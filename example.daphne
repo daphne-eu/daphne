@@ -1,0 +1,9 @@
+def main() {
+    let x = 1;
+    let y = 2;
+    print(x + y);
+
+    let m = rand(2, 3, 0, 1.0);
+    print(m);
+    print(m+m);
+}

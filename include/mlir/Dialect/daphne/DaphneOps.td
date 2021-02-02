@@ -1,0 +1,141 @@
+#ifndef INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
+#define INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
+
+include "DaphneDialect.td"
+include "DaphneTypes.td"
+
+include "mlir/Interfaces/SideEffectInterfaces.td"
+include "mlir/Interfaces/ControlFlowInterfaces.td"
+
+def Daphne_PrintOp : Daphne_Op<"print", []> {
+  let summary = "Print Operation.";
+
+  let arguments = (ins AnyType:$input);
+}
+
+def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
+    let summary = "constant operation";
+
+    let arguments = (ins AnyAttr:$value);
+    let results = (outs AnyType:$result);
+
+    let builders = [
+        OpBuilderDAG<(ins "Attribute":$value), [{
+            build($_builder, $_state, value.getType(), value);
+        }]>,
+        OpBuilderDAG<(ins "double":$value), [{
+            build($_builder, $_state, $_builder.getF64FloatAttr(value));
+        }]>,
+        OpBuilderDAG<(ins "float":$value), [{
+            build($_builder, $_state, $_builder.getF32FloatAttr(value));
+        }]>,
+        OpBuilderDAG<(ins "long":$value), [{
+            build($_builder, $_state, $_builder.getI64IntegerAttr(value));
+        }]>,
+        OpBuilderDAG<(ins "int":$value), [{
+            build($_builder, $_state, $_builder.getI32IntegerAttr(value));
+        }]>,
+    ];
+
+    let extraClassDeclaration = [{
+        Attribute getValue() { return (*this)->getAttr("value"); }
+    }];
+
+    let hasFolder = 1;
+}
+
+def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, HasParent<"FuncOp">]> {
+    let summary = "return operation";
+
+    let arguments = (ins Variadic<AnyType>:$operands);
+
+    let extraClassDeclaration = [{
+        bool hasOperand() { return getNumOperands() != 0; }
+    }];
+
+    let builders = [
+        OpBuilderDAG<(ins), [{
+            build($_builder, $_state, llvm::None);
+        }]>
+    ];
+}
+
+def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
+    let summary = "kernel operation for C";
+
+    let arguments = (ins StrAttr:$callee, Variadic<AnyType>:$inputs);
+    let results = (outs Variadic<AnyType>);
+
+    let builders = [
+    OpBuilderDAG<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+        $_state.addOperands(operands);
+        $_state.addAttribute("callee", callee);
+        $_state.addTypes(results);
+    }]>,
+    OpBuilderDAG<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+        build($_builder, $_state, $_builder.getStringAttr(callee), operands, results);
+    }]>,
+    ];
+
+    let extraClassDeclaration = [{
+        StringAttr getCalleeAttr() { return (*this)->getAttrOfType<StringAttr>("callee"); }
+    }];
+}
+
+class Daphne_BinaryOp<string mnemonic, list<OpTrait> traits = []> :
+        Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect])> {
+    let arguments = (ins MathType:$lhs, MathType:$rhs);
+    let results = (outs MathType:$result);
+
+    let builders = [
+        OpBuilderDAG<(ins "Value":$lhs, "Value":$rhs), [{
+            $_state.addTypes(lhs.getType());
+            $_state.addOperands({lhs, rhs});
+        }]>
+    ];
+
+    let extraClassDeclaration = [{
+    Value getLhs() {
+        return getOperand(0);
+    }
+    Value getRhs() {
+        return getOperand(1);
+    }
+    }];
+}
+
+def Daphne_AddOp : Daphne_BinaryOp<"add", [SameOperandsAndResultShape]> {
+    let summary = "add operation";
+}
+
+def Daphne_SubOp : Daphne_BinaryOp<"sub", [SameOperandsAndResultShape]> {
+    let summary = "subtraction operation";
+}
+
+def Daphne_MulOp : Daphne_BinaryOp<"mul", [SameOperandsAndResultShape]> {
+    let summary = "mul operation";
+}
+
+def Daphne_RandOp : Daphne_Op<"rand", []> {
+    let summary = "rand operation";
+
+    let arguments = (ins AnyInteger:$rows, AnyInteger:$cols,
+        AnyInteger:$seed, AnyFloat:$sparsity);
+    let results = (outs MatrixType:$output);
+}
+
+def Daphne_TransposeOp : Daphne_Op<"transpose", [NoSideEffect]> {
+    let summary = "transpose operation";
+
+    let arguments = (ins MatrixType:$input);
+    let results = (outs MatrixType:$result);
+
+    let builders = [
+        OpBuilderDAG<(ins "Value":$input), [{
+            auto ty = input.getType().cast<MatrixType>();
+            build($_builder, $_state, ty, input);
+        }]>,
+    ];
+}
+
+#endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
