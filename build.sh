@@ -23,8 +23,12 @@ llvmName=llvm-project
 if [ ! -d $llvmName ]
 then
     git clone https://github.com/llvm/$llvmName.git
-    mkdir $llvmName/build
-    cd $llvmName/build
+    cd $llvmName
+    # We do not use the latest version of the MLIR/LLVM source code.
+    # See issue #1.
+    git checkout f1ff6d210a5fb45dc90d063d04b12b9da0ae4110
+    mkdir build
+    cd build
     cmake -G Ninja ../llvm \
        -DLLVM_ENABLE_PROJECTS=mlir \
        -DLLVM_BUILD_EXAMPLES=ON \
