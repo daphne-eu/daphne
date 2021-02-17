@@ -9,6 +9,9 @@
 # Stop immediately if any command fails.
 set -e
 
+# Make sure that the submodule(s) have been updated since the last clone/pull.
+git submodule update --init --recursive
+
 
 #******************************************************************************
 # Handle third-party material
