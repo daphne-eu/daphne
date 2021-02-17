@@ -18,6 +18,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
+#include "mlir/Target/LLVMIR.h"
 
 #include <iostream>
 #include <memory>
@@ -66,6 +67,7 @@ execJIT(OwningModuleRef & module)
         // TODO Find these at run-time.
         sharedLibRefs.push_back("build/lib/kernels/libPrintKernels.so");
         sharedLibRefs.push_back("build/lib/kernels/libLinAlgKernels.so");
+        registerLLVMDialectTranslation(*module->getContext());
         auto maybeEngine = ExecutionEngine::create(
                                                    module.get(), nullptr, optPipeline, llvm::CodeGenOpt::Level::Default,
                                                    sharedLibRefs, true, true, true);

@@ -160,7 +160,7 @@ antlrcpp::Any FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx)
         if (failed(visitBlockStatement(ctx->blockStatement()))) {
             return nullptr;
         }
-        if (funcBlock->back().isKnownNonTerminator()) {
+        if (!funcBlock->back().mightHaveTrait<OpTrait::IsTerminator>()) {
             // implicitly return last operation
             builder.create<daphne::ReturnOp>(endLoc);
         }
@@ -171,7 +171,8 @@ antlrcpp::Any FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx)
 
     auto *terminator = funcBlock->getTerminator();
     auto funcType = FunctionType::get(builder.getContext(), funcBlock->getArgumentTypes(), terminator->getOperandTypes());
-    auto func = builder.create<FuncOp>(loc, ctx->IDENTIFIER()->getText(), funcType);
+    // TODO The function name prefix should probably not be inserted here.
+    auto func = builder.create<FuncOp>(loc, "_mlir__mlir_ciface_" + ctx->IDENTIFIER()->getText(), funcType);
     func.push_back(funcBlock);
     return func.getOperation();
 }

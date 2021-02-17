@@ -111,12 +111,12 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
     {
         auto *context = module.getContext();
         if (module.lookupSymbol<LLVM::LLVMFuncOp>(funcName))
-            return SymbolRefAttr::get(funcName, context);
+            return SymbolRefAttr::get(context, funcName);
 
         PatternRewriter::InsertionGuard insertGuard(rewriter);
         rewriter.setInsertionPointToStart(module.getBody());
         rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), funcName, llvmFnType);
-        return SymbolRefAttr::get(funcName, context);
+        return SymbolRefAttr::get(context, funcName);
     }
 
     static LLVM::LLVMFunctionType
