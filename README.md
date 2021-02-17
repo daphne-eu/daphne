@@ -19,15 +19,42 @@ Please ensure that your system meets the following requirements before trying to
 - hardware
   - about 3.5 GB disk space (only for LLVM/MLIR)
 
-## 1. Build
+## 1. Obtain the source code
 
-Simply build the prototype using `./build.sh`.
-When you do this the *first* time, it will also download and build antlr4 as well as clone and build LLVM/MLIR.
-The latter takes very long (can be about 30 minutes).
-All *following* build should take only a few seconds.
-To clean, simply delete the `build`-directory.
+The prototype is based on MLIR, which is a part of the LLVM monorepo.
+The LLVM monorepo is included in this repository as a submodule.
+Thus, clone this repository as follows to also clone the submodule:
 
-## 2. Run
+```bash
+git clone --recursive https://gitlab.know-center.tugraz.at/daphne/prototype.git
+```
+
+Upstream changes to this repository might contain changes to the submodule (we might have upgraded to a newer version of MLIR/LLVM).
+Thus, please pull as follows:
+
+```bash
+# in git >= 2.14
+git pull --recurse-submodules
+
+# in git < 2.14
+git pull && git submodule update --init --recursive
+
+# or use this little convenience script
+./pull.sh
+```
+
+## 2. Build
+
+Simply build the prototype using the build-script without any arguments:
+
+```bash
+./build.sh
+```
+
+When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
+Subsequent builds, e.g., when you changed something in this repository, will be much faster.
+
+## 3. Run
 
 Write a little DaphneDSL script or use `example.daphne`...
 
