@@ -8,16 +8,31 @@ Prints script outputs to `stdout`.
 
 Please ensure that your system meets the following requirements before trying to build the prototype.
 
-- operation system
-  - GNU/Linux
-- software
-  - cmake
-  - ninja
-  - clang
-  - lld
-  - uuid-dev
-- hardware
-  - about 3.5 GB disk space (only for LLVM/MLIR)
+**(*)**
+You can view the version numbers as an orientation rather than a strict requirement.
+Newer versions should work as well, older versions might work as well.
+
+##### Operating system
+
+| OS | distribution/version known to work (*) |
+| --- | --- |
+| GNU/Linux | Ubuntu 20.4.1 with kernel 5.8.0-43-generic |
+
+##### Software
+
+| tool/lib | version known to work (*) |
+| ----------- | ----------- |
+| clang | 10.0.0 |
+| cmake | 3.16.3 |
+| git | 2.25.1 |
+| lld | 10.0.0 |
+| ninja | 1.10.0 |
+| pkg-config | 0.29.1 |
+| uuid-dev |  |
+
+##### Hardware
+
+  - about 2.1 GB of free disk space (mostly due to MLIR/LLVM)
 
 ## 1. Obtain the source code
 
