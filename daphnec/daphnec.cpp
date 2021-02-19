@@ -35,6 +35,11 @@ processModule(MLIRContext & context, daphne_antlr::DaphneParser::FileContext *fi
     OpBuilder builder(&context);
     mlir_gen::FileVisitor visitor(builder);
     auto module = visitor.visitFile(file).as<ModuleOp>();
+    
+    if(failed(verify(module))) {
+        module.emitError("failed to verify the module right after parsing");
+        return nullptr;
+    }
 
     if (module) {
         //module->dump(); // print the DaphneIR representation
