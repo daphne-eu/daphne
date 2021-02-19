@@ -215,6 +215,47 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpression(DaphneParser::LiteralExpre
         value = builder.create<daphne::ConstantOp>(loc,
                 builder.getIntegerAttr(type, res.as<APInt>()));
     }
+    else if (res.is<MatrixLiteral>()) {
+        // matrix
+        auto matLit = res.as<MatrixLiteral>();
+        int64_t rows = matLit.getRows();
+        int64_t cols = matLit.getCols();
+        mlir::Type elementType = matLit.getElementType();
+
+        mlir::Value cstRows = builder.create<ConstantOp>(loc, rows);
+        mlir::Value cstCols = builder.create<ConstantOp>(loc, cols);
+        mlir::Value cstZeroEl = elementType.isa<IntegerType>() ? builder.create<ConstantOp>(loc, static_cast<int64_t>(0)) : builder.create<ConstantOp>(loc, 0.0);
+        mlir::Value cstSeed = builder.create<ConstantOp>(loc, static_cast<int64_t>(0));
+        mlir::Value cstSparsity = builder.create<ConstantOp>(loc, 0.0);
+        // TODO Creating a constant matrix should not involve a random op, it
+        // should just be allocated, but not initialized here.
+        std::cerr << "AAA" << std::endl;
+        elementType.dump();
+        std::cerr << "AAA" << std::endl;
+        value = builder.create<RandOp>(loc, MatrixType::get(builder.getContext(), elementType), cstRows, cstCols, cstSeed, cstSparsity, cstZeroEl, cstZeroEl);
+        std::cerr << "BBB" << std::endl;
+        value.getType().dump();
+        std::cerr << "BBB" << std::endl;
+
+        llvm::SmallVector<mlir::Value, 8> cstIndices;
+        for (auto i : llvm::seq<int64_t>(0, std::max(rows, cols)))
+            cstIndices.push_back(builder.create<ConstantOp>(loc, builder.getIndexAttr(i)));
+        for (auto r = 0u; r < matLit.getRows(); r++) {
+            for (auto c = 0; c < matLit.getCols(); c++) {
+                Value cst;
+                if (elementType.isa<IntegerType>()) {
+                    cst = builder.create<ConstantOp>(loc,
+                            builder.getIntegerAttr(elementType, matLit.getLinIntData()[r * cols + c]));
+                }
+                else if (elementType.isa<FloatType>()) {
+                    cst = builder.create<ConstantOp>(loc,
+                            builder.getFloatAttr(elementType, matLit.getLinFloatData()[r * cols + c]));
+                }
+                builder.create<SetCellOp>(loc, value, cstIndices[r], cstIndices[c],
+                        cst);
+            }
+        }
+    }
     if (value == nullptr)
         emitError(loc) << "failed to create literal expression";
     return value;
@@ -507,7 +548,7 @@ void MatrixLiteral::addData(Location &loc, OpBuilder &builder, antlrcpp::Any dat
         if (!initialized) {
             initialized = true;
             // TODO: different bit-widths
-            elementType = builder.getI64Type();
+            elementType = builder.getIntegerType(64, true);
             cols = 1;
         }
         else {

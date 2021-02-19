@@ -9,7 +9,7 @@
 
 class Daphne_Type<string name> : TypeDef<Daphne_Dialect, name>;
 
-def ScalarType : AnyTypeOf<[SI64, F64]> {}
+def ScalarType : AnyTypeOf<[SI64, F64, Index]> {}
 
 def MatrixType : Daphne_Type<"Matrix"> {
     let summary = "a matrix for the daphne dialect";
