@@ -25,8 +25,12 @@ namespace
         LogicalResult matchAndRewrite(Operation *op,
                                       PatternRewriter &rewriter) const override
         {
-            if (op->getName().getStringRef().equals(daphne::PrintOp::getOperationName())) {
-                StringRef callee;
+            // The name of the kernel function to call.
+            StringRef callee;
+
+            // Determine the name of the kernel function to call based on the
+            // operation, types, etc., or return failure() on error.
+            if (llvm::dyn_cast<daphne::PrintOp>(op)) {
                 Type t = llvm::dyn_cast<daphne::PrintOp>(op).input().getType();
                 if (t.isSignedInteger(64))
                     callee = StringRef("printInt");
@@ -36,84 +40,49 @@ namespace
                     callee = StringRef("printMatrix");
                 else
                     return failure();
-                auto operands = op->getOperands();
-                auto kernel = rewriter.create<daphne::CallKernelOp>(
-                        op->getLoc(),
-                        callee,
-                        operands,
-                        op->getResultTypes()
-                        );
-                rewriter.replaceOp(op, kernel.getResults());
-                return success();
             }
-            else if (op->getName().getStringRef().equals(daphne::RandOp::getOperationName())) {
+            else if (llvm::dyn_cast<daphne::RandOp>(op)) {
                 // Derive the element type of the matrix to be generated from
                 // the type of the "min" argument. (Note that the "max"
                 // argument is guaranteed to have the same type.)
                 Type et = llvm::dyn_cast<daphne::RandOp>(op).min().getType();
 
-                StringRef callee;
                 if (et.isSignedInteger(64))
                     callee = StringRef("randMatI64");
                 else if (et.isF64())
                     callee = StringRef("randMatF64");
                 else
                     return failure();
-                auto operands = op->getOperands();
-                auto kernel = rewriter.create<daphne::CallKernelOp>(
-                        op->getLoc(),
-                        callee,
-                        operands,
-                        op->getResultTypes()
-                        );
-                rewriter.replaceOp(op, kernel.getResults());
-                return success();
             }
-            else if (op->getName().getStringRef().equals(daphne::TransposeOp::getOperationName())) {
-                auto operands = op->getOperands();
-                auto kernel = rewriter.create<daphne::CallKernelOp>(
-                        op->getLoc(),
-                        "transpose",
-                        operands,
-                        op->getResultTypes()
-                        );
-                rewriter.replaceOp(op, kernel.getResults());
-                return success();
-            }
-            else if (op->getName().getStringRef().equals(daphne::AddOp::getOperationName())) {
-                auto operands = op->getOperands();
+            else if (llvm::dyn_cast<daphne::TransposeOp>(op))
+                callee = "transpose";
+            else if (llvm::dyn_cast<daphne::AddOp>(op)) {
                 if (op->getOperand(0).getType().isa<daphne::MatrixType>() &&
-                    op->getOperand(1).getType().isa<daphne::MatrixType>()) {
-                    auto kernel = rewriter.create<daphne::CallKernelOp>(
-                            op->getLoc(),
-                            "addMM",
-                            operands,
-                            op->getResultTypes()
-                            );
-                    rewriter.replaceOp(op, kernel.getResults());
-                    return success();
-                }
+                    op->getOperand(1).getType().isa<daphne::MatrixType>())
+                    callee = "addMM";
                 else
                     return failure();
             }
-            else if (op->getName().getStringRef().equals(daphne::SetCellOp::getOperationName())) {
-                auto operands = op->getOperands();
+            else if (llvm::dyn_cast<daphne::SetCellOp>(op)) {
                 Type et = llvm::dyn_cast<daphne::SetCellOp>(op).mat().getType().dyn_cast<daphne::MatrixType>().getElementType();
-                StringRef callee;
-                if(et.isSignedInteger(64))
+                if (et.isSignedInteger(64))
                     callee = StringRef("setCellI64");
-                else if(et.isF64())
+                else if (et.isF64())
                     callee = StringRef("setCellF64");
-                auto kernel = rewriter.create<daphne::CallKernelOp>(
-                        op->getLoc(),
-                        callee,
-                        operands,
-                        op->getResultTypes()
-                        );
-                rewriter.replaceOp(op, kernel.getResults());
-                return success();
             }
-            return failure();
+            else
+                return failure();
+
+            // Create a CallKernelOp for the kernel function to call and return
+            // success().
+            auto kernel = rewriter.create<daphne::CallKernelOp>(
+                    op->getLoc(),
+                    callee,
+                    op->getOperands(),
+                    op->getResultTypes()
+                    );
+            rewriter.replaceOp(op, kernel.getResults());
+            return success();
         }
     };
 
