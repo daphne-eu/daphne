@@ -79,7 +79,7 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
 }
 
 class Daphne_BinaryOp<string mnemonic, list<OpTrait> traits = []> :
-        Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect])> {
+        Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchWith<"left and right operand must be of the same type", "lhs", "rhs", "$_self">])> {
     let arguments = (ins MathType:$lhs, MathType:$rhs);
     let results = (outs MathType:$result);
 
