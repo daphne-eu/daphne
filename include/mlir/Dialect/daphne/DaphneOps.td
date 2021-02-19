@@ -37,10 +37,6 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         }]>,
     ];
 
-    let extraClassDeclaration = [{
-        Attribute getValue() { return (*this)->getAttr("value"); }
-    }];
-
     let hasFolder = 1;
 }
 
@@ -93,15 +89,6 @@ class Daphne_BinaryOp<string mnemonic, list<OpTrait> traits = []> :
             $_state.addOperands({lhs, rhs});
         }]>
     ];
-
-    let extraClassDeclaration = [{
-    Value getLhs() {
-        return getOperand(0);
-    }
-    Value getRhs() {
-        return getOperand(1);
-    }
-    }];
 }
 
 def Daphne_AddOp : Daphne_BinaryOp<"add", [SameOperandsAndResultShape]> {

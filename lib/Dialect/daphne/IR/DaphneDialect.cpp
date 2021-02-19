@@ -54,5 +54,5 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
 {
     assert(operands.empty() && "constant has no operands");
-    return getValue();
+    return value();
 }

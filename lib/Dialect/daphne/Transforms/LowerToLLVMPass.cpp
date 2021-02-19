@@ -60,7 +60,7 @@ public:
     matchAndRewrite(daphne::ConstantOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
-        rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.getValue());
+        rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
         return success();
     }
 };
