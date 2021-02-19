@@ -26,14 +26,20 @@ namespace
                                       PatternRewriter &rewriter) const override
         {
             if (op->getName().getStringRef().equals(daphne::PrintOp::getOperationName())) {
+                StringRef callee;
+                Type t = llvm::dyn_cast<daphne::PrintOp>(op).input().getType();
+                if (t.isSignedInteger(64))
+                    callee = StringRef("printInt");
+                else if (t.isF64())
+                    callee = StringRef("printDouble");
+                else if (t.isa<daphne::MatrixType>())
+                    callee = StringRef("printMatrix");
+                else
+                    return failure();
                 auto operands = op->getOperands();
                 auto kernel = rewriter.create<daphne::CallKernelOp>(
                         op->getLoc(),
-                        op->getOperand(0).getType().isa<IntegerType>()
-                        ? "printInt"
-                        : (
-                        op->getOperand(0).getType().isa<FloatType>() ? "printDouble" : "printMatrix"
-                        ),
+                        callee,
                         operands,
                         op->getResultTypes()
                         );
