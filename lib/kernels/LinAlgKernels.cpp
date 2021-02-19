@@ -46,6 +46,16 @@ bool binOpMM(BaseMatrix *lhsIn, BaseMatrix *rhsIn, BaseMatrix **outIn,
     return false;
 }
 
+template<typename T>
+bool setCell(BaseMatrix *matIn, int32_t row, int32_t col, T val)
+{
+    if (auto *mat = dynamic_cast<DenseMatrix<T> *> (matIn)) {
+        mat->set(row, col, val);
+        return true;
+    }
+    return false;
+}
+
 
 extern "C"
 {
@@ -139,6 +149,20 @@ extern "C"
             return;
         }
         assert(false && "Matrix types don't match with any implementation");
+    }
+
+    void setCellF64(BaseMatrix *mat, size_t row, size_t col, double out)
+    {
+        if (setCell<double>(mat, row, col, out))
+            return;
+        assert(false && "Matrix type doesn't match with any implementation");
+    }
+
+    void setCellI64(BaseMatrix *mat, size_t row, size_t col, int64_t out)
+    {
+        if (setCell<int64_t>(mat, row, col, out))
+            return;
+        assert(false && "Matrix type doesn't match with any implementation");
     }
 
 } // extern "C"

@@ -90,6 +90,23 @@ namespace
                 else
                     return failure();
             }
+            else if (op->getName().getStringRef().equals(daphne::SetCellOp::getOperationName())) {
+                auto operands = op->getOperands();
+                Type et = llvm::dyn_cast<daphne::SetCellOp>(op).mat().getType().dyn_cast<daphne::MatrixType>().getElementType();
+                StringRef callee;
+                if(et.isSignedInteger(64))
+                    callee = StringRef("setCellI64");
+                else if(et.isF64())
+                    callee = StringRef("setCellF64");
+                auto kernel = rewriter.create<daphne::CallKernelOp>(
+                        op->getLoc(),
+                        callee,
+                        operands,
+                        op->getResultTypes()
+                        );
+                rewriter.replaceOp(op, kernel.getResults());
+                return success();
+            }
             return failure();
         }
     };
@@ -113,8 +130,8 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, ModuleTerminatorOp, FuncOp>();
     target.addIllegalOp<
-            daphne::PrintOp, daphne::RandOp, daphne::TransposeOp
-            >();
+            daphne::PrintOp, daphne::RandOp, daphne::TransposeOp, daphne::SetCellOp
+    >();
     target.addDynamicallyLegalOp<daphne::AddOp>([](daphne::AddOp op)
     {
         const bool legal = (

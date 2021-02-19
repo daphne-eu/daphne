@@ -126,4 +126,10 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [NoSideEffect]> {
     ];
 }
 
+def Daphne_SetCellOp : Daphne_Op<"setCell",  []> {
+    let summary = "set cell operation";
+
+    let arguments = (ins MatrixType:$mat, Index:$row, Index:$col, ScalarType:$val);
+}
+
 #endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
