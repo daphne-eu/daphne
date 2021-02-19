@@ -26,15 +26,15 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         OpBuilderDAG<(ins "double":$value), [{
             build($_builder, $_state, $_builder.getF64FloatAttr(value));
         }]>,
-        OpBuilderDAG<(ins "float":$value), [{
-            build($_builder, $_state, $_builder.getF32FloatAttr(value));
+        //OpBuilderDAG<(ins "float":$value), [{
+        //    build($_builder, $_state, $_builder.getF32FloatAttr(value));
+        //}]>,
+        OpBuilderDAG<(ins "int64_t":$value), [{
+            build($_builder, $_state, $_builder.getIntegerAttr($_builder.getIntegerType(64, true), value));
         }]>,
-        OpBuilderDAG<(ins "long":$value), [{
-            build($_builder, $_state, $_builder.getI64IntegerAttr(value));
-        }]>,
-        OpBuilderDAG<(ins "int":$value), [{
-            build($_builder, $_state, $_builder.getI32IntegerAttr(value));
-        }]>,
+        //OpBuilderDAG<(ins "int":$value), [{
+        //    build($_builder, $_state, $_builder.getI32IntegerAttr(value));
+        //}]>,
     ];
 
     let hasFolder = 1;
