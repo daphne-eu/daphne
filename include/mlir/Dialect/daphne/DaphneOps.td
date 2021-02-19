@@ -63,14 +63,14 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
     let results = (outs Variadic<AnyType>);
 
     let builders = [
-    OpBuilderDAG<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
-        $_state.addOperands(operands);
-        $_state.addAttribute("callee", callee);
-        $_state.addTypes(results);
-    }]>,
-    OpBuilderDAG<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
-        build($_builder, $_state, $_builder.getStringAttr(callee), operands, results);
-    }]>,
+        OpBuilderDAG<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+            $_state.addOperands(operands);
+            $_state.addAttribute("callee", callee);
+            $_state.addTypes(results);
+        }]>,
+        OpBuilderDAG<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+            build($_builder, $_state, $_builder.getStringAttr(callee), operands, results);
+        }]>,
     ];
 
     let extraClassDeclaration = [{
