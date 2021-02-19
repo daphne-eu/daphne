@@ -211,7 +211,7 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpression(DaphneParser::LiteralExpre
     }
     else if (res.is<APInt>()) {
         // TODO: get bit type, if specified
-        Type type = builder.getI64Type();
+        Type type = builder.getIntegerType(64, true);
         value = builder.create<daphne::ConstantOp>(loc,
                 builder.getIntegerAttr(type, res.as<APInt>()));
     }

@@ -9,11 +9,15 @@
 
 class Daphne_Type<string name> : TypeDef<Daphne_Dialect, name>;
 
+def ScalarType : AnyTypeOf<[SI64, F64]> {}
+
 def MatrixType : Daphne_Type<"Matrix"> {
-    let summary = "A matrix for the daphne dialect";
+    let summary = "a matrix for the daphne dialect";
+
+    let parameters = (ins "Type":$elementType);
+    let genVerifyInvariantsDecl = 1;
 }
 
-def ScalarType : AnyTypeOf<[AnyFloat, AnyInteger]> {}
 def MathType : TypeAlias<AnyTypeOf<[ScalarType, MatrixType]>> {}
 
 #endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNETYPES_H

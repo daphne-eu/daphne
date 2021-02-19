@@ -44,7 +44,7 @@ RandOp RandBuiltin::create(OpBuilder builder,
     if (values.size() == 4) {
         return builder.create<RandOp>(
                 loc,
-                MatrixType::get(builder.getContext()),
+                MatrixType::get(builder.getContext(), builder.getF64Type()),
                 values[0], values[1], values[2], values[3]
                 );
     }

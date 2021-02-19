@@ -48,11 +48,19 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
     if (type.isa<mlir::daphne::MatrixType>())
-        os << "Matrix";
+        os << "Matrix<" << type.dyn_cast<mlir::daphne::MatrixType>().getElementType() << '>';
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
 {
     assert(operands.empty() && "constant has no operands");
     return value();
+}
+
+::mlir::LogicalResult mlir::daphne::MatrixType::verifyConstructionInvariants(::mlir::Location loc, Type elementType)
+{
+    if (elementType.isSignedInteger(64) || elementType.isF64())
+        return mlir::success();
+    else
+        return mlir::emitError(loc) << "invalid matrix element type: " << elementType;
 }

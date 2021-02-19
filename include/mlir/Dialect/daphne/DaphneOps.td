@@ -17,7 +17,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let summary = "constant operation";
 
     let arguments = (ins AnyAttr:$value);
-    let results = (outs AnyType:$result);
+    let results = (outs MathType:$result);
 
     let builders = [
         OpBuilderDAG<(ins "Attribute":$value), [{
