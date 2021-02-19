@@ -104,18 +104,18 @@ extern "C"
         }
     }
 
-    void randMatF64(size_t rows, size_t cols, size_t seed, double sparsity,
+    void randMatF64(size_t rows, size_t cols, size_t seed, double sparsity, double min, double max,
                     AbstractMatrix<double> **out)
     {
-        randRangedMatF64(rows, cols, seed, sparsity, 0.0, 1.0, out);
+        randRangedMatF64(rows, cols, seed, sparsity, min, max, out);
     }
 
-    void randMatI64(size_t rows, size_t cols, size_t seed, double sparsity,
+    void randMatI64(size_t rows, size_t cols, size_t seed, double sparsity, int64_t min, int64_t max,
                     AbstractMatrix<int64_t> **out)
     {
         randRangedMatI64(rows, cols, seed, sparsity,
-                         std::numeric_limits<int64_t>::min(),
-                         std::numeric_limits<int64_t>::max(), out);
+                         min,
+                         max, out);
     }
 
     void transpose(BaseMatrix *mat, BaseMatrix **out)

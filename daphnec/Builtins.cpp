@@ -41,11 +41,11 @@ RandOp RandBuiltin::create(OpBuilder builder,
                            Location &loc,
                            ValueRange values)
 {
-    if (values.size() == 4) {
+    if (values.size() == 6) {
         return builder.create<RandOp>(
                 loc,
-                MatrixType::get(builder.getContext(), builder.getF64Type()),
-                values[0], values[1], values[2], values[3]
+                MatrixType::get(builder.getContext(), values[4].getType()),
+                values[0], values[1], values[2], values[3], values[4], values[5]
                 );
     }
     if (failed(checkNumParams(loc, name, values.size())))
@@ -72,7 +72,6 @@ antlrcpp::Any Builtins::build(OpBuilder &builder,
         return op;
     }
     if (name == RandBuiltin::name) {
-        RandBuiltin p;
         Value rand = RandBuiltin().create(builder, loc, values);
         return rand;
     }

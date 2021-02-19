@@ -103,11 +103,12 @@ def Daphne_MulOp : Daphne_BinaryOp<"mul", [SameOperandsAndResultShape]> {
     let summary = "mul operation";
 }
 
-def Daphne_RandOp : Daphne_Op<"rand", []> {
+def Daphne_RandOp : Daphne_Op<"rand", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
     let summary = "rand operation";
 
     let arguments = (ins AnyInteger:$rows, AnyInteger:$cols,
-        AnyInteger:$seed, AnyFloat:$sparsity);
+        AnyInteger:$seed, AnyFloat:$sparsity,
+        ScalarType:$min, ScalarType:$max);
     let results = (outs MatrixType:$output);
 }
 

@@ -41,10 +41,22 @@ namespace
                 return success();
             }
             else if (op->getName().getStringRef().equals(daphne::RandOp::getOperationName())) {
+                // Derive the element type of the matrix to be generated from
+                // the type of the "min" argument. (Note that the "max"
+                // argument is guaranteed to have the same type.)
+                Type et = llvm::dyn_cast<daphne::RandOp>(op).min().getType();
+
+                StringRef callee;
+                if (et.isSignedInteger(64))
+                    callee = StringRef("randMatI64");
+                else if (et.isF64())
+                    callee = StringRef("randMatF64");
+                else
+                    return failure();
                 auto operands = op->getOperands();
                 auto kernel = rewriter.create<daphne::CallKernelOp>(
                         op->getLoc(),
-                        "randMatF64",
+                        callee,
                         operands,
                         op->getResultTypes()
                         );
