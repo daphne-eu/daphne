@@ -229,13 +229,7 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpression(DaphneParser::LiteralExpre
         mlir::Value cstSparsity = builder.create<ConstantOp>(loc, 0.0);
         // TODO Creating a constant matrix should not involve a random op, it
         // should just be allocated, but not initialized here.
-        std::cerr << "AAA" << std::endl;
-        elementType.dump();
-        std::cerr << "AAA" << std::endl;
         value = builder.create<RandOp>(loc, MatrixType::get(builder.getContext(), elementType), cstRows, cstCols, cstSeed, cstSparsity, cstZeroEl, cstZeroEl);
-        std::cerr << "BBB" << std::endl;
-        value.getType().dump();
-        std::cerr << "BBB" << std::endl;
 
         llvm::SmallVector<mlir::Value, 8> cstIndices;
         for (auto i : llvm::seq<int64_t>(0, std::max(rows, cols)))
