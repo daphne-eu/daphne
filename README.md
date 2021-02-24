@@ -79,9 +79,10 @@ def main() {
     let y = 2;
     print(x + y);
 
-    let m = rand(2, 3, 0, 1.0);
+    // generate 2x3 matrix containing random numbers in [0.0, 100.0]
+    let m = rand(2, 3, 0, 1.0, 0.0, 100.0);
     print(m);
-    print(m + m);
+    print(m+m);
 }
 ```
 
