@@ -1,8 +1,6 @@
 #ifndef INCLUDE_DATASTRUCTURES_MATRIX_H
 #define INCLUDE_DATASTRUCTURES_MATRIX_H
 
-#include <iostream>
-
 class BaseMatrix
 {
 public:
@@ -58,28 +56,5 @@ public:
     virtual const T &get(unsigned row, unsigned col) const = 0;
     virtual void set(unsigned row, unsigned col, T value) = 0;
 };
-
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const AbstractMatrix<T> &mat)
-{
-    os << "Matrix(rows = " << mat.getRows() << ", cols = " << mat.getCols()
-            << ")\n[";
-    for (unsigned r = 0; r < mat.getRows(); r++) {
-        if (r != 0)
-            os << " ";
-        os << "[";
-        for (unsigned c = 0; c < mat.getCols(); c++) {
-            os << mat.get(r, c);
-            if (c < mat.getCols() - 1) {
-                os << " ";
-            }
-        }
-        os << "]";
-        if (r < mat.getRows() - 1) {
-            os << "\n";
-        }
-    }
-    return os << "]\n";
-}
 
 #endif //INCLUDE_DATASTRUCTURES_MATRIX_H

@@ -33,11 +33,18 @@ namespace
             if (llvm::dyn_cast<daphne::PrintOp>(op)) {
                 Type t = llvm::dyn_cast<daphne::PrintOp>(op).input().getType();
                 if (t.isSignedInteger(64))
-                    callee = StringRef("printInt");
+                    callee = StringRef("printScaI64");
                 else if (t.isF64())
-                    callee = StringRef("printDouble");
-                else if (t.isa<daphne::MatrixType>())
-                    callee = StringRef("printMatrix");
+                    callee = StringRef("printScaF64");
+                else if (t.isa<daphne::MatrixType>()) {
+                    Type et = t.dyn_cast<daphne::MatrixType>().getElementType();
+                    if (et.isSignedInteger(64))
+                        callee = StringRef("printDenI64");
+                    else if (et.isF64())
+                        callee = StringRef("printDenF64");
+                    else
+                        return failure();
+                }
                 else
                     return failure();
             }
@@ -48,27 +55,41 @@ namespace
                 Type et = llvm::dyn_cast<daphne::RandOp>(op).min().getType();
 
                 if (et.isSignedInteger(64))
-                    callee = StringRef("randMatI64");
+                    callee = StringRef("randDenI64");
                 else if (et.isF64())
-                    callee = StringRef("randMatF64");
+                    callee = StringRef("randDenF64");
                 else
                     return failure();
             }
-            else if (llvm::dyn_cast<daphne::TransposeOp>(op))
-                callee = "transpose";
+            else if (llvm::dyn_cast<daphne::TransposeOp>(op)) {
+                Type et = op->getOperand(0).getType().dyn_cast<daphne::MatrixType>().getElementType();
+                if (et.isSignedInteger(64))
+                    callee = "transposeDenI64";
+                else if (et.isF64())
+                    callee = "transposeDenF64";
+                else
+                    return failure();
+            }
             else if (llvm::dyn_cast<daphne::AddOp>(op)) {
                 if (op->getOperand(0).getType().isa<daphne::MatrixType>() &&
-                    op->getOperand(1).getType().isa<daphne::MatrixType>())
-                    callee = "addMM";
+                    op->getOperand(1).getType().isa<daphne::MatrixType>()) {
+                    Type et = op->getOperand(0).getType().dyn_cast<daphne::MatrixType>().getElementType();
+                    if (et.isSignedInteger(64))
+                        callee = "addDenDenDenI64";
+                    else if (et.isF64())
+                        callee = "addDenDenDenF64";
+                    else
+                        return failure();
+                }
                 else
                     return failure();
             }
             else if (llvm::dyn_cast<daphne::SetCellOp>(op)) {
                 Type et = llvm::dyn_cast<daphne::SetCellOp>(op).mat().getType().dyn_cast<daphne::MatrixType>().getElementType();
                 if (et.isSignedInteger(64))
-                    callee = StringRef("setCellI64");
+                    callee = StringRef("setCellDenI64");
                 else if (et.isF64())
-                    callee = StringRef("setCellF64");
+                    callee = StringRef("setCellDenF64");
             }
             else
                 return failure();

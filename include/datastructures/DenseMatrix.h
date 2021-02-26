@@ -3,6 +3,8 @@
 
 #include "datastructures/Matrix.h"
 
+#include <iostream>
+
 #include <cassert>
 #include <cmath>
 #include <functional>
@@ -184,6 +186,29 @@ template <typename T> void DenseMatrix<T>::fill(T value)
 template <typename T> void DenseMatrix<T>::transpose()
 {
     transposed = !transposed;
+}
+
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const DenseMatrix<T> &mat)
+{
+    os << "Matrix(rows = " << mat.getRows() << ", cols = " << mat.getCols()
+            << ")\n[";
+    for (unsigned r = 0; r < mat.getRows(); r++) {
+        if (r != 0)
+            os << " ";
+        os << "[";
+        for (unsigned c = 0; c < mat.getCols(); c++) {
+            os << mat.get(r, c);
+            if (c < mat.getCols() - 1) {
+                os << " ";
+            }
+        }
+        os << "]";
+        if (r < mat.getRows() - 1) {
+            os << "\n";
+        }
+    }
+    return os << "]\n";
 }
 
 #endif //INCLUDE_DATASTRUCTURES_DENSEMATRIX_H

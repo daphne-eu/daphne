@@ -1,44 +1,56 @@
+#include "datastructures/DenseMatrix.h"
 #include "datastructures/Matrix.h"
+#include "utils.h"
 
 #include <iostream>
 
 #include <cassert>
+#include <cstdint>
+
+// ****************************************************************************
+// Kernel implementations
+// ****************************************************************************
+
+template<typename T>
+void printSca(T val)
+{
+    std::cout << val << std::endl;
+}
+
+template<typename T>
+void printDen(const BaseMatrix * mat)
+{
+    dynamic_cast_assert(const DenseMatrix<T> *, matDense, mat);
+    std::cout << *matDense;
+}
+
+// ****************************************************************************
+// Macros generating functions called from JIT-compiled code
+// ****************************************************************************
+
+#define MAKE_PRINT_SCA(valueTypeName, valueType) \
+    void printSca ## valueTypeName(valueType sca) \
+    { \
+        printSca<valueType>(sca); \
+    }
+    
+#define MAKE_PRINT_DEN(valueTypeName, valueType) \
+    void printDen ## valueTypeName(BaseMatrix * mat) \
+    { \
+        printDen<valueType>(mat); \
+    }
+
+// ****************************************************************************
+// Functions called from JIT-compiled code
+// ****************************************************************************
 
 extern "C"
 {
-
-    void printInt(int x)
-    {
-        std::cout << x << std::endl;
-    }
-
-    void printDouble(double x)
-    {
-        std::cout << x << std::endl;
-    }
-
-    void printMatrix(BaseMatrix * x)
-    {
-        if (AbstractMatrix<double> *mat =
-            dynamic_cast<AbstractMatrix<double> *> (x)) {
-            std::cout << *mat;
-            return;
-        }
-        if (AbstractMatrix<float> *mat =
-            dynamic_cast<AbstractMatrix<float> *> (x)) {
-            std::cout << *mat;
-            return;
-        }
-        if (AbstractMatrix<int64_t> *mat =
-            dynamic_cast<AbstractMatrix<int64_t> *> (x)) {
-            std::cout << *mat;
-            return;
-        }
-        if (AbstractMatrix<int32_t> *mat =
-            dynamic_cast<AbstractMatrix<int32_t> *> (x)) {
-            std::cout << *mat;
-            return;
-        }
-        assert(false && "Matrix type not recognized");
-    }
-}
+    
+    MAKE_PRINT_SCA(I64, int64_t);
+    MAKE_PRINT_SCA(F64, double);
+    
+    MAKE_PRINT_DEN(I64, int64_t);
+    MAKE_PRINT_DEN(F64, double);
+    
+} // extern "C"
