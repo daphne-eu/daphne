@@ -8,7 +8,6 @@
 #include <cstddef>
 #include <cstdint>
 
-// TODO Get rid of the virtual get/set calls.
 // TODO Don't use assertions for checks that could NOT have been done during
 // our MLIR-based compilation.
 
