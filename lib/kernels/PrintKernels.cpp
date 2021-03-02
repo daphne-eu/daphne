@@ -1,5 +1,5 @@
+#include "datastructures/BaseMatrix.h"
 #include "datastructures/DenseMatrix.h"
-#include "datastructures/Matrix.h"
 #include "utils.h"
 
 #include <iostream>

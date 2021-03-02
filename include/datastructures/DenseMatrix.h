@@ -1,7 +1,7 @@
 #ifndef INCLUDE_DATASTRUCTURES_DENSEMATRIX_H
 #define INCLUDE_DATASTRUCTURES_DENSEMATRIX_H
 
-#include "datastructures/Matrix.h"
+#include "datastructures/BaseMatrix.h"
 
 #include <functional>
 #include <iostream>
