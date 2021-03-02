@@ -1,11 +1,17 @@
 #ifndef INCLUDE_DATASTRUCTURES_MATRIX_H
 #define INCLUDE_DATASTRUCTURES_MATRIX_H
 
+#include <cstddef>
+
 class BaseMatrix
 {
+protected:
+    size_t rows;
+    size_t cols;
+
 public:
 
-    BaseMatrix()
+    BaseMatrix(size_t rows, size_t cols) : rows(rows), cols(cols)
     {
     };
 
@@ -13,48 +19,24 @@ public:
     {
     };
 
-    virtual unsigned getRows() const = 0;
-    virtual unsigned getCols() const = 0;
+    size_t getRows() const
+    {
+        return rows;
+    }
 
+    size_t getCols() const
+    {
+        return cols;
+    }
+
+    // TODO Maybe these can be useful later again.
+#if 0
     virtual void setSubMat(unsigned startRow, unsigned startCol, BaseMatrix *mat,
                            bool allocSpace = false) = 0;
 
     virtual BaseMatrix *slice(unsigned beginRow, unsigned beginCol,
                               unsigned endRow, unsigned endCol) const = 0;
-};
-
-template <typename T> class AbstractMatrix : public BaseMatrix
-{
-protected:
-    unsigned rows;
-    unsigned cols;
-
-public:
-
-    AbstractMatrix() : BaseMatrix()
-    {
-    };
-
-    AbstractMatrix(unsigned rows, unsigned cols) : rows(rows), cols(cols)
-    {
-    };
-
-    virtual ~AbstractMatrix()
-    {
-    };
-
-    unsigned getRows() const override
-    {
-        return rows;
-    };
-
-    unsigned getCols() const override
-    {
-        return cols;
-    };
-    virtual T &get(unsigned row, unsigned col) = 0;
-    virtual const T &get(unsigned row, unsigned col) const = 0;
-    virtual void set(unsigned row, unsigned col, T value) = 0;
+#endif
 };
 
 #endif //INCLUDE_DATASTRUCTURES_MATRIX_H

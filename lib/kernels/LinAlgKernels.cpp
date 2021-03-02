@@ -40,13 +40,14 @@ void randDen(size_t rows, size_t cols, int64_t seed, double sparsity,
     uniform_T_distribution<T> distrVal(min, max);
     std::uniform_real_distribution<double> distrSparse(0.0, 1.0);
 
-    for (size_t r = 0; r < rows; r++)
-        for (size_t c = 0; c < cols; c++) {
-            if (distrSparse(genSparse) > sparsity)
-                outDense->set(r, c, T(0));
-            else
-                outDense->set(r, c, distrVal(genVal));
-        }
+    const size_t numCells = rows * cols;
+    T * cells = outDense->getCells();
+    for (size_t i = 0; i < numCells; i++) {
+        if (distrSparse(genSparse) > sparsity)
+            cells[i] = T(0);
+        else
+            cells[i] = distrVal(genVal);
+    }
 }
 
 template<typename T, template<typename> class BinOp>
@@ -55,16 +56,22 @@ void elementwiseBinOpDenDenDen(const BaseMatrix * lhs, const BaseMatrix * rhs,
 {
     dynamic_cast_assert(const DenseMatrix<T> *, lhsDense, lhs);
     dynamic_cast_assert(const DenseMatrix<T> *, rhsDense, rhs);
-    assert(lhsDense->getRows() == rhsDense->getRows() && lhsDense->getCols() == rhsDense->getCols() &&
+    const size_t rows = lhsDense->getRows();
+    const size_t cols = lhsDense->getCols();
+    assert(rows == rhsDense->getRows() && cols == rhsDense->getCols() &&
            "matrix dimensions of lhs and rhs have to match");
     
-    DenseMatrix<T> * outDense = new DenseMatrix<T>(lhsDense->getRows(), lhsDense->getCols());
+    DenseMatrix<T> * outDense = new DenseMatrix<T>(rows, cols);
     *out = outDense;
     
+    const T * lhsCells = lhsDense->getCells();
+    const T * rhsCells = rhsDense->getCells();
+    T * outCells = outDense->getCells();
+    
     BinOp<T> op;
-    for (size_t r = 0; r < lhsDense->getRows(); r++)
-        for (size_t c = 0; c < lhsDense->getCols(); c++)
-            outDense->set(r, c, op(lhsDense->get(r, c), rhsDense->get(r, c)));
+    const size_t numCells = rows * cols;
+    for (size_t i = 0; i < numCells; i++)
+        outCells[i] = op(lhsCells[i], rhsCells[i]);
 }
 
 template<typename T>
@@ -72,17 +79,27 @@ void transposeDenDen(const BaseMatrix * in, BaseMatrix ** out)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, inDense, in);
     
-    DenseMatrix<T> * outDense = new DenseMatrix<T>(*inDense);
+    const size_t rows = in->getRows();
+    const size_t cols = in->getCols();
+    
+    DenseMatrix<T> * outDense = new DenseMatrix<T>(cols, rows);
     *out = outDense;
     
-    outDense->transpose();
+    const T * inCells = inDense->getCells();
+    T * outCells = outDense->getCells();
+    for(size_t r = 0, i = 0; r < rows; r++)
+        for(size_t c = 0; c < cols; c++, i++) {
+            size_t j = c * rows + r;
+            outCells[i] = inCells[j];
+            outCells[j] = inCells[i];
+        }
 }
 
 template<typename T>
 void setCellDen(BaseMatrix * mat, size_t row, size_t col, T val)
 {
     dynamic_cast_assert(DenseMatrix<T> *, matDense, mat);
-    matDense->set(row, col, val);
+    matDense->getCells()[row * mat->getRows() + col] = val;
 }
 
 // ****************************************************************************

@@ -3,33 +3,37 @@
 
 #include "datastructures/Matrix.h"
 
+#include <functional>
 #include <iostream>
 
 #include <cassert>
 #include <cmath>
-#include <functional>
+#include <cstddef>
 
-template <typename T> class DenseMatrix : public AbstractMatrix<T>
+template <typename T>
+class DenseMatrix : public BaseMatrix
 {
 private:
-    T *cells;
-    bool transposed;
+    T * cells;
 
 public:
-    DenseMatrix();
-    DenseMatrix(unsigned rows, unsigned cols);
-    DenseMatrix(const DenseMatrix &other);
+    DenseMatrix(size_t rows, size_t cols);
     virtual ~DenseMatrix();
 
+    const T * getCells() const
+    {
+        return cells;
+    };
+
+    T * getCells()
+    {
+        return cells;
+    }
+
+    // TODO Maybe these can be useful later again.
+#if 0
     DenseMatrix &operator=(DenseMatrix &other) = delete;
     DenseMatrix &operator=(const DenseMatrix &&other);
-
-    unsigned getRows() const override;
-    unsigned getCols() const override;
-
-    T &get(unsigned row, unsigned col) override;
-    const T &get(unsigned row, unsigned col) const override;
-    void set(unsigned row, unsigned col, T value) override;
 
     void setSubMat(unsigned startRow, unsigned startCol, BaseMatrix *mat,
                    bool allocSpace) override;
@@ -39,30 +43,28 @@ public:
     void resize(unsigned rows, unsigned cols);
 
     void fill(T value);
-    void transpose();
+#endif
 };
 
 template <typename T>
-DenseMatrix<T>::DenseMatrix()
-: AbstractMatrix<T>(), cells(nullptr), transposed(false)
+DenseMatrix<T>::DenseMatrix(size_t rows, size_t cols)
+: BaseMatrix(rows, cols), cells(new T[rows * cols])
 {
 }
 
-template <typename T>
-DenseMatrix<T>::DenseMatrix(unsigned rows, unsigned cols)
-: AbstractMatrix<T>(rows, cols), cells(new T[rows * cols]),
-transposed(false)
-{
-}
-
+// TODO Maybe these can be useful later again.
+#if 0
 template <typename T>
 DenseMatrix<T>::DenseMatrix(const DenseMatrix<T> &other)
 : DenseMatrix(other.rows, other.cols)
 {
-    transposed = other.transposed;
-    std::copy(other.cells, other.cells + getRows() * getCols(), cells);
+    // TODO check for same size
+    std::copy(other.cells, other.cells + rows * cols, cells);
 }
+#endif
 
+// TODO Maybe these can be useful later again.
+#if 0
 template <typename T>
 DenseMatrix<T> &DenseMatrix<T>::operator=(const DenseMatrix<T> &&other)
 {
@@ -76,45 +78,16 @@ DenseMatrix<T> &DenseMatrix<T>::operator=(const DenseMatrix<T> &&other)
     other.transposed = false;
     return *this;
 }
+#endif
 
-template <typename T> DenseMatrix<T>::~DenseMatrix()
+template <typename T>
+DenseMatrix<T>::~DenseMatrix()
 {
     delete[] cells;
 }
 
-template <typename T> unsigned DenseMatrix<T>::getRows() const
-{
-    return transposed ? AbstractMatrix<T>::cols : AbstractMatrix<T>::rows;
-}
-
-template <typename T> unsigned DenseMatrix<T>::getCols() const
-{
-    return transposed ? AbstractMatrix<T>::rows : AbstractMatrix<T>::cols;
-}
-
-template <typename T> T &DenseMatrix<T>::get(unsigned row, unsigned col)
-{
-    if (transposed)
-        return cells[col * getRows() + row];
-    else
-        return cells[row * getCols() + col];
-}
-
-template <typename T>
-const T &DenseMatrix<T>::get(unsigned row, unsigned col) const
-{
-    if (transposed)
-        return cells[col * getRows() + row];
-    else
-        return cells[row * getCols() + col];
-}
-
-template <typename T>
-void DenseMatrix<T>::set(unsigned row, unsigned col, T value)
-{
-    get(row, col) = value;
-}
-
+// TODO Maybe these can be useful later again.
+#if 0
 template <typename T>
 void DenseMatrix<T>::setSubMat(unsigned startRow, unsigned startCol,
                                BaseMatrix *mat, bool allocSpace)
@@ -182,15 +155,15 @@ template <typename T> void DenseMatrix<T>::fill(T value)
 {
     std::fill_n(cells, getRows() * getCols(), value);
 }
-
-template <typename T> void DenseMatrix<T>::transpose()
-{
-    transposed = !transposed;
-}
+#endif
 
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const DenseMatrix<T> &mat)
 {
+    const T * cells = mat.getCells();
+
+    size_t i = 0;
+
     os << "Matrix(rows = " << mat.getRows() << ", cols = " << mat.getCols()
             << ")\n[";
     for (unsigned r = 0; r < mat.getRows(); r++) {
@@ -198,7 +171,7 @@ std::ostream &operator<<(std::ostream &os, const DenseMatrix<T> &mat)
             os << " ";
         os << "[";
         for (unsigned c = 0; c < mat.getCols(); c++) {
-            os << mat.get(r, c);
+            os << cells[i++];
             if (c < mat.getCols() - 1) {
                 os << " ";
             }
