@@ -64,9 +64,9 @@ namespace
             else if (llvm::dyn_cast<daphne::TransposeOp>(op)) {
                 Type et = op->getOperand(0).getType().dyn_cast<daphne::MatrixType>().getElementType();
                 if (et.isSignedInteger(64))
-                    callee = "transposeDenI64";
+                    callee = "transposeDenDenI64";
                 else if (et.isF64())
-                    callee = "transposeDenF64";
+                    callee = "transposeDenDenF64";
                 else
                     return failure();
             }
