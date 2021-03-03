@@ -78,8 +78,26 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
     }];
 }
 
+// The type of `mat` is a matrix whose value type is the type of `sca`.
+class TypeIsMatrixOf<string mat, string sca> : And<[
+    TypeIs<mat, MatrixType>.predicate,
+    TypesMatchWith<"", mat, sca, "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()">.predicate
+]>;
+
+// The types of `a` and `b` must either be the same (e.g. both are matrices of
+// the same value type, or both are scalars of the same type), or the type of
+// `a` must be a matrix whose value type is the type of `b`, or vice-versa.
+class TypesMatchOrOneIsMatrixOfOther<string a, string b> : PredOpTrait<
+    a # " and " # b # " must either be of the same type, or " # a # " must be a matrix whose value type is the type of " # b # ", or vice-versa",
+    Or<[
+        TypesMatchWith<"", a, b, "$_self">.predicate,
+        TypeIsMatrixOf<a, b>,
+        TypeIsMatrixOf<b, a>
+    ]>
+>;
+
 class Daphne_ElementwiseBinaryOp<string mnemonic, list<OpTrait> traits = []> :
-        Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchWith<"left and right operand must be of the same type", "lhs", "rhs", "$_self">])> {
+        Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">])> {
     let arguments = (ins AnyTypeOf<[ScalarType, MatrixType]>:$lhs, AnyTypeOf<[ScalarType, MatrixType]>:$rhs);
     let results = (outs AnyTypeOf<[ScalarType, MatrixType]>:$result);
 
