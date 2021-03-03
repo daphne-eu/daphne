@@ -121,6 +121,11 @@ def Daphne_MulOp : Daphne_ElementwiseBinaryOp<"mul", [SameOperandsAndResultShape
     let summary = "mul operation";
 }
 
+def Daphne_SumOp : Daphne_Op<"sum"> {
+    let arguments = (ins MatrixType:$in);
+    let results = (outs ScalarType:$out);
+}
+
 def Daphne_RandOp : Daphne_Op<"rand", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
     let summary = "rand operation";
 

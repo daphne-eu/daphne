@@ -74,6 +74,21 @@ void elementwiseBinOpDenDenDen(const BaseMatrix * lhs, const BaseMatrix * rhs,
 }
 
 template<typename T>
+void sumDenSca(const BaseMatrix * mat, T * res)
+{
+    dynamic_cast_assert(const DenseMatrix<T> *, matDense, mat);
+    
+    const T * cells = matDense->getCells();
+    
+    T agg(0);
+    const size_t numCells = mat->getRows() * mat->getCols();
+    for(size_t i = 0; i < numCells; i++)
+        agg += cells[i];
+    
+    *res = agg;
+}
+
+template<typename T>
 void transposeDenDen(const BaseMatrix * in, BaseMatrix ** out)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, inDense, in);
@@ -119,6 +134,12 @@ void setCellDen(BaseMatrix * mat, size_t row, size_t col, T val)
         elementwiseBinOpDenDenDen<valueType, std::plus>(lhs, rhs, out); \
     }
 
+#define MAKE_SUM_DENSCA(valueTypeName, valueType) \
+    void sumDenSca ## valueTypeName(BaseMatrix * mat, valueType * res) \
+    { \
+        sumDenSca<valueType>(mat, res); \
+    }
+
 #define MAKE_TRANSPOSE_DENDEN(valueTypeName, valueType) \
     void transposeDenDen ## valueTypeName(BaseMatrix * matIn, BaseMatrix ** matOut) \
     { \
@@ -144,6 +165,9 @@ extern "C"
     
     MAKE_ADD_DENDENDEN(I64, int64_t);
     MAKE_ADD_DENDENDEN(F64, double);
+    
+    MAKE_SUM_DENSCA(I64, int64_t);
+    MAKE_SUM_DENSCA(F64, double);
     
     MAKE_TRANSPOSE_DENDEN(I64, int64_t);
     MAKE_TRANSPOSE_DENDEN(F64, double);
