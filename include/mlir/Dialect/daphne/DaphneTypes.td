@@ -18,4 +18,15 @@ def MatrixType : Daphne_Type<"Matrix"> {
     let genVerifyInvariantsDecl = 1;
 }
 
+// TODO We could omit the "Of" and have it default to ScalarType.
+// A type constraint checking if a type is a matrix whose value type is one of
+// the given types.
+// Reuses MLIR's ContainerType constraint in way inspired by MLIR's VectorOf.
+class MatrixOf<list<Type> allowedTypes> : ContainerType<
+        AnyTypeOf<allowedTypes>,
+        MatrixType.predicate,
+        "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()",
+        "matrix"
+>;
+
 #endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNETYPES_H
