@@ -113,7 +113,7 @@ template<typename T>
 void setCellDen(BaseMatrix * mat, size_t row, size_t col, T val)
 {
     dynamic_cast_assert(DenseMatrix<T> *, matDense, mat);
-    matDense->getCells()[row * mat->getRows() + col] = val;
+    matDense->getCells()[row * mat->getCols() + col] = val;
 }
 
 // ****************************************************************************
