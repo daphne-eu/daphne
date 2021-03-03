@@ -78,7 +78,7 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
     }];
 }
 
-class Daphne_BinaryOp<string mnemonic, list<OpTrait> traits = []> :
+class Daphne_ElementwiseBinaryOp<string mnemonic, list<OpTrait> traits = []> :
         Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchWith<"left and right operand must be of the same type", "lhs", "rhs", "$_self">])> {
     let arguments = (ins AnyTypeOf<[ScalarType, MatrixType]>:$lhs, AnyTypeOf<[ScalarType, MatrixType]>:$rhs);
     let results = (outs AnyTypeOf<[ScalarType, MatrixType]>:$result);
@@ -91,15 +91,15 @@ class Daphne_BinaryOp<string mnemonic, list<OpTrait> traits = []> :
     ];
 }
 
-def Daphne_AddOp : Daphne_BinaryOp<"add", [SameOperandsAndResultShape]> {
+def Daphne_AddOp : Daphne_ElementwiseBinaryOp<"add", [SameOperandsAndResultShape]> {
     let summary = "add operation";
 }
 
-def Daphne_SubOp : Daphne_BinaryOp<"sub", [SameOperandsAndResultShape]> {
+def Daphne_SubOp : Daphne_ElementwiseBinaryOp<"sub", [SameOperandsAndResultShape]> {
     let summary = "subtraction operation";
 }
 
-def Daphne_MulOp : Daphne_BinaryOp<"mul", [SameOperandsAndResultShape]> {
+def Daphne_MulOp : Daphne_ElementwiseBinaryOp<"mul", [SameOperandsAndResultShape]> {
     let summary = "mul operation";
 }
 
