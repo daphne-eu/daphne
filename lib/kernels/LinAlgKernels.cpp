@@ -104,7 +104,6 @@ void transposeDenDen(const BaseMatrix * in, BaseMatrix ** out)
     for(size_t r = 0, i = 0; r < rows; r++)
         for(size_t c = 0; c < cols; c++, i++) {
             size_t j = c * rows + r;
-            outCells[i] = inCells[j];
             outCells[j] = inCells[i];
         }
 }
