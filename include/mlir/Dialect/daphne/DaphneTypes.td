@@ -18,6 +18,4 @@ def MatrixType : Daphne_Type<"Matrix"> {
     let genVerifyInvariantsDecl = 1;
 }
 
-def MathType : TypeAlias<AnyTypeOf<[ScalarType, MatrixType]>> {}
-
 #endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNETYPES_H

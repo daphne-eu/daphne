@@ -17,7 +17,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let summary = "constant operation";
 
     let arguments = (ins AnyAttr:$value);
-    let results = (outs MathType:$result);
+    let results = (outs AnyTypeOf<[ScalarType, MatrixType]>:$result);
 
     let builders = [
         OpBuilderDAG<(ins "Attribute":$value), [{
@@ -80,8 +80,8 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
 
 class Daphne_BinaryOp<string mnemonic, list<OpTrait> traits = []> :
         Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchWith<"left and right operand must be of the same type", "lhs", "rhs", "$_self">])> {
-    let arguments = (ins MathType:$lhs, MathType:$rhs);
-    let results = (outs MathType:$result);
+    let arguments = (ins AnyTypeOf<[ScalarType, MatrixType]>:$lhs, AnyTypeOf<[ScalarType, MatrixType]>:$rhs);
+    let results = (outs AnyTypeOf<[ScalarType, MatrixType]>:$result);
 
     let builders = [
         OpBuilderDAG<(ins "Value":$lhs, "Value":$rhs), [{
