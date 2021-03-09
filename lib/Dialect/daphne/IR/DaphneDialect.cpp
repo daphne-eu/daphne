@@ -49,6 +49,13 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
 {
     if (type.isa<mlir::daphne::MatrixType>())
         os << "Matrix<" << type.dyn_cast<mlir::daphne::MatrixType>().getElementType() << '>';
+    else if (type.isa<mlir::daphne::FrameType>()) {
+        std::vector<mlir::Type> cts = type.dyn_cast<mlir::daphne::FrameType>().getColumnTypes();
+        os << "Frame<[" << cts[0];
+        for (size_t i = 1; i < cts.size(); i++)
+            os << ", " << cts[i];
+        os << "]>";
+    }
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
@@ -63,4 +70,9 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
         return mlir::success();
     else
         return mlir::emitError(loc) << "invalid matrix element type: " << elementType;
+}
+
+::mlir::LogicalResult mlir::daphne::FrameType::verifyConstructionInvariants(::mlir::Location loc, std::vector<Type> columnTypes)
+{
+    return mlir::success();
 }

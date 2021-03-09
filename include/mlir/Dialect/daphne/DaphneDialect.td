@@ -3,9 +3,9 @@
 
 include "mlir/IR/OpBase.td"
 
-//===----------------------------------------------------------------------===//
+// ****************************************************************************
 // Daphne dialect definition.
-//===----------------------------------------------------------------------===//
+// ****************************************************************************
 
 def Daphne_Dialect : Dialect {
     let name = "daphne";
@@ -17,12 +17,5 @@ def Daphne_Dialect : Dialect {
 
     let hasConstantMaterializer = 1;
 }
-
-//===----------------------------------------------------------------------===//
-// Base Daphne operation definition.
-//===----------------------------------------------------------------------===//
-
-class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
-        Op<Daphne_Dialect, mnemonic, traits>;
 
 #endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEDIALECT_H

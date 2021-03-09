@@ -79,15 +79,15 @@ antlrcpp::Any Builtins::build(OpBuilder &builder,
         Value transpose = TransposeBuiltin().create(builder, loc, values);
         return transpose;
     }
-    if (name == "sum") {
-        if (values[0].getType().isa<daphne::MatrixType>()) {
-            Value sum = builder.create<SumOp>(loc, values[0].getType().dyn_cast<daphne::MatrixType>().getElementType(), values[0]);
-            return sum;
-        }
-        else
-            // TODO This is probably not a good way of handling it.
-            return nullptr;
-    }
+//    if (name == "sum") {
+//        if (values[0].getType().isa<daphne::MatrixType>()) {
+//            Value sum = builder.create<SumOp>(loc, values[0].getType().dyn_cast<daphne::MatrixType>().getElementType(), values[0]);
+//            return sum;
+//        }
+//        else
+//            // TODO This is probably not a good way of handling it.
+//            return nullptr;
+//    }
     //  if (name == "rowSums") {
     //    Value rowSums = builder.create<RowAggOp>(loc, AggFn::sum, values[0]);
     //    return rowSums;

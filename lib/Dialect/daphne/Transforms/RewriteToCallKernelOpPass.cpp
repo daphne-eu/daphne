@@ -31,7 +31,7 @@ namespace
             // Determine the name of the kernel function to call based on the
             // operation, types, etc., or return failure() on error.
             if (llvm::dyn_cast<daphne::PrintOp>(op)) {
-                Type t = llvm::dyn_cast<daphne::PrintOp>(op).input().getType();
+                Type t = llvm::dyn_cast<daphne::PrintOp>(op).arg().getType();
                 if (t.isSignedInteger(64))
                     callee = StringRef("printScaI64");
                 else if (t.isF64())
@@ -84,15 +84,15 @@ namespace
                 else
                     return failure();
             }
-            else if (llvm::dyn_cast<daphne::SumOp>(op)) {
-                Type et = llvm::dyn_cast<daphne::SumOp>(op).in().getType().dyn_cast<daphne::MatrixType>().getElementType();
-                if (et.isSignedInteger(64))
-                    callee = "sumDenScaI64";
-                else if (et.isF64())
-                    callee = "sumDenScaF64";
-                else
-                    return failure();
-            }
+//            else if (llvm::dyn_cast<daphne::SumOp>(op)) {
+//                Type et = llvm::dyn_cast<daphne::SumOp>(op).in().getType().dyn_cast<daphne::MatrixType>().getElementType();
+//                if (et.isSignedInteger(64))
+//                    callee = "sumDenScaI64";
+//                else if (et.isF64())
+//                    callee = "sumDenScaF64";
+//                else
+//                    return failure();
+//            }
             else if (llvm::dyn_cast<daphne::SetCellOp>(op)) {
                 Type et = llvm::dyn_cast<daphne::SetCellOp>(op).mat().getType().dyn_cast<daphne::MatrixType>().getElementType();
                 if (et.isSignedInteger(64))
@@ -135,7 +135,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, ModuleTerminatorOp, FuncOp>();
     target.addIllegalOp<
-            daphne::PrintOp, daphne::RandOp, daphne::TransposeOp, daphne::SetCellOp, daphne::SumOp
+            daphne::PrintOp, daphne::RandOp, daphne::TransposeOp, daphne::SetCellOp/*, daphne::SumOp*/
     >();
     target.addDynamicallyLegalOp<daphne::AddOp>([](daphne::AddOp op)
     {
