@@ -4,7 +4,9 @@ Initial prototype of the DAPHNE system.
 Takes a plain text file written in *DaphneDSL* as input, parses, optimizes, JIT-compiles, and executes it.
 Prints script outputs to `stdout`.
 
-## 0. Requirements
+# Getting Started
+
+### 0. System Requirements
 
 Please ensure that your system meets the following requirements before trying to build the prototype.
 
@@ -58,7 +60,7 @@ git pull && git submodule update --init --recursive
 ./pull.sh
 ```
 
-## 2. Build
+### 2. Build
 
 Simply build the prototype using the build-script without any arguments:
 
@@ -69,7 +71,7 @@ Simply build the prototype using the build-script without any arguments:
 When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
 Subsequent builds, e.g., when you changed something in this repository, will be much faster.
 
-## 3. Run
+### 3. Run
 
 Write a little DaphneDSL script or use `example.daphne`...
 
@@ -87,3 +89,15 @@ def main() {
 ```
 
 ... and execute it as follows: `build/bin/daphnec example.daphne`.
+
+# Exploring the Source Code
+
+As an **entry point for exploring the source code**, you might want to have a look at the code behind the `daphnec` executable, which can be found in `src/api/cli/daphnec.cpp`.
+
+On the top-level, there are the following directories:
+
+- `build`: everything generated during build (executables, libraries, generated source code)
+- `doc` (*to be added soon*): documentation
+- `src`: the actual source code, subdivided into the individual components of the prototype
+- `test` (*to be added soon*): test cases
+- `thirdparty`: required external software
