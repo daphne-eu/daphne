@@ -1,5 +1,5 @@
-#ifndef INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNE_H
-#define INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNE_H
+#ifndef SRC_IR_DAPHNEIR_DAPHNE_H
+#define SRC_IR_DAPHNEIR_DAPHNE_H
 
 // The following includes are required by...
 #include "llvm/ADT/StringRef.h"
@@ -22,9 +22,9 @@
 
 // ... the following tablegen'erated headers.
 #define GET_TYPEDEF_CLASSES
-#include <mlir/Dialect/daphne/DaphneOpsTypes.h.inc>
-#include "mlir/Dialect/daphne/DaphneOpsDialect.h.inc"
+#include <ir/daphneir/DaphneOpsTypes.h.inc>
+#include "ir/daphneir/DaphneOpsDialect.h.inc"
 #define GET_OP_CLASSES
-#include "mlir/Dialect/daphne/DaphneOps.h.inc"
+#include "ir/daphneir/DaphneOps.h.inc"
 
-#endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNE_H
+#endif //SRC_IR_DAPHNEIR_DAPHNE_H

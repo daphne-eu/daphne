@@ -1,5 +1,5 @@
-#ifndef DAPHNEC_MLIRGENVISITORS_H
-#define DAPHNEC_MLIRGENVISITORS_H
+#ifndef SRC_PARSER_DAPHNEDSL_MLIRGENVISITORS_H
+#define SRC_PARSER_DAPHNEDSL_MLIRGENVISITORS_H
 
 #include "DaphneLexer.h"
 #include "DaphneParser.h"
@@ -113,4 +113,4 @@ namespace mlir_gen
         }
     };
 } // namespace mlir_gen
-#endif //DAPHNEC_MLIRGENVISITORS_H
+#endif //SRC_PARSER_DAPHNEDSL_MLIRGENVISITORS_H

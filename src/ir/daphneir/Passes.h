@@ -1,5 +1,5 @@
-#ifndef INCLUDE_MLIR_DIALECT_DAPHNE_PASSES_H
-#define INCLUDE_MLIR_DIALECT_DAPHNE_PASSES_H
+#ifndef SRC_IR_DAPHNEIR_PASSES_H
+#define SRC_IR_DAPHNEIR_PASSES_H
 
 #include "mlir/Pass/Pass.h"
 
@@ -12,4 +12,4 @@ namespace mlir
     } // namespace daphne
 } // namespace mlir
 
-#endif //INCLUDE_MLIR_DIALECT_DAPHNE_PASSES_H
+#endif //SRC_IR_DAPHNEIR_PASSES_H

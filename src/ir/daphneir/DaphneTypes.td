@@ -1,5 +1,5 @@
-#ifndef INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNETYPES_H
-#define INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNETYPES_H
+#ifndef SRC_IR_DAPHNEIR_DAPHNETYPES_TD
+#define SRC_IR_DAPHNEIR_DAPHNETYPES_TD
 
 // ****************************************************************************
 // General
@@ -70,4 +70,4 @@ def Seed : TypeAlias<UI64, "seed">;
 
 def Selection : AnyTypeOf<[Size, MatrixOf<[Size]>, MatrixOf<[BoolScalar]>]>;
 
-#endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNETYPES_H
+#endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

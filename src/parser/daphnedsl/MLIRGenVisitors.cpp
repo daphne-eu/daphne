@@ -1,7 +1,7 @@
-#include "Builtins.h"
+#include "parser/daphnedsl/Builtins.h"
 #include "DaphneParser.h"
-#include "MLIRGenVisitors.h"
-#include "mlir/Dialect/daphne/Daphne.h"
+#include "parser/daphnedsl/MLIRGenVisitors.h"
+#include "ir/daphneir/Daphne.h"
 
 #include "antlr4-runtime.h"
 #include "llvm/ADT/APFloat.h"

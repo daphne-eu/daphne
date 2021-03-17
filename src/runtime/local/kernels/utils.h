@@ -1,5 +1,5 @@
-#ifndef LIB_KERNELS_UTILS_H
-#define LIB_KERNELS_UTILS_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
+#define SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
 
 #include <cassert>
 
@@ -10,4 +10,4 @@
     typeNew varNew = dynamic_cast<typeNew>(varOld); \
     assert(varNew && "'" #varOld "'does not have the expected type '" #typeNew "'");
 
-#endif //LIB_KERNELS_UTILS_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_UTILS_H

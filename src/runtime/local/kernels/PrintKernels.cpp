@@ -1,6 +1,6 @@
-#include "datastructures/BaseMatrix.h"
-#include "datastructures/DenseMatrix.h"
-#include "utils.h"
+#include "runtime/local/datastructures/BaseMatrix.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "runtime/local/kernels/utils.h"
 
 #include <iostream>
 

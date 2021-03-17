@@ -1,10 +1,10 @@
 #include "DaphneLexer.h"
 #include "DaphneParser.h"
-#include "MLIRGenVisitors.h"
-#include "mlir/Dialect/daphne/Daphne.h"
-#include "mlir/Dialect/daphne/Passes.h"
+#include "parser/daphnedsl/MLIRGenVisitors.h"
+#include "ir/daphneir/Daphne.h"
+#include "ir/daphneir/Passes.h"
 #define GET_TYPEDEF_CLASSES
-#include <mlir/Dialect/daphne/DaphneOpsTypes.cpp.inc>
+#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 
 #include "antlr4-runtime.h"
 #include "llvm/Support/TargetSelect.h"
@@ -70,8 +70,8 @@ execJIT(OwningModuleRef & module)
 
         llvm::SmallVector<llvm::StringRef, 0> sharedLibRefs;
         // TODO Find these at run-time.
-        sharedLibRefs.push_back("build/lib/kernels/libPrintKernels.so");
-        sharedLibRefs.push_back("build/lib/kernels/libLinAlgKernels.so");
+        sharedLibRefs.push_back("build/src/runtime/local/kernels/libPrintKernels.so");
+        sharedLibRefs.push_back("build/src/runtime/local/kernels/libLinAlgKernels.so");
         registerLLVMDialectTranslation(*module->getContext());
         auto maybeEngine = ExecutionEngine::create(
                                                    module.get(), nullptr, optPipeline, llvm::CodeGenOpt::Level::Default,

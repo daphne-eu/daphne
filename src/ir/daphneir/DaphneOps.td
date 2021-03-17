@@ -1,8 +1,8 @@
-#ifndef INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
-#define INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
+#ifndef SRC_IR_DAPHNEIR_DAPHNEOPS_TD
+#define SRC_IR_DAPHNEIR_DAPHNEOPS_TD
 
-include "DaphneDialect.td"
-include "DaphneTypes.td"
+include "ir/daphneir/DaphneDialect.td"
+include "ir/daphneir/DaphneTypes.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -670,4 +670,4 @@ def Daphne_SetCellOp : Daphne_Op<"setCell",  []> {
     let arguments = (ins Matrix:$mat, Index:$row, Index:$col, AnyScalar:$val);
 }
 
-#endif //INCLUDE_MLIR_DIALECT_DAPHNE_DAPHNEOPS_H
+#endif //SRC_IR_DAPHNEIR_DAPHNEOPS_TD

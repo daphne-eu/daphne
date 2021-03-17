@@ -1,5 +1,5 @@
-#include "mlir/Dialect/daphne/Daphne.h"
-#include "mlir/Dialect/daphne/Passes.h"
+#include "ir/daphneir/Daphne.h"
+#include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"

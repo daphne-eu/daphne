@@ -23,13 +23,19 @@ include(HandleLLVMOptions)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${PROJECT_BINARY_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_BINARY_DIR}/src)
+
+# TODO Don't hardcode these paths. See "src/parser/daphnedsl/CMakeLists.txt".
+include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4_runtime/src/antlr4_runtime/runtime/Cpp/runtime/src)
+include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneLexer)
+include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneParser)
+
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
-add_subdirectory(include/mlir/Dialect/daphne)
-add_subdirectory(lib/Dialect/daphne/IR)
-add_subdirectory(lib/Dialect/daphne/Transforms)
-add_subdirectory(lib/kernels)
-add_subdirectory(daphnec)
+add_subdirectory(src/api/cli)
+add_subdirectory(src/compiler/lowering)
+add_subdirectory(src/ir/daphneir)
+add_subdirectory(src/parser/daphnedsl)
+add_subdirectory(src/runtime/local/kernels)

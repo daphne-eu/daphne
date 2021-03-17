@@ -1,6 +1,6 @@
-#include <mlir/Dialect/daphne/Daphne.h>
+#include <ir/daphneir/Daphne.h>
 #define GET_OP_CLASSES
-#include <mlir/Dialect/daphne/DaphneOps.cpp.inc>
+#include <ir/daphneir/DaphneOps.cpp.inc>
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -24,11 +24,11 @@ void mlir::daphne::DaphneDialect::initialize()
 {
     addOperations<
 #define GET_OP_LIST
-#include <mlir/Dialect/daphne/DaphneOps.cpp.inc>
+#include <ir/daphneir/DaphneOps.cpp.inc>
             >();
     addTypes<
 #define GET_TYPEDEF_LIST
-#include <mlir/Dialect/daphne/DaphneOpsTypes.cpp.inc>
+#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
             >();
 }
 

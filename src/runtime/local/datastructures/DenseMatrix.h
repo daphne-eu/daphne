@@ -1,7 +1,7 @@
-#ifndef INCLUDE_DATASTRUCTURES_DENSEMATRIX_H
-#define INCLUDE_DATASTRUCTURES_DENSEMATRIX_H
+#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
+#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 
-#include "datastructures/BaseMatrix.h"
+#include "runtime/local/datastructures/BaseMatrix.h"
 
 #include <functional>
 #include <iostream>
@@ -184,4 +184,4 @@ std::ostream &operator<<(std::ostream &os, const DenseMatrix<T> &mat)
     return os << "]\n";
 }
 
-#endif //INCLUDE_DATASTRUCTURES_DENSEMATRIX_H
+#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H

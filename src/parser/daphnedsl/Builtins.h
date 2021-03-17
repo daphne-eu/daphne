@@ -1,7 +1,7 @@
-#ifndef DAPHNEC_BUILTINS_H
-#define DAPHNEC_BUILTINS_H
+#ifndef SRC_PARSER_DAPHNEDSL_BUILTINS_H
+#define SRC_PARSER_DAPHNEDSL_BUILTINS_H
 
-#include "mlir/Dialect/daphne/Daphne.h"
+#include "ir/daphneir/Daphne.h"
 
 #include "antlr4-runtime.h"
 #include "mlir/IR/Builders.h"
@@ -71,4 +71,4 @@ struct Builtins
                                const std::string &name);
 };
 
-#endif //DAPHNEC_BUILTINS_H
+#endif //SRC_PARSER_DAPHNEDSL_BUILTINS_H
