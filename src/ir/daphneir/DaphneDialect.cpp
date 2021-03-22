@@ -1,6 +1,8 @@
 #include <ir/daphneir/Daphne.h>
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>
+#define GET_TYPEDEF_CLASSES
+#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -64,15 +66,15 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
     return value();
 }
 
-::mlir::LogicalResult mlir::daphne::MatrixType::verifyConstructionInvariants(::mlir::Location loc, Type elementType)
+::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, Type elementType)
 {
     if (elementType.isSignedInteger(64) || elementType.isF64())
         return mlir::success();
     else
-        return mlir::emitError(loc) << "invalid matrix element type: " << elementType;
+        return emitError() << "invalid matrix element type: " << elementType;
 }
 
-::mlir::LogicalResult mlir::daphne::FrameType::verifyConstructionInvariants(::mlir::Location loc, std::vector<Type> columnTypes)
+::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, std::vector<Type> columnTypes)
 {
     return mlir::success();
 }

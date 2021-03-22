@@ -127,7 +127,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
 {
     auto module = getOperation();
 
-    OwningRewritePatternList patterns;
+    OwningRewritePatternList patterns(&getContext());
 
     // convert other operations
     ConversionTarget target(getContext());

@@ -17,7 +17,7 @@ def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";
 
     let parameters = (ins "::mlir::Type":$elementType);
-    let genVerifyInvariantsDecl = 1;
+    let genVerifyDecl = 1;
 }
 
 // TODO We could omit the "Of" and have it default to ScalarType.
@@ -35,7 +35,7 @@ def Frame : Daphne_Type<"Frame"> {
     let summary = "frame";
 
     let parameters = (ins "std::vector<::mlir::Type>":$columnTypes);
-    let genVerifyInvariantsDecl = 1;
+    let genVerifyDecl = 1;
 }
 
 def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;

@@ -44,7 +44,7 @@ Location DaphneMlirVisitor::getLocMLIR(antlr4::Token *token)
     auto filename = token->getTokenSource()->getSourceName();
     auto line = token->getLine();
     auto col = token->getCharPositionInLine();
-    return builder.getFileLineColLoc(builder.getIdentifier(filename), line, col);
+    return mlir::FileLineColLoc::get(builder.getIdentifier(filename), line, col);
 }
 
 antlrcpp::Any DaphneMlirVisitor::visitFloatType(DaphneParser::FloatTypeContext *ctx)

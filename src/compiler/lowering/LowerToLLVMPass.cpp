@@ -213,7 +213,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
 {
     auto module = getOperation();
 
-    OwningRewritePatternList patterns;
+    OwningRewritePatternList patterns(&getContext());
 
     LLVMTypeConverter typeConverter(&getContext());
     typeConverter.addConversion([&](daphne::MatrixType matType)

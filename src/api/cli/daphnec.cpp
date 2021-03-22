@@ -3,8 +3,6 @@
 #include "parser/daphnedsl/MLIRGenVisitors.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#define GET_TYPEDEF_CLASSES
-#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 
 #include "antlr4-runtime.h"
 #include "llvm/Support/TargetSelect.h"
@@ -18,7 +16,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
-#include "mlir/Target/LLVMIR.h"
+#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
 #include <iostream>
 #include <memory>

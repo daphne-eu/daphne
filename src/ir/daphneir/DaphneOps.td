@@ -304,7 +304,7 @@ def Daphne_TransposeOp : Daphne_Op<"t"> {
     let results = (outs Matrix:$res);
 
     let builders = [
-        OpBuilderDAG<(ins "Value":$input), [{
+        OpBuilder<(ins "Value":$input), [{
             auto ty = input.getType().cast<MatrixType>();
             build($_builder, $_state, ty, input);
         }]>,
@@ -554,19 +554,19 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let results = (outs AnyTypeOf<[AnyScalar, Matrix]>:$result);
 
     let builders = [
-        OpBuilderDAG<(ins "Attribute":$value), [{
+        OpBuilder<(ins "Attribute":$value), [{
             build($_builder, $_state, value.getType(), value);
         }]>,
-        OpBuilderDAG<(ins "double":$value), [{
+        OpBuilder<(ins "double":$value), [{
             build($_builder, $_state, $_builder.getF64FloatAttr(value));
         }]>,
-        //OpBuilderDAG<(ins "float":$value), [{
+        //OpBuilder<(ins "float":$value), [{
         //    build($_builder, $_state, $_builder.getF32FloatAttr(value));
         //}]>,
-        OpBuilderDAG<(ins "int64_t":$value), [{
+        OpBuilder<(ins "int64_t":$value), [{
             build($_builder, $_state, $_builder.getIntegerAttr($_builder.getIntegerType(64, true), value));
         }]>,
-        //OpBuilderDAG<(ins "int":$value), [{
+        //OpBuilder<(ins "int":$value), [{
         //    build($_builder, $_state, $_builder.getI32IntegerAttr(value));
         //}]>,
     ];
@@ -584,7 +584,7 @@ def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike,
     }];
 
     let builders = [
-        OpBuilderDAG<(ins), [{
+        OpBuilder<(ins), [{
             build($_builder, $_state, llvm::None);
         }]>
     ];
@@ -597,12 +597,12 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
     let results = (outs Variadic<AnyType>);
 
     let builders = [
-        OpBuilderDAG<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+        OpBuilder<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
             $_state.addOperands(operands);
             $_state.addAttribute("callee", callee);
             $_state.addTypes(results);
         }]>,
-        OpBuilderDAG<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+        OpBuilder<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
             build($_builder, $_state, $_builder.getStringAttr(callee), operands, results);
         }]>,
     ];
@@ -636,7 +636,7 @@ class Daphne_ElementwiseBinaryOp<string mnemonic, list<OpTrait> traits = []> :
     let results = (outs AnyTypeOf<[AnyScalar, Matrix]>:$result);
 
     let builders = [
-        OpBuilderDAG<(ins "Value":$lhs, "Value":$rhs), [{
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
             $_state.addTypes(lhs.getType());
             $_state.addOperands({lhs, rhs});
         }]>
