@@ -19,40 +19,43 @@
 
 #include <cstddef>
 
+/**
+ * @brief The base class of all matrix implementations.
+ * 
+ * All elements of a matrix have the same value type. Rows and columns are
+ * addressed starting at zero.
+ */
+// TODO Could we have the value type as a template parameter here already? Or
+// would that cause problems with pure C?
 class BaseMatrix
 {
 protected:
-    size_t rows;
-    size_t cols;
+    size_t numRows;
+    size_t numCols;
 
 public:
 
-    BaseMatrix(size_t rows, size_t cols) : rows(rows), cols(cols)
+    BaseMatrix(size_t numRows, size_t numCols) :
+            numRows(numRows), numCols(numCols)
     {
+        // nothing to do
     };
 
     virtual ~BaseMatrix()
     {
+        // nothing to do
     };
 
-    size_t getRows() const
+    size_t getNumRows() const
     {
-        return rows;
+        return numRows;
     }
 
-    size_t getCols() const
+    size_t getNumCols() const
     {
-        return cols;
+        return numCols;
     }
-
-    // TODO Maybe these can be useful later again.
-#if 0
-    virtual void setSubMat(unsigned startRow, unsigned startCol, BaseMatrix *mat,
-                           bool allocSpace = false) = 0;
-
-    virtual BaseMatrix *slice(unsigned beginRow, unsigned beginCol,
-                              unsigned endRow, unsigned endCol) const = 0;
-#endif
+    
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_BASEMATRIX_H

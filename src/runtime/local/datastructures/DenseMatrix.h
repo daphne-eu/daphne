@@ -17,183 +17,147 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 
-#include "runtime/local/datastructures/BaseMatrix.h"
-
-#include <functional>
-#include <iostream>
+#include <runtime/local/datastructures/BaseMatrix.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
 
 #include <cassert>
-#include <cmath>
 #include <cstddef>
+#include <cstring>
 
-template <typename T>
+/**
+ * @brief A dense matrix implementation.
+ * 
+ * This matrix implementation is backed by a single dense array of values. The
+ * values are arranged in row-major fashion. That is, the array contains all
+ * values in the first row, followed by all values in the second row, etc.
+ * 
+ * Each instance of this class might represent a sub-matrix of another
+ * `DenseMatrix`. Thus, in general, the row skip (see `getRowSkip()`) needs to
+ * be added to a pointer to a particular cell in the `values` array in order to
+ * obtain a pointer to the corresponsing cell in the next row.
+ */
+template <typename ValueType>
 class DenseMatrix : public BaseMatrix
 {
-private:
-    T * cells;
+    size_t rowSkip;
+    ValueType * values;
+    
+    // Grant DataObjectFactory::create access to the private constructors.
+    template<class DataType, typename ... ArgTypes>
+    friend DataType * DataObjectFactory::create(ArgTypes ...);
 
-public:
-    DenseMatrix(size_t rows, size_t cols);
-    virtual ~DenseMatrix();
-
-    const T * getCells() const
+    /**
+     * @brief Creates a `DenseMatrix` and allocates enough memory for the
+     * specified maximum size in the `values` array.
+     * 
+     * @param maxNumRows The maximum number of rows.
+     * @param numCols The exact number of columns.
+     * @param zero Whether the allocated memory of the `values` array shall be
+     * initialized to zeros (`true`), or be left uninitialized (`false`).
+     */
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero) :
+            BaseMatrix(maxNumRows, numCols),
+            rowSkip(numCols),
+            values(new ValueType[maxNumRows * numCols])
     {
-        return cells;
+        if(zero)
+            memset(values, 0, maxNumRows * numCols * sizeof(ValueType));
+    }
+            
+    /**
+     * @brief Creates a `DenseMatrix` around an existing array of values
+     * without copying the data.
+     * 
+     * @param numRows The exact number of rows.
+     * @param numCols The exact number of columns.
+     * @param values The existing array of values.
+     */
+    DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
+            BaseMatrix(numRows, numCols),
+            rowSkip(numCols),
+            values(values)
+    {
+        assert(values && "values must not be null");
+    }
+            
+    /**
+     * @brief Creates a `DenseMatrix` around a sub-matrix of another
+     * `DenseMatrix` without copying the data.
+     * 
+     * @param src The other dense matrix.
+     * @param rowLowerIncl Inclusive lower bound for the range of rows to extract.
+     * @param rowUpperExcl Exclusive upper bound for the range of rows to extract.
+     * @param colLowerIncl Inclusive lower bound for the range of columns to extract.
+     * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
+     */
+    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) {
+        assert(src && "src must not be null");
+        assert((rowLowerIncl < numRows) && "rowLowerIncl is out of bounds");
+        assert((rowUpperExcl <= numRows) && "rowUpperExcl is out of bounds");
+        assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+        assert((colLowerIncl < numCols) && "colLowerIncl is out of bounds");
+        assert((colUpperExcl <= numCols) && "colUpperExcl is out of bounds");
+        assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
+        
+        numRows = rowUpperExcl - rowLowerIncl;
+        numCols = colUpperExcl - colLowerIncl;
+        
+        rowSkip = src->rowSkip;
+        values = src.values + rowLowerIncl * src.rowSkip + colLowerIncl;
+    }
+    
+public:
+    
+    virtual ~DenseMatrix() {
+        delete[] values;
+    }
+    
+    void shrinkNumRows(size_t numRows) {
+        assert((numRows <= this->numRows) && "number of rows can only the shrinked");
+        // TODO Here we could reduce the allocated size of the values array.
+        this->numRows = numRows;
+    }
+    
+    size_t getRowSkip() const {
+        return rowSkip;
+    }
+
+    const ValueType * getValues() const
+    {
+        return values;
     };
 
-    T * getCells()
+    ValueType * getValues()
     {
-        return cells;
+        return values;
     }
 
-    // TODO Maybe these can be useful later again.
-#if 0
-    DenseMatrix &operator=(DenseMatrix &other) = delete;
-    DenseMatrix &operator=(const DenseMatrix &&other);
-
-    void setSubMat(unsigned startRow, unsigned startCol, BaseMatrix *mat,
-                   bool allocSpace) override;
-    BaseMatrix *slice(unsigned beginRow, unsigned beginCol, unsigned endRow,
-                      unsigned endCol) const override;
-
-    void resize(unsigned rows, unsigned cols);
-
-    void fill(T value);
-#endif
 };
 
-template <typename T>
-DenseMatrix<T>::DenseMatrix(size_t rows, size_t cols)
-: BaseMatrix(rows, cols), cells(new T[rows * cols])
-{
-}
-
-// TODO Maybe these can be useful later again.
-#if 0
-template <typename T>
-DenseMatrix<T>::DenseMatrix(const DenseMatrix<T> &other)
-: DenseMatrix(other.rows, other.cols)
-{
-    // TODO check for same size
-    std::copy(other.cells, other.cells + rows * cols, cells);
-}
-#endif
-
-// TODO Maybe these can be useful later again.
-#if 0
-template <typename T>
-DenseMatrix<T> &DenseMatrix<T>::operator=(const DenseMatrix<T> &&other)
-{
-    AbstractMatrix<T>::rows = other.rows;
-    other.rows = 0;
-    AbstractMatrix<T>::cols = other.cols;
-    other.cols = 0;
-    cells = other.cells;
-    other.cells = nullptr;
-    transposed = other.transposed;
-    other.transposed = false;
-    return *this;
-}
-#endif
-
-template <typename T>
-DenseMatrix<T>::~DenseMatrix()
-{
-    delete[] cells;
-}
-
-// TODO Maybe these can be useful later again.
-#if 0
-template <typename T>
-void DenseMatrix<T>::setSubMat(unsigned startRow, unsigned startCol,
-                               BaseMatrix *mat, bool allocSpace)
-{
-    if (allocSpace) {
-        auto neededRows = std::max(getRows(), startRow + mat->getRows());
-        auto neededCols = std::max(getCols(), startCol + mat->getCols());
-        resize(neededRows, neededCols);
-    }
-    assert(startRow + mat->getRows() <= getRows() &&
-           "Sub-Matrix has to fit in matrix");
-    assert(startCol + mat->getCols() <= getCols() &&
-           "Sub-Matrix has to fit in matrix");
-    auto *castMat = dynamic_cast<AbstractMatrix<T> *> (mat);
-    assert(castMat && "Sub-Matrix hast to have the same element type");
-
-    for (auto r = 0u; r < mat->getRows(); r++) {
-        for (auto c = 0u; c < mat->getCols(); c++) {
-            set(startRow + r, startCol + c, castMat->get(r, c));
-        }
-    }
-}
-
-template <typename T>
-BaseMatrix *DenseMatrix<T>::slice(unsigned beginRow, unsigned beginCol,
-                                  unsigned endRow, unsigned endCol) const
-{
-    assert(endRow <= getRows() && "Slice-Matrix has to be contained in matrix");
-    assert(endCol <= getCols() && "Slice-Matrix has to be contained in matrix");
-    assert(beginRow <= endRow && "Begin has to be smaller than end index");
-    assert(beginCol <= endCol && "Begin has to be smaller than end index");
-    auto numRows = endRow - beginRow;
-    auto numCols = endCol - beginCol;
-    auto *out = new DenseMatrix<T>(numRows, numCols);
-
-    for (auto r = 0u; r < numRows; r++) {
-        for (auto c = 0u; c < numCols; c++) {
-            out->set(r, c, get(beginRow + r, beginCol + c));
-        }
-    }
-    return out;
-}
-
-template <typename T>
-void DenseMatrix<T>::resize(unsigned rows, unsigned cols)
-{
-    if (transposed)
-        std::swap(rows, cols);
-    if (rows == AbstractMatrix<T>::rows && cols == AbstractMatrix<T>::cols)
-        return;
-    auto *newArr = new T[rows * cols];
-    // don't use getRows(), we want raw rows (transpose would change what we get)
-    for (auto r = 0u; r < AbstractMatrix<T>::rows; r++) {
-        for (auto c = 0u; c < AbstractMatrix<T>::cols; c++) {
-            newArr[r * cols + c] = cells[r * AbstractMatrix<T>::cols + c];
-        }
-    }
-    delete[] cells;
-    cells = newArr;
-    AbstractMatrix<T>::rows = rows;
-    AbstractMatrix<T>::cols = cols;
-}
-
-template <typename T> void DenseMatrix<T>::fill(T value)
-{
-    std::fill_n(cells, getRows() * getCols(), value);
-}
-#endif
-
+// TODO Move this somewhere else?
+#include <functional>
+#include <iostream>
 template <typename T>
 std::ostream &operator<<(std::ostream &os, const DenseMatrix<T> &mat)
 {
-    const T * cells = mat.getCells();
+    const T * values = mat.getValues();
 
     size_t i = 0;
 
-    os << "Matrix(rows = " << mat.getRows() << ", cols = " << mat.getCols()
+    os << "Matrix(rows = " << mat.getNumRows() << ", cols = " << mat.getNumCols()
             << ")\n[";
-    for (unsigned r = 0; r < mat.getRows(); r++) {
+    for (unsigned r = 0; r < mat.getNumRows(); r++) {
         if (r != 0)
             os << " ";
         os << "[";
-        for (unsigned c = 0; c < mat.getCols(); c++) {
-            os << cells[i++];
-            if (c < mat.getCols() - 1) {
+        for (unsigned c = 0; c < mat.getNumCols(); c++) {
+            os << values[i++];
+            if (c < mat.getNumCols() - 1) {
                 os << " ";
             }
         }
         os << "]";
-        if (r < mat.getRows() - 1) {
+        if (r < mat.getNumRows() - 1) {
             os << "\n";
         }
     }

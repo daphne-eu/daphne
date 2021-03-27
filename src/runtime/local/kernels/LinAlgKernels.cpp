@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/BaseMatrix.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 #include "runtime/local/kernels/utils.h"
@@ -32,16 +33,16 @@
 // ****************************************************************************
 
 template<typename T, template<typename> class uniform_T_distribution>
-void randDen(size_t rows, size_t cols, int64_t seed, double sparsity,
+void randDen(size_t numRows, size_t numCols, int64_t seed, double sparsity,
              T min, T max, BaseMatrix ** out)
 {
-    assert(rows > 0 && "rows must be > 0");
-    assert(cols > 0 && "cols must be > 0");
+    assert(numRows > 0 && "numRows must be > 0");
+    assert(numCols > 0 && "numCols must be > 0");
     assert(min <= max && "min must be <= max");
     assert(sparsity >= 0.0 && sparsity <= 1.0 &&
            "sparsity has to be in the interval [0.0, 1.0]");
     
-    DenseMatrix<T> * outDense = new DenseMatrix<T>(rows, cols);
+    DenseMatrix<T> * outDense = DataObjectFactory::create<DenseMatrix<T>>(numRows, numCols, false);
     *out = outDense;
 
     if (seed == -1) {
@@ -55,13 +56,13 @@ void randDen(size_t rows, size_t cols, int64_t seed, double sparsity,
     uniform_T_distribution<T> distrVal(min, max);
     std::uniform_real_distribution<double> distrSparse(0.0, 1.0);
 
-    const size_t numCells = rows * cols;
-    T * cells = outDense->getCells();
-    for (size_t i = 0; i < numCells; i++) {
+    const size_t numValues = numRows * numCols;
+    T * values = outDense->getValues();
+    for (size_t i = 0; i < numValues; i++) {
         if (distrSparse(genSparse) > sparsity)
-            cells[i] = T(0);
+            values[i] = T(0);
         else
-            cells[i] = distrVal(genVal);
+            values[i] = distrVal(genVal);
     }
 }
 
@@ -71,22 +72,22 @@ void elementwiseBinOpDenDenDen(const BaseMatrix * lhs, const BaseMatrix * rhs,
 {
     dynamic_cast_assert(const DenseMatrix<T> *, lhsDense, lhs);
     dynamic_cast_assert(const DenseMatrix<T> *, rhsDense, rhs);
-    const size_t rows = lhsDense->getRows();
-    const size_t cols = lhsDense->getCols();
-    assert(rows == rhsDense->getRows() && cols == rhsDense->getCols() &&
+    const size_t numRows = lhsDense->getNumRows();
+    const size_t numCols = lhsDense->getNumCols();
+    assert(numRows == rhsDense->getNumRows() && numCols == rhsDense->getNumCols() &&
            "matrix dimensions of lhs and rhs have to match");
     
-    DenseMatrix<T> * outDense = new DenseMatrix<T>(rows, cols);
+    DenseMatrix<T> * outDense = DataObjectFactory::create<DenseMatrix<T>>(numRows, numCols, false);
     *out = outDense;
     
-    const T * lhsCells = lhsDense->getCells();
-    const T * rhsCells = rhsDense->getCells();
-    T * outCells = outDense->getCells();
+    const T * lhsValues = lhsDense->getValues();
+    const T * rhsValues = rhsDense->getValues();
+    T * outValues = outDense->getValues();
     
     BinOp<T> op;
-    const size_t numCells = rows * cols;
-    for (size_t i = 0; i < numCells; i++)
-        outCells[i] = op(lhsCells[i], rhsCells[i]);
+    const size_t numValues = numRows * numCols;
+    for (size_t i = 0; i < numValues; i++)
+        outValues[i] = op(lhsValues[i], rhsValues[i]);
 }
 
 template<typename T>
@@ -94,12 +95,12 @@ void sumDenSca(const BaseMatrix * mat, T * res)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, matDense, mat);
     
-    const T * cells = matDense->getCells();
+    const T * values = matDense->getValues();
     
     T agg(0);
-    const size_t numCells = mat->getRows() * mat->getCols();
-    for(size_t i = 0; i < numCells; i++)
-        agg += cells[i];
+    const size_t numValues = mat->getNumRows() * mat->getNumCols();
+    for(size_t i = 0; i < numValues; i++)
+        agg += values[i];
     
     *res = agg;
 }
@@ -109,18 +110,18 @@ void transposeDenDen(const BaseMatrix * in, BaseMatrix ** out)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, inDense, in);
     
-    const size_t rows = in->getRows();
-    const size_t cols = in->getCols();
+    const size_t numRows = in->getNumRows();
+    const size_t numCols = in->getNumCols();
     
-    DenseMatrix<T> * outDense = new DenseMatrix<T>(cols, rows);
+    DenseMatrix<T> * outDense = DataObjectFactory::create<DenseMatrix<T>>(numCols, numRows, false);
     *out = outDense;
     
-    const T * inCells = inDense->getCells();
-    T * outCells = outDense->getCells();
-    for(size_t r = 0, i = 0; r < rows; r++)
-        for(size_t c = 0; c < cols; c++, i++) {
-            size_t j = c * rows + r;
-            outCells[j] = inCells[i];
+    const T * inValues = inDense->getValues();
+    T * outValues = outDense->getValues();
+    for(size_t r = 0, i = 0; r < numRows; r++)
+        for(size_t c = 0; c < numCols; c++, i++) {
+            size_t j = c * numRows + r;
+            outValues[j] = inValues[i];
         }
 }
 
@@ -128,19 +129,19 @@ template<typename T>
 void setCellDen(BaseMatrix * mat, size_t row, size_t col, T val)
 {
     dynamic_cast_assert(DenseMatrix<T> *, matDense, mat);
-    matDense->getCells()[row * mat->getCols() + col] = val;
+    matDense->getValues()[row * mat->getNumCols() + col] = val;
 }
 
 // ****************************************************************************
 // Macros generating functions called from JIT-compiled code
 // ****************************************************************************
 
-// TODO Use size_t for rows/cols as soon as the IR supports it.
+// TODO Use size_t for numRows/numCols as soon as the IR supports it.
 #define MAKE_RAND_DEN(valueTypeName, valueType, distrType) \
-    void randDen ## valueTypeName(int64_t rows, int64_t cols, int64_t seed, double sparsity, valueType min, valueType max, \
+    void randDen ## valueTypeName(int64_t numRows, int64_t numCols, int64_t seed, double sparsity, valueType min, valueType max, \
                     BaseMatrix ** out) \
     { \
-        randDen<valueType, distrType>(static_cast<size_t>(rows), static_cast<size_t>(cols), seed, sparsity, min, max, out); \
+        randDen<valueType, distrType>(static_cast<size_t>(numRows), static_cast<size_t>(numCols), seed, sparsity, min, max, out); \
     }
 
 #define MAKE_ADD_DENDENDEN(valueTypeName, valueType) \
