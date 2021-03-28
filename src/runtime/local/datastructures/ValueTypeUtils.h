@@ -19,6 +19,8 @@
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
 
+#include <string>
+
 #include <cinttypes>
 #include <cstddef>
 
@@ -37,35 +39,99 @@ struct ValueTypeUtils {
             default: throw std::runtime_error("unknown value type code");
         }
     }
-
+    
     template<typename ValueType>
     static const ValueTypeCode codeFor;
-
+    
+    template<typename ValueType>
+    static const std::string cppNameFor;
+    
+    template<typename ValueType>
+    static const std::string irNameFor;
+    
+    static const std::string cppNameForCode(ValueTypeCode type);
+    
+    static const std::string irNameForCode(ValueTypeCode type);
 };
 
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<int8_t>   = ValueTypeCode::SI8;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<int32_t>  = ValueTypeCode::SI32;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<int64_t>  = ValueTypeCode::SI64;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<uint8_t>  = ValueTypeCode::UI8;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<uint32_t> = ValueTypeCode::UI32;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<uint64_t> = ValueTypeCode::UI64;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<float>  = ValueTypeCode::F32;
-
 template<>
 const ValueTypeCode ValueTypeUtils::codeFor<double> = ValueTypeCode::F64;
+
+template<>
+const std::string ValueTypeUtils::cppNameFor<int8_t>   = "int8_t";
+template<>
+const std::string ValueTypeUtils::cppNameFor<int32_t>  = "int32_t";
+template<>
+const std::string ValueTypeUtils::cppNameFor<int64_t>  = "int64_t";
+template<>
+const std::string ValueTypeUtils::cppNameFor<uint8_t>  = "uint8_t";
+template<>
+const std::string ValueTypeUtils::cppNameFor<uint32_t> = "uint32_t";
+template<>
+const std::string ValueTypeUtils::cppNameFor<uint64_t> = "uint64_t";
+template<>
+const std::string ValueTypeUtils::cppNameFor<float>  = "float";
+template<>
+const std::string ValueTypeUtils::cppNameFor<double> = "double";
+
+template<>
+const std::string ValueTypeUtils::irNameFor<int8_t>   = "si8";
+template<>
+const std::string ValueTypeUtils::irNameFor<int32_t>  = "si32";
+template<>
+const std::string ValueTypeUtils::irNameFor<int64_t>  = "si64";
+template<>
+const std::string ValueTypeUtils::irNameFor<uint8_t>  = "ui8";
+template<>
+const std::string ValueTypeUtils::irNameFor<uint32_t> = "ui32";
+template<>
+const std::string ValueTypeUtils::irNameFor<uint64_t> = "ui64";
+template<>
+const std::string ValueTypeUtils::irNameFor<float>  = "f32";
+template<>
+const std::string ValueTypeUtils::irNameFor<double> = "f64";
+    
+const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
+    switch(type) {
+        case ValueTypeCode::SI8:  return cppNameFor<int8_t>;
+        case ValueTypeCode::SI32: return cppNameFor<int32_t>;
+        case ValueTypeCode::SI64: return cppNameFor<int64_t>;
+        case ValueTypeCode::UI8:  return cppNameFor<uint8_t>;
+        case ValueTypeCode::UI32: return cppNameFor<uint32_t>;
+        case ValueTypeCode::UI64: return cppNameFor<uint64_t>;
+        case ValueTypeCode::F32: return cppNameFor<float>;
+        case ValueTypeCode::F64: return cppNameFor<double>;
+        default: throw std::runtime_error("unknown value type code");
+    }
+}
+
+const std::string ValueTypeUtils::irNameForCode(ValueTypeCode type) {
+    switch(type) {
+        case ValueTypeCode::SI8:  return irNameFor<int8_t>;
+        case ValueTypeCode::SI32: return irNameFor<int32_t>;
+        case ValueTypeCode::SI64: return irNameFor<int64_t>;
+        case ValueTypeCode::UI8:  return irNameFor<uint8_t>;
+        case ValueTypeCode::UI32: return irNameFor<uint32_t>;
+        case ValueTypeCode::UI64: return irNameFor<uint64_t>;
+        case ValueTypeCode::F32: return irNameFor<float>;
+        case ValueTypeCode::F64: return irNameFor<double>;
+        default: throw std::runtime_error("unknown value type code");
+    }
+}
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_VALUETYPEUTILS_H
 
