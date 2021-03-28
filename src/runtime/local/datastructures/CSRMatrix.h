@@ -19,7 +19,9 @@
 
 #include <runtime/local/datastructures/BaseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <iostream>
 #include <memory>
 
 #include <cassert>
@@ -167,6 +169,36 @@ public:
         return rowOffsets.get();
     }
     
+    void print(std::ostream & os) const {
+        os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
+                << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+        // Note that, in general, the values within one row might not be sorted
+        // by column index. Thus, the following is a little complicated.
+        ValueType * oneRow = new ValueType[numCols];
+        for (size_t r = 0; r < numRows; r++) {
+            memset(oneRow, 0, numCols * sizeof(ValueType));
+            const size_t rowNumNonZeros = getNumNonZeros(r);
+            const size_t * rowColIdxs = getColIdxs(r);
+            const ValueType * rowValues = getValues(r);
+            for(size_t i = 0; i < rowNumNonZeros; i++)
+                oneRow[rowColIdxs[i]] = rowValues[i];
+            for(size_t c = 0; c < numCols; c++) {
+                os << oneRow[c];
+                if (c < numCols - 1)
+                    os << ' ';
+            }
+            os << std::endl;
+        }
+        delete[] oneRow;
+    }
+    
 };
+
+template <typename ValueType>
+std::ostream & operator<<(std::ostream & os, const CSRMatrix<ValueType> & obj)
+{
+    obj.print(os);
+    return os;
+}
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H

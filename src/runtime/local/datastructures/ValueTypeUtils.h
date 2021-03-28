@@ -19,6 +19,7 @@
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
 
+#include <iostream>
 #include <string>
 
 #include <cinttypes>
@@ -40,6 +41,20 @@ struct ValueTypeUtils {
         }
     }
     
+    static void printValue(std::ostream & os, ValueTypeCode type, const void * array, size_t pos) {
+        switch(type) {
+            case ValueTypeCode::SI8:  os << reinterpret_cast<const int8_t  *>(array)[pos]; break;
+            case ValueTypeCode::SI32: os << reinterpret_cast<const int32_t *>(array)[pos]; break;
+            case ValueTypeCode::SI64: os << reinterpret_cast<const int64_t *>(array)[pos]; break;
+            case ValueTypeCode::UI8:  os << reinterpret_cast<const int8_t  *>(array)[pos]; break;
+            case ValueTypeCode::UI32: os << reinterpret_cast<const int32_t *>(array)[pos]; break;
+            case ValueTypeCode::UI64: os << reinterpret_cast<const int64_t *>(array)[pos]; break;
+            case ValueTypeCode::F32: os << reinterpret_cast<const float  *>(array)[pos]; break;
+            case ValueTypeCode::F64: os << reinterpret_cast<const double *>(array)[pos]; break;
+            default: throw std::runtime_error("unknown value type code");
+        }
+    }
+
     template<typename ValueType>
     static const ValueTypeCode codeFor;
     

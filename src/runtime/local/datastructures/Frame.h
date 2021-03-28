@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 
@@ -172,6 +173,30 @@ public:
         return const_cast<Frame *>(this)->getColumn<ValueType>(idx);
     }
     
+    void print(std::ostream & os) const {
+        os << "Frame(" << numRows << 'x' << numCols << ", [";
+        for(size_t c = 0; c < numCols; c++) {
+            os << ValueTypeUtils::cppNameForCode(schema[c]);
+            if(c < numCols - 1)
+                os << ", ";
+        }
+        os << "])" << std::endl;
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
+                ValueTypeUtils::printValue(os, schema[c], columns[c].get(), r);
+                if (c < numCols - 1)
+                    os << ' ';
+            }
+            os << std::endl;
+        }
+    }
+    
 };
+
+std::ostream & operator<<(std::ostream & os, const Frame & obj)
+{
+    obj.print(os);
+    return os;
+}
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_FRAME_H

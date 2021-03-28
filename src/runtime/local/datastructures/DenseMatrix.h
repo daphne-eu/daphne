@@ -19,7 +19,9 @@
 
 #include <runtime/local/datastructures/BaseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <iostream>
 #include <memory>
 
 #include <cassert>
@@ -132,37 +134,29 @@ public:
     {
         return values.get();
     }
+    
+    void print(std::ostream & os) const {
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
+                << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+        size_t i = 0;
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
+                os << values.get()[i + c];
+                if (c < numCols - 1)
+                    os << ' ';
+            }
+            os << std::endl;
+            i += rowSkip;
+        }
+    }
 
 };
 
-// TODO Move this somewhere else?
-#include <functional>
-#include <iostream>
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const DenseMatrix<T> &mat)
+template <typename ValueType>
+std::ostream & operator<<(std::ostream & os, const DenseMatrix<ValueType> & obj)
 {
-    const T * values = mat.getValues();
-
-    size_t i = 0;
-
-    os << "Matrix(rows = " << mat.getNumRows() << ", cols = " << mat.getNumCols()
-            << ")\n[";
-    for (unsigned r = 0; r < mat.getNumRows(); r++) {
-        if (r != 0)
-            os << " ";
-        os << "[";
-        for (unsigned c = 0; c < mat.getNumCols(); c++) {
-            os << values[i++];
-            if (c < mat.getNumCols() - 1) {
-                os << " ";
-            }
-        }
-        os << "]";
-        if (r < mat.getNumRows() - 1) {
-            os << "\n";
-        }
-    }
-    return os << "]\n";
+    obj.print(os);
+    return os;
 }
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
