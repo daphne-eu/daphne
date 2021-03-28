@@ -125,7 +125,10 @@ class Frame {
         this->columns = new std::shared_ptr<ColByteType>[numCols];
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = src->schema[colIdxs[i]];
-            this->columns[i] = std::shared_ptr<ColByteType>(src->columns[colIdxs[i]], src->columns[colIdxs[i]].get() + rowLowerIncl);
+            this->columns[i] = std::shared_ptr<ColByteType>(
+                    src->columns[colIdxs[i]],
+                    src->columns[colIdxs[i]].get() + rowLowerIncl * ValueTypeUtils::sizeOf(schema[i])
+            );
         }
     }
     
