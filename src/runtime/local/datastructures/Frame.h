@@ -54,14 +54,23 @@ class Frame {
     ValueTypeCode * schema;
     
     /**
-     * @brief An array of length `numCols` of the column arrays of this frame.
+     * @brief The common pointer type used for the array of each column,
+     * irrespective of the actual value type of the column.
      * 
-     * Since each column can have its own value type, as determined by the
-     * `schema`, we use `uint8_t` as a common pointer type here. This is
-     * advantageous, since `sizeof(uint8_t) == 1`, which simplifies the
-     * computation physical sizes.
+     * Each column can have its own value type, as determined by the `schema`.
+     * However, we cannot declare the column pointers of individual types,
+     * since we want to store them in one array. Thus, we use a common pointer
+     * type for all of them, internally.
+     * 
+     * Using `uint8_t` is advantageous, since `sizeof(uint8_t) == 1`, which
+     * simplifies the computation of physical sizes.
      */
-    std::shared_ptr<uint8_t> * columns;
+    using ColByteType = uint8_t;
+    
+    /**
+     * @brief An array of length `numCols` of the column arrays of this frame.
+     */
+    std::shared_ptr<ColByteType> * columns;
     
     // TODO Should the given schema array really be copied, or reused?
     /**
@@ -80,12 +89,12 @@ class Frame {
             numRows(maxNumRows),
             numCols(numCols),
             schema(new ValueTypeCode[numCols]),
-            columns(new std::shared_ptr<uint8_t>[numCols])
+            columns(new std::shared_ptr<ColByteType>[numCols])
     {
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = schema[i];
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = std::shared_ptr<uint8_t>(new uint8_t[sizeAlloc]);
+            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc]);
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
         }
@@ -113,10 +122,10 @@ class Frame {
         this->numRows = rowUpperExcl - rowLowerIncl;
         this->numCols = numCols;
         this->schema = new ValueTypeCode[numCols];
-        this->columns = new std::shared_ptr<uint8_t>[numCols];
+        this->columns = new std::shared_ptr<ColByteType>[numCols];
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = src->schema[colIdxs[i]];
-            this->columns[i] = std::shared_ptr<uint8_t>(src->columns[colIdxs[i]], src->columns[colIdxs[i]].get() + rowLowerIncl);
+            this->columns[i] = std::shared_ptr<ColByteType>(src->columns[colIdxs[i]], src->columns[colIdxs[i]].get() + rowLowerIncl);
         }
     }
     
