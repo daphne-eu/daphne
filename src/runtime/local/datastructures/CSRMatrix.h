@@ -83,19 +83,20 @@ class CSRMatrix : public BaseMatrix {
      * @param rowLowerIncl Inclusive lower bound for the range of rows to extract.
      * @param rowUpperExcl Exclusive upper bound for the range of rows to extract.
      */
-    CSRMatrix(const CSRMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl) {
+    CSRMatrix(const CSRMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl) :
+            BaseMatrix(rowUpperExcl - rowLowerIncl, src->numCols)
+    {
         assert(src && "src must not be null");
-        assert((rowLowerIncl < numRows) && "rowLowerIncl is out of bounds");
-        assert((rowUpperExcl <= numRows) && "rowUpperExcl is out of bounds");
+        assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+        assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
         assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
         
-        numRows = rowUpperExcl - rowLowerIncl;
-        numCols = src.numCols;
-        
-        values = src.values;
-        colIdxs = src.colIdxs;
-        rowOffsets = src.rowOffsets + rowLowerIncl;
+        values = src->values;
+        colIdxs = src->colIdxs;
+        rowOffsets = src->rowOffsets + rowLowerIncl;
     }
+    
+public:
     
     virtual ~CSRMatrix() {
         // Enable safe sharing.
@@ -104,7 +105,6 @@ class CSRMatrix : public BaseMatrix {
         delete[] rowOffsets;
     }
     
-public:
     void shrinkNumRows(size_t numRows) {
         assert((numRows <= this->numRows) && "numRows can only the shrinked");
         // TODO Here we could reduce the allocated size of the rowOffsets array.
@@ -160,11 +160,11 @@ public:
         return const_cast<CSRMatrix<ValueType> *>(this)->getColIdxs(rowIdx);
     }
     
-    size_t * getRowPtrs() {
+    size_t * getRowOffsets() {
         return rowOffsets;
     }
     
-    const size_t * getRowPtrs() const {
+    const size_t * getRowOffsets() const {
         return rowOffsets;
     }
     

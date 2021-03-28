@@ -103,11 +103,11 @@ class Frame {
      */
     Frame(const Frame * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t numCols, const size_t * colIdxs) {
         assert(src && "src must not be null");
-        assert((rowLowerIncl < numRows) && "rowLowerIncl is out of bounds");
-        assert((rowUpperExcl <= numRows) && "rowUpperExcl is out of bounds");
+        assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+        assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
         assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
         for(size_t i = 0; i < numCols; i++)
-            assert((colIdxs[i] < numCols) && "some colIdx is out of bounds");
+            assert((colIdxs[i] < src->numCols) && "some colIdx is out of bounds");
         
         this->numRows = rowUpperExcl - rowLowerIncl;
         this->numCols = numCols;
@@ -120,6 +120,14 @@ class Frame {
     }
     
 public:
+    
+    ~Frame() {
+        for(size_t i = 0; i < numCols; i++)
+            delete[] columns[i];
+        delete[] columns;
+        delete[] schema;
+    }
+    
     size_t getNumRows() const {
         return numRows;
     }

@@ -90,20 +90,19 @@ class DenseMatrix : public BaseMatrix
      * @param colLowerIncl Inclusive lower bound for the range of columns to extract.
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
-    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) {
+    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) :
+            BaseMatrix(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl)
+    {
         assert(src && "src must not be null");
-        assert((rowLowerIncl < numRows) && "rowLowerIncl is out of bounds");
-        assert((rowUpperExcl <= numRows) && "rowUpperExcl is out of bounds");
+        assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+        assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
         assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
-        assert((colLowerIncl < numCols) && "colLowerIncl is out of bounds");
-        assert((colUpperExcl <= numCols) && "colUpperExcl is out of bounds");
+        assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+        assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
         assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
         
-        numRows = rowUpperExcl - rowLowerIncl;
-        numCols = colUpperExcl - colLowerIncl;
-        
         rowSkip = src->rowSkip;
-        values = src.values + rowLowerIncl * src.rowSkip + colLowerIncl;
+        values = src->values + rowLowerIncl * src->rowSkip + colLowerIncl;
     }
     
 public:
