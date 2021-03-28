@@ -20,6 +20,8 @@
 #include <runtime/local/datastructures/BaseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 
+#include <memory>
+
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -40,7 +42,7 @@ template <typename ValueType>
 class DenseMatrix : public BaseMatrix
 {
     size_t rowSkip;
-    ValueType * values;
+    std::shared_ptr<ValueType> values;
     
     // Grant DataObjectFactory::create access to the private constructors.
     template<class DataType, typename ... ArgTypes>
@@ -61,7 +63,7 @@ class DenseMatrix : public BaseMatrix
             values(new ValueType[maxNumRows * numCols])
     {
         if(zero)
-            memset(values, 0, maxNumRows * numCols * sizeof(ValueType));
+            memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
     }
             
     /**
@@ -102,13 +104,13 @@ class DenseMatrix : public BaseMatrix
         assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
         
         rowSkip = src->rowSkip;
-        values = src->values + rowLowerIncl * src->rowSkip + colLowerIncl;
+        values = std::shared_ptr<ValueType>(src->values, src->values.get() + rowLowerIncl * src->rowSkip + colLowerIncl);
     }
     
 public:
     
     virtual ~DenseMatrix() {
-        delete[] values;
+        // nothing to do
     }
     
     void shrinkNumRows(size_t numRows) {
@@ -123,12 +125,12 @@ public:
 
     const ValueType * getValues() const
     {
-        return values;
+        return values.get();
     };
 
     ValueType * getValues()
     {
-        return values;
+        return values.get();
     }
 
 };

@@ -20,6 +20,8 @@
 #include <runtime/local/datastructures/BaseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 
+#include <memory>
+
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -43,9 +45,9 @@
  */
 template<typename ValueType>
 class CSRMatrix : public BaseMatrix {
-    ValueType * values;
-    size_t * colIdxs;
-    size_t * rowOffsets;
+    std::shared_ptr<ValueType> values;
+    std::shared_ptr<size_t> colIdxs;
+    std::shared_ptr<size_t> rowOffsets;
     
     // Grant DataObjectFactory::create access to the private constructors.
     template<class DataType, typename ... ArgTypes>
@@ -69,9 +71,9 @@ class CSRMatrix : public BaseMatrix {
             rowOffsets(new size_t[numRows + 1])
     {
         if(zero) {
-            memset(values, 0, maxNumNonZeros * sizeof(ValueType));
-            memset(colIdxs, 0, maxNumNonZeros * sizeof(size_t));
-            memset(rowOffsets, 0, (numRows + 1) * sizeof(size_t));
+            memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
+            memset(colIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
+            memset(rowOffsets.get(), 0, (numRows + 1) * sizeof(size_t));
         }
     }
     
@@ -93,16 +95,13 @@ class CSRMatrix : public BaseMatrix {
         
         values = src->values;
         colIdxs = src->colIdxs;
-        rowOffsets = src->rowOffsets + rowLowerIncl;
+        rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
     
 public:
     
     virtual ~CSRMatrix() {
-        // Enable safe sharing.
-        delete[] values;
-        delete[] colIdxs;
-        delete[] rowOffsets;
+        // nothing to do
     }
     
     void shrinkNumRows(size_t numRows) {
@@ -112,12 +111,12 @@ public:
     }
     
     size_t getNumNonZeros() const {
-        return rowOffsets[numRows] - rowOffsets[0];
+        return rowOffsets.get()[numRows] - rowOffsets.get()[0];
     }
     
     size_t getNumNonZeros(size_t rowIdx) const {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        return rowOffsets[rowIdx + 1] - rowOffsets[rowIdx];
+        return rowOffsets.get()[rowIdx + 1] - rowOffsets.get()[rowIdx];
     }
     
     void shrinkNumNonZeros(size_t numNonZeros) {
@@ -127,16 +126,16 @@ public:
     }
     
     ValueType * getValues() {
-        return values;
+        return values.get();
     }
     
     const ValueType * getValues() const {
-        return values;
+        return values.get();
     }
     
     ValueType * getValues(size_t rowIdx) {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        return values + rowOffsets[rowIdx];
+        return values.get() + rowOffsets.get()[rowIdx];
     }
     
     const ValueType * getValues(size_t rowIdx) const {
@@ -144,16 +143,16 @@ public:
     }
     
     size_t * getColIdxs() {
-        return colIdxs;
+        return colIdxs.get();
     }
     
     const size_t * getColIdxs() const {
-        return colIdxs;
+        return colIdxs.get();
     }
     
     size_t * getColIdxs(size_t rowIdx) {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        return colIdxs + rowOffsets[rowIdx];
+        return colIdxs.get() + rowOffsets.get()[rowIdx];
     }
     
     const size_t * getColIdxs(size_t rowIdx) const {
@@ -161,11 +160,11 @@ public:
     }
     
     size_t * getRowOffsets() {
-        return rowOffsets;
+        return rowOffsets.get();
     }
     
     const size_t * getRowOffsets() const {
-        return rowOffsets;
+        return rowOffsets.get();
     }
     
 };

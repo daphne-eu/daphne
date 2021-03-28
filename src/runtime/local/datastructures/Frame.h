@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
+#include <memory>
 #include <stdexcept>
 
 #include <cassert>
@@ -60,7 +61,7 @@ class Frame {
      * advantageous, since `sizeof(uint8_t) == 1`, which simplifies the
      * computation physical sizes.
      */
-    uint8_t ** columns;
+    std::shared_ptr<uint8_t> * columns;
     
     // TODO Should the given schema array really be copied, or reused?
     /**
@@ -79,14 +80,14 @@ class Frame {
             numRows(maxNumRows),
             numCols(numCols),
             schema(new ValueTypeCode[numCols]),
-            columns(new uint8_t *[numCols])
+            columns(new std::shared_ptr<uint8_t>[numCols])
     {
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = schema[i];
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = new uint8_t[sizeAlloc];
+            this->columns[i] = std::shared_ptr<uint8_t>(new uint8_t[sizeAlloc]);
             if(zero)
-                memset(this->columns[i], 0, sizeAlloc);
+                memset(this->columns[i].get(), 0, sizeAlloc);
         }
     }
     
@@ -112,18 +113,16 @@ class Frame {
         this->numRows = rowUpperExcl - rowLowerIncl;
         this->numCols = numCols;
         this->schema = new ValueTypeCode[numCols];
-        this->columns = new uint8_t *[numCols];
+        this->columns = new std::shared_ptr<uint8_t>[numCols];
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = src->schema[colIdxs[i]];
-            this->columns[i] = src->columns[colIdxs[i]];
+            this->columns[i] = std::shared_ptr<uint8_t>(src->columns[colIdxs[i]], src->columns[colIdxs[i]].get() + rowLowerIncl);
         }
     }
     
 public:
     
     ~Frame() {
-        for(size_t i = 0; i < numCols; i++)
-            delete[] columns[i];
         delete[] columns;
         delete[] schema;
     }
@@ -153,7 +152,7 @@ public:
     template<typename ValueType>
     DenseMatrix<ValueType> * getColumn(size_t idx) {
         assert((ValueTypeUtils::codeFor<ValueType> == schema[idx]) && "requested value type must match the type of the column");
-        return DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, 1, reinterpret_cast<ValueType *>(columns[idx]));
+        return DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, 1, reinterpret_cast<ValueType *>(columns[idx].get()));
     }
     
     template<typename ValueType>
