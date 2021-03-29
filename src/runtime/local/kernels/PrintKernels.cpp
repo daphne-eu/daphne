@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "runtime/local/datastructures/BaseMatrix.h"
+#include "runtime/local/datastructures/Matrix.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 #include "runtime/local/kernels/utils.h"
 
@@ -34,7 +34,7 @@ void printSca(T val)
 }
 
 template<typename T>
-void printDen(const BaseMatrix * mat)
+void printDen(const Matrix * mat)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, matDense, mat);
     std::cout << *matDense;
@@ -51,7 +51,7 @@ void printDen(const BaseMatrix * mat)
     }
     
 #define MAKE_PRINT_DEN(valueTypeName, valueType) \
-    void printDen ## valueTypeName(BaseMatrix * mat) \
+    void printDen ## valueTypeName(Matrix * mat) \
     { \
         printDen<valueType>(mat); \
     }

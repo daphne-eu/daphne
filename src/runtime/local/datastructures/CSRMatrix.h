@@ -17,8 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_CSRMATRIX_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_CSRMATRIX_H
 
-#include <runtime/local/datastructures/BaseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <iostream>
@@ -46,7 +46,7 @@
  * start at `values[rowOffsets[0]`.
  */
 template<typename ValueType>
-class CSRMatrix : public BaseMatrix {
+class CSRMatrix : public Matrix {
     std::shared_ptr<ValueType> values;
     std::shared_ptr<size_t> colIdxs;
     std::shared_ptr<size_t> rowOffsets;
@@ -70,7 +70,7 @@ class CSRMatrix : public BaseMatrix {
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
     CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero) : 
-            BaseMatrix(maxNumRows, numCols),
+            Matrix(maxNumRows, numCols),
             values(new ValueType[maxNumNonZeros]),
             colIdxs(new size_t[maxNumNonZeros]),
             rowOffsets(new size_t[numRows + 1])
@@ -91,7 +91,7 @@ class CSRMatrix : public BaseMatrix {
      * @param rowUpperExcl Exclusive upper bound for the range of rows to extract.
      */
     CSRMatrix(const CSRMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl) :
-            BaseMatrix(rowUpperExcl - rowLowerIncl, src->numCols)
+            Matrix(rowUpperExcl - rowLowerIncl, src->numCols)
     {
         assert(src && "src must not be null");
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");

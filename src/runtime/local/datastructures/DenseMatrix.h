@@ -17,8 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 
-#include <runtime/local/datastructures/BaseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
 #include <iostream>
@@ -41,7 +41,7 @@
  * obtain a pointer to the corresponsing cell in the next row.
  */
 template <typename ValueType>
-class DenseMatrix : public BaseMatrix
+class DenseMatrix : public Matrix
 {
     size_t rowSkip;
     std::shared_ptr<ValueType> values;
@@ -63,7 +63,7 @@ class DenseMatrix : public BaseMatrix
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero) :
-            BaseMatrix(maxNumRows, numCols),
+            Matrix(maxNumRows, numCols),
             rowSkip(numCols),
             values(new ValueType[maxNumRows * numCols])
     {
@@ -80,7 +80,7 @@ class DenseMatrix : public BaseMatrix
      * @param values The existing array of values.
      */
     DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
-            BaseMatrix(numRows, numCols),
+            Matrix(numRows, numCols),
             rowSkip(numCols),
             values(values)
     {
@@ -98,7 +98,7 @@ class DenseMatrix : public BaseMatrix
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
     DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) :
-            BaseMatrix(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl)
+            Matrix(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl)
     {
         assert(src && "src must not be null");
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");

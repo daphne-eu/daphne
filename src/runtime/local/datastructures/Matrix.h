@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_BASEMATRIX_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_BASEMATRIX_H
+#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
+#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
 
 #include <cstddef>
 
@@ -27,7 +27,7 @@
  */
 // TODO Could we have the value type as a template parameter here already? Or
 // would that cause problems with pure C?
-class BaseMatrix
+class Matrix
 {
 protected:
     size_t numRows;
@@ -35,13 +35,13 @@ protected:
 
 public:
 
-    BaseMatrix(size_t numRows, size_t numCols) :
+    Matrix(size_t numRows, size_t numCols) :
             numRows(numRows), numCols(numCols)
     {
         // nothing to do
     };
 
-    virtual ~BaseMatrix()
+    virtual ~Matrix()
     {
         // nothing to do
     };
@@ -58,4 +58,4 @@ public:
     
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_BASEMATRIX_H
+#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
