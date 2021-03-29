@@ -46,9 +46,12 @@ class DenseMatrix : public BaseMatrix
     size_t rowSkip;
     std::shared_ptr<ValueType> values;
     
-    // Grant DataObjectFactory::create access to the private constructors.
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
     template<class DataType, typename ... ArgTypes>
     friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
 
     /**
      * @brief Creates a `DenseMatrix` and allocates enough memory for the
@@ -109,11 +112,11 @@ class DenseMatrix : public BaseMatrix
         values = std::shared_ptr<ValueType>(src->values, src->values.get() + rowLowerIncl * src->rowSkip + colLowerIncl);
     }
     
-public:
-    
     virtual ~DenseMatrix() {
         // nothing to do
     }
+    
+public:
     
     void shrinkNumRows(size_t numRows) {
         assert((numRows <= this->numRows) && "number of rows can only the shrinked");

@@ -34,6 +34,17 @@ struct DataObjectFactory {
         // TODO Employ placement-new.
         return new DataType(args...);
     }
+    
+    /**
+     * @brief The central function for destroying data objects of any data type
+     * (matrices, frames).
+     * 
+     * @param obj The data object to destroy.
+     */
+    template<class DataType>
+    static void destroy(const DataType * obj) {
+        delete obj;
+    }
 };
 
 

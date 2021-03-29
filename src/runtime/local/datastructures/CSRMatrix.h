@@ -51,9 +51,12 @@ class CSRMatrix : public BaseMatrix {
     std::shared_ptr<size_t> colIdxs;
     std::shared_ptr<size_t> rowOffsets;
     
-    // Grant DataObjectFactory::create access to the private constructors.
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
     template<class DataType, typename ... ArgTypes>
     friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
     
     /**
      * @brief Creates a `CSRMatrix` and allocates enough memory for the
@@ -100,11 +103,11 @@ class CSRMatrix : public BaseMatrix {
         rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
     
-public:
-    
     virtual ~CSRMatrix() {
         // nothing to do
     }
+    
+public:
     
     void shrinkNumRows(size_t numRows) {
         assert((numRows <= this->numRows) && "numRows can only the shrinked");

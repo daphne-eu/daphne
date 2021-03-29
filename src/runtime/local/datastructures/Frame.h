@@ -41,9 +41,12 @@ class Frame {
     size_t numRows;
     size_t numCols;
     
-    // Grant DataObjectFactory::create access to the private constructors.
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
     template<class DataType, typename ... ArgTypes>
     friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
     
     /**
      * @brief An array of length `numCols` of the value types of the columns of
@@ -133,12 +136,12 @@ class Frame {
         }
     }
     
-public:
-    
     ~Frame() {
         delete[] columns;
         delete[] schema;
     }
+    
+public:
     
     size_t getNumRows() const {
         return numRows;
