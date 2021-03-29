@@ -19,6 +19,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 
@@ -37,9 +38,7 @@
  * A `Frame` is organized in column-major fashion and is backed by an
  * individual dense array for each column.
  */
-class Frame {
-    size_t numRows;
-    size_t numCols;
+class Frame : public Structure {
     
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
@@ -90,8 +89,7 @@ class Frame {
      * (`false`).
      */
     Frame(size_t maxNumRows, size_t numCols, const ValueTypeCode * schema, bool zero) :
-            numRows(maxNumRows),
-            numCols(numCols),
+            Structure(maxNumRows, numCols),
             schema(new ValueTypeCode[numCols]),
             columns(new std::shared_ptr<ColByteType>[numCols])
     {
@@ -115,7 +113,9 @@ class Frame {
      * @param colIdxs An array of length `numCols` of the indexes of the
      * columns to extract from `src`.
      */
-    Frame(const Frame * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t numCols, const size_t * colIdxs) {
+    Frame(const Frame * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t numCols, const size_t * colIdxs) :
+            Structure(rowUpperExcl - rowLowerIncl, numCols)
+    {
         assert(src && "src must not be null");
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
         assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
@@ -123,8 +123,6 @@ class Frame {
         for(size_t i = 0; i < numCols; i++)
             assert((colIdxs[i] < src->numCols) && "some colIdx is out of bounds");
         
-        this->numRows = rowUpperExcl - rowLowerIncl;
-        this->numCols = numCols;
         this->schema = new ValueTypeCode[numCols];
         this->columns = new std::shared_ptr<ColByteType>[numCols];
         for(size_t i = 0; i < numCols; i++) {
@@ -143,17 +141,9 @@ class Frame {
     
 public:
     
-    size_t getNumRows() const {
-        return numRows;
-    }
-    
     void shrinkNumRows(size_t numRows) {
         // TODO Here we could reduce the allocated size of the column arrays.
         this->numRows = numRows;
-    }
-    
-    size_t getNumCols() const {
-        return numCols;
     }
     
     const ValueTypeCode * getSchema() const {
@@ -176,7 +166,7 @@ public:
         return const_cast<Frame *>(this)->getColumn<ValueType>(idx);
     }
     
-    void print(std::ostream & os) const {
+    void print(std::ostream & os) const override {
         os << "Frame(" << numRows << 'x' << numCols << ", [";
         for(size_t c = 0; c < numCols; c++) {
             os << ValueTypeUtils::cppNameForCode(schema[c]);

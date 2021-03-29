@@ -172,7 +172,7 @@ public:
         return rowOffsets.get();
     }
     
-    void print(std::ostream & os) const {
+    void print(std::ostream & os) const override {
         os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
         // Note that, in general, the values within one row might not be sorted

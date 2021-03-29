@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
 
+#include <runtime/local/datastructures/Structure.h>
+
 #include <cstddef>
 
 /**
@@ -27,16 +29,13 @@
  */
 // TODO Could we have the value type as a template parameter here already? Or
 // would that cause problems with pure C?
-class Matrix
+class Matrix : public Structure
 {
-protected:
-    size_t numRows;
-    size_t numCols;
 
-public:
+protected:
 
     Matrix(size_t numRows, size_t numCols) :
-            numRows(numRows), numCols(numCols)
+            Structure(numRows, numCols)
     {
         // nothing to do
     };
@@ -46,16 +45,6 @@ public:
         // nothing to do
     };
 
-    size_t getNumRows() const
-    {
-        return numRows;
-    }
-
-    size_t getNumCols() const
-    {
-        return numCols;
-    }
-    
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H

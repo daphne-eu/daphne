@@ -138,7 +138,7 @@ public:
         return values.get();
     }
     
-    void print(std::ostream & os) const {
+    void print(std::ostream & os) const override {
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
         size_t i = 0;
