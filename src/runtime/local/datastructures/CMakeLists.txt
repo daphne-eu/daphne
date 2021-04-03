@@ -12,8 +12,5 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(PrintKernels SHARED PrintKernels.cpp)
-target_link_libraries(PrintKernels)
-
-add_library(LinAlgKernels SHARED LinAlgKernels.cpp)
-target_link_libraries(LinAlgKernels PRIVATE ValueTypeUtils)
+add_library(ValueTypeUtils ValueTypeUtils.cpp)
+target_link_libraries(ValueTypeUtils)

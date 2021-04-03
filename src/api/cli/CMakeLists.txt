@@ -21,6 +21,7 @@ set(LIBS
         MLIRDaphneTransforms
         MLIRExecutionEngine
         DaphneDSLParser
+        ValueTypeUtils
 )
 
 # enable exceptions handling
