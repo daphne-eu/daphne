@@ -81,12 +81,32 @@ cd $thirdpartyPath
 # Download third-party material if necessary
 #------------------------------------------------------------------------------
 
+# antlr4 (parser).
 # Download antlr4 jar if it does not exist yet.
 antlrName=antlr-4.9.1-complete.jar
 if [ ! -f $antlrName ]
 then
     wget https://www.antlr.org/download/$antlrName
 fi
+
+# catch2 (unit test framework).
+# Download catch2 release zip (if necessary), and unpack the single header file
+# (if necessary).
+catch2Name=catch2
+catch2ZipName=v2.13.4.zip
+catch2SingleHeaderName=catch.hpp
+mkdir --parents $catch2Name
+cd $catch2Name
+if [ ! -f $catch2ZipName ]
+then
+    wget https://github.com/catchorg/Catch2/archive/refs/tags/$catch2ZipName
+fi
+if [ ! -f $catch2SingleHeaderName ]
+then
+    unzip -p $catch2ZipName "Catch2-2.13.4/single_include/catch2/catch.hpp" \
+        > $catch2SingleHeaderName
+fi
+cd ..
 
 #------------------------------------------------------------------------------
 # Build MLIR

@@ -71,7 +71,15 @@ Simply build the prototype using the build-script without any arguments:
 When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
 Subsequent builds, e.g., when you changed something in this repository, will be much faster.
 
-### 3. Run
+### 3. Run tests
+
+```bash
+./test.sh
+```
+
+We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. You can use all [command line arguments](https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#top) of catch2 with `test.sh`.
+
+### 4. Run the prototype
 
 Write a little DaphneDSL script or use `example.daphne`...
 
@@ -99,5 +107,5 @@ On the top-level, there are the following directories:
 - `build`: everything generated during build (executables, libraries, generated source code)
 - `doc` (*to be added soon*): documentation
 - `src`: the actual source code, subdivided into the individual components of the prototype
-- `test` (*to be added soon*): test cases
+- `test`: test cases
 - `thirdparty`: required external software
