@@ -14,14 +14,56 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script builds the DAPHNE prototype.
-#
-# It also downloads and builds all required third-party material. Simply invoke
-# it without any arguments.
-
-
 # Stop immediately if any command fails.
 set -e
+
+#******************************************************************************
+# Help message
+#******************************************************************************
+
+function printHelp {
+    echo "Build the DAPHNE prototype."
+    echo ""
+    echo "Usage: $0 [-h|--help] [--target TARGET]"
+    echo ""
+    echo "This includes downloading and building all required third-party "
+    echo "material, if necessary. Simply invoke this script without any "
+    echo "arguments to build the prototype. You should only invoke it from "
+    echo "the prototype's root directory (where this script resides)."
+    echo ""
+    echo "Optional arguments:"
+    echo "  -h, --help        Print this help message and exit."
+    echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
+}
+
+#******************************************************************************
+# Parse arguments
+#******************************************************************************
+
+# Defaults.
+target="daphnec"
+
+while [[ $# -gt 0 ]]
+do
+    key=$1
+    shift
+    case $key in
+        -h|--help)
+            printHelp
+            exit 0
+            ;;
+        --target)
+            target=$1
+            shift
+            ;;
+        *)
+            printf "Unknown option: '%s'\n\n" $key
+            printHelp
+            exit 1
+            ;;
+    esac
+done;
+
 
 # Make sure that the submodule(s) have been updated since the last clone/pull.
 git submodule update --init --recursive
@@ -79,7 +121,7 @@ cd $oldPwd
 mkdir --parents build
 cd build
 cmake -G Ninja .. -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/
-cmake --build . --target daphnec
+cmake --build . --target $target
 
 
 set +e
