@@ -22,7 +22,7 @@
 // tag macros separated by whitespace, e.g., if TAG_A is "[a]" and TAG_B is
 // "[b]", then TAG_A TAG_B is "[a]" "[b]", which is equivalent to "[a][b]".
 
-// none so far
+#define TAG_DATASTRUCTURES "[datastructures]"
 
 #endif //TEST_TAGS_H
 

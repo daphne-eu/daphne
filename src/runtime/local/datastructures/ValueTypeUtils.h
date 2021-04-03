@@ -25,6 +25,14 @@
 #include <cinttypes>
 #include <cstddef>
 
+// Intended for use with TEMPLATE_TEST_CASE in the test cases, but fits nicely
+// here where everything else value-type-related resides, as that helps to keep
+// changes to the list of supported data types local.
+#define ALL_VALUE_TYPES \
+    int8_t, int32_t, int64_t, \
+    uint8_t, uint32_t, uint64_t, \
+    float, double
+
 struct ValueTypeUtils {
 
     static size_t sizeOf(ValueTypeCode type);

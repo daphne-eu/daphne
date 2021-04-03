@@ -17,5 +17,9 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
 add_executable(run_tests
         run_tests.cpp
+        
+        runtime/local/datastructures/CSRMatrixTest.cpp
+        runtime/local/datastructures/DenseMatrixTest.cpp
+        runtime/local/datastructures/FrameTest.cpp
 )
-target_link_libraries(run_tests)
+target_link_libraries(run_tests PRIVATE ValueTypeUtils)
