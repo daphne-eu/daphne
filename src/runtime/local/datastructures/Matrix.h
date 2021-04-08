@@ -27,8 +27,7 @@
  * All elements of a matrix have the same value type. Rows and columns are
  * addressed starting at zero.
  */
-// TODO Could we have the value type as a template parameter here already? Or
-// would that cause problems with pure C?
+template<typename ValueType>
 class Matrix : public Structure
 {
 

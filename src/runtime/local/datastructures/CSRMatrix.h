@@ -46,7 +46,12 @@
  * start at `values[rowOffsets[0]`.
  */
 template<typename ValueType>
-class CSRMatrix : public Matrix {
+class CSRMatrix : public Matrix<ValueType> {
+    // `using`, so that we do not need to prefix each occurrence of these
+    // fields from the super-classes.
+    using Matrix<ValueType>::numRows;
+    using Matrix<ValueType>::numCols;
+    
     std::shared_ptr<ValueType> values;
     std::shared_ptr<size_t> colIdxs;
     std::shared_ptr<size_t> rowOffsets;
@@ -70,7 +75,7 @@ class CSRMatrix : public Matrix {
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
     CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero) : 
-            Matrix(maxNumRows, numCols),
+            Matrix<ValueType>(maxNumRows, numCols),
             values(new ValueType[maxNumNonZeros]),
             colIdxs(new size_t[maxNumNonZeros]),
             rowOffsets(new size_t[numRows + 1])
@@ -91,7 +96,7 @@ class CSRMatrix : public Matrix {
      * @param rowUpperExcl Exclusive upper bound for the range of rows to extract.
      */
     CSRMatrix(const CSRMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl) :
-            Matrix(rowUpperExcl - rowLowerIncl, src->numCols)
+            Matrix<ValueType>(rowUpperExcl - rowLowerIncl, src->numCols)
     {
         assert(src && "src must not be null");
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");

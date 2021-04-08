@@ -41,8 +41,13 @@
  * obtain a pointer to the corresponsing cell in the next row.
  */
 template <typename ValueType>
-class DenseMatrix : public Matrix
+class DenseMatrix : public Matrix<ValueType>
 {
+    // `using`, so that we do not need to prefix each occurrence of these
+    // fields from the super-classes.
+    using Matrix<ValueType>::numRows;
+    using Matrix<ValueType>::numCols;
+    
     size_t rowSkip;
     std::shared_ptr<ValueType> values;
     
@@ -63,7 +68,7 @@ class DenseMatrix : public Matrix
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero) :
-            Matrix(maxNumRows, numCols),
+            Matrix<ValueType>(maxNumRows, numCols),
             rowSkip(numCols),
             values(new ValueType[maxNumRows * numCols])
     {
@@ -80,7 +85,7 @@ class DenseMatrix : public Matrix
      * @param values The existing array of values.
      */
     DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
-            Matrix(numRows, numCols),
+            Matrix<ValueType>(numRows, numCols),
             rowSkip(numCols),
             values(values)
     {
@@ -98,7 +103,7 @@ class DenseMatrix : public Matrix
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
     DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) :
-            Matrix(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl)
+            Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl)
     {
         assert(src && "src must not be null");
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");

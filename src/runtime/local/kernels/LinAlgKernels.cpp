@@ -34,7 +34,7 @@
 
 template<typename T, template<typename> class uniform_T_distribution>
 void randDen(size_t numRows, size_t numCols, int64_t seed, double sparsity,
-             T min, T max, Matrix ** out)
+             T min, T max, Matrix<T> ** out)
 {
     assert(numRows > 0 && "numRows must be > 0");
     assert(numCols > 0 && "numCols must be > 0");
@@ -67,8 +67,8 @@ void randDen(size_t numRows, size_t numCols, int64_t seed, double sparsity,
 }
 
 template<typename T, template<typename> class BinOp>
-void elementwiseBinOpDenDenDen(const Matrix * lhs, const Matrix * rhs,
-                           Matrix ** out)
+void elementwiseBinOpDenDenDen(const Matrix<T> * lhs, const Matrix<T> * rhs,
+                           Matrix<T> ** out)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, lhsDense, lhs);
     dynamic_cast_assert(const DenseMatrix<T> *, rhsDense, rhs);
@@ -91,7 +91,7 @@ void elementwiseBinOpDenDenDen(const Matrix * lhs, const Matrix * rhs,
 }
 
 template<typename T>
-void sumDenSca(const Matrix * mat, T * res)
+void sumDenSca(const Matrix<T>* mat, T * res)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, matDense, mat);
     
@@ -106,7 +106,7 @@ void sumDenSca(const Matrix * mat, T * res)
 }
 
 template<typename T>
-void transposeDenDen(const Matrix * in, Matrix ** out)
+void transposeDenDen(const Matrix<T> * in, Matrix<T> ** out)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, inDense, in);
     
@@ -126,7 +126,7 @@ void transposeDenDen(const Matrix * in, Matrix ** out)
 }
 
 template<typename T>
-void setCellDen(Matrix * mat, size_t row, size_t col, T val)
+void setCellDen(Matrix<T> * mat, size_t row, size_t col, T val)
 {
     dynamic_cast_assert(DenseMatrix<T> *, matDense, mat);
     matDense->getValues()[row * mat->getNumCols() + col] = val;
@@ -139,32 +139,32 @@ void setCellDen(Matrix * mat, size_t row, size_t col, T val)
 // TODO Use size_t for numRows/numCols as soon as the IR supports it.
 #define MAKE_RAND_DEN(valueTypeName, valueType, distrType) \
     void randDen ## valueTypeName(int64_t numRows, int64_t numCols, int64_t seed, double sparsity, valueType min, valueType max, \
-                    Matrix ** out) \
+                    Matrix<valueType> ** out) \
     { \
         randDen<valueType, distrType>(static_cast<size_t>(numRows), static_cast<size_t>(numCols), seed, sparsity, min, max, out); \
     }
 
 #define MAKE_ADD_DENDENDEN(valueTypeName, valueType) \
-    void addDenDenDen ## valueTypeName(Matrix * lhs, Matrix * rhs, Matrix ** out) \
+    void addDenDenDen ## valueTypeName(Matrix<valueType> * lhs, Matrix<valueType> * rhs, Matrix<valueType> ** out) \
     { \
         elementwiseBinOpDenDenDen<valueType, std::plus>(lhs, rhs, out); \
     }
 
 #define MAKE_SUM_DENSCA(valueTypeName, valueType) \
-    void sumDenSca ## valueTypeName(Matrix * mat, valueType * res) \
+    void sumDenSca ## valueTypeName(Matrix<valueType> * mat, valueType * res) \
     { \
         sumDenSca<valueType>(mat, res); \
     }
 
 #define MAKE_TRANSPOSE_DENDEN(valueTypeName, valueType) \
-    void transposeDenDen ## valueTypeName(Matrix * matIn, Matrix ** matOut) \
+    void transposeDenDen ## valueTypeName(Matrix<valueType> * matIn, Matrix<valueType> ** matOut) \
     { \
         transposeDenDen<valueType>(matIn, matOut); \
     }
 
 // TODO Use size_t for row/col as soon as the IR supports it.
 #define MAKE_SETCELL_DEN(valueTypeName, valueType) \
-    void setCellDen ## valueTypeName(Matrix * mat, int64_t row, int64_t col, valueType val) \
+    void setCellDen ## valueTypeName(Matrix<valueType> * mat, int64_t row, int64_t col, valueType val) \
     { \
         setCellDen<valueType>(mat, static_cast<size_t>(row), static_cast<size_t>(col), val); \
     } \

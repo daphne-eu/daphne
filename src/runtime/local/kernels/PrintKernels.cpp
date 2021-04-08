@@ -34,7 +34,7 @@ void printSca(T val)
 }
 
 template<typename T>
-void printDen(const Matrix * mat)
+void printDen(const Matrix<T> * mat)
 {
     dynamic_cast_assert(const DenseMatrix<T> *, matDense, mat);
     std::cout << *matDense;
@@ -51,7 +51,7 @@ void printDen(const Matrix * mat)
     }
     
 #define MAKE_PRINT_DEN(valueTypeName, valueType) \
-    void printDen ## valueTypeName(Matrix * mat) \
+    void printDen ## valueTypeName(Matrix<valueType> * mat) \
     { \
         printDen<valueType>(mat); \
     }
