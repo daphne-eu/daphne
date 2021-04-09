@@ -44,6 +44,13 @@ protected:
         // nothing to do
     };
 
+public:
+    
+    /**
+     * @brief The common type of all values in this matrix.
+     */
+    using VT = ValueType;
+    
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_MATRIX_H
