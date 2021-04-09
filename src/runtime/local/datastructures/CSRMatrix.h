@@ -52,6 +52,12 @@ class CSRMatrix : public Matrix<ValueType> {
     using Matrix<ValueType>::numRows;
     using Matrix<ValueType>::numCols;
     
+    /**
+     * @brief The maximum number of non-zero values this matrix was allocated
+     * to accommodate.
+     */
+    size_t maxNumNonZeros;
+    
     std::shared_ptr<ValueType> values;
     std::shared_ptr<size_t> colIdxs;
     std::shared_ptr<size_t> rowOffsets;
@@ -76,6 +82,7 @@ class CSRMatrix : public Matrix<ValueType> {
      */
     CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero) : 
             Matrix<ValueType>(maxNumRows, numCols),
+            maxNumNonZeros(maxNumNonZeros),
             values(new ValueType[maxNumNonZeros]),
             colIdxs(new size_t[maxNumNonZeros]),
             rowOffsets(new size_t[numRows + 1])
@@ -103,6 +110,7 @@ class CSRMatrix : public Matrix<ValueType> {
         assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
         assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
         
+        maxNumNonZeros = src->maxNumNonZeros;
         values = src->values;
         colIdxs = src->colIdxs;
         rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
