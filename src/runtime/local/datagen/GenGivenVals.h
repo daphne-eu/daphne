@@ -21,6 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+#include <algorithm>
 #include <vector>
 
 #include <cassert>
@@ -33,7 +34,7 @@
 
 template<class DT>
 struct GenGivenVals {
-    static DT * generate(size_t numRows, const std::vector<typename DT::VT> & elements) = delete;
+    static DT * generate(size_t numRows, const std::vector<typename DT::VT> & elements, size_t minNumNonZeros = 0) = delete;
 };
 
 // ****************************************************************************
@@ -57,12 +58,14 @@ struct GenGivenVals {
  * @param numRows The number of rows.
  * @param elements The data elements to populate the matrix with. Their number
  * must be divisible by `numRows`.
+ * @param minNumNonZeros The minimum number of non-zeros to reserve space for
+ * in a sparse matrix.
  * @return A matrix of the specified data type `DT` containing the provided
  * data elements.
  */
 template<class DT>
-DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements) {
-    return GenGivenVals<DT>::generate(numRows, elements);
+DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements, size_t minNumNonZeros = 0) {
+    return GenGivenVals<DT>::generate(numRows, elements, minNumNonZeros);
 }
 
 // ****************************************************************************
@@ -80,7 +83,7 @@ DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements)
 
 template<typename VT>
 struct GenGivenVals<DenseMatrix<VT>> {
-    static DenseMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements) {
+    static DenseMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
         assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
         const size_t numCols = numCells / numRows;
@@ -96,7 +99,7 @@ struct GenGivenVals<DenseMatrix<VT>> {
 
 template<typename VT>
 struct GenGivenVals<CSRMatrix<VT>> {
-    static CSRMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements) {
+    static CSRMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
         const size_t numCells = elements.size();
         assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
         const size_t numCols = numCells / numRows;
@@ -104,7 +107,7 @@ struct GenGivenVals<CSRMatrix<VT>> {
         for(VT v : elements)
             if(v != VT(0))
                 numNonZeros++;
-        auto res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, false);
+        auto res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, std::max(numNonZeros, minNumNonZeros), false);
         VT * values = res->getValues();
         size_t * colIdxs = res->getColIdxs();
         size_t * rowOffsets = res->getRowOffsets();
