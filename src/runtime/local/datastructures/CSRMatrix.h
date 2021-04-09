@@ -208,6 +208,33 @@ public:
         delete[] oneRow;
     }
     
+    /**
+     * @brief Prints the internal arrays of this matrix.
+     * 
+     * Meant to be used for testing and debugging only. Note that this method
+     * works even if the internal state of the matrix is invalid, e.g., due to
+     * uninitialized row offsets or column indexes.
+     * 
+     * @param os The stream to print to.
+     */
+    void printRaw(std::ostream & os) const {
+        os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
+                << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+        os << "maxNumNonZeros: \t" << maxNumNonZeros << std::endl;
+        os << "values: \t";
+        for(size_t i = 0; i < maxNumNonZeros; i++)
+            os << values.get()[i] << ", ";
+        os << std::endl;
+        os << "colIdxs: \t";
+        for(size_t i = 0; i < maxNumNonZeros; i++)
+            os << colIdxs.get()[i] << ", ";
+        os << std::endl;
+        os << "rowOffsets: \t";
+        for(size_t i = 0; i <= numRows; i++)
+            os << rowOffsets.get()[i] << ", ";
+        os << std::endl;
+    }
+    
 };
 
 template <typename ValueType>
