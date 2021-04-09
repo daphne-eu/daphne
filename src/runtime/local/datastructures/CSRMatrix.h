@@ -152,7 +152,8 @@ public:
     }
     
     ValueType * getValues(size_t rowIdx) {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
+        // We allow equality here to enable retrieving a pointer to the end.
+        assert((rowIdx <= numRows) && "rowIdx is out of bounds");
         return values.get() + rowOffsets.get()[rowIdx];
     }
     
@@ -169,7 +170,8 @@ public:
     }
     
     size_t * getColIdxs(size_t rowIdx) {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
+        // We allow equality here to enable retrieving a pointer to the end.
+        assert((rowIdx <= numRows) && "rowIdx is out of bounds");
         return colIdxs.get() + rowOffsets.get()[rowIdx];
     }
     
