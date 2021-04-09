@@ -52,7 +52,7 @@ struct GenGivenVals {
  * ```c++
  * // Generates the matrix  3 1 4
  * //                       1 5 9
- * auto m = genGivenVals<DenseMatrix, double>(2, {3, 1, 4, 1, 5, 9});
+ * auto m = genGivenVals<DenseMatrix<double>>(2, {3, 1, 4, 1, 5, 9});
  * ```
  * 
  * @param numRows The number of rows.
