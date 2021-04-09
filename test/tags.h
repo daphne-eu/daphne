@@ -23,6 +23,7 @@
 // "[b]", then TAG_A TAG_B is "[a]" "[b]", which is equivalent to "[a][b]".
 
 #define TAG_DATASTRUCTURES "[datastructures]"
+#define TAG_KERNELS "[kernels]"
 
 #endif //TEST_TAGS_H
 

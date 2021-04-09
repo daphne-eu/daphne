@@ -21,5 +21,7 @@ add_executable(run_tests
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
+        
+        runtime/local/kernels/CheckEqTest.cpp
 )
 target_link_libraries(run_tests PRIVATE ValueTypeUtils)
