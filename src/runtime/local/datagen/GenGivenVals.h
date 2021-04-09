@@ -31,9 +31,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<template<typename> class DT, typename VT>
+template<class DT>
 struct GenGivenVals {
-    static DT<VT> * generate(size_t numRows, const std::vector<VT> & elements) = delete;
+    static DT * generate(size_t numRows, const std::vector<typename DT::VT> & elements) = delete;
 };
 
 // ****************************************************************************
@@ -57,12 +57,12 @@ struct GenGivenVals {
  * @param numRows The number of rows.
  * @param elements The data elements to populate the matrix with. Their number
  * must be divisible by `numRows`.
- * @return A matrix of the specified data type `DT` and value type `VT`
- * containing the provided data elements.
+ * @return A matrix of the specified data type `DT` containing the provided
+ * data elements.
  */
-template<template<typename> class DT, typename VT>
-DT<VT> * genGivenVals(size_t numRows, const std::vector<VT> & elements) {
-    return GenGivenVals<DT, VT>::generate(numRows, elements);
+template<class DT>
+DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements) {
+    return GenGivenVals<DT>::generate(numRows, elements);
 }
 
 // ****************************************************************************
@@ -79,7 +79,7 @@ DT<VT> * genGivenVals(size_t numRows, const std::vector<VT> & elements) {
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct GenGivenVals<DenseMatrix, VT> {
+struct GenGivenVals<DenseMatrix<VT>> {
     static DenseMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements) {
         const size_t numCells = elements.size();
         assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
@@ -95,7 +95,7 @@ struct GenGivenVals<DenseMatrix, VT> {
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct GenGivenVals<CSRMatrix, VT> {
+struct GenGivenVals<CSRMatrix<VT>> {
     static CSRMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements) {
         const size_t numCells = elements.size();
         assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
