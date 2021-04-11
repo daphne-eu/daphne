@@ -51,6 +51,9 @@ class DenseMatrix : public Matrix<ValueType>
     size_t rowSkip;
     std::shared_ptr<ValueType> values;
     
+    size_t lastAppendedRowIdx;
+    size_t lastAppendedColIdx;
+    
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
     template<class DataType, typename ... ArgTypes>
@@ -70,12 +73,14 @@ class DenseMatrix : public Matrix<ValueType>
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero) :
             Matrix<ValueType>(maxNumRows, numCols),
             rowSkip(numCols),
-            values(new ValueType[maxNumRows * numCols])
+            values(new ValueType[maxNumRows * numCols]),
+            lastAppendedRowIdx(0),
+            lastAppendedColIdx(0)
     {
         if(zero)
             memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
     }
-            
+    
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values
      * without copying the data.
@@ -87,7 +92,9 @@ class DenseMatrix : public Matrix<ValueType>
     DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
             Matrix<ValueType>(numRows, numCols),
             rowSkip(numCols),
-            values(values)
+            values(values),
+            lastAppendedRowIdx(0),
+            lastAppendedColIdx(0)
     {
         assert(values && "values must not be null");
     }
@@ -103,7 +110,9 @@ class DenseMatrix : public Matrix<ValueType>
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
     DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) :
-            Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl)
+            Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl),
+            lastAppendedRowIdx(0),
+            lastAppendedColIdx(0)
     {
         assert(src && "src must not be null");
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
@@ -119,6 +128,32 @@ class DenseMatrix : public Matrix<ValueType>
     
     virtual ~DenseMatrix() {
         // nothing to do
+    }
+    
+    size_t pos(size_t rowIdx, size_t colIdx) const {
+        assert((rowIdx < numRows) && "rowIdx is out of bounds");
+        assert((colIdx < numCols) && "colIdx is out of bounds");
+        return rowIdx * rowSkip + colIdx;
+    }
+    
+    void fillZeroUntil(size_t rowIdx, size_t colIdx) {
+        if(rowSkip == numCols || lastAppendedRowIdx == rowIdx) {
+            const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
+            const size_t endPosExcl = pos(rowIdx, colIdx);
+            if(startPosIncl < endPosExcl)
+                memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
+        }
+        else {
+            ValueType * v = values.get() + lastAppendedRowIdx * rowSkip;
+            memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
+            v += rowSkip;
+            for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
+                memset(v, 0, numCols * sizeof(ValueType));
+                v += rowSkip;
+            }
+            if(colIdx)
+                memset(v, 0, (colIdx - 1) * sizeof(ValueType));
+        }
     }
     
 public:
@@ -141,6 +176,35 @@ public:
     ValueType * getValues()
     {
         return values.get();
+    }
+    
+    ValueType get(size_t rowIdx, size_t colIdx) const override {
+        return values.get()[pos(rowIdx, colIdx)];
+    }
+    
+    void set(size_t rowIdx, size_t colIdx, ValueType value) override {
+        values.get()[pos(rowIdx, colIdx)] = value;
+    }
+    
+    void prepareAppend() override {
+        values.get()[0] = ValueType(0);
+        lastAppendedRowIdx = 0;
+        lastAppendedColIdx = 0;
+    }
+    
+    void append(size_t rowIdx, size_t colIdx, ValueType value) override {
+        // Set all cells since the last one that was appended to zero.
+        fillZeroUntil(rowIdx, colIdx);
+        // Set the specified cell.
+        values.get()[pos(rowIdx, colIdx)] = value;
+        // Update append state.
+        lastAppendedRowIdx = rowIdx;
+        lastAppendedColIdx = colIdx;
+    }
+    
+    void finishAppend() override {
+        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+            append(numRows - 1, numCols - 1, ValueType(0));
     }
     
     void print(std::ostream & os) const override {
