@@ -105,7 +105,15 @@ As an **entry point for exploring the source code**, you might want to have a lo
 On the top-level, there are the following directories:
 
 - `build`: everything generated during build (executables, libraries, generated source code)
-- `doc` (*to be added soon*): documentation
+- `doc`: documentation
 - `src`: the actual source code, subdivided into the individual components of the prototype
 - `test`: test cases
 - `thirdparty`: required external software
+
+# Documentation
+
+The source code is partly documented in doxygen style.
+However, the generation of a proper documentation still needs to be set up.
+
+In `doc` you can find some documentation, how-tos, etc.:
+- [Implementing a Built-in Kernel for a DaphneIR Operation](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ImplementBuiltinKernel.md)
