@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+///////////////////////////////////////////////////////////////////////////////
+// Deprecated
+//
+// This file is outdated and does not reflect the way we implement kernels
+// anymore. The code here will be refactored and moved to other files soon.
+// Please refer to the other files in this directory or to
+// "doc/ImplementBuiltinKernel.md" to learn how to implement kernels.
+//
+// However, these kernels are currently still used by the daphnec executable.
+///////////////////////////////////////////////////////////////////////////////
+
 #include "runtime/local/datastructures/Matrix.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 #include "runtime/local/kernels/utils.h"
