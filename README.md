@@ -1,119 +1,36 @@
-# Initial DAPHNE Prototype [WIP]
+<!--
+Copyright 2021 The DAPHNE Consortium
 
-Initial prototype of the DAPHNE system.
-Takes a plain text file written in *DaphneDSL* as input, parses, optimizes, JIT-compiles, and executes it.
-Prints script outputs to `stdout`.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-# Getting Started
+    http://www.apache.org/licenses/LICENSE-2.0
 
-### 0. System Requirements
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 
-Please ensure that your system meets the following requirements before trying to build the prototype.
+# Initial DAPHNE Prototype
 
-**(*)**
-You can view the version numbers as an orientation rather than a strict requirement.
-Newer versions should work as well, older versions might work as well.
+### Overview
 
-##### Operating system
+"The DAPHNE project aims to define and build an open and extensible system infrastructure for integrated data analysis pipelines, including data management and processing, high-performance computing (HPC), and machine learning (ML) training and scoring." (more information on https://daphne-eu.github.io)
 
-| OS | distribution/version known to work (*) |
-| --- | --- |
-| GNU/Linux | Ubuntu 20.4.1 with kernel 5.8.0-43-generic |
+In this repository, we develop the reference implementation of the whole DAPHNE system with all its components including, but not limited to *DaphneDSL*, *DaphneLib*, *DaphneIR*, the *Daphne Compiler*, and the *Daphne Run-time*.
+The system will be built up and extended gradually in the course of the project.
 
-##### Software
+### Getting Started
 
-| tool/lib | version known to work (*) |
-| ----------- | ----------- |
-| clang | 10.0.0 |
-| cmake | 3.16.3 |
-| git | 2.25.1 |
-| lld | 10.0.0 |
-| ninja | 1.10.0 |
-| pkg-config | 0.29.1 |
-| uuid-dev |  |
+- Find information on [getting started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md) in the documentation.
 
-##### Hardware
+### Getting Involved
 
-  - about 2.1 GB of free disk space (mostly due to MLIR/LLVM)
+- Read our [contribution guidelines](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/CONTRIBUTING.md).
 
-## 1. Obtain the source code
+- Have a look at the [documentation](https://gitlab.know-center.tugraz.at/daphne/prototype/-/tree/master/doc).
 
-The prototype is based on MLIR, which is a part of the LLVM monorepo.
-The LLVM monorepo is included in this repository as a submodule.
-Thus, clone this repository as follows to also clone the submodule:
-
-```bash
-git clone --recursive https://gitlab.know-center.tugraz.at/daphne/prototype.git
-```
-
-Upstream changes to this repository might contain changes to the submodule (we might have upgraded to a newer version of MLIR/LLVM).
-Thus, please pull as follows:
-
-```bash
-# in git >= 2.14
-git pull --recurse-submodules
-
-# in git < 2.14
-git pull && git submodule update --init --recursive
-
-# or use this little convenience script
-./pull.sh
-```
-
-### 2. Build
-
-Simply build the prototype using the build-script without any arguments:
-
-```bash
-./build.sh
-```
-
-When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
-Subsequent builds, e.g., when you changed something in this repository, will be much faster.
-
-### 3. Run tests
-
-```bash
-./test.sh
-```
-
-We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. You can use all [command line arguments](https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#top) of catch2 with `test.sh`.
-
-### 4. Run the prototype
-
-Write a little DaphneDSL script or use `example.daphne`...
-
-```
-def main() {
-    let x = 1;
-    let y = 2;
-    print(x + y);
-
-    // generate 2x3 matrix containing random numbers in [0.0, 100.0]
-    let m = rand(2, 3, 0, 1.0, 0.0, 100.0);
-    print(m);
-    print(m+m);
-}
-```
-
-... and execute it as follows: `build/bin/daphnec example.daphne`.
-
-# Exploring the Source Code
-
-As an **entry point for exploring the source code**, you might want to have a look at the code behind the `daphnec` executable, which can be found in `src/api/cli/daphnec.cpp`.
-
-On the top-level, there are the following directories:
-
-- `build`: everything generated during build (executables, libraries, generated source code)
-- `doc`: documentation
-- `src`: the actual source code, subdivided into the individual components of the prototype
-- `test`: test cases
-- `thirdparty`: required external software
-
-# Documentation
-
-The source code is partly documented in doxygen style.
-However, the generation of a proper documentation still needs to be set up.
-
-In `doc` you can find some documentation, how-tos, etc.:
-- [Implementing a Built-in Kernel for a DaphneIR Operation](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ImplementBuiltinKernel.md)
+- [Browse open issues](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues) (e.g. ["good first issues"](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues?label_name%5B%5D=good+first+issue)) or [create a new issue](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues/new?issue%5Bassignee_id%5D=&issue%5Bmilestone_id%5D=).
