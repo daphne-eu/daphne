@@ -168,12 +168,12 @@ antlrcpp::Any FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx)
         OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(funcBlock, funcBlock->begin());
 
-        if (ctx->functionArgs() != nullptr && failed(visitFunctionArgs(ctx->functionArgs()))) {
+        if (ctx->functionArgs() != nullptr && failed(visitFunctionArgs(ctx->functionArgs()).as<LogicalResult>())) {
             return nullptr;
         }
 
         auto endLoc = getLocMLIR(ctx->RPAREN()->getSymbol());
-        if (failed(visitBlockStatement(ctx->blockStatement()))) {
+        if (failed(visitBlockStatement(ctx->blockStatement()).as<LogicalResult>())) {
             return nullptr;
         }
         if (!funcBlock->back().mightHaveTrait<OpTrait::IsTerminator>()) {
@@ -196,7 +196,7 @@ antlrcpp::Any FunctionVisitor::visitFunction(DaphneParser::FunctionContext *ctx)
 antlrcpp::Any FunctionVisitor::visitFunctionArgs(DaphneParser::FunctionArgsContext *ctx)
 {
     for (auto arg : ctx->functionArg()) {
-        if (failed(visitFunctionArg(arg))) {
+        if (failed(visitFunctionArg(arg).as<LogicalResult>())) {
             return failure();
         }
     }
@@ -205,7 +205,7 @@ antlrcpp::Any FunctionVisitor::visitFunctionArgs(DaphneParser::FunctionArgsConte
 
 antlrcpp::Any FunctionVisitor::visitFunctionArg(DaphneParser::FunctionArgContext *ctx)
 {
-    Type argType = visit(ctx->type());
+    Type argType = visit(ctx->type()).as<Type>();
     auto arg = builder.getBlock()->addArgument(argType);
     if (failed(declareVar(ctx->IDENTIFIER()->getText(), arg))) {
         // NOTE: consider continuing parsing for further errors
@@ -324,7 +324,7 @@ antlrcpp::Any FunctionVisitor::visitBlockStatement(DaphneParser::BlockStatementC
     // scope handling here?
     for (auto statement : ctx->statement()) {
         auto result = visitStatement(statement);
-        if (result.isNull() || (result.is<LogicalResult>() && failed(result))) {
+        if (result.isNull() || (result.is<LogicalResult>() && failed(result.as<LogicalResult>()))) {
             return failure();
         }
     }
@@ -351,7 +351,7 @@ antlrcpp::Any FunctionVisitor::visitAssignmentExpression(DaphneParser::Assignmen
         emitError(getLocMLIR(ctx->EQ()->getSymbol())) << "Can't assign expression that does not return a value";
         return nullptr;
     }
-    if (failed(declareVar(varName, val, true))) {
+    if (failed(declareVar(varName, val.as<Value>(), true))) {
         return nullptr;
     }
     return val;
@@ -372,7 +372,7 @@ antlrcpp::Any FunctionVisitor::visitLetStatement(DaphneParser::LetStatementConte
         emitError(getLocMLIR(ctx->start)) << "Can't initialize variable with expression that does not return a value";
         return failure();
     }
-    if (failed(declareVar(ctx->IDENTIFIER()->getText(), val))) {
+    if (failed(declareVar(ctx->IDENTIFIER()->getText(), val.as<Value>()))) {
         return failure();
     }
     return success();
@@ -425,13 +425,13 @@ antlrcpp::Any FunctionVisitor::visitArithmeticExpression(DaphneParser::Arithmeti
         emitError(getLocMLIR(ctx->lhs->start)) << "left hand side of arithmetic expression did not return a value";
         return nullptr;
     }
-    Value lhs = lhsAny;
+    Value lhs = lhsAny.as<Value>();
     auto rhsAny = visit(ctx->rhs);
     if (rhsAny.isNull()) {
         emitError(getLocMLIR(ctx->rhs->start)) << "right hand side of arithmetic expression did not return a value";
         return nullptr;
     }
-    Value rhs = rhsAny;
+    Value rhs = rhsAny.as<Value>();
     auto loc = getLocMLIR(ctx->op);
     Value retVal = nullptr;
     //  if (ctx->AT()) // @
@@ -457,7 +457,7 @@ antlrcpp::Any FunctionVisitor::visitParameters(DaphneParser::ParametersContext *
         if (val.isNull()) {
             return nullptr;
         }
-        parameters.push_back(val);
+        parameters.push_back(val.as<Value>());
     }
     return parameters;
 }
