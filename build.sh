@@ -140,7 +140,7 @@ cd $oldPwd
 
 mkdir --parents build
 cd build
-cmake -G Ninja .. -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/
+cmake -G Ninja .. -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/
 cmake --build . --target $target
 
 
