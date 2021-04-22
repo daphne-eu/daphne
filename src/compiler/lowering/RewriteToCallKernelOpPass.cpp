@@ -33,8 +33,8 @@ namespace
     struct KernelReplacement : public RewritePattern
     {
 
-        KernelReplacement(PatternBenefit benefit = 1)
-        : RewritePattern(benefit, Pattern::MatchAnyOpTypeTag())
+        KernelReplacement(MLIRContext * context, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
         {
         }
 
@@ -149,7 +149,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect,
             daphne::DaphneDialect>();
-    target.addLegalOp<ModuleOp, ModuleTerminatorOp, FuncOp>();
+    target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalOp<
             daphne::PrintOp, daphne::RandOp, daphne::TransposeOp, daphne::SetCellOp/*, daphne::SumOp*/
     >();
@@ -162,7 +162,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
         return legal;
     });
 
-    patterns.insert<KernelReplacement>();
+    patterns.insert<KernelReplacement>(&getContext());
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();

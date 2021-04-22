@@ -243,7 +243,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
     // populate dialect conversions
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
 
-    target.addLegalOp<ModuleOp, ModuleTerminatorOp>();
+    target.addLegalOp<ModuleOp>();
 
     patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering, CallKernelOpLowering>(typeConverter, &getContext());
     patterns.insert<ConstantOpLowering, ReturnOpLowering>(&getContext());
