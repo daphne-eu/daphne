@@ -22,7 +22,8 @@ add_executable(run_tests
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
-        
+
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/MatPropsKernelsTest.cpp
 )
 target_link_libraries(run_tests PRIVATE ValueTypeUtils)
