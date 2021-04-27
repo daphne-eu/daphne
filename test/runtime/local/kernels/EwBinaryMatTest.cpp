@@ -115,6 +115,35 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m3);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m0 = genGivenVals<DT>(2, {
+            0, 0, 0,
+            0, 0, 0,
+    });
+    auto m1 = genGivenVals<DT>(2, {
+            1, 2, 4,
+            6, 8, 9,
+    });
+    auto m2 = genGivenVals<DT>(2, {
+            1, 2, 2,
+            2, 4, 3,
+    });
+    auto m3 = genGivenVals<DT>(2, {
+            1, 1, 2,
+            3, 2, 3,
+    });
+    
+    checkEwBinaryMat(BinaryOpCode::DIV, m0, m1, m0);
+    checkEwBinaryMat(BinaryOpCode::DIV, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT * res = nullptr;

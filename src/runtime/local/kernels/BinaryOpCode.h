@@ -18,7 +18,9 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
 
 enum class BinaryOpCode {
-    ADD, MUL,
+    ADD,
+    MUL,
+    DIV,
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H

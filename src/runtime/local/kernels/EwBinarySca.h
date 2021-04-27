@@ -53,6 +53,7 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         #define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::MUL)
+        MAKE_CASE(BinaryOpCode::DIV)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown BinaryOpCode");
@@ -109,6 +110,7 @@ TRes ewBinaryScaRT(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
 // One such line for each binary function to support.
 MAKE_EW_BINARY_SCA(BinaryOpCode::ADD, lhs + rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::MUL, lhs * rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::DIV, lhs / rhs)
 
 #undef MAKE_EW_BINARY_SCA
 

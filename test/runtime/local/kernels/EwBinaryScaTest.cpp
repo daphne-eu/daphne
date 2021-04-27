@@ -45,6 +45,12 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::MUL, VT>(2, 3, 6);
 }
 
+TEMPLATE_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::DIV, VT>(0, 3, 0);
+    checkEwBinarySca<BinaryOpCode::DIV, VT>(6, 3, 2);
+}
+
 TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
     CHECK_THROWS(ewBinaryScaRT<VT, VT, VT>(static_cast<BinaryOpCode>(999), 0, 0));
