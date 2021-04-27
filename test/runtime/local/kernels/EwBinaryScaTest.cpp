@@ -22,26 +22,30 @@
 
 #include <cstdint>
 
+#define TEST_NAME(opName) "EwBinarySca (" opName ")"
+#define VALUE_TYPES double, uint32_t
+
 template<BinaryOpCode opCode, typename VT>
 void checkEwBinarySca(VT lhs, VT rhs, VT exp) {
     CHECK(ewBinaryScaCT<opCode, VT, VT, VT>(lhs, rhs) == exp);
     CHECK(ewBinaryScaRT<VT, VT, VT>(opCode, lhs, rhs) == exp);
 }
 
-TEMPLATE_TEST_CASE("EwBinarySca", TAG_KERNELS, double, uint32_t) {
+TEMPLATE_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 0, 0);
+    checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 1, 1);
+    checkEwBinarySca<BinaryOpCode::ADD, VT>(1, 2, 3);
+}
 
-    SECTION("add") {
-        checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 0, 0);
-        checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 1, 1);
-        checkEwBinarySca<BinaryOpCode::ADD, VT>(1, 2, 3);
-    }
-    SECTION("mul") {
-        checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 0, 0);
-        checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 1, 0);
-        checkEwBinarySca<BinaryOpCode::MUL, VT>(2, 3, 6);
-    }
-    SECTION("some invalid opCode") {
-        CHECK_THROWS(ewBinaryScaRT<VT, VT, VT>(static_cast<BinaryOpCode>(999), 0, 0));
-    }
+TEMPLATE_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 0, 0);
+    checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 1, 0);
+    checkEwBinarySca<BinaryOpCode::MUL, VT>(2, 3, 6);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    CHECK_THROWS(ewBinaryScaRT<VT, VT, VT>(static_cast<BinaryOpCode>(999), 0, 0));
 }
