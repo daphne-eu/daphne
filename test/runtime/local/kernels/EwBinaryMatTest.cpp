@@ -144,6 +144,90 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_
     DataObjectFactory::destroy(m3);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 3,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {1, 0, 1,  1, 0, 0,});
+    
+    checkEwBinaryMat(BinaryOpCode::EQ, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 3,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {0, 1, 0,  0, 1, 1,});
+    
+    checkEwBinaryMat(BinaryOpCode::NEQ, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {0, 0, 1,  0, 0, 1,});
+    
+    checkEwBinaryMat(BinaryOpCode::LT, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {1, 0, 1,  1, 0, 1,});
+    
+    checkEwBinaryMat(BinaryOpCode::LE, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {0, 1, 0,  0, 1, 0,});
+    
+    checkEwBinaryMat(BinaryOpCode::GT, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {1, 1, 0,  1, 1, 0,});
+    
+    checkEwBinaryMat(BinaryOpCode::GE, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT * res = nullptr;

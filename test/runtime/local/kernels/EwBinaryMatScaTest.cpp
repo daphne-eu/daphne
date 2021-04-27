@@ -125,6 +125,78 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {0, 1, 0,  1, 0, 0,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::EQ, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 1,  0, 1, 1,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::NEQ, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 0,  0, 0, 1,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::LT, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {1, 1, 0,  1, 0, 1,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::LE, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {0, 0, 1,  0, 1, 0,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::GT, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {0, 1, 1,  1, 1, 0,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::GE, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT * res = nullptr;

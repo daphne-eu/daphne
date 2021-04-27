@@ -18,9 +18,18 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
 
 enum class BinaryOpCode {
-    ADD,
-    MUL,
-    DIV,
+    // Arithmetic.
+    ADD, // addition
+    MUL, // multiplication
+    DIV, // division
+    
+    // Comparisons.
+    EQ,  // equal
+    NEQ, // not equal
+    LT,  // less than
+    LE,  // less equal
+    GT,  // greater than
+    GE,  // greater equal
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H

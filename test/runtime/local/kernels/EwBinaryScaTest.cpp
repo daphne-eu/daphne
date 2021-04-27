@@ -51,6 +51,48 @@ TEMPLATE_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::DIV, VT>(6, 3, 2);
 }
 
+TEMPLATE_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::EQ, VT>(0, 0, 1);
+    checkEwBinarySca<BinaryOpCode::EQ, VT>(3, 3, 1);
+    checkEwBinarySca<BinaryOpCode::EQ, VT>(3, 5, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::NEQ, VT>(0, 0, 0);
+    checkEwBinarySca<BinaryOpCode::NEQ, VT>(3, 3, 0);
+    checkEwBinarySca<BinaryOpCode::NEQ, VT>(3, 5, 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::LT, VT>(1, 1, 0);
+    checkEwBinarySca<BinaryOpCode::LT, VT>(1, 3, 1);
+    checkEwBinarySca<BinaryOpCode::LT, VT>(4, 2, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::LE, VT>(1, 1, 1);
+    checkEwBinarySca<BinaryOpCode::LE, VT>(1, 3, 1);
+    checkEwBinarySca<BinaryOpCode::LE, VT>(4, 2, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::GT, VT>(1, 1, 0);
+    checkEwBinarySca<BinaryOpCode::GT, VT>(1, 3, 0);
+    checkEwBinarySca<BinaryOpCode::GT, VT>(4, 2, 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::GE, VT>(1, 1, 1);
+    checkEwBinarySca<BinaryOpCode::GE, VT>(1, 3, 0);
+    checkEwBinarySca<BinaryOpCode::GE, VT>(4, 2, 1);
+}
+
 TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
     CHECK_THROWS(ewBinaryScaRT<VT, VT, VT>(static_cast<BinaryOpCode>(999), 0, 0));
