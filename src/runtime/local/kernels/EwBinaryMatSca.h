@@ -50,7 +50,7 @@ void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs 
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix, DenseMatrix
+// DenseMatrix <- DenseMatrix, scalar
 // ----------------------------------------------------------------------------
 
 template<typename VT>
@@ -77,7 +77,7 @@ struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 };
 
 // ----------------------------------------------------------------------------
-// Matrix <- Matrix, Matrix
+// Matrix <- Matrix, scalar
 // ----------------------------------------------------------------------------
 
 template<typename VT>
