@@ -88,7 +88,7 @@ template<typename VT>
 struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs) {
         const size_t numRows = lhs->getNumRows();
-        const size_t numCols = rhs->getNumCols();
+        const size_t numCols = lhs->getNumCols();
         assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
         assert((numCols == rhs->getNumCols()) && "lhs and rhs must have the same dimensions");
         
