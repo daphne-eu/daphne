@@ -27,6 +27,10 @@ add_executable(run_tests
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
+        runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/TransposeTest.cpp
 )
-target_link_libraries(run_tests PRIVATE ValueTypeUtils)
+target_link_libraries(run_tests PRIVATE
+    ValueTypeUtils
+    ${BLAS_LIBRARIES}
+)

@@ -46,6 +46,14 @@ link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
 # *****************************************************************************
+# Related to BLAS
+# *****************************************************************************
+
+set(BLA_STATIC ON)
+set(BLA_VENDOR OpenBLAS)
+find_package(BLAS REQUIRED)
+
+# *****************************************************************************
 # Related to ANTLR and DaphneDSL parser
 # *****************************************************************************
 

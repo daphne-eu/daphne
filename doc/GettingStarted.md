@@ -43,6 +43,7 @@ Newer versions should work as well, older versions might work as well.
 | ninja | 1.10.0 |
 | pkg-config | 0.29.1 |
 | uuid-dev |  |
+| libopenblas-dev |  |
 
 ##### Hardware
 
