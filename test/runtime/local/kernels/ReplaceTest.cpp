@@ -18,6 +18,8 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/kernels/Replace.h>
+#include <runtime/local/kernels/CheckEq.h>
+
 
 #include <tags.h>
 
@@ -38,7 +40,7 @@ void checkReplace(DT* inoutMatrix, VT pattern, VT replacement, const DT* expecte
 	CHECK(*inoutMatrix == *expected);   
 }
 
-TEMPLATE_REPLACE_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
+TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
 	using DT = TestType;
 	
 	auto initMatrix = genGivenVals(4, {
