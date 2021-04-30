@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_AGGALL_H
 #define SRC_RUNTIME_LOCAL_KERNELS_AGGALL_H
 
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
@@ -70,6 +71,43 @@ struct AggAll<DenseMatrix<VT>> {
         }
 
         return agg;
+    }
+};
+
+// ----------------------------------------------------------------------------
+// scalar <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct AggAll<CSRMatrix<VT>> {
+    static VT aggArray(const VT * values, size_t numNonZeros, size_t numCells, EwBinaryScaFuncPtr<VT, VT, VT> func, bool isSparseSafe, VT neutral) {
+        if(numNonZeros) {
+            VT agg = values[0];
+            for(size_t i = 1; i < numNonZeros; i++)
+                agg = func(agg, values[i]);
+
+            if(!isSparseSafe && numNonZeros < numCells)
+                agg = func(agg, 0);
+
+            return agg;
+        }
+        else
+            return func(neutral, 0);
+    }
+    
+    static VT apply(AggOpCode opCode, const CSRMatrix<VT> * arg) {
+        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        
+        return aggArray(
+                arg->getValues(0),
+                arg->getNumNonZeros(),
+                arg->getNumRows() * arg->getNumCols(),
+                func,
+                AggOpCodeUtils::isSparseSafe(opCode),
+                AggOpCodeUtils::template getNeutral<VT>(opCode)
+        );
     }
 };
 

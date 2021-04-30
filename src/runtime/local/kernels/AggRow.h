@@ -17,8 +17,10 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
 #define SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
 
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/AggAll.h>
 #include <runtime/local/kernels/AggOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
 
@@ -73,6 +75,42 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
                 agg = func(agg, valuesArg[c]);
             *valuesRes = agg;
             valuesArg += arg->getRowSkip();
+            valuesRes += res->getRowSkip();
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1, false);
+        
+        VT * valuesRes = res->getValues();
+        
+        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
+        
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+        const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
+        const VT neutral = AggOpCodeUtils::template getNeutral<VT>(opCode);
+        
+        for(size_t r = 0; r < numRows; r++) {
+            *valuesRes = AggAll<CSRMatrix<VT>>::aggArray(
+                    arg->getValues(r),
+                    arg->getNumNonZeros(r),
+                    numCols,
+                    func,
+                    isSparseSafe,
+                    neutral
+            );
             valuesRes += res->getRowSkip();
         }
     }

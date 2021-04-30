@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_AGGCOL_H
 #define SRC_RUNTIME_LOCAL_KERNELS_AGGCOL_H
 
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
@@ -74,6 +75,61 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesArg += arg->getRowSkip();
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesRes[c], valuesArg[c]);
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
+        
+        VT * valuesRes = res->getValues();
+        
+        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
+        
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+        const VT * valuesArg = arg->getValues(0);
+        const size_t * colIdxsArg = arg->getColIdxs(0);
+        
+        const size_t numNonZeros = arg->getNumNonZeros();
+        
+        if(AggOpCodeUtils::isSparseSafe(opCode)) {
+            for(size_t i = 0; i < numNonZeros; i++) {
+                const size_t colIdx = colIdxsArg[i];
+                valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i]);
+            }
+        }
+        else {
+            size_t * hist = new size_t[numCols](); // initialized to zeros
+
+            const size_t numNonZerosFirstRowArg = arg->getNumNonZeros(0);
+            for(size_t i = 0; i < numNonZerosFirstRowArg; i++) {
+                size_t colIdx = colIdxsArg[i];
+                valuesRes[colIdx] = valuesArg[i];
+                hist[colIdx]++;
+            }
+
+            if(arg->getNumRows() > 1) {
+                for(size_t i = numNonZerosFirstRowArg; i < numNonZeros; i++) {
+                    const size_t colIdx = colIdxsArg[i];
+                    valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i]);
+                    hist[colIdx]++;
+                }
+                for(size_t c = 0; c < numCols; c++)
+                    if(hist[c] < numRows)
+                        valuesRes[c] = func(valuesRes[c], 0);
+                delete[] hist;
+            }
         }
     }
 };

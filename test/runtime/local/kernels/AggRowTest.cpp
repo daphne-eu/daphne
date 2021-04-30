@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/AggRow.h>
@@ -27,31 +28,32 @@
 #include <vector>
 
 #define TEST_NAME(opName) "AggRow (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
 
-template<class DT>
-void checkAggRow(AggOpCode opCode, const DT * arg, const DT * exp) {
-    DT * res = nullptr;
-    aggRow<DT>(opCode, res, arg);
+template<class DTRes, class DTArg>
+void checkAggRow(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
+    DTRes * res = nullptr;
+    aggRow<DTRes, DTArg>(opCode, res, arg);
     CHECK(*res == *exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
     
-    auto m0 = genGivenVals<DT>(3, {
+    auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
     });
-    auto m0exp = genGivenVals<DT>(3, {0, 0, 0});
-    auto m1 = genGivenVals<DT>(3, {
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
         3, 0, 2, 0,
         0, 0, 1, 1,
         2, 5, 0, 0,
     });
-    auto m1exp = genGivenVals<DT>(3, {5, 2, 7});
+    auto m1exp = genGivenVals<DTRes>(3, {5, 2, 7});
     
     checkAggRow(AggOpCode::SUM, m0, m0exp);
     checkAggRow(AggOpCode::SUM, m1, m1exp);
@@ -63,51 +65,71 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
     
-    auto m0 = genGivenVals<DT>(3, {
+    auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
     });
-    auto m0exp = genGivenVals<DT>(3, {0, 0, 0});
-    auto m1 = genGivenVals<DT>(3, {
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
         4, 6, 3, 9,
-        5, 2, 8, 9,
+        5, 2, 0, 9,
         7, 4, 5, 4,
     });
-    auto m1exp = genGivenVals<DT>(3, {3, 2, 4});
+    auto m1exp = genGivenVals<DTRes>(3, {3, 0, 4});
+    auto m2 = genGivenVals<DTArg>(3, {
+        4, 0, 0, 9,
+        0, 2, 0, 0,
+        0, 0, 5, 0,
+    });
+    auto m2exp = genGivenVals<DTRes>(3, {0, 0, 0});
     
     checkAggRow(AggOpCode::MIN, m0, m0exp);
     checkAggRow(AggOpCode::MIN, m1, m1exp);
+    checkAggRow(AggOpCode::MIN, m2, m2exp);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m0exp);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m1exp);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m2exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
     
-    auto m0 = genGivenVals<DT>(3, {
+    auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
         0, 0, 0, 0,
     });
-    auto m0exp = genGivenVals<DT>(3, {0, 0, 0});
-    auto m1 = genGivenVals<DT>(3, {
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
         4, 6, 3, 9,
-        5, 2, 8, 9,
+        5, 2, 0, 9,
         7, 4, 5, 4,
     });
-    auto m1exp = genGivenVals<DT>(3, {9, 9, 7});
+    auto m1exp = genGivenVals<DTRes>(3, {9, 9, 7});
+    auto m2 = genGivenVals<DTArg>(3, {
+        4, 0, 0, 9,
+        0, 2, 0, 0,
+        0, 0, 5, 0,
+    });
+    auto m2exp = genGivenVals<DTRes>(3, {9, 2, 5});
     
     checkAggRow(AggOpCode::MAX, m0, m0exp);
     checkAggRow(AggOpCode::MAX, m1, m1exp);
+    checkAggRow(AggOpCode::MAX, m2, m2exp);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m0exp);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m1exp);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m2exp);
 }

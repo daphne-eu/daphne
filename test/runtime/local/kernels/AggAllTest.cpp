@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/AggAll.h>
@@ -27,7 +28,7 @@
 #include <vector>
 
 #define TEST_NAME(opName) "AggAll (" opName ")"
-#define DATA_TYPES DenseMatrix
+#define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
 
 template<class DT>
@@ -70,12 +71,19 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         5, 2, 8, 9,
         7, 4, 5, 4,
     });
+    auto m2 = genGivenVals<DT>(3, {
+        4, 0, 0, 9,
+        0, 2, 0, 0,
+        0, 0, 5, 0,
+    });
     
     checkAggAll(AggOpCode::MIN, m0, 0);
     checkAggAll(AggOpCode::MIN, m1, 2);
+    checkAggAll(AggOpCode::MIN, m2, 0);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -91,10 +99,17 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         5, 2, 8, 9,
         7, 4, 5, 4,
     });
+    auto m2 = genGivenVals<DT>(3, {
+        4, 0, 0, 9,
+        0, 2, 0, 0,
+        0, 0, 5, 0,
+    });
     
     checkAggAll(AggOpCode::MAX, m0, 0);
     checkAggAll(AggOpCode::MAX, m1, 9);
+    checkAggAll(AggOpCode::MAX, m2, 9);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
 }

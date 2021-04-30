@@ -64,6 +64,18 @@ struct AggOpCodeUtils {
                 throw std::runtime_error("unsupported AggOpCode");
         }
     }
+    
+    static bool isSparseSafe(AggOpCode opCode) {
+        switch(opCode) {
+            case AggOpCode::SUM:
+                return true;
+            case AggOpCode::MIN:
+            case AggOpCode::MAX:
+                return false;
+            default:
+                throw std::runtime_error("unknown AggOpCode");
+        }
+    }
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGOPCODE_H
