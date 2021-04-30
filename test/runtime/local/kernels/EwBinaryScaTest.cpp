@@ -31,6 +31,10 @@ void checkEwBinarySca(VT lhs, VT rhs, VT exp) {
     CHECK(ewBinaryScaRT<VT, VT, VT>(opCode, lhs, rhs) == exp);
 }
 
+// ****************************************************************************
+// Arithmetic
+// ****************************************************************************
+
 TEMPLATE_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
     checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 0, 0);
@@ -50,6 +54,10 @@ TEMPLATE_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::DIV, VT>(0, 3, 0);
     checkEwBinarySca<BinaryOpCode::DIV, VT>(6, 3, 2);
 }
+
+// ****************************************************************************
+// Comparisons
+// ****************************************************************************
 
 TEMPLATE_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
@@ -92,6 +100,28 @@ TEMPLATE_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::GE, VT>(1, 3, 0);
     checkEwBinarySca<BinaryOpCode::GE, VT>(4, 2, 1);
 }
+
+// ****************************************************************************
+// Min/max
+// ****************************************************************************
+
+TEMPLATE_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MIN, VT>(2, 2, 2);
+    checkEwBinarySca<BinaryOpCode::MIN, VT>(2, 3, 2);
+    checkEwBinarySca<BinaryOpCode::MIN, VT>(3, 0, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MAX, VT>(2, 2, 2);
+    checkEwBinarySca<BinaryOpCode::MAX, VT>(2, 3, 3);
+    checkEwBinarySca<BinaryOpCode::MAX, VT>(3, 0, 3);
+}
+
+// ****************************************************************************
+// Invalid op-code
+// ****************************************************************************
 
 TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;

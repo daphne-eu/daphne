@@ -30,6 +30,10 @@ enum class BinaryOpCode {
     LE,  // less equal
     GT,  // greater than
     GE,  // greater equal
+    
+    // Min/max.
+    MIN,
+    MAX,
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H

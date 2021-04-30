@@ -19,6 +19,7 @@
 
 #include <runtime/local/kernels/BinaryOpCode.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 // ****************************************************************************
@@ -62,6 +63,9 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         MAKE_CASE(BinaryOpCode::LE)
         MAKE_CASE(BinaryOpCode::GT)
         MAKE_CASE(BinaryOpCode::GE)
+        // Min/max.
+        MAKE_CASE(BinaryOpCode::MIN)
+        MAKE_CASE(BinaryOpCode::MAX)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown BinaryOpCode");
@@ -127,6 +131,9 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::LT , lhs <  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
+// Min/max.
+MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
+MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
 
 #undef MAKE_EW_BINARY_SCA
 

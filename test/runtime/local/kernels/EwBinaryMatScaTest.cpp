@@ -38,6 +38,10 @@ void checkEwBinaryMatSca(BinaryOpCode opCode, const DT * lhs, typename DT::VT rh
     CHECK(*res == *exp);
 }
 
+// ****************************************************************************
+// Arithmetic
+// ****************************************************************************
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -125,6 +129,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2);
 }
 
+// ****************************************************************************
+// Comparisons
+// ****************************************************************************
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -196,6 +204,38 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
 }
+
+// ****************************************************************************
+// Min/max
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {1, 2, 2,  2, 2, 1,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::MIN, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  2, 3, 1});
+    auto m2 = genGivenVals<DT>(2, {2, 2, 3,  2, 3, 2,});
+    
+    checkEwBinaryMatSca(BinaryOpCode::MAX, m1, 2, m2);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}
+
+// ****************************************************************************
+// Invalid op-code
+// ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;

@@ -39,6 +39,10 @@ void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const
     CHECK(*res == *exp);
 }
 
+// ****************************************************************************
+// Arithmetic
+// ****************************************************************************
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -144,6 +148,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_
     DataObjectFactory::destroy(m3);
 }
 
+// ****************************************************************************
+// Comparisons
+// ****************************************************************************
+
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -227,6 +235,42 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DenseMatrix), (VALUE_T
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
 }
+
+// ****************************************************************************
+// Min/max
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {1, 0, 3,  4, 4, 6,});
+    
+    checkEwBinaryMat(BinaryOpCode::MIN, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
+    auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
+    auto m3 = genGivenVals<DT>(2, {1, 2, 4,  4, 5, 9,});
+    
+    checkEwBinaryMat(BinaryOpCode::MAX, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+}
+
+// ****************************************************************************
+// Invalid op-code
+// ****************************************************************************
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
