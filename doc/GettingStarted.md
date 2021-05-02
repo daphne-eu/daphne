@@ -42,6 +42,7 @@ Newer versions should work as well, older versions might work as well.
 | lld | 10.0.0 |
 | ninja | 1.10.0 |
 | pkg-config | 0.29.1 |
+| python3 | 3.8.5 |
 | uuid-dev |  |
 | libopenblas-dev |  |
 
