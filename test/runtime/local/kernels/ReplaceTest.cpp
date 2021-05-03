@@ -31,8 +31,8 @@
 
 
 
-#define VALUE_TYPES double, uint32_t
-#define DATA_TYPES DenseMatrix, CSRMatrix
+#define VALUE_TYPES double
+#define DATA_TYPES DenseMatrix
 
 template<class DT, typename VT>
 void checkReplace(DT* inoutMatrix, VT pattern, VT replacement, const DT* expected){
@@ -43,31 +43,33 @@ void checkReplace(DT* inoutMatrix, VT pattern, VT replacement, const DT* expecte
 TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
 	using DT = TestType;
 	
-	auto initMatrix = genGivenVals(4, {
+	auto initMatrix = genGivenVals<DT>(4, {
 	1, 2, 3, 7, 7, 7,
 	7, 1, 2, 3, 7, 7,
 	7, 7, 1, 2, 3, 7,
 	7, 7, 7, 1, 2, 3,
 	});
 	
-	auto testMatrix1 = genGivenVals(4, {
+	auto testMatrix1 = genGivenVals<DT>(4, {
         7, 2, 3, 7, 7, 7,
         7, 7, 2, 3, 7, 7,
         7, 7, 7, 2, 3, 7,
         7, 7, 7, 7, 2, 3,
 	}); 
 	
-	auto testMatrix2 = genGivenVals(4, {
+	auto testMatrix2 = genGivenVals<DT>(4, {
         7, 7, 3, 7, 7, 7,
         7, 7, 7, 3, 7, 7,
         7, 7, 7, 7, 3, 7,
         7, 7, 7, 7, 7, 3,
 	});
-
-	checkReplace(initMatrix, 1, 7, testMatrix1);
+	double target=1;
+	double replacement=7;	
+	checkReplace(initMatrix, target, replacement, testMatrix1);
         //should do nothing because there is no ones
-        checkReplace(initMatrix, 1, 7, testMatrix1);
-	checkReplace(initMatrix, 2, 7, testMatrix2);
+        checkReplace(initMatrix, target,replacement, testMatrix1);
+	target=2;
+	checkReplace(initMatrix, target, replacement, testMatrix2);
 	
 	DataObjectFactory::destroy(initMatrix);
     	DataObjectFactory::destroy(testMatrix1);
