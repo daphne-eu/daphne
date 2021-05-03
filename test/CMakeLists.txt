@@ -31,6 +31,7 @@ add_executable(run_tests
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/MatMulTest.cpp
+        runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/TransposeTest.cpp
 )
 target_link_libraries(run_tests PRIVATE
