@@ -35,28 +35,30 @@
 #define DATA_TYPES DenseMatrix
 
 template<class DT, typename VT>
-void checkReplace(DT* inoutMatrix, VT pattern, VT replacement, const DT* expected){
-	replace<DT,VT>(inoutMatrix, pattern, replacement);
-	CHECK(*inoutMatrix == *expected);   
+void checkReplace(DT* outputMatrix, DT* inputMatrix,VT pattern, VT replacement, const DT* expected){
+	replace<DT, DT, VT>(outputMatrix, inputMatrix, pattern, replacement);
+	CHECK(*outputMatrix == *expected);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
 	using DT = TestType;
-	
+
+	//inplace updates
+
 	auto initMatrix = genGivenVals<DT>(4, {
 	1, 2, 3, 7, 7, 7,
 	7, 1, 2, 3, 7, 7,
 	7, 7, 1, 2, 3, 7,
 	7, 7, 7, 1, 2, 3,
 	});
-	
+
 	auto testMatrix1 = genGivenVals<DT>(4, {
         7, 2, 3, 7, 7, 7,
         7, 7, 2, 3, 7, 7,
         7, 7, 7, 2, 3, 7,
         7, 7, 7, 7, 2, 3,
-	}); 
-	
+	});
+
 	auto testMatrix2 = genGivenVals<DT>(4, {
         7, 7, 3, 7, 7, 7,
         7, 7, 7, 3, 7, 7,
@@ -64,15 +66,39 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
         7, 7, 7, 7, 7, 3,
 	});
 	double target=1;
-	double replacement=7;	
-	checkReplace(initMatrix, target, replacement, testMatrix1);
+	double replacement=7;
+	checkReplace(initMatrix, initMatrix ,target, replacement, testMatrix1);
         //should do nothing because there is no ones
-        checkReplace(initMatrix, target,replacement, testMatrix1);
+	checkReplace(initMatrix, initMatrix, target, replacement, testMatrix1);
 	target=2;
-	checkReplace(initMatrix, target, replacement, testMatrix2);
-	
-	DataObjectFactory::destroy(initMatrix);
-    	DataObjectFactory::destroy(testMatrix1);
-    	DataObjectFactory::destroy(testMatrix2);
-}
+	checkReplace(initMatrix, initMatrix, target, replacement, testMatrix2);
 
+
+ 	// update in a new copy
+ 	auto testMatrix3 = genGivenVals<DT>(4, {
+	 7, 7, 7, 7, 7, 7,
+	 7, 7, 7, 7, 7, 7,
+	 7, 7, 7, 7, 7, 7,
+	 7, 7, 7, 7, 7, 7,
+ 	});
+
+ 	auto testMatrix4 = genGivenVals<DT>(4, {
+	 7, 7, 0, 7, 7, 7,
+	 7, 7, 7, 0, 7, 7,
+	 7, 7, 7, 7, 0, 7,
+	 7, 7, 7, 7, 7, 0,
+	 });
+
+	DT * outputMatrix=nullptr;
+	target=3;
+	//replace<DT, DT, double>(outputMatrix, initMatrix, target, replacement);	
+	checkReplace(outputMatrix, initMatrix, target, replacement, testMatrix3);
+	replacement=0;
+	checkReplace(initMatrix, initMatrix, target, replacement, testMatrix4);
+	DataObjectFactory::destroy(initMatrix);
+  	DataObjectFactory::destroy(testMatrix1);
+  	DataObjectFactory::destroy(testMatrix2);
+	DataObjectFactory::destroy(testMatrix3);
+  	DataObjectFactory::destroy(testMatrix4);
+	DataObjectFactory::destroy(outputMatrix);
+}
