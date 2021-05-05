@@ -91,14 +91,20 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
 
 	DT * outputMatrix=nullptr;
 	target=3;
-	//replace<DT, DT, double>(outputMatrix, initMatrix, target, replacement);	
 	checkReplace(outputMatrix, initMatrix, target, replacement, testMatrix3);
 	replacement=0;
 	checkReplace(initMatrix, initMatrix, target, replacement, testMatrix4);
+	//this test case should act as a copy	
+	DT * outputMatrix2=nullptr;
+	target=3;
+	replacement=3;
+	checkReplace(outputMatrix2, initMatrix,  target, replacement, testMatrix4);
+
 	DataObjectFactory::destroy(initMatrix);
   	DataObjectFactory::destroy(testMatrix1);
   	DataObjectFactory::destroy(testMatrix2);
 	DataObjectFactory::destroy(testMatrix3);
   	DataObjectFactory::destroy(testMatrix4);
 	DataObjectFactory::destroy(outputMatrix);
+	DataObjectFactory::destroy(outputMatrix2);
 }
