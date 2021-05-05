@@ -18,6 +18,8 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/MatSymCheckKernels.h>
+#include <stdexcept>
 #include <tags.h>
 #include <catch.hpp>
 
@@ -49,8 +51,29 @@ TEMPLATE_PRODUCT_TEST_CASE("MatPropsKernelsTest", TAG_KERNELS, (DenseMatrix, CSR
           2, 4, 2, 7
   });
 
+  auto singleValMat = genGivenVals<DT>(1, {1});
+
   SECTION("isSymmetric") {
-    CHECK(returnsFalse());
+
+      CHECK(matSymCheck<DT>(symMat));
+
+      CHECK(!matSymCheck<DT>(asymMat));
+
+      bool nonSquareMatThrewException = false;
+      try {
+          matSymCheck<DT>(nonSquareMat);
+      } catch (std::runtime_error e) {
+        nonSquareMatThrewException = true;
+      }
+      CHECK(nonSquareMatThrewException);
+
+      bool singleValMatThrewException = false;
+      try {
+          matSymCheck<DT>(singleValMat);
+      } catch (std::runtime_error e) {
+        singleValMatThrewException = true;
+      }
+      CHECK(singleValMatThrewException);
   }
   SECTION("hasSpecialValue") {
     CHECK(returnsFalse());
