@@ -72,7 +72,8 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 			else{
 				res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,  false);
 				//copy and return in this case replace will be a copy function that copies arg to res
-				memcpy(res, arg, numRows*numRows*sizeof(VT));
+				//memcpy(res, arg, numRows*numRows*sizeof(VT));
+				memcpy(res->getValues(), arg->getValues(), numRows*numCols*sizeof(VT));
 				return;
 			}
 		}
