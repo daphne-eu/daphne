@@ -291,8 +291,8 @@
     },
     {
         "kernelTemplate": {
-            "header": "PrintStruct.h",
-            "opName": "printStruct",
+            "header": "PrintObj.h",
+            "opName": "printObj",
             "returnType": "void",
             "templateParams": [
                 {

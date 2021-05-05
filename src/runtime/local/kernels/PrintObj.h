@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_PRINTSTRUCT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_PRINTSTRUCT_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
+#define SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
 
 #include <iostream>
 
@@ -32,8 +32,8 @@
  * @param arg The data object to print.
  */
 template<class DT>
-void printStruct(const DT * arg) {
+void printObj(const DT * arg) {
     arg->print(std::cout);
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTSTRUCT_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
