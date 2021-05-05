@@ -53,14 +53,14 @@ PrintOp PrintBuiltin::create(OpBuilder builder,
 
 const llvm::StringRef RandBuiltin::name = "rand";
 
-RandOp RandBuiltin::create(OpBuilder builder,
+RandMatrixOp RandBuiltin::create(OpBuilder builder,
                            Location &loc,
                            ValueRange values)
 {
     if (values.size() == 6) {
-        return builder.create<RandOp>(
+        return builder.create<RandMatrixOp>(
                 loc,
-                MatrixType::get(builder.getContext(), values[4].getType()),
+                MatrixType::get(builder.getContext(), values[2].getType()),
                 values[0], values[1], values[2], values[3], values[4], values[5]
                 );
     }

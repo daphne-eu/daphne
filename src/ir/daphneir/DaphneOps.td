@@ -49,8 +49,9 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix"> {
     let results = (outs Matrix:$res);
 }
 
-def Daphne_RandMatrixOp : Daphne_Op<"randMatrix"> {
-    let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
+def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
+    //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
+    let arguments = (ins IntScalar:$numRows, IntScalar:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs Matrix:$res);
 }
 
@@ -700,15 +701,6 @@ def Daphne_SubOp : Daphne_ElementwiseBinaryOp<"subOld", [SameOperandsAndResultSh
 
 def Daphne_MulOp : Daphne_ElementwiseBinaryOp<"mulOld", [SameOperandsAndResultShape]> {
     let summary = "mul operation";
-}
-
-def Daphne_RandOp : Daphne_Op<"rand", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
-    let summary = "rand operation";
-
-    let arguments = (ins AnyInteger:$rows, AnyInteger:$cols,
-        AnyInteger:$seed, AnyFloat:$sparsity,
-        AnyScalar:$min, AnyScalar:$max);
-    let results = (outs Matrix:$output);
 }
 
 def Daphne_SetCellOp : Daphne_Op<"setCell",  []> {

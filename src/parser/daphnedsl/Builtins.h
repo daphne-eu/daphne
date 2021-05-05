@@ -53,15 +53,15 @@ struct PrintBuiltin : public Builtin<mlir::daphne::PrintOp>
                                  mlir::ValueRange values) override;
 };
 
-struct RandBuiltin : public Builtin<mlir::daphne::RandOp>
+struct RandBuiltin : public Builtin<mlir::daphne::RandMatrixOp>
 {
-    using Builtin<mlir::daphne::RandOp>::Builtin;
+    using Builtin<mlir::daphne::RandMatrixOp>::Builtin;
     static const llvm::StringRef name;
 
     RandBuiltin() : Builtin({2, 4})
     {
     };
-    mlir::daphne::RandOp create(mlir::OpBuilder builder,
+    mlir::daphne::RandMatrixOp create(mlir::OpBuilder builder,
                                 mlir::Location &loc,
                                 mlir::ValueRange values) override;
 };

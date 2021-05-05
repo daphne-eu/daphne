@@ -49,43 +49,44 @@ namespace
             if (llvm::dyn_cast<daphne::PrintOp>(op)) {
                 Type t = llvm::dyn_cast<daphne::PrintOp>(op).arg().getType();
                 if (t.isSignedInteger(64))
-                    callee = StringRef("printScaI64");
+                    callee = StringRef("printSca__int64_t");
                 else if (t.isF64())
-                    callee = StringRef("printScaF64");
+                    callee = StringRef("printSca__double");
                 else if (t.isa<daphne::MatrixType>()) {
                     Type et = t.dyn_cast<daphne::MatrixType>().getElementType();
                     if (et.isSignedInteger(64))
-                        callee = StringRef("printDenI64");
+                        callee = StringRef("printObj__DenseMatrix_int64_t");
                     else if (et.isF64())
-                        callee = StringRef("printDenF64");
+                        callee = StringRef("printObj__DenseMatrix_double");
                     else
                         return failure();
                 }
                 else
                     return failure();
             }
-            else if (llvm::dyn_cast<daphne::RandOp>(op)) {
+            else if (llvm::dyn_cast<daphne::RandMatrixOp>(op)) {
                 // Derive the element type of the matrix to be generated from
                 // the type of the "min" argument. (Note that the "max"
                 // argument is guaranteed to have the same type.)
-                Type et = llvm::dyn_cast<daphne::RandOp>(op).min().getType();
+                Type et = llvm::dyn_cast<daphne::RandMatrixOp>(op).min().getType();
 
                 if (et.isSignedInteger(64))
-                    callee = StringRef("randDenI64");
+                    callee = StringRef("randMatrix__DenseMatrix_int64_t__int64_t");
                 else if (et.isF64())
-                    callee = StringRef("randDenF64");
+                    callee = StringRef("randMatrix__DenseMatrix_double__double");
                 else
                     return failure();
             }
             else if (llvm::dyn_cast<daphne::TransposeOp>(op)) {
                 Type et = op->getOperand(0).getType().dyn_cast<daphne::MatrixType>().getElementType();
                 if (et.isSignedInteger(64))
-                    callee = "transposeDenDenI64";
+                    callee = "transpose__DenseMatrix_int64_t__DenseMatrix_int64_t";
                 else if (et.isF64())
-                    callee = "transposeDenDenF64";
+                    callee = "transpose__DenseMatrix_double__DenseMatrix_double";
                 else
                     return failure();
             }
+#if 0
             else if (llvm::dyn_cast<daphne::AddOp>(op)) {
                 if (op->getOperand(0).getType().isa<daphne::MatrixType>() &&
                     op->getOperand(1).getType().isa<daphne::MatrixType>()) {
@@ -100,6 +101,7 @@ namespace
                 else
                     return failure();
             }
+#endif
 //            else if (llvm::dyn_cast<daphne::SumOp>(op)) {
 //                Type et = llvm::dyn_cast<daphne::SumOp>(op).in().getType().dyn_cast<daphne::MatrixType>().getElementType();
 //                if (et.isSignedInteger(64))
@@ -109,6 +111,7 @@ namespace
 //                else
 //                    return failure();
 //            }
+#if 0
             else if (llvm::dyn_cast<daphne::SetCellOp>(op)) {
                 Type et = llvm::dyn_cast<daphne::SetCellOp>(op).mat().getType().dyn_cast<daphne::MatrixType>().getElementType();
                 if (et.isSignedInteger(64))
@@ -116,6 +119,7 @@ namespace
                 else if (et.isF64())
                     callee = StringRef("setCellDenF64");
             }
+#endif
             else
                 return failure();
 
@@ -151,7 +155,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalOp<
-            daphne::PrintOp, daphne::RandOp, daphne::TransposeOp, daphne::SetCellOp/*, daphne::SumOp*/
+            daphne::PrintOp, daphne::RandMatrixOp, daphne::TransposeOp, daphne::SetCellOp/*, daphne::SumOp*/
     >();
     target.addDynamicallyLegalOp<daphne::AddOp>([](daphne::AddOp op)
     {

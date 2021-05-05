@@ -231,6 +231,7 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpression(DaphneParser::LiteralExpre
         value = builder.create<daphne::ConstantOp>(loc,
                 builder.getIntegerAttr(type, res.as<APInt>()));
     }
+#if 0
     else if (res.is<MatrixLiteral>()) {
         // matrix
         auto matLit = res.as<MatrixLiteral>();
@@ -266,6 +267,7 @@ antlrcpp::Any FunctionVisitor::visitLiteralExpression(DaphneParser::LiteralExpre
             }
         }
     }
+#endif
     if (value == nullptr)
         emitError(loc) << "failed to create literal expression";
     return value;
