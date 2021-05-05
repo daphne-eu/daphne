@@ -72,8 +72,7 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 			else{
 				res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,  false);
 				//copy and return in this case replace will be a copy function that copies arg to res
-				//memcpy(res, arg, numRows*numRows*sizeof(VT));
-				memcpy(res->getValues(), arg->getValues(), numRows*numCols*sizeof(VT));
+				memcpy(res, arg, numRows*numRows*sizeof(VT));
 				return;
 			}
 		}
@@ -116,6 +115,7 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 	}
 };
 
+
 // ----------------------------------------------------------------------------
 // CSRMatrix <- CSRMatrix
 // ----------------------------------------------------------------------------
@@ -123,9 +123,67 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 template<typename VT>
 struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 	static void apply(CSRMatrix<VT> *& res, CSRMatrix<VT> *& arg, VT pattern, VT replacement) {
-		//TODO
+		if(arg==nullptr){//one might throw an exception - nullptr
+			return;
+		}
+		const size_t numRows = arg->getNumRows();
+        	const size_t numCols = arg->getNumCols();
+		const size_t nnzElements= arg->getNumNonZeros();
+		CSRMatrix<VT> *  targetMatrix = arg; // this will point to the matrix that should be updated. Default is arg "in-place update"
+		bool requireCopy=false; // this variable is to indicate whether we need to copy to res (when not using inplace update semantic)
+		if(nnzElements==0){// one might throw an exception - empty matrix
+			return;
+		}
+		if(res!=arg && res!=nullptr){ //one might throw an exception -- res should be either pointing to the same location of arg or equals to a nullptr
+			return;
+		}
+		if((replacement!=replacement && pattern!=pattern) || (pattern == replacement)){// nothing to be done pattern equals replacement
+			if(res!=nullptr){// do nothing
+			}
+			else{
+				res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,  nnzElements, false);
+				//copy and return in this case replace will be a copy function that copies arg to res
+				memcpy(res->getRowOffsets(), arg->getRowOffsets(), (numRows+1)*sizeof(size_t));
+				memcpy(res->getColIdxs(), arg->getColIdxs(), nnzElements*sizeof(size_t));
+				memcpy(res->getValues(), arg->getValues(), nnzElements*sizeof(VT));
+				return;
+			}
+		}
+
+		if(res==nullptr){
+			res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,  nnzElements, false);
+			memcpy(res->getRowOffsets(), arg->getRowOffsets(), (numRows+1)*sizeof(size_t));
+			memcpy(res->getColIdxs(), arg->getColIdxs(), nnzElements*sizeof(size_t));
+			memcpy(res->getValues(), arg->getValues(), nnzElements*sizeof(VT));
+			requireCopy=true;
+			targetMatrix=res;
+		}
+
+		//--------main logic --------------------------
+		VT * allValues = arg->getValues();
+		VT * updatedAllValues = targetMatrix->getValues();
+		if(pattern!=pattern){ // pattern is NaN
+			for(size_t i=0;i<arg->getNumNonZeros();i++){
+				if(allValues[i]!=allValues[i]){
+					updatedAllValues[i]=replacement;
+				}
+				else if (requireCopy){
+					updatedAllValues[i]=allValues[i];
+				}
+			}
+		}
+		else{
+			for(size_t i=0;i<arg->getNumNonZeros();i++){
+				if(allValues[i]==pattern){
+					updatedAllValues[i]=replacement;
+				}
+				else if (requireCopy){
+					updatedAllValues[i]=allValues[i];
+				}
+			}
+		}
+
 	}
 };
-
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_REPLACE_H
