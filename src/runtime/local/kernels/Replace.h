@@ -57,10 +57,10 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 		}
 		const size_t numRows = arg->getNumRows(); // number of rows
 		const size_t numCols = arg->getNumCols(); // number of columns
-		const size_t rowSkipRes = arg->getRowSkip(); // number of row skips
+		const size_t elementCountt= numRows*numCols; // total number of elements
 		DenseMatrix<VT> *  targetMatrix = arg; // this will point to the matrix that should be updated. Default is arg "in-place update"
 		bool requireCopy=false; // this variable is to indicate whether we need to copy to res (when not using inplace update semantic)
-		if(numRows==0 && numRows==numCols){// one might throw an exception - empty matrix
+		if(elementCountt==0){// one might throw an exception - empty matrix
 			return;
 		}
 		if(res!=arg && res!=nullptr){ //one might throw an exception -- res should be either pointing to the same location of arg or equals to a nullptr
@@ -72,7 +72,7 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 			else{
 				res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,  false);
 				//copy and return in this case replace will be a copy function that copies arg to res
-				memcpy(res, arg, numRows*numRows*sizeof(VT));
+				memcpy(res->getValues(), arg->getValues(), elementCountt*sizeof(VT));
 				return;
 			}
 		}
@@ -82,33 +82,26 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 			requireCopy=true;
 			targetMatrix=res;
 		}
-
+		VT * allValues = arg->getValues() ;
+		VT * allUpdatedValues = targetMatrix->getValues();
 		//--------main logic --------------------------
 		if(pattern!=pattern){ // pattern is NaN
-			for(size_t r=0;r<numRows;r++){
-				VT * valuesOfRow = arg->getValues() + (r*rowSkipRes);
-				VT * updatedValuesOfRow = targetMatrix->getValues() + (r*rowSkipRes);
-				for (size_t c=0; c<numCols;c++){
-					if(valuesOfRow[c]!=valuesOfRow[c]){
-						updatedValuesOfRow[c]=replacement;
-					}
-					else if(requireCopy){
-						updatedValuesOfRow[c]=valuesOfRow[c];
-					}
+			for(size_t i=0;i<elementCountt;i++){
+				if(allValues[i]!=allValues[i]){
+					allUpdatedValues[i]=replacement;
+				}
+				else if(requireCopy){
+					allUpdatedValues[i]=allValues[i];
 				}
 			}
 		}
 		else{ // pattern is not NaN --> replacement can still be NaN
-			for(size_t r=0;r<numRows;r++){
-				VT * valuesOfRow = arg->getValues() + (r*rowSkipRes);
-				VT * updatedValuesOfRow = targetMatrix->getValues() + (r*rowSkipRes);
-				for (size_t c=0; c<numCols;c++){
-					if(valuesOfRow[c]==pattern){
-						updatedValuesOfRow[c]=replacement;
-					}
-					else if(requireCopy){
-						updatedValuesOfRow[c]=valuesOfRow[c];
-					}
+			for(size_t i=0;i<elementCountt;i++){
+				if(allValues[i]==pattern){
+					allUpdatedValues[i]=replacement;
+				}
+				else if(requireCopy){
+					allUpdatedValues[i]=allValues[i];
 				}
 			}
 		}
@@ -127,7 +120,7 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 			return;
 		}
 		const size_t numRows = arg->getNumRows();
-        	const size_t numCols = arg->getNumCols();
+		const size_t numCols = arg->getNumCols();
 		const size_t nnzElements= arg->getNumNonZeros();
 		CSRMatrix<VT> *  targetMatrix = arg; // this will point to the matrix that should be updated. Default is arg "in-place update"
 		bool requireCopy=false; // this variable is to indicate whether we need to copy to res (when not using inplace update semantic)
@@ -163,7 +156,7 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 		VT * allValues = arg->getValues();
 		VT * updatedAllValues = targetMatrix->getValues();
 		if(pattern!=pattern){ // pattern is NaN
-			for(size_t i=0;i<arg->getNumNonZeros();i++){
+			for(size_t i=0;i<nnzElements;i++){
 				if(allValues[i]!=allValues[i]){
 					updatedAllValues[i]=replacement;
 				}
@@ -173,7 +166,7 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 			}
 		}
 		else{
-			for(size_t i=0;i<arg->getNumNonZeros();i++){
+			for(size_t i=0;i<nnzElements;i++){
 				if(allValues[i]==pattern){
 					updatedAllValues[i]=replacement;
 				}
