@@ -44,30 +44,22 @@ template <typename VT> struct MatSymCheck<DenseMatrix<VT>> {
 
     const size_t numRows = arg->getNumRows();
     const size_t numCols = arg->getNumCols();
-    const VT *values = arg->getValues();
 
-    if(numRows != numCols || numRows <= 1 || numCols <= 1){
-        throw std::runtime_error("Provided matrix is not square.");
+    if (numRows != numCols || numRows <= 1 || numCols <= 1) {
+      throw std::runtime_error("Provided matrix is not square.");
     }
 
-    size_t totalCheckToMake = numRows * numRows - numRows;
+    size_t totalCheckToMake = (numRows * numRows - numRows) / 2;
     size_t rowIdx = 0;
     size_t checksInRow = numRows - 1;
 
     const VT *start = arg->getValues();
-    const VT *fin = start + sizeof(VT) * ((numCols * numCols) -
-                    2); // last element to check
+    const VT *fin = start + ((numCols * numCols) - 2); // last element to check
 
-      std::printf("sizeof(VT) %d\n", sizeof(VT));
-      std::printf("start %d, *start %f\n", start, *start);
-      std::printf("fin %d, *fin %f\n", fin, *fin);
     while (totalCheckToMake > 0) {
 
-      const VT * pt1 = start + sizeof(VT) * ((rowIdx * numRows) + (numRows - checksInRow));
-      const VT * pt2 = start + sizeof(VT) * (numRows - checksInRow) * numRows + (rowIdx + 1);
-
-      std::printf("pt1 %f\n", *pt1);
-      std::printf("pt2 %f\n", *pt2);
+      const VT *pt1 = start + (rowIdx * numRows) + (numRows - checksInRow);
+      const VT *pt2 = start + (numRows - checksInRow) * numRows + rowIdx;
 
       if (*pt1 != *pt2) {
         return false;
@@ -93,12 +85,12 @@ template <typename VT> struct MatSymCheck<CSRMatrix<VT>> {
     const size_t numCols = arg->getNumCols();
     const VT *values = arg->getValues();
 
-    if(numRows != numCols || numRows <= 1 || numCols <= 1){
-        throw std::runtime_error("Provided matrix is not square.");
+    if (numRows != numCols || numRows <= 1 || numCols <= 1) {
+      throw std::runtime_error("Provided matrix is not square.");
     }
 
     return false;
-    //throw std::string("Not implemented");
+    // throw std::string("Not implemented");
   }
 };
 
