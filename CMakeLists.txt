@@ -19,6 +19,10 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
 set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
 
+# *****************************************************************************
+# Related to MLIR/LLVM
+# *****************************************************************************
+
 find_package(MLIR REQUIRED CONFIG)
 
 message(STATUS "Using MLIRConfig.cmake in: ${MLIR_DIR}")
@@ -37,16 +41,37 @@ include(HandleLLVMOptions)
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
-include_directories(${PROJECT_SOURCE_DIR}/src)
-include_directories(${PROJECT_BINARY_DIR}/src)
+
+link_directories(${LLVM_BUILD_LIBRARY_DIR})
+add_definitions(${LLVM_DEFINITIONS})
+
+# *****************************************************************************
+# Related to BLAS
+# *****************************************************************************
+
+set(BLA_STATIC ON)
+set(BLA_VENDOR OpenBLAS)
+find_package(BLAS REQUIRED)
+
+# *****************************************************************************
+# Related to ANTLR and DaphneDSL parser
+# *****************************************************************************
 
 # TODO Don't hardcode these paths. See "src/parser/daphnedsl/CMakeLists.txt".
 include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4_runtime/src/antlr4_runtime/runtime/Cpp/runtime/src)
 include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneLexer)
 include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneParser)
 
-link_directories(${LLVM_BUILD_LIBRARY_DIR})
-add_definitions(${LLVM_DEFINITIONS})
+# *****************************************************************************
+# Project-specific include directories
+# *****************************************************************************
+
+include_directories(${PROJECT_SOURCE_DIR}/src)
+include_directories(${PROJECT_BINARY_DIR}/src)
+
+# *****************************************************************************
+# Descend to subdirectories
+# *****************************************************************************
 
 add_subdirectory(src/api/cli)
 add_subdirectory(src/compiler/lowering)

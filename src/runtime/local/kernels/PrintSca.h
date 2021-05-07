@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H
+#define SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H
 
-enum class BinaryOpCode {
-    // Arithmetic.
-    ADD, // addition
-    MUL, // multiplication
-    DIV, // division
-    
-    // Comparisons.
-    EQ,  // equal
-    NEQ, // not equal
-    LT,  // less than
-    LE,  // less equal
-    GT,  // greater than
-    GE,  // greater equal
-    
-    // Min/max.
-    MIN,
-    MAX,
-};
+#include <iostream>
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+/**
+ * @brief Prints a scalar value to standard output.
+ * 
+ * @param arg The value to print.
+ */
+template<typename VT>
+void printSca(VT arg) {
+    std::cout << arg << std::endl;
+}
+
+#endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H

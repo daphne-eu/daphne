@@ -84,8 +84,7 @@ execJIT(OwningModuleRef & module)
 
         llvm::SmallVector<llvm::StringRef, 0> sharedLibRefs;
         // TODO Find these at run-time.
-        sharedLibRefs.push_back("build/src/runtime/local/kernels/libPrintKernels.so");
-        sharedLibRefs.push_back("build/src/runtime/local/kernels/libLinAlgKernels.so");
+        sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
         registerLLVMDialectTranslation(*module->getContext());
         auto maybeEngine = ExecutionEngine::create(
                                                    module.get(), nullptr, optPipeline, llvm::CodeGenOpt::Level::Default,

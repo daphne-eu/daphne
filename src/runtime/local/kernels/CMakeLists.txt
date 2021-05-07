@@ -12,8 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(PrintKernels SHARED PrintKernels.cpp)
-target_link_libraries(PrintKernels)
+# Specifies how to generate the file "kernels.cpp" (which resides in the build
+# directory) as the basis for the pre-compiled kernels library.
+add_custom_command(
+        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
+        DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
+)
 
-add_library(LinAlgKernels SHARED LinAlgKernels.cpp)
-target_link_libraries(LinAlgKernels PRIVATE ValueTypeUtils)
+# The library of pre-compiled kernels. Will be linked into the JIT-compiled
+# user program.
+add_library(AllKernels SHARED
+        ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+)
+target_link_libraries(AllKernels PRIVATE
+        ValueTypeUtils
+        ${BLAS_LIBRARIES}
+)

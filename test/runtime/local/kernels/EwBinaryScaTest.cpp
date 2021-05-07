@@ -22,26 +22,108 @@
 
 #include <cstdint>
 
+#define TEST_NAME(opName) "EwBinarySca (" opName ")"
+#define VALUE_TYPES double, uint32_t
+
 template<BinaryOpCode opCode, typename VT>
 void checkEwBinarySca(VT lhs, VT rhs, VT exp) {
     CHECK(ewBinaryScaCT<opCode, VT, VT, VT>(lhs, rhs) == exp);
     CHECK(ewBinaryScaRT<VT, VT, VT>(opCode, lhs, rhs) == exp);
 }
 
-TEMPLATE_TEST_CASE("EwBinarySca", TAG_KERNELS, double, uint32_t) {
-    using VT = TestType;
+// ****************************************************************************
+// Arithmetic
+// ****************************************************************************
 
-    SECTION("add") {
-        checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 0, 0);
-        checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 1, 1);
-        checkEwBinarySca<BinaryOpCode::ADD, VT>(1, 2, 3);
-    }
-    SECTION("mul") {
-        checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 0, 0);
-        checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 1, 0);
-        checkEwBinarySca<BinaryOpCode::MUL, VT>(2, 3, 6);
-    }
-    SECTION("some invalid opCode") {
-        CHECK_THROWS(ewBinaryScaRT<VT, VT, VT>(static_cast<BinaryOpCode>(999), 0, 0));
-    }
+TEMPLATE_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 0, 0);
+    checkEwBinarySca<BinaryOpCode::ADD, VT>(0, 1, 1);
+    checkEwBinarySca<BinaryOpCode::ADD, VT>(1, 2, 3);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 0, 0);
+    checkEwBinarySca<BinaryOpCode::MUL, VT>(0, 1, 0);
+    checkEwBinarySca<BinaryOpCode::MUL, VT>(2, 3, 6);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::DIV, VT>(0, 3, 0);
+    checkEwBinarySca<BinaryOpCode::DIV, VT>(6, 3, 2);
+}
+
+// ****************************************************************************
+// Comparisons
+// ****************************************************************************
+
+TEMPLATE_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::EQ, VT>(0, 0, 1);
+    checkEwBinarySca<BinaryOpCode::EQ, VT>(3, 3, 1);
+    checkEwBinarySca<BinaryOpCode::EQ, VT>(3, 5, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::NEQ, VT>(0, 0, 0);
+    checkEwBinarySca<BinaryOpCode::NEQ, VT>(3, 3, 0);
+    checkEwBinarySca<BinaryOpCode::NEQ, VT>(3, 5, 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::LT, VT>(1, 1, 0);
+    checkEwBinarySca<BinaryOpCode::LT, VT>(1, 3, 1);
+    checkEwBinarySca<BinaryOpCode::LT, VT>(4, 2, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::LE, VT>(1, 1, 1);
+    checkEwBinarySca<BinaryOpCode::LE, VT>(1, 3, 1);
+    checkEwBinarySca<BinaryOpCode::LE, VT>(4, 2, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::GT, VT>(1, 1, 0);
+    checkEwBinarySca<BinaryOpCode::GT, VT>(1, 3, 0);
+    checkEwBinarySca<BinaryOpCode::GT, VT>(4, 2, 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::GE, VT>(1, 1, 1);
+    checkEwBinarySca<BinaryOpCode::GE, VT>(1, 3, 0);
+    checkEwBinarySca<BinaryOpCode::GE, VT>(4, 2, 1);
+}
+
+// ****************************************************************************
+// Min/max
+// ****************************************************************************
+
+TEMPLATE_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MIN, VT>(2, 2, 2);
+    checkEwBinarySca<BinaryOpCode::MIN, VT>(2, 3, 2);
+    checkEwBinarySca<BinaryOpCode::MIN, VT>(3, 0, 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MAX, VT>(2, 2, 2);
+    checkEwBinarySca<BinaryOpCode::MAX, VT>(2, 3, 3);
+    checkEwBinarySca<BinaryOpCode::MAX, VT>(3, 0, 3);
+}
+
+// ****************************************************************************
+// Invalid op-code
+// ****************************************************************************
+
+TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    CHECK_THROWS(ewBinaryScaRT<VT, VT, VT>(static_cast<BinaryOpCode>(999), 0, 0));
 }

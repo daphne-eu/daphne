@@ -19,6 +19,7 @@
 
 #include <runtime/local/kernels/BinaryOpCode.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 // ****************************************************************************
@@ -51,8 +52,20 @@ template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
     switch(opCode) {
         #define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
+        // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::MUL)
+        MAKE_CASE(BinaryOpCode::DIV)
+        // Comparisons.
+        MAKE_CASE(BinaryOpCode::EQ)
+        MAKE_CASE(BinaryOpCode::NEQ)
+        MAKE_CASE(BinaryOpCode::LT)
+        MAKE_CASE(BinaryOpCode::LE)
+        MAKE_CASE(BinaryOpCode::GT)
+        MAKE_CASE(BinaryOpCode::GE)
+        // Min/max.
+        MAKE_CASE(BinaryOpCode::MIN)
+        MAKE_CASE(BinaryOpCode::MAX)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown BinaryOpCode");
@@ -107,8 +120,20 @@ TRes ewBinaryScaRT(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
     };
 
 // One such line for each binary function to support.
+// Arithmetic.
 MAKE_EW_BINARY_SCA(BinaryOpCode::ADD, lhs + rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::MUL, lhs * rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::DIV, lhs / rhs)
+// Comparisons.
+MAKE_EW_BINARY_SCA(BinaryOpCode::EQ , lhs == rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::NEQ, lhs != rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::LT , lhs <  rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
+// Min/max.
+MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
+MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
 
 #undef MAKE_EW_BINARY_SCA
 

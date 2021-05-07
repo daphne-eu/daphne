@@ -49,8 +49,9 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix"> {
     let results = (outs Matrix:$res);
 }
 
-def Daphne_RandMatrixOp : Daphne_Op<"randMatrix"> {
-    let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
+def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
+    //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
+    let arguments = (ins IntScalar:$numRows, IntScalar:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs Matrix:$res);
 }
 
@@ -340,9 +341,10 @@ def Daphne_ReverseOp : Daphne_Op<"reverse"> {
     let results = (outs Matrix:$res);
 }
 
-def Daphne_OrderOp : Daphne_Op<"order"> {
-    let arguments = (ins Matrix:$arg, BoolScalar:$asc, BoolScalar:$returnIdxs);
-    let results = (outs Matrix:$res);
+def Daphne_OrderOp : Daphne_Op<"order", [SameVariadicOperandSize]> {
+    // TODO Maybe colIdxs and ascs should be attributes.
+    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolAttr:$returnIdxs);
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // ****************************************************************************
@@ -485,6 +487,10 @@ def Daphne_CTableOp : Daphne_Op<"ctable"> {
 // Extended relational algebra
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// Set operations
+// ----------------------------------------------------------------------------
+
 class Daphne_SetOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
     let arguments = (ins Frame:$lhs, Frame:$rhs);
     let results = (outs Frame:$res);
@@ -492,11 +498,19 @@ class Daphne_SetOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, tra
 
 def Daphne_IntersectOp : Daphne_SetOp<"intersect">;
 def Daphne_MergeOp : Daphne_SetOp<"merge">;
-// TODO Think about the name.
-def Daphne_MinusOp : Daphne_SetOp<"setMinus">;
+def Daphne_ExceptOp : Daphne_SetOp<"except">;
+
+// ----------------------------------------------------------------------------
+// Cartesian product and joins
+// ----------------------------------------------------------------------------
+
+def Daphne_CartesianOp : Daphne_Op<"cartesian"> {
+    let arguments = (ins Variadic<Frame>:$args);
+    let results = (outs Frame:$res);
+}
 
 class Daphne_JoinOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, !listconcat([SameVariadicOperandSize], traits)> {
-    // TODO $rightOn could default to $leftOn.
+    // TODO Maybe leftOn and rightOn should be attributes.
     let arguments = (ins Frame:$lhs, Frame:$rhs, Variadic<Size>:$leftOn, Variadic<Size>:$rightOn);
     let results = (outs Frame:$res);
 }
@@ -507,9 +521,27 @@ def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
 def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 
-// TODO This is n-ary.
+// ----------------------------------------------------------------------------
+// Selection
+// ----------------------------------------------------------------------------
+
+def Daphne_QueryOp : Daphne_Op<"query"> {
+    let arguments = (ins Frame:$arg, StrAttr:$cond);
+    let results = (outs Frame:$res);
+}
+
+def Daphne_FilterOp : Daphne_Op<"filter"> {
+    let arguments = (ins Frame:$arg, MatrixOf<[BoolScalar]>:$selected);
+    let results = (outs Frame:$res);
+}
+
+// ----------------------------------------------------------------------------
+// Grouping
+// ----------------------------------------------------------------------------
+
 def Daphne_GroupOp : Daphne_Op<"group"> {
-    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs);
+    // TODO Maybe colIdxs should be an attribute.
+    let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
     let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
 }
 
@@ -669,15 +701,6 @@ def Daphne_SubOp : Daphne_ElementwiseBinaryOp<"subOld", [SameOperandsAndResultSh
 
 def Daphne_MulOp : Daphne_ElementwiseBinaryOp<"mulOld", [SameOperandsAndResultShape]> {
     let summary = "mul operation";
-}
-
-def Daphne_RandOp : Daphne_Op<"rand", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
-    let summary = "rand operation";
-
-    let arguments = (ins AnyInteger:$rows, AnyInteger:$cols,
-        AnyInteger:$seed, AnyFloat:$sparsity,
-        AnyScalar:$min, AnyScalar:$max);
-    let results = (outs Matrix:$output);
 }
 
 def Daphne_SetCellOp : Daphne_Op<"setCell",  []> {

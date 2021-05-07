@@ -33,8 +33,7 @@ add_llvm_executable(daphnec
         DEPENDS
         MLIRDaphneOpsIncGen
         # The kernels are linked at runtime.
-        PrintKernels
-        LinAlgKernels
+        AllKernels
 )
 
 llvm_update_compile_flags(daphnec)
