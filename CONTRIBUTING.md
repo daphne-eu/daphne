@@ -55,11 +55,20 @@ Please note that you can create as many branches and merge requests as you want,
 
 - *Integrating your branch into the master branch.*
 
-  Once you feel that your contribution is ready to be merged into the master branch, please create a merge request in GitLab.
-  *Details on this will be added soon.*
-  You can also create a merge request before the contribution is ready if you would like to discuss about it.
-  In that case, please prefix the merge request name with "[WIP]".
-  After your branch has been merged, it can be deleted.
+  Once you feel comfortable with your changes, you can ask for their integration into the master branch by creating a *merge request*.
+  Please choose an expressive title and provide a short description of your changes.
+  The default merge options are to (1) squash the commits on your branch into a single commit on the master branch to keep a clean history, and (2) to delete your feature branch after a successful merge.
+  However, these can be decided on a case-by-case basis, and even after the merge request has been created.
+
+  After you have created the merge request, GitLab might tell you: "Fast-forward merge is not possible. To merge this request, first rebase locally"
+  This happens when there are conflicts between your branch and the master branch.
+  In that case, please try to resolve the conflicts yourself locally and push any new commits to your branch.
+  If you do not feel comfortable with that, please ask for help by commenting on your merge request.
+
+  Please also feel free to create a merge request to ask for feedback or to start a discusssion on the code.
+  In that case, you should prefix the title of your merge request with "Draft:" or "WIP:" to indicate that you don't ask for its integration right now.
+
+  Finally, you can always add more commits to your merge request by pushing to your branch.
 
 **Code style**
 
