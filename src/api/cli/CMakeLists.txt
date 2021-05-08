@@ -24,8 +24,9 @@ set(LIBS
         ValueTypeUtils
 )
 
-# enable exceptions handling
+# Enable exception handling and run-time type information.
 set(LLVM_ENABLE_EH ON)
+set(LLVM_ENABLE_RTTI ON)
 
 add_llvm_executable(daphnec
         daphnec.cpp
