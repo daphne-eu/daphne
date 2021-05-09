@@ -14,13 +14,10 @@
  * limitations under the License.
  */
 
-#include "DaphneLexer.h"
-#include "DaphneParser.h"
-#include "parser/daphnedsl/MLIRGenVisitors.h"
+#include <parser/daphnedsl/DaphneDSLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
-#include "antlr4-runtime.h"
 #include "llvm/Support/TargetSelect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -44,12 +41,8 @@ using namespace std;
 using namespace mlir;
 
 OwningModuleRef
-processModule(MLIRContext & context, daphne_antlr::DaphneParser::FileContext *file)
+processModule(ModuleOp module)
 {
-    OpBuilder builder(&context);
-    mlir_gen::FileVisitor visitor(builder);
-    auto module = visitor.visitFile(file).as<ModuleOp>();
-    
     if(failed(verify(module))) {
         module.emitError("failed to verify the module right after parsing");
         return nullptr;
@@ -114,28 +107,31 @@ main(int argc, char** argv)
         exit(1);
     }
 
+    // Parse command line arguments.
     string inputFile(argv[1]);
 
+    // Create an MLIR context and load the required MLIR dialects.
     MLIRContext context;
     context.getOrLoadDialect<daphne::DaphneDialect>();
     context.getOrLoadDialect<StandardOpsDialect>();
 
-    ifstream stream;
-    stream.open(inputFile, ios::in);
-    if (!stream.is_open()) {
-        cerr << "Could not open file \"" << inputFile << '"' << endl;
-        return 1;
-    }
+    // Create an OpBuilder and an MLIR module and set the builder's insertion
+    // point to the module's body, such that subsequently created DaphneIR
+    // operations are inserted into the module.
+    OpBuilder builder(&context);
+    auto moduleOp = ModuleOp::create(builder.getUnknownLoc());
+    auto * body = moduleOp.getBody();
+    builder.setInsertionPoint(body, body->begin());
 
-    antlr4::ANTLRInputStream input(stream);
-    input.name = inputFile;
-    daphne_antlr::DaphneLexer lexer(&input);
-    antlr4::CommonTokenStream tokens(&lexer);
-    daphne_antlr::DaphneParser parser(&tokens);
-
-    auto *file = parser.file();
-
-    OwningModuleRef module = processModule(context, file);
+    // Parse the input file and generate the corresponding DaphneIR operations
+    // inside the module, assuming DaphneDSL as the input format.
+    DaphneDSLParser parser;
+    parser.parseFile(builder, inputFile);
+    
+    // Further process the module, including optimization and lowering passes.
+    OwningModuleRef module = processModule(moduleOp);
+    
+    // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
     execJIT(module);
 
