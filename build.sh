@@ -82,12 +82,34 @@ cd $thirdpartyPath
 #------------------------------------------------------------------------------
 
 # antlr4 (parser).
+pwdBeforeAntlr=$(pwd)
+antlrDirName=antlr
+antlrVersion=4.9.2
+antlrJarName=antlr-${antlrVersion}-complete.jar
+antlrCppRuntimeDirName=antlr4-cpp-runtime-${antlrVersion}-source
+antlrCppRuntimeZipName=$antlrCppRuntimeDirName.zip
+mkdir --parents $antlrDirName
+cd $antlrDirName
 # Download antlr4 jar if it does not exist yet.
-antlrName=antlr-4.9.1-complete.jar
-if [ ! -f $antlrName ]
+if [ ! -f $antlrJarName ]
 then
-    wget https://www.antlr.org/download/$antlrName
+    wget https://www.antlr.org/download/$antlrJarName
 fi
+# Download and build antlr4 C++ run-time if it does not exist yet.
+if [ ! -f $antlrCppRuntimeZipName ]
+then
+    wget https://www.antlr.org/download/$antlrCppRuntimeZipName
+    mkdir --parents $antlrCppRuntimeDirName
+    unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
+    cd $antlrCppRuntimeDirName
+    mkdir build
+    mkdir run
+    cd build
+    cmake .. -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON
+    make
+    DESTDIR=../run make install
+fi
+cd $pwdBeforeAntlr
 
 # catch2 (unit test framework).
 # Download catch2 release zip (if necessary), and unpack the single header file
@@ -141,7 +163,11 @@ cd $oldPwd
 
 mkdir --parents build
 cd build
-cmake -G Ninja .. -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/
+cmake -G Ninja .. \
+    -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
+    -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
+    -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
+    -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName
 cmake --build . --target $target
 
 

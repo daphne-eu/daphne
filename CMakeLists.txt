@@ -54,15 +54,6 @@ set(BLA_VENDOR OpenBLAS)
 find_package(BLAS REQUIRED)
 
 # *****************************************************************************
-# Related to ANTLR and DaphneDSL parser
-# *****************************************************************************
-
-# TODO Don't hardcode these paths. See "src/parser/daphnedsl/CMakeLists.txt".
-include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4_runtime/src/antlr4_runtime/runtime/Cpp/runtime/src)
-include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneLexer)
-include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneParser)
-
-# *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
 
@@ -76,7 +67,7 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 add_subdirectory(src/api/cli)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/ir/daphneir)
-add_subdirectory(src/parser/daphnedsl)
+add_subdirectory(src/parser)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/kernels)
 
