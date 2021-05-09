@@ -24,6 +24,28 @@ include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 
 // ****************************************************************************
+// Custom constraints
+// ****************************************************************************
+
+// The type of `mat` is a matrix whose value type is the type of `sca`.
+class TypeIsMatrixOf<string mat, string sca> : And<[
+    TypeIs<mat, Matrix>.predicate,
+    TypesMatchWith<"", mat, sca, "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()">.predicate
+]>;
+
+// The types of `a` and `b` must either be the same (e.g. both are matrices of
+// the same value type, or both are scalars of the same type), or the type of
+// `a` must be a matrix whose value type is the type of `b`, or vice-versa.
+class TypesMatchOrOneIsMatrixOfOther<string a, string b> : PredOpTrait<
+    a # " and " # b # " must either be of the same type, or " # a # " must be a matrix whose value type is the type of " # b # ", or vice-versa",
+    Or<[
+        TypesMatchWith<"", a, b, "$_self">.predicate,
+        TypeIsMatrixOf<a, b>,
+        TypeIsMatrixOf<b, a>
+    ]>
+>;
+
+// ****************************************************************************
 // Base Daphne operation definition
 // ****************************************************************************
 
@@ -139,9 +161,18 @@ def DaphneEwAtanOp : Daphne_EwUnaryOp<"atan", FloatScalar>;
 // Elementwise binary
 // ****************************************************************************
 
-class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
+class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
+: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
+
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
+            // TODO This is wrong if lhs is a scalar and rhs is a matrix.
+            $_state.addTypes(lhs.getType());
+            $_state.addOperands({lhs, rhs});
+        }]>
+    ];
 }
 
 // ----------------------------------------------------------------------------
@@ -182,7 +213,9 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"concat", StrScalar>;
 // ----------------------------------------------------------------------------
 
 class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []> : Daphne_EwBinaryOp<name, inputScalarType, traits> {
-    let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
+    // TODO: We do not enforce (matrix of) boolean output any more, but should
+    // think about that again.
+    //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
 }
 
 def Daphne_EwEqOp  : Daphne_EwCmpOp<"eq" , AnyScalar>;
@@ -659,24 +692,6 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
         StringAttr getCalleeAttr() { return (*this)->getAttrOfType<StringAttr>("callee"); }
     }];
 }
-
-// The type of `mat` is a matrix whose value type is the type of `sca`.
-class TypeIsMatrixOf<string mat, string sca> : And<[
-    TypeIs<mat, Matrix>.predicate,
-    TypesMatchWith<"", mat, sca, "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()">.predicate
-]>;
-
-// The types of `a` and `b` must either be the same (e.g. both are matrices of
-// the same value type, or both are scalars of the same type), or the type of
-// `a` must be a matrix whose value type is the type of `b`, or vice-versa.
-class TypesMatchOrOneIsMatrixOfOther<string a, string b> : PredOpTrait<
-    a # " and " # b # " must either be of the same type, or " # a # " must be a matrix whose value type is the type of " # b # ", or vice-versa",
-    Or<[
-        TypesMatchWith<"", a, b, "$_self">.predicate,
-        TypeIsMatrixOf<a, b>,
-        TypeIsMatrixOf<b, a>
-    ]>
->;
 
 class Daphne_ElementwiseBinaryOp<string mnemonic, list<OpTrait> traits = []> :
         Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">])> {

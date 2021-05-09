@@ -12,6 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+antlr4_generate(
+        DaphneDSLGrammar
+        ${CMAKE_CURRENT_SOURCE_DIR}/DaphneDSLGrammar.g4
+        BOTH  # the specified g4 file contains both lexer and parser rules
+        FALSE # don't generate listener interfaces
+        TRUE  # generate visitor interfaces
+)
+
+include_directories(${ANTLR4_INCLUDE_DIR_DaphneDSLGrammar})
+
 add_library(DaphneDSLParser STATIC
         DaphneDSLParser.cpp
+        DaphneDSLVisitor.cpp
+        ${ANTLR4_SRC_FILES_DaphneDSLGrammar}
+)
+
+target_link_libraries(DaphneDSLParser PRIVATE
+        antlr4_static
 )

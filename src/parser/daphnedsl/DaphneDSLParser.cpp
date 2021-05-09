@@ -16,6 +16,11 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
+#include <parser/daphnedsl/DaphneDSLVisitor.h>
+
+#include "antlr4-runtime.h"
+#include "DaphneDSLGrammarLexer.h"
+#include "DaphneDSLGrammarParser.h"
 
 #include <mlir/IR/Block.h>
 #include <mlir/IR/Builders.h>
@@ -31,15 +36,17 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(funcBlock, funcBlock->begin());
-
-        // TODO At this point, we should parse the stream and generate the
-        // corresponding DaphneIR operations. But for now, we only generate the
-        // operations for "print(123);".
-        builder.create<mlir::daphne::PrintOp>(
-                loc,
-                builder.create<mlir::daphne::ConstantOp>(loc, double(123))
-        );
-
+        
+        // Run ANTLR-based DaphneDSL parser.
+        antlr4::ANTLRInputStream input(stream);
+        input.name = "whateverFile"; // TODO
+        DaphneDSLGrammarLexer lexer(&input);
+        antlr4::CommonTokenStream tokens(&lexer);
+        DaphneDSLGrammarParser parser(&tokens);
+        DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
+        DaphneDSLVisitor visitor(builder);
+        visitor.visitScript(ctx);
+        
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto * terminator = funcBlock->getTerminator();
