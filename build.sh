@@ -166,8 +166,8 @@ cd build
 cmake -G Ninja .. \
     -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
     -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
-    -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
-    -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName
+    -DANTLR4_RUNTIME_DIR=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
+    -DANTLR4_JAR_LOCATION=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrJarName
 cmake --build . --target $target
 
 

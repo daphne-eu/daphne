@@ -16,10 +16,15 @@
 # Configuration for ANTLR
 # *****************************************************************************
 
+# Information on using ANTLR's cmake packages can be found at:
+# - https://github.com/antlr/antlr4/blob/master/runtime/Cpp/README.md
+# - https://github.com/antlr/antlr4/blob/master/runtime/Cpp/cmake/README.md
+# - https://github.com/antlr/antlr4/blob/master/runtime/Cpp/cmake/Antlr4Package.md
+
 message(STATUS "ANTLR4_JAR_LOCATION is ${ANTLR4_JAR_LOCATION}")
 
-SET(antlr4-generator_DIR ${PROJECT_SOURCE_DIR}/${ANTLR4_RUNTIME_DIR}/run/usr/local/lib/cmake/antlr4-generator)
-SET(antlr4-runtime_DIR ${PROJECT_SOURCE_DIR}/${ANTLR4_RUNTIME_DIR}/run/usr/local/lib/cmake/antlr4-runtime)
+SET(antlr4-generator_DIR ${ANTLR4_RUNTIME_DIR}/run/usr/local/lib/cmake/antlr4-generator)
+SET(antlr4-runtime_DIR ${ANTLR4_RUNTIME_DIR}/run/usr/local/lib/cmake/antlr4-runtime)
 message(STATUS "antlr4-generator_DIR is ${antlr4-generator_DIR}")
 message(STATUS "antlr4-runtime_DIR is ${antlr4-runtime_DIR}")
 find_package(antlr4-generator REQUIRED)
