@@ -45,6 +45,10 @@ include_directories(${MLIR_INCLUDE_DIRS})
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+# Enable exception handling and run-time type information.
+set(LLVM_ENABLE_EH ON)
+set(LLVM_ENABLE_RTTI ON)
+
 # *****************************************************************************
 # Related to BLAS
 # *****************************************************************************
