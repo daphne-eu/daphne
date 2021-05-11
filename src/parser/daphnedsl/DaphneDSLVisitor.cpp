@@ -123,16 +123,8 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     mlir::Value lhs = valueOrError(visit(ctx->lhs));
     mlir::Value rhs = valueOrError(visit(ctx->rhs));
     
-    if(op == "@") {
-        mlir::Value lhs = valueOrError(visit(ctx->lhs));
-        return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::MatMulOp>(
-                        loc,
-                        lhs.getType(), // TODO
-                        lhs, valueOrError(visit(ctx->rhs))
-                )
-        );
-    }
+    if(op == "@")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs));
     
     throw std::runtime_error("unexpected op symbol");
 }
