@@ -26,7 +26,8 @@
             [["DenseMatrix", "double"]],
             [["CSRMatrix", "float"]],
             [["CSRMatrix", "double"]]
-        ]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -63,7 +64,8 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "float"], ["CSRMatrix", "float"]],
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]]
-        ]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -100,7 +102,8 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "float"], ["CSRMatrix", "float"]],
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]]
-        ]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -143,7 +146,8 @@
         "instantiations": [
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
-        ]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -186,7 +190,8 @@
         "instantiations": [
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"]
-        ]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -225,7 +230,8 @@
         "instantiations": [
             ["float", "float", "float"],
             ["double", "double", "double"]
-        ]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {

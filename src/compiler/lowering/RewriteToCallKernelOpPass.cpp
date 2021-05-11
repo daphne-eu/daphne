@@ -24,11 +24,41 @@
 #include <memory>
 #include <utility>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 
 using namespace mlir;
 
 namespace
 {
+    
+    // TODO We might want to merge this with ValueTypeUtils, and maybe place it
+    // somewhere central.
+    std::string mlirTypeToCppTypeName(Type t) {
+        if(t.isF64())
+            return "double";
+        else if(t.isF32())
+            return "float";
+        else if(t.isSignedInteger(8))
+            return "int8_t";
+        else if(t.isSignedInteger(32))
+            return "int32_t";
+        else if(t.isSignedInteger(64))
+            return "int64_t";
+        else if(t.isUnsignedInteger(8))
+            return "uint8_t";
+        else if(t.isUnsignedInteger(32))
+            return "uint32_t";
+        else if(t.isUnsignedInteger(64))
+            return "uint64_t";
+        else if(t.isa<daphne::MatrixType>())
+            return "DenseMatrix_" + mlirTypeToCppTypeName(
+                    t.dyn_cast<daphne::MatrixType>().getElementType()
+            );
+        throw std::runtime_error(
+                "no C++ type name known for the given MLIR type"
+        );
+    }
 
     struct KernelReplacement : public RewritePattern
     {
@@ -41,93 +71,26 @@ namespace
         LogicalResult matchAndRewrite(Operation *op,
                                       PatternRewriter &rewriter) const override
         {
-            // The name of the kernel function to call.
-            StringRef callee;
+            // Determine the name of the kernel function to call by convention
+            // based on the DaphneIR operation and the types of its results and
+            // arguments.
 
-            // Determine the name of the kernel function to call based on the
-            // operation, types, etc., or return failure() on error.
-            if (llvm::dyn_cast<daphne::PrintOp>(op)) {
-                Type t = llvm::dyn_cast<daphne::PrintOp>(op).arg().getType();
-                if (t.isSignedInteger(64))
-                    callee = StringRef("printSca__int64_t");
-                else if (t.isF64())
-                    callee = StringRef("printSca__double");
-                else if (t.isa<daphne::MatrixType>()) {
-                    Type et = t.dyn_cast<daphne::MatrixType>().getElementType();
-                    if (et.isSignedInteger(64))
-                        callee = StringRef("printObj__DenseMatrix_int64_t");
-                    else if (et.isF64())
-                        callee = StringRef("printObj__DenseMatrix_double");
-                    else
-                        return failure();
-                }
-                else
-                    return failure();
-            }
-            else if (llvm::dyn_cast<daphne::RandMatrixOp>(op)) {
-                // Derive the element type of the matrix to be generated from
-                // the type of the "min" argument. (Note that the "max"
-                // argument is guaranteed to have the same type.)
-                Type et = llvm::dyn_cast<daphne::RandMatrixOp>(op).min().getType();
+            std::stringstream callee;
+            callee << op->getName().stripDialect().str();
 
-                if (et.isSignedInteger(64))
-                    callee = StringRef("randMatrix__DenseMatrix_int64_t__int64_t");
-                else if (et.isF64())
-                    callee = StringRef("randMatrix__DenseMatrix_double__double");
-                else
-                    return failure();
-            }
-            else if (llvm::dyn_cast<daphne::TransposeOp>(op)) {
-                Type et = op->getOperand(0).getType().dyn_cast<daphne::MatrixType>().getElementType();
-                if (et.isSignedInteger(64))
-                    callee = "transpose__DenseMatrix_int64_t__DenseMatrix_int64_t";
-                else if (et.isF64())
-                    callee = "transpose__DenseMatrix_double__DenseMatrix_double";
-                else
-                    return failure();
-            }
-#if 0
-            else if (llvm::dyn_cast<daphne::AddOp>(op)) {
-                if (op->getOperand(0).getType().isa<daphne::MatrixType>() &&
-                    op->getOperand(1).getType().isa<daphne::MatrixType>()) {
-                    Type et = op->getOperand(0).getType().dyn_cast<daphne::MatrixType>().getElementType();
-                    if (et.isSignedInteger(64))
-                        callee = "addDenDenDenI64";
-                    else if (et.isF64())
-                        callee = "addDenDenDenF64";
-                    else
-                        return failure();
-                }
-                else
-                    return failure();
-            }
-#endif
-//            else if (llvm::dyn_cast<daphne::SumOp>(op)) {
-//                Type et = llvm::dyn_cast<daphne::SumOp>(op).in().getType().dyn_cast<daphne::MatrixType>().getElementType();
-//                if (et.isSignedInteger(64))
-//                    callee = "sumDenScaI64";
-//                else if (et.isF64())
-//                    callee = "sumDenScaF64";
-//                else
-//                    return failure();
-//            }
-#if 0
-            else if (llvm::dyn_cast<daphne::SetCellOp>(op)) {
-                Type et = llvm::dyn_cast<daphne::SetCellOp>(op).mat().getType().dyn_cast<daphne::MatrixType>().getElementType();
-                if (et.isSignedInteger(64))
-                    callee = StringRef("setCellDenI64");
-                else if (et.isF64())
-                    callee = StringRef("setCellDenF64");
-            }
-#endif
-            else
-                return failure();
+            Operation::result_type_range resultTypes = op->getResultTypes();
+            for(size_t i = 0; i < resultTypes.size(); i++)
+                callee << "__" << mlirTypeToCppTypeName(resultTypes[i]);
+            
+            Operation::operand_type_range operandTypes = op->getOperandTypes();
+            for(size_t i = 0; i < operandTypes.size(); i++)
+                callee << "__" << mlirTypeToCppTypeName(operandTypes[i]);
 
             // Create a CallKernelOp for the kernel function to call and return
             // success().
             auto kernel = rewriter.create<daphne::CallKernelOp>(
                     op->getLoc(),
-                    callee,
+                    callee.str(),
                     op->getOperands(),
                     op->getResultTypes()
                     );

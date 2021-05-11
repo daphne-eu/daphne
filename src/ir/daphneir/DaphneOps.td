@@ -122,40 +122,40 @@ class Daphne_EwUnaryOp<string name, Type scalarType, list<OpTrait> traits = []> 
 // Arithmetic/general math
 // ----------------------------------------------------------------------------
 
-def DaphneEwMinusOp : Daphne_EwUnaryOp<"minus", NumScalar>;
-def DaphneEwAbsOp : Daphne_EwUnaryOp<"abs", NumScalar>;
-def DaphneEwSignOp : Daphne_EwUnaryOp<"sign", NumScalar>;
-def DaphneEwExpOp : Daphne_EwUnaryOp<"exp", FloatScalar>;
-def DaphneEwLogOp : Daphne_EwUnaryOp<"ln", FloatScalar>;
-def DaphneEwSqrtOp : Daphne_EwUnaryOp<"sqrt", FloatScalar>;
+def DaphneEwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar>;
+def DaphneEwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar>;
+def DaphneEwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar>;
+def DaphneEwExpOp : Daphne_EwUnaryOp<"ewExp", FloatScalar>;
+def DaphneEwLogOp : Daphne_EwUnaryOp<"ewLn", FloatScalar>;
+def DaphneEwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def DaphneEwNegOp : Daphne_EwUnaryOp<"neg", AnyTypeOf<[BoolScalar, IntScalar]>>;
+def DaphneEwNegOp : Daphne_EwUnaryOp<"ewNeg", AnyTypeOf<[BoolScalar, IntScalar]>>;
 
 // ----------------------------------------------------------------------------
 // Rounding
 // ----------------------------------------------------------------------------
 
-def DaphneEwRoundOp : Daphne_EwUnaryOp<"round", FloatScalar>;
-def DaphneEwFloorOp : Daphne_EwUnaryOp<"floor", FloatScalar>;
-def DaphneEwCeilOp : Daphne_EwUnaryOp<"ceil", FloatScalar>;
+def DaphneEwRoundOp : Daphne_EwUnaryOp<"ewRound", FloatScalar>;
+def DaphneEwFloorOp : Daphne_EwUnaryOp<"ewFloor", FloatScalar>;
+def DaphneEwCeilOp : Daphne_EwUnaryOp<"ewCeil", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Trigonometric
 // ----------------------------------------------------------------------------
 
-def DaphneEwSinOp : Daphne_EwUnaryOp<"sin", FloatScalar>;
-def DaphneEwCosOp : Daphne_EwUnaryOp<"cos", FloatScalar>;
-def DaphneEwTanOp : Daphne_EwUnaryOp<"tan", FloatScalar>;
-def DaphneEwSinhOp : Daphne_EwUnaryOp<"sinh", FloatScalar>;
-def DaphneEwCoshOp : Daphne_EwUnaryOp<"cosh", FloatScalar>;
-def DaphneEwTanhOp : Daphne_EwUnaryOp<"tanh", FloatScalar>;
-def DaphneEwAsinOp : Daphne_EwUnaryOp<"asin", FloatScalar>;
-def DaphneEwAcosOp : Daphne_EwUnaryOp<"acos", FloatScalar>;
-def DaphneEwAtanOp : Daphne_EwUnaryOp<"atan", FloatScalar>;
+def DaphneEwSinOp : Daphne_EwUnaryOp<"ewSin", FloatScalar>;
+def DaphneEwCosOp : Daphne_EwUnaryOp<"ewCos", FloatScalar>;
+def DaphneEwTanOp : Daphne_EwUnaryOp<"ewTan", FloatScalar>;
+def DaphneEwSinhOp : Daphne_EwUnaryOp<"ewSinh", FloatScalar>;
+def DaphneEwCoshOp : Daphne_EwUnaryOp<"ewCosh", FloatScalar>;
+def DaphneEwTanhOp : Daphne_EwUnaryOp<"ewTanh", FloatScalar>;
+def DaphneEwAsinOp : Daphne_EwUnaryOp<"ewAsin", FloatScalar>;
+def DaphneEwAcosOp : Daphne_EwUnaryOp<"ewAcos", FloatScalar>;
+def DaphneEwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
 
 // ****************************************************************************
 // Elementwise binary
@@ -179,34 +179,34 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"add", NumScalar>;
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"sub", NumScalar>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"mul", NumScalar>;
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"div", NumScalar>;
-def Daphne_EwPowOp    : Daphne_EwBinaryOp<"pow", NumScalar>;
-def Daphne_EwModOp    : Daphne_EwBinaryOp<"mod", IntScalar>;
-def Daphne_EwLogOp    : Daphne_EwBinaryOp<"log", FloatScalar>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar>;
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
+def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar>;
+def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar>;
+def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Min/max
 // ----------------------------------------------------------------------------
 
-def Daphne_EwMinOp    : Daphne_EwBinaryOp<"min", AnyScalar>;
-def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"max", AnyScalar>;
+def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar>;
+def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAndOp    : Daphne_EwBinaryOp<"and", AnyTypeOf<[BoolScalar, IntScalar]>>;
-def Daphne_EwOrOp     : Daphne_EwBinaryOp<"or" , AnyTypeOf<[BoolScalar, IntScalar]>>;
-def Daphne_EwXorOp    : Daphne_EwBinaryOp<"xor", AnyTypeOf<[BoolScalar, IntScalar]>>;
+def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>>;
+def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>>;
+def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntScalar]>>;
 
 // ----------------------------------------------------------------------------
 // Strings
 // ----------------------------------------------------------------------------
 
-def Daphne_EwConcatOp : Daphne_EwBinaryOp<"concat", StrScalar>;
+def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 
 // ----------------------------------------------------------------------------
 // Comparisons
@@ -218,12 +218,12 @@ class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = [
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
 }
 
-def Daphne_EwEqOp  : Daphne_EwCmpOp<"eq" , AnyScalar>;
-def Daphne_EwNeqOp : Daphne_EwCmpOp<"neq", AnyScalar>;
-def Daphne_EwLtOp  : Daphne_EwCmpOp<"lt" , AnyScalar>;
-def Daphne_EwLeOp  : Daphne_EwCmpOp<"le" , AnyScalar>;
-def Daphne_EwGtOp  : Daphne_EwCmpOp<"gt" , AnyScalar>;
-def Daphne_EwGeOp  : Daphne_EwCmpOp<"ge" , AnyScalar>;
+def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar>;
+def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar>;
+def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
+def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
+def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
+def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 
 // ****************************************************************************
 // Aggregation and statistical
@@ -349,7 +349,7 @@ def Daphne_InsertOp : Daphne_Op<"insert"> {
 // Reorganization
 // ****************************************************************************
 
-def Daphne_TransposeOp : Daphne_Op<"t"> {
+def Daphne_TransposeOp : Daphne_Op<"transpose"> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
 
