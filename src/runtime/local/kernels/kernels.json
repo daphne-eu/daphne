@@ -196,7 +196,7 @@
     {
         "kernelTemplate": {
             "header": "EwBinarySca.h",
-            "opName": "ewBinaryScaRT",
+            "opName": "ewBinarySca",
             "returnType": "TRes",
             "templateParams": [
                 {
