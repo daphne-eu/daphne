@@ -114,20 +114,10 @@ void RewriteToCallKernelOpPass::runOnOperation()
 
     // convert other operations
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect,
-            daphne::DaphneDialect>();
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
-    target.addIllegalOp<
-            daphne::PrintOp, daphne::RandMatrixOp, daphne::TransposeOp, daphne::SetCellOp/*, daphne::SumOp*/
-    >();
-    target.addDynamicallyLegalOp<daphne::AddOp>([](daphne::AddOp op)
-    {
-        const bool legal = (
-                !op->getOperand(0).getType().isa<daphne::MatrixType>() &&
-                !op->getOperand(1).getType().isa<daphne::MatrixType>()
-                );
-        return legal;
-    });
+    target.addIllegalDialect<daphne::DaphneDialect>();
+    target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp>();
 
     patterns.insert<KernelReplacement>(&getContext());
 

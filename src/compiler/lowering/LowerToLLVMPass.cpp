@@ -27,6 +27,8 @@
 
 using namespace mlir;
 
+#if 0
+// At the moment, all of these operations are lowered to kernel calls.
 template <typename BinaryOp, typename ReplIOp, typename ReplFOp>
 struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
 {
@@ -52,6 +54,7 @@ struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
 using AddOpLowering = BinaryOpLowering<daphne::AddOp, AddIOp, AddFOp>;
 using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
 using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
+#endif
 
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
@@ -255,7 +258,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
-    patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering, CallKernelOpLowering>(typeConverter, &getContext());
+    patterns.insert<CallKernelOpLowering>(typeConverter, &getContext());
     patterns.insert<ConstantOpLowering, ReturnOpLowering>(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
