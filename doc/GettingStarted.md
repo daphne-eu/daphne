@@ -20,7 +20,7 @@ This document summarizes everything you need to know to get started with using o
 
 ### System Requirements
 
-Please ensure that your system meets the following requirements before trying to build the prototype.
+Please ensure that your development system meets the following requirements before trying to build the prototype.
 
 **(*)**
 You can view the version numbers as an orientation rather than a strict requirement.
@@ -43,6 +43,7 @@ Newer versions should work as well, older versions might work as well.
 | ninja | 1.10.0 |
 | pkg-config | 0.29.1 |
 | python3 | 3.8.5 |
+| java (e.g. openjdk) | 11 (1.7 should be fine) |
 | uuid-dev |  |
 | libopenblas-dev |  |
 
