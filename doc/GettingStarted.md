@@ -99,16 +99,14 @@ We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. 
 Write a little DaphneDSL script or use `example.daphne`...
 
 ```
-def main() {
-    let x = 1;
-    let y = 2;
-    print(x + y);
+x = 1;
+y = 2;
+print(x + y);
 
-    // generate 2x3 matrix containing random numbers in [0.0, 100.0]
-    let m = rand(2, 3, 0, 1.0, 0.0, 100.0);
-    print(m);
-    print(m+m);
-}
+m = rand(2, 3, 100.0, 200.0, 1.0, -1);
+print(m);
+print(m + m);
+print(t(m));
 ```
 
 ... and execute it as follows: `build/bin/daphnec example.daphne`.
