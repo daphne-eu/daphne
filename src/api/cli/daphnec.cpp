@@ -19,6 +19,8 @@
 #include "ir/daphneir/Passes.h"
 
 #include "llvm/Support/TargetSelect.h"
+#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
@@ -53,6 +55,7 @@ processModule(ModuleOp module)
         PassManager pm(module->getContext());
 
         pm.addPass(daphne::createRewriteToCallKernelOpPass());
+        pm.addPass(createLowerToCFGPass());
         pm.addPass(daphne::createLowerToLLVMPass());
 
         if (failed(pm.run(module))) {
@@ -114,6 +117,7 @@ main(int argc, char** argv)
     MLIRContext context;
     context.getOrLoadDialect<daphne::DaphneDialect>();
     context.getOrLoadDialect<StandardOpsDialect>();
+    context.getOrLoadDialect<scf::SCFDialect>();
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

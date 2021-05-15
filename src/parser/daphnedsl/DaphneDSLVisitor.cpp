@@ -21,8 +21,12 @@
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarParser.h"
 
+#include <mlir/Dialect/SCF/SCF.h>
+
+#include <set>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 #include <cstdint>
 #include <cstdlib>
@@ -62,6 +66,86 @@ antlrcpp::Any DaphneDSLVisitor::visitExprStatement(DaphneDSLGrammarParser::ExprS
 
 antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::AssignStatementContext * ctx) {
     symbolTable.put(ctx->var->getText(), valueOrError(visit(ctx->expr())));
+    return nullptr;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
+    mlir::Value cond = valueOrError(visit(ctx->cond));
+    
+    mlir::Location loc = builder.getUnknownLoc();
+
+    // Save the current state of the builder.
+    mlir::OpBuilder oldBuilder = builder;
+    
+    // Generate the operations for the then-block.
+    mlir::Block thenBlock;
+    builder.setInsertionPointToEnd(&thenBlock);
+    symbolTable.pushScope();
+    visit(ctx->thenStmt);
+    ScopedSymbolTable::SymbolTable owThen = symbolTable.popScope();
+    
+    // Generate the operations for the else-block, if it is present. Otherwise
+    // leave it empty; we might need to insert a yield-operation.
+    mlir::Block elseBlock;
+    ScopedSymbolTable::SymbolTable owElse;
+    if(ctx->elseStmt) {
+        builder.setInsertionPointToEnd(&elseBlock);
+        symbolTable.pushScope();
+        visit(ctx->elseStmt);
+        owElse = symbolTable.popScope();
+    }
+    
+    // Determine the result type(s) of the if-operation as well as the operands
+    // to the yield-operation of both branches.
+    std::set<std::string> owUnion = ScopedSymbolTable::mergeSymbols(owThen, owElse);
+    std::vector<mlir::Type> resultTypes;
+    std::vector<mlir::Value> resultsThen;
+    std::vector<mlir::Value> resultsElse;
+    for(auto it = owUnion.begin(); it != owUnion.end(); it++) {
+        mlir::Value valThen = symbolTable.get(*it, owThen);
+        mlir::Value valElse = symbolTable.get(*it, owElse);
+        if(valThen.getType() != valElse.getType())
+            // TODO We could try to cast the types.
+            throw std::runtime_error("type missmatch");
+        resultTypes.push_back(valThen.getType());
+        resultsThen.push_back(valThen);
+        resultsElse.push_back(valElse);
+    }
+
+    // Create yield-operations in both branches, possibly with empty results.
+    builder.setInsertionPointToEnd(&thenBlock);
+    builder.create<mlir::scf::YieldOp>(loc, resultsThen);
+    builder.setInsertionPointToEnd(&elseBlock);
+    builder.create<mlir::scf::YieldOp>(loc, resultsElse);
+    
+    // Restore the old state of the builder.
+    builder = oldBuilder;
+    
+    // Helper functions to move the operations in the two blocks created above
+    // into the actual branches of the if-operation.
+    auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), thenBlock.getOperations());
+    };
+    auto insertElseBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
+    };
+    llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)> insertElseBlockNo = nullptr;
+    
+    // Create the actual if-operation. Generate the else-block only if it was
+    // explicitly given in the DSL script, or when it is needed to yield values.
+    auto ifOp = builder.create<mlir::scf::IfOp>(
+            loc,
+            resultTypes,
+            cond,
+            insertThenBlockDo,
+            (ctx->elseStmt || !owUnion.empty()) ? insertElseBlockDo : insertElseBlockNo
+    );
+    
+    // Rewire the results of the if-operation to their variable names.
+    size_t i = 0;
+    for(auto it = owUnion.begin(); it != owUnion.end(); it++)
+        symbolTable.put(*it, ifOp.results()[i++]);
+    
     return nullptr;
 }
 

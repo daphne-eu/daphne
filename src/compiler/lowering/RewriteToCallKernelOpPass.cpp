@@ -18,6 +18,7 @@
 #include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -51,6 +52,8 @@ namespace
             return "uint32_t";
         else if(t.isUnsignedInteger(64))
             return "uint64_t";
+        else if(t.isSignlessInteger(1))
+            return "bool";
         else if(t.isa<daphne::MatrixType>())
             return "DenseMatrix_" + mlirTypeToCppTypeName(
                     t.dyn_cast<daphne::MatrixType>().getElementType()
@@ -114,7 +117,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
 
     // convert other operations
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect>();
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp>();

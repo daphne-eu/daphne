@@ -34,6 +34,7 @@ statement:
     blockStatement
     | exprStatement
     | assignStatement
+    | ifStatement
     ;
 
 blockStatement:
@@ -44,6 +45,9 @@ exprStatement:
 
 assignStatement:
     var=IDENTIFIER '=' expr ';' ;
+
+ifStatement:
+    KW_IF '(' cond=expr ')' thenStmt=statement (KW_ELSE elseStmt=statement)? ;
 
 expr:
     literal # literalExpr
@@ -64,6 +68,9 @@ literal:
 // ****************************************************************************
 // Lexer rules
 // ****************************************************************************
+
+KW_IF: 'if';
+KW_ELSE: 'else';
 
 fragment DIGIT:
     [0-9] ;

@@ -216,6 +216,18 @@ class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = [
     // TODO: We do not enforce (matrix of) boolean output any more, but should
     // think about that again.
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
+
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
+            if(lhs.getType().isa<::mlir::daphne::MatrixType>())
+                $_state.addTypes(lhs.getType());
+            else if(rhs.getType().isa<::mlir::daphne::MatrixType>())
+                $_state.addTypes(rhs.getType());
+            else
+                $_state.addTypes($_builder.getI1Type()); // bool
+            $_state.addOperands({lhs, rhs});
+        }]>
+    ];
 }
 
 def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar>;

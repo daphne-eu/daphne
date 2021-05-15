@@ -229,7 +229,9 @@
         },
         "instantiations": [
             ["double", "double", "double"],
-            ["int64_t", "int64_t", "int64_t"]
+            ["int64_t", "int64_t", "int64_t"],
+            ["bool", "double", "double"],
+            ["bool", "int64_t", "int64_t"]
         ],
         "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
@@ -291,9 +293,9 @@
             ]
         },
         "instantiations": [
-            ["float"],
             ["double"],
-            ["int64_t"]
+            ["int64_t"],
+            ["bool"]
         ]
     },
     {
