@@ -16,6 +16,7 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
+#include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarParser.h"
@@ -48,15 +49,19 @@ antlrcpp::Any DaphneDSLVisitor::visitStatement(DaphneDSLGrammarParser::Statement
     return visitChildren(ctx);
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitBlockStatement(DaphneDSLGrammarParser::BlockStatementContext * ctx) {
+    symbolTable.pushScope();
+    antlrcpp::Any res = visitChildren(ctx);
+    symbolTable.put(symbolTable.popScope());
+    return res;
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitExprStatement(DaphneDSLGrammarParser::ExprStatementContext * ctx) {
     return visitChildren(ctx);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::AssignStatementContext * ctx) {
-    std::string var = ctx->var->getText();
-    antlrcpp::Any valAny = visit(ctx->expr());
-    symbolTable[var] = valueOrError(valAny);
-    
+    symbolTable.put(ctx->var->getText(), valueOrError(visit(ctx->expr())));
     return nullptr;
 }
 
@@ -66,10 +71,12 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::Literal
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
     std::string var = ctx->var->getText();
-    if(symbolTable.count(var))
-        return symbolTable[var];
-    else
+    try {
+        return symbolTable.get(var);
+    }
+    catch(std::runtime_error &) {
         throw std::runtime_error("variable " + var + " referenced before assignment");
+    }
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext * ctx) {

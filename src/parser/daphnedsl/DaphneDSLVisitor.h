@@ -17,15 +17,14 @@
 #ifndef SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H
 #define SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H
 
+#include <parser/ScopedSymbolTable.h>
+
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarParser.h"
 #include "DaphneDSLGrammarVisitor.h"
 
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
-
-#include <string>
-#include <unordered_map>
 
 class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     // By inheriting from DaphneDSLGrammarVisitor (as opposed to
@@ -42,7 +41,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * Maps a variable name from the input DaphneDSL script to the MLIR SSA
      * value that has been assigned to it most recently.
      */
-    std::unordered_map<std::string, mlir::Value> symbolTable;
+    ScopedSymbolTable symbolTable;
     
 public:
     DaphneDSLVisitor(mlir::OpBuilder & builder) : builder(builder) {
@@ -52,6 +51,8 @@ public:
     antlrcpp::Any visitScript(DaphneDSLGrammarParser::ScriptContext * ctx) override;
 
     antlrcpp::Any visitStatement(DaphneDSLGrammarParser::StatementContext * ctx) override;
+
+    antlrcpp::Any visitBlockStatement(DaphneDSLGrammarParser::BlockStatementContext * ctx) override;
 
     antlrcpp::Any visitExprStatement(DaphneDSLGrammarParser::ExprStatementContext * ctx) override;
 

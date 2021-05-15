@@ -31,9 +31,13 @@ script:
     statement* EOF ;
 
 statement:
-    exprStatement
+    blockStatement
+    | exprStatement
     | assignStatement
     ;
+
+blockStatement:
+    '{' statement* '}' ';'? ;
 
 exprStatement:
     expr ';' ;
