@@ -36,5 +36,5 @@ add_executable(run_tests
 )
 target_link_libraries(run_tests PRIVATE
     ValueTypeUtils
-    ${BLAS_LIBRARIES}
+    ${OPENBLAS_LIBRARIES}
 )
