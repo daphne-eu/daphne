@@ -104,7 +104,7 @@ def Daphne_NumCellOp : Daphne_NumOp<"ncell">;
 // Matrix multiplication
 // ****************************************************************************
 
-def Daphne_MatMulOp : Daphne_Op<"matmul"> {
+def Daphne_MatMulOp : Daphne_Op<"matMul"> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs);
     let results = (outs MatrixOf<[NumScalar]>:$res);
 }
