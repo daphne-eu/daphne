@@ -29,5 +29,5 @@ add_library(AllKernels SHARED
 )
 target_link_libraries(AllKernels PRIVATE
         ValueTypeUtils
-        ${BLAS_LIBRARIES}
+        ${OPENBLAS_LIBRARIES}
 )
