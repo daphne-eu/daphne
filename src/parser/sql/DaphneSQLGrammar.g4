@@ -32,7 +32,7 @@ query:
 select:
   SQL_SELECT (SQL_ALL | SQL_DISTINCT | SQL_UNIQUE)? select_list
   SQL_FROM table_list
-/*  where_clause?*/
+/*  where_clause?//*/
 /*
   group_by_clause?
   (SQL_HAVING condition)?
@@ -68,6 +68,12 @@ expr:
 alias:
   IDENTIFIER;
 
+condition:
+  expr
+  | condition '&&' condition
+  | expr '=' expr
+  ;
+
 join_list:
   join_clause join_list?;
 
@@ -80,11 +86,11 @@ inner_cross_join_clause:
   ;
 
 outer_join_clause:
-  SQL_NATURAL? join_type SQL_JOIN table_reference join_condition;
+  SQL_NATURAL? outer_join_type SQL_JOIN table_reference join_condition;
 
 join_condition:
   SQL_ON condition
-  | SQL_USING '(' column_list ')'
+  | SQL_USING '(' expr ')'
   ;
 
 outer_join_type:
