@@ -130,6 +130,25 @@ then
 fi
 cd ..
 
+# OpenBLAS (basic linear algebra subprograms)
+pwdBeforeOpenBlas=$(pwd)
+openBlasDirName=OpenBLAS
+openBlasVersion=0.3.15
+openBlasZipName=OpenBLAS-$openBlasVersion.zip
+openBlasInstDirName=installed
+mkdir --parents $openBlasDirName
+cd $openBlasDirName
+if [ ! -f $openBlasZipName ]
+then
+    wget https://github.com/xianyi/OpenBLAS/releases/download/v$openBlasVersion/$openBlasZipName
+    unzip $openBlasZipName
+    mkdir --parents $openBlasInstDirName
+    cd OpenBLAS-$openBlasVersion
+    make
+    make install PREFIX=../$openBlasInstDirName
+fi
+cd $pwdBeforeOpenBlas
+
 #------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
@@ -167,7 +186,8 @@ cmake -G Ninja .. \
     -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
     -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
     -DANTLR4_RUNTIME_DIR=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
-    -DANTLR4_JAR_LOCATION=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrJarName
+    -DANTLR4_JAR_LOCATION=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrJarName \
+    -DOPENBLAS_INST_DIR=$(pwd)/../$thirdpartyPath/$openBlasDirName/$openBlasInstDirName
 cmake --build . --target $target
 
 

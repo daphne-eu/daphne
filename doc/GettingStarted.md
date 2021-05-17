@@ -45,7 +45,6 @@ Newer versions should work as well, older versions might work as well.
 | python3 | 3.8.5 |
 | java (e.g. openjdk) | 11 (1.7 should be fine) |
 | uuid-dev |  |
-| libopenblas-dev |  |
 
 ##### Hardware
 

@@ -53,9 +53,11 @@ set(LLVM_ENABLE_RTTI ON)
 # Related to BLAS
 # *****************************************************************************
 
-set(BLA_STATIC ON)
-set(BLA_VENDOR OpenBLAS)
-find_package(BLAS REQUIRED)
+SET(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
+include_directories(${OPENBLAS_INST_DIR}/include)
+SET(OPENBLAS_LIBRARIES ${OPENBLAS_INST_DIR}/lib/libopenblas.a ${CMAKE_THREAD_LIBS_INIT})
 
 # *****************************************************************************
 # Project-specific include directories
