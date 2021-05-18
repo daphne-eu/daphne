@@ -33,7 +33,7 @@ add_executable(run_tests
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/TransposeTest.cpp
-        runtime/local/kernels/MatPropsKernelsTest.cpp
+        runtime/local/kernels/IsSymmetricTest.cpp
 )
 target_link_libraries(run_tests PRIVATE
     ValueTypeUtils

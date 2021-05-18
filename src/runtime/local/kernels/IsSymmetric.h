@@ -23,7 +23,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <string>
 
-template <class DTArg> struct MatSymCheck {
+template <class DTArg> struct IsSymmetric {
   static bool apply(const DTArg *arg) = delete;
 };
 
@@ -31,66 +31,74 @@ template <class DTArg> struct MatSymCheck {
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg> bool matSymCheck(const DTArg *arg) {
-  return MatSymCheck<DTArg>::apply(arg);
+template <class DTArg> bool isSymmetric(const DTArg *arg) {
+  return IsSymmetric<DTArg>::apply(arg);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different DataTypes
 // ****************************************************************************
 
-template <typename VT> struct MatSymCheck<DenseMatrix<VT>> {
+
+/**
+ * @brief Checks for symmetrie of a `DenseMatrix`.
+ *
+ * Checks for symmetrie in a DenseMatrix. Returning early if a check failes, or the matrix is not
+ * square. Singular matrixes are considered square. The maximum amount of required checks is 
+ * (#row * #rows - #rows)/2 elements.
+*/
+
+template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
   static bool apply(const DenseMatrix<VT> *arg) {
 
     const size_t numRows = arg->getNumRows();
     const size_t numCols = arg->getNumCols();
 
-    if (numRows != numCols || numRows <= 1 || numCols <= 1) {
+    if (numRows != numCols ) {
       throw std::runtime_error("Provided matrix is not square.");
     }
 
-    size_t totalCheckToMake = (numRows * numRows - numRows) / 2;
-    size_t rowIdx = 0;
-    size_t checksInRow = numRows - 1;
-
-    const VT *start = arg->getValues();
-    const VT *fin = start + ((numCols * numCols) - 2); // last element to check
-
-    while (totalCheckToMake > 0) {
-
-      const VT *pt1 = start + (rowIdx * numRows) + (numRows - checksInRow);
-      const VT *pt2 = start + (numRows - checksInRow) * numRows + rowIdx;
-
-      if (*pt1 != *pt2) {
-        return false;
-      }
-
-      checksInRow--;
-      totalCheckToMake--;
-
-      if (checksInRow == 0) {
-        rowIdx++;
-        checksInRow = numRows - (rowIdx + 1);
-      }
+    // singular matrix is considered symmetric.
+    if(numRows <= 1 || numCols <= 1) {
+        return true;
     }
 
+    for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+        for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
+
+            if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
+                return false;
+            }
+        }
+    }
     return true;
   }
 };
 
-template <typename VT> struct MatSymCheck<CSRMatrix<VT>> {
+template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
   static bool apply(const CSRMatrix<VT> *arg) {
 
     const size_t numRows = arg->getNumRows();
     const size_t numCols = arg->getNumCols();
-    const VT *values = arg->getValues();
 
-    if (numRows != numCols || numRows <= 1 || numCols <= 1) {
+    if (numRows != numCols ) {
       throw std::runtime_error("Provided matrix is not square.");
     }
 
-    return false;
-    // throw std::string("Not implemented");
+    // singular matrix is considered symmetric.
+    if(numRows <= 1 || numCols <= 1) {
+        return true;
+    }
+
+    for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+        for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
+
+            if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
+                return false;
+            }
+        }
+    }
+    return true;
   }
 };
 
