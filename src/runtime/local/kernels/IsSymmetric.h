@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MATSYMCHECK_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MATSYMCHECK_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
+#define SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
 
 #include <cstddef>
 #include <cstdio>
@@ -24,7 +24,7 @@
 #include <string>
 
 template <class DTArg> struct IsSymmetric {
-  static bool apply(const DTArg *arg) = delete;
+    static bool apply(const DTArg *arg) = delete;
 };
 
 // ****************************************************************************
@@ -32,74 +32,74 @@ template <class DTArg> struct IsSymmetric {
 // ****************************************************************************
 
 template <class DTArg> bool isSymmetric(const DTArg *arg) {
-  return IsSymmetric<DTArg>::apply(arg);
+    return IsSymmetric<DTArg>::apply(arg);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different DataTypes
 // ****************************************************************************
 
-
 /**
  * @brief Checks for symmetrie of a `DenseMatrix`.
  *
- * Checks for symmetrie in a DenseMatrix. Returning early if a check failes, or the matrix is not
- * square. Singular matrixes are considered square. The maximum amount of required checks is 
+ * Checks for symmetrie in a DenseMatrix. Returning early if a check failes, or
+ * the matrix is not square. Singular matrixes are considered square. The
+ * maximum amount of required checks is
  * (#row * #rows - #rows)/2 elements.
-*/
+ */
 
 template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
-  static bool apply(const DenseMatrix<VT> *arg) {
+    static bool apply(const DenseMatrix<VT> *arg) {
 
-    const size_t numRows = arg->getNumRows();
-    const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
 
-    if (numRows != numCols ) {
-      throw std::runtime_error("Provided matrix is not square.");
-    }
+        if (numRows != numCols) {
+            throw std::runtime_error("Provided matrix is not square.");
+        }
 
-    // singular matrix is considered symmetric.
-    if(numRows <= 1 || numCols <= 1) {
-        return true;
-    }
+        // singular matrix is considered symmetric.
+        if (numRows <= 1 || numCols <= 1) {
+            return true;
+        }
 
-    for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-        for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
 
-            if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
-                return false;
+                if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
+                    return false;
+                }
             }
         }
+        return true;
     }
-    return true;
-  }
 };
 
 template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
-  static bool apply(const CSRMatrix<VT> *arg) {
+    static bool apply(const CSRMatrix<VT> *arg) {
 
-    const size_t numRows = arg->getNumRows();
-    const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
 
-    if (numRows != numCols ) {
-      throw std::runtime_error("Provided matrix is not square.");
-    }
+        if (numRows != numCols) {
+            throw std::runtime_error("Provided matrix is not square.");
+        }
 
-    // singular matrix is considered symmetric.
-    if(numRows <= 1 || numCols <= 1) {
-        return true;
-    }
+        // singular matrix is considered symmetric.
+        if (numRows <= 1 || numCols <= 1) {
+            return true;
+        }
 
-    for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-        for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
 
-            if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
-                return false;
+                if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
+                  return false;
+                }
             }
         }
+        return true;
     }
-    return true;
-  }
 };
 
-#endif // SRC_RUNTIME_LOCAL_KERNELS_MATSYMCHECK_H
+#endif // SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
