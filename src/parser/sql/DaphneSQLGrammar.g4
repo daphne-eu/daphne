@@ -27,74 +27,89 @@ script:
     query* EOF ;
 
 query:
-  subquery? select';';
+    subquery? select';';
 
 select:
-  SQL_SELECT (SQL_ALL | SQL_DISTINCT | SQL_UNIQUE)? select_list
-  SQL_FROM table_list
-/*  where_clause?//*/
+    SQL_SELECT /*(SQL_ALL | SQL_DISTINCT | SQL_UNIQUE)?*/ selectList
+    SQL_FROM tableList
+    whereClause?//*/
 /*
-  group_by_clause?
+  group_byClause?
   (SQL_HAVING condition)?
   ( (SQL_UNION SQL_ALL? | SQL_INTERSECT | SQL_MINUS) ( subquery ))?
-  order_by_clause?
+  order_byClause?
 */
 ;
-/* query_name is a temporary identifier */
+
 subquery:
-  SQL_WITH subquery_list;
+    SQL_WITH subqueryExpr (',' subqueryExpr)*;
 
-subquery_list:
-  alias SQL_AS '(' select ')' (',' subquery_list)*;
+subqueryExpr:
+    var=alias SQL_AS '(' select ')';
+/*
+*   Needs to be extended. For instance selecting everything from a table
+*   Function calls like AVG()..
+*/
+selectList:
+    var=ident (SQL_AS rename=alias)? (',' selectList)?;
 
-/* Needs to be extended. For instance selecting everything from a table*/
-select_list:
-  '*'
-  | expr (SQL_AS alias)? (',' select_list)?;
+tableList:
+    tableReference (',' tableList | joinList)?;
 
-table_list:
-  table_reference (',' table_list | join_list)?;
+joinList:
+    joinClause joinList?;
 
-/* ONLY keyword and flashback clause excluded for the moment*/
-table_reference:
-  query_table_expression (SQL_AS? alias)?;
+joinClause:
+    innerCrossJoinClause | outerJoinClause;
 
-query_table_expression:
-  (IDENTIFIER '.')? IDENTIFIER;
+innerCrossJoinClause:
+    SQL_INNER? SQL_JOIN tableReference joinCondition
+    | (SQL_CROSS | SQL_NATURAL SQL_INNER?) SQL_JOIN tableReference
+    ;
+
+outerJoinClause:
+    SQL_NATURAL? outerJoinType SQL_JOIN tableReference joinCondition;
+
+joinCondition:
+    SQL_ON cond=expr
+    | SQL_USING '(' ident ')'
+    ;
+
+outerJoinType:
+    (SQL_FULL | SQL_LEFT | SQL_RIGHT) SQL_OUTER?;
+
+whereClause:
+    SQL_WHERE cond=expr;
+
+
 
 expr:
-  IDENTIFIER ('.' IDENTIFIER | '.' INT_POSITIV_LITERAL)?;
+    literal # literalExpr
+    | var=ident # identifierExpr
+    | '(' expr ')' # paranthesesExpr
+    | lhs=expr op=('*'|'/') rhs=expr # mulExpr
+    | lhs=expr op=('+'|'-') rhs=expr # addExpr
+    | lhs=expr op=('='|'=='|'!='|'<>'|'<='|'>='|'<'|'>') rhs=expr # cmpExpr
+    | lhs=expr op=('&&'|'||') rhs=expr # logicalExpr
+    ;
+
+tableReference:
+    var=IDENTIFIER (SQL_AS? aka=alias)?;
+
+ident:
+    (frame=IDENTIFIER '.')? colname=IDENTIFIER
+    | frame=IDENTIFIER '[' colnumber=INT_POSITIV_LITERAL ']'
+    | frame=IDENTIFIER '.' colnumber=INT_POSITIV_LITERAL
+    ;
 
 alias:
-  IDENTIFIER;
+    IDENTIFIER;
 
-condition:
-  expr
-  | condition '&&' condition
-  | expr '=' expr
-  ;
+literal:
+    INT_LITERAL
+    | FLOAT_LITERAL
+    ;
 
-join_list:
-  join_clause join_list?;
-
-join_clause:
-  inner_cross_join_clause | outer_join_clause;
-
-inner_cross_join_clause:
-  SQL_INNER? SQL_JOIN table_reference join_condition
-  | (SQL_CROSS | SQL_NATURAL SQL_INNER?) SQL_JOIN table_reference
-  ;
-
-outer_join_clause:
-  SQL_NATURAL? outer_join_type SQL_JOIN table_reference join_condition;
-
-join_condition:
-  SQL_ON condition
-  | SQL_USING '(' expr ')'
-  ;
-
-outer_join_type:
-  (SQL_FULL | SQL_LEFT | SQL_RIGHT) SQL_OUTER?;
 
 // ****************************************************************************
 // Lexer rules
