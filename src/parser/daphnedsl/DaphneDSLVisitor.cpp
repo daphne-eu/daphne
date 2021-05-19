@@ -149,6 +149,112 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     return nullptr;
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+    
+    auto ip = builder.saveInsertionPoint();
+    
+    // The two blocks for the SCF WhileOp.
+    auto beforeBlock = new mlir::Block;
+    auto afterBlock = new mlir::Block;
+    
+    const bool isDoWhile = ctx->KW_DO();
+    
+    mlir::Value cond;
+    ScopedSymbolTable::SymbolTable ow;
+    if(isDoWhile) { // It's a do-while loop.
+        builder.setInsertionPointToEnd(beforeBlock);
+        
+        // Scope for body and condition, such that condition can see the body's
+        // updates to variables existing before the loop.
+        symbolTable.pushScope();
+        
+        // The body gets its own scope to not expose variables created inside
+        // the body to the condition. While this is unnecessary if the body is
+        // a block statement, there are nasty cases if no block statement is
+        // used.
+        symbolTable.pushScope();
+        visit(ctx->bodyStmt);
+        ow = symbolTable.popScope();
+        
+        // Make the body's updates visible to the condition.
+        symbolTable.put(ow);
+        
+        cond = valueOrError(visit(ctx->cond));
+        
+        symbolTable.popScope();
+    }
+    else { // It's a while loop.
+        builder.setInsertionPointToEnd(beforeBlock);
+        cond = valueOrError(visit(ctx->cond));
+
+        builder.setInsertionPointToEnd(afterBlock);
+        symbolTable.pushScope();
+        visit(ctx->bodyStmt);
+        ow = symbolTable.popScope();
+    }
+    
+    // Determine which variables created before the loop are updated in the
+    // loop's body. These become the arguments and results of the WhileOp and
+    // its "before" and "after" region.
+    std::vector<mlir::Value> owVals;
+    std::vector<mlir::Type> resultTypes;
+    std::vector<mlir::Value> whileOperands;
+    for(auto it = ow.begin(); it != ow.end(); it++) {
+        mlir::Value owVal = it->second;
+        mlir::Type type = owVal.getType();
+        
+        owVals.push_back(owVal);
+        resultTypes.push_back(type);
+        
+        mlir::Value oldVal = symbolTable.get(it->first);
+        whileOperands.push_back(oldVal);
+        
+        beforeBlock->addArgument(type);
+        afterBlock->addArgument(type);
+    }
+    
+    // Create the ConditionOp of the "before" block.
+    builder.setInsertionPointToEnd(beforeBlock);
+    if(isDoWhile)
+        builder.create<mlir::scf::ConditionOp>(loc, cond, owVals);
+    else
+        builder.create<mlir::scf::ConditionOp>(loc, cond, beforeBlock->getArguments());
+    
+    // Create the YieldOp of the "after" block.
+    builder.setInsertionPointToEnd(afterBlock);
+    if(isDoWhile)
+        builder.create<mlir::scf::YieldOp>(loc, afterBlock->getArguments());
+    else
+        builder.create<mlir::scf::YieldOp>(loc, owVals);
+    
+    builder.restoreInsertionPoint(ip);
+    
+    // Create the SCF WhileOp and insert the "before" and "after" blocks.
+    auto whileOp = builder.create<mlir::scf::WhileOp>(loc, resultTypes, whileOperands);
+    whileOp.before().push_back(beforeBlock);
+    whileOp.after().push_back(afterBlock);
+    
+    size_t i = 0;
+    for(auto it = ow.begin(); it != ow.end(); it++) {
+        // Replace usages of the variables updated in the loop's body by the
+        // corresponding block arguments.
+        whileOperands[i].replaceUsesWithIf(beforeBlock->getArgument(i), [&](mlir::OpOperand & operand) {
+            auto parentRegion = operand.getOwner()->getBlock()->getParent();
+            return parentRegion != nullptr && whileOp.before().isAncestor(parentRegion);
+        });
+        whileOperands[i].replaceUsesWithIf(afterBlock->getArgument(i), [&](mlir::OpOperand & operand) {
+            auto parentRegion = operand.getOwner()->getBlock()->getParent();
+            return parentRegion != nullptr && whileOp.after().isAncestor(parentRegion);
+        });
+        
+        // Rewire the results of the WhileOp to their variable names.
+        symbolTable.put(it->first, whileOp.results()[i++]);
+    }
+    
+    return nullptr;
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) {
     return visitChildren(ctx);
 }
