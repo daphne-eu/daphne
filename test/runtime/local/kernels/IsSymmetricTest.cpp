@@ -24,7 +24,6 @@
 #include <stdexcept>
 #include <tags.h>
 #include <catch.hpp>
-#include <type_traits>
 
 TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
 
@@ -55,7 +54,7 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
     SECTION("isSymmetric") {
 
         CHECK(isSymmetric<DT>(symMat));
-  
+
         CHECK_FALSE(isSymmetric<DT>(asymMat));
 
         CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat), std::runtime_error);
