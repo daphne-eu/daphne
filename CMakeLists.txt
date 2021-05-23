@@ -45,22 +45,19 @@ include_directories(${MLIR_INCLUDE_DIRS})
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
+# Enable exception handling and run-time type information.
+set(LLVM_ENABLE_EH ON)
+set(LLVM_ENABLE_RTTI ON)
+
 # *****************************************************************************
 # Related to BLAS
 # *****************************************************************************
 
-set(BLA_STATIC ON)
-set(BLA_VENDOR OpenBLAS)
-find_package(BLAS REQUIRED)
+SET(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
-# *****************************************************************************
-# Related to ANTLR and DaphneDSL parser
-# *****************************************************************************
-
-# TODO Don't hardcode these paths. See "src/parser/daphnedsl/CMakeLists.txt".
-include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4_runtime/src/antlr4_runtime/runtime/Cpp/runtime/src)
-include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneLexer)
-include_directories(${PROJECT_BINARY_DIR}/src/parser/daphnedsl/antlr4cpp_generated_src/DaphneParser)
+include_directories(${OPENBLAS_INST_DIR}/include)
+SET(OPENBLAS_LIBRARIES ${OPENBLAS_INST_DIR}/lib/libopenblas.a ${CMAKE_THREAD_LIBS_INIT})
 
 # *****************************************************************************
 # Project-specific include directories
@@ -76,7 +73,7 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 add_subdirectory(src/api/cli)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/ir/daphneir)
-add_subdirectory(src/parser/daphnedsl)
+add_subdirectory(src/parser)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/kernels)
 

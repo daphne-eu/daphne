@@ -68,7 +68,7 @@ def UIntScalar : AnyTypeOf<[UI8, UI32, UI64], "unsigned integer">;
 def IntScalar : AnyTypeOf<[SIntScalar, UIntScalar], "integer">;
 def FloatScalar : AnyTypeOf<[F32, F64], "float">;
 def NumScalar : AnyTypeOf<[IntScalar, FloatScalar], "numeric">;
-def BoolScalar : TypeAlias<UI1, "boolean">;
+def BoolScalar : TypeAlias<I1, "boolean">;
 
 // TODO Exclude Index again.
 def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;

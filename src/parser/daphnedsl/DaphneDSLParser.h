@@ -14,16 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
-#define SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
+#ifndef SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H
+#define SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H
 
-#include <cassert>
+#include <parser/Parser.h>
 
-/**
- * `typeNew` should be a pointer type.
- */
-#define dynamic_cast_assert(typeNew, varNew, varOld) \
-    typeNew varNew = dynamic_cast<typeNew>(varOld); \
-    assert(varNew && "'" #varOld "'does not have the expected type '" #typeNew "'");
+#include <mlir/IR/Builders.h>
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
+#include <istream>
+
+struct DaphneDSLParser : public Parser {
+    
+    void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
+    
+};
+
+#endif /* SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H */
+

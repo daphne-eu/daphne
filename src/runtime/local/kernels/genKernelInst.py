@@ -39,12 +39,18 @@ DEFAULT_NEWRESPARAM = "res"
 def toCppType(t):
     return "{}<{}>".format(t[0], t[1]) if isinstance(t, list) else t
 
-def generateKernelInstantiation(kernelTemplateInfo, templateValues, outFile):
+def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, outFile):
     # Extract some information.
     opName = kernelTemplateInfo["opName"]
     returnType = kernelTemplateInfo["returnType"]
     templateParams = kernelTemplateInfo["templateParams"]
     runtimeParams = kernelTemplateInfo["runtimeParams"]
+    if opCodes is not None:
+        # We assume that the op-code is the first run-time parameter.
+        opCodeType = runtimeParams[0]["type"]
+        runtimeParams = runtimeParams[1:]
+    else:
+        opCodeType = None
 
     # Create mapping from original template argument names to assigned C++
     # types.
@@ -64,33 +70,66 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, outFile):
     # Replace occurences of original template arguments by their assigned
     # types.
     for rp in extendedRuntimeParams:
-        for tp in templateParams:
+        for tpIdx, tp in enumerate(templateParams):
+            if isinstance(templateValues[tpIdx], list):
+                rp["type"] = rp["type"].replace("typename {}::VT".format(tp["name"]), templateValues[tpIdx][1])
             rp["type"] = rp["type"].replace(tp["name"], templateArgToCppType[tp["name"]])
         rp["type"] = rp["type"].replace("*&", "**")
+        if rp["type"] == "size_t":
+            rp["type"] = "int64_t" # TODO actually, it should be "uint64_t"
     
-    typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
+    #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
+    typesForName = "__".join([rp["type"].replace("const ", "").replace(" **", "").replace(" *", "").replace("<", "_").replace(">", "") for rp in extendedRuntimeParams])
     params = ", ".join(["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams])
 
-    # Signature of the function wrapping the kernel instantiation.
-    outFile.write(INDENT + "void {}__{}({}) {{\n".format(opName, typesForName, params))
+    def generateFunction(opCode):
+        # Obtain the name of the function to be generated from the opName by
+        # removing suffices "Sca"/"Mat"/"Obj" (they are not required here), and
+        # potentially by inserting the opCode into the name.
+        funcName = opName
+        while funcName[-3:] in ["Sca", "Mat", "Obj"]:
+            funcName = funcName[:-3]
+        if opCode is not None:
+            # We assume that the name of the op-code type ends with "OpCode".
+            opCodeWord = opCodeType[:-len("OpCode")]
+            funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
+            funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+        
+        # Signature of the function wrapping the kernel instantiation.
+        outFile.write(INDENT + "void {}__{}({}) {{\n".format(funcName, typesForName, params))
+        
+        # List of parameters for the call.
+        if opCode is None:
+            callParams = []
+        else:
+            callParams = ["{}::{}".format(opCodeType, opCode)]
+        callParams.extend([
+            # Dereference double pointer.
+            "{}{}".format("*" if rp["type"].endswith("**") else "", rp["name"])
+            for rp
+            in extendedRuntimeParams[(0 if returnType == "void" else 1):]
+        ])
+        
+        # Body of that function: delegate to the kernel instantiation.
+        outFile.write(2 * INDENT)
+        if returnType != "void":
+            outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
+        outFile.write("{}<{}>({});\n".format(
+                opName,
+                # Template parameters:
+                ", ".join([toCppType(tv) for tv in templateValues]),
+                # Run-time parameters:
+                ", ".join(callParams)
+        ))
+        outFile.write(INDENT + "}\n")
     
-    # Body of that function: delegate to the kernel instantiation.
-    outFile.write(2 * INDENT)
-    if returnType != "void":
-        outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
-    outFile.write("{}<{}>({});\n".format(
-            opName,
-            # Template parameters:
-            ", ".join([toCppType(tv) for tv in templateValues]),
-            # Run-time parameters:
-            ", ".join([
-                # Dereference double pointer.
-                "{}{}".format("*" if rp["type"].endswith("**") else "", rp["name"])
-                for rp
-                in extendedRuntimeParams[(0 if returnType == "void" else 1):]
-            ])
-    ))
-    outFile.write(INDENT + "}\n\n")
+    # Generate the function(s).
+    if opCodes is None:
+        generateFunction(None)
+    else:
+        for opCode in opCodes:
+            generateFunction(opCode)
+    outFile.write(INDENT + "\n")
 
 def printHelp():
     print("Usage: python3 {} INPUT_SPEC_FILE OUTPUT_CPP_FILE".format(sys.argv[0]))
@@ -127,6 +166,7 @@ if __name__ == "__main__":
             outFile.write("#include <runtime/local/kernels/{}>\n\n".format(kernelTemplateInfo["header"]))
             # One function per instantiation of the kernel.
             outFile.write("extern \"C\" {\n\n")
+            opCodes = kernelInfo.get("opCodes", None)
             for instantiation in kernelInfo["instantiations"]:
-                generateKernelInstantiation(kernelTemplateInfo, instantiation, outFile)
+                generateKernelInstantiation(kernelTemplateInfo, instantiation, opCodes, outFile)
             outFile.write("}\n\n")

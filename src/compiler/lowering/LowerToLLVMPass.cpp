@@ -27,6 +27,8 @@
 
 using namespace mlir;
 
+#if 0
+// At the moment, all of these operations are lowered to kernel calls.
 template <typename BinaryOp, typename ReplIOp, typename ReplFOp>
 struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
 {
@@ -52,6 +54,7 @@ struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
 using AddOpLowering = BinaryOpLowering<daphne::AddOp, AddIOp, AddFOp>;
 using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
 using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
+#endif
 
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
@@ -206,14 +209,20 @@ private:
         for (size_t i = 0; i < inputOutputTypes.size() - operands.size(); i++) {
             auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1);
             kernelOperands.push_back(allocaOp);
-            // Initialize the allocated pointer with a null-pointer.
-            rewriter.create<LLVM::StoreOp>(
-                    loc,
-                    rewriter.create<LLVM::NullOp>(
-                            loc, LLVM::LLVMPointerType::get(IntegerType::get(rewriter.getContext(), 1))
-                    ),
-                    allocaOp
-            );
+
+            // If the type of this result parameter is a pointer (i.e. when it
+            // represents a matrix or frame), then initialize the allocated
+            // element with a null pointer (required by the kernels). Otherwise
+            // (i.e. when it represents a scalar), initialization is not
+            // required.
+            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>())
+                rewriter.create<LLVM::StoreOp>(
+                        loc,
+                        rewriter.create<LLVM::NullOp>(
+                                loc, LLVM::LLVMPointerType::get(IntegerType::get(rewriter.getContext(), 1))
+                        ),
+                        allocaOp
+                );
         }
         for(auto op : operands)
             kernelOperands.push_back(op);
@@ -255,7 +264,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
-    patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering, CallKernelOpLowering>(typeConverter, &getContext());
+    patterns.insert<CallKernelOpLowering>(typeConverter, &getContext());
     patterns.insert<ConstantOpLowering, ReturnOpLowering>(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This

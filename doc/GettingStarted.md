@@ -20,7 +20,7 @@ This document summarizes everything you need to know to get started with using o
 
 ### System Requirements
 
-Please ensure that your system meets the following requirements before trying to build the prototype.
+Please ensure that your development system meets the following requirements before trying to build the prototype.
 
 **(*)**
 You can view the version numbers as an orientation rather than a strict requirement.
@@ -43,8 +43,8 @@ Newer versions should work as well, older versions might work as well.
 | ninja | 1.10.0 |
 | pkg-config | 0.29.1 |
 | python3 | 3.8.5 |
+| java (e.g. openjdk) | 11 (1.7 should be fine) |
 | uuid-dev |  |
-| libopenblas-dev |  |
 
 ##### Hardware
 
@@ -98,16 +98,14 @@ We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. 
 Write a little DaphneDSL script or use `example.daphne`...
 
 ```
-def main() {
-    let x = 1;
-    let y = 2;
-    print(x + y);
+x = 1;
+y = 2;
+print(x + y);
 
-    // generate 2x3 matrix containing random numbers in [0.0, 100.0]
-    let m = rand(2, 3, 0, 1.0, 0.0, 100.0);
-    print(m);
-    print(m+m);
-}
+m = rand(2, 3, 100.0, 200.0, 1.0, -1);
+print(m);
+print(m + m);
+print(t(m));
 ```
 
 ... and execute it as follows: `build/bin/daphnec example.daphne`.

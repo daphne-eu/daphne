@@ -24,9 +24,6 @@ set(LIBS
         ValueTypeUtils
 )
 
-# enable exceptions handling
-set(LLVM_ENABLE_EH ON)
-
 add_llvm_executable(daphnec
         daphnec.cpp
 

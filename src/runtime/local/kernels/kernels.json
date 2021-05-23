@@ -22,11 +22,12 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
-            [["CSRMatrix", "float"]],
-            [["CSRMatrix", "double"]]
-        ]
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -59,11 +60,12 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"], ["CSRMatrix", "float"]],
-            [["DenseMatrix", "double"], ["CSRMatrix", "double"]]
-        ]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -96,11 +98,12 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"], ["CSRMatrix", "float"]],
-            [["DenseMatrix", "double"], ["CSRMatrix", "double"]]
-        ]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -141,9 +144,10 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
-        ]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -184,14 +188,15 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"]
-        ]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
             "header": "EwBinarySca.h",
-            "opName": "ewBinaryScaRT",
+            "opName": "ewBinarySca",
             "returnType": "TRes",
             "templateParams": [
                 {
@@ -223,9 +228,12 @@
             ]
         },
         "instantiations": [
-            ["float", "float", "float"],
-            ["double", "double", "double"]
-        ]
+            ["double", "double", "double"],
+            ["int64_t", "int64_t", "int64_t"],
+            ["bool", "double", "double"],
+            ["bool", "int64_t", "int64_t"]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -285,9 +293,9 @@
             ]
         },
         "instantiations": [
-            ["float"],
             ["double"],
-            ["int64_t"]
+            ["int64_t"],
+            ["bool"]
         ]
     },
     {
@@ -309,7 +317,6 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]]
         ]
@@ -361,7 +368,6 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"]
         ]
@@ -393,11 +399,10 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["CSRMatrix", "float"], ["CSRMatrix", "float"]],
-            [["CSRMatrix", "double"], ["CSRMatrix", "double"]]
+            [["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
         ]
     }
 ]
