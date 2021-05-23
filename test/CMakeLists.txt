@@ -22,7 +22,9 @@ add_executable(run_tests
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
-        
+
+        runtime/local/io/ReadCsv.cpp
+
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
