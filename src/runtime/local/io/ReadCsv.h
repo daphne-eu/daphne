@@ -19,6 +19,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include <type_traits>
 
@@ -36,6 +37,9 @@
 template <class DTRes> struct ReadCsv {
   static void apply(DTRes *&res, char *filename, size_t numRows, size_t numCols,
                     char delim) = delete;
+
+  static void apply(DTRes *&res, char *filename, size_t numRows, size_t numCols,
+                    char delim, ValueTypeCode *schema) = delete;
 };
 
 // ****************************************************************************
@@ -46,6 +50,12 @@ template <class DTRes>
 void readCsv(DTRes *&res, char *filename, size_t numRows, size_t numCols,
              char delim) {
   ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim);
+}
+
+template <class DTRes>
+void readCsv(DTRes *&res, char *filename, size_t numRows, size_t numCols,
+             char delim, ValueTypeCode *schema) {
+  ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema);
 }
 
 // ****************************************************************************
@@ -103,6 +113,91 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
           VT val;
           convert(cell, &val);
           res->set(row, col, val);
+          if (++col >= numCols) {
+            break;
+          }
+        }
+
+        lineStream.clear();
+        if (++row >= numRows) {
+          break;
+        }
+        col = 0;
+      }
+
+      file.close();
+    } else {
+      assert(false && "File not found.");
+    }
+  }
+};
+
+template <> struct ReadCsv<Frame> {
+  static void apply(Frame *&res, char *filename, size_t numRows,
+                    size_t numCols, char delim, ValueTypeCode *schema) {
+    assert(numRows > 0 && "numRows must be > 0");
+    assert(numCols > 0 && "numCols must be > 0");
+
+    if (res == nullptr) {
+      res = DataObjectFactory::create<Frame>(numRows, numCols, schema, false);
+    }
+
+    std::ifstream file(filename);
+    std::string line;
+    std::stringstream lineStream;
+    std::string cell;
+
+    if (file.is_open()) {
+      size_t row = 0, col = 0;
+      std::string line;
+
+      while (std::getline(file, line)) {
+        lineStream.str(line);
+
+        while (std::getline(lineStream, cell, delim)) {
+          switch (res->getColumnType(col)){
+              case ValueTypeCode::SI8:
+                  int8_t val_si8;
+                  convert(cell, &val_si8);
+                  res->getColumn<int8_t>(col)->set(row, 0, val_si8);
+                  break;
+              case ValueTypeCode::SI32:
+                  int32_t val_si32;
+                  convert(cell, &val_si32);
+                  res->getColumn<int32_t>(col)->set(row, 0, val_si32);
+                  break;
+              case ValueTypeCode::SI64:
+                  int64_t val_si64;
+                  convert(cell, &val_si64);
+                  res->getColumn<int64_t>(col)->set(row, 0, val_si64);
+                  break;
+              case ValueTypeCode::UI8:
+                  uint8_t val_ui8;
+                  convert(cell, &val_ui8);
+                  res->getColumn<uint8_t>(col)->set(row, 0, val_ui8);
+                  break;
+              case ValueTypeCode::UI32:
+                  uint32_t val_ui32;
+                  convert(cell, &val_ui32);
+                  res->getColumn<uint32_t>(col)->set(row, 0, val_ui32);
+                  break;
+              case ValueTypeCode::UI64:
+                  uint64_t val_ui64;
+                  convert(cell, &val_ui64);
+                  res->getColumn<uint64_t>(col)->set(row, 0, val_ui64);
+                  break;
+              case ValueTypeCode::F32:
+                  float val_f32;
+                  convert(cell, &val_f32);
+                  res->getColumn<float>(col)->set(row, 0, val_f32);
+                  break;
+              case ValueTypeCode::F64:
+                  double val_f64;
+                  convert(cell, &val_f64);
+                  res->getColumn<double>(col)->set(row, 0, val_f64);
+                  break;
+          }
+
           if (++col >= numCols) {
             break;
           }
