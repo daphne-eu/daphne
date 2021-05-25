@@ -35,6 +35,6 @@ add_executable(run_tests
         runtime/local/kernels/TransposeTest.cpp
 )
 target_link_libraries(run_tests PRIVATE
-    ValueTypeUtils
+    DataStructures
     ${OPENBLAS_LIBRARIES}
 )
