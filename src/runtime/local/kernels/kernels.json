@@ -130,12 +130,19 @@
         "instantiations": [
             ["double", "double"],
             ["double", "int64_t"],
+            ["double", "size_t"],
             ["double", "bool"],
             ["int64_t", "double"],
             ["int64_t", "int64_t"],
+            ["int64_t", "size_t"],
             ["int64_t", "bool"],
+            ["size_t", "double"],
+            ["size_t", "int64_t"],
+            ["size_t", "size_t"],
+            ["size_t", "bool"],
             ["bool", "double"],
             ["bool", "int64_t"],
+            ["bool", "size_t"],
             ["bool", "bool"]
         ]
     },
@@ -329,7 +336,8 @@
         "instantiations": [
             ["double"],
             ["int64_t"],
-            ["bool"]
+            ["bool"],
+            ["size_t"]
         ]
     },
     {

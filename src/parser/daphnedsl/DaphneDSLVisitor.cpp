@@ -41,6 +41,12 @@ mlir::Value valueOrError(antlrcpp::Any a) {
     throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
 }
 
+mlir::Value DaphneDSLVisitor::castIf(mlir::Location loc, mlir::Type t, mlir::Value v) {
+    if(v.getType() == t)
+        return v;
+    return builder.create<mlir::daphne::CastOp>(loc, t, v);
+}
+
 // ****************************************************************************
 // Visitor functions
 // ****************************************************************************
@@ -278,6 +284,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     std::string func = ctx->func->getText();
     const size_t numArgs = ctx->expr().size();
     mlir::Location loc = builder.getUnknownLoc();
+    mlir::Type sizeType = builder.getIndexType();
     if(func == "print") {
         if(numArgs != 1)
             throw std::runtime_error("function print expects exactly 1 argument(s)");
@@ -288,8 +295,8 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     if(func == "rand") {
         if(numArgs != 6)
             throw std::runtime_error("function rand expects exactly 6 argument(s)");
-        mlir::Value numRows = valueOrError(visit(ctx->expr(0)));
-        mlir::Value numCols = valueOrError(visit(ctx->expr(1)));
+        mlir::Value numRows = castIf(loc, sizeType, valueOrError(visit(ctx->expr(0))));
+        mlir::Value numCols = castIf(loc, sizeType, valueOrError(visit(ctx->expr(1))));
         mlir::Value min = valueOrError(visit(ctx->expr(2)));
         mlir::Value max = valueOrError(visit(ctx->expr(3)));
         mlir::Value sparsity = valueOrError(visit(ctx->expr(4)));

@@ -75,8 +75,6 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
                 rp["type"] = rp["type"].replace("typename {}::VT".format(tp["name"]), templateValues[tpIdx][1])
             rp["type"] = rp["type"].replace(tp["name"], templateArgToCppType[tp["name"]])
         rp["type"] = rp["type"].replace("*&", "**")
-        if rp["type"] == "size_t":
-            rp["type"] = "int64_t" # TODO actually, it should be "uint64_t"
     
     #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([rp["type"].replace("const ", "").replace(" **", "").replace(" *", "").replace("<", "_").replace(">", "") for rp in extendedRuntimeParams])
