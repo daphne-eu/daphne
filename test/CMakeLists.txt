@@ -30,6 +30,7 @@ add_executable(run_tests
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
+        runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/TransposeTest.cpp
