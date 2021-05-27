@@ -71,7 +71,10 @@ antlrcpp::Any DaphneDSLVisitor::visitExprStatement(DaphneDSLGrammarParser::ExprS
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::AssignStatementContext * ctx) {
-    symbolTable.put(ctx->var->getText(), valueOrError(visit(ctx->expr())));
+    std::string var = ctx->var->getText();
+    if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
+        throw std::runtime_error("trying to assign read-only variable " + var);
+    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(valueOrError(visit(ctx->expr())), false));
     return nullptr;
 }
 
@@ -108,8 +111,8 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     std::vector<mlir::Value> resultsThen;
     std::vector<mlir::Value> resultsElse;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++) {
-        mlir::Value valThen = symbolTable.get(*it, owThen);
-        mlir::Value valElse = symbolTable.get(*it, owElse);
+        mlir::Value valThen = symbolTable.get(*it, owThen).value;
+        mlir::Value valElse = symbolTable.get(*it, owElse).value;
         if(valThen.getType() != valElse.getType())
             // TODO We could try to cast the types.
             throw std::runtime_error("type missmatch");
@@ -207,13 +210,13 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
     std::vector<mlir::Type> resultTypes;
     std::vector<mlir::Value> whileOperands;
     for(auto it = ow.begin(); it != ow.end(); it++) {
-        mlir::Value owVal = it->second;
+        mlir::Value owVal = it->second.value;
         mlir::Type type = owVal.getType();
         
         owVals.push_back(owVal);
         resultTypes.push_back(type);
         
-        mlir::Value oldVal = symbolTable.get(it->first);
+        mlir::Value oldVal = symbolTable.get(it->first).value;
         whileOperands.push_back(oldVal);
         
         beforeBlock->addArgument(type);
@@ -318,8 +321,13 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     // Make the induction variable available by the specified name.
     symbolTable.put(
             ctx->var->getText(),
-            // Un-compensate for counting direction.
-            builder.create<mlir::daphne::EwMulOp>(loc, castIf(loc, t, ph), direction)
+            ScopedSymbolTable::SymbolInfo(
+                    // Un-compensate for counting direction.
+                    builder.create<mlir::daphne::EwMulOp>(
+                            loc, castIf(loc, t, ph), direction
+                    ),
+                    true // the for-loop's induction variable is read-only
+            )
     );
 
     // Parse the loop's body.
@@ -331,8 +339,8 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     std::vector<mlir::Value> resVals;
     std::vector<mlir::Value> forOperands;
     for(auto it = ow.begin(); it != ow.end(); it++) {
-        resVals.push_back(it->second);
-        forOperands.push_back(symbolTable.get(it->first));
+        resVals.push_back(it->second.value);
+        forOperands.push_back(symbolTable.get(it->first).value);
     }
     
     builder.create<mlir::scf::YieldOp>(loc, resVals);
@@ -376,7 +384,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::Literal
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
     std::string var = ctx->var->getText();
     try {
-        return symbolTable.get(var);
+        return symbolTable.get(var).value;
     }
     catch(std::runtime_error &) {
         throw std::runtime_error("variable " + var + " referenced before assignment");
