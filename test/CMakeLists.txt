@@ -26,6 +26,7 @@ add_executable(run_tests
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
+        runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp

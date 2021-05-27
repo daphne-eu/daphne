@@ -107,6 +107,40 @@
     },
     {
         "kernelTemplate": {
+            "header": "CastSca.h",
+            "opName": "castSca",
+            "returnType": "VTRes",
+            "templateParams": [
+                {
+                    "name": "VTRes",
+                    "isDataType": false
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "VTArg",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double", "double"],
+            ["double", "int64_t"],
+            ["double", "bool"],
+            ["int64_t", "double"],
+            ["int64_t", "int64_t"],
+            ["int64_t", "bool"],
+            ["bool", "double"],
+            ["bool", "int64_t"],
+            ["bool", "bool"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "EwBinaryMat.h",
             "opName": "ewBinaryMat",
             "returnType": "void",
