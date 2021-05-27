@@ -73,6 +73,8 @@ public:
 
     antlrcpp::Any visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) override;
 
+    antlrcpp::Any visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) override;
+
     antlrcpp::Any visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) override;
 
     antlrcpp::Any visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) override;
