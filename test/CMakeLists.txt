@@ -37,6 +37,8 @@ add_executable(run_tests
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/HasSpecialValueTest.cpp
+        runtime/local/kernels/NumDistinctApproxTest.cpp
+
 )
 target_link_libraries(run_tests PRIVATE
     DataStructures
