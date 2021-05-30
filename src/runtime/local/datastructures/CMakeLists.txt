@@ -12,5 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_library(ValueTypeUtils ValueTypeUtils.cpp)
-target_link_libraries(ValueTypeUtils)
+add_library(DataStructures
+        Frame.cpp
+        ValueTypeUtils.cpp
+)
+target_link_libraries(DataStructures)

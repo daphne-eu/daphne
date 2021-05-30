@@ -186,10 +186,6 @@ public:
     
 };
 
-std::ostream & operator<<(std::ostream & os, const Frame & obj)
-{
-    obj.print(os);
-    return os;
-}
+std::ostream & operator<<(std::ostream & os, const Frame & obj);
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_FRAME_H

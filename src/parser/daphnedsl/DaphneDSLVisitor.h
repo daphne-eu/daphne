@@ -43,6 +43,17 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      */
     ScopedSymbolTable symbolTable;
     
+    /**
+     * @brief Wraps the given `Value` in a `CastOp` if it does not have the
+     * given `Type`.
+     * 
+     * @param loc A location.
+     * @param t The expected type.
+     * @param v The value.
+     * @return `v` if it has type `t`, otherwise a `CastOp` of `v` to `t`.
+     */
+    mlir::Value castIf(mlir::Location loc, mlir::Type t, mlir::Value v);
+    
 public:
     DaphneDSLVisitor(mlir::OpBuilder & builder) : builder(builder) {
         //
@@ -61,6 +72,8 @@ public:
     antlrcpp::Any visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) override;
 
     antlrcpp::Any visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) override;
+
+    antlrcpp::Any visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) override;
 
     antlrcpp::Any visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) override;
 

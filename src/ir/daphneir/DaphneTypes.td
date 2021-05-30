@@ -80,7 +80,7 @@ def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 // TODO Could also be Index or whatever, but it might be wise to define the
 // type we use to express dimensions and numeric row/col indexes just once.
 // TODO Rename, it's misleading. Sounds like a pair of height/width.
-def Size : TypeAlias<UI64, "size">;
+def Size : TypeAlias<Index, "size">;
 
 def Seed : TypeAlias<UI64, "seed">;
 

@@ -73,7 +73,7 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix"> {
 
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">]> {
     //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
-    let arguments = (ins IntScalar:$numRows, IntScalar:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
+    let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs Matrix:$res);
 }
 
@@ -122,40 +122,40 @@ class Daphne_EwUnaryOp<string name, Type scalarType, list<OpTrait> traits = []> 
 // Arithmetic/general math
 // ----------------------------------------------------------------------------
 
-def DaphneEwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar>;
-def DaphneEwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar>;
-def DaphneEwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar>;
-def DaphneEwExpOp : Daphne_EwUnaryOp<"ewExp", FloatScalar>;
-def DaphneEwLogOp : Daphne_EwUnaryOp<"ewLn", FloatScalar>;
-def DaphneEwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", FloatScalar>;
+def Daphne_EwMinusOp : Daphne_EwUnaryOp<"ewMinus", NumScalar>;
+def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar>;
+def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar>;
+def Daphne_EwExpOp : Daphne_EwUnaryOp<"ewExp", FloatScalar>;
+def Daphne_EwLnOp : Daphne_EwUnaryOp<"ewLn", FloatScalar>;
+def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def DaphneEwNegOp : Daphne_EwUnaryOp<"ewNeg", AnyTypeOf<[BoolScalar, IntScalar]>>;
+def Daphne_EwNegOp : Daphne_EwUnaryOp<"ewNeg", AnyTypeOf<[BoolScalar, IntScalar]>>;
 
 // ----------------------------------------------------------------------------
 // Rounding
 // ----------------------------------------------------------------------------
 
-def DaphneEwRoundOp : Daphne_EwUnaryOp<"ewRound", FloatScalar>;
-def DaphneEwFloorOp : Daphne_EwUnaryOp<"ewFloor", FloatScalar>;
-def DaphneEwCeilOp : Daphne_EwUnaryOp<"ewCeil", FloatScalar>;
+def Daphne_EwRoundOp : Daphne_EwUnaryOp<"ewRound", FloatScalar>;
+def Daphne_EwFloorOp : Daphne_EwUnaryOp<"ewFloor", FloatScalar>;
+def Daphne_EwCeilOp : Daphne_EwUnaryOp<"ewCeil", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Trigonometric
 // ----------------------------------------------------------------------------
 
-def DaphneEwSinOp : Daphne_EwUnaryOp<"ewSin", FloatScalar>;
-def DaphneEwCosOp : Daphne_EwUnaryOp<"ewCos", FloatScalar>;
-def DaphneEwTanOp : Daphne_EwUnaryOp<"ewTan", FloatScalar>;
-def DaphneEwSinhOp : Daphne_EwUnaryOp<"ewSinh", FloatScalar>;
-def DaphneEwCoshOp : Daphne_EwUnaryOp<"ewCosh", FloatScalar>;
-def DaphneEwTanhOp : Daphne_EwUnaryOp<"ewTanh", FloatScalar>;
-def DaphneEwAsinOp : Daphne_EwUnaryOp<"ewAsin", FloatScalar>;
-def DaphneEwAcosOp : Daphne_EwUnaryOp<"ewAcos", FloatScalar>;
-def DaphneEwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
+def Daphne_EwSinOp : Daphne_EwUnaryOp<"ewSin", FloatScalar>;
+def Daphne_EwCosOp : Daphne_EwUnaryOp<"ewCos", FloatScalar>;
+def Daphne_EwTanOp : Daphne_EwUnaryOp<"ewTan", FloatScalar>;
+def Daphne_EwSinhOp : Daphne_EwUnaryOp<"ewSinh", FloatScalar>;
+def Daphne_EwCoshOp : Daphne_EwUnaryOp<"ewCosh", FloatScalar>;
+def Daphne_EwTanhOp : Daphne_EwUnaryOp<"ewTanh", FloatScalar>;
+def Daphne_EwAsinOp : Daphne_EwUnaryOp<"ewAsin", FloatScalar>;
+def Daphne_EwAcosOp : Daphne_EwUnaryOp<"ewAcos", FloatScalar>;
+def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
 
 // ****************************************************************************
 // Elementwise binary
