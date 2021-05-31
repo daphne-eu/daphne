@@ -59,6 +59,7 @@ antlrcpp::Any visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) {
 //PROBLEM: due to new frame the indices are messed up. with named columns this wouldnn't be an issue
 //it would be good to know the columns that we want to keep before we execute the joins.
 //this would
+antlrcpp::Any visitSelect(DaphneSQLGrammarParser::SelectContext * ctx){
     antlrcpp::Any tableproduct = valueOrError(visit(ctx->tableList()));
     if(where->clause)
 
@@ -76,26 +77,28 @@ antlrcpp::Any visitSubqueryExpr(DaphneSQLGrammarParser::SubqueryExprContext * ct
 }
 
 
-antlrcpp::Any visitSelectList(DaphneSQLGrammarParser::SelectListContext * ctx) {
-
-}
-
-//this needs to build the cartesianproduct or needs to trackthat one must be build.
-antlrcpp::Any visitTableList(DaphneSQLGrammarParser::TableListContext * ctx) {
-    return visitChildren(ctx);
-}
-
-antlrcpp::Any visitJoinList(DaphneSQLGrammarParser::JoinListContext * ctx) {}
-
 antlrcpp::Any visitJoinClause(DaphneSQLGrammarParser::JoinClauseContext * ctx) {}
 
-antlrcpp::Any visitInnerCrossJoinClause(DaphneSQLGrammarParser::InnerCrossJoinClauseContext * ctx) {}
 
-antlrcpp::Any visitOuterJoinClause(DaphneSQLGrammarParser::OuterJoinClauseContext * ctx) {}
+antlrcpp::Any visitInnerJoin(DaphneSQLGrammarParser::InnerJoinContext * ctx) {}
+
+antlrcpp::Any visitCrossJoin(DaphneSQLGrammarParser::CrossJoinContext * ctx) {}
+
+antlrcpp::Any visitNaturalJoin(DaphneSQLGrammarParser::NaturalJoinContext * ctx) {}
+
+
+antlrcpp::Any visitFullJoin(DaphneSQLGrammarParser::FullJoinContext * ctx) {}
+
+antlrcpp::Any visitLeftJoin(DaphneSQLGrammarParser::LeftJoinContext * ctx) {}
+
+antlrcpp::Any visitRightJoin(DaphneSQLGrammarParser::RightJoinContext * ctx) {}
+
 
 antlrcpp::Any visitJoinCondition(DaphneSQLGrammarParser::JoinConditionContext * ctx) {}
 
-antlrcpp::Any visitOuterJoinType(DaphneSQLGrammarParser::OuterJoinTypeContext * ctx) {}
+
+antlrcpp::Any visitWhereClause(DaphneSQLGrammarParser::WhereClauseContext * ctx) {}
+
 
 antlrcpp::Any visitLiteralExpr(DaphneSQLGrammarParser::LiteralExprContext * ctx) {}
 
@@ -112,6 +115,16 @@ antlrcpp::Any visitCmpExpr(DaphneSQLGrammarParser::CmpExprContext * ctx) {}
 antlrcpp::Any visitLogicalExpr(DaphneSQLGrammarParser::LogicalExprContext * ctx) {}
 
 
+antlrcpp::Any visitSelectExpr(DaphneSQLGrammarParser::SelectExprContext * ctx) {}
+
+antlrcpp::Any visitFromExpr(DaphneSQLGrammarParser::FromExprContext * ctx) {}
+
+antlrcpp::Any visitJoinExpr(DaphneSQLGrammarParser::JoinExprContext * ctx) {
+    if(ctx->var){
+        return visitChildren(ctx);
+    }
+}
+
 //Needs to put it's own value into the scope again (this means that it is in the current scope)
 //this is a hack of the symboltable. Maybe there is a better way.
 antlrcpp::Any visitTableReference(DaphneSQLGrammarParser::TableReferenceContext * ctx) {
@@ -125,13 +138,73 @@ antlrcpp::Any visitTableReference(DaphneSQLGrammarParser::TableReferenceContext 
         return res;
     }
     catch(std::runtime_error &) {
-        throw std::runtime_error("Unknown Frame " + var + " referenced before assignment");
+        throw std::runtime_error("Frame " + var + " referenced before assignment");
+    }
 }
 
-antlrcpp::Any visitIdent(DaphneSQLGrammarParser::IdentContext * ctx) {
 
+antlrcpp::Any visitStringIdent(DaphneSQLGrammarParser::IdentContext * ctx) {
+
+    std::string var = atol(ctx->IDENTIFIER()->getText());
+    if(ctx->frame){
+        try {
+            return static_cast<mlir::Value>(
+                builder.create<mlir::daphne::GetOp>(
+                    loc,
+                    valueOrError(symbolTable.get(frame)),
+                    builder.getStringAttr(var)
+                )
+            );
+        }
+        catch(std::runtime_error &) {
+            throw std::runtime_error("Frame " + frame + " referenced before assignment");
+        }
+    }
+    try {
+        return symbolTable.get(var);
+    }
+    catch(std::runtime_error &) {
+        throw std::runtime_error("variable " + var + " referenced before assignment");
+    }
 }
 
-antlrcpp::Any visitAlias(DaphneSQLGrammarParser::AliasContext * ctx) {}
+antlrcpp::Any visitIntIdent(DaphneSQLGrammarParser::IdentContext * ctx) {
 
-antlrcpp::Any visitLiteral(DaphneSQLGrammarParser::LiteralContext * ctx) {}
+    std::string frame = ctx->frame->getText();
+    std::string id = atol(ctx->INT_POSITIVE_LITERAL()->getText().c_str());
+    try {
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::GetOp>(
+                loc,
+                valueOrError(symbolTable.get(frame)),
+                builder.getIntegerAttr(builder.getIntegerType(64, true), id)
+            )
+        );
+    }
+    catch(std::runtime_error &) {
+        throw std::runtime_error("Frame " + frame + " referenced before assignment");
+    }
+}
+
+antlrcpp::Any visitLiteral(DaphneSQLGrammarParser::LiteralContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+    if(auto lit = ctx->INT_LITERAL()) {
+        int64_t val = atol(lit->getText().c_str());
+        return static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(
+                        loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, true), val)
+                )
+        );
+    }
+    if(auto lit = ctx->FLOAT_LITERAL()) {
+        double val = atof(lit->getText().c_str());
+        return static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(
+                        loc,
+                        builder.getF64FloatAttr(val)
+                )
+        );
+    }
+    throw std::runtime_error("unexpected literal");
+}

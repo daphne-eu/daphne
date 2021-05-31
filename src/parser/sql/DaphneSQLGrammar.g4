@@ -30,58 +30,24 @@ query:
     subquery? select';';
 
 select:
-    SQL_SELECT /*(SQL_ALL | SQL_DISTINCT | SQL_UNIQUE)?*/ selectList
-    SQL_FROM tableList
-    whereClause?//*/
-/*
-  group_byClause?
-  (SQL_HAVING condition)?
-  ( (SQL_UNION SQL_ALL? | SQL_INTERSECT | SQL_MINUS) ( subquery ))?
-  order_byClause?
-*/
-;
+    SQL_SELECT selectExpr (',' selectExpr)*
+    SQL_FROM fromExpr
+    whereClause?
+    ;
 
 subquery:
     SQL_WITH subqueryExpr (',' subqueryExpr)*;
 
 subqueryExpr:
-    var=alias SQL_AS '(' select ')';
-/*
-*   Needs to be extended. For instance selecting everything from a table
-*   Function calls like AVG()..
-*/
-selectList:
-    var=ident (SQL_AS rename=alias)? (',' selectList)?;
-
-tableList:
-    tableReference (',' tableList | joinList)?;
-
-joinList:
-    joinClause joinList?;
-
-joinClause:
-    innerCrossJoinClause | outerJoinClause;
-
-innerCrossJoinClause:
-    SQL_INNER? SQL_JOIN tableReference joinCondition
-    | (SQL_CROSS | SQL_NATURAL SQL_INNER?) SQL_JOIN tableReference
-    ;
-
-outerJoinClause:
-    SQL_NATURAL? outerJoinType SQL_JOIN tableReference joinCondition;
+    var=IDENTIFIER SQL_AS '(' select ')';
 
 joinCondition:
     SQL_ON cond=expr
     | SQL_USING '(' ident ')'
     ;
 
-outerJoinType:
-    (SQL_FULL | SQL_LEFT | SQL_RIGHT) SQL_OUTER?;
-
 whereClause:
     SQL_WHERE cond=expr;
-
-
 
 expr:
     literal # literalExpr
@@ -93,13 +59,33 @@ expr:
     | lhs=expr op=('&&'|'||') rhs=expr # logicalExpr
     ;
 
+/*
+*   Needs to be extended. For instance selecting everything from a table
+*   Function calls like AVG()..
+*/
+selectExpr:
+    var=ident (SQL_AS rename=IDENTIFIER)?;
+
+//rename
+fromExpr:
+    var=tableReference #tableIdentifierExpr
+    | lhs=fromExpr ',' rhs=tableReference #cartesianExpr
+    | lhs=fromExpr SQL_INNER? SQL_JOIN rhs=tableReference cond=joinCondition #innerJoin
+//    | lhs=fromExpr SQL_CROSS rhs=tableReference #crossjoin
+//doesn't work jet because no nameing of columns
+//    | lhs=fromExpr SQL_NATURAL SQL_INNER? SQL_JOIN rhs=tableReference #naturalJoin
+//    | lhs=fromExpr SQL_FULL SQL_OUTER? SQL_JOIN rhs=tableReference cond=joinCondition #fullJoin
+//    | lhs=fromExpr SQL_LEFT SQL_OUTER? SQL_JOIN rhs=tableReference cond=joinCondition #leftJoin
+//    | lhs=fromExpr SQL_RIGHT SQL_OUTER? SQL_JOIN rhs=tableReference cond=joinCondition #rightJoin
+    ;
+
+
 tableReference:
-    var=IDENTIFIER (SQL_AS? aka=alias)?;
+    var=IDENTIFIER (SQL_AS? aka=IDENTIFIER)?;
 
 ident:
-    (frame=IDENTIFIER '.')? colname=IDENTIFIER
-    | frame=IDENTIFIER '[' colnumber=INT_POSITIV_LITERAL ']'
-    | frame=IDENTIFIER '.' colnumber=INT_POSITIV_LITERAL
+    (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
+    | frame=IDENTIFIER ('[' colnumber=INT_POSITIV_LITERAL ']'|DOT colnumber=INT_POSITIV_LITERAL) #intIdent
     ;
 
 alias:
@@ -175,16 +161,28 @@ fragment LETTER: [a-zA-Z];
 fragment DIGIT: [0-9];
 fragment NON_ZERO_DIGIT: [1-9];
 
-IDENTIFIER:
-    (LETTER | '_')(LETTER | '_' | DIGIT)* ;
+DOT : '.'; // generated as a part of Number rule
+COLON : ':' ;
+COMMA : ',' ;
+SEMICOLON : ';' ;
 
-INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
+LPAREN : '(' ;
+RPAREN : ')' ;
+LSQUARE : '[' ;
+RSQUARE : ']' ;
+LCURLY : '{';
+RCURLY : '}';
+
+IDENTIFIER:
+    (LETTER | '_')(LETTER | '_' | DIGIT)?(LETTER | DIGIT)(LETTER | '_' | DIGIT)* ;  //Identifiertstarting with 3 or more underscores are reserved
 
 INT_POSITIV_LITERAL:
-    ('0' | NON_ZERO_DIGIT DIGIT*) ;
+    DIGIT+ ;
+
+INT_LITERAL:
+    '-'? INT_POSITIV_LITERAL;
 
 FLOAT_LITERAL:
-    '-'? (DIGIT* '.' DIGIT+ | DIGIT+ '.' DIGIT*);
+    '-'? ( DIGIT+ DOT DIGIT+);
 
 WS: [ \t\r\n]+ -> skip;
