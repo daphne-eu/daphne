@@ -41,10 +41,21 @@
 class ScopedSymbolTable {
     
 public:
+    
+    struct SymbolInfo {
+        mlir::Value value;
+        bool isReadOnly;
+        
+        SymbolInfo(mlir::Value value, bool isReadOnly)
+        : value(value), isReadOnly(isReadOnly) {
+            // nothing to do
+        }
+    };
+    
     /**
      * @brief The type of single-level symbol table.
      */
-    using SymbolTable = std::unordered_map<std::string, mlir::Value>;
+    using SymbolTable = std::unordered_map<std::string, SymbolInfo>;
     
 private:
     /**
@@ -53,14 +64,15 @@ private:
     std::vector<SymbolTable> scopes;
     
     /**
-     * @brief Determines whether some scope before the current scope has the
-     * given symbol.
+     * @brief Determines whether some scope has the given symbol.
      * 
      * @param sym The symbol (variable name) to look for.
+     * @param parent `0` to start at the current scope, `1` to start at the
+     * direct parent, and so on.
      * @return `true` if the symbol is found, `false` otherwise.
      */
-    bool someParentHas(const std::string & sym) {
-        for(int i = scopes.size() - 2; i >= 0; i--)
+    bool has(const std::string & sym, int parent) {
+        for(int i = scopes.size() - 1 - parent; i >= 0; i--)
             if(scopes[i].count(sym))
                 return true;
         return false;
@@ -76,6 +88,16 @@ public:
     }
     
     /**
+     * @brief Determines whether some scope has the given symbol.
+     * 
+     * @param sym The symbol (variable name) to look for.
+     * @return `true` if the symbol is found, `false` otherwise.
+     */
+    bool has(const std::string & sym) {
+        return has(sym, 0);
+    }
+    
+    /**
      * @brief Returns the SSA value associated with the given symbol, or throws
      * an exception if the symbol is unknown.
      * 
@@ -83,9 +105,9 @@ public:
      * the first occurrence of the symbol is found.
      * 
      * @param sym The symbol (variable name) to look for.
-     * @return The associated SSA value.
+     * @return Information on the symbol, including the associated SSA value.
      */
-    mlir::Value get(const std::string & sym) {
+    SymbolInfo get(const std::string & sym) {
         for(int i = scopes.size() - 1; i >= 0; i--) {
             auto it = scopes[i].find(sym);
             if(it != scopes[i].end())
@@ -101,9 +123,9 @@ public:
      * @param sym The symbol (variable name) to look for.
      * @param tab A single-level symbol table from outside of this
      * `ScopedSymbolTable`.
-     * @return The associated SSA value.
+     * @return Information on the symbol, including the associated SSA value.
      */
-    mlir::Value get(const std::string & sym, const SymbolTable & tab) {
+    SymbolInfo get(const std::string & sym, const SymbolTable & tab) {
         auto it = tab.find(sym);
         if(it != tab.end())
             return it->second;
@@ -111,16 +133,32 @@ public:
     }
     
     /**
-     * @brief Associates the given SSA value with the given symbol.
+     * @brief Associates the given symbol information (including an SSA value)
+     * with the given symbol.
      * 
      * The association is always created in the current scope. Any existing
      * mapping in that scope will be overwritten.
      * 
      * @param sym The symbol (variable name).
-     * @param val The SSA value.
+     * @param info The symbol information, including the SSA value.
+     */
+    void put(std::string sym, SymbolInfo info) {
+        scopes.back().emplace(sym, info);
+    }
+    
+    /**
+     * @brief Updates the SSA value associated with the given symbol, while
+     * retaining all other information on the symbol; requires the symbol to
+     * exist already.
+     * 
+     * @param sym The symbol (variable name).
+     * @param val The new SSA value to associate with the symbol.
      */
     void put(std::string sym, mlir::Value val) {
-        scopes.back()[sym] = val;
+        auto it = scopes.back().find(sym);
+        if(it == scopes.back().end())
+            throw std::runtime_error("trying to update the value of an unknown symbol");
+        it->second.value = val;
     }
     
     /**
@@ -156,8 +194,8 @@ public:
         SymbolTable curScope = scopes.back();
         SymbolTable overwritten;
         for(auto it = curScope.begin(); it != curScope.end(); it++) {
-            if(someParentHas(it->first))
-                overwritten[it->first] = it->second;
+            if(has(it->first, 1))
+                overwritten.emplace(it->first, it->second);
         }
         scopes.pop_back();
         return overwritten;

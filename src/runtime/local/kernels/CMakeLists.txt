@@ -28,6 +28,6 @@ add_library(AllKernels SHARED
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
 )
 target_link_libraries(AllKernels PRIVATE
-        ValueTypeUtils
+        DataStructures
         ${OPENBLAS_LIBRARIES}
 )

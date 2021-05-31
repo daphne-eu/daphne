@@ -35,6 +35,8 @@ statement:
     | exprStatement
     | assignStatement
     | ifStatement
+    | whileStatement
+    | forStatement
     ;
 
 blockStatement:
@@ -48,6 +50,12 @@ assignStatement:
 
 ifStatement:
     KW_IF '(' cond=expr ')' thenStmt=statement (KW_ELSE elseStmt=statement)? ;
+
+whileStatement:
+    ( KW_WHILE '(' cond=expr ')' bodyStmt=statement | KW_DO bodyStmt=statement KW_WHILE '(' cond=expr ')' ';'? );
+
+forStatement:
+    KW_FOR '(' var=IDENTIFIER KW_IN from=expr ':' to=expr (':' step=expr)? ')' bodyStmt=statement ;
 
 expr:
     literal # literalExpr
@@ -71,6 +79,10 @@ literal:
 
 KW_IF: 'if';
 KW_ELSE: 'else';
+KW_WHILE: 'while';
+KW_DO: 'do';
+KW_FOR: 'for';
+KW_IN: 'in';
 
 fragment DIGIT:
     [0-9] ;

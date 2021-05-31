@@ -54,6 +54,8 @@ namespace
             return "uint64_t";
         else if(t.isSignlessInteger(1))
             return "bool";
+        else if(t.isIndex())
+            return "size_t";
         else if(t.isa<daphne::MatrixType>())
             return "DenseMatrix_" + mlirTypeToCppTypeName(
                     t.dyn_cast<daphne::MatrixType>().getElementType()

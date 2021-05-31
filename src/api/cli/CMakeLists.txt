@@ -21,7 +21,7 @@ set(LIBS
         MLIRDaphneTransforms
         MLIRExecutionEngine
         DaphneDSLParser
-        ValueTypeUtils
+        DataStructures
 )
 
 add_llvm_executable(daphnec
