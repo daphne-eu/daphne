@@ -17,6 +17,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/io/ReadCsv.h>
+#include <runtime/local/io/File.h>
 
 #include <tags.h>
 
@@ -35,7 +36,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_KERNELS, (DenseMatrix), (double)) {
   size_t numRows = 2;
   size_t numCols = 4;
 
-  char file[] = "./test/runtime/local/io/ReadCsv1.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim);
@@ -63,7 +65,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_KERNELS, (DenseMatrix), (uint8_t)) {
   size_t numRows = 2;
   size_t numCols = 4;
 
-  char file[] = "./test/runtime/local/io/ReadCsv2.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim);
@@ -93,7 +96,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, col + row ignore", TAG_KERNELS,
   size_t numRows = 1;
   size_t numCols = 2;
 
-  char file[] = "./test/runtime/local/io/ReadCsv2.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim);
@@ -115,7 +119,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, INF and NAN parsing", TAG_KERNELS,
   size_t numRows = 2;
   size_t numCols = 4;
 
-  char file[] = "./test/runtime/local/io/ReadCsv3.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv3.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim);
@@ -143,7 +148,8 @@ TEST_CASE("ReadCsv, frame of floats", TAG_KERNELS) {
   size_t numRows = 2;
   size_t numCols = 4;
 
-  char file[] = "./test/runtime/local/io/ReadCsv1.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim, schema);
@@ -171,7 +177,8 @@ TEST_CASE("ReadCsv, frame of uint8s", TAG_KERNELS) {
   size_t numRows = 2;
   size_t numCols = 4;
 
-  char file[] = "./test/runtime/local/io/ReadCsv2.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim, schema);
@@ -200,7 +207,8 @@ TEST_CASE("ReadCsv, col + row ignore", TAG_KERNELS) {
   size_t numRows = 1;
   size_t numCols = 2;
 
-  char file[] = "./test/runtime/local/io/ReadCsv2.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv2.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim, schema);
@@ -221,7 +229,8 @@ TEST_CASE("ReadCsv, INF and NAN parsing", TAG_KERNELS) {
   size_t numRows = 2;
   size_t numCols = 4;
 
-  char file[] = "./test/runtime/local/io/ReadCsv3.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv3.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim, schema);
@@ -249,7 +258,8 @@ TEST_CASE("ReadCsv, varying columns", TAG_KERNELS) {
   size_t numRows = 2;
   size_t numCols = 2;
 
-  char file[] = "./test/runtime/local/io/ReadCsv4.csv";
+  char filename[] = "./test/runtime/local/io/ReadCsv4.csv";
+  struct File *file = openFile(filename);
   char delim = ',';
 
   readCsv(m, file, numRows, numCols, delim, schema);
