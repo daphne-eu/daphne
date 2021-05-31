@@ -32,7 +32,7 @@ query:
 select:
     SQL_SELECT selectExpr (',' selectExpr)*
     SQL_FROM fromExpr
-    whereClause?
+//    whereClause?
     ;
 
 subquery:
@@ -40,7 +40,7 @@ subquery:
 
 subqueryExpr:
     var=IDENTIFIER SQL_AS '(' select ')';
-
+/*
 joinCondition:
     SQL_ON cond=expr
     | SQL_USING '(' ident ')'
@@ -64,13 +64,15 @@ expr:
 *   Function calls like AVG()..
 */
 selectExpr:
-    var=ident (SQL_AS rename=IDENTIFIER)?;
+    var=selectIdent// (SQL_AS rename=IDENTIFIER)?
+    ;
 
 //rename
 fromExpr:
     var=tableReference #tableIdentifierExpr
     | lhs=fromExpr ',' rhs=tableReference #cartesianExpr
-    | lhs=fromExpr SQL_INNER? SQL_JOIN rhs=tableReference cond=joinCondition #innerJoin
+//addressig cartesian variadic operation    | fromExpr (',' fromExpr) #cartesianExpr
+//    | lhs=fromExpr SQL_INNER? SQL_JOIN rhs=tableReference cond=joinCondition #innerJoin
 //    | lhs=fromExpr SQL_CROSS rhs=tableReference #crossjoin
 //doesn't work jet because no nameing of columns
 //    | lhs=fromExpr SQL_NATURAL SQL_INNER? SQL_JOIN rhs=tableReference #naturalJoin
@@ -83,13 +85,12 @@ fromExpr:
 tableReference:
     var=IDENTIFIER (SQL_AS? aka=IDENTIFIER)?;
 
-ident:
-    (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
-    | frame=IDENTIFIER ('[' colnumber=INT_POSITIV_LITERAL ']'|DOT colnumber=INT_POSITIV_LITERAL) #intIdent
+//add string identifier as soon as
+selectIdent:
+    /* (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
+    |  */
+    frame=IDENTIFIER ('[' colnumber=INT_POSITIV_LITERAL ']'|DOT colnumber=INT_POSITIV_LITERAL) #intIdent
     ;
-
-alias:
-    IDENTIFIER;
 
 literal:
     INT_LITERAL
@@ -174,7 +175,7 @@ LCURLY : '{';
 RCURLY : '}';
 
 IDENTIFIER:
-    (LETTER | '_')(LETTER | '_' | DIGIT)?(LETTER | DIGIT)(LETTER | '_' | DIGIT)* ;  //Identifiertstarting with 3 or more underscores are reserved
+    (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
 INT_POSITIV_LITERAL:
     DIGIT+ ;

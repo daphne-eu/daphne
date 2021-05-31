@@ -30,7 +30,7 @@
 
 /**
  * @brief A hierarchical symbol table offering a stack of nested scopes.
- * 
+ *
  * Each scope is a single-level symbol table. A symbol table maps a variable
  * name (symbol) to the SSA value currently denoted by that name. A symbol
  * table is used during the parsing of a DSL script. This particular kind of
@@ -39,33 +39,33 @@
  * if-then-else and loops.
  */
 class ScopedSymbolTable {
-    
+
 public:
-    
+
     struct SymbolInfo {
         mlir::Value value;
         bool isReadOnly;
-        
+
         SymbolInfo(mlir::Value value, bool isReadOnly)
         : value(value), isReadOnly(isReadOnly) {
             // nothing to do
         }
     };
-    
+
     /**
      * @brief The type of single-level symbol table.
      */
     using SymbolTable = std::unordered_map<std::string, SymbolInfo>;
-    
+
 private:
     /**
      * @brief A stack of single-level symbol tables representing nested scopes.
      */
     std::vector<SymbolTable> scopes;
-    
+
     /**
      * @brief Determines whether some scope has the given symbol.
-     * 
+     *
      * @param sym The symbol (variable name) to look for.
      * @param parent `0` to start at the current scope, `1` to start at the
      * direct parent, and so on.
@@ -77,7 +77,7 @@ private:
                 return true;
         return false;
     }
-    
+
 public:
     /**
      * @brief Creates a new `ScopedSymbolTable` initialized with a single empty
@@ -86,24 +86,24 @@ public:
     ScopedSymbolTable() {
         pushScope();
     }
-    
+
     /**
      * @brief Determines whether some scope has the given symbol.
-     * 
+     *
      * @param sym The symbol (variable name) to look for.
      * @return `true` if the symbol is found, `false` otherwise.
      */
     bool has(const std::string & sym) {
         return has(sym, 0);
     }
-    
+
     /**
      * @brief Returns the SSA value associated with the given symbol, or throws
      * an exception if the symbol is unknown.
-     * 
+     *
      * Starting at the current scope, all hierarchy levels are searched until
      * the first occurrence of the symbol is found.
-     * 
+     *
      * @param sym The symbol (variable name) to look for.
      * @return Information on the symbol, including the associated SSA value.
      */
@@ -115,11 +115,11 @@ public:
         }
         throw std::runtime_error("symbol not found: '" + sym + "'");
     }
-    
+
     /**
      * @brief Like the other `get` method, but first tries to find the symbol
      * in the given single-level symbol table.
-     * 
+     *
      * @param sym The symbol (variable name) to look for.
      * @param tab A single-level symbol table from outside of this
      * `ScopedSymbolTable`.
@@ -131,26 +131,43 @@ public:
             return it->second;
         return get(sym);
     }
-    
+
+    /**
+     * @brief Returns the SSA value associated with the given symbol, or throws
+     * an exception if the symbol is unknown.
+     *
+     * Starting at the current scope, all hierarchy levels are searched until
+     * the first occurrence of the symbol is found.
+     *
+     * @param sym The symbol (variable name) to look for.
+     * @return The associated SSA value.
+     */
+    mlir::Value getCurrentScope(const std::string & sym) {
+        int i = scopes.size() - 1;
+        auto it = scopes[i].find(sym);
+        if(it != scopes[i].end())
+            return it->second;
+        throw std::runtime_error("symbol not found: '" + sym + "'");
+    }
     /**
      * @brief Associates the given symbol information (including an SSA value)
      * with the given symbol.
-     * 
+     *
      * The association is always created in the current scope. Any existing
      * mapping in that scope will be overwritten.
-     * 
+     *
      * @param sym The symbol (variable name).
      * @param info The symbol information, including the SSA value.
      */
     void put(std::string sym, SymbolInfo info) {
         scopes.back().emplace(sym, info);
     }
-    
+
     /**
      * @brief Updates the SSA value associated with the given symbol, while
      * retaining all other information on the symbol; requires the symbol to
      * exist already.
-     * 
+     *
      * @param sym The symbol (variable name).
      * @param val The new SSA value to associate with the symbol.
      */
@@ -160,32 +177,32 @@ public:
             throw std::runtime_error("trying to update the value of an unknown symbol");
         it->second.value = val;
     }
-    
+
     /**
      * @brief Puts all symbol-to-value mappings in the given single-level
      * symbol table into the current scope.
-     * 
+     *
      * Existing mappings are overwritten in case of duplicate symbols.
-     * 
+     *
      * @param tab The single-level symbol table to read from.
      */
     void put(SymbolTable tab) {
         for(auto it = tab.begin(); it != tab.end(); it++)
             put(it->first, it->second);
     }
-    
+
     /**
      * @brief Creates a new scope in the hierarchy of nested scopes.
-     * 
+     *
      * All subsequent calls to `get` and `put` will address the new scope.
      */
     void pushScope() {
         scopes.push_back(SymbolTable());
     }
-    
+
     /**
      * @brief Removes the current scope from the hierarchy of nested scopes.
-     * 
+     *
      * @return A single-level symbol table containing only those symbols that
      * (1) existed prior to the removed scope, and (2) were overwritten in the
      * removed scope.
@@ -200,10 +217,10 @@ public:
         scopes.pop_back();
         return overwritten;
     }
-    
+
     /**
      * @brief Prints the contents of this `ScopedSymbolTable` to a stream.
-     * 
+     *
      * @param os The stream to print to. Could be `std::cout`.
      */
     void dump(std::ostream & os) {
@@ -214,23 +231,23 @@ public:
         }
         os << std::endl;
     }
-    
+
     /**
      * @brief Determines the union of the symbols in the two given single-level
      * symbol tables.
-     * 
+     *
      * @param lhs Some single-level symbol table.
      * @param rhs Some single-level symbol table.
      * @return The union of the symbol in the two input symbol tables.
      */
     static std::set<std::string> mergeSymbols(SymbolTable lhs, SymbolTable rhs) {
         std::set<std::string> res;
-        
+
         for(auto it = lhs.begin(); it != lhs.end(); it++)
             res.insert(it->first);
         for(auto it = rhs.begin(); it != rhs.end(); it++)
             res.insert(it->first);
-        
+
         return res;
     }
 };

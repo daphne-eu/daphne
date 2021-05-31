@@ -36,6 +36,8 @@ class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
      * The OpBuilder used to generate DaphneIR operations.
      */
     mlir::OpBuilder builder;
+    int i_se = 0;
+    std::vector<std::vector<std::string>> fj_order;
 
     /**
      * Maps a variable name from the input DaphneSQL script to the MLIR SSA

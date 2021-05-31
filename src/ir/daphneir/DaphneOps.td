@@ -546,6 +546,15 @@ def Daphne_MergeOp : Daphne_SetOp<"merge">;
 def Daphne_ExceptOp : Daphne_SetOp<"except">;
 
 // ----------------------------------------------------------------------------
+// Get operations
+// ----------------------------------------------------------------------------
+
+class Daphne_GetOp : Daphne_Op<"get"> {
+    let arguments = (ins Frame:$frame, AnyTypeOf<[IntScalar, StrScalar]>:$col);
+    let results = (outs Frame:$res);
+}
+
+// ----------------------------------------------------------------------------
 // Cartesian product and joins
 // ----------------------------------------------------------------------------
 

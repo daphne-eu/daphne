@@ -52,6 +52,7 @@ mlir::Value DaphneDSLVisitor::castIf(mlir::Location loc, mlir::Type t, mlir::Val
 // ****************************************************************************
 
 antlrcpp::Any DaphneDSLVisitor::visitScript(DaphneDSLGrammarParser::ScriptContext * ctx) {
+    dump(visitChildren(ctx));
     return visitChildren(ctx);
 }
 
@@ -80,19 +81,19 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
     mlir::Value cond = valueOrError(visit(ctx->cond));
-    
+
     mlir::Location loc = builder.getUnknownLoc();
 
     // Save the current state of the builder.
     mlir::OpBuilder oldBuilder = builder;
-    
+
     // Generate the operations for the then-block.
     mlir::Block thenBlock;
     builder.setInsertionPointToEnd(&thenBlock);
     symbolTable.pushScope();
     visit(ctx->thenStmt);
     ScopedSymbolTable::SymbolTable owThen = symbolTable.popScope();
-    
+
     // Generate the operations for the else-block, if it is present. Otherwise
     // leave it empty; we might need to insert a yield-operation.
     mlir::Block elseBlock;
@@ -103,7 +104,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         visit(ctx->elseStmt);
         owElse = symbolTable.popScope();
     }
-    
+
     // Determine the result type(s) of the if-operation as well as the operands
     // to the yield-operation of both branches.
     std::set<std::string> owUnion = ScopedSymbolTable::mergeSymbols(owThen, owElse);
@@ -126,10 +127,10 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     builder.create<mlir::scf::YieldOp>(loc, resultsThen);
     builder.setInsertionPointToEnd(&elseBlock);
     builder.create<mlir::scf::YieldOp>(loc, resultsElse);
-    
+
     // Restore the old state of the builder.
     builder = oldBuilder;
-    
+
     // Helper functions to move the operations in the two blocks created above
     // into the actual branches of the if-operation.
     auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
@@ -139,7 +140,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
     };
     llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)> insertElseBlockNo = nullptr;
-    
+
     // Create the actual if-operation. Generate the else-block only if it was
     // explicitly given in the DSL script, or when it is needed to yield values.
     auto ifOp = builder.create<mlir::scf::IfOp>(
@@ -149,12 +150,12 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
             insertThenBlockDo,
             (ctx->elseStmt || !owUnion.empty()) ? insertElseBlockDo : insertElseBlockNo
     );
-    
+
     // Rewire the results of the if-operation to their variable names.
     size_t i = 0;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++)
         symbolTable.put(*it, ifOp.results()[i++]);
-    
+
     return nullptr;
 }
 
@@ -442,10 +443,10 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = valueOrError(visit(ctx->lhs));
     mlir::Value rhs = valueOrError(visit(ctx->rhs));
-    
+
     if(op == "@")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs));
-    
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -454,12 +455,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = valueOrError(visit(ctx->lhs));
     mlir::Value rhs = valueOrError(visit(ctx->rhs));
-    
+
     if(op == "*")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
     if(op == "/")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
-    
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -468,10 +469,10 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = valueOrError(visit(ctx->lhs));
     mlir::Value rhs = valueOrError(visit(ctx->rhs));
-    
+
     if(op == "+")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
-    
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -480,7 +481,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = valueOrError(visit(ctx->lhs));
     mlir::Value rhs = valueOrError(visit(ctx->rhs));
-    
+
     if(op == "==")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if(op == "!=")
@@ -493,7 +494,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if(op == ">=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
-    
+
     throw std::runtime_error("unexpected op symbol");
 }
 
