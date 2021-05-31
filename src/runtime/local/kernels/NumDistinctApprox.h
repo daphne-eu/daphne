@@ -27,7 +27,7 @@
 #include <queue>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/util/MurmurHash.h>
+//#include <runtime/local/util/MurmurHash.h>
 #include <vector>
 
 template <class DTArg> struct NumDistinctApprox {
@@ -64,7 +64,8 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
     for (size_t idx = 0; idx < K; idx++) {
       const VT *el = valuesBegin + idx;
 
-      uint64_t hashedValue = MurmurHash::MurmurHash64A(el, sizeof(VT), seed);
+      //uint64_t hashedValue = MurmurHash::MurmurHash64A(el, sizeof(VT), seed);
+      uint64_t hashedValue = 1;
 
       printf("unhashed dec %d float %f\n", *el);
       printf("hashed %d\n", hashedValue);
@@ -74,7 +75,8 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
     for (size_t idx = K; idx < numElements; idx++) {
       const VT *el = valuesBegin + idx;
 
-      uint64_t hashedValue = MurmurHash::MurmurHash64A(el, sizeof(VT), seed);
+      //uint64_t hashedValue = MurmurHash::MurmurHash64A(el, sizeof(VT), seed);
+      uint64_t hashedValue = 1;
 
       if (hashedValue < pQueue.top()) {
         pQueue.pop();
