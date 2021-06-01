@@ -43,9 +43,7 @@ template <class DTArg> bool isSymmetric(const DTArg *arg) {
  * @brief Checks for symmetrie of a `DenseMatrix`.
  *
  * Checks for symmetrie in a DenseMatrix. Returning early if a check failes, or
- * the matrix is not square. Singular matrixes are considered square. The
- * maximum amount of required checks is
- * (#row * #rows - #rows)/2 elements.
+ * the matrix is not square. Singular matrixes are considered square. 
  */
 
 template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
@@ -53,6 +51,9 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
+        const size_t rowSkip = arg->getRowSkip();
+
+        const VT* values = arg->getValues();
 
         if (numRows != numCols) {
             throw std::runtime_error("Provided matrix is not square.");
@@ -66,7 +67,10 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
             for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
 
-                if (arg->get(colIdx, rowIdx) != arg->get(rowIdx, colIdx)) {
+                const VT* val1 = values + rowSkip *  rowIdx +  colIdx;
+                const VT* val2 = values + rowSkip * colIdx + rowIdx;
+
+                if (*val1 != *val2) {
                     return false;
                 }
             }
