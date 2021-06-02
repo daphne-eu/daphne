@@ -31,7 +31,7 @@
 
 template<class DTRes, class DTArg, typename VT>
 struct Replace {
-    static void apply(DTRes *& res, DTArg *& arg, VT pattern, VT replacement) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, VT pattern, VT replacement) = delete;
 };
 
 
@@ -39,7 +39,7 @@ struct Replace {
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg, typename VT>
-void replace(DTRes *& res, const DTArg *& arg, VT pattern, VT replacement ) {
+void replace(DTRes *& res, const DTArg * arg, VT pattern, VT replacement ) {
     Replace<DTRes, DTArg, VT>::apply(res, arg, pattern, replacement);
 }
 
@@ -49,10 +49,11 @@ void replace(DTRes *& res, const DTArg *& arg, VT pattern, VT replacement ) {
 
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
-//
+// ----------------------------------------------------------------------------
+
 template<typename VT>
 struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-        static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> *& arg, VT pattern, VT replacement) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, VT pattern, VT replacement) {
         //------handling corner cases -------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         // variable declaration
@@ -69,10 +70,10 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         }
         if((replacement!=replacement && pattern!=pattern) || (pattern == replacement)){// nothing to be done pattern equals replacement
             if(res!=nullptr && res==arg){  // arg and res are the same
-                    return; 
+                return; 
             }
             else if (res==nullptr){
-                        res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,  false);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,  false);
             }
             //copy and return in this case replace will be a copy function that copies arg to res
             const VT * allValues = arg->getValues();
@@ -131,7 +132,7 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 
 template<typename VT>
 struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
-    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> *& arg, VT pattern, VT replacement) {
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, VT pattern, VT replacement) {
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         assert(pattern!=0&& "pattern equals zero"); // this case is not supported for now
         const size_t numRows = arg->getNumRows();
@@ -147,24 +148,15 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
         }
         if((replacement!=replacement && pattern!=pattern) || (pattern == replacement)){// nothing to be done pattern equals replacement
             if(res!=nullptr && res==arg){  // arg and res are the same
-                    return; 
+                return; 
             }
             else if (res==nullptr){
                 res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols,  nnzElements, false);
-                memcpy(res->getRowOffsets(), arg->getRowOffsets(), (numRows+1)*sizeof(size_t));
-                memcpy(res->getColIdxs(), arg->getColIdxs(), nnzElements*sizeof(size_t));
-                memcpy(res->getValues(), arg->getValues(), nnzElements*sizeof(VT));
-
             }
             //copy and return in this case replace will be a copy function that copies arg to res
-            for(size_t r = 0; r < numRows; r++){
-                const VT * allValues = arg->getValues(r);
-                VT * allUpdatedValues = res->getValues(r);
-                const size_t nnzElementsRes= arg->getNumNonZeros(r);
-                for(size_t c = 0; c < nnzElementsRes; c++){
-                    allUpdatedValues[c]=allValues[c];
-                }
-            }
+            memcpy(res->getRowOffsets(), arg->getRowOffsets(), (numRows+1)*sizeof(size_t));
+            memcpy(res->getColIdxs(), arg->getColIdxs(), nnzElements*sizeof(size_t));
+            memcpy(res->getValues(), arg->getValues(), nnzElements*sizeof(VT));
             return;
         }
         if(res==nullptr){
@@ -203,3 +195,4 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_REPLACE_H
+
