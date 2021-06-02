@@ -31,8 +31,9 @@
 
 
 
-#define VALUE_TYPES double, float, uint32_t, uint64_t
+#define VALUE_TYPES double, float, uint32_t, uint64_t, int32_t, int64_t 
 #define DATA_TYPES   CSRMatrix, DenseMatrix
+#define VALUE_TYPES_SPECIAL_CASE double 
 
 template<class DT>
 void checkReplace(DT* outputMatrix,  const DT* inputMatrix,typename DT::VT pattern, typename DT::VT replacement,  DT* expected){
@@ -101,4 +102,28 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
     DataObjectFactory::destroy(testMatrix4);
     DataObjectFactory::destroy(outputMatrix);
     DataObjectFactory::destroy(outputMatrix2);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("Replace-nan", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_SPECIAL_CASE)){
+     using DT = TestType;
+    //inplace updates
+
+    auto initMatrix = genGivenVals<DT>(4, {
+        1, 2, 3, 7, 7, 7,
+        7, 1, 2, 3, 7, 7,
+        7, 7, 1, 2, 3, 7,
+        7, 7, 7, 1, 2, 3,
+    });
+    auto testMatrix1 = genGivenVals<DT>(4, {
+        1000, 2, 3, 7, 7, 7,
+        7, 1, 2, 3, 7, 7,
+        7, 7, 1, 2, 3, 7,
+        7, 7, 7, 1, 2, 3,
+    });
+
+    initMatrix->set(0, 0, nan(""));
+    checkReplace(initMatrix, initMatrix ,nan(""), 1000, testMatrix1);
+    DataObjectFactory::destroy(initMatrix);
+    DataObjectFactory::destroy(testMatrix1);
+
 }
