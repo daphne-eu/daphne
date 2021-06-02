@@ -31,8 +31,8 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
   
     auto symMat = genGivenVals<DT>(4, {
         0, 1, 2, 3,
-        1, 1, 4, 6,
-        2, 4, 2, 7,
+        1, 1, 0, 6,
+        2, 0, 2, 7,
         3, 6, 7, 3
     });
 
@@ -49,6 +49,13 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
         2, 4, 2, 7
     });
 
+    auto squareZeroMat = genGivenVals<DT>(4, {
+        0, 0, 0, 0,
+        0, 0, 1, 0,
+        0, 1, 0, 0,
+        0, 0, 0, 0
+    });
+
     auto singularMat = genGivenVals<DT>(1, {1});
 
     SECTION("isSymmetric") {
@@ -58,6 +65,8 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
         CHECK_FALSE(isSymmetric<DT>(asymMat));
 
         CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat), std::runtime_error);
+
+        CHECK(isSymmetric<DT>(squareZeroMat));
 
         CHECK(isSymmetric<DT>(singularMat));
     }
