@@ -19,6 +19,7 @@
 
 #include <runtime/local/kernels/BinaryOpCode.h>
 
+#include <algorithm>
 #include <stdexcept>
 
 // ****************************************************************************
@@ -26,6 +27,10 @@
 // ****************************************************************************
 
 template<BinaryOpCode opCode, class VTRes, class VTLhs, class VTRhs>
+// Note that, deviating from the kernel function ewBinarySca below, the opCode
+// is a template parameter here, because we want to enable re-use for efficient
+// elementwise operations on matrices, where we want to be able to avoid the
+// overhead of interpreting the opCode for each pair of values at run-time.
 struct EwBinarySca {
     static VTRes apply(VTLhs lhs, VTRhs rhs) = delete;
 };
@@ -62,6 +67,9 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         MAKE_CASE(BinaryOpCode::LE)
         MAKE_CASE(BinaryOpCode::GT)
         MAKE_CASE(BinaryOpCode::GE)
+        // Min/max.
+        MAKE_CASE(BinaryOpCode::MIN)
+        MAKE_CASE(BinaryOpCode::MAX)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown BinaryOpCode");
@@ -73,25 +81,7 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
 // ****************************************************************************
 
 /**
- * @brief Performs a binary operation on two scalars, whereby the operation is
- * known at compile-time.
- * 
- * Thus, `opCode` is a template parameter here.
- * 
- * @param lhs The left-hand-side operand.
- * @param rhs The right-hand-side operand.
- * @return The result of the binary operation.
- */
-template<BinaryOpCode opCode, class TRes, class TLhs, class TRhs>
-TRes ewBinaryScaCT(TLhs lhs, TRhs rhs) {
-    return EwBinarySca<opCode, TRes, TLhs, TRhs>::apply(lhs, rhs);
-}
-
-/**
- * @brief Performs a binary operation on two scalars, whereby the operation is
- * only known at run-time.
- * 
- * Thus, `opCode` is a run-time parameter here.
+ * @brief Performs a binary operation on two scalars.
  * 
  * @param opCode The binary operation to perform.
  * @param lhs The left-hand-side operand.
@@ -99,7 +89,7 @@ TRes ewBinaryScaCT(TLhs lhs, TRhs rhs) {
  * @return The result of the binary operation.
  */
 template<typename TRes, typename TLhs, typename TRhs>
-TRes ewBinaryScaRT(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
+TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
     return getEwBinaryScaFuncPtr<TRes, TLhs, TRhs>(opCode)(lhs, rhs);
 }
 
@@ -127,6 +117,9 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::LT , lhs <  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
+// Min/max.
+MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
+MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
 
 #undef MAKE_EW_BINARY_SCA
 

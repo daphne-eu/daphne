@@ -82,12 +82,34 @@ cd $thirdpartyPath
 #------------------------------------------------------------------------------
 
 # antlr4 (parser).
+pwdBeforeAntlr=$(pwd)
+antlrDirName=antlr
+antlrVersion=4.9.2
+antlrJarName=antlr-${antlrVersion}-complete.jar
+antlrCppRuntimeDirName=antlr4-cpp-runtime-${antlrVersion}-source
+antlrCppRuntimeZipName=$antlrCppRuntimeDirName.zip
+mkdir --parents $antlrDirName
+cd $antlrDirName
 # Download antlr4 jar if it does not exist yet.
-antlrName=antlr-4.9.1-complete.jar
-if [ ! -f $antlrName ]
+if [ ! -f $antlrJarName ]
 then
-    wget https://www.antlr.org/download/$antlrName
+    wget https://www.antlr.org/download/$antlrJarName
 fi
+# Download and build antlr4 C++ run-time if it does not exist yet.
+if [ ! -f $antlrCppRuntimeZipName ]
+then
+    wget https://www.antlr.org/download/$antlrCppRuntimeZipName
+    mkdir --parents $antlrCppRuntimeDirName
+    unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
+    cd $antlrCppRuntimeDirName
+    mkdir build
+    mkdir run
+    cd build
+    cmake .. -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON
+    make
+    DESTDIR=../run make install
+fi
+cd $pwdBeforeAntlr
 
 # catch2 (unit test framework).
 # Download catch2 release zip (if necessary), and unpack the single header file
@@ -108,6 +130,25 @@ then
 fi
 cd ..
 
+# OpenBLAS (basic linear algebra subprograms)
+pwdBeforeOpenBlas=$(pwd)
+openBlasDirName=OpenBLAS
+openBlasVersion=0.3.15
+openBlasZipName=OpenBLAS-$openBlasVersion.zip
+openBlasInstDirName=installed
+mkdir --parents $openBlasDirName
+cd $openBlasDirName
+if [ ! -f $openBlasZipName ]
+then
+    wget https://github.com/xianyi/OpenBLAS/releases/download/v$openBlasVersion/$openBlasZipName
+    unzip $openBlasZipName
+    mkdir --parents $openBlasInstDirName
+    cd OpenBLAS-$openBlasVersion
+    make
+    make install PREFIX=../$openBlasInstDirName
+fi
+cd $pwdBeforeOpenBlas
+
 #------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
@@ -124,7 +165,8 @@ cmake -G Ninja ../llvm \
    -DLLVM_TARGETS_TO_BUILD="X86;NVPTX;AMDGPU" \
    -DCMAKE_BUILD_TYPE=Release \
    -DLLVM_ENABLE_ASSERTIONS=ON \
-   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON
+   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
+   -DLLVM_ENABLE_RTTI=ON
 cmake --build . --target check-mlir
 
 #------------------------------------------------------------------------------
@@ -140,7 +182,12 @@ cd $oldPwd
 
 mkdir --parents build
 cd build
-cmake -G Ninja .. -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/
+cmake -G Ninja .. \
+    -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
+    -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
+    -DANTLR4_RUNTIME_DIR=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
+    -DANTLR4_JAR_LOCATION=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrJarName \
+    -DOPENBLAS_INST_DIR=$(pwd)/../$thirdpartyPath/$openBlasDirName/$openBlasInstDirName
 cmake --build . --target $target
 
 

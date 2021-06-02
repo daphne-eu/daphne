@@ -27,6 +27,8 @@
 
 using namespace mlir;
 
+#if 0
+// At the moment, all of these operations are lowered to kernel calls.
 template <typename BinaryOp, typename ReplIOp, typename ReplFOp>
 struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
 {
@@ -52,6 +54,7 @@ struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
 using AddOpLowering = BinaryOpLowering<daphne::AddOp, AddIOp, AddFOp>;
 using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
 using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
+#endif
 
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
@@ -87,18 +90,11 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
     static std::vector<Type> getLLVMInputOutputTypes(Location &loc,
                                                      MLIRContext *context,
                                                      TypeConverter *typeConverter,
-                                                     TypeRange operandTypes,
-                                                     TypeRange resultTypes)
+                                                     TypeRange resultTypes,
+                                                     TypeRange operandTypes)
     {
 
         llvm::SmallVector<Type, 5> args;
-        for (auto type : operandTypes) {
-            if (typeConverter->isLegal(type)) {
-                args.push_back(type);
-            }
-            else if (failed(typeConverter->convertType(type, args)))
-                emitError(loc) << "Couldn't convert operand type `" << type << "`\n";
-        }
         for (auto type : resultTypes) {
             if (typeConverter->isLegal(type)) {
                 args.push_back(type);
@@ -106,11 +102,18 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
             else if (failed(typeConverter->convertType(type, args)))
                 emitError(loc) << "Couldn't convert result type `" << type << "`\n";
         }
+        for (auto type : operandTypes) {
+            if (typeConverter->isLegal(type)) {
+                args.push_back(type);
+            }
+            else if (failed(typeConverter->convertType(type, args)))
+                emitError(loc) << "Couldn't convert operand type `" << type << "`\n";
+        }
+        
         std::vector<Type> argsLLVM;
-
         for (size_t i = 0; i < args.size(); i++) {
-            Type type = args[i].cast<Type>();
-            if (i >= operandTypes.size()) {
+            Type type = args[i]; //.cast<Type>();
+            if (i < resultTypes.size()) {
                 // outputs have to be given by reference
                 type = LLVM::LLVMPointerType::get(type);
             }
@@ -154,7 +157,7 @@ public:
 
         auto inputOutputTypes = getLLVMInputOutputTypes(
                                                         loc, rewriter.getContext(), typeConverter,
-                                                        ValueRange(operands).getTypes(), op.getResultTypes());
+                                                        op.getResultTypes(), ValueRange(operands).getTypes());
 
         // create function protoype and get `FlatSymbolRefAttr` to it
         auto kernelRef = getOrInsertFunctionAttr(
@@ -182,7 +185,7 @@ private:
     {
         // transformed results
         std::vector<Value> results;
-        for (size_t i = numInputs; i < kernelOperands.size(); i++) {
+        for (size_t i = 0; i < kernelOperands.size() - numInputs; i++) {
             // dereference output
             auto value = kernelOperands[i];
             // load element (dereference)
@@ -202,11 +205,27 @@ private:
         Value cst1 =
                 rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(1));
 
-        std::vector<Value> kernelOperands(operands);
-        for (size_t i = operands.size(); i < inputOutputTypes.size(); i++) {
-            kernelOperands.push_back(
-                                     rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1));
+        std::vector<Value> kernelOperands;
+        for (size_t i = 0; i < inputOutputTypes.size() - operands.size(); i++) {
+            auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1);
+            kernelOperands.push_back(allocaOp);
+
+            // If the type of this result parameter is a pointer (i.e. when it
+            // represents a matrix or frame), then initialize the allocated
+            // element with a null pointer (required by the kernels). Otherwise
+            // (i.e. when it represents a scalar), initialization is not
+            // required.
+            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>())
+                rewriter.create<LLVM::StoreOp>(
+                        loc,
+                        rewriter.create<LLVM::NullOp>(
+                                loc, LLVM::LLVMPointerType::get(IntegerType::get(rewriter.getContext(), 1))
+                        ),
+                        allocaOp
+                );
         }
+        for(auto op : operands)
+            kernelOperands.push_back(op);
         return kernelOperands;
     }
 };
@@ -245,7 +264,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
-    patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering, CallKernelOpLowering>(typeConverter, &getContext());
+    patterns.insert<CallKernelOpLowering>(typeConverter, &getContext());
     patterns.insert<ConstantOpLowering, ReturnOpLowering>(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This

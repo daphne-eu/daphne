@@ -68,7 +68,7 @@ def UIntScalar : AnyTypeOf<[UI8, UI32, UI64], "unsigned integer">;
 def IntScalar : AnyTypeOf<[SIntScalar, UIntScalar], "integer">;
 def FloatScalar : AnyTypeOf<[F32, F64], "float">;
 def NumScalar : AnyTypeOf<[IntScalar, FloatScalar], "numeric">;
-def BoolScalar : TypeAlias<UI1, "boolean">;
+def BoolScalar : TypeAlias<I1, "boolean">;
 
 // TODO Exclude Index again.
 def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
@@ -80,7 +80,7 @@ def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 // TODO Could also be Index or whatever, but it might be wise to define the
 // type we use to express dimensions and numeric row/col indexes just once.
 // TODO Rename, it's misleading. Sounds like a pair of height/width.
-def Size : TypeAlias<UI64, "size">;
+def Size : TypeAlias<Index, "size">;
 
 def Seed : TypeAlias<UI64, "seed">;
 

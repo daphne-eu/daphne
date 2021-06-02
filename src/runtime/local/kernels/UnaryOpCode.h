@@ -14,16 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
-#define SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
+#define SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
 
-#include <cassert>
+enum class UnaryOpCode {
+    // Arithmetic/general math.
+    SIGN, // signum (-1, 0, +1)
+};
 
-/**
- * `typeNew` should be a pointer type.
- */
-#define dynamic_cast_assert(typeNew, varNew, varOld) \
-    typeNew varNew = dynamic_cast<typeNew>(varOld); \
-    assert(varNew && "'" #varOld "'does not have the expected type '" #typeNew "'");
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_UTILS_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

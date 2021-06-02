@@ -21,11 +21,8 @@ set(LIBS
         MLIRDaphneTransforms
         MLIRExecutionEngine
         DaphneDSLParser
-        ValueTypeUtils
+        DataStructures
 )
-
-# enable exceptions handling
-set(LLVM_ENABLE_EH ON)
 
 add_llvm_executable(daphnec
         daphnec.cpp
@@ -33,8 +30,7 @@ add_llvm_executable(daphnec
         DEPENDS
         MLIRDaphneOpsIncGen
         # The kernels are linked at runtime.
-        PrintKernels
-        LinAlgKernels
+        AllKernels
 )
 
 llvm_update_compile_flags(daphnec)

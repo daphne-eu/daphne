@@ -1,0 +1,482 @@
+[
+    {
+        "kernelTemplate": {
+            "header": "AggAll.h",
+            "opName": "aggAll",
+            "returnType": "typename DT::VT",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "AggCol.h",
+            "opName": "aggCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "AggRow.h",
+            "opName": "aggRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CastSca.h",
+            "opName": "castSca",
+            "returnType": "VTRes",
+            "templateParams": [
+                {
+                    "name": "VTRes",
+                    "isDataType": false
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "VTArg",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double", "double"],
+            ["double", "int64_t"],
+            ["double", "size_t"],
+            ["double", "bool"],
+            ["int64_t", "double"],
+            ["int64_t", "int64_t"],
+            ["int64_t", "size_t"],
+            ["int64_t", "bool"],
+            ["size_t", "double"],
+            ["size_t", "int64_t"],
+            ["size_t", "size_t"],
+            ["size_t", "bool"],
+            ["bool", "double"],
+            ["bool", "int64_t"],
+            ["bool", "size_t"],
+            ["bool", "bool"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "EwBinaryMat.h",
+            "opName": "ewBinaryMat",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "EwBinaryMatSca.h",
+            "opName": "ewBinaryMatSca",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTRhs",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "VTRhs",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "EwBinarySca.h",
+            "opName": "ewBinarySca",
+            "returnType": "TRes",
+            "templateParams": [
+                {
+                    "name": "TRes",
+                    "isDataType": false
+                },
+                {
+                    "name": "TLhs",
+                    "isDataType": false
+                },
+                {
+                    "name": "TRhs",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "TLhs",
+                    "name": "lhs"
+                },
+                {
+                    "type": "TRhs",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double", "double", "double"],
+            ["int64_t", "int64_t", "int64_t"],
+            ["bool", "double", "double"],
+            ["bool", "int64_t", "int64_t"]
+        ],
+        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "MatMul.h",
+            "opName": "matMul",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "PrintSca.h",
+            "opName": "printSca",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "VT",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double"],
+            ["int64_t"],
+            ["bool"],
+            ["size_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "PrintObj.h",
+            "opName": "printObj",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "RandMatrix.h",
+            "opName": "randMatrix",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numRows"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numCols"
+                },
+                {
+                    "type": "VTArg",
+                    "name": "min"
+                },
+                {
+                    "type": "VTArg",
+                    "name": "max"
+                },
+                {
+                    "type": "double",
+                    "name": "sparsity"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "seed"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Transpose.h",
+            "opName": "transpose",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "EwUnarySca.h",
+            "opName": "ewUnarySca",
+            "returnType": "TRes",
+            "templateParams": [
+                {
+                    "name": "TRes",
+                    "isDataType": false
+                },
+                {
+                    "name": "TArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "UnaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "TArg",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["double", "double"],
+            ["int64_t", "int64_t"]
+        ],
+        "opCodes": ["SIGN"]
+    }
+]

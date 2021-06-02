@@ -14,26 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
+#ifndef SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H
+#define SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H
 
-enum class BinaryOpCode {
-    // Arithmetic.
-    ADD, // addition
-    MUL, // multiplication
-    DIV, // division
+#include <parser/Parser.h>
+
+#include <mlir/IR/Builders.h>
+
+#include <istream>
+
+struct DaphneDSLParser : public Parser {
     
-    // Comparisons.
-    EQ,  // equal
-    NEQ, // not equal
-    LT,  // less than
-    LE,  // less equal
-    GT,  // greater than
-    GE,  // greater equal
+    void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
     
-    // Min/max.
-    MIN,
-    MAX,
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H
+#endif /* SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H */
+
