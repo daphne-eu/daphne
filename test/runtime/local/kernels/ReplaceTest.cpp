@@ -105,7 +105,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Replace-nan", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES_SPECIAL_CASE)){
-     using DT = TestType;
+    using DT = TestType;
     //inplace updates
 
     auto initMatrix = genGivenVals<DT>(4, {
