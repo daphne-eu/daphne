@@ -276,3 +276,73 @@ TEST_CASE("ReadCsv, varying columns", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 
 }
+
+TEST_CASE("ReadCsv, frame async", TAG_KERNELS) {
+  ValueTypeCode schema[] = { ValueTypeCode::SI8, ValueTypeCode::F32 };
+  Frame *m = NULL;
+
+  size_t numRows = 1;
+  size_t numCols = 2;
+
+  char filename[] = "./test/runtime/local/io/ReadCsv4.csv";
+  struct File *file = openFile(filename);
+  char delim = ',';
+
+  readCsv(m, file, numRows, numCols, delim, schema);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<int8_t>(0)->get(0, 0) == 1);
+  CHECK(m->getColumn<float>(1)->get(0, 0) == 0.5);
+
+  DataObjectFactory::destroy(m);
+  m = NULL;
+
+  readCsv(m, file, numRows, numCols, delim, schema);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<int8_t>(0)->get(0, 0) == 2);
+  CHECK(m->getColumn<float>(1)->get(0, 0) == 1.0);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, DenseMatrix async", TAG_KERNELS, (DenseMatrix), (double)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 1;
+  size_t numCols = 4;
+
+  char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
+  struct File *file = openFile(filename);
+  char delim = ',';
+
+  readCsv(m, file, numRows, numCols, delim);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(0, 0) == -0.1);
+  CHECK(m->get(0, 1) == -0.2);
+  CHECK(m->get(0, 2) == 0.1);
+  CHECK(m->get(0, 3) == 0.2);
+
+  DataObjectFactory::destroy(m);
+  m = NULL;
+
+  readCsv(m, file, numRows, numCols, delim);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(0, 0) == 3.14);
+  CHECK(m->get(0, 1) == 5.41);
+  CHECK(m->get(0, 2) == 6.22216);
+  CHECK(m->get(0, 3) == 5);
+
+  DataObjectFactory::destroy(m);
+}
