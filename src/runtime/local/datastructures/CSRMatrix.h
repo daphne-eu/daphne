@@ -73,7 +73,7 @@ class CSRMatrix : public Matrix<ValueType> {
     std::shared_ptr<size_t> rowOffsets;
     
     size_t lastAppendedRowIdx;
-    
+
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
     template<class DataType, typename ... ArgTypes>
@@ -168,7 +168,7 @@ public:
         // TODO Here we could reduce the allocated size of the values and
         // colIdxs arrays.
     }
-    
+
     ValueType * getValues() {
         return values.get();
     }
@@ -200,19 +200,19 @@ public:
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
         return colIdxs.get() + rowOffsets.get()[rowIdx];
     }
-    
+
     const size_t * getColIdxs(size_t rowIdx) const {
         return const_cast<CSRMatrix<ValueType> *>(this)->getColIdxs(rowIdx);
     }
-    
+
     size_t * getRowOffsets() {
         return rowOffsets.get();
     }
-    
+
     const size_t * getRowOffsets() const {
         return rowOffsets.get();
     }
-    
+
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
@@ -220,7 +220,7 @@ public:
         const size_t * rowColIdxsBeg = getColIdxs(rowIdx);
         const size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
         const size_t * ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
-        
+
         if(ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx)
             // No entry for the given coordinates present.
             return ValueType(0);

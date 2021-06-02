@@ -84,11 +84,8 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        VT zero = 0;
+        const VT zero = 0;
         const VT* values = arg->getValues();
-        /*
-        const size_t* colIdxs = arg->getColIdxs();
-        */
         const size_t* rowOffsets = arg->getRowOffsets();
 
         if (numRows != numCols) {
@@ -108,9 +105,7 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
 
                 const size_t * ptrExpected1 = std::lower_bound(colIdxVal1Begin, colIdxVal1End, colIdx);
-
                 const VT * val1;
-
 
                 if(ptrExpected1 == colIdxVal1End || *ptrExpected1 != colIdx) {
                     val1 = &zero;
@@ -121,8 +116,8 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 const size_t * colIdxVal2Begin = arg->getColIdxs(colIdx);
                 const size_t * colIdxVal2End = arg->getColIdxs(colIdx+1);
                 const size_t * ptrExpected2 = std::lower_bound(colIdxVal2Begin, colIdxVal2End, rowIdx);
-
                 const VT * val2;
+
                 if(ptrExpected2 == colIdxVal2End || *ptrExpected2 != rowIdx) {
                     val2 = &zero;
                 } else {
