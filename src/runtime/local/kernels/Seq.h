@@ -20,8 +20,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <type_traits>
-
+#include <cmath>
+#include <cassert>
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -47,22 +47,24 @@ void seq(DTRes *& res, VT start, VT end, VT inc) {
 template<typename VT>
 struct Seqx<DenseMatrix<VT>, VT, VT,VT> {
     static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc) {
-        assert(start<end 0 && "start must be less than end");
-        assert(inc>0 && "this inc must be greater than zero");
-	assert(res==nullptr && "result matrix should point to null")
-	
-	size_t numRows= (int64_t)(((end-start)/inc) +1);
-	size_t numCols=1;
-	size_t rowSkip	
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-	VT * allValues= res->getValues();
-	const size_t rowSkip= res->getRowSkip();
-	VT accumulatorValue= start;
-	for(size_t i =0; i<numRows ;i++){
-		allvalues[i*rowSkip]= accumulatorvalue;
-		accumulatorValue+=inc;
-	}
+    assert(res!=nullptr && "result matrix should point to null")
+    assert(inc != 0 && "inc should not be zero");
+    assert(start!=end && "start and end should not be equal");
+    VT distanceToEnd= std::abs(end-(start+inc));
+    VT initialDistanceToEnd= std::abs(end-start);
+    assert(distanceToEnd<initialDistanceToEnd  && "repeatedly adding a step to start does not lead to the end");
+    size_t numRows= (size_t)(((end-start)/inc) +1);
+    size_t numCols=1;
+    size_t rowSkip	
+    if(res == nullptr)
+        res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+    VT * allValues= res->getValues();
+    const size_t rowSkip= res->getRowSkip();
+    VT accumulatorValue= start;
+    for(size_t i =0; i<numRows ;i++){
+      allvalues[i*rowSkip]= accumulatorvalue;
+      accumulatorValue+=inc;
+    }
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SEQ_H
