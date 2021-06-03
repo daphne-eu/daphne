@@ -20,7 +20,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <cmath>
+#include <stdlib.h>
+#include <math.h>
 #include <cassert>
 // ****************************************************************************
 // Struct for partial template specialization
@@ -50,10 +51,10 @@ struct Seqx<DenseMatrix<VT>, VT, VT,VT> {
     assert(res!=nullptr && "result matrix should point to null")
     assert(inc != 0 && "inc should not be zero");
     assert(start!=end && "start and end should not be equal");
-    VT distanceToEnd= std::abs(end-(start+inc));
-    VT initialDistanceToEnd= std::abs(end-start);
+    VT distanceToEnd= abs(end-(start+inc));
+    VT initialDistanceToEnd= abs(end-start);
     assert(distanceToEnd<initialDistanceToEnd  && "repeatedly adding a step to start does not lead to the end");
-    size_t numRows= (size_t)((initialDistanceToEnd/std::abs(inc)) +1);
+    size_t numRows= ceil((initialDistanceToEnd/abs(inc))+1);
     size_t numCols=1;
     size_t rowSkip	
     if(res == nullptr)
