@@ -53,7 +53,7 @@ struct Seqx<DenseMatrix<VT>, VT, VT,VT> {
     VT distanceToEnd= std::abs(end-(start+inc));
     VT initialDistanceToEnd= std::abs(end-start);
     assert(distanceToEnd<initialDistanceToEnd  && "repeatedly adding a step to start does not lead to the end");
-    size_t numRows= (size_t)(((end-start)/inc) +1);
+    size_t numRows= (size_t)((initialDistanceToEnd/std::abs(inc)) +1);
     size_t numCols=1;
     size_t rowSkip	
     if(res == nullptr)
