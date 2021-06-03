@@ -46,7 +46,7 @@ void seq(DTRes *& res, VT start, VT end, VT inc) {
 // ****************************************************************************
 
 template<typename VT>
-struct Seqx<DenseMatrix<VT>, VT, VT,VT> {
+struct Seq<DenseMatrix<VT>, VT, VT,VT> {
     static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc) {
     assert(res!=nullptr && "result matrix should point to null")
     assert(inc != 0 && "inc should not be zero");
