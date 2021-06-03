@@ -352,6 +352,12 @@ def Daphne_ExtractOp : Daphne_Op<"extract"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
+def Daphne_ExtractColumnOp : Daphne_Op<"extract_Column"> {
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedCols);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+
 def Daphne_InsertOp : Daphne_Op<"insert"> {
     let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
     let results = (outs); // no results
@@ -544,15 +550,6 @@ class Daphne_SetOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, tra
 def Daphne_IntersectOp : Daphne_SetOp<"intersect">;
 def Daphne_MergeOp : Daphne_SetOp<"merge">;
 def Daphne_ExceptOp : Daphne_SetOp<"except">;
-
-// ----------------------------------------------------------------------------
-// Get operations
-// ----------------------------------------------------------------------------
-
-class Daphne_GetOp : Daphne_Op<"get"> {
-    let arguments = (ins Frame:$frame, AnyTypeOf<[IntScalar, StrScalar]>:$col);
-    let results = (outs Frame:$res);
-}
 
 // ----------------------------------------------------------------------------
 // Cartesian product and joins

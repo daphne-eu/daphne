@@ -24,10 +24,10 @@ grammar DaphneSQLGrammar;
 // Parser rules
 // ****************************************************************************
 script:
-    query* EOF ;
+    (query ';')* EOF ;
 
 query:
-    subquery? select';';
+    subquery? select;
 
 select:
     SQL_SELECT selectExpr (',' selectExpr)*
