@@ -27,7 +27,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VT, typename VT, typename VT>
+template<class DTRes, typename VT>
 struct Seq{
     static void apply(DTRes *& res, VT start, VT end, VT incp) = delete;
 };
@@ -36,9 +36,9 @@ struct Seq{
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VT, typename VT, typename VT>
+template<class DTRes, typename VT>
 void seq(DTRes *& res, VT start, VT end, VT inc) {
-    Seq<DTRes, VT, VT, VT>::apply(res, start, end, inc);
+    Seq<DTRes, VT>::apply(res, start, end, inc);
 }
 
 // ****************************************************************************
@@ -46,24 +46,22 @@ void seq(DTRes *& res, VT start, VT end, VT inc) {
 // ****************************************************************************
 
 template<typename VT>
-struct Seq<DenseMatrix<VT>, VT, VT,VT> {
+struct Seq<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc) {
-    assert(res!=nullptr && "result matrix should point to null")
-    assert(inc != 0 && "inc should not be zero");
-    assert(start!=end && "start and end should not be equal");
-    VT distanceToEnd= abs(end-(start+inc));
+    assert(inc != 0 && "inc should not be zero"); // setp 0 can not make any progress to any given boundary
+    assert(start!=end && "start and end should not be equal"); // can not have start = end
+    VT distanceToEnd= abs(end-(start+inc)); 
     VT initialDistanceToEnd= abs(end-start);
-    assert(distanceToEnd<initialDistanceToEnd  && "repeatedly adding a step to start does not lead to the end");
-    size_t numRows= ceil((initialDistanceToEnd/abs(inc))+1);
-    size_t numCols=1;
-    size_t rowSkip	
-    if(res == nullptr)
+    assert(distanceToEnd<initialDistanceToEnd  && "repeatedly adding a step to start does not lead to the end"); // to make sure we have a finite sequence
+    const size_t numRows= ceil((initialDistanceToEnd/abs(inc))+1); // number of steps = numRows
+    const size_t numCols=1;
+    if(res == nullptr) // should one do such a check or reallocate directly?
         res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
     VT * allValues= res->getValues();
-    const size_t rowSkip= res->getRowSkip();
     VT accumulatorValue= start;
+    const size_t rowSkip= res->getRowSkip();
     for(size_t i =0; i<numRows ;i++){
-      allvalues[i*rowSkip]= accumulatorvalue;
+      allValues[i*rowSkip]= accumulatorvalue;
       accumulatorValue+=inc;
     }
 };
