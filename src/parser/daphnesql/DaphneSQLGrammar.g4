@@ -89,7 +89,7 @@ tableReference:
 selectIdent:
     /* (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
     |  */
-    frame=IDENTIFIER ('[' colnumber=INT_POSITIV_LITERAL ']'|DOT colnumber=INT_POSITIV_LITERAL) #intIdent
+    frame=IDENTIFIER ('[' colnumber=INT_POSITIVE_LITERAL ']'|DOT colnumber=INT_POSITIVE_LITERAL) #intIdent
     ;
 
 literal:
@@ -177,11 +177,11 @@ RCURLY : '}';
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
-INT_POSITIV_LITERAL:
+INT_POSITIVE_LITERAL:
     DIGIT+ ;
 
 INT_LITERAL:
-    '-'? INT_POSITIV_LITERAL;
+    '-'? INT_POSITIVE_LITERAL;
 
 FLOAT_LITERAL:
     '-'? ( DIGIT+ DOT DIGIT+);

@@ -20,12 +20,12 @@ antlr4_generate(
         TRUE  # generate visitor interfaces
 )
 
-include_directories(${ANTLR4_INCLUDE_DIR_DaphneDSLGrammar})
+include_directories(${ANTLR4_INCLUDE_DIR_DaphneSQLGrammar})
 
 add_library(DaphneSQLParser STATIC
         DaphneSQLParser.cpp
         DaphneSQLVisitor.cpp
-        ${ANTLR4_SRC_FILES_DaphneDSLGrammar}
+        ${ANTLR4_SRC_FILES_DaphneSQLGrammar}
 )
 
 target_link_libraries(DaphneSQLParser PRIVATE

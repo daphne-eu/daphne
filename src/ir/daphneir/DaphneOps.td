@@ -363,6 +363,11 @@ def Daphne_InsertOp : Daphne_Op<"insert"> {
     let results = (outs); // no results
 }
 
+def Daphne_InsertColumnOp : Daphne_Op<"insert_Column"> {
+    let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedCols);
+    let results = (outs); // no results
+}
+
 // ****************************************************************************
 // Reorganization
 // ****************************************************************************

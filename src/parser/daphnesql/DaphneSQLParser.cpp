@@ -15,10 +15,12 @@
  */
 
 #include <ir/daphneir/Daphne.h>
-#include <parser/sql/DaphneSQLParser.h>
-#include <parser/sql/DaphneSQLVisitor.h>
+#include <parser/daphnesql/DaphneSQLParser.h>
+#include <parser/daphnesql/DaphneSQLVisitor.h>
 
 #include "antlr4-runtime.h"
+// #include "build/antlr4_generated_src/DaphneSQLGrammar/DaphneSQLGrammarLexer.h"
+// #include "build/antlr4_generated_src/DaphneSQLGrammar/DaphneSQLGrammarParser.h"
 #include "DaphneSQLGrammarLexer.h"
 #include "DaphneSQLGrammarParser.h"
 
@@ -28,7 +30,7 @@
 
 #include <istream>
 
-void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
+void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
     mlir::Location loc = builder.getUnknownLoc();
 
     // Create a single "main"-function and insert DaphneIR operations into it.
@@ -37,7 +39,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(funcBlock, funcBlock->begin());
 
-        // Run ANTLR-based DaphneDSL parser.
+        // Run ANTLR-based DaphneSQL parser.
         antlr4::ANTLRInputStream input(stream);
         input.name = "whateverFile"; // TODO
         DaphneSQLGrammarLexer lexer(&input);
