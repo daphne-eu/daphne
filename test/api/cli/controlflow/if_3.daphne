@@ -1,0 +1,4 @@
+if(1==2)
+    print(123);
+else
+    print(456);

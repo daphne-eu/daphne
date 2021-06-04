@@ -18,6 +18,8 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 add_executable(run_tests
         run_tests.cpp
 
+        api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/scoping/ScopingTest.cpp
         api/cli/Utils.cpp
         
         runtime/local/datastructures/CSRMatrixTest.cpp
