@@ -56,11 +56,12 @@ class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
 // Data generation
 // ****************************************************************************
 
-def Daphne_MatrixOp : Daphne_Op<"matrix"> {
-    let arguments = (ins AnyTypeOf<[AnyScalar, Matrix]>:$arg, Size:$numRows, Size:$numCols);
+def Daphne_FillOp : Daphne_Op<"fill"> {
+    let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs Matrix:$res);
 }
 
+// TODO This can probably be subsumed by ColBindOp.
 def Daphne_FrameOp : Daphne_Op<"frame"> {
     let arguments = (ins Variadic<Matrix>:$cols);
     let results = (outs Frame:$res);
@@ -361,6 +362,11 @@ def Daphne_InsertOp : Daphne_Op<"insert"> {
 // Reorganization
 // ****************************************************************************
 
+def Daphne_ReshapeOp : Daphne_Op<"reshape"> {
+    let arguments = (ins Matrix:$arg, Size:$numRows, Size:$numCols);
+    let results = (outs Matrix:$res);
+}
+
 def Daphne_TransposeOp : Daphne_Op<"transpose"> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
@@ -591,7 +597,7 @@ def Daphne_GroupOp : Daphne_Op<"group"> {
 }
 
 // ****************************************************************************
-// Conversions and casts
+// Conversions, casts, and copying
 // ****************************************************************************
 
 def Daphne_ToStringOp : Daphne_Op<"toString"> {
@@ -606,6 +612,11 @@ def Daphne_CastOp : Daphne_Op<"cast"> {
     // specified as the output type when creating a CastOp.
     let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$res);
+}
+
+def Daphne_CopyOp : Daphne_Op<"copy"> {
+    let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // ****************************************************************************

@@ -86,7 +86,7 @@ void convert(std::string const &x, uint32_t *v) { *v = stoi(x); }
 void convert(std::string const &x, uint64_t *v) { *v = stoi(x); }
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix, DenseMatrix
+// DenseMatrix
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
@@ -130,6 +130,10 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
     }
   }
 };
+
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
 
 template <> struct ReadCsv<Frame> {
   static void apply(Frame *&res, struct File *file, size_t numRows,

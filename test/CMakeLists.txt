@@ -17,13 +17,13 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
 add_executable(run_tests
         run_tests.cpp
-        
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
 
-        runtime/local/io/ReadCsv.cpp
+        runtime/local/io/ReadCsvTest.cpp
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
@@ -37,6 +37,7 @@ add_executable(run_tests
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/TransposeTest.cpp
+	runtime/local/kernels/ReplaceTest.cpp
 )
 target_link_libraries(run_tests PRIVATE
     DataStructures
