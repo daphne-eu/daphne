@@ -24,6 +24,7 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/HasSpecialValue.h>
 
+// TODO [DODO] Templates didn't work, can this be made better?
 bool isNaN(double val) {
     return std::isnan(val);
 }
@@ -40,13 +41,14 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue integer", TAG_KERNELS, (DenseMatrix,
 
     using DT = TestType;
 
-    auto specialMat = genGivenVals<DT>(3, {
-        0, 1, 3,
-        4, 5, 6,
-        7, 8, 9
+    DT* specialMat = genGivenVals<DT>(4, {
+        0, 1, 2, 3,
+        4, 5, 6, 7,
+        8, 9, 0, 2,
+        3, 4, 5, 1
     });
 
-    auto nonSpecialMat = genGivenVals<DT>(3, {
+    DT* nonSpecialMat = genGivenVals<DT>(3, {
         0, 0, 3,
         4, 5, 6,
         7, 8, 9
@@ -55,6 +57,29 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue integer", TAG_KERNELS, (DenseMatrix,
     SECTION("hasSpecialValue") {
         CHECK(hasSpecialValue(specialMat, isOne));
         CHECK_FALSE(hasSpecialValue(nonSpecialMat, isOne));
+    }
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue DenseMatrix sub matrix.", TAG_KERNELS, (DenseMatrix), (uint32_t)) {
+
+    using DT = TestType;
+
+    DT* specialMat = genGivenVals<DT>(4, {
+        0, 1, 2, 3,
+        4, 5, 6, 7,
+        8, 9, 0, 2,
+        3, 4, 5, 1
+    });
+
+    DT * subNonSpecialMat = DataObjectFactory::create<DT>(specialMat,
+        1,
+        specialMat->getNumRows() - 1,
+        1,
+        specialMat->getNumCols() - 1
+    );
+
+    SECTION("hasSpecialValue sub matrix") {
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, isOne));
     }
 }
 
