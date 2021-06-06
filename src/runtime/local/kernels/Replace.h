@@ -195,4 +195,3 @@ struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_REPLACE_H
-

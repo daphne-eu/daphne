@@ -127,4 +127,3 @@ TEMPLATE_PRODUCT_TEST_CASE("Replace-nan", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPE
     DataObjectFactory::destroy(testMatrix1);
 
 }
-
