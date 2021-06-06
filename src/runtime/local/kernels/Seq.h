@@ -21,24 +21,29 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <stdlib.h>
-#include <math.h>
+#include <cmath>
 #include <cassert>
+#include <iomanip>
+#include <stdexcept>
+
+#define EPS 1.0e-13
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VT>
+template<class DT>
 struct Seq{
-    static void apply(DTRes *& res, VT start, VT end, VT incp) = delete;
+    static void apply(DT *& res, typename DT::VT start,typename DT::VT end, typename DT::VT inc) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VT>
-void seq(DTRes *& res, VT start, VT end, VT inc) {
-    Seq<DTRes, VT>::apply(res, start, end, inc);
+template<class DT>
+void seq(DT *& res, typename DT::VT start, typename DT::VT end, typename DT::VT inc) {
+    Seq<DT>::apply(res, start, end, inc);
 }
 
 // ****************************************************************************
@@ -46,23 +51,48 @@ void seq(DTRes *& res, VT start, VT end, VT inc) {
 // ****************************************************************************
 
 template<typename VT>
-struct Seq<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc) {
-    assert(inc != 0 && "inc should not be zero"); // setp 0 can not make any progress to any given boundary
-    assert(start!=end && "start and end should not be equal"); // can not have start = end
-    VT distanceToEnd= abs(end-(start+inc)); 
-    VT initialDistanceToEnd= abs(end-start);
-    assert(distanceToEnd<initialDistanceToEnd  && "repeatedly adding a step to start does not lead to the end"); // to make sure we have a finite sequence
-    const size_t numRows= ceil((initialDistanceToEnd/abs(inc))+1); // number of steps = numRows
-    const size_t numCols=1;
-    if(res == nullptr) // should one do such a check or reallocate directly?
-        res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-    VT * allValues= res->getValues();
-    VT accumulatorValue= start;
-    const size_t rowSkip= res->getRowSkip();
-    for(size_t i =0; i<numRows ;i++){
-      allValues[i*rowSkip]= accumulatorvalue;
-      accumulatorValue+=inc;
+struct Seq<DenseMatrix<VT>> {
+        static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc) {
+            assert(inc == inc && "inc cannot be NaN");   
+            assert(start == start && "inc cannot be NaN");
+            assert(end == end && "inc cannot be Nan");   
+            assert(inc != 0 && "inc should not be zero"); // setp 0 can not make any progress to any given boundary
+	    if( (start<end && inc<0) || (start>end && inc>0)){// error
+		   throw std::runtime_error("The inc cannot lead to the boundary of the sequence"); 
+	    }
+            
+	    VT initialDistanceToEnd= abs(end-start);
+            const size_t expectednumRows= ceil((initialDistanceToEnd/abs(inc)))+1; // number of steps = expectednumRows and numRows might = expectednumRows -1 ot expectednumRows
+            const size_t numCols=1;
+            //std::cout<<"numRows "<< expectednumRows<<std::endl;
+            // should the kernel do such a check or reallocate res matrix directly?
+            if(res == nullptr) 
+                res = DataObjectFactory::create<DenseMatrix<VT>>(expectednumRows, numCols, false);
+            else
+                assert(res->getNumRows()==expectednumRows  && "input matrix is not null and may not fit the sequence");
+
+            VT * allValues= res->getValues();
+
+            VT accumulatorValue= start;
+
+            for(size_t i =0; i<expectednumRows; i++){
+              allValues[i]= accumulatorValue;
+              accumulatorValue+=inc;
+            }
+
+            VT lastValue=allValues[expectednumRows-1]; 
+
+            // on my machine the difference is (1.7e-15) greater  than epsilon std::numeric_limits<VT>::epsilon() 
+            if ( (end < start) && end-lastValue>EPS ) { // reversed sequence
+                res->shrinkNumRows(expectednumRows-1);
+                //std::cout<<"reduced"<<std::endl;
+            }
+            else if ( (end > start) && lastValue-end> EPS ){ // normal sequence
+                res->shrinkNumRows(expectednumRows-1);
+                //std::cout<<"reduced"<<std::endl;
+                double diff = lastValue-end;
+                //std::cout<<"acc " << lastValue << " end "  <<end<<" diff "<<diff << std::endl; 
+            }
     }
 };
 
