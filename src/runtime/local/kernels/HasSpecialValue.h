@@ -24,8 +24,9 @@
 #include <string>
 #include <cmath>
 #include <type_traits>
-template <class DTArg> struct HasSpecialValue {
-    static bool apply(const DTArg *arg) = delete;
+
+template <class DTArg, class DTFArg> struct HasSpecialValue {
+    static bool apply(const DTArg *arg, bool (*specValTesttestFunc)(DTFArg)) = delete;
 };
 
 // ****************************************************************************
@@ -33,32 +34,35 @@ template <class DTArg> struct HasSpecialValue {
 // ****************************************************************************
 
 /**
- * @brief Checks the matrix for the special values infinity and NaN.
+ * @brief Checks each element of the matrix against a provided function
+ * returning a boolean. Stops early when the test function returns true.
  *
- * Checks each element of the matrix for:
+ * Example use
  *
- *  - std::numeric_limits<double_t>::signaling_NaN();
- *  - std::numeric_limits<double_t>::quiet_NaN();
- *  - std::numeric_limits<double_t>::infinity();
+ *  bool isNaN(double val) {
+ *      return std::isnan(val);
+ *  }
  *
- * @param arg Pointer to the to check.
- * @return Returns true on first find of inifinity or NaN.
+ *  bool hasSpecVal = hasSpecialValue(mat, isNaN);
+ *
+ * @param
+ * @param arg Pointer to a matrix.
+ * @param testFunc Pointer to a bool returning function taking the matrix element type as an argument.
+ * @return Returns true when the test function returns true.
  */
-template <class DTArg> bool hasSpecialValue(const DTArg *arg) {
-    return HasSpecialValue<DTArg>::apply(arg);
+template <class DTArg, class TestFunc> bool hasSpecialValue(const DTArg *arg, TestFunc testFunc) {
+    return HasSpecialValue<DTArg, TestFunc>::apply(arg, testFunc);
 }
 
-template <typename VT> struct HasSpecialValue<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> *arg) {
+template <typename VT, typename TestFunc> struct HasSpecialValue<DenseMatrix<VT>, TestFunc> {
+    static bool apply(const DenseMatrix<VT> *arg, TestFunc testFunc) {
 
-        if (!std::is_floating_point<VT>::value) return false;
-
-        auto values = arg->getValues();
+        const VT* values = arg->getValues();
         size_t numValues = arg->getNumRows() * arg->getNumCols();
 
         for (size_t idx = 0; idx < numValues; idx++) {
             const VT * value = values + idx;
-            if (!std::isnan(*value) || !std::isinf(*value)) {
+            if (testFunc(*value)) {
                 return true;
             }
         }
@@ -67,17 +71,15 @@ template <typename VT> struct HasSpecialValue<DenseMatrix<VT>> {
     }
 };
 
-template <typename VT> struct HasSpecialValue<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> *arg) {
+template <typename VT, typename TestFunc> struct HasSpecialValue<CSRMatrix<VT>, TestFunc> {
+    static bool apply(const CSRMatrix<VT> *arg, TestFunc testFunc) {
 
-        if (!std::is_floating_point<VT>::value) return false;
-
-        auto values = arg->getValues();
+        const VT* values = arg->getValues();
         size_t numValues = arg->getNumRows() * arg->getNumCols();
 
         for (size_t idx = 0; idx < numValues; idx++) {
             const VT * value = values + idx;
-            if (!std::isnan(*value) || !std::isinf(*value)) {
+            if (testFunc(*value)) {
                 return true;
             }
         }

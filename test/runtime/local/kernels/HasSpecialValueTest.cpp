@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#include <bits/stdint-intn.h>
+#include <bits/stdint-uintn.h>
 #include <catch.hpp>
 #include <cmath>
 #include <tags.h>
@@ -22,30 +24,47 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/HasSpecialValue.h>
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue integer", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int32_t, uint32_t, size_t)) {
+bool isNaN(double val) {
+    return std::isnan(val);
+}
+
+bool isInf(double val) {
+    return std::isinf(val);
+}
+
+bool isOne(uint32_t val) {
+    return val == 1; 
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue integer", TAG_KERNELS, (DenseMatrix, CSRMatrix), (uint32_t)) {
 
     using DT = TestType;
 
-    auto mat = genGivenVals<DT>(3, {
+    auto specialMat = genGivenVals<DT>(3, {
         0, 1, 3,
         4, 5, 6,
         7, 8, 9
     });
 
+    auto nonSpecialMat = genGivenVals<DT>(3, {
+        0, 0, 3,
+        4, 5, 6,
+        7, 8, 9
+    });
+
     SECTION("hasSpecialValue") {
-        CHECK_FALSE(hasSpecialValue(mat));
+        CHECK(hasSpecialValue(specialMat, isOne));
+        CHECK_FALSE(hasSpecialValue(nonSpecialMat, isOne));
     }
-
-
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue floating point", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue floating point", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double)) {
 
     using DT = TestType;
 
-    auto sigNaN = std::numeric_limits<double_t>::signaling_NaN();
-    auto quietNaN = std::numeric_limits<double_t>::quiet_NaN();
-    auto inf = std::numeric_limits<double_t>::infinity();
+    auto sigNaN = std::numeric_limits<double>::signaling_NaN();
+    auto quietNaN = std::numeric_limits<double>::quiet_NaN();
+    auto inf = std::numeric_limits<double>::infinity();
 
     auto sigNaNMat= genGivenVals<DT>(3, {
         0, 1, 3,
@@ -66,14 +85,18 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue floating point", TAG_KERNELS, (Dense
     });
 
     SECTION("signaling NaN") {
-        CHECK(hasSpecialValue(sigNaNMat));
+        CHECK(hasSpecialValue(sigNaNMat, isNaN));
     }
 
     SECTION("quiet NaN"){
-        CHECK(hasSpecialValue(quietNaNMat));
+        CHECK(hasSpecialValue(quietNaNMat, isNaN));
     }
 
     SECTION("infinity") {
-        CHECK(hasSpecialValue(infinityMat));
+        CHECK(hasSpecialValue(infinityMat, isInf));
+    }
+
+    SECTION("no special value found") {
+        CHECK_FALSE(hasSpecialValue(infinityMat, isNaN));
     }
 }
