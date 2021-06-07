@@ -110,6 +110,30 @@ print(t(m));
 
 ... and execute it as follows: `build/bin/daphnec example.daphne`.
 
+### Building and running with containers [Alternative path for building and running the prototype and the tests]
+If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
+- you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or higher are sufficient
+- you can use the provided docker file to create an image that contains all dependencies as follows:
+```bash
+cd prototype
+docker build -t <ImageTag> .
+#the image can be built from the dockerhub docker://ahmedeleliemy/test-workflow:latest as well
+docker run -v absolute_path_to_prototype/:absolute_path_to_prototype_in_the_container -it <ImageTag> bash
+[root@<some_container_ID>]cd absolute_path_to_prototype_in_the_container
+[root@<some_container_ID>]./build.sh #or ./test.sh  
+```
+ - you can also use Singularity containers instead of docker as follows:
+  ```bash
+singularity build <ImageName.sif> docker://ahmedeleliemy/test-workflow
+#one can also use [Singularity python](https://singularityhub.github.io/singularity-cli/)
+#to convert the provided Dockerfile into Singularity recipe 
+singularity shell <ImageName.sif>
+Singularity> cd prototype
+Singularity> ./build.sh #or ./test.sh  
+```
+- Because the container instance works on the same folder, if one already built the prototype outside the container, it is recommended to clean all build files to avoid conflicts.
+- One may also do the commits from within the containers as normal.
+
 ### Exploring the Source Code
 
 As an **entry point for exploring the source code**, you might want to have a look at the code behind the `daphnec` executable, which can be found in `src/api/cli/daphnec.cpp`.

@@ -46,6 +46,10 @@ public:
         mlir::Value value;
         bool isReadOnly;
         
+        SymbolInfo() : value(nullptr), isReadOnly(false) {
+            // nothing to do
+        }
+        
         SymbolInfo(mlir::Value value, bool isReadOnly)
         : value(value), isReadOnly(isReadOnly) {
             // nothing to do
@@ -143,7 +147,7 @@ public:
      * @param info The symbol information, including the SSA value.
      */
     void put(std::string sym, SymbolInfo info) {
-        scopes.back().emplace(sym, info);
+        scopes.back()[sym] = info;
     }
     
     /**
