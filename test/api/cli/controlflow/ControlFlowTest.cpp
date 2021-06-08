@@ -14,18 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef TEST_TAGS_H
-#define TEST_TAGS_H
+#include <api/cli/Utils.h>
 
-// The following tags are intended to be used as the second argument to the
-// TEST_CASE macros of catch2. You can easily combine tags by using multiple
-// tag macros separated by whitespace, e.g., if TAG_A is "[a]" and TAG_B is
-// "[b]", then TAG_A TAG_B is "[a]" "[b]", which is equivalent to "[a][b]".
+#include <tags.h>
 
-#define TAG_CONTROLFLOW "[controlflow]"
-#define TAG_DATASTRUCTURES "[datastructures]"
-#define TAG_KERNELS "[kernels]"
-#define TAG_SCOPING "[scoping]"
+#include <catch.hpp>
 
-#endif //TEST_TAGS_H
+#include <sstream>
+#include <string>
 
+const std::string dirPath = "test/api/cli/controlflow/";
+
+#define MAKE_TEST_CASE(name, count) \
+    TEST_CASE(name, TAG_CONTROLFLOW) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
+                compareDaphneToRef(dirPath, name, i); \
+            } \
+        } \
+    }
+
+MAKE_TEST_CASE("if", 4)
+MAKE_TEST_CASE("for", 16)
+MAKE_TEST_CASE("while", 4)
