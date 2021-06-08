@@ -38,6 +38,7 @@ add_executable(run_tests
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/TransposeTest.cpp
 	runtime/local/kernels/ReplaceTest.cpp
+	runtime/local/kernels/SeqTest.cpp
 )
 target_link_libraries(run_tests PRIVATE
     DataStructures
