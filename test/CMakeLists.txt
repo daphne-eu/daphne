@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${PROJECT_SOURCE_DIR}/test) # for "tags.h"
+include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
 add_executable(run_tests
         run_tests.cpp
+
+        api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/scoping/ScopingTest.cpp
+        api/cli/Utils.cpp
         
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
@@ -40,6 +44,7 @@ add_executable(run_tests
 	runtime/local/kernels/ReplaceTest.cpp
 	runtime/local/kernels/SeqTest.cpp
 )
+add_dependencies(run_tests daphnec)
 target_link_libraries(run_tests PRIVATE
     DataStructures
     ${OPENBLAS_LIBRARIES}
