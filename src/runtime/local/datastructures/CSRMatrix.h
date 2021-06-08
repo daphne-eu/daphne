@@ -164,7 +164,7 @@ public:
     }
     
     void shrinkNumNonZeros(size_t numNonZeros) {
-        assert((numNonZeros <= getNumNonZeros()) && "numNonZeros can only the shrinked");
+        assert((numNonZeros <= getNumNonZeros()) && "numNonZeros can only be shrinked");
         // TODO Here we could reduce the allocated size of the values and
         // colIdxs arrays.
     }
