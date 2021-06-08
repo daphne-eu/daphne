@@ -122,7 +122,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Seq-basic-mix", TAG_KERNELS, (DATA_TYPES), (VALUE_TY
 }
 
 
-TEMPLATE_PRODUCT_TEST_CASE("Seq-revers-mix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("Seq-reverse-mix", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     DT * inputMatrix = nullptr;
     DT * targetMatrix = nullptr;
