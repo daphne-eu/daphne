@@ -58,12 +58,18 @@ template <typename VT, typename TestFunc> struct HasSpecialValue<DenseMatrix<VT>
     static bool apply(const DenseMatrix<VT> *arg, TestFunc testFunc) {
 
         const VT* values = arg->getValues();
-        size_t numValues = arg->getNumRows() * arg->getNumCols();
+        size_t numRows = arg->getNumRows();
+        size_t numCols = arg->getNumCols();
+        size_t rowSkip = arg->getRowSkip();
 
-        for (size_t idx = 0; idx < numValues; idx++) {
-            const VT * value = values + idx;
-            if (testFunc(*value)) {
-                return true;
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
+
+                const VT* value = values + rowSkip * rowIdx + colIdx;
+
+                if (testFunc(*value)) {
+                    return true;
+                }
             }
         }
 
@@ -74,13 +80,33 @@ template <typename VT, typename TestFunc> struct HasSpecialValue<DenseMatrix<VT>
 template <typename VT, typename TestFunc> struct HasSpecialValue<CSRMatrix<VT>, TestFunc> {
     static bool apply(const CSRMatrix<VT> *arg, TestFunc testFunc) {
 
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const VT zero = 0;
         const VT* values = arg->getValues();
-        size_t numValues = arg->getNumRows() * arg->getNumCols();
+        const size_t* rowOffsets = arg->getRowOffsets();
 
-        for (size_t idx = 0; idx < numValues; idx++) {
-            const VT * value = values + idx;
-            if (testFunc(*value)) {
-                return true;
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+
+            const size_t * colIdxBegin = arg->getColIdxs(rowIdx);
+            const size_t * colIdxEnd = arg->getColIdxs(rowIdx+1);
+
+            for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
+
+                const size_t * ptrExpected = std::lower_bound(colIdxBegin, colIdxEnd, colIdx);
+                const VT * value;
+
+                // Check wether this colIdx does exist in this row's colIdxs.
+                if(ptrExpected == colIdxEnd || *ptrExpected != colIdx) {
+                    value = &zero;
+                } else {
+                    value = (values + rowOffsets[rowIdx]) + (ptrExpected - colIdxBegin);
+                }
+
+                if (testFunc(*value)) {
+                    return true;
+                }
+
             }
         }
 

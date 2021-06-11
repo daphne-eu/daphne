@@ -28,7 +28,7 @@
 TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
 
     using DT = TestType;
-  
+
     auto symMat = genGivenVals<DT>(4, {
         0, 1, 2, 3,
         1, 1, 0, 6,
@@ -58,25 +58,20 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
 
     auto singularMat = genGivenVals<DT>(1, {1});
 
-    SECTION("isSymmetric") {
-
+    SECTION("isSymmetric check for symmetrie.") {
         CHECK(isSymmetric<DT>(symMat));
-
-        CHECK_FALSE(isSymmetric<DT>(asymMat));
-
-        CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat), std::runtime_error);
-
         CHECK(isSymmetric<DT>(squareZeroMat));
-
+        CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat), std::runtime_error);
+        CHECK_FALSE(isSymmetric<DT>(asymMat));
         CHECK(isSymmetric<DT>(singularMat));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("isSymmetric DenseMatrix specific", TAG_KERNELS, DenseMatrix, (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - DenseMatrix-Submatrix", TAG_KERNELS, DenseMatrix, (double, uint32_t)) {
 
     using DT = TestType;
 
-    DT * centerSymMat = genGivenVals<DT>(5, {
+    auto centerSymMat = genGivenVals<DT>(5, {
         1, 1, 0, 1, 8,
         2, 0, 1, 2, 8,
         3, 1, 0, 3, 8,
@@ -84,23 +79,24 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric DenseMatrix specific", TAG_KERNELS, Dens
         5, 4, 0, 4, 8
     });
 
-    DT * symSubMat = DataObjectFactory::create<DT>(centerSymMat,
+    auto symSubMat = DataObjectFactory::create<DT>(centerSymMat,
         1,
         centerSymMat->getNumRows() - 1,
         1,
         centerSymMat->getNumCols() - 1
     );
 
-    SECTION("isSymmetric") {
+    SECTION("isSymmetric with submatrix.") {
+        CHECK_FALSE(isSymmetric(centerSymMat));
         CHECK(isSymmetric(symSubMat));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("isSymmetric CSRMatrix specific", TAG_KERNELS, CSRMatrix, (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - CSRMatrix-Submatrix", TAG_KERNELS, CSRMatrix, (double, uint32_t)) {
 
     using DT = TestType;
 
-    DT * centerSymMat = genGivenVals<DT>(5, {
+    auto centerSymMat = genGivenVals<DT>(5, {
          1, 0, 1,
          0, 1, 2,
          1, 0, 3,
@@ -108,12 +104,13 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric CSRMatrix specific", TAG_KERNELS, CSRMat
          4, 0, 4
     });
 
-    DT * symSubMat = DataObjectFactory::create<DT>(centerSymMat,
+    auto symSubMat = DataObjectFactory::create<DT>(centerSymMat,
         1,
         centerSymMat->getNumRows() - 1
     );
 
-    SECTION("isSymmetric") {
+    SECTION("isSymmetric with submatrix.") {
+        CHECK_THROWS_AS(isSymmetric(centerSymMat), std::runtime_error);
         CHECK(isSymmetric(symSubMat));
     }
 }

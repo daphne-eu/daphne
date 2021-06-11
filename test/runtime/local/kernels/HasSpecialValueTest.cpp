@@ -37,53 +37,76 @@ bool isOne(uint32_t val) {
     return val == 1; 
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue integer", TAG_KERNELS, (DenseMatrix, CSRMatrix), (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DenseMatrix, CSRMatrix), (uint32_t)) {
 
     using DT = TestType;
 
-    DT* specialMat = genGivenVals<DT>(4, {
+    auto specialMat = genGivenVals<DT>(4, {
         0, 1, 2, 3,
         4, 5, 6, 7,
         8, 9, 0, 2,
         3, 4, 5, 1
     });
 
-    DT* nonSpecialMat = genGivenVals<DT>(3, {
+    auto nonSpecialMat = genGivenVals<DT>(3, {
         0, 0, 3,
         4, 5, 6,
         7, 8, 9
     });
 
-    SECTION("hasSpecialValue") {
+    SECTION("hasSpecialValue check if test function is applied correctly.") {
         CHECK(hasSpecialValue(specialMat, isOne));
         CHECK_FALSE(hasSpecialValue(nonSpecialMat, isOne));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue DenseMatrix sub matrix.", TAG_KERNELS, (DenseMatrix), (uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - DenseMatrix-Submatrix.", TAG_KERNELS, DenseMatrix, (uint32_t)) {
 
     using DT = TestType;
 
-    DT* specialMat = genGivenVals<DT>(4, {
+    auto specialMat = genGivenVals<DT>(4, {
         0, 1, 2, 3,
         4, 5, 6, 7,
         8, 9, 0, 2,
         3, 4, 5, 1
     });
 
-    DT * subNonSpecialMat = DataObjectFactory::create<DT>(specialMat,
+    auto subNonSpecialMat = DataObjectFactory::create<DT>(specialMat,
         1,
         specialMat->getNumRows() - 1,
         1,
         specialMat->getNumCols() - 1
     );
 
-    SECTION("hasSpecialValue sub matrix") {
+    SECTION("hasSpecialValue for Sub-DenseMatrix") {
+        CHECK(hasSpecialValue(specialMat, isOne));
         CHECK_FALSE(hasSpecialValue(subNonSpecialMat, isOne));
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue floating point", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - CSRMatrix-Submatrix.", TAG_KERNELS, CSRMatrix, (uint32_t)) {
+
+    using DT = TestType;
+
+    auto specialMat = genGivenVals<DT>(4, {
+        0, 1, 2, 3,
+        4, 5, 6, 7,
+        8, 9, 0, 2,
+        3, 4, 5, 1
+    });
+
+    auto subNonSpecialMat = DataObjectFactory::create<DT>(specialMat,
+        1,
+        specialMat->getNumRows() - 2
+    );
+
+    SECTION("hasSpecialValue for Sub-CSRMatrix") {
+        CHECK(hasSpecialValue(specialMat, isOne));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, isOne));
+    }
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double)) {
 
     using DT = TestType;
 
@@ -109,19 +132,10 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue floating point", TAG_KERNELS, (Dense
         7, 8, inf
     });
 
-    SECTION("signaling NaN") {
+    SECTION("Check for special values std::isnan/std::isinf.") {
         CHECK(hasSpecialValue(sigNaNMat, isNaN));
-    }
-
-    SECTION("quiet NaN"){
         CHECK(hasSpecialValue(quietNaNMat, isNaN));
-    }
-
-    SECTION("infinity") {
         CHECK(hasSpecialValue(infinityMat, isInf));
-    }
-
-    SECTION("no special value found") {
         CHECK_FALSE(hasSpecialValue(infinityMat, isNaN));
     }
 }
