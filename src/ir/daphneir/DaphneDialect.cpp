@@ -84,7 +84,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, Type elementType)
 {
-    if (elementType.isSignedInteger(64) || elementType.isF64())
+    if (elementType.isSignedInteger(64) || elementType.isF64() || elementType.isIndex())
         return mlir::success();
     else
         return emitError() << "invalid matrix element type: " << elementType;
