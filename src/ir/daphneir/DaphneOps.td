@@ -659,7 +659,14 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
     let results = (outs); // no results
 }
 
+// ****************************************************************************
+// Data preprocessing
+// ****************************************************************************
 
+def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOf<[SI64]>:$info);
+    let results = (outs MatrixOrFrame:$res);
+}
 
 // ****************************************************************************
 // Old operations

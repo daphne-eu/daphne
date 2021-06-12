@@ -578,6 +578,19 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         );
     }
     // TODO read/write
+    
+    // ********************************************************************
+    // Data preprocessing
+    // ********************************************************************
+    
+    if(func == "oneHot") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value arg = args[0];
+        mlir::Value info = args[1];
+        return static_cast<mlir::Value>(builder.create<OneHotOp>(
+                loc, arg.getType(), arg, info
+        ));
+    }
 
     // ********************************************************************
 
