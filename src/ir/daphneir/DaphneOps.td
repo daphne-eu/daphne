@@ -97,9 +97,9 @@ class Daphne_NumOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, tra
     let results = (outs Size:$res);
 }
 
-def Daphne_NumRowOp : Daphne_NumOp<"nrow">;
-def Daphne_NumColOp : Daphne_NumOp<"ncol">;
-def Daphne_NumCellOp : Daphne_NumOp<"ncell">;
+def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
+def Daphne_NumColsOp : Daphne_NumOp<"numCols">;
+def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
 // ****************************************************************************
 // Matrix multiplication

@@ -298,11 +298,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
 
     if(func == "nrow")
-        return createNumOp<NumRowOp>(loc, func, args);
+        return createNumOp<NumRowsOp>(loc, func, args);
     if(func == "ncol")
-        return createNumOp<NumColOp>(loc, func, args);
+        return createNumOp<NumColsOp>(loc, func, args);
     if(func == "ncell")
-        return createNumOp<NumCellOp>(loc, func, args);
+        return createNumOp<NumCellsOp>(loc, func, args);
 
     // ********************************************************************
     // Elementwise unary
