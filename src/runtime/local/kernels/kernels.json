@@ -478,5 +478,40 @@
             ["int64_t", "int64_t"]
         ],
         "opCodes": ["SIGN"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Seq.h",
+            "opName": "seq",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "typename DT::VT",
+                    "name": "start"
+                },
+                {
+                    "type": "typename DT::VT",
+                    "name": "end"
+                },
+                {
+                    "type": "typename DT::VT",
+                    "name": "inc"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
     }
 ]
