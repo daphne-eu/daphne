@@ -389,8 +389,8 @@ class Daphne_BindOp<string name> : Daphne_Op<name> {
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_ColBindOp : Daphne_BindOp<"cbind">;
-def Daphne_RowBindOp : Daphne_BindOp<"rbind">;
+def Daphne_ColBindOp : Daphne_BindOp<"colBind">;
+def Daphne_RowBindOp : Daphne_BindOp<"rowBind">;
 
 def Daphne_ReverseOp : Daphne_Op<"reverse"> {
     let arguments = (ins Matrix:$arg);
