@@ -22,6 +22,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include <cmath>
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -58,8 +60,10 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         #define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
+        MAKE_CASE(BinaryOpCode::SUB)
         MAKE_CASE(BinaryOpCode::MUL)
         MAKE_CASE(BinaryOpCode::DIV)
+        MAKE_CASE(BinaryOpCode::POW)
         // Comparisons.
         MAKE_CASE(BinaryOpCode::EQ)
         MAKE_CASE(BinaryOpCode::NEQ)
@@ -108,8 +112,10 @@ TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
 // One such line for each binary function to support.
 // Arithmetic.
 MAKE_EW_BINARY_SCA(BinaryOpCode::ADD, lhs + rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::SUB, lhs - rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::MUL, lhs * rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::DIV, lhs / rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::POW, pow(lhs, rhs))
 // Comparisons.
 MAKE_EW_BINARY_SCA(BinaryOpCode::EQ , lhs == rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::NEQ, lhs != rhs)

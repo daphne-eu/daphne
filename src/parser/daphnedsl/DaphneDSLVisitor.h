@@ -89,6 +89,8 @@ public:
     
     antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) override;
     
+    antlrcpp::Any visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) override;
+    
     antlrcpp::Any visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) override;
     
     antlrcpp::Any visitAddExpr(DaphneDSLGrammarParser::AddExprContext * ctx) override;

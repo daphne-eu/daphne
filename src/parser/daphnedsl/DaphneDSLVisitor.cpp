@@ -423,6 +423,18 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     throw std::runtime_error("unexpected op symbol");
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    
+    if(op == "^")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+    
+    throw std::runtime_error("unexpected op symbol");
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
@@ -445,6 +457,8 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
     
     if(op == "+")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+    if(op == "-")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
     
     throw std::runtime_error("unexpected op symbol");
 }
