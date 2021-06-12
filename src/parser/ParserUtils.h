@@ -92,7 +92,7 @@ public:
             builder(builder),
             sizeType(builder.getIndexType()),
             boolType(builder.getI1Type()),
-            seedType(builder.getIntegerType(64, false)), // TODO is this really UI, or I?
+            seedType(builder.getIntegerType(64, true)),
             matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType)))
     {
         // nothing to do

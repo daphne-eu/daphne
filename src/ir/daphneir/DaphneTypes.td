@@ -82,7 +82,7 @@ def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 // TODO Rename, it's misleading. Sounds like a pair of height/width.
 def Size : TypeAlias<Index, "size">;
 
-def Seed : TypeAlias<UI64, "seed">;
+def Seed : TypeAlias<SI64, "seed">;
 
 def Selection : AnyTypeOf<[Size, MatrixOf<[Size]>, MatrixOf<[BoolScalar]>]>;
 
