@@ -62,6 +62,7 @@ expr:
     | var=IDENTIFIER # identifierExpr
     | '(' expr ')' # paranthesesExpr
     | func=IDENTIFIER '(' expr (',' expr)* ')' # callExpr
+    | obj=expr '[' (rows=expr)? ',' (cols=expr)? ']' # rightIdxExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op=('*'|'/') rhs=expr # mulExpr
     | lhs=expr op='+' rhs=expr # addExpr

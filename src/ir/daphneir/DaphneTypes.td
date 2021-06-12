@@ -84,6 +84,7 @@ def Size : TypeAlias<Index, "size">;
 
 def Seed : TypeAlias<SI64, "seed">;
 
-def Selection : AnyTypeOf<[Size, MatrixOf<[Size]>, MatrixOf<[BoolScalar]>]>;
+// TODO Remove SI64 again, it was only added temporarily to make things work.
+def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

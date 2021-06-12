@@ -353,6 +353,11 @@ def Daphne_ExtractOp : Daphne_Op<"extract"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
+def Daphne_ExtractColOp : Daphne_Op<"extractCol"> {
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedCols);
+    let results = (outs MatrixOrFrame:$res);
+}
+
 def Daphne_InsertOp : Daphne_Op<"insert"> {
     let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
     let results = (outs); // no results

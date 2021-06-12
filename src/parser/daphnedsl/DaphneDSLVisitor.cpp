@@ -392,6 +392,25 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     return builtins.build(loc, func, args);
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) {
+    mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    if(ctx->rows)
+        throw std::runtime_error("right indexing does not support selecting rows yet");
+    else if(ctx->cols) {
+        mlir::Value cols = utils.valueOrError(visit(ctx->cols));
+        mlir::Type t = cols.getType();
+        if(t.isInteger(64) || t.isF64()) // TODO consider all supported value types
+            cols = utils.castSizeIf(cols);
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
+                builder.getUnknownLoc(), obj.getType(), obj, cols
+        ));
+    }
+    else
+        // TODO Actually, this would be okay, but we should think about whether
+        // it should be a no-op or a copy.
+        throw std::runtime_error("right indexing requires the specification of rows and/or columns");
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
