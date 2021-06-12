@@ -352,6 +352,45 @@
     },
     {
         "kernelTemplate": {
+            "header": "Fill.h",
+            "opName": "fill",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "VTArg",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numRows"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numCols"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
             "returnType": "void",
