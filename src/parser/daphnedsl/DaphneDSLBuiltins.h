@@ -39,7 +39,7 @@ class DaphneDSLBuiltins {
     /**
      * @brief The OpBuilder used to generate DaphneIR operations.
      */
-    mlir::OpBuilder builder;
+    mlir::OpBuilder & builder;
     
     /**
      * @brief General utilities for parsing to DaphneIR.

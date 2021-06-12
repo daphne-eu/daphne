@@ -36,7 +36,7 @@ class ParserUtils {
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
-    mlir::OpBuilder builder;
+    mlir::OpBuilder & builder;
     
 public:
     

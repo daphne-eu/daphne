@@ -37,7 +37,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
-    mlir::OpBuilder builder;
+    mlir::OpBuilder & builder;
     
     /**
      * Maps a variable name from the input DaphneDSL script to the MLIR SSA
