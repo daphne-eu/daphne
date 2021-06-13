@@ -85,6 +85,12 @@ Simply build the prototype using the build-script without any arguments:
 When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
 Subsequent builds, e.g., when you changed something in this repository, will be much faster.
 
+If the build fails in between (e.g., due to missing packages), multiple build directories (e.g., daphne, antlr, llvm) require cleanup. For convenience, you can call the following to remove them all.
+
+```bash
+./build.sh --clean
+```
+
 ### Running the Tests
 
 ```bash

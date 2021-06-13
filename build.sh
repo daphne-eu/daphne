@@ -34,6 +34,28 @@ function printHelp {
     echo "Optional arguments:"
     echo "  -h, --help        Print this help message and exit."
     echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
+    echo "  --clean           Remove all temporary build directories for a fresh build"
+}
+
+#******************************************************************************
+# Clean build directories
+#******************************************************************************
+
+function cleanBuildDirs {
+    echo "-- Cleanup of build directories pwd=$(pwd) ..."
+    dirs=("build" \
+        "thirdparty/llvm-project/build" \
+        "thirdparty/antlr")
+    for ((i=0; i<${#dirs[@]}; i++))
+    do
+        if [ -d ${dirs[$i]} ]
+        then
+            echo "---- cleanup ${dirs[$i]}"
+            rm -rf ${dirs[$i]}
+        else
+            echo "---- cleanup ${dirs[$i]} - non-existing"
+        fi
+    done
 }
 
 #******************************************************************************
@@ -50,6 +72,10 @@ do
     case $key in
         -h|--help)
             printHelp
+            exit 0
+            ;;
+        --clean)
+            cleanBuildDirs
             exit 0
             ;;
         --target)
