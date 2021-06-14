@@ -625,7 +625,7 @@
             ["double", "double"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN"]
+        "opCodes": ["SIGN", "FLOOR"]
     },
     {
         "kernelTemplate": {

@@ -22,6 +22,8 @@
 #include <limits>
 #include <stdexcept>
 
+#include <cmath>
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -58,6 +60,8 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
         #define MAKE_CASE(opCode) case opCode: return &EwUnarySca<opCode, VTRes, VTArg>::apply;
         // Arithmetic/general math.
         MAKE_CASE(UnaryOpCode::SIGN)
+        // Rounding.
+        MAKE_CASE(UnaryOpCode::FLOOR)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown UnaryOpCode");
@@ -95,6 +99,8 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg) {
 // One such line for each unary function to support.
 // Arithmetic/general math.
 MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN, (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 0) ? 1 : std::numeric_limits<TRes>::quiet_NaN()))); 
+// Rounding.
+MAKE_EW_UNARY_SCA(UnaryOpCode::FLOOR, floor(arg));
         
 #undef MAKE_EW_UNARY_SCA
 
