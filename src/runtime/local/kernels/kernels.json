@@ -597,6 +597,42 @@
     },
     {
         "kernelTemplate": {
+            "header": "EwUnaryMat.h",
+            "opName": "ewUnaryMat",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "UnaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"],["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SIGN", "FLOOR"]
+    },
+    {
+        "kernelTemplate": {
             "header": "EwUnarySca.h",
             "opName": "ewUnarySca",
             "returnType": "TRes",
