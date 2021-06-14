@@ -56,13 +56,13 @@ void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTR
 template<typename VT>
 struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs) {
-        const size_t numRows = lhs->getNumRows();
-        const size_t numCols = lhs->getNumCols();
-        assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
-        assert((numCols == rhs->getNumCols()) && "lhs and rhs must have the same dimensions");
+        const size_t numRowsLhs = lhs->getNumRows();
+        const size_t numColsLhs = lhs->getNumCols();
+        const size_t numRowsRhs = rhs->getNumRows();
+        const size_t numColsRhs = rhs->getNumCols();
         
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsLhs, numColsLhs, false);
         
         const VT * valuesLhs = lhs->getValues();
         const VT * valuesRhs = rhs->getValues();
@@ -70,12 +70,41 @@ struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
         
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
         
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = func(valuesLhs[c], valuesRhs[c]);
-            valuesLhs += lhs->getRowSkip();
-            valuesRhs += rhs->getRowSkip();
-            valuesRes += res->getRowSkip();
+        if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
+            // matrix op matrix (same size)
+            for(size_t r = 0; r < numRowsLhs; r++) {
+                for(size_t c = 0; c < numColsLhs; c++)
+                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c]);
+                valuesLhs += lhs->getRowSkip();
+                valuesRhs += rhs->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+            // matrix op row-vector
+            for(size_t r = 0; r < numRowsLhs; r++) {
+                for(size_t c = 0; c < numColsLhs; c++)
+                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c]);
+                valuesLhs += lhs->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else if(numRowsLhs == numRowsRhs && numColsRhs == 1) {
+            // matrix op col-vector
+            for(size_t r = 0; r < numRowsLhs; r++) {
+                for(size_t c = 0; c < numColsLhs; c++)
+                    valuesRes[c] = func(valuesLhs[c], valuesRhs[0]);
+                valuesLhs += lhs->getRowSkip();
+                valuesRhs += rhs->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else {
+            assert(
+                    false && "lhs and rhs must either have the same dimensions, "
+                    "or one if them must be a row/column vector with the "
+                    "width/height of the other"
+            );
         }
     }
 };
