@@ -26,6 +26,7 @@
 #define TAG_DATASTRUCTURES "[datastructures]"
 #define TAG_KERNELS "[kernels]"
 #define TAG_SCOPING "[scoping]"
+#define TAG_PARSER "[parser]"
 
 #endif //TEST_TAGS_H
 

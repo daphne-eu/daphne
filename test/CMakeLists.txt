@@ -19,6 +19,7 @@ add_executable(run_tests
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
+		api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/Utils.cpp
         
@@ -45,7 +46,12 @@ add_executable(run_tests
 	runtime/local/kernels/SeqTest.cpp
 )
 add_dependencies(run_tests daphnec)
+
+get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 target_link_libraries(run_tests PRIVATE
+	${dialect_libs}
     DataStructures
+	DaphneDSLParser
+	MLIRDaphne
     ${OPENBLAS_LIBRARIES}
 )
