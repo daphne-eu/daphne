@@ -24,6 +24,7 @@
 
 #define TAG_CONTROLFLOW "[controlflow]"
 #define TAG_DATASTRUCTURES "[datastructures]"
+#define TAG_DISTRIBUTED "[distributed]"
 #define TAG_KERNELS "[kernels]"
 #define TAG_LITERALS "[literals]"
 #define TAG_OPERATIONS "[operations]"

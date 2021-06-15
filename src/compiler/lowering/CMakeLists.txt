@@ -15,9 +15,11 @@
 add_mlir_dialect_library(MLIRDaphneTransforms
     RewriteToCallKernelOpPass.cpp
     LowerToLLVMPass.cpp
+    DistributeComputationsPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
+    MLIRDaphneTransformsIncGen
 
     LINK_COMPONENTS
     Core

@@ -19,18 +19,22 @@ add_executable(run_tests
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/distributed/DistributedTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/Utils.cpp
-        
+
+        runtime/distributed/worker/WorkerTest.cpp
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
-        
-        runtime/local/io/ReadCsvTest.cpp
+
+        # FIXME: it is not possible to include `ReadCsv.h` in two different tests (`WorkerTest.cpp` also uses it)
+        #runtime/local/io/ReadCsvTest.cpp
         
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
@@ -59,5 +63,7 @@ target_link_libraries(run_tests PRIVATE
     DataStructures
     DaphneDSLParser
     MLIRDaphne
+    WorkerImpl
+    Proto
     ${OPENBLAS_LIBRARIES}
 )

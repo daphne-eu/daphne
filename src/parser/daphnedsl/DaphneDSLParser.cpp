@@ -55,6 +55,6 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
             funcBlock->getArgumentTypes(),
             terminator->getOperandTypes()
     );
-    auto func = builder.create<mlir::FuncOp>(loc, "_mlir__mlir_ciface_main", funcType);
+    auto func = builder.create<mlir::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);
 }

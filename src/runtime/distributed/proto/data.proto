@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package distributed;
+
+option optimize_for = SPEED;
+
+message StoredData {
+  string filename = 1;
+  uint64 num_rows = 2;
+  uint64 num_cols = 3;
+}
+
+message Matrix {
+  oneof cells {
+    CellsF64 cells_f64 = 1;
+    CellsF32 cells_f32 = 2;
+    CellsI64 cells_i64 = 3;
+    CellsI32 cells_i32 = 4;
+  }
+  uint64 num_rows = 5;
+  uint64 num_cols = 6;
+}
+
+message CellsF64 {
+  repeated double cells = 1;
+}
+message CellsF32 {
+  repeated float cells = 1;
+}
+message CellsI64 {
+  // TODO: int64 would perform better for mostly positive integers, performance improvements?
+  repeated sint64 cells = 1;
+}
+message CellsI32 {
+  repeated sint32 cells = 1;
+}

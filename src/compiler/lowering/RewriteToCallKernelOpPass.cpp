@@ -57,14 +57,11 @@ namespace
             return "bool";
         else if(t.isIndex())
             return "size_t";
-        else if(t.isa<daphne::MatrixType>())
+        else if(auto matTy = t.dyn_cast<daphne::MatrixType>())
             if(generalizeToStructure)
                 return "Structure";
             else
-                return "DenseMatrix_" + mlirTypeToCppTypeName(
-                        t.dyn_cast<daphne::MatrixType>().getElementType(),
-                        false
-                );
+                return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
         else if(t.isa<daphne::FrameType>())
             if(generalizeToStructure)
                 return "Structure";
@@ -75,6 +72,11 @@ namespace
             // strings) when inserted into the typical "const DT *" template of
             // kernel input parameters.
             return "char";
+        else if(auto handleTy = t.dyn_cast<daphne::HandleType>())
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), false);
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );
@@ -92,7 +94,7 @@ namespace
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
         }
-        
+
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information. But, for instance, the
         // isVariadic boolean array is automatically generated *within* the
@@ -123,21 +125,21 @@ namespace
                                       PatternRewriter &rewriter) const override
         {
             Location loc = op->getLoc();
-            
+
             // Determine the name of the kernel function to call by convention
             // based on the DaphneIR operation and the types of its results and
             // arguments.
 
             std::stringstream callee;
             callee << op->getName().stripDialect().str();
-            
+
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
                 llvm::isa<daphne::CreateFrameOp>(op) |
                 llvm::isa<daphne::NumCellsOp>(op) |
                 llvm::isa<daphne::NumColsOp>(op) |
                 llvm::isa<daphne::NumRowsOp>(op);
-            
+
             // Append names of result types to the kernel name.
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
@@ -162,7 +164,7 @@ namespace
                     const unsigned idx = std::get<0>(odsOpInfo);
                     const unsigned len = std::get<1>(odsOpInfo);
                     const bool isVariadic = std::get<2>(odsOpInfo);
-                    
+
                     callee << "__" << mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
                     if(isVariadic) {
                         // Variadic operand.

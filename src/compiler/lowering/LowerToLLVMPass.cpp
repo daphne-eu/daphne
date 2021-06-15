@@ -132,7 +132,7 @@ public:
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
             rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
-        
+
         return success();
     }
 };
@@ -268,14 +268,14 @@ private:
             // element with a null pointer (required by the kernels). Otherwise
             // (i.e. when it represents a scalar), initialization is not
             // required.
-            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>())
+            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>()) {
+                auto elType = inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType();
                 rewriter.create<LLVM::StoreOp>(
-                        loc,
-                        rewriter.create<LLVM::NullOp>(
-                                loc, LLVM::LLVMPointerType::get(IntegerType::get(rewriter.getContext(), 1))
-                        ),
-                        allocaOp
+                    loc,
+                    rewriter.create<LLVM::NullOp>(loc, elType),
+                    allocaOp
                 );
+            }
         }
         for(auto op : operands)
             kernelOperands.push_back(op);
@@ -358,7 +358,9 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     OwningRewritePatternList patterns(&getContext());
 
-    LLVMTypeConverter typeConverter(&getContext());
+    LowerToLLVMOptions llvmOptions(&getContext());
+    llvmOptions.emitCWrappers = true;
+    LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
     {
         return LLVM::LLVMPointerType::get(
@@ -379,6 +381,11 @@ void DaphneLowerToLLVMPass::runOnOperation()
         return LLVM::LLVMPointerType::get(
                 typeConverter.convertType(t.getContainedType())
         );
+    });
+    typeConverter.addConversion([&](daphne::HandleType matType)
+    {
+      return LLVM::LLVMPointerType::get(
+          IntegerType::get(matType.getContext(), 1));
     });
 
     LLVMConversionTarget target(getContext());

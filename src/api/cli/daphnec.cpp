@@ -16,22 +16,12 @@
 
 #include <api/cli/StatusCode.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
-#include "ir/daphneir/Daphne.h"
-#include "ir/daphneir/Passes.h"
+#include "compiler/execution/DaphneIrExecutor.h"
 
-#include "llvm/Support/TargetSelect.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
-#include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
-#include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Support/LogicalResult.h"
-#include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
 #include <exception>
 #include <iostream>
@@ -42,66 +32,6 @@
 
 using namespace std;
 using namespace mlir;
-
-OwningModuleRef
-processModule(ModuleOp module)
-{
-    if(failed(verify(module))) {
-        module.emitError("failed to verify the module right after parsing");
-        return nullptr;
-    }
-
-    if (module) {
-        //module->dump(); // print the DaphneIR representation
-        PassManager pm(module->getContext());
-
-        pm.addPass(daphne::createRewriteToCallKernelOpPass());
-        pm.addPass(createLowerToCFGPass());
-        pm.addPass(daphne::createLowerToLLVMPass());
-
-        if (failed(pm.run(module))) {
-            module->dump();
-            module->emitError("module pass error");
-            return nullptr;
-        }
-        return module;
-    }
-    return nullptr;
-}
-
-int
-execJIT(OwningModuleRef & module)
-{
-    if (module) {
-        llvm::InitializeNativeTarget();
-        llvm::InitializeNativeTargetAsmPrinter();
-
-        // An optimization pipeline to use within the execution engine.
-        auto optPipeline = makeOptimizingTransformer(0, 0, nullptr);
-
-        llvm::SmallVector<llvm::StringRef, 0> sharedLibRefs;
-        // TODO Find these at run-time.
-        sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
-        registerLLVMDialectTranslation(*module->getContext());
-        auto maybeEngine = ExecutionEngine::create(
-                                                   module.get(), nullptr, optPipeline, llvm::CodeGenOpt::Level::Default,
-                                                   sharedLibRefs, true, true, true);
-
-        if (!maybeEngine) {
-            llvm::errs() << "Failed to create JIT-Execution engine: "
-                    << maybeEngine.takeError();
-            return -1;
-        }
-        auto engine = maybeEngine->get();
-        auto error = engine->invoke("main");
-        if (error) {
-            llvm::errs() << "JIT-Engine invokation failed: " << error;
-            return -1;
-        }
-        return 0;
-    }
-    return -1;
-}
 
 int
 main(int argc, char** argv)
@@ -114,16 +44,13 @@ main(int argc, char** argv)
     // Parse command line arguments.
     string inputFile(argv[1]);
 
-    // Create an MLIR context and load the required MLIR dialects.
-    MLIRContext context;
-    context.getOrLoadDialect<daphne::DaphneDialect>();
-    context.getOrLoadDialect<StandardOpsDialect>();
-    context.getOrLoadDialect<scf::SCFDialect>();
+    // Creates an MLIR context and loads the required MLIR dialects.
+    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"));
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
     // operations are inserted into the module.
-    OpBuilder builder(&context);
+    OpBuilder builder(executor.getContext());
     auto moduleOp = ModuleOp::create(builder.getUnknownLoc());
     auto * body = moduleOp.getBody();
     builder.setInsertionPoint(body, body->begin());
@@ -140,11 +67,18 @@ main(int argc, char** argv)
     }
     
     // Further process the module, including optimization and lowering passes.
-    OwningModuleRef module = processModule(moduleOp);
-    
+    if (!executor.runPasses(moduleOp)) {
+        return StatusCode::PASS_ERROR;
+    }
+
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
-    execJIT(module);
+    auto engine = executor.createExecutionEngine(moduleOp);
+    auto error = engine->invoke("main");
+    if (error) {
+        llvm::errs() << "JIT-Engine invocation failed: " << error;
+        return StatusCode::EXECUTION_ERROR;
+    }
 
     return StatusCode::SUCCESS;
 }

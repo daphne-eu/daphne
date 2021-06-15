@@ -18,19 +18,12 @@ set(LIBS
         ${dialect_libs}
         ${conversion_libs}
         MLIRDaphne
-        MLIRDaphneTransforms
-        MLIRExecutionEngine
         DaphneDSLParser
-        DataStructures
+        DaphneIrExecutor
 )
 
 add_llvm_executable(daphnec
         daphnec.cpp
-
-        DEPENDS
-        MLIRDaphneOpsIncGen
-        # The kernels are linked at runtime.
-        AllKernels
 )
 
 llvm_update_compile_flags(daphnec)

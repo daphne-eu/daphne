@@ -89,6 +89,16 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         }
         return FrameType::get(parser.getBuilder().getContext(), cts);
     }
+    else if (keyword == "Handle") {
+        mlir::Type dataType;
+        if (parser.parseLess() || parser.parseType(dataType) || parser.parseGreater()) {
+            return nullptr;
+        }
+        return mlir::daphne::HandleType::get(parser.getBuilder().getContext(), dataType);
+    }
+    else if (keyword == "String") {
+        return StringType::get(parser.getBuilder().getContext());
+    }
     else {
         parser.emitError(parser.getCurrentLocation()) << "Parsing failed, keyword `" << keyword << "` not recognized!";
         return nullptr;
@@ -109,6 +119,9 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                 os << ", " << cts[i];
         }
         os << "]>";
+    }
+    else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
+        os << "Handle<" << handle.getDataType() << ">";
     }
     else if (type.isa<mlir::daphne::StringType>())
         os << "String";
@@ -133,4 +146,36 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 ::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, std::vector<Type> columnTypes)
 {
     return mlir::success();
+}
+
+::mlir::LogicalResult mlir::daphne::HandleType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+                                                       Type dataType)
+{
+    if (dataType.isa<MatrixType>()) {
+        return mlir::success();
+    }
+    else
+        return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+std::vector<mlir::Value> mlir::daphne::EwAddOp::createEquivalentDistributedDAG(mlir::OpBuilder &builder,
+                                                                               mlir::ValueRange distributedInputs)
+{
+    auto compute = builder.create<daphne::DistributedComputeOp>(getLoc(),
+        ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
+        distributedInputs);
+    auto &block = compute.body().emplaceBlock();
+    auto argLhs = block.addArgument(distributedInputs[0].getType().cast<HandleType>().getDataType());
+    auto argRhs = block.addArgument(distributedInputs[1].getType().cast<HandleType>().getDataType());
+
+    {
+        mlir::OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPoint(&block, block.begin());
+
+        auto addOp = builder.create<EwAddOp>(getLoc(), argLhs, argRhs);
+        builder.create<ReturnOp>(getLoc(), ArrayRef<Value>{addOp});
+    }
+
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(getLoc(), compute.getResult(0))});
+    return ret;
 }

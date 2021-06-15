@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package distributed;
+
+option optimize_for = SPEED;
+
+import "data.proto";
+
+service Worker {
+  rpc Store (Matrix) returns (StoredData) {}
+  rpc Compute (Task) returns (ComputeResult) {}
+  rpc Transfer (StoredData) returns (Matrix) {}
+}
+
+message WorkData {
+  oneof data {
+    double f64 = 1;
+    // TODO: negative integers are not ideal. performance improvements?
+    int64 i64 = 2;
+    float f32 = 3;
+    int32 i32 = 4;
+    StoredData stored = 5;
+  }
+}
+
+message Task {
+  string mlir_code = 1;
+  repeated WorkData inputs = 2;
+}
+
+message ComputeResult {
+  repeated WorkData outputs = 1;
+}

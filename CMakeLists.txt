@@ -71,9 +71,12 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 # *****************************************************************************
 
 add_subdirectory(src/api/cli)
+add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/parser)
+add_subdirectory(src/runtime/distributed/proto)
+add_subdirectory(src/runtime/distributed/worker)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/kernels)
 

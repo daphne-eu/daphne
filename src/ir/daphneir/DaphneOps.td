@@ -19,6 +19,7 @@
 
 include "ir/daphneir/DaphneDialect.td"
 include "ir/daphneir/DaphneTypes.td"
+include "ir/daphneir/DaphneDistributableOpInterface.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -180,7 +181,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [DeclareOpInterfaceMethods<DistributableOpInterface>]>;
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
@@ -636,6 +637,34 @@ def Daphne_CopyOp : Daphne_Op<"copy"> {
 }
 
 // ****************************************************************************
+// Distributed Operations
+// ****************************************************************************
+
+def Daphne_DistributeOp : Daphne_Op<"distribute"> {
+    let arguments = (ins Matrix:$mat);
+    let results = (outs Handle:$res);
+}
+
+def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect]> {
+    let arguments = (ins Variadic<Handle>:$args);
+    let results = (outs Variadic<Handle>:$res);
+    let regions = (region SizedRegion<1>:$body);
+}
+
+// TODO: Map Keys Operation
+
+def Daphne_DistributedCollectOp : Daphne_Op<"distributedCollect", [NoSideEffect]> {
+    let arguments = (ins Handle:$arg);
+    let results = (outs AnyType:$res);
+
+    let builders = [
+        OpBuilder<(ins "Value":$value), [{
+            build($_builder, $_state, value.getType().cast<HandleType>().getDataType(), value);
+        }]>,
+    ];
+}
+
+// ****************************************************************************
 // Input/output
 // ****************************************************************************
 
@@ -718,7 +747,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let hasFolder = 1;
 }
 
-def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, HasParent<"FuncOp">]> {
+def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, ParentOneOf<["FuncOp", "DistributedComputeOp"]>]> {
     let summary = "return operation";
 
     let arguments = (ins Variadic<AnyType>:$operands);
