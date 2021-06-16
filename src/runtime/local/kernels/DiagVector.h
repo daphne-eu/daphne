@@ -60,7 +60,6 @@ struct DiagVector<DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols(); // number of columns
         assert(numRows==numCols && "arg matrix should be square matrix");
         assert(numRows!=0 && "arg matrix cannot be empty");
-        assert(numRows%2!=0 && "number of rows and columns have to be odd number");
         if(res==nullptr){
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
         }
@@ -87,7 +86,6 @@ struct DiagVector<CSRMatrix<VT>> {
         const size_t numCols = arg->getNumCols(); // number of columns
         assert(numRows==numCols && "arg matrix should be square matrix");
         assert(numRows!=0 && "arg matrix cannot be empty");
-        assert(numRows%2!=0 && "number of rows and columns have to be odd number");
         if(res==nullptr){ 
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
         }
