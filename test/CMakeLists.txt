@@ -43,6 +43,7 @@ add_executable(run_tests
         runtime/local/kernels/TransposeTest.cpp
 	runtime/local/kernels/ReplaceTest.cpp
 	runtime/local/kernels/SeqTest.cpp
+	runtime/local/kernels/DiagVectorTest.cpp
 )
 add_dependencies(run_tests daphnec)
 target_link_libraries(run_tests PRIVATE
