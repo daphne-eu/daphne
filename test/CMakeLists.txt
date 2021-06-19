@@ -45,6 +45,7 @@ add_executable(run_tests
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/TransposeTest.cpp
+        runtime/local/kernels/TriTest.cpp
 )
 add_dependencies(run_tests daphnec)
 target_link_libraries(run_tests PRIVATE

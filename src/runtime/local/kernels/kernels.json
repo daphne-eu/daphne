@@ -840,5 +840,46 @@
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Tri.h",
+            "opName": "tri",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "upper"
+                },
+                {
+                    "type": "bool",
+                    "name": "diag"
+                },
+                {
+                    "type": "bool",
+                    "name": "values"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
+        ]
     }
 ]
