@@ -797,5 +797,48 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Solve.h",
+            "opName": "solve",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                },
+                {
+                    "type": "bool",
+                    "name": "triangLhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
     }
 ]
