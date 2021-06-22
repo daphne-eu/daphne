@@ -15,7 +15,7 @@
  */
 
 
-#include <bits/stdint-uintn.h>
+#include <cstdlib>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -28,56 +28,72 @@
 TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
 
     using DT = TestType;
-  
-    auto mat = genGivenVals<DT>(8, {
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
-    });
 
-    auto mat2 = genGivenVals<DT>(8, {
-        1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 0
-    });
+    const size_t numElements = 10000;
+    std::vector<typename DT::VT> v(numElements,0);
+    std::srand(123456789);
 
-    auto mat3 = genGivenVals<DT>(8, {
-        1, 1, 1, 1, 1, 1, 1, 1,
-        1, 1, 1, 1, 1, 1, 1, 1,
-        2, 2, 2, 2, 2, 2, 2, 2,
-        2, 2, 2, 2, 2, 2, 2, 2,
-        3, 3, 3, 3, 3, 3, 3, 3,
-        3, 3, 3, 3, 3, 3, 3, 3,
-        4, 4, 4, 4, 4, 4, 4, 4,
-        4, 4, 4, 4, 4, 4, 4, 4
-    });
+    std::generate_n(v.begin(), numElements/100, std::rand);
+    auto mat1000 = genGivenVals<DT>(100, v);
 
-    /*
-    SECTION("numDistinctApprox 1 distinct") {
-        CHECK(numDistinctApprox(mat, 32) <= 1);
-        CHECK(numDistinctApprox(mat3, 32) <= 4);
+    SECTION("numDistinctApprox distinct") {
+
+        // Allow +/-20% error. When error is bigger something is either 
+        // wrong parametriced (K to small) or the algorithm broke.
+        auto approxResult = numDistinctApprox(mat1000, 64);
+        auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
+        CHECK(isResultBelow20PercentOff);
+    }
+}
+
+
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+
+    using DT = TestType;
+
+    const size_t numElements = 1000;
+    std::vector<typename DT::VT> v(numElements,0);
+    std::srand(123456789);
+
+    std::generate_n(v.begin(), numElements, std::rand);
+    auto mat1000 = genGivenVals<DT>(100, v);
+
+    auto subNonSpecialMat = DataObjectFactory::create<DT>(mat1000,
+        0,
+        mat1000->getNumRows()/10,
+        0,
+        mat1000->getNumCols()
+    );
+
+    SECTION("numDistinctApprox for Sub-DenseMatrix") {
+
+        // Allow +/-20% error. When error is bigger something is either
+        // wrong parametriced (K to small) or the algorithm broke.
+        auto approxResult = numDistinctApprox(mat1000, 64);
+        auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
+        CHECK(isResultBelow20PercentOff);
+    }
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
+
+    using DT = TestType;
+
+    const size_t numElements = 1000;
+    std::vector<typename DT::VT> v(numElements,0);
+    std::srand(123456789);
+
+    std::generate_n(v.begin(), numElements/10, std::rand);
+    auto mat1000 = genGivenVals<DT>(100, v);
+
+
+    SECTION("numDistinctApprox Sub-CSRMatrix") {
+
+        // Allow +/-20% error. When error is bigger something is either
+        // wrong parametriced (K to small) or the algorithm broke.
+        auto approxResult = numDistinctApprox(mat1000, 64);
+        auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
+        CHECK(isResultBelow20PercentOff);
     }
 
-    SECTION("numDistinctApprox 1 distinct") {
-        CHECK(numDistinctApprox(mat, 32) <= 1);
-        CHECK(numDistinctApprox(mat2, 32) <= 2);
-        CHECK(numDistinctApprox(mat3, 32) <= 4);
-    }
-
-    SECTION("numDistinctApprox 1 distinct") {
-        CHECK(numDistinctApprox(mat, 32) <= 1);
-        CHECK(numDistinctApprox(mat2, 32) <= 2);
-        CHECK(numDistinctApprox(mat3, 32) <= 4);
-    }
-    */
 }

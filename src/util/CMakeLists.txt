@@ -13,6 +13,6 @@
 # limitations under the License.
 
 add_library(Util
-        MurmurHash.cpp
+        MurmurHash3.cpp
 )
 target_link_libraries(Util)
