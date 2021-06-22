@@ -1,0 +1,89 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H
+#define SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H
+
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
+template<class DTRes, class DTArg>
+struct ExtractCol {
+    static void apply(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * sel) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+// TODO Actually, the positions should be given as size_t to stay consistent
+// with the rest of the code and DaphneIR (even though int64_t also makes
+// sense), but currently, it would be too hard to get a matrix of size_t via
+// DaphneDSL, since we do not have value type casts yet.
+template<class DTRes, class DTArg>
+void extractCol(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * sel) {
+    ExtractCol<DTRes, DTArg>::apply(res, arg, sel);
+}
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * sel) {
+        assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
+        
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numColsRes = sel->getNumRows();
+        const size_t * colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
+        for(size_t i = 0; i < numColsRes; i++) {
+            assert((colIdxs[i] < numColsArg) && "column index out of bounds");
+        }
+        
+        const size_t numRows = arg->getNumRows();
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numColsRes, false);
+
+        const VT * valuesArg = arg->getValues();
+        VT * valuesRes = res->getValues();
+        
+        const size_t rowSkipArg = arg->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+        
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numColsRes; c++)
+                valuesRes[c] = valuesArg[colIdxs[c]];
+            valuesArg += rowSkipArg;
+            valuesRes += rowSkipRes;
+        }
+    }
+};
+
+#endif //SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H

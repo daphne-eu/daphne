@@ -148,6 +148,76 @@
     },
     {
         "kernelTemplate": {
+            "header": "ColBind.h",
+            "opName": "colBind",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DiagMatrix.h",
+            "opName": "diagMatrix",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "EwBinaryMat.h",
             "opName": "ewBinaryMat",
             "returnType": "void",
@@ -188,7 +258,7 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ],
-        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -232,7 +302,7 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
         ],
-        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -274,7 +344,81 @@
             ["bool", "double", "double"],
             ["bool", "int64_t", "int64_t"]
         ],
-        "opCodes": ["ADD", "MUL", "DIV", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ExtractCol.h",
+            "opName": "extractCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DenseMatrix<int64_t> *",
+                    "name": "colIdxs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Fill.h",
+            "opName": "fill",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "VTArg",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numRows"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numCols"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
     },
     {
         "kernelTemplate": {
@@ -313,6 +457,41 @@
         "instantiations": [
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "OneHot.h",
+            "opName": "oneHot",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DenseMatrix<int64_t> *",
+                    "name": "info"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
     },
     {
@@ -449,6 +628,42 @@
     },
     {
         "kernelTemplate": {
+            "header": "EwUnaryMat.h",
+            "opName": "ewUnaryMat",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "UnaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"],["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SIGN", "FLOOR"]
+    },
+    {
+        "kernelTemplate": {
             "header": "EwUnarySca.h",
             "opName": "ewUnarySca",
             "returnType": "TRes",
@@ -477,6 +692,194 @@
             ["double", "double"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN"]
+        "opCodes": ["SIGN", "FLOOR"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "NumCols.h",
+            "opName": "numCols",
+            "returnType": "size_t",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "NumRows.h",
+            "opName": "numRows",
+            "returnType": "size_t",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "NumCells.h",
+            "opName": "numCells",
+            "returnType": "size_t",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Seq.h",
+            "opName": "seq",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "typename DT::VT",
+                    "name": "start"
+                },
+                {
+                    "type": "typename DT::VT",
+                    "name": "end"
+                },
+                {
+                    "type": "typename DT::VT",
+                    "name": "inc"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Solve.h",
+            "opName": "solve",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                },
+                {
+                    "type": "bool",
+                    "name": "triangLhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Tri.h",
+            "opName": "tri",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "upper"
+                },
+                {
+                    "type": "bool",
+                    "name": "diag"
+                },
+                {
+                    "type": "bool",
+                    "name": "values"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
+        ]
     }
 ]

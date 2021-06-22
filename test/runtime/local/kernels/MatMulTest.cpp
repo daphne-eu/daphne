@@ -64,16 +64,51 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
         3, 4,
         2, 2,
     });
-    
-    
+    auto v0 = genGivenVals<DT>(3, {
+        0,
+        0,
+        0
+    });
+    auto v1 = genGivenVals<DT>(3, {
+        1,
+        1,
+        1
+    });
+    auto v2 = genGivenVals<DT>(3, {
+        1,
+        2,
+        3
+    });
+    auto v3 = genGivenVals<DT>(3, {
+        6,
+        6,
+        6
+    });
+    auto v4 = genGivenVals<DT>(3, {
+        14,
+        11,
+        11
+    });
+
     checkMatMul(m0, m0, m0);
     checkMatMul(m1, m1, m2);
     checkMatMul(m3, m4, m5);
-    
+    checkMatMul(m0, v0, v0);
+    checkMatMul(m1, v0, v0);
+    checkMatMul(m2, v0, v0);
+    checkMatMul(m0, v1, v0);
+    checkMatMul(m1, v1, v3);
+    checkMatMul(m1, v2, v4);
+
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
+    DataObjectFactory::destroy(v0);
+    DataObjectFactory::destroy(v1);
+    DataObjectFactory::destroy(v2);
+    DataObjectFactory::destroy(v3);
+    DataObjectFactory::destroy(v4);
 }

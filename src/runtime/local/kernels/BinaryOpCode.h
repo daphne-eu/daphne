@@ -20,8 +20,10 @@
 enum class BinaryOpCode {
     // Arithmetic.
     ADD, // addition
+    SUB, // subtraction
     MUL, // multiplication
     DIV, // division
+    POW, // to the power of
     
     // Comparisons.
     EQ,  // equal

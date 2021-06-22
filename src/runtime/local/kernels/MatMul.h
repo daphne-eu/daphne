@@ -54,46 +54,50 @@ void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
 template<>
 struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
     static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs) {
-        const size_t numRowsLhs = lhs->getNumRows();
-        const size_t numColsLhs = lhs->getNumCols();
-        const size_t numRowsRhs = rhs->getNumRows();
-        const size_t numColsRhs = rhs->getNumCols();
+        const size_t nr1 = lhs->getNumRows();
+        const size_t nc1 = lhs->getNumCols();
+        const size_t nr2 = rhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
 
-        assert((numColsLhs == numRowsRhs) && "#cols of lhs and #rows of rhs must be the same");
-        
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<float>>(numRowsLhs, numColsRhs, false);
-        
-        cblas_sgemm(
-                CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                numRowsLhs, numColsRhs, numColsLhs,
-                1, lhs->getValues(), lhs->getRowSkip(),
-                rhs->getValues(), rhs->getRowSkip(),
-                0, res->getValues(), res->getRowSkip()
-        );
+            res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
+
+        if(nr1 == 1 && nc2 == 1) // Vector-Vector
+            cblas_sdot(nc1, lhs->getValues(), rhs->getRowSkip(), rhs->getValues(), 1);
+        else if(nc2 == 1)        // Matrix-Vector
+            cblas_sgemv(CblasRowMajor, CblasNoTrans, nr1, nc1, 1, lhs->getValues(),
+                lhs->getRowSkip(), rhs->getValues(), rhs->getRowSkip(), 0,
+                res->getValues(), res->getRowSkip());
+        else                     // Matrix-Matrix
+            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nr1, nc2, nc1,
+                1, lhs->getValues(), lhs->getRowSkip(), rhs->getValues(),
+                rhs->getRowSkip(), 0, res->getValues(), res->getRowSkip());
     }
 };
 
 template<>
 struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
     static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs) {
-        const size_t numRowsLhs = lhs->getNumRows();
-        const size_t numColsLhs = lhs->getNumCols();
-        const size_t numRowsRhs = rhs->getNumRows();
-        const size_t numColsRhs = rhs->getNumCols();
+        const size_t nr1 = lhs->getNumRows();
+        const size_t nc1 = lhs->getNumCols();
+        const size_t nr2 = rhs->getNumRows();
+        const size_t nc2 = rhs->getNumCols();
+        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
 
-        assert((numColsLhs == numRowsRhs) && "#cols of lhs and #rows of rhs must be the same");
-        
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<double>>(numRowsLhs, numColsRhs, false);
-        
-        cblas_dgemm(
-                CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                numRowsLhs, numColsRhs, numColsLhs,
-                1, lhs->getValues(), lhs->getRowSkip(),
-                rhs->getValues(), rhs->getRowSkip(),
-                0, res->getValues(), res->getRowSkip()
-        );
+            res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, false);
+
+        if(nr1 == 1 && nc2 == 1) // Vector-Vector
+            cblas_ddot(nc1, lhs->getValues(), rhs->getRowSkip(), rhs->getValues(), 1);
+        else if(nc2 == 1)        // Matrix-Vector
+            cblas_dgemv(CblasRowMajor, CblasNoTrans, nr1, nc1, 1, lhs->getValues(),
+                lhs->getRowSkip(), rhs->getValues(), rhs->getRowSkip(), 0,
+                res->getValues(), res->getRowSkip());
+        else                     // Matrix-Matrix
+            cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nr1, nc2, nc1,
+                1, lhs->getValues(), lhs->getRowSkip(), rhs->getValues(),
+                rhs->getRowSkip(), 0, res->getValues(), res->getRowSkip());
     }
 };
 

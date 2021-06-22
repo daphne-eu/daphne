@@ -82,8 +82,9 @@ def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 // TODO Rename, it's misleading. Sounds like a pair of height/width.
 def Size : TypeAlias<Index, "size">;
 
-def Seed : TypeAlias<UI64, "seed">;
+def Seed : TypeAlias<SI64, "seed">;
 
-def Selection : AnyTypeOf<[Size, MatrixOf<[Size]>, MatrixOf<[BoolScalar]>]>;
+// TODO Remove SI64 again, it was only added temporarily to make things work.
+def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD
