@@ -27,6 +27,7 @@
 #include <queue>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <tuple>
 #include <util/MurmurHash3.h>
 #include <vector>
 template <class DTArg> struct NumDistinctApprox {
@@ -54,7 +55,6 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
 
       const size_t numRows = arg->getNumRows();
       const size_t numCols = arg->getNumCols();
-      const size_t numElements = numRows * numCols;
       const size_t rowSkip = arg->getRowSkip();
       const VT *valuesBegin = arg->getValues();
 
@@ -65,27 +65,38 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
       size_t rowIdx = 0;
       size_t colIdx = 0;
       size_t elementIdx = 0;
+      bool stopInit = false;
 
       // Initialize KVM with K values.
-      for (; rowIdx < numRows; rowIdx++) {
-          for (; colIdx < numCols && elementIdx < K; colIdx++, elementIdx++) {
+
+      while( rowIdx < numRows) {
+          colIdx = 0;
+          while( colIdx < numCols) {
 
               const VT *el = valuesBegin + rowSkip * rowIdx + colIdx;
 
               MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
               pQueue.push(hashedValueOut);
+
+              elementIdx++;
+
+              if (elementIdx >= K) {
+                  stopInit = true;
+                  break;
+              }
+              colIdx++;
           }
+
+          if (stopInit) {
+              break;
+          }
+          rowIdx++;
       }
 
-      //for (size_t idx = 0; idx < K; idx++) {
-      //    const VT *el = valuesBegin + idx;
-    
-      //    MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
-      //    pQueue.push(hashedValueOut);
-      //}
 
-      for (; rowIdx < numRows; rowIdx++) {
-          for (; colIdx < numCols; colIdx++) {
+      // rowIdx/colIdx are now at the element where we left off.
+      while ( rowIdx < numRows) {
+          while ( colIdx < numCols) {
 
               const VT *el = valuesBegin + rowSkip * rowIdx + colIdx;
               MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
@@ -94,19 +105,13 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
                   pQueue.pop();
                   pQueue.push(hashedValueOut);
               }
+
+              colIdx++;
           }
+
+          colIdx = 0;
+          rowIdx++;
       }
-
-
-      //for (size_t idx = K; idx < numElements; idx++) {
-      //    const VT *el = valuesBegin + idx;
-      //    MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
-
-      //    if (hashedValueOut < pQueue.top()) {
-      //        pQueue.pop();
-      //        pQueue.push(hashedValueOut);
-      //    }
-      //}
 
       size_t kMinVal = pQueue.top();
       const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
@@ -123,38 +128,90 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
 template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
     static size_t apply(const CSRMatrix<VT> *arg, size_t K, uint64_t seed = 1234567890) {
 
-        const size_t numElements = arg->getNumRows() * arg->getNumCols();
-        const VT* valuesBegin = arg->getValues();
-        const size_t numNonZeros = arg->getNumNonZeros();
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const size_t numElements = numRows * numCols;
+        const VT* values = arg->getValues();
+        const size_t* rowOffsets = arg->getRowOffsets();
+        const VT zero = 0;
 
         std::priority_queue<uint32_t> pQueue;
 
-        uint32_t hashedValue = 0;
+        uint32_t hashedValueOut = 0;
 
-        // Initialize KVM with K values.
-        // Inserting first zero if one exists.
-        if (numElements != numNonZeros) {
-            const VT zero = 0;
-            MurmurHash3_x86_32(&zero, sizeof(VT), seed, &hashedValue);
-            pQueue.push(hashedValue);
-        }
+        size_t rowIdx = 0;
+        size_t colIdx = 0;
+        size_t elementIdx = 0;
+        bool stopInit = false;
+        const size_t * colIdxBegin = arg->getColIdxs(rowIdx);
+        const size_t * colIdxEnd = arg->getColIdxs(rowIdx+1);
 
-        for (size_t idx = 1; idx < K; idx++) {
-            const VT *el = valuesBegin + idx;
-    
-            MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValue);
-            pQueue.push(hashedValue);
-        }
+        while( rowIdx < numRows ) {
+            colIdx = 0;
+            colIdxBegin = arg->getColIdxs(rowIdx);
+            colIdxEnd = arg->getColIdxs(rowIdx+1);
 
-        for (size_t idx = K; idx < numNonZeros; idx++) {
-            const VT *el = valuesBegin + idx;
-            MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValue);
-    
-            if (hashedValue < pQueue.top()) {
-                pQueue.pop();
-                pQueue.push(hashedValue);
+            while( colIdx < numCols) {
+
+                const size_t * ptrExpected = std::lower_bound(colIdxBegin, colIdxEnd, colIdx);
+                const VT * el;
+
+                // Check wether this colIdx does exist in this row's colIdxs.
+                if(ptrExpected == colIdxEnd || *ptrExpected != colIdx) {
+                    el = &zero;
+                } else {
+                    el = (values + rowOffsets[rowIdx]) + (ptrExpected - colIdxBegin);
+                }
+
+                MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
+                pQueue.push(hashedValueOut);
+
+                elementIdx++;
+
+                if (elementIdx >= K) {
+                    stopInit = true;
+                    break;
+                }
+                colIdx++;
             }
+
+            if (stopInit) {
+                break;
+            }
+            rowIdx++;
         }
+
+
+        // rowIdx/colIdx are now at the element where we left off.
+        while ( rowIdx < numRows) {
+            colIdxBegin = arg->getColIdxs(rowIdx);
+            colIdxEnd = arg->getColIdxs(rowIdx+1);
+
+            while ( colIdx < numCols) {
+
+                const size_t * ptrExpected = std::lower_bound(colIdxBegin, colIdxEnd, colIdx);
+                const VT * el;
+
+                // Check wether this colIdx does exist in this row's colIdxs.
+                if(ptrExpected == colIdxEnd || *ptrExpected != colIdx) {
+                    el = &zero;
+                } else {
+                    el = (values + rowOffsets[rowIdx]) + (ptrExpected - colIdxBegin);
+                }
+
+                MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
+
+                if (hashedValueOut < pQueue.top()) {
+                    pQueue.pop();
+                    pQueue.push(hashedValueOut);
+                }
+
+                colIdx++;
+            }
+
+            colIdx = 0;
+            rowIdx++;
+       }
 
       size_t kMinVal = pQueue.top();
       const size_t maxVal = std::numeric_limits<std::uint32_t>::max();

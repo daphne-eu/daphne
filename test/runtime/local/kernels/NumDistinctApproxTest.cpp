@@ -34,14 +34,14 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
     std::srand(123456789);
 
     std::generate_n(v.begin(), numElements/100, std::rand);
-    auto mat1000 = genGivenVals<DT>(100, v);
+    auto mat10000 = genGivenVals<DT>(100, v);
 
     SECTION("numDistinctApprox distinct") {
 
-        // Allow +/-20% error. When error is bigger something is either 
+        // Allow +/-10% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
-        auto approxResult = numDistinctApprox(mat1000, 64);
-        auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
+        auto approxResult = numDistinctApprox(mat10000, 64);
+        auto isResultBelow20PercentOff = approxResult <= 110 && approxResult >= 90;
         CHECK(isResultBelow20PercentOff);
     }
 }
@@ -51,26 +51,26 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
 
     using DT = TestType;
 
-    const size_t numElements = 1000;
+    const size_t numElements = 10000;
     std::vector<typename DT::VT> v(numElements,0);
     std::srand(123456789);
 
     std::generate_n(v.begin(), numElements, std::rand);
-    auto mat1000 = genGivenVals<DT>(100, v);
+    auto mat10000 = genGivenVals<DT>(100, v);
 
-    auto subNonSpecialMat = DataObjectFactory::create<DT>(mat1000,
+    auto subMat = DataObjectFactory::create<DT>(mat10000,
         0,
-        mat1000->getNumRows()/10,
+        mat10000->getNumRows()/100,
         0,
-        mat1000->getNumCols()
+        mat10000->getNumCols()
     );
 
     SECTION("numDistinctApprox for Sub-DenseMatrix") {
 
-        // Allow +/-20% error. When error is bigger something is either
+        // Allow +/-10% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
-        auto approxResult = numDistinctApprox(mat1000, 64);
-        auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
+        auto approxResult = numDistinctApprox(subMat, 64);
+        auto isResultBelow20PercentOff = approxResult <= 110 && approxResult >= 90;
         CHECK(isResultBelow20PercentOff);
     }
 }
@@ -79,19 +79,24 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CS
 
     using DT = TestType;
 
-    const size_t numElements = 1000;
+    const size_t numElements = 10000;
     std::vector<typename DT::VT> v(numElements,0);
     std::srand(123456789);
 
-    std::generate_n(v.begin(), numElements/10, std::rand);
-    auto mat1000 = genGivenVals<DT>(100, v);
+    std::generate_n(v.begin(), numElements, std::rand);
+    auto mat10000 = genGivenVals<DT>(100, v);
+
+    auto subMat = DataObjectFactory::create<DT>(mat10000,
+        0,
+        mat10000->getNumRows()/100
+    );
 
 
     SECTION("numDistinctApprox Sub-CSRMatrix") {
 
         // Allow +/-20% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
-        auto approxResult = numDistinctApprox(mat1000, 64);
+        auto approxResult = numDistinctApprox(subMat, 64);
         auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
         CHECK(isResultBelow20PercentOff);
     }
