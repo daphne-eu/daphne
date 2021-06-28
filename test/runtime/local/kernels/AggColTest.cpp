@@ -133,3 +133,55 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m2exp);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, DenseMatrix, int64_t) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    });
+    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
+        4, 6, 3, 9,
+        5, 2, 0, 9,
+        7, 4, 5, 4,
+    });
+    auto m1exp = genGivenVals<DTRes>(1, {5, 4, 2, 7});
+    
+    checkAggCol(AggOpCode::MEAN, m0, m0exp);
+    checkAggCol(AggOpCode::MEAN, m1, m1exp);
+    
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m0exp);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m1exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev"), TAG_KERNELS, DenseMatrix, int64_t) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    });
+    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
+        4, 6, 3, 9,
+        5, 2, 0, 9,
+        7, 4, 5, 4,
+    });
+    auto m1exp = genGivenVals<DTRes>(1, {1, 1, 2, 2});
+    
+    checkAggCol(AggOpCode::STDDEV, m0, m0exp);
+    checkAggCol(AggOpCode::STDDEV, m1, m1exp);
+    
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m0exp);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m1exp);
+}
