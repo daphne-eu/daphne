@@ -73,7 +73,11 @@ expr:
 literal:
     INT_LITERAL
     | FLOAT_LITERAL
+    | BOOL_LITERAL
     ;
+
+BOOL_LITERAL:
+    KW_TRUE | KW_FALSE;
 
 // ****************************************************************************
 // Lexer rules
@@ -85,6 +89,8 @@ KW_WHILE: 'while';
 KW_DO: 'do';
 KW_FOR: 'for';
 KW_IN: 'in';
+KW_TRUE: 'true';
+KW_FALSE: 'false';
 
 fragment DIGIT:
     [0-9] ;
@@ -95,13 +101,13 @@ fragment NON_ZERO_DIGIT:
 fragment LETTER:
     [a-zA-Z] ;
 
-IDENTIFIER:
-    (LETTER | '_')(LETTER | '_' | DIGIT)* ;
-
 INT_LITERAL:
     ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
 
 FLOAT_LITERAL:
     '-'? (NON_ZERO_DIGIT DIGIT*)? '.' DIGIT* ;
+
+IDENTIFIER:
+    (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
 WS: [ \t\r\n]+ -> skip;

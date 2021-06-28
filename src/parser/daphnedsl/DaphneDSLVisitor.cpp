@@ -505,5 +505,15 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                 )
         );
     }
+    if(auto lit = ctx->BOOL_LITERAL()) {
+        // FIXME: Is strncmp necessary?
+        bool val = !strncmp("true", lit->getText().c_str(), 5);
+        return static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(
+                        loc,
+                        builder.getBoolAttr(val)
+                )
+        );
+    }
     throw std::runtime_error("unexpected literal");
 }
