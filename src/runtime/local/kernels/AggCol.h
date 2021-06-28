@@ -26,6 +26,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
+#include <cmath>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -65,9 +66,12 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
         const VT * valuesArg = arg->getValues();
         VT * valuesRes = res->getValues();
         
-        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        EwBinaryScaFuncPtr<VT, VT, VT> func;
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        else
+            // for MEAN and STDDDEV, we need to sum
+            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
         memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
         
@@ -76,6 +80,35 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesRes[c], valuesArg[c]);
         }
+        
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+            return;
+
+        for(size_t c = 0; c < numCols; c++)
+            valuesRes[c] /= numRows;
+
+        if(opCode != AggOpCode::STDDEV)
+            return;
+
+        auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
+        VT * valuesT = tmp->getValues();
+        valuesArg = arg->getValues();
+
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                VT val = valuesArg[c] - valuesRes[c];
+                valuesT[c] = func(valuesT[c], val * val);
+            }
+            valuesArg += arg->getRowSkip();
+        }
+
+        for(size_t c = 0; c < numCols; c++) {
+            valuesT[c] /= numRows;
+            valuesT[c] = sqrt(valuesT[c]);
+        }
+
+        memcpy(valuesRes, valuesT, numCols * sizeof(VT));
+        DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
     }
 };
 
@@ -94,9 +127,12 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         
         VT * valuesRes = res->getValues();
         
-        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        EwBinaryScaFuncPtr<VT, VT, VT> func;
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        else
+            // for MEAN and STDDDEV, we need to sum
+            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
         const VT * valuesArg = arg->getValues(0);
         const size_t * colIdxsArg = arg->getColIdxs(0);
@@ -128,9 +164,37 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
                 for(size_t c = 0; c < numCols; c++)
                     if(hist[c] < numRows)
                         valuesRes[c] = func(valuesRes[c], 0);
-                delete[] hist;
             }
+            delete[] hist;
         }
+
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+            return;
+
+        for(size_t c = 0; c < numCols; c++)
+            valuesRes[c] /= arg->getNumRows();
+
+        if(opCode != AggOpCode::STDDEV)
+            return;
+
+        auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
+        VT * valuesT = tmp->getValues();
+
+        for(size_t i = 0; i < numNonZeros; i++) {
+            const size_t colIdx = colIdxsArg[i];
+            VT val = valuesArg[i] - valuesRes[colIdx];
+            valuesT[colIdx] = func(valuesT[colIdx], val * val);
+        }
+
+
+        for(size_t c = 0; c < numCols; c++) {
+            valuesT[c] /= numRows;
+            valuesT[c] = sqrt(valuesT[c]);
+        }
+
+        memcpy(valuesRes, valuesT, numCols * sizeof(VT));
+        DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
+
     }
 };
 
