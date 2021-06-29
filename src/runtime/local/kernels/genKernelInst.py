@@ -90,8 +90,16 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         if opCode is not None:
             # We assume that the name of the op-code type ends with "OpCode".
             opCodeWord = opCodeType[:-len("OpCode")]
-            funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
-            funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+
+            # FIXME: Special case agg function for the moment
+            if opCodeWord == "Agg":
+                # aggAll -> All
+                funcName = funcName.replace(opCodeWord.lower(), "")
+                # All -> all{Sum, Max, }
+                funcName = funcName.lower() + opCode[0].upper() + opCode[1:].lower()
+            else:
+                # ewBinary -> ewAdd
+                funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
         
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}__{}({}) {{\n".format(funcName, typesForName, params))
