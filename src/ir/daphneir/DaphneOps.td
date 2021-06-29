@@ -254,12 +254,12 @@ class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []> :
     let results = (outs scalarType:$res);
 }
 
-def Daphne_AllAggSumOp    : Daphne_AllAggOp<"allSum", NumScalar>;
-def Daphne_AllAggMinOp    : Daphne_AllAggOp<"allMin", NumScalar>;
-def Daphne_AllAggMaxOp    : Daphne_AllAggOp<"allMax", NumScalar>;
-def Daphne_AllAggMeanOp   : Daphne_AllAggOp<"allMean", FloatScalar>;
-def Daphne_AllAggVarOp    : Daphne_AllAggOp<"allVar", FloatScalar>;
-def Daphne_AllAggStddevOp : Daphne_AllAggOp<"allStddev", FloatScalar>;
+def Daphne_AllAggSumOp    : Daphne_AllAggOp<"sumAll", NumScalar>;
+def Daphne_AllAggMinOp    : Daphne_AllAggOp<"minAll", NumScalar>;
+def Daphne_AllAggMaxOp    : Daphne_AllAggOp<"maxAll", NumScalar>;
+def Daphne_AllAggMeanOp   : Daphne_AllAggOp<"meanAll", FloatScalar>;
+def Daphne_AllAggVarOp    : Daphne_AllAggOp<"varAll", FloatScalar>;
+def Daphne_AllAggStddevOp : Daphne_AllAggOp<"stddevAll", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Row/column-wise aggregation
@@ -272,23 +272,23 @@ class Daphne_DimAggOp<string name, Type inScalarType, Type outScalarType = inSca
 class Daphne_RowAggOp<string name, Type inScalarType, Type outScalarType = inScalarType, list<OpTrait> traits = []> : Daphne_DimAggOp<name, inScalarType, outScalarType, traits>;
 class Daphne_ColAggOp<string name, Type inScalarType, Type outScalarType = inScalarType, list<OpTrait> traits = []> : Daphne_DimAggOp<name, inScalarType, outScalarType, traits>;
 
-def Daphne_RowAggSumOp    : Daphne_RowAggOp<"rowSum"   , NumScalar>;
-def Daphne_RowAggMinOp    : Daphne_RowAggOp<"rowMin"   , AnyScalar>;
-def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"rowMax"   , AnyScalar>;
-def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"rowIdxMin", NumScalar, Size>;
-def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"rowIdxMax", NumScalar, Size>;
-def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"rowMean"  , FloatScalar>;
-def Daphne_RowAggVarOp    : Daphne_RowAggOp<"rowVar"   , FloatScalar>;
-def Daphne_RowAggStddevOp : Daphne_RowAggOp<"rowStddev", FloatScalar>;
+def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar>;
+def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar>;
+def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar>;
+def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar, Size>;
+def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar, Size>;
+def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
+def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , FloatScalar>;
+def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", FloatScalar>;
 
-def Daphne_ColAggSumOp    : Daphne_ColAggOp<"colSum"   , NumScalar>;
-def Daphne_ColAggMinOp    : Daphne_ColAggOp<"colMin"   , AnyScalar>;
-def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"colMax"   , AnyScalar>;
-def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"colIdxMin", NumScalar, Size>;
-def Daphne_ColAggIdxMaxOp : Daphne_ColAggOp<"colIdxMax", NumScalar, Size>;
-def Daphne_ColAggMeanOp   : Daphne_ColAggOp<"colMean"  , FloatScalar>;
-def Daphne_ColAggVarOp    : Daphne_ColAggOp<"colVar"   , FloatScalar>;
-def Daphne_ColAggStddevOp : Daphne_ColAggOp<"colStddev", FloatScalar>;
+def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar>;
+def Daphne_ColAggMinOp    : Daphne_ColAggOp<"minCol"   , AnyScalar>;
+def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"maxCol"   , AnyScalar>;
+def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"idxminCol", NumScalar, Size>;
+def Daphne_ColAggIdxMaxOp : Daphne_ColAggOp<"idxmaxCol", NumScalar, Size>;
+def Daphne_ColAggMeanOp   : Daphne_ColAggOp<"meanCol"  , FloatScalar>;
+def Daphne_ColAggVarOp    : Daphne_ColAggOp<"varCol"   , FloatScalar>;
+def Daphne_ColAggStddevOp : Daphne_ColAggOp<"stddevCol", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Cumulative aggregation
@@ -298,10 +298,10 @@ class Daphne_CumAggOp<string name, Type scalarType, list<OpTrait> traits = []> :
     let results = (outs MatrixOf<[scalarType]>);
 }
 
-def Daphne_CumAggSumOp  : Daphne_CumAggOp<"cumSum" , NumScalar>;
-def Daphne_CumAggProdOp : Daphne_CumAggOp<"cumProd", NumScalar>;
-def Daphne_CumAggMinOp  : Daphne_CumAggOp<"cumMin" , AnyScalar>;
-def Daphne_CumAggMaxOp  : Daphne_CumAggOp<"cumMax" , AnyScalar>;
+def Daphne_CumAggSumOp  : Daphne_CumAggOp<"sumCum" , NumScalar>;
+def Daphne_CumAggProdOp : Daphne_CumAggOp<"prodCum", NumScalar>;
+def Daphne_CumAggMinOp  : Daphne_CumAggOp<"minCum" , AnyScalar>;
+def Daphne_CumAggMaxOp  : Daphne_CumAggOp<"maxCum" , AnyScalar>;
 
 // ----------------------------------------------------------------------------
 // Grouped aggregation
@@ -312,13 +312,13 @@ class Daphne_GrpAggOp<string name, Type scalarType, list<OpTrait> traits = []> :
     let results = (outs MatrixOf<[scalarType]>:$groupAggs);
 }
 
-def Daphne_GrpAggCountOp  : Daphne_GrpAggOp<"grpCount" , AnyScalar>;
-def Daphne_GrpAggSumOp    : Daphne_GrpAggOp<"grpSum"   , NumScalar>;
-def Daphne_GrpAggMinOp    : Daphne_GrpAggOp<"grpMin"   , AnyScalar>;
-def Daphne_GrpAggMaxOp    : Daphne_GrpAggOp<"grpMax"   , AnyScalar>;
-def Daphne_GrpAggMeanOp   : Daphne_GrpAggOp<"grpMean"  , FloatScalar>;
-def Daphne_GrpAggVarOp    : Daphne_GrpAggOp<"grpVar"   , FloatScalar>;
-def Daphne_GrpAggStddevOp : Daphne_GrpAggOp<"grpStddev", FloatScalar>;
+def Daphne_GrpAggCountOp  : Daphne_GrpAggOp<"countGrp" , AnyScalar>;
+def Daphne_GrpAggSumOp    : Daphne_GrpAggOp<"sumGrp"   , NumScalar>;
+def Daphne_GrpAggMinOp    : Daphne_GrpAggOp<"minGrp"   , AnyScalar>;
+def Daphne_GrpAggMaxOp    : Daphne_GrpAggOp<"maxGrp"   , AnyScalar>;
+def Daphne_GrpAggMeanOp   : Daphne_GrpAggOp<"meanGrp"  , FloatScalar>;
+def Daphne_GrpAggVarOp    : Daphne_GrpAggOp<"varGrp"   , FloatScalar>;
+def Daphne_GrpAggStddevOp : Daphne_GrpAggOp<"stddevGrp", FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Statistical for column matrices
