@@ -6,3 +6,10 @@ m = rand(2, 3, 100.0, 200.0, 1.0, -1);
 print(m);
 print(m + m);
 print(t(m));
+
+print(sum(m));
+print(sum(m, 0));
+print(stddev(m, 1));
+
+l = rand(3, 3, 100.0, 200.0, 1.0, -1);
+print(lowerTri(l, true, false));
