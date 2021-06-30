@@ -76,7 +76,7 @@ struct Tri<DenseMatrix<VT>> {
 
         size_t start = upper ? !diag : 0;
         size_t end = upper ? numCols : diag;
-        size_t *inc = upper ? &start : &end;
+        size_t * inc = upper ? &start : &end;
 
         for(size_t r = 0; r < numRows; r++, (*inc)++) {
             for(size_t c = start; c < end; c++) {
@@ -103,18 +103,20 @@ struct Tri<CSRMatrix<VT>> {
 
         assert((numRows == numCols) && "matrix must be square");
         if(res == nullptr) {
-            const size_t nonzeros = std::min(arg->getNumNonZeros(), numRows * (numRows + 1) / 2);
-            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nonzeros, true);
+            const size_t nonZeros = std::min(arg->getNumNonZeros(), numRows * (numRows + 1) / 2);
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, nonZeros, false);
         }
 
         size_t start = upper ? !diag : 0;
         size_t end = upper ? numCols : diag;
-        size_t *inc = upper ? &start : &end;
+        size_t * inc = upper ? &start : &end;
 
-        //TODO perf append only to avoid reshifting (O(n) vs O(n log n))
-        // note: changing to append requires prepareAppend, instead we should
-        // append to int/value arrays and then wrap a csr matrix around it
-        for(size_t r = 0; r < numRows; r++, (*inc)++) {
+        VT * valuesRes = res->getValues();
+        size_t * colIdxsRes = res->getColIdxs();
+        size_t * rowOffsetsRes = res->getRowOffsets();
+
+        rowOffsetsRes[0] = 0;
+        for(size_t r = 0, pos = 0; r < numRows; r++, (*inc)++) {
             const size_t rowNumNonZeros = arg->getNumNonZeros(r);
             const size_t * rowColIdxs = arg->getColIdxs(r);
             const VT * rowValues = arg->getValues(r);
@@ -124,10 +126,12 @@ struct Tri<CSRMatrix<VT>> {
                 if(c >= start && c < end) {
                     VT val = rowValues[i];
                     if(val != VT(0)) {
-                        res->set(r, c, !values ? 1 : val);
+                        valuesRes[pos] = !values ? 1 : val;
+                        colIdxsRes[pos++] = c;
                     }
                 }
             }
+            rowOffsetsRes[r + 1] = pos;
         }
     }
 };
