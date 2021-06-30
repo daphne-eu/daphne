@@ -115,9 +115,6 @@ struct Tri<CSRMatrix<VT>> {
         size_t * colIdxsRes = res->getColIdxs();
         size_t * rowOffsetsRes = res->getRowOffsets();
 
-        //TODO perf append only to avoid reshifting (O(n) vs O(n log n))
-        // note: changing to append requires prepareAppend, instead we should
-        // append to int/value arrays and then wrap a csr matrix around it
         rowOffsetsRes[0] = 0;
         for(size_t r = 0, pos = 0; r < numRows; r++, (*inc)++) {
             const size_t rowNumNonZeros = arg->getNumNonZeros(r);
