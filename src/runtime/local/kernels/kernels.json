@@ -854,7 +854,7 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "DT *",
+                    "type": "DT *&",
                     "name": "res"
                 },
                 {
