@@ -73,7 +73,11 @@ expr:
 literal:
     INT_LITERAL
     | FLOAT_LITERAL
+    | bl=boolLiteral
     ;
+
+boolLiteral:
+    KW_TRUE | KW_FALSE;
 
 // ****************************************************************************
 // Lexer rules
@@ -85,6 +89,8 @@ KW_WHILE: 'while';
 KW_DO: 'do';
 KW_FOR: 'for';
 KW_IN: 'in';
+KW_TRUE: 'true';
+KW_FALSE: 'false';
 
 fragment DIGIT:
     [0-9] ;

@@ -505,5 +505,25 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                 )
         );
     }
+    if(ctx->bl)
+        return visit(ctx->bl);
     throw std::runtime_error("unexpected literal");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+    bool val;
+    if(ctx->KW_TRUE())
+        val = true;
+    else if(ctx->KW_FALSE())
+        val = false;
+    else
+        throw std::runtime_error("unexpected bool literal");
+
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getBoolAttr(val)
+        )
+    );
 }

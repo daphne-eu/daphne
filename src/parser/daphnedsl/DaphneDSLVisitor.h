@@ -99,6 +99,7 @@ public:
 
     antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) override;
 
+    antlrcpp::Any visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) override;
 };
 
 #endif //SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H
