@@ -505,7 +505,9 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                 )
         );
     }
-    return visit(ctx->bl);
+    if(ctx->bl)
+        return visit(ctx->bl);
+    throw std::runtime_error("unexpected literal");
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) {
@@ -516,7 +518,7 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
     else if(ctx->KW_FALSE())
         val = false;
     else
-        throw std::runtime_error("unexpected literal");
+        throw std::runtime_error("unexpected bool literal");
 
     return static_cast<mlir::Value>(
         builder.create<mlir::daphne::ConstantOp>(
