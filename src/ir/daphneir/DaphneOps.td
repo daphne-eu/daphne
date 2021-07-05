@@ -552,7 +552,7 @@ def Daphne_CTableOp : Daphne_Op<"ctable"> {
 // ----------------------------------------------------------------------------
 
 def Daphne_SqlOp : Daphne_Op<"sql"> {
-    let arguments = (ins Frame:$arg, StrAttr:$sql);
+    let arguments = (ins StrAttr:$sql);
     let results = (outs Frame:$res);
 }
 
