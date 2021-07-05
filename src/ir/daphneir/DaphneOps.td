@@ -672,7 +672,7 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be
-// removed/replaced/changed inthe future.
+// removed/replaced/changed in the future.
 
 def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let summary = "constant operation";
@@ -696,6 +696,9 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         //OpBuilder<(ins "int":$value), [{
         //    build($_builder, $_state, $_builder.getI32IntegerAttr(value));
         //}]>,
+        OpBuilder<(ins "std::string":$value), [{
+            build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(value));
+        }]>,
     ];
 
     let hasFolder = 1;

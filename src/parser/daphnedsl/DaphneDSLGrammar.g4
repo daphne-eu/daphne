@@ -74,6 +74,7 @@ literal:
     INT_LITERAL
     | FLOAT_LITERAL
     | bl=boolLiteral
+    | STRING_LITERAL
     ;
 
 boolLiteral:
@@ -109,5 +110,10 @@ INT_LITERAL:
 
 FLOAT_LITERAL:
     '-'? (NON_ZERO_DIGIT DIGIT*)? '.' DIGIT* ;
+
+STRING_LITERAL:
+    '"' (ESCAPE_SEQ | ~["\\])* '"';
+
+fragment ESCAPE_SEQ: '\\' [bfnrt"\\];
 
 WS: [ \t\r\n]+ -> skip;

@@ -107,6 +107,8 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
             os << ", " << cts[i];
         os << "]>";
     }
+    else if (type.isa<mlir::daphne::StringType>())
+        os << "String";
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)

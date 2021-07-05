@@ -61,7 +61,9 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;
 // ****************************************************************************
 
 // A character string type.
-def StrScalar : Daphne_Type<"String">;
+def StrScalar : Daphne_Type<"String"> {
+    let summary = "string";
+}
 
 def SIntScalar : AnyTypeOf<[SI8, SI32, SI64], "signed integer">;
 def UIntScalar : AnyTypeOf<[UI8, UI32, UI64], "unsigned integer">;

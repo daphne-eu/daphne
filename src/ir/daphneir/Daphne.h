@@ -34,6 +34,7 @@
 #include "mlir/IR/Types.h"
 #include "mlir/Support/TypeID.h"
 
+#include <string>
 #include <utility>
 
 // ... the following tablegen'erated headers.
