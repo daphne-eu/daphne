@@ -23,6 +23,7 @@ antlr4_generate(
 include_directories(${ANTLR4_INCLUDE_DIR_DaphneDSLGrammar})
 
 add_library(DaphneDSLParser STATIC
+        DaphneDSLBuiltins.cpp
         DaphneDSLParser.cpp
         DaphneDSLVisitor.cpp
         ${ANTLR4_SRC_FILES_DaphneDSLGrammar}

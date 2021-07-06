@@ -1,0 +1,8 @@
+x = 1;
+print(x);
+{
+    print(x);
+    x = 2;
+    print(x);
+}
+print(x);

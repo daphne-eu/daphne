@@ -52,7 +52,6 @@ mlir::Value DaphneDSLVisitor::castIf(mlir::Location loc, mlir::Type t, mlir::Val
 // ****************************************************************************
 
 antlrcpp::Any DaphneDSLVisitor::visitScript(DaphneDSLGrammarParser::ScriptContext * ctx) {
-    dump(visitChildren(ctx));
     return visitChildren(ctx);
 }
 
@@ -161,24 +160,24 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
 
 antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-    
+
     auto ip = builder.saveInsertionPoint();
-    
+
     // The two blocks for the SCF WhileOp.
     auto beforeBlock = new mlir::Block;
     auto afterBlock = new mlir::Block;
-    
+
     const bool isDoWhile = ctx->KW_DO();
-    
+
     mlir::Value cond;
     ScopedSymbolTable::SymbolTable ow;
     if(isDoWhile) { // It's a do-while loop.
         builder.setInsertionPointToEnd(beforeBlock);
-        
+
         // Scope for body and condition, such that condition can see the body's
         // updates to variables existing before the loop.
         symbolTable.pushScope();
-        
+
         // The body gets its own scope to not expose variables created inside
         // the body to the condition. While this is unnecessary if the body is
         // a block statement, there are nasty cases if no block statement is
@@ -186,12 +185,12 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         symbolTable.pushScope();
         visit(ctx->bodyStmt);
         ow = symbolTable.popScope();
-        
+
         // Make the body's updates visible to the condition.
         symbolTable.put(ow);
-        
+
         cond = valueOrError(visit(ctx->cond));
-        
+
         symbolTable.popScope();
     }
     else { // It's a while loop.
@@ -203,7 +202,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         visit(ctx->bodyStmt);
         ow = symbolTable.popScope();
     }
-    
+
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the WhileOp and
     // its "before" and "after" region.
@@ -213,38 +212,38 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
     for(auto it = ow.begin(); it != ow.end(); it++) {
         mlir::Value owVal = it->second.value;
         mlir::Type type = owVal.getType();
-        
+
         owVals.push_back(owVal);
         resultTypes.push_back(type);
-        
+
         mlir::Value oldVal = symbolTable.get(it->first).value;
         whileOperands.push_back(oldVal);
-        
+
         beforeBlock->addArgument(type);
         afterBlock->addArgument(type);
     }
-    
+
     // Create the ConditionOp of the "before" block.
     builder.setInsertionPointToEnd(beforeBlock);
     if(isDoWhile)
         builder.create<mlir::scf::ConditionOp>(loc, cond, owVals);
     else
         builder.create<mlir::scf::ConditionOp>(loc, cond, beforeBlock->getArguments());
-    
+
     // Create the YieldOp of the "after" block.
     builder.setInsertionPointToEnd(afterBlock);
     if(isDoWhile)
         builder.create<mlir::scf::YieldOp>(loc, afterBlock->getArguments());
     else
         builder.create<mlir::scf::YieldOp>(loc, owVals);
-    
+
     builder.restoreInsertionPoint(ip);
-    
+
     // Create the SCF WhileOp and insert the "before" and "after" blocks.
     auto whileOp = builder.create<mlir::scf::WhileOp>(loc, resultTypes, whileOperands);
     whileOp.before().push_back(beforeBlock);
     whileOp.after().push_back(afterBlock);
-    
+
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
@@ -257,20 +256,20 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && whileOp.after().isAncestor(parentRegion);
         });
-        
+
         // Rewire the results of the WhileOp to their variable names.
         symbolTable.put(it->first, whileOp.results()[i++]);
     }
-    
+
     return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-    
+
     // The type we assume for from, to, and step.
     mlir::Type t = builder.getIntegerType(64, true);
-    
+
     // Parse from, to, and step.
     mlir::Value from = castIf(loc, t, valueOrError(visit(ctx->from)));
     mlir::Value to = castIf(loc, t, valueOrError(visit(ctx->to)));
@@ -308,14 +307,14 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     from = castIf(loc, idxType, from);
     to   = castIf(loc, idxType, to);
     step = castIf(loc, idxType, step);
-    
+
     auto ip = builder.saveInsertionPoint();
 
     // A block for the body of the for-loop.
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
-    
+
     // A placeholder for the loop's induction variable, since we do not know it
     // yet; will be replaced later.
     mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexAttr(123));
@@ -333,7 +332,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
 
     // Parse the loop's body.
     visit(ctx->bodyStmt);
-    
+
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
@@ -343,23 +342,23 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
     }
-    
+
     builder.create<mlir::scf::YieldOp>(loc, resVals);
-    
+
     builder.restoreInsertionPoint(ip);
-    
+
     // Helper function for moving the operations in the block created above
     // into the actual body of the ForOp.
     auto insertBodyBlock = [&](mlir::OpBuilder & nested, mlir::Location loc, mlir::Value iv, mlir::ValueRange lcv) {
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), bodyBlock.getOperations());
     };
-    
+
     // Create the actual ForOp.
     auto forOp = builder.create<mlir::scf::ForOp>(loc, from, to, step, forOperands, insertBodyBlock);
 
     // Substitute the induction variable, now that we know it.
     ph.replaceAllUsesWith(forOp.getInductionVar());
-    
+
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
@@ -368,13 +367,13 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && forOp.getLoopBody().isAncestor(parentRegion);
         });
-        
+
         // Rewire the results of the ForOp to their variable names.
         symbolTable.put(it->first, forOp.results()[i]);
-        
+
         i++;
     }
-    
+
     return nullptr;
 }
 

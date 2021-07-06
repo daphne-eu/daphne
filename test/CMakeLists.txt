@@ -12,32 +12,49 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-include_directories(${PROJECT_SOURCE_DIR}/test) # for "tags.h"
+include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
 add_executable(run_tests
         run_tests.cpp
+
+        api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/parser/ParserTest.cpp
+        api/cli/scoping/ScopingTest.cpp
+        api/cli/Utils.cpp
         
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         
+        runtime/local/io/ReadCsvTest.cpp
+        
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
+        runtime/local/kernels/ReplaceTest.cpp
+        runtime/local/kernels/SeqTest.cpp
+        runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/TransposeTest.cpp
-	runtime/local/kernels/ReplaceTest.cpp
+        runtime/local/kernels/TriTest.cpp
 )
+add_dependencies(run_tests daphnec)
+
+get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 target_link_libraries(run_tests PRIVATE
+    ${dialect_libs}
     DataStructures
+    DaphneDSLParser
+    MLIRDaphne
     ${OPENBLAS_LIBRARIES}
 )

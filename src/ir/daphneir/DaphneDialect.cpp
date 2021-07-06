@@ -59,8 +59,41 @@ mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(OpBuilder &bui
 
 mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const
 {
-    return mlir::IntegerType();
-};
+    llvm::StringRef keyword;
+    parser.parseKeyword(&keyword);
+    if (keyword == "Matrix") {
+        mlir::Type elementType;
+        llvm::SMLoc locElementType;
+        if (parser.parseLess() || parser.getCurrentLocation(&locElementType)
+            || parser.parseType(elementType) || parser.parseGreater()) {
+            return nullptr;
+        }
+
+        // TODO: check valid element types
+        return MatrixType::get(parser.getBuilder().getContext(), elementType);
+    }
+    else if (keyword == "Frame") {
+        if (parser.parseLess() || parser.parseLSquare()) {
+            return nullptr;
+        }
+        std::vector<mlir::Type> cts;
+        mlir::Type type;
+        do {
+            if (parser.parseType(type))
+                return nullptr;
+            cts.push_back(type);
+        }
+        while (succeeded(parser.parseOptionalComma()));
+        if (parser.parseRSquare() || parser.parseGreater()) {
+            return nullptr;
+        }
+        return FrameType::get(parser.getBuilder().getContext(), cts);
+    }
+    else {
+        parser.emitError(parser.getCurrentLocation()) << "Parsing failed, keyword `" << keyword << "` not recognized!";
+        return nullptr;
+    }
+}
 
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
@@ -74,6 +107,8 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
             os << ", " << cts[i];
         os << "]>";
     }
+    else if (type.isa<mlir::daphne::StringType>())
+        os << "String";
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
@@ -84,7 +119,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, Type elementType)
 {
-    if (elementType.isSignedInteger(64) || elementType.isF64())
+    if (elementType.isSignedInteger(64) || elementType.isF64() || elementType.isIndex())
         return mlir::success();
     else
         return emitError() << "invalid matrix element type: " << elementType;

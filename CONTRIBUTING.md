@@ -47,7 +47,7 @@ Please note that you can create as many branches and merge requests as you want,
 - *Working on your own branch.*
   
   Start by creating a new branch locally: `git checkout -b BRANCH_NAME`.
-  Please select `BRANCH_NAME` to clearly indicate what it is about or who is responsible for it, ideally by referring to the issue, e.g. `dev-issue-123`.
+  Please select `BRANCH_NAME` to clearly indicate what it is about or who is responsible for it, ideally by referring to the issue, e.g. `dev-issue-123` or `123-some-short-title`.
   Make as many commits to your branch as you like.
   When you push the branch for the first time, use `git push --set-upstream origin BRANCH_NAME`.
   Finally, note that to push to the repository, you need to have the developer role.

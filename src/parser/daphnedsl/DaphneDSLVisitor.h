@@ -17,6 +17,8 @@
 #ifndef SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H
 #define SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H
 
+#include <parser/daphnedsl/DaphneDSLBuiltins.h>
+#include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
@@ -35,7 +37,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
-    mlir::OpBuilder builder;
+    mlir::OpBuilder & builder;
     
     /**
      * Maps a variable name from the input DaphneDSL script to the MLIR SSA
@@ -44,18 +46,18 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     ScopedSymbolTable symbolTable;
     
     /**
-     * @brief Wraps the given `Value` in a `CastOp` if it does not have the
-     * given `Type`.
-     * 
-     * @param loc A location.
-     * @param t The expected type.
-     * @param v The value.
-     * @return `v` if it has type `t`, otherwise a `CastOp` of `v` to `t`.
+     * @brief General utilities for parsing to DaphneIR.
      */
-    mlir::Value castIf(mlir::Location loc, mlir::Type t, mlir::Value v);
+    ParserUtils utils;
+    
+    /**
+     * @brief Utility for creating DaphneIR operations for DaphneDSL built-in
+     * functions.
+     */
+    DaphneDSLBuiltins builtins;
     
 public:
-    DaphneDSLVisitor(mlir::OpBuilder & builder) : builder(builder) {
+    DaphneDSLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder), builtins(builder) {
         //
     };
     
@@ -82,8 +84,12 @@ public:
     antlrcpp::Any visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext * ctx) override;
 
     antlrcpp::Any visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) override;
+
+    antlrcpp::Any visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) override;
     
     antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) override;
+    
+    antlrcpp::Any visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) override;
     
     antlrcpp::Any visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) override;
     
@@ -93,6 +99,7 @@ public:
 
     antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) override;
 
+    antlrcpp::Any visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) override;
 };
 
 #endif //SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H

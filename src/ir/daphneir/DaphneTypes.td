@@ -61,7 +61,9 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;
 // ****************************************************************************
 
 // A character string type.
-def StrScalar : Daphne_Type<"String">;
+def StrScalar : Daphne_Type<"String"> {
+    let summary = "string";
+}
 
 def SIntScalar : AnyTypeOf<[SI8, SI32, SI64], "signed integer">;
 def UIntScalar : AnyTypeOf<[UI8, UI32, UI64], "unsigned integer">;
@@ -82,8 +84,9 @@ def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 // TODO Rename, it's misleading. Sounds like a pair of height/width.
 def Size : TypeAlias<Index, "size">;
 
-def Seed : TypeAlias<UI64, "seed">;
+def Seed : TypeAlias<SI64, "seed">;
 
-def Selection : AnyTypeOf<[Size, MatrixOf<[Size]>, MatrixOf<[BoolScalar]>]>;
+// TODO Remove SI64 again, it was only added temporarily to make things work.
+def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

@@ -34,6 +34,28 @@ function printHelp {
     echo "Optional arguments:"
     echo "  -h, --help        Print this help message and exit."
     echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
+    echo "  --clean           Remove all temporary build directories for a fresh build"
+}
+
+#******************************************************************************
+# Clean build directories
+#******************************************************************************
+
+function cleanBuildDirs {
+    echo "-- Cleanup of build directories pwd=$(pwd) ..."
+    dirs=("build" \
+        "thirdparty/llvm-project/build" \
+        "thirdparty/antlr")
+    for ((i=0; i<${#dirs[@]}; i++))
+    do
+        if [ -d ${dirs[$i]} ]
+        then
+            echo "---- cleanup ${dirs[$i]}"
+            rm -rf ${dirs[$i]}
+        else
+            echo "---- cleanup ${dirs[$i]} - non-existing"
+        fi
+    done
 }
 
 #******************************************************************************
@@ -50,6 +72,10 @@ do
     case $key in
         -h|--help)
             printHelp
+            exit 0
+            ;;
+        --clean)
+            cleanBuildDirs
             exit 0
             ;;
         --target)
@@ -161,8 +187,8 @@ mkdir --parents build
 cd build
 cmake -G Ninja ../llvm \
    -DLLVM_ENABLE_PROJECTS=mlir \
-   -DLLVM_BUILD_EXAMPLES=ON \
-   -DLLVM_TARGETS_TO_BUILD="X86;NVPTX;AMDGPU" \
+   -DLLVM_BUILD_EXAMPLES=OFF \
+   -DLLVM_TARGETS_TO_BUILD="X86" \
    -DCMAKE_BUILD_TYPE=Release \
    -DLLVM_ENABLE_ASSERTIONS=ON \
    -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \

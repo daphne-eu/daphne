@@ -133,23 +133,6 @@ public:
     }
 
     /**
-     * @brief Returns the SSA value associated with the given symbol, or throws
-     * an exception if the symbol is unknown.
-     *
-     * Starting at the current scope, all hierarchy levels are searched until
-     * the first occurrence of the symbol is found.
-     *
-     * @param sym The symbol (variable name) to look for.
-     * @return The associated SSA value.
-     */
-    mlir::Value getCurrentScope(const std::string & sym) {
-        int i = scopes.size() - 1;
-        auto it = scopes[i].find(sym);
-        if(it != scopes[i].end())
-            return it->second;
-        throw std::runtime_error("symbol not found: '" + sym + "'");
-    }
-    /**
      * @brief Associates the given symbol information (including an SSA value)
      * with the given symbol.
      *
