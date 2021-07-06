@@ -39,3 +39,4 @@ include_directories(${PROJECT_BINARY_DIR} ${ANTLR4_INCLUDE_DIR})
 # *****************************************************************************
 
 add_subdirectory(daphnedsl)
+add_subdirectory(daphnesql)

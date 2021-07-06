@@ -49,6 +49,10 @@ antlrcpp::Any DaphneSQLVisitor::visitScript(DaphneSQLGrammarParser::ScriptContex
     return visitChildren(ctx);
 }
 
+antlrcpp::Any DaphneSQLVisitor::visitSql(DaphneSQLGrammarParser::SqlContext * ctx) {
+    return visitChildren(ctx);
+}
+
 antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) {
     return visitChildren(ctx);
 }
@@ -60,6 +64,7 @@ antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext 
 //it would be good to know the columns that we want to keep before we execute the joins.
 //this would
 antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContext * ctx){
+    /*
     mlir::Value res;
     mlir::Value bigframe;
     try{
@@ -92,9 +97,9 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
                 break;
             }else{
                 mlir::Value c_count = static_cast<mlir::Value>(
-                    builder.create<mlir::daphne::NumRowOp>(
+                    builder.create<mlir::daphne::NumColOp>(
                         loc,
-                        symbolTable.get(fj_order.at(v).at(0))
+                        valueOrError(symbolTable.get(fj_order.at(v).at(0)))
                     )
                 );
                 se_id = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, se_id, c_count));
@@ -124,6 +129,7 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
 
     // symbolTable.put(symbolTable.popScope());
     return res;
+    */
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitSubquery(DaphneSQLGrammarParser::SubqueryContext * ctx) {
@@ -158,8 +164,8 @@ antlrcpp::Any DaphneSQLVisitor::visitCartesianExpr(DaphneSQLGrammarParser::Carte
         antlrcpp::Any rhs = valueOrError(symbolTable.get(rhs_name.at(0)));
         fj_order.push_back(rhs_name);
         //creating join code
-        mlir::Value co = static_cast<mlir::Value>(builder.create<mlir::daphne::CartesianOp>(lhs, rhs));
-        return co;
+        // mlir::Value co = static_cast<mlir::Value>(builder.create<mlir::daphne::CartesianOp>(lhs, rhs));
+        return nullptr;// return co;
     }catch(std::runtime_error &){
         throw std::runtime_error("Unexpected Error during cartesian operation");
     }

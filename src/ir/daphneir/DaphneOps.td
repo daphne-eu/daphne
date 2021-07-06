@@ -53,6 +53,18 @@ class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
 // ****************************************************************************
+// Daphne Special Function Definition
+// ****************************************************************************
+
+class Daphne_SpecialFunctionOp<string name, Type scalarType, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
+        let arguments = (ins scalarType:$script);
+        let results = (outs Frame:$res);
+}
+
+def Daphne_SQLOp : Daphne_SpecialFunctionOp<"sql", StrScalar>{
+}
+
+// ****************************************************************************
 // Data generation
 // ****************************************************************************
 
@@ -365,11 +377,11 @@ def Daphne_InsertOp : Daphne_Op<"insert"> {
 
 def Daphne_InsertColumnOp : Daphne_Op<"insert_Column"> {
     let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedCols);
-    let results = (outs); // no results
+    let results = (outs MatrixOrFrame:$res); // no results
 }
 
 // ****************************************************************************
-// Reorganization
+// Reorganizationmlir::daphne::
 // ****************************************************************************
 
 def Daphne_TransposeOp : Daphne_Op<"transpose"> {
@@ -561,7 +573,7 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // ----------------------------------------------------------------------------
 
 def Daphne_CartesianOp : Daphne_Op<"cartesian"> {
-    let arguments = (ins Variadic<Frame>:$args);
+    let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args); // since i don't know how to use variadic it got replaced..
     let results = (outs Frame:$res);
 }
 

@@ -21,6 +21,7 @@ antlr4_generate(
 )
 
 include_directories(${ANTLR4_INCLUDE_DIR_DaphneSQLGrammar})
+message(STATUS "ANTLR4_SQL_DIR is ${ANTLR4_INCLUDE_DIR_DaphneSQLGrammar}")
 
 add_library(DaphneSQLParser STATIC
         DaphneSQLParser.cpp

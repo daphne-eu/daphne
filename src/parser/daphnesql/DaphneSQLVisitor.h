@@ -53,6 +53,8 @@ public:
 
     antlrcpp::Any visitScript(DaphneSQLGrammarParser::ScriptContext * ctx) override;
 
+    antlrcpp::Any visitSql(DaphneSQLGrammarParser::SqlContext * ctx) override;
+
     antlrcpp::Any visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) override;
 
     antlrcpp::Any visitSelect(DaphneSQLGrammarParser::SelectContext * ctx) override;
