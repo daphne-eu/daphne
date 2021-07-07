@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.13.4)
+cmake_minimum_required(VERSION 3.17)
 project(daphne-prototype LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -50,7 +50,7 @@ set(LLVM_ENABLE_EH ON)
 set(LLVM_ENABLE_RTTI ON)
 
 # *****************************************************************************
-# Related to BLAS
+# Related to external libraries (OpenBLAS, CUDA, etc)
 # *****************************************************************************
 
 SET(THREADS_PREFER_PTHREAD_FLAG ON)
@@ -58,6 +58,26 @@ find_package(Threads REQUIRED)
 
 include_directories(${OPENBLAS_INST_DIR}/include)
 SET(OPENBLAS_LIBRARIES ${OPENBLAS_INST_DIR}/lib/libopenblas.a ${CMAKE_THREAD_LIBS_INIT})
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# check <package>_ROOT env var
+cmake_policy(SET CMP0074 NEW)
+
+option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
+include(CheckLanguage)
+check_language(CUDA)
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+    set(CMAKE_CUDA_ARCHITECTURES  OFF)
+    cmake_policy(SET CMP0104 NEW)
+    add_definitions(-DUSE_CUDA)
+    set(CMAKE_CUDA_STANDARD 17)
+    set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+    message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
+endif()
 
 # *****************************************************************************
 # Project-specific include directories

@@ -31,3 +31,9 @@ target_link_libraries(AllKernels PRIVATE
         DataStructures
         ${OPENBLAS_LIBRARIES}
 )
+
+# The library of pre-compiled CUDA kernels
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    add_library(CUDAKernels SHARED ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations.cpp)
+    target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublas)
+endif()

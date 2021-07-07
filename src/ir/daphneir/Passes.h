@@ -24,7 +24,7 @@ namespace mlir
     namespace daphne
     {
         std::unique_ptr<Pass> createLowerToLLVMPass();
-        std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
+        std::unique_ptr<Pass> createRewriteToCallKernelOpPass(bool use_cuda);
     } // namespace daphne
 } // namespace mlir
 

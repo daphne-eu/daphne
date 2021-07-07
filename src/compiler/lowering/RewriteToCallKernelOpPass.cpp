@@ -27,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <string_view>
 
 using namespace mlir;
 
@@ -69,9 +70,9 @@ namespace
 
     struct KernelReplacement : public RewritePattern
     {
-
-        KernelReplacement(MLIRContext * context, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
+		bool use_cuda;
+        KernelReplacement(MLIRContext * context, bool use_cuda = false, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context), use_cuda(use_cuda)
         {
         }
 
@@ -83,7 +84,16 @@ namespace
             // arguments.
 
             std::stringstream callee;
-            callee << op->getName().stripDialect().str();
+            if(use_cuda) {
+            	std::string_view op_name{op->getName().stripDialect().data()};
+            	std::string_view arg_sv("matMul");
+            	if(op_name.compare(arg_sv)) {
+            		std::cout << "need to insert cuda context init/destroy ops" << std::endl;
+					callee << "CUDA_" << op_name;
+				}
+            }
+            else
+            	callee << op->getName().stripDialect().str();
 
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
@@ -109,6 +119,8 @@ namespace
     struct RewriteToCallKernelOpPass
     : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<ModuleOp>>
     {
+    	bool use_cuda;
+    	RewriteToCallKernelOpPass(bool use_cuda) : use_cuda(use_cuda){}
         void runOnOperation() final;
     };
 }
@@ -126,14 +138,14 @@ void RewriteToCallKernelOpPass::runOnOperation()
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp>();
 
-    patterns.insert<KernelReplacement>(&getContext());
+    patterns.insert<KernelReplacement>(&getContext(), use_cuda);
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
 
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass()
+std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(bool use_cuda)
 {
-    return std::make_unique<RewriteToCallKernelOpPass>();
+    return std::make_unique<RewriteToCallKernelOpPass>(use_cuda);
 }

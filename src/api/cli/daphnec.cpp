@@ -34,6 +34,8 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
+#include "runtime/local/kernels/CUDA_HostUtils.h"
+
 #include <exception>
 #include <iostream>
 #include <memory>
@@ -45,7 +47,7 @@ using namespace std;
 using namespace mlir;
 
 OwningModuleRef
-processModule(ModuleOp module)
+processModule(ModuleOp module, bool use_cuda)
 {
     if(failed(verify(module))) {
         module.emitError("failed to verify the module right after parsing");
@@ -56,7 +58,7 @@ processModule(ModuleOp module)
         //module->dump(); // print the DaphneIR representation
         PassManager pm(module->getContext());
 
-        pm.addPass(daphne::createRewriteToCallKernelOpPass());
+        pm.addPass(daphne::createRewriteToCallKernelOpPass(use_cuda));
         pm.addPass(createLowerToCFGPass());
         pm.addPass(daphne::createLowerToLLVMPass());
 
@@ -71,7 +73,7 @@ processModule(ModuleOp module)
 }
 
 int
-execJIT(OwningModuleRef & module)
+execJIT(OwningModuleRef & module, bool use_cuda)
 {
     if (module) {
         llvm::InitializeNativeTarget();
@@ -83,6 +85,8 @@ execJIT(OwningModuleRef & module)
         llvm::SmallVector<llvm::StringRef, 0> sharedLibRefs;
         // TODO Find these at run-time.
         sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
+        if(use_cuda)
+			sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
         registerLLVMDialectTranslation(*module->getContext());
         auto maybeEngine = ExecutionEngine::create(
                                                    module.get(), nullptr, optPipeline, llvm::CodeGenOpt::Level::Default,
@@ -115,6 +119,19 @@ main(int argc, char** argv)
     // Parse command line arguments.
     string inputFile(argv[1]);
 
+    bool use_cuda = false;
+#ifdef USE_CUDA
+	for(auto i = 0; i < argc; ++i) {
+		std::string_view arg_sv(argv[i]);
+		if(arg_sv.compare("-cuda"sv)) {
+			std::cout << "-cuda flag provided" << std::endl;
+			int device_count;
+  			CHECK_CUDART(cudaGetDeviceCount(&device_count));
+  			std::cout << "Available CUDA devices: " << device_count;
+		}
+	}
+#endif
+
     // Create an MLIR context and load the required MLIR dialects.
     MLIRContext context;
     context.getOrLoadDialect<daphne::DaphneDialect>();
@@ -139,13 +156,13 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
+
     // Further process the module, including optimization and lowering passes.
-    OwningModuleRef module = processModule(moduleOp);
+    OwningModuleRef module = processModule(moduleOp, use_cuda);
     
     // JIT-compile the module and execute it.
-    // module->dump(); // print the LLVM IR representation
-    execJIT(module);
+	// module->dump(); // print the LLVM IR representation
+    execJIT(module, use_cuda);
 
     return StatusCode::SUCCESS;
 }

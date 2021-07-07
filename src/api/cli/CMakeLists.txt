@@ -24,14 +24,15 @@ set(LIBS
         DataStructures
 )
 
-add_llvm_executable(daphnec
-        daphnec.cpp
+# These dependencies are linked at runtime
+set(LIB_DEPS MLIRDaphneOpsIncGen AllKernels)
 
-        DEPENDS
-        MLIRDaphneOpsIncGen
-        # The kernels are linked at runtime.
-        AllKernels
-)
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    list(APPEND LIBS CUDA::cudart)
+    list(APPEND LIB_DEPS CUDAKernels)
+endif()
+
+add_llvm_executable(daphnec daphnec.cpp DEPENDS ${LIB_DEPS})
 
 llvm_update_compile_flags(daphnec)
 target_link_libraries(daphnec PRIVATE ${LIBS})
