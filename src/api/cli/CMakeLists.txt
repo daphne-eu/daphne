@@ -28,7 +28,7 @@ set(LIBS
 set(LIB_DEPS MLIRDaphneOpsIncGen AllKernels)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    list(APPEND LIBS CUDA::cudart)
+    list(APPEND LIBS CUDAKernels CUDA::cudart)
     list(APPEND LIB_DEPS CUDAKernels)
 endif()
 

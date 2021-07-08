@@ -57,7 +57,7 @@ processModule(ModuleOp module, const DaphneUserConfig& config)
     }
 
     if (module) {
-        //module->dump(); // print the DaphneIR representation
+        module->dump(); // print the DaphneIR representation
         PassManager pm(module->getContext());
 
         pm.addPass(daphne::createRewriteToCallKernelOpPass(config));
@@ -173,7 +173,7 @@ main(int argc, char** argv)
     OwningModuleRef module = processModule(moduleOp, user_config);
     
     // JIT-compile the module and execute it.
-    // module->dump(); // print the LLVM IR representation
+    module->dump(); // print the LLVM IR representation
     execJIT(module, user_config);
 
     return StatusCode::SUCCESS;

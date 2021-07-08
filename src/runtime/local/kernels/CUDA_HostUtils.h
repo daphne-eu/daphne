@@ -21,6 +21,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime_api.h>
+#include <cublas_v2.h>
 
 #define CHECK_CUDART(call)                                                \
   do {                                                                    \

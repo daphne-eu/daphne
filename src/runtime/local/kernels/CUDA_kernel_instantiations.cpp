@@ -34,11 +34,11 @@ extern "C" {
 		matMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>(*res, lhs, rhs, config);
 	}
 
-	void createCUDAContext() {
-		CUDAContext::create();
+	CUDAContext* createCUDAContext(DaphneUserConfig* config) {
+		return CUDAContext::create(config);
 	}
 
-	void destroyCUDAContext() {
-		CUDAContext::destroy();
+	void destroyCUDAContext(CUDAContext* ctx) {
+		ctx->destroy();
 	}
 }

@@ -21,23 +21,39 @@
 
 #include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/kernels/CUDA_HostUtils.h>
+#include <cublasLt.h>
 #include <cublas_v2.h>
+
+#include <cassert>
 #include <iostream>
+#include <memory>
 
 struct DaphneUserConfig;
 
 class CUDAContext {
 	int device_id = -1;
-	cublasHandle_t handle = nullptr;
+
+	cublasHandle_t cublas_handle = nullptr;
+
+	// cublasLt API
+	cublasLtHandle_t cublaslt_Handle = nullptr;
+	void* cublas_workspace{};
+	size_t cublas_workspace_size{};
+
 public:
-//	static void create(DaphneUserConfig& config);
-//	static void destroy(DaphneUserConfig& config);
-	static void create() {
-		std::cout << "creating CUDA context..." << std::endl;
-	}
-	static void destroy() {
-		std::cout << "destroying CUDA context..." << std::endl;
-	}
+	static CUDAContext* create(DaphneUserConfig* config);
+
+	void destroy();
+
+	[[nodiscard]] cublasLtHandle_t getCublasLtHandle() const { return cublaslt_Handle; }
+	[[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
+	[[nodiscard]] void* getCublasWorkspacePtr() const { return cublas_workspace; }
+	[[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
+
+	~CUDAContext();
+
+private:
+	void init();
 };
 
 #endif //DAPHNE_PROTOTYPE_CUDA_CONTEXT_H
