@@ -14,18 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef SRC_IR_DAPHNEIR_PASSES_H
-#define SRC_IR_DAPHNEIR_PASSES_H
+#ifndef DAPHNE_PROTOTYPE_CUDA_CONTEXT_H
+#define DAPHNE_PROTOTYPE_CUDA_CONTEXT_H
 
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
-#include "mlir/Pass/Pass.h"
+#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include <cublas_v2.h>
+#include <iostream>
 
-namespace mlir::daphne
-{
-	std::unique_ptr<Pass> createLowerToLLVMPass();
-	std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& config);
-} // namespace mlir
+struct DaphneUserConfig;
 
-#endif //SRC_IR_DAPHNEIR_PASSES_H
+class CUDAContext {
+	int device_id = -1;
+	cublasHandle_t handle = nullptr;
+public:
+//	static void create(DaphneUserConfig& config);
+//	static void destroy(DaphneUserConfig& config);
+	static void create() {
+		std::cout << "creating CUDA context..." << std::endl;
+	}
+	static void destroy() {
+		std::cout << "destroying CUDA context..." << std::endl;
+	}
+};
+
+#endif //DAPHNE_PROTOTYPE_CUDA_CONTEXT_H

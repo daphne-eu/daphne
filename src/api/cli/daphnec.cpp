@@ -15,6 +15,7 @@
  */
 
 #include <api/cli/StatusCode.h>
+#include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -30,15 +31,16 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
-#include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
-#include "runtime/local/kernels/CUDA_HostUtils.h"
+#ifdef USE_CUDA
+	#include "runtime/local/kernels/CUDA_HostUtils.h"
+#endif
 
 #include <exception>
 #include <iostream>
-#include <memory>
+#include <string_view>
 
 #include <cstdlib>
 #include <cstring>
@@ -47,7 +49,7 @@ using namespace std;
 using namespace mlir;
 
 OwningModuleRef
-processModule(ModuleOp module, bool use_cuda)
+processModule(ModuleOp module, const DaphneUserConfig& config)
 {
     if(failed(verify(module))) {
         module.emitError("failed to verify the module right after parsing");
@@ -58,7 +60,7 @@ processModule(ModuleOp module, bool use_cuda)
         //module->dump(); // print the DaphneIR representation
         PassManager pm(module->getContext());
 
-        pm.addPass(daphne::createRewriteToCallKernelOpPass(use_cuda));
+        pm.addPass(daphne::createRewriteToCallKernelOpPass(config));
         pm.addPass(createLowerToCFGPass());
         pm.addPass(daphne::createLowerToLLVMPass());
 
@@ -73,7 +75,7 @@ processModule(ModuleOp module, bool use_cuda)
 }
 
 int
-execJIT(OwningModuleRef & module, bool use_cuda)
+execJIT(OwningModuleRef & module, const DaphneUserConfig& config)
 {
     if (module) {
         llvm::InitializeNativeTarget();
@@ -82,11 +84,15 @@ execJIT(OwningModuleRef & module, bool use_cuda)
         // An optimization pipeline to use within the execution engine.
         auto optPipeline = makeOptimizingTransformer(0, 0, nullptr);
 
-        llvm::SmallVector<llvm::StringRef, 0> sharedLibRefs;
-        // TODO Find these at run-time.
-        sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
-        if(use_cuda)
-			sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
+        // storage for lib paths, since we only pass refs
+		// TODO Find these at run-time.
+        std::array<std::string, 2> lib_paths;
+        llvm::SmallVector<llvm::StringRef, 2> sharedLibRefs;
+        sharedLibRefs.push_back(lib_paths[0] = config.build_output_dir + std::string("/libAllKernels.so"));
+
+        if(config.use_cuda) {
+			sharedLibRefs.push_back(lib_paths[1] = config.build_output_dir + std::string("/libCUDAKernels.so"));
+		}
         registerLLVMDialectTranslation(*module->getContext());
         auto maybeEngine = ExecutionEngine::create(
                                                    module.get(), nullptr, optPipeline, llvm::CodeGenOpt::Level::Default,
@@ -111,23 +117,29 @@ execJIT(OwningModuleRef & module, bool use_cuda)
 int
 main(int argc, char** argv)
 {
-    if (argc != 2 || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
-        cout << "Usage: " << argv[0] << " FILE" << endl;
+    if (argc < 2 || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
+        cout << "Usage: " << argv[0] << " FILE [-cuda]" << endl;
         exit(1);
     }
 
     // Parse command line arguments.
     string inputFile(argv[1]);
 
-    bool use_cuda = false;
+    DaphneUserConfig user_config;
+    user_config.build_output_dir = "build-mc/lib/Debug"; // ToDo: some form of a more elaborate user config
 #ifdef USE_CUDA
 	for(auto i = 0; i < argc; ++i) {
 		std::string_view arg_sv(argv[i]);
-		if(arg_sv.compare("-cuda"sv)) {
+		if(arg_sv.compare("-cuda"sv) == 0) {
 			std::cout << "-cuda flag provided" << std::endl;
 			int device_count;
   			CHECK_CUDART(cudaGetDeviceCount(&device_count));
-  			std::cout << "Available CUDA devices: " << device_count;
+  			if(device_count < 1)
+  				std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+			else { // NOLINT(readability-misleading-indentation)
+				std::cout << "Available CUDA devices: " << device_count << std::endl;
+				user_config.use_cuda = true;
+			}
 		}
 	}
 #endif
@@ -158,11 +170,11 @@ main(int argc, char** argv)
     }
 
     // Further process the module, including optimization and lowering passes.
-    OwningModuleRef module = processModule(moduleOp, use_cuda);
+    OwningModuleRef module = processModule(moduleOp, user_config);
     
     // JIT-compile the module and execute it.
-	// module->dump(); // print the LLVM IR representation
-    execJIT(module, use_cuda);
+    // module->dump(); // print the LLVM IR representation
+    execJIT(module, user_config);
 
     return StatusCode::SUCCESS;
 }

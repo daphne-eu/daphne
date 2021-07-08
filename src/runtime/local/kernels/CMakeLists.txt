@@ -24,16 +24,13 @@ add_custom_command(
 
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled
 # user program.
-add_library(AllKernels SHARED
-        ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-)
-target_link_libraries(AllKernels PRIVATE
-        DataStructures
-        ${OPENBLAS_LIBRARIES}
-)
+add_library(AllKernels SHARED ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp)
+target_link_libraries(AllKernels PRIVATE DataStructures ${OPENBLAS_LIBRARIES})
+set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_library(CUDAKernels SHARED ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations.cpp)
     target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublas)
+    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()

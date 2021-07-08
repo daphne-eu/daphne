@@ -22,6 +22,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CUDA_HostUtils.h>
+#include <runtime/local/kernels/CUDA_Context.h>
+
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -29,7 +31,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct MatMul_CUDA {
-	static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) = delete;
+	static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAContext& ctx) = delete;
 };
 
 // ****************************************************************************
@@ -37,8 +39,8 @@ struct MatMul_CUDA {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void matMul_CUDA(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
-	MatMul_CUDA<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs);
+void matMul_CUDA(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAContext& ctx) {
+	MatMul_CUDA<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -51,15 +53,35 @@ void matMul_CUDA(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
 
 template<>
 struct MatMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-	static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs) {
+	static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs,
+			const CUDAContext& ctx) {
 		std::cout << "MatMult_CUDA<" << type_name<DenseMatrix<float>>() << "> called" << std::endl;
+
+		const size_t nr1 = lhs->getNumRows();
+		const size_t nc1 = lhs->getNumCols();
+		const size_t nr2 = rhs->getNumRows();
+		const size_t nc2 = rhs->getNumCols();
+		assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+
+		if(res == nullptr)
+			res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, true);
 	}
 };
 
 template<>
 struct MatMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
-	static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs) {
+	static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs,
+			const CUDAContext& ctx) {
 		std::cout << "MatMult_CUDA<" << type_name<DenseMatrix<double>>() << "> called" << std::endl;
+
+		const size_t nr1 = lhs->getNumRows();
+		const size_t nc1 = lhs->getNumCols();
+		const size_t nr2 = rhs->getNumRows();
+		const size_t nc2 = rhs->getNumCols();
+		assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+
+		if(res == nullptr)
+			res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, true);
 	}
 };
 

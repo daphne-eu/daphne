@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <api/cli/DaphneUserConfig.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -25,7 +26,6 @@
 #include <memory>
 #include <utility>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <string_view>
 
@@ -70,9 +70,9 @@ namespace
 
     struct KernelReplacement : public RewritePattern
     {
-		bool use_cuda;
-        KernelReplacement(MLIRContext * context, bool use_cuda = false, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context), use_cuda(use_cuda)
+		const DaphneUserConfig& user_config;
+        KernelReplacement(MLIRContext * context, const DaphneUserConfig& config, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context), user_config(config)
         {
         }
 
@@ -84,16 +84,36 @@ namespace
             // arguments.
 
             std::stringstream callee;
-            if(use_cuda) {
-            	std::string_view op_name{op->getName().stripDialect().data()};
+			std::string_view op_name{op->getName().stripDialect().data()};
+#ifdef USE_CUDA
+			if(user_config.use_cuda) {
             	std::string_view arg_sv("matMul");
-            	if(op_name.compare(arg_sv)) {
-            		std::cout << "need to insert cuda context init/destroy ops" << std::endl;
-					callee << "CUDA_" << op_name;
+            	if(op_name.compare(arg_sv) == 0) {
+            		if(user_config.context == nullptr) {
+						std::cout << "need to insert cuda context init/destroy ops" << std::endl;
+						auto* parentBlock = op->getBlock();
+						auto ctxCreateOp = rewriter.create<daphne::CallKernelOp>(parentBlock->front().getLoc(),
+								"createCUDAContext" /*,
+								op->getOperands(),
+								op->getResultTypes()*/
+						);
+						ctxCreateOp->moveAfter(&parentBlock->front());
+						auto ctxDestroyOp = rewriter.create<daphne::CallKernelOp>(parentBlock->front().getLoc(),
+																				 "destroyCUDAContext" /*,
+																				 op->getOperands(),
+																				 op->getResultTypes()*/
+						);
+						ctxDestroyOp->moveBefore(&parentBlock->back());
+					}
+
+					callee << op_name << "_CUDA";
 				}
+            	else
+					callee << op_name;
             }
-            else
-            	callee << op->getName().stripDialect().str();
+			else // NOLINT(readability-misleading-indentation)
+#endif
+            	callee << op_name;
 
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
@@ -119,8 +139,8 @@ namespace
     struct RewriteToCallKernelOpPass
     : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<ModuleOp>>
     {
-    	bool use_cuda;
-    	RewriteToCallKernelOpPass(bool use_cuda) : use_cuda(use_cuda){}
+    	const DaphneUserConfig& user_config;
+    	explicit RewriteToCallKernelOpPass(const DaphneUserConfig& config) : user_config(config){}
         void runOnOperation() final;
     };
 }
@@ -138,14 +158,14 @@ void RewriteToCallKernelOpPass::runOnOperation()
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp>();
 
-    patterns.insert<KernelReplacement>(&getContext(), use_cuda);
+    patterns.insert<KernelReplacement>(&getContext(), user_config);
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
 
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(bool use_cuda)
+std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig& config)
 {
-    return std::make_unique<RewriteToCallKernelOpPass>(use_cuda);
+    return std::make_unique<RewriteToCallKernelOpPass>(config);
 }

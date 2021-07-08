@@ -22,18 +22,6 @@
 #include <cuda.h>
 #include <cuda_runtime_api.h>
 
-#define CHECK_CUDA(call)                                                  \
-  do {                                                                    \
-    CUresult status = call;                                               \
-    if (status != CUDA_SUCCESS) {                                         \
-      const char* str;                                                    \
-      cuGetErrorName(status, &str);                                       \
-      std::cout << "(CUDA) returned: " << str;                             \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-    }                                                                     \
-  } while (0)
-
 #define CHECK_CUDART(call)                                                \
   do {                                                                    \
     cudaError_t status = call;                                            \
