@@ -27,8 +27,8 @@
 
 template<class DT>
 void checkMatMulCUDA(const DT * lhs, const DT * rhs, const DT * exp, const CUDAContext& ctx) {
-    DT * res = nullptr;
-    matMul_CUDA<DT, DT, DT>(res, lhs, rhs, ctx);
+    DT* res = nullptr;
+	matMul_CUDA<DT, DT, DT>(res, lhs, rhs, ctx);
     CHECK(*res == *exp);
 }
 

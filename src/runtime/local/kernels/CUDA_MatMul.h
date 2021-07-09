@@ -31,17 +31,22 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct MatMul_CUDA {
-	static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAContext& ctx) = delete;
+	static void apply(DTRes*& res, const DTLhs* lhs, const DTRhs* rhs, const CUDAContext& ctx);//= delete;
 
-	[[maybe_unused]] static void applyLT(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAContext& ctx) = delete;
+//	[[maybe_unused]] static void applyLT(DTRes<T> *& res, const DTLhs<T> * lhs, const DTRhs<T> * rhs, const CUDAContext& ctx) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-
+//template<class DTRes, class DTLhs, class DTRhs>
+//void matMul_CUDA(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAContext& ctx) {
+//	MatMul_CUDA<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
+//}
+//template<class DTRes, class DTLhs, class DTRhs>
 template<class DTRes, class DTLhs, class DTRhs>
-void matMul_CUDA(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAContext& ctx) {
+void matMul_CUDA(DTRes*& res, const DTLhs* lhs, const DTRhs* rhs, const CUDAContext& ctx) {
+
 	MatMul_CUDA<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
 
@@ -53,6 +58,7 @@ void matMul_CUDA(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, const CUDAC
 // DenseMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
+/*
 template<>
 struct MatMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
 	static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs,
@@ -210,5 +216,5 @@ struct MatMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>
 		CHECK_CUDART(cudaFree(Cdev));
 	}
 };
-
+*/
 #endif //DAPHNE_PROTOTYPE_CUDA_MATMULT_H

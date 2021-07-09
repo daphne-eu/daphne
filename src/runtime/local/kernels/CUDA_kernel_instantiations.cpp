@@ -21,17 +21,18 @@ extern "C" {
 	// DTRes = DenseMatrix<float>
 	// DTLhs = DenseMatrix<float>
 	// DTRhs = DenseMatrix<float>
-	void matMul_CUDA__DenseMatrix_float__DenseMatrix_float__DenseMatrix_float(DenseMatrix<float> ** res,
-			const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, const CUDAContext& config) {
-		matMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>(*res, lhs, rhs, config);
+	void matMul_CUDA__DenseMatrix_float__DenseMatrix_float__DenseMatrix_float(DenseMatrix<float>** res,
+			const DenseMatrix<float>* lhs, const DenseMatrix<float>* rhs, const CUDAContext& config) {
+//		matMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>(*res, lhs, rhs, config);
+		MatMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>::apply(*res, lhs, rhs, config);
 	}
 
 	// DTRes = DenseMatrix<double>
 	// DTLhs = DenseMatrix<double>
 	// DTRhs = DenseMatrix<double>
-	void matMul_CUDA__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double(DenseMatrix<double> ** res,
-			const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, const CUDAContext& config) {
-		matMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>(*res, lhs, rhs, config);
+	void matMul_CUDA__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double(DenseMatrix<double>** res,
+			const DenseMatrix<double>* lhs, const DenseMatrix<double>* rhs, const CUDAContext& config) {
+		MatMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>::apply(*res, lhs, rhs, config);
 	}
 
 	CUDAContext* createCUDAContext(DaphneUserConfig* config) {

@@ -31,7 +31,7 @@ set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_B
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
-    set(CUDAKernels_SRC ${PREFIX}CUDA_kernel_instantiations.cpp ${PREFIX}CUDA_Context.cpp)
+    set(CUDAKernels_SRC ${PREFIX}CUDA_kernel_instantiations.cpp ${PREFIX}CUDA_Context.cpp ${PREFIX}/CUDA_MatMul.cpp)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
     target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas)

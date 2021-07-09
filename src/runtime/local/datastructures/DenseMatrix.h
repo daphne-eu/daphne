@@ -43,11 +43,15 @@
 template <typename ValueType>
 class DenseMatrix : public Matrix<ValueType>
 {
-    // `using`, so that we do not need to prefix each occurrence of these
+public:
+	using value_type = ValueType;
+
+private:
+	// `using`, so that we do not need to prefix each occurrence of these
     // fields from the super-classes.
     using Matrix<ValueType>::numRows;
     using Matrix<ValueType>::numCols;
-    
+
     size_t rowSkip;
     std::shared_ptr<ValueType> values;
     
