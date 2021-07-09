@@ -773,4 +773,16 @@ def Daphne_SetCellOp : Daphne_Op<"setCell",  []> {
     let arguments = (ins Matrix:$mat, Index:$row, Index:$col, AnyScalar:$val);
 }
 
+def Daphne_CreateCUDAContextOp : Daphne_Op<"createCUDAContext"> {
+	let summary = "initialize CUDA device and libraries";
+	let arguments = (ins);
+	let results = (outs DaphneCUDAContext:$ctx);
+}
+
+def Daphne_DestroyCUDAContextOp : Daphne_Op<"destroyCUDAContext"> {
+	let summary = "destroy a CUDA device context";
+	let arguments = (ins DaphneCUDAContext);
+	let results = (outs);
+}
+
 #endif //SRC_IR_DAPHNEIR_DAPHNEOPS_TD

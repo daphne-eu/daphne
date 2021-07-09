@@ -92,18 +92,14 @@ namespace
             		if(user_config.context == nullptr) {
 						std::cout << "need to insert cuda context init/destroy ops" << std::endl;
 						auto* parentBlock = op->getBlock();
-						auto ctxCreateOp = rewriter.create<daphne::CallKernelOp>(parentBlock->front().getLoc(),
-								"createCUDAContext" /*,
-								op->getOperands(),
-								op->getResultTypes()*/
-						);
-						ctxCreateOp->moveAfter(&parentBlock->front());
-						auto ctxDestroyOp = rewriter.create<daphne::CallKernelOp>(parentBlock->front().getLoc(),
-																				 "destroyCUDAContext" /*,
-																				 op->getOperands(),
-																				 op->getResultTypes()*/
-						);
-						ctxDestroyOp->moveBefore(&parentBlock->back());
+
+						// that does not work :(
+//						auto ctxCreateOp = rewriter.create<daphne::CreateCUDAContextOp>(parentBlock->front().getLoc(),
+//																						);
+//						ctxCreateOp->moveAfter(&parentBlock->front());
+//						auto ctxDestroyOp = rewriter.create<daphne::DestroyCUDAContextOp>(parentBlock->back().getLoc(),
+//								ctxCreateOp->getResult(0));
+//						ctxDestroyOp->moveBefore(&parentBlock->back());
 					}
 
 					callee << op_name << "_CUDA";

@@ -89,4 +89,11 @@ def Seed : TypeAlias<SI64, "seed">;
 // TODO Remove SI64 again, it was only added temporarily to make things work.
 def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
 
+// Type to pass CUDA library handles
+def DaphneCUDAContext : Daphne_Type<"DaphneCUDAContext"> {
+	let summary = "CUDA context information";
+
+	let genVerifyDecl = 1;
+}
+
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD
