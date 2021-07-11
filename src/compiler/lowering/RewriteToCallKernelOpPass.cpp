@@ -60,6 +60,8 @@ namespace
             return "DenseMatrix_" + mlirTypeToCppTypeName(
                     t.dyn_cast<daphne::MatrixType>().getElementType()
             );
+        else if(t.isa<daphne::FrameType>())
+            return "Frame";
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );

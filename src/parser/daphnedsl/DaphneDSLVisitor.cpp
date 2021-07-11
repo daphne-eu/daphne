@@ -23,6 +23,7 @@
 
 #include <mlir/Dialect/SCF/SCF.h>
 
+#include <regex>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -505,5 +506,44 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                 )
         );
     }
+    if(ctx->bl)
+        return visit(ctx->bl);
+    if(auto lit = ctx->STRING_LITERAL()) {
+        std::string val = lit->getText();
+        
+        // Remove quotation marks.
+        val = val.substr(1, val.size() - 2);
+        
+        // Replace escape sequences.
+        val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
+        val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
+        val = std::regex_replace(val, std::regex(R"(\\n)"), "\n");
+        val = std::regex_replace(val, std::regex(R"(\\r)"), "\r");
+        val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
+        val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
+        val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
+        
+        return static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(loc, val)
+        );
+    }
     throw std::runtime_error("unexpected literal");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+    bool val;
+    if(ctx->KW_TRUE())
+        val = true;
+    else if(ctx->KW_FALSE())
+        val = false;
+    else
+        throw std::runtime_error("unexpected bool literal");
+
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getBoolAttr(val)
+        )
+    );
 }

@@ -173,8 +173,8 @@ mlir::Value DaphneDSLBuiltins::createTriOp(mlir::Location loc, const std::string
     checkNumArgsExact(func, args.size(), 3);
     mlir::Value arg = args[0];
     mlir::Value upper2 = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), upper));
-    mlir::Value diag = args[1];
-    mlir::Value values = args[2];
+    mlir::Value diag = utils.castBoolIf(args[1]);
+    mlir::Value values = utils.castBoolIf(args[2]);
     return static_cast<mlir::Value>(builder.create<mlir::daphne::TriOp>(
             loc, arg.getType(), arg, upper2, diag, values
     ));
@@ -523,6 +523,29 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Extended relational algebra
     // ********************************************************************
+    
+    // ----------------------------------------------------------------------------
+    // Entire SQL query
+    // ----------------------------------------------------------------------------
+
+    if(func == "sql") {
+        checkNumArgsExact(func, numArgs, 1);
+        if(auto co = args[0].getDefiningOp<mlir::daphne::ConstantOp>()) {
+            mlir::Attribute attr = co.value();
+            if(attr.isa<mlir::StringAttr>()) {
+                // TODO How to know the column types, or how to not need to
+                // know them here? For now, we just leave them blank here.
+                std::vector<mlir::Type> colTypes;
+                co.erase();
+                return static_cast<mlir::Value>(builder.create<SqlOp>(
+                        loc,
+                        FrameType::get(builder.getContext(), colTypes),
+                        attr.dyn_cast<mlir::StringAttr>()
+                ));
+            }
+        }
+        throw std::runtime_error("SqlOp requires a SQL query as a constant string");
+    }
 
     // --------------------------------------------------------------------
     // Set operations

@@ -251,10 +251,15 @@ void DaphneLowerToLLVMPass::runOnOperation()
     OwningRewritePatternList patterns(&getContext());
 
     LLVMTypeConverter typeConverter(&getContext());
-    typeConverter.addConversion([&](daphne::MatrixType matType)
+    typeConverter.addConversion([&](daphne::MatrixType t)
     {
         return LLVM::LLVMPointerType::get(
-                IntegerType::get(matType.getContext(), 1));
+                IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::FrameType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                IntegerType::get(t.getContext(), 2));
     });
 
     LLVMConversionTarget target(getContext());
