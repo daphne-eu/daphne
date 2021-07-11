@@ -64,13 +64,14 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
             return true;
         }
 
+        // TODO add cache-conscious operations
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
             for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
 
-                const VT* val1 = values + rowSkip * rowIdx +  colIdx;
-                const VT* val2 = values + rowSkip * colIdx + rowIdx;
+                const VT val1 = arg->get(rowIdx, colIdx);
+                const VT val2 = arg->get(colIdx, rowIdx);
 
-                if (*val1 != *val2) {
+                if (val1 != val2) {
                     return false;
                 }
             }
@@ -94,48 +95,75 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             return true;
         }
 
-        const VT zero = 0;
-        const VT* values = arg->getValues();
         const size_t* rowOffsets = arg->getRowOffsets();
 
+        std::vector<size_t> positions(numRows, 0);
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
 
-            const size_t * colIdxVal1Begin = arg->getColIdxs(rowIdx);
-            const size_t * colIdxVal1End = arg->getColIdxs(rowIdx+1); // first index of another row.
+            const VT* rowA = arg->getValues(rowIdx);
+            const size_t* colIdxsA = arg->getColIdxs(rowIdx);
+            const size_t numNonZerosA = arg->getNumNonZeros(rowIdx);
+
+            size_t posA = positions[rowIdx];
+            size_t probedColIdxA = -1;
+
+            // Only get idx when one exists.
+            if (posA < numNonZerosA) {
+                probedColIdxA = colIdxsA[posA];
+            }
+
+            // positions contains idx of diagonal element idx, try to advance.
+            if (probedColIdxA == rowIdx && posA < numNonZerosA) {
+                positions[rowIdx]++;
+            }
 
             for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
 
-                // find element row/col
-                const size_t * ptrExpected1 = std::lower_bound(colIdxVal1Begin, colIdxVal1End, colIdx);
-                const VT * val1;
+                posA = positions[rowIdx];
 
-                // Check wether this colIdx does exist in this row's colIdxs.
-                if(ptrExpected1 == colIdxVal1End || *ptrExpected1 != colIdx) {
-                    val1 = &zero;
-                } else {
-                    val1 = (values + rowOffsets[rowIdx]) + (ptrExpected1 - colIdxVal1Begin);
+                VT valA = 0;
+                probedColIdxA = -1;
+
+                // Only get idx when one exists.
+                if (posA < numNonZerosA) {
+                    probedColIdxA = colIdxsA[posA];
                 }
 
-                // find element with transposed coordinates col/row
-                const size_t * colIdxVal2Begin = arg->getColIdxs(colIdx);
-                const size_t * colIdxVal2End = arg->getColIdxs(colIdx+1);
-                const size_t * ptrExpected2 = std::lower_bound(colIdxVal2Begin, colIdxVal2End, rowIdx);
-                const VT * val2;
-
-
-                // Check wether this colIdx does exist in this row's colIdxs.
-                if(ptrExpected2 == colIdxVal2End || *ptrExpected2 != rowIdx) {
-                    val2 = &zero;
-                } else {
-                    val2 = (values + rowOffsets[colIdx]) + (ptrExpected2 - colIdxVal2Begin);
+                // index exists element not zero
+                if (colIdx == probedColIdxA && posA < numNonZerosA) {
+                    valA = rowA[posA];
+                    // Advance to next 'unused' position.
+                    positions[rowIdx]++;
                 }
 
-                if (*val1 != *val2) {
+                // B references the transposed element to compare for symmetrie.
+                const VT* rowB = arg->getValues(colIdx);
+                const size_t* colIdxsB = arg->getColIdxs(colIdx);
+                const size_t numNonZerosB = arg->getNumNonZeros(colIdx);
+
+                const size_t posB = positions[colIdx];
+                size_t probedColIdxB = -1;
+
+                // Only get idx when one exists.
+                if (posB < numNonZerosB) {
+                    probedColIdxB = colIdxsB[posB];
+                }
+
+                VT valB = 0;
+                // Index exists element not zero.
+                if (rowIdx == probedColIdxB && posB < numNonZerosA) {
+                    valB = rowB[posB];
+                    // Advance to next 'unused' position.
+                    positions[colIdx]++;
+                }
+
+                if (valA != valB) {
                     return false;
                 }
             }
         }
+
         return true;
     }
 };

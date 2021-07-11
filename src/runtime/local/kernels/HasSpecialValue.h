@@ -57,17 +57,15 @@ template <class DTArg, class TestFunc> bool hasSpecialValue(const DTArg *arg, Te
 template <typename VT, typename TestFunc> struct HasSpecialValue<DenseMatrix<VT>, TestFunc> {
     static bool apply(const DenseMatrix<VT> *arg, TestFunc testFunc) {
 
-        const VT* values = arg->getValues();
         size_t numRows = arg->getNumRows();
         size_t numCols = arg->getNumCols();
-        size_t rowSkip = arg->getRowSkip();
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+
             for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
 
-                const VT* value = values + rowSkip * rowIdx + colIdx;
-
-                if (testFunc(*value)) {
+                const VT value = arg->get(rowIdx, colIdx);
+                if (testFunc(value)) {
                     return true;
                 }
             }
@@ -83,31 +81,23 @@ template <typename VT, typename TestFunc> struct HasSpecialValue<CSRMatrix<VT>, 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         const VT zero = 0;
-        const VT* values = arg->getValues();
-        const size_t* rowOffsets = arg->getRowOffsets();
+        const size_t numNonZeros = arg->getNumNonZeros();
+        const size_t numElements = numRows*numCols;
 
-        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+        // zeroes only need to be testes once.
+        if (numNonZeros < numElements && testFunc(zero)) {
+            return true;
+        }
 
-            const size_t * colIdxBegin = arg->getColIdxs(rowIdx);
-            const size_t * colIdxEnd = arg->getColIdxs(rowIdx+1);
+        for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
 
-            for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
+           auto avals = arg->getValues(rowIdx);
+           auto alen = arg->getNumNonZeros(rowIdx);
 
-                const size_t * ptrExpected = std::lower_bound(colIdxBegin, colIdxEnd, colIdx);
-                const VT * value;
+           for(size_t colIdx = 0; colIdx < alen; colIdx++ )
 
-                // Check wether this colIdx does exist in this row's colIdxs.
-                if(ptrExpected == colIdxEnd || *ptrExpected != colIdx) {
-                    value = &zero;
-                } else {
-                    value = (values + rowOffsets[rowIdx]) + (ptrExpected - colIdxBegin);
-                }
-
-                if (testFunc(*value)) {
-                    return true;
-                }
-
-            }
+              if( testFunc(avals[colIdx]) )
+                 return true;
         }
 
         return false;
