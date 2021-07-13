@@ -116,4 +116,8 @@ STRING_LITERAL:
 
 fragment ESCAPE_SEQ: '\\' [bfnrt"\\];
 
+// Comments, whitespaces and new line
+SCRIPT_STYLE_LINE_COMMENT : '#' ~('\r' | '\n')* -> skip;
+C_STYLE_LINE_COMMENT : '//' ~('\r' | '\n')* -> skip;
+MULTILINE_BLOCK_COMMENT : '/*' .*? '*/' -> skip;
 WS: [ \t\r\n]+ -> skip;
