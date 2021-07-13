@@ -67,7 +67,7 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
 
         if (seed == -1) {
             std::random_device rd;
-            std::uniform_int_distribution<size_t> seedRnd;
+            std::uniform_int_distribution<int64_t> seedRnd;
             seed = seedRnd(rd);
         }
 
