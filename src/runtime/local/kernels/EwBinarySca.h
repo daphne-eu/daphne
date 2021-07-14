@@ -61,7 +61,7 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::SUB)
-        MAKE_CASE(BinaryOpCode::MUL)
+//        MAKE_CASE(BinaryOpCode::MUL)
         MAKE_CASE(BinaryOpCode::DIV)
         MAKE_CASE(BinaryOpCode::POW)
         // Comparisons.

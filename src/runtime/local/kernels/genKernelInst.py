@@ -80,6 +80,13 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     typesForName = "__".join([rp["type"].replace("const ", "").replace(" **", "").replace(" *", "").replace("<", "_").replace(">", "") for rp in extendedRuntimeParams])
     params = ", ".join(["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams])
 
+    # to avoid compilation warnings
+    non_boolean_opcodes = ["ADD", "SUB", "MUL", "DIV", "POW", "MIN", "MAX"]
+    if extendedRuntimeParams[0]["type"] == "bool *" and opCodes is not None:
+        for o in non_boolean_opcodes:
+            if o in opCodes:
+                opCodes.remove(o)
+
     def generateFunction(opCode):
         # Obtain the name of the function to be generated from the opName by
         # removing suffices "Sca"/"Mat"/"Obj" (they are not required here), and
@@ -112,13 +119,24 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         outFile.write(2 * INDENT)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
-        outFile.write("{}<{}>({});\n".format(
-                opName,
+
+        # to avoid compilation warnings
+        if opName == "ewBinarySca" and opCode == "MUL":
+            outFile.write("{}<{}>::apply({});\n".format(
+                "EwBinarySca",
                 # Template parameters:
-                ", ".join([toCppType(tv) for tv in templateValues]),
+                ", ".join(["BinaryOpCode::MUL"]+[toCppType(tv) for tv in templateValues]),
                 # Run-time parameters:
-                ", ".join(callParams)
-        ))
+                ", ".join(callParams[1:])
+            ))
+        else:
+            outFile.write("{}<{}>({});\n".format(
+                    opName,
+                    # Template parameters:
+                    ", ".join([toCppType(tv) for tv in templateValues]),
+                    # Run-time parameters:
+                    ", ".join(callParams)
+            ))
         outFile.write(INDENT + "}\n")
     
     # Generate the function(s).
