@@ -21,7 +21,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <cblas.h>
-#include <lapacke.h>
+#include <openblas/lapacke.h>
 
 #include <cassert>
 #include <cstddef>
