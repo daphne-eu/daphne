@@ -248,7 +248,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "frame") {
         checkNumArgsMin(func, numArgs, 1);
         std::vector<mlir::Type> colTypes;
-        for(auto arg : args)
+        colTypes.reserve(args.size());
+		for(auto arg : args)
             colTypes.push_back(arg.getType().dyn_cast<MatrixType>().getElementType());
         mlir::Type t = FrameType::get(builder.getContext(), colTypes);
         return static_cast<mlir::Value>(builder.create<FrameOp>(loc, t, args));
@@ -495,18 +496,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value a = args[0];
         mlir::Value b = args[1];
-        return static_cast<mlir::Value>(builder.create<SolveOp>(
-                loc, b.getType(), a, b
-        ));
+        return static_cast<mlir::Value>(builder.create<SolveOp>(loc, b.getType(), a, b));
     }
     if(func == "replace") {
         checkNumArgsExact(func, numArgs, 3);
         mlir::Value arg = args[0];
         mlir::Value pattern = args[1];
         mlir::Value replacement = args[2];
-        return static_cast<mlir::Value>(builder.create<ReplaceOp>(
-                loc, arg.getType(), arg, pattern, replacement
-        ));
+        return static_cast<mlir::Value>(builder.create<ReplaceOp>(loc, arg.getType(), arg, pattern, replacement));
     }
     if(func == "ctable") {
         checkNumArgsExact(func, numArgs, 5);
