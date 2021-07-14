@@ -96,9 +96,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             funcName = funcName[:-3]
         if opCode is not None:
             # We assume that the name of the op-code type ends with "OpCode".
-            opCodeWord = opCodeType[:-len("OpCode")]
-            funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
-            funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+            if funcName == "PoolForward":
+                funcName = opCode.lower() + funcName
+            else:
+                opCodeWord = opCodeType[:-len("OpCode")]
+                funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
+                funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
         
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}__{}({}) {{\n".format(funcName, typesForName, params))
@@ -126,6 +129,14 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
                 "EwBinarySca",
                 # Template parameters:
                 ", ".join(["BinaryOpCode::MUL"]+[toCppType(tv) for tv in templateValues]),
+                # Run-time parameters:
+                ", ".join(callParams[1:])
+            ))
+        elif opName == "PoolForward":
+            outFile.write("{}<{}>::apply({});\n".format(
+                "PoolForward",
+                # Template parameters:
+                ", ".join(["PoolOpCode::"+opCode]+[toCppType(tv) for tv in templateValues]),
                 # Run-time parameters:
                 ", ".join(callParams[1:])
             ))

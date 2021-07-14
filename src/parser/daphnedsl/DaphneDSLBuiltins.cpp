@@ -213,6 +213,38 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
+template<class PoolOp>
+mlir::Value DaphneDSLBuiltins::createPoolOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>&
+		args) {
+	const size_t numArgs = args.size();
+	checkNumArgsBetween(func, numArgs, 5, 11);
+
+	mlir::Value input_data = args[0];
+	mlir::Value num_images = utils.castUI64If(args[1]);
+	mlir::Value num_channels = utils.castUI8If(args[2]);
+	mlir::Value img_height = utils.castUI32If(args[3]);
+	mlir::Value img_width = utils.castUI32If(args[4]);
+
+	mlir::Value two = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(builder.getIntegerType(32,
+			false), 2));
+	mlir::Value one = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(builder.getIntegerType(32,
+			false), 1));
+	mlir::Value zero = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(builder.getIntegerType(32,
+			false), 0));
+
+	mlir::Value pool_h = numArgs > 5 ? utils.castUI32If(args[5]) : two;
+	mlir::Value pool_w = numArgs > 6 ? utils.castUI32If(args[6]) : two;
+
+	mlir::Value stride_h = numArgs > 7 ? utils.castUI32If(args[7]) : one;
+	mlir::Value stride_w = numArgs > 8 ? utils.castUI32If(args[8]) : one;
+
+	mlir::Value padding_h = numArgs > 5 ? utils.castUI32If(args[9]) : zero;
+	mlir::Value padding_w = numArgs > 6 ? utils.castUI32If(args[10]) : zero;
+
+	return static_cast<mlir::Value>(builder.create<PoolOp>(loc, input_data.getType(), input_data, num_images,
+			num_channels, img_height, img_width, pool_h, pool_w, stride_h, stride_w, padding_h, padding_w));
+}
+
 antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     using namespace mlir::daphne;
 
@@ -480,7 +512,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Deep neural network
     // ********************************************************************
 
-    // TODO Add built-in functions for those.
+	if(func == "avg_pool")
+		return createPoolOp<AvgPoolForwardOp>(loc, func, args);
+
+	if(func == "max_pool")
+		return createPoolOp<MaxPoolForwardOp>(loc, func, args);
 
     // ********************************************************************
     // Other matrix operations

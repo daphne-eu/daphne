@@ -479,32 +479,37 @@ def Daphne_Conv2DBackwardDataOp : Daphne_Op<"conv2DBackwardData"> {
 // ----------------------------------------------------------------------------
 
 class Daphne_PoolForwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-    let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
-        // input shape
-        Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // pool shape
-        Size:$poolHeight, Size:$poolWidth
-    );
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input,
+        // input shape (NCHW)
+        UI64:$inputBatchSize, UI8:$inputNumChannels, UI32:$inputHeight, UI32:$inputWidth,
+        // pool shape (ToDo: optional, default filter size 2x2)
+		UI32:$poolHeight, UI32:$poolWidth,
+		// filter application properties (ToDo: optional, default stride=1x1, padding=0x0)
+		UI32:$strideHeight, UI32:$strideWidth, UI32:$padHeight, UI32:$padWidth
+	);
+
+	let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
-class Daphne_PoolBackwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-    let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$output,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
-        // input shape
-        Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // pool shape
-        Size:$poolHeight, Size:$poolWidth
-    );
-}
+//def Daphne_PoolForwardOp : Daphne_PoolOp<"Forward">;
+//def Daphne_PoolBackwardOp : Daphne_PoolOp<"Backward">;
+
+//class Daphne_PoolBackwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
+//    let arguments = (ins
+//        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$output,
+//        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
+//        // input shape
+//        Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
+//        // pool shape
+//        Size:$poolHeight, Size:$poolWidth
+//    );
+//}
 
 def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward">;
 def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward">;
 
-def Daphne_MaxPoolBackwardOp : Daphne_PoolBackwardOp<"maxPoolBackward">;
-def Daphne_AvgPoolBackwardOp : Daphne_PoolBackwardOp<"avgPoolBackward">;
+//def Daphne_MaxPoolBackwardOp : Daphne_PoolBackwardOp<"maxPoolBackward">;
+//def Daphne_AvgPoolBackwardOp : Daphne_PoolBackwardOp<"avgPoolBackward">;
 
 // ****************************************************************************
 // Other matrix operations
