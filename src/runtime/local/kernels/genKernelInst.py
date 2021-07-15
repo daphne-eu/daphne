@@ -108,14 +108,17 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             in extendedRuntimeParams[(0 if returnType == "void" else 1):]
         ])
         
+        # List of template parameters for the call.
+        callTemplateParams = [toCppType(tv) for tv in templateValues]
+        
         # Body of that function: delegate to the kernel instantiation.
         outFile.write(2 * INDENT)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
-        outFile.write("{}<{}>({});\n".format(
+        outFile.write("{}{}({});\n".format(
                 opName,
-                # Template parameters:
-                ", ".join([toCppType(tv) for tv in templateValues]),
+                # Template parameters, if the kernel is a template:
+                "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
                 # Run-time parameters:
                 ", ".join(callParams)
         ))

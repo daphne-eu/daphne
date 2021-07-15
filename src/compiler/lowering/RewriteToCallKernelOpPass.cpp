@@ -35,7 +35,7 @@ namespace
     
     // TODO We might want to merge this with ValueTypeUtils, and maybe place it
     // somewhere central.
-    std::string mlirTypeToCppTypeName(Type t) {
+    std::string mlirTypeToCppTypeName(Type t, bool generalizeToStructure) {
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -57,11 +57,18 @@ namespace
         else if(t.isIndex())
             return "size_t";
         else if(t.isa<daphne::MatrixType>())
-            return "DenseMatrix_" + mlirTypeToCppTypeName(
-                    t.dyn_cast<daphne::MatrixType>().getElementType()
-            );
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "DenseMatrix_" + mlirTypeToCppTypeName(
+                        t.dyn_cast<daphne::MatrixType>().getElementType(),
+                        false
+                );
         else if(t.isa<daphne::FrameType>())
-            return "Frame";
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "Frame";
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );
@@ -85,13 +92,19 @@ namespace
             std::stringstream callee;
             callee << op->getName().stripDialect().str();
 
+            // TODO Don't enumerate all ops, decide based on a trait.
+            const bool generalizeInputTypes =
+                llvm::isa<mlir::daphne::NumCellsOp>(op) |
+                llvm::isa<mlir::daphne::NumColsOp>(op) |
+                llvm::isa<mlir::daphne::NumRowsOp>(op);
+
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
-                callee << "__" << mlirTypeToCppTypeName(resultTypes[i]);
+                callee << "__" << mlirTypeToCppTypeName(resultTypes[i], false);
             
             Operation::operand_type_range operandTypes = op->getOperandTypes();
             for(size_t i = 0; i < operandTypes.size(); i++)
-                callee << "__" << mlirTypeToCppTypeName(operandTypes[i]);
+                callee << "__" << mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
 
             // Create a CallKernelOp for the kernel function to call and return
             // success().

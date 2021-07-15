@@ -699,22 +699,16 @@
             "header": "NumCols.h",
             "opName": "numCols",
             "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DT",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DT *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            []
         ]
     },
     {
@@ -722,22 +716,16 @@
             "header": "NumRows.h",
             "opName": "numRows",
             "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DT",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DT *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            []
         ]
     },
     {
@@ -745,22 +733,16 @@
             "header": "NumCells.h",
             "opName": "numCells",
             "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DT",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DT *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            []
         ]
     },
     {
