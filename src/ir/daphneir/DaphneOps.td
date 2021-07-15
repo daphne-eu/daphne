@@ -669,6 +669,20 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
 }
 
 // ****************************************************************************
+// Low-level auxiliary operations
+// ****************************************************************************
+
+def Daphne_CreateVariadicPackOp : Daphne_Op<"createVariadicPack"> {
+    let arguments = (ins IndexAttr:$numElements);
+    let results = (outs VariadicPack:$res);
+}
+
+def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
+    let arguments = (ins VariadicPack:$pack, AnyType:$item, IndexAttr:$pos);
+    let results = (outs); // no results
+}
+
+// ****************************************************************************
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be

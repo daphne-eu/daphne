@@ -109,6 +109,8 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
     }
     else if (type.isa<mlir::daphne::StringType>())
         os << "String";
+    else if (type.isa<mlir::daphne::VariadicPackType>())
+        os << "VariadicPack";
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)

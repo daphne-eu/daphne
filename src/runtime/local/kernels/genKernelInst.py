@@ -63,7 +63,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     # The function wrapping the generated kernel instantiation always has
     # the return type void. If the considered kernel returns a scalar value,
     # we prepend an additional run-time parameter. 
-    extendedRuntimeParams = [{"name": DEFAULT_NEWRESPARAM, "type": "{} *".format(returnType)}] if (returnType != "void") else []
+    extendedRuntimeParams = [
+        {"name": DEFAULT_NEWRESPARAM, "type": "{} *".format(returnType), "isOutput": True}
+    ] if (returnType != "void") else []
     # Add all run-time parameters of the kernel. We need to copy, because
     # we apply string replacements to the types.
     extendedRuntimeParams.extend([rp.copy() for rp in runtimeParams])
@@ -74,10 +76,21 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             if isinstance(templateValues[tpIdx], list):
                 rp["type"] = rp["type"].replace("typename {}::VT".format(tp["name"]), templateValues[tpIdx][1])
             rp["type"] = rp["type"].replace(tp["name"], templateArgToCppType[tp["name"]])
-        rp["type"] = rp["type"].replace("*&", "**")
+        if rp["type"].endswith("*&"):
+            rp["type"] = rp["type"][:-2] + "**"
+            rp["isOutput"] = True
+        elif "isOutput" not in rp:
+            rp["isOutput"] = False
     
     #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
-    typesForName = "__".join([rp["type"].replace("const ", "").replace(" **", "").replace(" *", "").replace("<", "_").replace(">", "") for rp in extendedRuntimeParams])
+    typesForName = "__".join([
+        rp["type"]
+        .replace("const ", "")
+        .replace(" **", "" if rp["isOutput"] else "_variadic")
+        .replace(" *", "")
+        .replace("<", "_").replace(">", "")
+        for rp in extendedRuntimeParams
+    ])
     params = ", ".join(["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams])
 
     def generateFunction(opCode):
@@ -102,8 +115,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         else:
             callParams = ["{}::{}".format(opCodeType, opCode)]
         callParams.extend([
-            # Dereference double pointer.
-            "{}{}".format("*" if rp["type"].endswith("**") else "", rp["name"])
+            # Dereference double pointer for output parameters.
+            "{}{}".format("*" if (rp["type"].endswith("**") and rp["isOutput"]) else "", rp["name"])
             for rp
             in extendedRuntimeParams[(0 if returnType == "void" else 1):]
         ])

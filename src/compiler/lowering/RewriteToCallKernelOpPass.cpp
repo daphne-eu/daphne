@@ -27,6 +27,7 @@
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+#include <tuple>
 
 using namespace mlir;
 
@@ -74,9 +75,40 @@ namespace
         );
     }
 
-    struct KernelReplacement : public RewritePattern
+    class KernelReplacement : public RewritePattern
     {
+        // TODO This method is only required since MLIR does not seem to
+        // provide a means to get this information.
+        static size_t getNumODSOperands(Operation * op) {
+            // Example:
+//            if(llvm::isa<daphne::CreateFrameOp>(op))
+//                return 1;
+            throw std::runtime_error(
+                    "unsupported operation: " + op->getName().getStringRef().str()
+            );
+        }
+        
+        // TODO This method is only required since MLIR does not seem to
+        // provide a means to get this information. But, for instance, the
+        // isVariadic boolean array is automatically generated *within* the
+        // getODSOperandIndexAndLength method.
+        static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
+            // Example:
+//            if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
+//                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+//                static bool isVariadic[] = {true};
+//                return std::make_tuple(
+//                        idxAndLen.first,
+//                        idxAndLen.second,
+//                        isVariadic[index]
+//                );
+//            }
+            throw std::runtime_error(
+                    "unsupported operation: " + op->getName().getStringRef().str()
+            );
+        }
 
+    public:
         KernelReplacement(MLIRContext * context, PatternBenefit benefit = 1)
         : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
         {
@@ -85,6 +117,8 @@ namespace
         LogicalResult matchAndRewrite(Operation *op,
                                       PatternRewriter &rewriter) const override
         {
+            Location loc = op->getLoc();
+            
             // Determine the name of the kernel function to call by convention
             // based on the DaphneIR operation and the types of its results and
             // arguments.
@@ -94,26 +128,78 @@ namespace
 
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
-                llvm::isa<mlir::daphne::NumCellsOp>(op) |
-                llvm::isa<mlir::daphne::NumColsOp>(op) |
-                llvm::isa<mlir::daphne::NumRowsOp>(op);
+                llvm::isa<daphne::NumCellsOp>(op) |
+                llvm::isa<daphne::NumColsOp>(op) |
+                llvm::isa<daphne::NumRowsOp>(op);
 
+            // Append names of result types to the kernel name.
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
                 callee << "__" << mlirTypeToCppTypeName(resultTypes[i], false);
             
+            // Append names of operand types to the kernel name. Variadic
+            // operands, which can have an arbitrary number of occurrences, are
+            // treated specially.
             Operation::operand_type_range operandTypes = op->getOperandTypes();
-            for(size_t i = 0; i < operandTypes.size(); i++)
-                callee << "__" << mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
+            // The operands of the CallKernelOp may differ from the operands
+            // of the given operation, if it has a variadic operand.
+            std::vector<Value> newOperands;
+            if(op->hasTrait<OpTrait::VariadicOperands>()) {
+                // For operations with variadic operands, we replace all
+                // occurrences of a variadic operand by a single operand of
+                // type VariadicPack as well as an operand for the number of
+                // occurrences. All occurrences of the variadic operand are
+                // stored in the VariadicPack.
+                const size_t numODSOperands = getNumODSOperands(op);
+                for(size_t i = 0; i < numODSOperands; i++) {
+                    auto odsOpInfo = getODSOperandInfo(op, i);
+                    const unsigned idx = std::get<0>(odsOpInfo);
+                    const unsigned len = std::get<1>(odsOpInfo);
+                    const bool isVariadic = std::get<2>(odsOpInfo);
+                    
+                    callee << "__" << mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
+                    if(isVariadic) {
+                        // Variadic operand.
+                        callee << "_variadic__size_t";
+                        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                                loc,
+                                daphne::VariadicPackType::get(rewriter.getContext()),
+                                rewriter.getIndexAttr(len)
+                        );
+                        for(size_t k = 0; k < len; k++)
+                            rewriter.create<daphne::StoreVariadicPackOp>(
+                                    loc,
+                                    cvpOp,
+                                    op->getOperand(idx + k),
+                                    rewriter.getIndexAttr(k)
+                            );
+                        newOperands.push_back(cvpOp);
+                        newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                                loc, rewriter.getIndexAttr(len))
+                        );
+                    }
+                    else
+                        // Non-variadic operand.
+                        newOperands.push_back(op->getOperand(i));
+                }
+            }
+            else
+                // For operations without variadic operands, we simply append
+                // the name of the type of each operand and pass all operands
+                // to the CallKernelOp as-is.
+                for(size_t i = 0; i < operandTypes.size(); i++) {
+                    callee << "__" << mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
+                    newOperands.push_back(op->getOperand(i));
+                }
 
             // Create a CallKernelOp for the kernel function to call and return
             // success().
             auto kernel = rewriter.create<daphne::CallKernelOp>(
-                    op->getLoc(),
+                    loc,
                     callee.str(),
-                    op->getOperands(),
+                    newOperands,
                     op->getResultTypes()
-                    );
+            );
             rewriter.replaceOp(op, kernel.getResults());
             return success();
         }
@@ -137,7 +223,13 @@ void RewriteToCallKernelOpPass::runOnOperation()
     target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
-    target.addLegalOp<daphne::ConstantOp, daphne::ReturnOp, daphne::CallKernelOp>();
+    target.addLegalOp<
+            daphne::ConstantOp,
+            daphne::ReturnOp,
+            daphne::CallKernelOp,
+            daphne::CreateVariadicPackOp,
+            daphne::StoreVariadicPackOp
+    >();
 
     patterns.insert<KernelReplacement>(&getContext());
 

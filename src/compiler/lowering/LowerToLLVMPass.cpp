@@ -230,6 +230,61 @@ private:
     }
 };
 
+/**
+ * @brief Rewrites `daphne::CreateVariadicPackOp` to `LLVM::AllocaOp` to create
+ * an array for the required number of occurrences of a variadic operand.
+ */
+class CreateVariadicPackOpLowering : public OpConversionPattern<daphne::CreateVariadicPackOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::CreateVariadicPackOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
+                op.getOperation(),
+                LLVM::LLVMPointerType::get(LLVM::LLVMPointerType::get(rewriter.getI1Type())),
+                rewriter.create<ConstantOp>(op->getLoc(), op.numElementsAttr()),
+                1
+        );
+        return success();
+    }
+};
+
+/**
+ * @brief Rewrites `daphne::StoreVariadicPackOp` to `LLVM::StoreOp` to store
+ * an occurrence of a variadic operand to the respective position in an array
+ * created by lowering `daphne::CreateVariadicPackOp`.
+ */
+class StoreVariadicPackOpLowering : public OpConversionPattern<daphne::StoreVariadicPackOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::StoreVariadicPackOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        std::vector<Value> indices = {
+            rewriter.create<ConstantOp>(op->getLoc(), op.posAttr())
+        };
+        auto addr = rewriter.create<LLVM::GEPOp>(
+                op->getLoc(),
+                operands[0].getType(),
+                operands[0],
+                indices
+        );
+        rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
+                op.getOperation(),
+                operands[1],
+                addr
+        );
+        return success();
+    }
+};
+
 namespace
 {
     struct DaphneLowerToLLVMPass
@@ -259,7 +314,13 @@ void DaphneLowerToLLVMPass::runOnOperation()
     typeConverter.addConversion([&](daphne::FrameType t)
     {
         return LLVM::LLVMPointerType::get(
-                IntegerType::get(t.getContext(), 2));
+                IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::VariadicPackType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                LLVM::LLVMPointerType::get(
+                IntegerType::get(t.getContext(), 1)));
     });
 
     LLVMConversionTarget target(getContext());
@@ -270,7 +331,12 @@ void DaphneLowerToLLVMPass::runOnOperation()
     target.addLegalOp<ModuleOp>();
 
     patterns.insert<CallKernelOpLowering>(typeConverter, &getContext());
-    patterns.insert<ConstantOpLowering, ReturnOpLowering>(&getContext());
+    patterns.insert<
+            ConstantOpLowering,
+            ReturnOpLowering,
+            CreateVariadicPackOpLowering,
+            StoreVariadicPackOpLowering
+    >(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.

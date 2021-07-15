@@ -89,4 +89,15 @@ def Seed : TypeAlias<SI64, "seed">;
 // TODO Remove SI64 again, it was only added temporarily to make things work.
 def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
 
+def VariadicPack : Daphne_Type<"VariadicPack"> {
+    let summary = "pack of variadic operands";
+    let description = [{
+        This type is used to represent a variadic operand of an operation as a
+        single SSA value irrespective of the number of concrete operands. It
+        is meant to exist only in the low levels of the Daphne compilation
+        stack. It is introduced during the lowering to kernel calls and
+        converted when lowering to the LLVM dialect.
+    }];
+}
+
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD
