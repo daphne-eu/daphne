@@ -178,6 +178,10 @@ public:
         return values.get();
     }
     
+    std::shared_ptr<ValueType> getValuesSharedPtr() {
+        return values;
+    }
+    
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         return values.get()[pos(rowIdx, colIdx)];
     }

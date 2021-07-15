@@ -26,6 +26,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <vector>
 
 #include <cassert>
 #include <cinttypes>
@@ -99,6 +100,69 @@ class Frame : public Structure {
             this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc]);
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
+        }
+    }
+    
+    template<typename VT>
+    bool tryValueType(Structure * colMat, ValueTypeCode * schemaSlot, std::shared_ptr<ColByteType> * columnsSlot) {
+        if(auto colMat2 = dynamic_cast<DenseMatrix<VT> *>(colMat)) {
+            assert(
+                    (colMat2->getRowSkip() == 1) &&
+                    "all given matrices must not be a view on a column of a larger matrix"
+            );
+            *schemaSlot = ValueTypeUtils::codeFor<VT>;
+            std::shared_ptr<VT> orig = colMat2->getValuesSharedPtr();
+            *columnsSlot = std::shared_ptr<ColByteType>(orig, reinterpret_cast<ColByteType *>(orig.get()));
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * @brief Creates a `Frame` with the given single-column matrices as its
+     * columns.
+     * 
+     * The schema of the frame is automatically determined based on the value
+     * types of the given matrices.
+     * 
+     * The data arrays are shared with the given matrices, i.e., no copying is
+     * performed.
+     * 
+     * @param colMats A `std::vector` of single-column matrices. These must be
+     * `DenseMatrix`s of any value type (the type `Structure` is used here only
+     * to not depend on a template parameter for the value type). Furthermore,
+     * these matrices must not be views on a single column of a larger matrix.
+     */
+    Frame(const std::vector<Structure *> colMats) :
+            Structure(colMats.empty() ? 0 : colMats[0]->getNumRows(), colMats.size())
+    {
+        const size_t numCols = colMats.size();
+        assert(numCols && "you must provide at least one column matrix");
+        const size_t numRows = colMats[0]->getNumRows();
+        schema = new ValueTypeCode[numCols];
+        columns = new std::shared_ptr<ColByteType>[numCols];
+        for(size_t c = 0; c < numCols; c++) {
+            Structure * colMat = colMats[c];
+            assert(
+                    (colMat->getNumCols() == 1) &&
+                    "all given matrices must have a single column"
+            );
+            assert(
+                    (colMat->getNumRows() == numRows) &&
+                    "all given column matrices must have the same number of rows"
+            );
+            // For all value types.
+            bool found = false;
+            found = found || tryValueType<int8_t> (colMat, schema + c, columns + c);
+            found = found || tryValueType<int32_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<int64_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<uint8_t> (colMat, schema + c, columns + c);
+            found = found || tryValueType<uint32_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<uint64_t>(colMat, schema + c, columns + c);
+            found = found || tryValueType<float> (colMat, schema + c, columns + c);
+            found = found || tryValueType<double>(colMat, schema + c, columns + c);
+            if(!found)
+                throw std::runtime_error("unsupported value type");
         }
     }
     

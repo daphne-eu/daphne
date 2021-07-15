@@ -251,7 +251,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         for(auto arg : args)
             colTypes.push_back(arg.getType().dyn_cast<MatrixType>().getElementType());
         mlir::Type t = FrameType::get(builder.getContext(), colTypes);
-        return static_cast<mlir::Value>(builder.create<FrameOp>(loc, t, args));
+        return static_cast<mlir::Value>(builder.create<CreateFrameOp>(loc, t, args));
     }
     if(func == "diagMatrix")
         return createSameTypeUnaryOp<DiagMatrixOp>(loc, func, args);

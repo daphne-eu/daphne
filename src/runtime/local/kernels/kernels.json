@@ -187,6 +187,31 @@
     },
     {
         "kernelTemplate": {
+            "header": "CreateFrame.h",
+            "opName": "createFrame",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "Structure **",
+                    "name": "colMats"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numColMats"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "DiagMatrix.h",
             "opName": "diagMatrix",
             "returnType": "void",
@@ -539,7 +564,8 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"]],
+            ["Frame"]
         ]
     },
     {

@@ -62,7 +62,7 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
 }
 
 // TODO This can probably be subsumed by ColBindOp.
-def Daphne_FrameOp : Daphne_Op<"frame"> {
+def Daphne_CreateFrameOp : Daphne_Op<"createFrame"> {
     let arguments = (ins Variadic<Matrix>:$cols);
     let results = (outs Frame:$res);
 }

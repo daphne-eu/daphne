@@ -81,8 +81,8 @@ namespace
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
             // Example:
-//            if(llvm::isa<daphne::CreateFrameOp>(op))
-//                return 1;
+            if(llvm::isa<daphne::CreateFrameOp>(op))
+                return 1;
             throw std::runtime_error(
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
@@ -94,15 +94,15 @@ namespace
         // getODSOperandIndexAndLength method.
         static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
             // Example:
-//            if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
-//                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-//                static bool isVariadic[] = {true};
-//                return std::make_tuple(
-//                        idxAndLen.first,
-//                        idxAndLen.second,
-//                        isVariadic[index]
-//                );
-//            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
             throw std::runtime_error(
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
@@ -125,13 +125,14 @@ namespace
 
             std::stringstream callee;
             callee << op->getName().stripDialect().str();
-
+            
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
+                llvm::isa<daphne::CreateFrameOp>(op) |
                 llvm::isa<daphne::NumCellsOp>(op) |
                 llvm::isa<daphne::NumColsOp>(op) |
                 llvm::isa<daphne::NumRowsOp>(op);
-
+            
             // Append names of result types to the kernel name.
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
@@ -199,7 +200,7 @@ namespace
                     callee.str(),
                     newOperands,
                     op->getResultTypes()
-            );
+                    );
             rewriter.replaceOp(op, kernel.getResults());
             return success();
         }
