@@ -27,6 +27,7 @@
 #include <queue>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <util/UniqueBoundedPriorityQueue.h>
 #include <tuple>
 #include <util/MurmurHash3.h>
 #include <vector>
@@ -55,62 +56,17 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
 
       const size_t numRows = arg->getNumRows();
       const size_t numCols = arg->getNumCols();
-      const size_t rowSkip = arg->getRowSkip();
-      const VT *valuesBegin = arg->getValues();
 
-      std::priority_queue<uint32_t> pQueue;
+      UniqueBoundedPriorityQueue<uint32_t> pQueue(K);
 
       uint32_t hashedValueOut = 0;
 
-      size_t rowIdx = 0;
-      size_t colIdx = 0;
-      size_t elementIdx = 0;
-      bool stopInit = false;
-
-      // Initialize KVM with K values.
-
-      while( rowIdx < numRows) {
-          colIdx = 0;
-          while( colIdx < numCols) {
-
-              const VT *el = valuesBegin + rowSkip * rowIdx + colIdx;
-
-              MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
+      for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
+          for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+              auto el = arg->get(rowIdx, colIdx);
+              MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
               pQueue.push(hashedValueOut);
-
-              elementIdx++;
-
-              if (elementIdx >= K) {
-                  stopInit = true;
-                  break;
-              }
-              colIdx++;
           }
-
-          if (stopInit) {
-              break;
-          }
-          rowIdx++;
-      }
-
-
-      // rowIdx/colIdx are now at the element where we left off.
-      while ( rowIdx < numRows) {
-          while ( colIdx < numCols) {
-
-              const VT *el = valuesBegin + rowSkip * rowIdx + colIdx;
-              MurmurHash3_x86_32(el, sizeof(VT), seed, &hashedValueOut);
-
-              if (hashedValueOut < pQueue.top()) {
-                  pQueue.pop();
-                  pQueue.push(hashedValueOut);
-              }
-
-              colIdx++;
-          }
-
-          colIdx = 0;
-          rowIdx++;
       }
 
       size_t kMinVal = pQueue.top();
@@ -118,9 +74,6 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
       double kMinValNormed =
           static_cast<double>(kMinVal) / static_cast<double>(maxVal);
   
-      printf("kMinValNormed %f\n", kMinValNormed);
-      printf("result %f\n", (K - 1) / kMinValNormed);
-
       return (K - 1) / kMinValNormed;
   }
 };
@@ -135,8 +88,7 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
         const size_t* rowOffsets = arg->getRowOffsets();
         const VT zero = 0;
 
-        std::priority_queue<uint32_t> pQueue;
-
+        UniqueBoundedPriorityQueue<uint32_t> pQueue(K);
         uint32_t hashedValueOut = 0;
 
         size_t rowIdx = 0;
@@ -146,6 +98,14 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
         const size_t * colIdxBegin = arg->getColIdxs(rowIdx);
         const size_t * colIdxEnd = arg->getColIdxs(rowIdx+1);
 
+      for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+          for(size_t colIdx = 0; colIdx < numCols; colIdx++) {
+              VT el = arg->get(rowIdx, colIdx);
+              MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
+              pQueue.push(hashedValueOut);
+          }
+      }
+        /*
         while( rowIdx < numRows ) {
             colIdx = 0;
             colIdxBegin = arg->getColIdxs(rowIdx);
@@ -213,6 +173,7 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
             rowIdx++;
        }
 
+       */
       size_t kMinVal = pQueue.top();
       const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
       double kMinValNormed =

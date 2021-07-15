@@ -41,11 +41,11 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
         // Allow +/-10% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
         auto approxResult = numDistinctApprox(mat10000, 64);
-        auto isResultBelow20PercentOff = approxResult <= 110 && approxResult >= 90;
-        CHECK(isResultBelow20PercentOff);
+        auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
+
+        CHECK(isResultBelow10PercentOff);
     }
 }
-
 
 TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
 
@@ -65,7 +65,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
         mat10000->getNumCols()
     );
 
-    auto sanityCheckSubMat = DataObjectFactory::create<DT>(mat10000,
+    auto fullSubMat = DataObjectFactory::create<DT>(mat10000,
         0,
         mat10000->getNumRows(),
         0,
@@ -77,12 +77,12 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
         // Allow +/-10% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
         auto approxResult = numDistinctApprox(subMat, 64);
-        auto isResultBelow20PercentOff = approxResult <= 110 && approxResult >= 90;
-        CHECK(isResultBelow20PercentOff);
+        auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
+        CHECK(isResultBelow10PercentOff);
 
-        auto sanityCheckResult = numDistinctApprox(sanityCheckSubMat, 64);
-        isResultBelow20PercentOff = sanityCheckResult <= 110 && sanityCheckResult >= 90;
-        CHECK_FALSE(isResultBelow20PercentOff);
+        approxResult = numDistinctApprox(fullSubMat, 64);
+        isResultBelow10PercentOff = approxResult <= 11000 && approxResult >= 9000;
+        CHECK(isResultBelow10PercentOff);
     }
 }
 
@@ -102,22 +102,23 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CS
         mat10000->getNumRows()/100
     );
 
-    auto sanityCheckSubMat = DataObjectFactory::create<DT>(mat10000,
+    auto fullSubMat = DataObjectFactory::create<DT>(mat10000,
         0,
         mat10000->getNumRows()
     );
 
     SECTION("numDistinctApprox Sub-CSRMatrix") {
 
-        // Allow +/-20% error. When error is bigger something is either
+        // Allow +/-10% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
         auto approxResult = numDistinctApprox(subMat, 64);
-        auto isResultBelow20PercentOff = approxResult <= 120 && approxResult >= 80;
-        CHECK(isResultBelow20PercentOff);
+        auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
+        CHECK(isResultBelow10PercentOff);
 
-        auto sanityCheckResult = numDistinctApprox(sanityCheckSubMat, 64);
-        isResultBelow20PercentOff = sanityCheckResult <= 110 && sanityCheckResult >= 90;
-        CHECK_FALSE(isResultBelow20PercentOff);
+        approxResult = numDistinctApprox(fullSubMat, 64);
+        isResultBelow10PercentOff = approxResult <= 11000 && approxResult >= 9000;
+
+        CHECK(isResultBelow10PercentOff);
     }
 
 }
