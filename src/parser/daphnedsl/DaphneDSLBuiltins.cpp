@@ -449,7 +449,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "cbind")
         return createBindOp<ColBindOp>(loc, func, args);
     if(func == "rbind")
-        return createBindOp<ColBindOp>(loc, func, args);
+        return createBindOp<RowBindOp>(loc, func, args);
     if(func == "reverse")
         return createSameTypeUnaryOp<ReverseOp>(loc, func, args);
     if(func == "order") {
