@@ -19,6 +19,7 @@ add_executable(run_tests
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/literals/LiteralsTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp

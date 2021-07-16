@@ -109,7 +109,7 @@ INT_LITERAL:
     ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
 
 FLOAT_LITERAL:
-    '-'? (NON_ZERO_DIGIT DIGIT*)? '.' DIGIT* ;
+    '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ ;
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';
