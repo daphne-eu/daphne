@@ -51,7 +51,6 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        const size_t rowSkip = arg->getRowSkip();
 
         const VT* values = arg->getValues();
 
@@ -90,14 +89,14 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             throw std::runtime_error("Provided matrix is not square.");
         }
 
-        // singular matrix is considered symmetric.
+        // Singular matrix is considered symmetric.
         if (numRows <= 1 || numCols <= 1) {
             return true;
         }
 
         const size_t* rowOffsets = arg->getRowOffsets();
 
-        std::vector<size_t> positions(numRows, 0);
+        std::vector<size_t> positions(numRows, -1); // indexes of the column index array.
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
 
@@ -105,65 +104,43 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             const size_t* colIdxsA = arg->getColIdxs(rowIdx);
             const size_t numNonZerosA = arg->getNumNonZeros(rowIdx);
 
-            size_t posA = positions[rowIdx];
-            size_t probedColIdxA = -1;
+            for (size_t idx = 0;  idx < numNonZerosA; idx++) {
+                const size_t colIdxA = colIdxsA[idx];
 
-            // Only get idx when one exists.
-            if (posA < numNonZerosA) {
-                probedColIdxA = colIdxsA[posA];
-            }
-
-            // positions contains idx of diagonal element idx, try to advance.
-            if (probedColIdxA == rowIdx && posA < numNonZerosA) {
-                positions[rowIdx]++;
-            }
-
-            for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
-
-                posA = positions[rowIdx];
-
-                VT valA = 0;
-                probedColIdxA = -1;
-
-                // Only get idx when one exists.
-                if (posA < numNonZerosA) {
-                    probedColIdxA = colIdxsA[posA];
+                if (colIdxA <= rowIdx) { // Exit early if diagonal element or before.
+                    continue;
                 }
 
-                // index exists element not zero
-                if (colIdx == probedColIdxA && posA < numNonZerosA) {
-                    valA = rowA[posA];
-                    // Advance to next 'unused' position.
-                    positions[rowIdx]++;
-                }
+                positions[rowIdx] = idx;
+                VT valA = rowA[idx];
 
                 // B references the transposed element to compare for symmetrie.
-                const VT* rowB = arg->getValues(colIdx);
-                const size_t* colIdxsB = arg->getColIdxs(colIdx);
-                const size_t numNonZerosB = arg->getNumNonZeros(colIdx);
+                const VT* rowB = arg->getValues(colIdxA);
+                const size_t* colIdxsB = arg->getColIdxs(colIdxA);
+                const size_t numNonZerosB = arg->getNumNonZeros(colIdxA);
 
-                const size_t posB = positions[colIdx];
-                size_t probedColIdxB = -1;
+                positions[colIdxA]++; // colIdxA is rowIdxB
+                const size_t posB = positions[colIdxA];
 
-                // Only get idx when one exists.
-                if (posB < numNonZerosB) {
-                    probedColIdxB = colIdxsB[posB];
+                if (numNonZerosB <= posB) { // Does next expected element exist?
+                    return false;
                 }
 
-                VT valB = 0;
-                // Index exists element not zero.
-                if (rowIdx == probedColIdxB && posB < numNonZerosA) {
-                    valB = rowB[posB];
-                    // Advance to next 'unused' position.
-                    positions[colIdx]++;
-                }
+                const size_t colIdxB = colIdxsB[posB];
+                VT valB = rowB[posB];
 
-                if (valA != valB) {
+
+                if( colIdxB != rowIdx || valA != valB) { // Indexes or values differ, not sym.
                     return false;
                 }
             }
-        }
 
+            const size_t rowLastPos = positions[rowIdx];
+
+            if (rowLastPos == -1 && numNonZerosA != 0) { // Not all elements of this row were iterated over, not sym!
+                return false;
+            }
+        }
         return true;
     }
 };

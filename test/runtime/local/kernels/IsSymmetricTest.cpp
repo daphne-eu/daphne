@@ -25,7 +25,8 @@
 #include <tags.h>
 #include <catch.hpp>
 
-TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+//TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (CSRMatrix), (uint32_t)) {
 
     using DT = TestType;
 
@@ -63,6 +64,20 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
         0, 0, 0, 0
     });
 
+    auto squareUpperTriangleMat = genGivenVals<DT>(4, {
+        0, 1, 1, 1,
+        0, 0, 1, 1,
+        0, 0, 0, 1,
+        0, 0, 0, 0
+    });
+
+    auto squareLowerTriangleMat = genGivenVals<DT>(4, {
+        0, 0, 0, 0,
+        1, 0, 0, 0,
+        1, 1, 0, 0,
+        1, 1, 1, 0
+    });
+
     auto singularMat = genGivenVals<DT>(1, {1});
 
     SECTION("isSymmetric check for symmetrie.") {
@@ -72,6 +87,8 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
         CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat), std::runtime_error);
         CHECK_FALSE(isSymmetric<DT>(asymMat));
         CHECK(isSymmetric<DT>(singularMat));
+        CHECK_FALSE(isSymmetric<DT>(squareUpperTriangleMat));
+        CHECK_FALSE(isSymmetric<DT>(squareLowerTriangleMat));
     }
 }
 
