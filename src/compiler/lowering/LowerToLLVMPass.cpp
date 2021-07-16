@@ -79,7 +79,60 @@ public:
     matchAndRewrite(daphne::ConstantOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
-        rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+        Location loc = op->getLoc();
+        if(auto strAttr = op.value().dyn_cast<StringAttr>()) {
+            StringRef sr = strAttr.getValue();
+#if 1
+            // MLIR does not have direct support for strings. Thus, if this is
+            // a string constant, we create an array large enough to store the
+            // string (including a trailing null character). Then, we store all
+            // characters of the string constant to that array one by one. The
+            // SSA value of the constant is replaced by a pointer to i8
+            // pointing to the allocated buffer.
+            Type i8PtrType = LLVM::LLVMPointerType::get(
+                    IntegerType::get(rewriter.getContext(), 8)
+            );
+            const size_t numChars = sr.size() + 1; // +1 for trailing '\0'
+            const std::string str = sr.str();
+            const char * chars = str.c_str();
+            auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
+                    op.getOperation(),
+                    i8PtrType,
+                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(numChars)),
+                    1
+            );
+            for(size_t i = 0; i < numChars; i++) {
+                std::vector<Value> indices = {
+                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))
+                };
+                rewriter.create<LLVM::StoreOp>(
+                        loc,
+                        rewriter.create<ConstantOp>(
+                                loc, rewriter.getI8IntegerAttr(chars[i])
+                        ),
+                        rewriter.create<LLVM::GEPOp>(
+                                op->getLoc(), i8PtrType, allocaOp, indices
+                        )
+                );
+            }
+#else
+            // Alternatively, we could create a global string, which would
+            // yield a poiner to i8, too. However, we would need to choose a
+            // unique name.
+            rewriter.replaceOp(
+                    op.getOperation(),
+                    LLVM::createGlobalString(
+                            loc, rewriter, "someName", sr,
+                            LLVM::Linkage::Private // TODO Does that make sense?
+                    )
+            );
+#endif
+        }
+        else
+            // Constants of all other types are lowered to an mlir::ConstantOp.
+            // Note that this is a different op than mlir::daphne::ConstantOp!
+            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+        
         return success();
     }
 };
@@ -315,6 +368,11 @@ void DaphneLowerToLLVMPass::runOnOperation()
     {
         return LLVM::LLVMPointerType::get(
                 IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::StringType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                IntegerType::get(t.getContext(), 8));
     });
     typeConverter.addConversion([&](daphne::VariadicPackType t)
     {

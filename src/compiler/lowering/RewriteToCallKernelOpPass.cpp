@@ -70,6 +70,11 @@ namespace
                 return "Structure";
             else
                 return "Frame";
+        else if(t.isa<daphne::StringType>())
+            // This becomes "const char *" (which makes perfect sense for
+            // strings) when inserted into the typical "const DT *" template of
+            // kernel input parameters.
+            return "char";
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );
