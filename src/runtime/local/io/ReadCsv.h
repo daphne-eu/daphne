@@ -142,7 +142,7 @@ template <> struct ReadCsv<Frame> {
     assert(numCols > 0 && "numCols must be > 0");
 
     if (res == nullptr) {
-      res = DataObjectFactory::create<Frame>(numRows, numCols, schema, false);
+      res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
     }
 
     char *line;

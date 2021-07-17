@@ -34,7 +34,7 @@ void createFrame(Frame *& res, Structure ** colMats, size_t numColMats) {
     for(size_t c = 0; c < numColMats; c++)
         colMatsVec.push_back(colMats[c]);
     
-    res = DataObjectFactory::create<Frame>(colMatsVec);
+    res = DataObjectFactory::create<Frame>(colMatsVec, nullptr);
 }
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H

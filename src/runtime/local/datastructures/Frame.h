@@ -26,6 +26,8 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <cassert>
@@ -58,6 +60,17 @@ class Frame : public Structure {
     ValueTypeCode * schema;
     
     /**
+     * @brief An array of length `numCols` of the names of the columns of this
+     * frame.
+     */
+    std::string * labels;
+    
+    /**
+     * @brief A mapping from a column's label to its position in the frame.
+     */
+    std::unordered_map<std::string, size_t> labels2idxs;
+    
+    /**
      * @brief The common pointer type used for the array of each column,
      * irrespective of the actual value type of the column.
      * 
@@ -76,6 +89,28 @@ class Frame : public Structure {
      */
     std::shared_ptr<ColByteType> * columns;
     
+    /**
+     * @brief Initializes the mapping from column labels to column positions in
+     * the frame and checks for duplicate column labels.
+     * 
+     * This method should be called by each constructor, after the column
+     * labels have been initialized.
+     */
+    void initLabels2Idxs() {
+        for(size_t i = 0; i < numCols; i++) {
+            if(labels2idxs.count(labels[i]))
+                throw std::runtime_error(
+                        "a frame's column labels must be unique, but '" +
+                        labels[i] + "' occurs more than once"
+                );
+            labels2idxs[labels[i]] = i;
+        }
+    }
+    
+    const std::string getDefaultLabel(size_t pos) {
+        return "col_" + std::to_string(pos);
+    }
+    
     // TODO Should the given schema array really be copied, or reused?
     /**
      * @brief Creates a `Frame` and allocates enough memory for the specified
@@ -89,18 +124,21 @@ class Frame : public Structure {
      * shall be initialized to zeros (`true`), or be left uninitialized
      * (`false`).
      */
-    Frame(size_t maxNumRows, size_t numCols, const ValueTypeCode * schema, bool zero) :
+    Frame(size_t maxNumRows, size_t numCols, const ValueTypeCode * schema, const std::string * labels, bool zero) :
             Structure(maxNumRows, numCols),
             schema(new ValueTypeCode[numCols]),
+            labels(new std::string[numCols]),
             columns(new std::shared_ptr<ColByteType>[numCols])
     {
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = schema[i];
+            this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
             this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc]);
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
         }
+        initLabels2Idxs();
     }
     
     template<typename VT>
@@ -133,13 +171,14 @@ class Frame : public Structure {
      * to not depend on a template parameter for the value type). Furthermore,
      * these matrices must not be views on a single column of a larger matrix.
      */
-    Frame(const std::vector<Structure *> colMats) :
+    Frame(const std::vector<Structure *> colMats, const std::string * labels) :
             Structure(colMats.empty() ? 0 : colMats[0]->getNumRows(), colMats.size())
     {
         const size_t numCols = colMats.size();
         assert(numCols && "you must provide at least one column matrix");
         const size_t numRows = colMats[0]->getNumRows();
         schema = new ValueTypeCode[numCols];
+        this->labels = new std::string[numCols];
         columns = new std::shared_ptr<ColByteType>[numCols];
         for(size_t c = 0; c < numCols; c++) {
             Structure * colMat = colMats[c];
@@ -151,6 +190,7 @@ class Frame : public Structure {
                     (colMat->getNumRows() == numRows) &&
                     "all given column matrices must have the same number of rows"
             );
+            this->labels[c] = labels ? labels[c] : getDefaultLabel(c);
             // For all value types.
             bool found = false;
             found = found || tryValueType<int8_t> (colMat, schema + c, columns + c);
@@ -164,6 +204,7 @@ class Frame : public Structure {
             if(!found)
                 throw std::runtime_error("unsupported value type");
         }
+        initLabels2Idxs();
     }
     
     /**
@@ -188,19 +229,30 @@ class Frame : public Structure {
             assert((colIdxs[i] < src->numCols) && "some colIdx is out of bounds");
         
         this->schema = new ValueTypeCode[numCols];
+        this->labels = new std::string[numCols];
         this->columns = new std::shared_ptr<ColByteType>[numCols];
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = src->schema[colIdxs[i]];
+            this->labels[i] = src->labels[colIdxs[i]];
             this->columns[i] = std::shared_ptr<ColByteType>(
                     src->columns[colIdxs[i]],
                     src->columns[colIdxs[i]].get() + rowLowerIncl * ValueTypeUtils::sizeOf(schema[i])
             );
         }
+        initLabels2Idxs();
     }
     
     ~Frame() {
-        delete[] columns;
         delete[] schema;
+        delete[] labels;
+        delete[] columns;
+    }
+    
+    size_t getColIdx(const std::string & label) {
+        auto it = labels2idxs.find(label);
+        if(it != labels2idxs.end())
+            return it->second;
+        throw std::runtime_error("column label not found: '" + label + "'");
     }
     
 public:
@@ -230,9 +282,22 @@ public:
         return const_cast<Frame *>(this)->getColumn<ValueType>(idx);
     }
     
+    template<typename ValueType>
+    DenseMatrix<ValueType> * getColumn(const std::string & label) {
+        return getColumn<ValueType>(getColIdx(label));
+    }
+    
+    template<typename ValueType>
+    const DenseMatrix<ValueType> * getColumn(const std::string & label) const {
+        return const_cast<Frame *>(this)->getColumn<ValueType>(label);
+    }
+    
     void print(std::ostream & os) const override {
         os << "Frame(" << numRows << 'x' << numCols << ", [";
         for(size_t c = 0; c < numCols; c++) {
+            // TODO Ideally, special characters in the labels should be
+            // escaped.
+            os << labels[c] << ':';
             os << ValueTypeUtils::cppNameForCode(schema[c]);
             if(c < numCols - 1)
                 os << ", ";
