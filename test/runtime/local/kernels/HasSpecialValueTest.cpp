@@ -24,19 +24,6 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/kernels/HasSpecialValue.h>
 
-// TODO [DODO] Templates didn't work, can this be made better?
-bool isNaN(double val) {
-    return std::isnan(val);
-}
-
-bool isInf(double val) {
-    return std::isinf(val);
-}
-
-bool isOne(uint32_t val) {
-    return val == 1; 
-}
-
 TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DenseMatrix, CSRMatrix), (uint32_t)) {
 
     using DT = TestType;
@@ -55,10 +42,11 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DenseMatri
     });
 
     SECTION("hasSpecialValue check if test function is applied correctly.") {
-        CHECK(hasSpecialValue(specialMat, isOne));
-        CHECK_FALSE(hasSpecialValue(nonSpecialMat, isOne));
+        CHECK(hasSpecialValue(specialMat, typename DT::VT(1)));
+        CHECK_FALSE(hasSpecialValue(nonSpecialMat, typename DT::VT(1)));
     }
 }
+
 
 TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - DenseMatrix-Submatrix.", TAG_KERNELS, DenseMatrix, (uint32_t)) {
 
@@ -79,8 +67,8 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - DenseMatrix-Submatrix.", TAG_KERNE
     );
 
     SECTION("hasSpecialValue for Sub-DenseMatrix") {
-        CHECK(hasSpecialValue(specialMat, isOne));
-        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, isOne));
+        CHECK(hasSpecialValue(specialMat, typename DT::VT(1)));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1)));
     }
 }
 
@@ -101,8 +89,8 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - CSRMatrix-Submatrix.", TAG_KERNELS
     );
 
     SECTION("hasSpecialValue for Sub-CSRMatrix") {
-        CHECK(hasSpecialValue(specialMat, isOne));
-        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, isOne));
+        CHECK(hasSpecialValue(specialMat, typename DT::VT(1)));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1)));
     }
 }
 
@@ -133,9 +121,9 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (Den
     });
 
     SECTION("Check for special values std::isnan/std::isinf.") {
-        CHECK(hasSpecialValue(sigNaNMat, isNaN));
-        CHECK(hasSpecialValue(quietNaNMat, isNaN));
-        CHECK(hasSpecialValue(infinityMat, isInf));
-        CHECK_FALSE(hasSpecialValue(infinityMat, isNaN));
+        CHECK(hasSpecialValue(sigNaNMat, sigNaN));
+        CHECK(hasSpecialValue(quietNaNMat, quietNaN));
+        CHECK(hasSpecialValue(infinityMat, inf));
+        CHECK_FALSE(hasSpecialValue(infinityMat, sigNaN));
     }
 }

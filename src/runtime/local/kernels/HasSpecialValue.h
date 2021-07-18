@@ -25,8 +25,8 @@
 #include <cmath>
 #include <type_traits>
 
-template <class DTArg, class DTFArg> struct HasSpecialValue {
-    static bool apply(const DTArg *arg, bool (*specValTesttestFunc)(DTFArg)) = delete;
+template <class DTArg, typename TestType> struct HasSpecialValue {
+    static bool apply(const DTArg *arg, TestType testVal ) = delete;
 };
 
 // ****************************************************************************
@@ -34,39 +34,40 @@ template <class DTArg, class DTFArg> struct HasSpecialValue {
 // ****************************************************************************
 
 /**
- * @brief Checks each element of the matrix against a provided function
- * returning a boolean. Stops early when the test function returns true.
- *
- * Example use
- *
- *  bool isNaN(double val) {
- *      return std::isnan(val);
- *  }
- *
- *  bool hasSpecVal = hasSpecialValue(mat, isNaN);
+ * @brief Checks each element of the matrix against a value testVal. Returns
+ * true oppon finding the first matching element in the matrix.
  *
  * @param
  * @param arg Pointer to a matrix.
- * @param testFunc Pointer to a bool returning function taking the matrix element type as an argument.
- * @return Returns true when the test function returns true.
+ * @param testVal The value to test for in the matrix.
+ * @return Returns true when finding a matchin element.
  */
-template <class DTArg, class TestFunc> bool hasSpecialValue(const DTArg *arg, TestFunc testFunc) {
-    return HasSpecialValue<DTArg, TestFunc>::apply(arg, testFunc);
+template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal) { 
+    return HasSpecialValue<DTArg, TestType>::apply(arg, testVal);
 }
 
-template <typename VT, typename TestFunc> struct HasSpecialValue<DenseMatrix<VT>, TestFunc> {
-    static bool apply(const DenseMatrix<VT> *arg, TestFunc testFunc) {
+template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>, TestType> {
+    static bool apply(const DenseMatrix<VT> *arg, TestType testVal) {
 
-        size_t numRows = arg->getNumRows();
-        size_t numCols = arg->getNumCols();
+        auto numRows = arg->getNumRows();
+        auto numCols = arg->getNumCols();
 
-        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-
-            for (size_t colIdx = 0; colIdx < numCols; colIdx++) {
-
-                const VT value = arg->get(rowIdx, colIdx);
-                if (testFunc(value)) {
-                    return true;
+        if(std::isnan(testVal)) {
+            for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+                    auto val = arg->get(rowIdx, colIdx);
+                    if (std::isnan(val)) {
+                        return true;
+                    }
+                }
+            }
+        } else {
+            for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+                    auto val = arg->get(rowIdx, colIdx);
+                    if (val == testVal) {
+                        return true;
+                    }
                 }
             }
         }
@@ -75,33 +76,39 @@ template <typename VT, typename TestFunc> struct HasSpecialValue<DenseMatrix<VT>
     }
 };
 
-template <typename VT, typename TestFunc> struct HasSpecialValue<CSRMatrix<VT>, TestFunc> {
-    static bool apply(const CSRMatrix<VT> *arg, TestFunc testFunc) {
+template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, TestType> {
+    static bool apply(const CSRMatrix<VT> *arg, TestType testVal) {
 
-        const size_t numRows = arg->getNumRows();
-        const size_t numCols = arg->getNumCols();
-        const VT zero = 0;
-        const size_t numNonZeros = arg->getNumNonZeros();
-        const size_t numElements = numRows*numCols;
+        auto numRows = arg->getNumRows();
+        auto numCols = arg->getNumCols();
+        auto numNonZeros = arg->getNumNonZeros();
+        auto numElements = numRows*numCols;
+        auto vBegin = arg->getValues(0);
+        auto vEnd = arg->getValues(numRows);
+        auto hasZeroes = numNonZeros < numElements;
+        auto zero = VT(0);
 
-        // zeroes only need to be testes once.
-        if (numNonZeros < numElements && testFunc(zero)) {
-            return true;
+        if(std::isnan(testVal)) {
+            for(auto it = vBegin; it != vEnd; it++) {
+                if (std::isnan(*it)) {
+                    return true;
+                }
+            }
+        } else {
+            if (hasZeroes) { // test zero;
+                if ((zero) == testVal) {
+                    return true;
+                }
+            }
+            for(auto it = vBegin; it != vEnd; it++) {
+                if ((*it) == testVal) {
+                    return true;
+                }
+            }
         }
-
-        for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
-
-           auto avals = arg->getValues(rowIdx);
-           auto alen = arg->getNumNonZeros(rowIdx);
-
-           for(size_t colIdx = 0; colIdx < alen; colIdx++ )
-
-              if( testFunc(avals[colIdx]) )
-                 return true;
-        }
-
         return false;
     }
 };
+
 
 #endif
