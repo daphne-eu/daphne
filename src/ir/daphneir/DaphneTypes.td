@@ -98,6 +98,7 @@ def VariadicPack : Daphne_Type<"VariadicPack"> {
         stack. It is introduced during the lowering to kernel calls and
         converted when lowering to the LLVM dialect.
     }];
+    let parameters = (ins "::mlir::Type":$containedType);
 }
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

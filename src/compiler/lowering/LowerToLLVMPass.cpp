@@ -296,9 +296,11 @@ public:
     matchAndRewrite(daphne::CreateVariadicPackOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
+        Type contType = op.res().getType().dyn_cast<daphne::VariadicPackType>().getContainedType();
+        Type convType = typeConverter->convertType(contType);
         rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
                 op.getOperation(),
-                LLVM::LLVMPointerType::get(LLVM::LLVMPointerType::get(rewriter.getI1Type())),
+                LLVM::LLVMPointerType::get(convType),
                 rewriter.create<ConstantOp>(op->getLoc(), op.numElementsAttr()),
                 1
         );
@@ -320,19 +322,17 @@ public:
     matchAndRewrite(daphne::StoreVariadicPackOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
+        mlir::Location loc = op->getLoc();
+        mlir::Value pack = operands[0];
+        mlir::Value item = operands[1];
         std::vector<Value> indices = {
-            rewriter.create<ConstantOp>(op->getLoc(), op.posAttr())
+            rewriter.create<ConstantOp>(loc, op.posAttr())
         };
         auto addr = rewriter.create<LLVM::GEPOp>(
-                op->getLoc(),
-                operands[0].getType(),
-                operands[0],
-                indices
+                loc, pack.getType(), pack, indices
         );
         rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
-                op.getOperation(),
-                operands[1],
-                addr
+                op.getOperation(), item, addr
         );
         return success();
     }
@@ -377,8 +377,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
     typeConverter.addConversion([&](daphne::VariadicPackType t)
     {
         return LLVM::LLVMPointerType::get(
-                LLVM::LLVMPointerType::get(
-                IntegerType::get(t.getContext(), 1)));
+                typeConverter.convertType(t.getContainedType())
+        );
     });
 
     LLVMConversionTarget target(getContext());
@@ -388,11 +388,13 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
-    patterns.insert<CallKernelOpLowering>(typeConverter, &getContext());
+    patterns.insert<
+            CallKernelOpLowering,
+            CreateVariadicPackOpLowering
+    >(typeConverter, &getContext());
     patterns.insert<
             ConstantOpLowering,
             ReturnOpLowering,
-            CreateVariadicPackOpLowering,
             StoreVariadicPackOpLowering
     >(&getContext());
 

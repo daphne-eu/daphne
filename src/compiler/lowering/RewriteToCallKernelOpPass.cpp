@@ -169,7 +169,10 @@ namespace
                         callee << "_variadic__size_t";
                         auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
                                 loc,
-                                daphne::VariadicPackType::get(rewriter.getContext()),
+                                daphne::VariadicPackType::get(
+                                        rewriter.getContext(),
+                                        op->getOperand(idx).getType()
+                                ),
                                 rewriter.getIndexAttr(len)
                         );
                         for(size_t k = 0; k < len; k++)

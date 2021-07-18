@@ -98,19 +98,22 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
-    if (type.isa<mlir::daphne::MatrixType>())
-        os << "Matrix<" << type.dyn_cast<mlir::daphne::MatrixType>().getElementType() << '>';
-    else if (type.isa<mlir::daphne::FrameType>()) {
-        std::vector<mlir::Type> cts = type.dyn_cast<mlir::daphne::FrameType>().getColumnTypes();
-        os << "Frame<[" << cts[0];
-        for (size_t i = 1; i < cts.size(); i++)
-            os << ", " << cts[i];
+    if (auto t = type.dyn_cast<mlir::daphne::MatrixType>())
+        os << "Matrix<" << t.getElementType() << '>';
+    else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
+        std::vector<mlir::Type> cts = t.getColumnTypes();
+        os << "Frame<[";
+        if(!cts.empty()) {
+            os << cts[0];
+            for (size_t i = 1; i < cts.size(); i++)
+                os << ", " << cts[i];
+        }
         os << "]>";
     }
     else if (type.isa<mlir::daphne::StringType>())
         os << "String";
-    else if (type.isa<mlir::daphne::VariadicPackType>())
-        os << "VariadicPack";
+    else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
+        os << "VariadicPack<" << t.getContainedType() << '>';
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
