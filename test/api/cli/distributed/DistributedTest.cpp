@@ -14,8 +14,8 @@
  *  limitations under the License.
  */
 
-#include "runtime/distributed/worker/WorkerImpl.h"
-#include "api/cli/Utils.h"
+#include <runtime/distributed/worker/WorkerImpl.h>
+#include <api/cli/Utils.h>
 
 #include <cstdlib>
 
@@ -38,7 +38,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
-    for (auto i = 1u; i < 2; ++i) {
+    for (auto i = 1u; i < 3; ++i) {
         auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
 
         std::stringstream outLocal;

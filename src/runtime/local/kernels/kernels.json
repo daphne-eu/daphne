@@ -960,12 +960,16 @@
                     "name": "res"
                 },
                 {
-                    "type": "const Handle<DT> *",
-                    "name": "lhs"
+                    "type": "const Handle<DT> **",
+                    "name": "args"
                 },
                 {
-                    "type": "const Handle<DT> *",
-                    "name": "rhs"
+                    "type": "size_t",
+                    "name": "numArgs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "mlirCode"
                 }
             ]
         },

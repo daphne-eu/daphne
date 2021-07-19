@@ -38,7 +38,7 @@
 template<class DT>
 struct DistributedCompute
 {
-    static void apply(Handle<DT> *&res, const Handle<DT> *lhs, const Handle<DT> *rhs) = delete;
+    static void apply(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode) = delete;
 };
 
 // ****************************************************************************
@@ -46,9 +46,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DT>
-void distributedCompute(Handle<DT> *&res, const Handle<DT> *lhs, const Handle<DT> *rhs)
+void distributedCompute(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode)
 {
-    DistributedCompute<DT>::apply(res, lhs, rhs);
+    DistributedCompute<DT>::apply(res, args, num_args, mlirCode);
 }
 
 // ****************************************************************************
@@ -59,10 +59,13 @@ template<>
 struct DistributedCompute<DenseMatrix<double>>
 {
     static void apply(Handle<DenseMatrix<double>> *&res,
-                      const Handle<DenseMatrix<double>> *lhs,
-                      const Handle<DenseMatrix<double>> *rhs)
+                      const Handle<DenseMatrix<double>> **args,
+                      size_t num_args,
+                      const char *mlirCode)
     {
-        assert(lhs->getMap().size() == rhs->getMap().size() && "Number of keys/data have to match");
+        assert(num_args == 2 && "Only binary supported for now");
+        auto lhs = args[0];
+        auto rhs = args[1];
 
         Handle<DenseMatrix<double>>::HandleMap resMap;
         for (auto &pair : lhs->getMap()) {
@@ -79,13 +82,7 @@ struct DistributedCompute<DenseMatrix<double>>
                 distributed::Task task;
                 *task.add_inputs()->mutable_stored() = lhsData.getData();
                 *task.add_inputs()->mutable_stored() = rhsData.getData();
-                // FIXME: in `RewriteToCallKernelOpPass` create string for body of `DistributedComputeOp` and pass it as
-                //  an additional parameter to this kernel -> string representation necessary!
-                task.set_mlir_code(
-                    "func @dist(%arg0: !daphne.Matrix<f64>, %arg1: !daphne.Matrix<f64>) -> !daphne.Matrix<f64> {\n"
-                    "      %13 = \"daphne.ewAdd\"(%arg0, %arg1) : (!daphne.Matrix<f64>, !daphne.Matrix<f64>) -> !daphne.Matrix<f64>\n"
-                    "      \"daphne.return\"(%13) : (!daphne.Matrix<f64>) -> ()\n"
-                    "    }");
+                task.set_mlir_code(mlirCode);
                 distributed::ComputeResult result;
                 auto status = stub->Compute(&context, task, &result);
 
