@@ -1,0 +1,1 @@
+print("ESCAPES:\ntab\ttab\nquote\"\nbackslash\\");

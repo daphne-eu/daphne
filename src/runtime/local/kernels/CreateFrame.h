@@ -14,17 +14,27 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
-#define SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H
+#define SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H
 
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
+
+#include <vector>
+
+#include <cstddef>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-size_t numRows(const Structure * arg) {
-    return arg->getNumRows();
+void createFrame(Frame *& res, Structure ** colMats, size_t numColMats) {
+    std::vector<Structure *> colMatsVec;
+    for(size_t c = 0; c < numColMats; c++)
+        colMatsVec.push_back(colMats[c]);
+    
+    res = DataObjectFactory::create<Frame>(colMatsVec, nullptr);
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H

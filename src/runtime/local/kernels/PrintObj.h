@@ -36,4 +36,9 @@ void printObj(const DT * arg) {
     arg->print(std::cout);
 }
 
+template<>
+void printObj(const char * arg) {
+    std::cout << arg << std::endl;
+}
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H

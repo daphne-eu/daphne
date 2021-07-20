@@ -101,7 +101,7 @@ class DaphneDSLBuiltins {
     
 public:
     
-    DaphneDSLBuiltins(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
+    explicit DaphneDSLBuiltins(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
         //
     };
 

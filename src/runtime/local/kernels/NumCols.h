@@ -17,12 +17,13 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMCOLS_H
 #define SRC_RUNTIME_LOCAL_KERNELS_NUMCOLS_H
 
+#include <runtime/local/datastructures/Structure.h>
+
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-size_t numCols(const DT * arg) {
+size_t numCols(const Structure * arg) {
     return arg->getNumCols();
 }
 

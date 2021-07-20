@@ -251,7 +251,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         for(auto arg : args)
             colTypes.push_back(arg.getType().dyn_cast<MatrixType>().getElementType());
         mlir::Type t = FrameType::get(builder.getContext(), colTypes);
-        return static_cast<mlir::Value>(builder.create<FrameOp>(loc, t, args));
+        return static_cast<mlir::Value>(builder.create<CreateFrameOp>(loc, t, args));
     }
     if(func == "diagMatrix")
         return createSameTypeUnaryOp<DiagMatrixOp>(loc, func, args);
@@ -449,7 +449,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "cbind")
         return createBindOp<ColBindOp>(loc, func, args);
     if(func == "rbind")
-        return createBindOp<ColBindOp>(loc, func, args);
+        return createBindOp<RowBindOp>(loc, func, args);
     if(func == "reverse")
         return createSameTypeUnaryOp<ReverseOp>(loc, func, args);
     if(func == "order") {
