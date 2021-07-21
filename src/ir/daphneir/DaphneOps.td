@@ -62,7 +62,7 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
 }
 
 // TODO This can probably be subsumed by ColBindOp.
-def Daphne_FrameOp : Daphne_Op<"frame"> {
+def Daphne_CreateFrameOp : Daphne_Op<"createFrame"> {
     let arguments = (ins Variadic<Matrix>:$cols);
     let results = (outs Frame:$res);
 }
@@ -666,6 +666,20 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOf<[SI64]>:$info);
     let results = (outs MatrixOrFrame:$res);
+}
+
+// ****************************************************************************
+// Low-level auxiliary operations
+// ****************************************************************************
+
+def Daphne_CreateVariadicPackOp : Daphne_Op<"createVariadicPack"> {
+    let arguments = (ins IndexAttr:$numElements);
+    let results = (outs VariadicPack:$res);
+}
+
+def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
+    let arguments = (ins VariadicPack:$pack, AnyType:$item, IndexAttr:$pos);
+    let results = (outs); // no results
 }
 
 // ****************************************************************************

@@ -19,6 +19,8 @@ add_executable(run_tests
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/literals/LiteralsTest.cpp
+        api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/Utils.cpp
@@ -33,6 +35,7 @@ add_executable(run_tests
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp
