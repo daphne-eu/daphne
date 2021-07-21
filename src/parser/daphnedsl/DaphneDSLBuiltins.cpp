@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <ir/daphneir/Daphne.h>
+#include <parser/daphnedsl/DaphneDSLBuiltins.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include "antlr4-runtime.h"
 
@@ -247,11 +248,49 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
     if(func == "frame") {
         checkNumArgsMin(func, numArgs, 1);
+        // Determine which arguments are column matrices and which are labels.
         std::vector<mlir::Type> colTypes;
-        for(auto arg : args)
-            colTypes.push_back(arg.getType().dyn_cast<MatrixType>().getElementType());
+        std::vector<mlir::Value> cols;
+        std::vector<mlir::Value> labels;
+        bool expectCol = true;
+        for(auto arg : args) {
+            mlir::Type t = arg.getType();
+            auto mt = t.dyn_cast<MatrixType>();
+            if(expectCol && mt) {
+                colTypes.push_back(mt.getElementType());
+                cols.push_back(arg);
+            }
+            else if(t.isa<mlir::daphne::StringType>()) {
+                expectCol = false;
+                labels.push_back(arg);
+            }
+            else
+                throw std::runtime_error(
+                        "arguments to frame() built-in function must be one or "
+                        "more matrices optionally followed by equally many "
+                        "strings"
+                );
+        }
+        // Use default labels, if necessary.
+        const size_t numCols = cols.size();
+        const size_t numLabels = labels.size();
+        if(!numLabels)
+            for(size_t i = 0; i < numCols; i++) {
+                const std::string dl(Frame::getDefaultLabel(i));
+                labels.push_back(builder.create<ConstantOp>(
+                        loc, dl
+                ));
+            }
+        else if(numLabels != numCols)
+            throw std::runtime_error(
+                    "frame built-in function expects either no column labels "
+                    "or as many labels as columns"
+            );
+        // Create CreateFrameOp.
         mlir::Type t = FrameType::get(builder.getContext(), colTypes);
-        return static_cast<mlir::Value>(builder.create<CreateFrameOp>(loc, t, args));
+        return static_cast<mlir::Value>(
+                builder.create<CreateFrameOp>(loc, t, cols, labels)
+        );
     }
     if(func == "diagMatrix")
         return createSameTypeUnaryOp<DiagMatrixOp>(loc, func, args);
@@ -582,6 +621,22 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createJoinOp<AntiJoinOp>(loc, func, args);
     if(func == "semiJoin")
         return createJoinOp<SemiJoinOp>(loc, func, args);
+    
+    // ********************************************************************
+    // Frame label manipulation
+    // ********************************************************************
+    
+    if(func == "setColLabels") {
+        checkNumArgsMin(func, numArgs, 2);
+        std::vector<mlir::Value> labels;
+        for(size_t i = 1; i < numArgs; i++)
+            labels.push_back(args[i]);
+        return builder.create<SetColLabelsOp>(loc, args[0], labels);
+    }
+    if(func == "setColLabelsPrefix") {
+        checkNumArgsExact(func, numArgs, 2);
+        return builder.create<SetColLabelsPrefixOp>(loc, args[0], args[1]);
+    }
 
     // ********************************************************************
     // Conversions, casts, and copying

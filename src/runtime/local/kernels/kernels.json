@@ -203,6 +203,14 @@
                 {
                     "type": "size_t",
                     "name": "numColMats"
+                },
+                {
+                    "type": "const char **",
+                    "name": "labels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numLabels"
                 }
             ]
         },
@@ -618,6 +626,52 @@
         "instantiations": [
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SetColLabels.h",
+            "opName": "setColLabels",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char **",
+                    "name": "labels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numLabels"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SetColLabelsPrefix.h",
+            "opName": "setColLabelsPrefix",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "prefix"
+                }
+            ]
+        },
+        "instantiations": [
+            []
         ]
     },
     {

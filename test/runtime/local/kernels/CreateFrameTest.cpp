@@ -41,7 +41,18 @@ TEST_CASE("CreateFrame", TAG_KERNELS) {
     
     Frame * f = nullptr;
     Structure * colMats[] = {c0, c1, c2};
-    createFrame(f, colMats, numCols);
+    SECTION("without column labels") {
+        createFrame(f, colMats, numCols, nullptr, 0);
+    }
+    SECTION("with column labels") {
+        const char * labels[] = {"ab", "cde", "fghi"};
+        createFrame(f, colMats, numCols, labels, numCols);
+        
+        // Check column data, access by label.
+        CHECK(*(f->template getColumn<VT0>("ab")) == *c0);
+        CHECK(*(f->template getColumn<VT1>("cde")) == *c1);
+        CHECK(*(f->template getColumn<VT2>("fghi")) == *c2);
+    }
     
     // Check #rows and #cols.
     REQUIRE(f->getNumRows() == numRows);
@@ -51,7 +62,7 @@ TEST_CASE("CreateFrame", TAG_KERNELS) {
     CHECK(schema[0] == ValueTypeUtils::codeFor<VT0>);
     CHECK(schema[1] == ValueTypeUtils::codeFor<VT1>);
     CHECK(schema[2] == ValueTypeUtils::codeFor<VT2>);
-    // Check column data.
+    // Check column data, access by position.
     CHECK(*(f->template getColumn<VT0>(0)) == *c0);
     CHECK(*(f->template getColumn<VT1>(1)) == *c1);
     CHECK(*(f->template getColumn<VT2>(2)) == *c2);

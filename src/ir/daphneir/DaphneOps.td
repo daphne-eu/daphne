@@ -61,9 +61,8 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
     let results = (outs Matrix:$res);
 }
 
-// TODO This can probably be subsumed by ColBindOp.
-def Daphne_CreateFrameOp : Daphne_Op<"createFrame"> {
-    let arguments = (ins Variadic<Matrix>:$cols);
+def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [SameVariadicOperandSize]> {
+    let arguments = (ins Variadic<Matrix>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs Frame:$res);
 }
 
@@ -610,6 +609,20 @@ def Daphne_GroupOp : Daphne_Op<"group"> {
     // TODO Maybe colIdxs should be an attribute.
     let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
     let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
+}
+
+// ****************************************************************************
+// Frame label manipulation
+// ****************************************************************************
+
+def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels"> {
+    let arguments = (ins Frame:$arg, Variadic<StrScalar>:$labels);
+    let results = (outs); // no results
+}
+
+def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix"> {
+    let arguments = (ins Frame:$arg, StrScalar:$prefix);
+    let results = (outs); // no results
 }
 
 // ****************************************************************************
