@@ -14,6 +14,5 @@
 
 add_library(Util
         MurmurHash3.cpp
-        UniqueBoundedPriorityQueue.cpp
 )
 target_link_libraries(Util)

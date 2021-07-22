@@ -15,6 +15,7 @@
  */
 
 
+#include <cstddef>
 #include <cstdlib>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -30,17 +31,37 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
     using DT = TestType;
 
     const size_t numElements = 10000;
-    std::vector<typename DT::VT> v(numElements,0);
     std::srand(123456789);
 
-    std::generate_n(v.begin(), numElements/100, std::rand);
-    auto mat10000 = genGivenVals<DT>(100, v);
 
     SECTION("numDistinctApprox distinct") {
 
+        std::vector<typename DT::VT> v(numElements,0);
+        std::generate_n(v.begin(), numElements/100, std::rand);
+
+        auto mat10000 = genGivenVals<DT>(100, v);
         // Allow +/-10% error. When error is bigger something is either
         // wrong parametriced (K to small) or the algorithm broke.
         auto approxResult = numDistinctApprox(mat10000, 64);
+        auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
+
+        CHECK(isResultBelow10PercentOff);
+    }
+
+    SECTION("numDistinctApprox distinct leading 100 zeros") {
+
+        std::vector<typename DT::VT> v2(numElements,0);
+        std::srand(123456789);
+
+        auto it = v2.begin();
+        std::advance(it, 100);
+        std::generate_n(it, numElements/100, std::rand);
+
+        auto matZerosAtStart = genGivenVals<DT>(100, v2);
+
+        // Allow +/-10% error. When error is bigger something is either
+        // wrong parametriced (K to small) or the algorithm broke.
+        auto approxResult = numDistinctApprox(matZerosAtStart, 64);
         auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
 
         CHECK(isResultBelow10PercentOff);

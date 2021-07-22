@@ -27,7 +27,7 @@
 #include <queue>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <util/UniqueBoundedPriorityQueue.h>
+#include <util/UniqueBoundedSet.h>
 #include <tuple>
 #include <util/MurmurHash3.h>
 #include <vector>
@@ -57,7 +57,7 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
       const size_t numRows = arg->getNumRows();
       const size_t numCols = arg->getNumCols();
 
-      UniqueBoundedPriorityQueue<uint32_t> pQueue(K);
+      UniqueBoundedSet<uint32_t> uBSet(K);
 
       uint32_t hashedValueOut = 0;
 
@@ -65,11 +65,11 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
           for(auto colIdx = 0; colIdx < numCols; colIdx++) {
               auto el = arg->get(rowIdx, colIdx);
               MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
-              pQueue.push(hashedValueOut);
+              uBSet.push(hashedValueOut);
           }
       }
 
-      size_t kMinVal = pQueue.top();
+      size_t kMinVal = uBSet.top();
       const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
       double kMinValNormed =
           static_cast<double>(kMinVal) / static_cast<double>(maxVal);
@@ -85,14 +85,14 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
         const size_t numElements = numRows * numCols;
 
-        UniqueBoundedPriorityQueue<uint32_t> pQueue(K);
+        UniqueBoundedSet<uint32_t> uBSet(K);
         uint32_t hashedValueOut = 0;
 
         const size_t numNonZeros = arg->getNumNonZeros();
         if (numElements > numNonZeros) { // at least one zero.
             const VT zero = 0;
             MurmurHash3_x86_32(&zero, sizeof(VT), seed, &hashedValueOut);
-            pQueue.push(hashedValueOut);
+            uBSet.push(hashedValueOut);
         }
 
         for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
@@ -102,11 +102,11 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
             for(size_t colIdx = 0; colIdx < numNonZerosInRow; colIdx++) {
                 VT el = values[colIdx];
                 MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
-                pQueue.push(hashedValueOut);
+                uBSet.push(hashedValueOut);
             }
         }
 
-      size_t kMinVal = pQueue.top();
+      size_t kMinVal = uBSet.top();
       const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
       double kMinValNormed =
           static_cast<double>(kMinVal) / static_cast<double>(maxVal);
