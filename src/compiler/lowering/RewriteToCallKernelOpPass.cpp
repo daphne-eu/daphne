@@ -85,9 +85,10 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
-            // Example:
             if(llvm::isa<daphne::CreateFrameOp>(op))
-                return 1;
+                return 2;
+            if(llvm::isa<daphne::SetColLabelsOp>(op))
+                return 2;
             throw std::runtime_error(
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
@@ -98,10 +99,18 @@ namespace
         // isVariadic boolean array is automatically generated *within* the
         // getODSOperandIndexAndLength method.
         static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
-            // Example:
             if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {true};
+                static bool isVariadic[] = {true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::SetColLabelsOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -150,7 +159,13 @@ namespace
             // The operands of the CallKernelOp may differ from the operands
             // of the given operation, if it has a variadic operand.
             std::vector<Value> newOperands;
-            if(op->hasTrait<OpTrait::VariadicOperands>()) {
+            if(
+                // TODO Unfortunately, one needs to know the exact N for
+                // AtLeastNOperands... There seems to be no simple way to
+                // detect if an operation has variadic ODS operands.
+                op->hasTrait<OpTrait::VariadicOperands>() ||
+                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>()
+            ) {
                 // For operations with variadic operands, we replace all
                 // occurrences of a variadic operand by a single operand of
                 // type VariadicPack as well as an operand for the number of

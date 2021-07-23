@@ -97,6 +97,7 @@ class Frame : public Structure {
      * labels have been initialized.
      */
     void initLabels2Idxs() {
+        labels2idxs.clear();
         for(size_t i = 0; i < numCols; i++) {
             if(labels2idxs.count(labels[i]))
                 throw std::runtime_error(
@@ -105,10 +106,6 @@ class Frame : public Structure {
                 );
             labels2idxs[labels[i]] = i;
         }
-    }
-    
-    const std::string getDefaultLabel(size_t pos) {
-        return "col_" + std::to_string(pos);
     }
     
     // TODO Should the given schema array really be copied, or reused?
@@ -257,6 +254,16 @@ class Frame : public Structure {
     
 public:
     
+    /**
+     * @brief Returns the default label to use for the pos-th column, if no
+     * column label was specified.
+     * @param pos The position of the column in the frame (starting at zero).
+     * @return The default label for the pos-th column.
+     */
+    static const std::string getDefaultLabel(size_t pos) {
+        return "col_" + std::to_string(pos);
+    }
+    
     void shrinkNumRows(size_t numRows) {
         // TODO Here we could reduce the allocated size of the column arrays.
         this->numRows = numRows;
@@ -264,6 +271,16 @@ public:
     
     const ValueTypeCode * getSchema() const {
         return schema;
+    }
+    
+    const std::string * getLabels() {
+        return labels;
+    }
+    
+    void setLabels(const std::string * newLabels) {
+        for(size_t i = 0; i < numCols; i++)
+            labels[i] = newLabels[i];
+        initLabels2Idxs();
     }
     
     ValueTypeCode getColumnType(size_t idx) const {
