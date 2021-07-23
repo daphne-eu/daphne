@@ -137,15 +137,15 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
                 std::uniform_real_distribution<VT>,
                 std::uniform_int_distribution<VT>
         >::type distrVal(min, max);
-        
+
         std::uniform_int_distribution<size_t> distrRow(0, numRows - 1);
         std::uniform_int_distribution<size_t> distrCol(0, numCols - 1);
-        
+
         // Generate non-zero values (positions in the matrix do not matter here).
         VT * valuesRes = res->getValues();
         for(size_t i = 0; i < nnz; i++)
             valuesRes[i] = distrVal(gen);
-        
+
         // Randomly determine the number of non-zeros per row. Store them in
         // the result matrix's rowOffsets array to avoid an additional
         // allocation and to make the prefix sum more cache-efficient.
@@ -178,7 +178,7 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
                 }
             }
         }
-        
+
         // Generate random column indexes, sorted within each row.
         size_t * colIdxsRes = res->getColIdxs();
         if(sparsity <= 0.5) {
@@ -202,7 +202,7 @@ struct RandMatrix<CSRMatrix<VT>, VT> {
                         *colIdxsRes++ = c;
             }
         }
-        
+
         // Calculate the row offsets as the prefix sum over the nnz per row.
         rowOffsetsRes[0] = 0;
         for(size_t i = 1; i <= numRows; i++)
