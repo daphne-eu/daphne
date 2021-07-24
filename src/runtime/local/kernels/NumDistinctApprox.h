@@ -52,30 +52,35 @@ template <class DTArg> size_t numDistinctApprox(const DTArg *arg, size_t K) {
 // ****************************************************************************
 
 template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
-  static size_t apply(const DenseMatrix<VT> *arg, size_t K, uint64_t seed = 1234567890) {
-
-      const size_t numRows = arg->getNumRows();
-      const size_t numCols = arg->getNumCols();
-
-      UniqueBoundedSet<uint32_t> uBSet(K);
-
-      uint32_t hashedValueOut = 0;
-
-      for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
-          for(auto colIdx = 0; colIdx < numCols; colIdx++) {
-              auto el = arg->get(rowIdx, colIdx);
-              MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
-              uBSet.push(hashedValueOut);
-          }
-      }
-
-      size_t kMinVal = uBSet.top();
-      const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
-      double kMinValNormed =
-          static_cast<double>(kMinVal) / static_cast<double>(maxVal);
+    static size_t apply(const DenseMatrix<VT> *arg, size_t K, uint64_t seed = 1234567890) {
   
-      return (K - 1) / kMinValNormed;
-  }
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+  
+        UniqueBoundedSet<uint32_t> uBSet(K);
+  
+        uint32_t hashedValueOut = 0;
+  
+        for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+                auto el = arg->get(rowIdx, colIdx);
+                MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
+                uBSet.push(hashedValueOut);
+            }
+        }
+  
+        // When the set is not full, we know exactly how many distinct items are in there.
+        if (uBSet.size() < K) {
+            return uBSet.size();
+        }
+  
+        size_t kMinVal = uBSet.top();
+        const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
+        double kMinValNormed =
+            static_cast<double>(kMinVal) / static_cast<double>(maxVal);
+    
+        return (K - 1) / kMinValNormed;
+    }
 };
 
 template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
@@ -106,12 +111,17 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
             }
         }
 
-      size_t kMinVal = uBSet.top();
-      const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
-      double kMinValNormed =
-          static_cast<double>(kMinVal) / static_cast<double>(maxVal);
+        // When the set is not full, we know exactly how many distinct items are in there.
+        if (uBSet.size() < K) {
+            return uBSet.size();
+        }
 
-      return (K - 1) / kMinValNormed;
+        size_t kMinVal = uBSet.top();
+        const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
+        double kMinValNormed =
+            static_cast<double>(kMinVal) / static_cast<double>(maxVal);
+  
+        return (K - 1) / kMinValNormed;
     }
 };
 

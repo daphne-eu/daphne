@@ -61,6 +61,12 @@ public:
         return *it;
     }
 
+    size_t size(){
+        return std::set<QT>::size();
+    };
+
+
+
 private:
     size_t K;
 };

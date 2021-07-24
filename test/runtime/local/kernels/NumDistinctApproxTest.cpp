@@ -32,37 +32,50 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
     using DT = TestType;
     using VT = typename DT::VT;
 
-    // The new data generation.
-    const size_t numRows = 100;
-    const size_t numCols = 100;
-    const double sparsity = 0.1;
-    // Each of the following cases generates approximately 1000 non-zero values.
-    // The test case is automatically run separately for each of the sections.
-    DT * mat = nullptr;
-    size_t expectedNumDistinct;
-    auto approxResult = 0;
-    SECTION("unique values") {
-        randMatrix<DT, VT>(mat, numRows, numCols, VT(0), VT(100000000), sparsity, -1);
-        expectedNumDistinct = 1000;
-        approxResult = numDistinctApprox(mat, 128);
-    }
-    SECTION("many, non-unique values") { // more than k unique values
-        randMatrix<DT, VT>(mat, numRows, numCols, VT(0), VT(200), sparsity, -1);
-        expectedNumDistinct = 200;
-        approxResult = numDistinctApprox(mat, 128);
-    }
-    /*
-    SECTION("few, non-unique values") { // less than k unique values
-        randMatrix<DT, VT>(mat, numRows, numCols, VT(0), VT(10), sparsity, -1);
-        expectedNumDistinct = 10;
-        approxResult = numDistinctApprox(mat, 128);
-    }
-    */
+    const size_t numElements = 10000;
+    std::srand(123456789);
+    size_t expectedNumDistinct = 0;
+    size_t approxResult = 0;
 
-    // Allow +/-20% error. When error is bigger something is either
+
+    SECTION("numDistinctApprox distinct") {
+
+        std::vector<VT> v(numElements,0);
+        std::generate_n(v.begin(), numElements/100, std::rand);
+
+        auto mat10000 = genGivenVals<DT>(100, v);
+        approxResult = numDistinctApprox(mat10000, 64);
+        expectedNumDistinct = 100;
+    }
+
+    SECTION("numDistinctApprox distinct leading 100 zeros") {
+
+        std::vector<VT> v(numElements,0);
+        std::srand(123456789);
+
+        auto it = v.begin();
+        std::advance(it, 100);
+        std::generate_n(it, numElements/100, std::rand);
+
+        auto matZerosAtStart = genGivenVals<DT>(100, v);
+        approxResult = numDistinctApprox(matZerosAtStart, 64);
+        expectedNumDistinct = 100;
+    }
+
+    SECTION("numDistinctApprox #distinct elements < K") {
+
+        std::vector<VT> v(numElements, 0);
+        v[0] = VT(1);
+        auto twoDistinctValsMat = genGivenVals<DT>(100, v);
+
+        approxResult = numDistinctApprox(twoDistinctValsMat, 64);
+        expectedNumDistinct = 2;
+
+    }
+
+    // Allow +/-10% error. When error is bigger something is either
     // wrong parametriced (K to small) or the algorithm broke.
-    //auto approxResult = numDistinctApprox(mat, 64);
-    const size_t tolerance = static_cast<size_t>(expectedNumDistinct * 0.2);
+    const size_t tolerance = static_cast<size_t>(expectedNumDistinct * 0.1);
     CHECK(approxResult >= expectedNumDistinct - tolerance);
     CHECK(approxResult <= expectedNumDistinct + tolerance);
 }
@@ -70,75 +83,113 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
 TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
 
     using DT = TestType;
+    using VT = typename DT::VT;
 
-    const size_t numElements = 10000;
-    std::vector<typename DT::VT> v(numElements,0);
+    const size_t numRows = 100;
+    const size_t numCols = 100;
+    const size_t numElements = numRows * numCols;
+    size_t expectedNumDistinct = 0;
+    size_t approxResult = 0;
+
+    std::vector<VT> v(numElements,0);
     std::srand(123456789);
 
     std::generate_n(v.begin(), numElements, std::rand);
-    auto mat10000 = genGivenVals<DT>(100, v);
+    auto mat10000 = genGivenVals<DT>(numRows, v);
 
-    auto subMat = DataObjectFactory::create<DT>(mat10000,
-        0,
-        mat10000->getNumRows()/100,
-        0,
-        mat10000->getNumCols()
-    );
-
-    auto fullSubMat = DataObjectFactory::create<DT>(mat10000,
-        0,
-        mat10000->getNumRows(),
-        0,
-        mat10000->getNumCols()
-    );
-
-    SECTION("numDistinctApprox for Sub-DenseMatrix") {
-
-        // Allow +/-10% error. When error is bigger something is either
-        // wrong parametriced (K to small) or the algorithm broke.
-        auto approxResult = numDistinctApprox(subMat, 64);
-        auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
-        CHECK(isResultBelow10PercentOff);
+    SECTION("numDistinctApprox for Sub-DenseMatrix full matrix - sanity check") {
+        auto fullSubMat = DataObjectFactory::create<DT>(mat10000,
+            0,
+            numRows,
+            0,
+            numCols
+        );
 
         approxResult = numDistinctApprox(fullSubMat, 64);
-        isResultBelow10PercentOff = approxResult <= 11000 && approxResult >= 9000;
-        CHECK(isResultBelow10PercentOff);
+        expectedNumDistinct = numElements;
     }
+
+    SECTION("numDistinctApprox for Sub-DenseMatrix") {
+        auto subMat = DataObjectFactory::create<DT>(mat10000,
+            0,
+            numRows/100,
+            0,
+            numCols
+        );
+
+        approxResult = numDistinctApprox(subMat, 64);
+        expectedNumDistinct = numElements/100;
+
+    }
+
+    SECTION("numDistinctApprox for Sub-DenseMatrix #distinct elements < K") {
+        auto smallSubMat = DataObjectFactory::create<DT>(mat10000,
+            0,
+            numRows/100,
+            0,
+            numCols/10
+        );
+
+        approxResult = numDistinctApprox(smallSubMat, 64);
+        expectedNumDistinct = numElements/1000;
+    }
+
+    // Allow +/-10% error. When error is bigger something is either
+    // wrong parametriced (K to small) or the algorithm broke.
+    const size_t tolerance = static_cast<size_t>(expectedNumDistinct * 0.1);
+    CHECK(approxResult >= expectedNumDistinct - tolerance);
+    CHECK(approxResult <= expectedNumDistinct + tolerance);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
 
     using DT = TestType;
+    using VT = typename DT::VT;
 
-    const size_t numElements = 10000;
-    std::vector<typename DT::VT> v(numElements,0);
+    const size_t numRows = 100;
+    const size_t numCols = 100;
+    const size_t numElements = numRows * numCols;
+    size_t expectedNumDistinct = 0;
+    size_t approxResult = 0;
+
+    std::vector<VT> v(numElements, 0);
     std::srand(123456789);
 
     std::generate_n(v.begin(), numElements, std::rand);
-    auto mat10000 = genGivenVals<DT>(100, v);
+    auto mat10000 = genGivenVals<DT>(numRows, v);
 
-    auto subMat = DataObjectFactory::create<DT>(mat10000,
-        0,
-        mat10000->getNumRows()/100
-    );
 
-    auto fullSubMat = DataObjectFactory::create<DT>(mat10000,
-        0,
-        mat10000->getNumRows()
-    );
-
-    SECTION("numDistinctApprox Sub-CSRMatrix") {
-
-        // Allow +/-10% error. When error is bigger something is either
-        // wrong parametriced (K to small) or the algorithm broke.
-        auto approxResult = numDistinctApprox(subMat, 64);
-        auto isResultBelow10PercentOff = approxResult <= 110 && approxResult >= 90;
-        CHECK(isResultBelow10PercentOff);
-
+    SECTION("numDistinctApprox for Sub-CSRMatrix full matrix - sanity check") {
+        auto fullSubMat = DataObjectFactory::create<DT>(mat10000,
+            0,
+            numRows
+        );
         approxResult = numDistinctApprox(fullSubMat, 64);
-        isResultBelow10PercentOff = approxResult <= 11000 && approxResult >= 9000;
-
-        CHECK(isResultBelow10PercentOff);
+        expectedNumDistinct = numElements;
     }
 
+    SECTION("numDistinctApprox Sub-CSRMatrix") {
+        auto subMat = DataObjectFactory::create<DT>(mat10000,
+            0,
+            numRows/100
+        );
+        approxResult = numDistinctApprox(subMat, 64);
+        expectedNumDistinct = numElements/100;
+    }
+
+    SECTION("numDistinctApprox for Sub-CSRMatrix #distinct elements < K") {
+        auto smallSubMat = DataObjectFactory::create<DT>(mat10000,
+            0,
+            numRows/100
+        );
+
+        approxResult = numDistinctApprox(smallSubMat, 128);
+        expectedNumDistinct = numElements/100;
+    }
+
+    // Allow +/-10% error. When error is bigger something is either
+    // wrong parametriced (K to small) or the algorithm broke.
+    const size_t tolerance = static_cast<size_t>(expectedNumDistinct * 0.1);
+    CHECK(approxResult >= expectedNumDistinct - tolerance);
+    CHECK(approxResult <= expectedNumDistinct + tolerance);
 }
