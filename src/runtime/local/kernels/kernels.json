@@ -392,6 +392,10 @@
                 {
                     "name": "DTArg",
                     "isDataType": true
+                },
+                {
+                    "name": "DTSel",
+                    "isDataType": true
                 }
             ],
             "runtimeParams": [
@@ -404,14 +408,16 @@
                     "name": "arg"
                 },
                 {
-                    "type": "const DenseMatrix<int64_t> *",
-                    "name": "colIdxs"
+                    "type": "const DTSel *",
+                    "name": "sel"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], "Frame", "char"],
+            [["DenseMatrix", "int64_t"], "Frame", "char"]
         ]
     },
     {

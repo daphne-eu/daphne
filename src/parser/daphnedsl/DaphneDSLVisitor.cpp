@@ -395,15 +395,26 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    mlir::Type objType = obj.getType();
     if(ctx->rows)
         throw std::runtime_error("right indexing does not support selecting rows yet");
     else if(ctx->cols) {
         mlir::Value cols = utils.valueOrError(visit(ctx->cols));
-        mlir::Type t = cols.getType();
-        if(t.isInteger(64) || t.isF64()) // TODO consider all supported value types
+        mlir::Type colsType = cols.getType();
+        mlir::Type resType;
+        // TODO Consider all supported value types.
+        if(colsType.isInteger(64) || colsType.isF64()) {
             cols = utils.castSizeIf(cols);
+            colsType = cols.getType();
+        }
+        if(objType.isa<mlir::daphne::FrameType>() && colsType.isa<mlir::daphne::StringType>())
+            // In this case, we cannot tell the value type of the output at the
+            // moment.
+            resType = utils.matrixOf(mlir::daphne::UnknownType::get(builder.getContext()));
+        else
+            resType = objType;
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
-                builder.getUnknownLoc(), obj.getType(), obj, cols
+                builder.getUnknownLoc(), resType, obj, cols
         ));
     }
     else

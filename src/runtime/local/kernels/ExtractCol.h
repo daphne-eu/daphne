@@ -28,9 +28,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
+template<class DTRes, class DTArg, class DTSel>
 struct ExtractCol {
-    static void apply(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * sel) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, const DTSel * sel) = delete;
 };
 
 // ****************************************************************************
@@ -41,9 +41,9 @@ struct ExtractCol {
 // with the rest of the code and DaphneIR (even though int64_t also makes
 // sense), but currently, it would be too hard to get a matrix of size_t via
 // DaphneDSL, since we do not have value type casts yet.
-template<class DTRes, class DTArg>
-void extractCol(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * sel) {
-    ExtractCol<DTRes, DTArg>::apply(res, arg, sel);
+template<class DTRes, class DTArg, class DTSel>
+void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel) {
+    ExtractCol<DTRes, DTArg, DTSel>::apply(res, arg, sel);
 }
 
 // ****************************************************************************
@@ -51,11 +51,11 @@ void extractCol(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * se
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix
+// DenseMatrix <- DenseMatrix, DenseMatrix (positions)
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>> {
+struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * sel) {
         assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
         
@@ -83,6 +83,18 @@ struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- Frame, String (column label)
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct ExtractCol<DenseMatrix<VT>, Frame, char> {
+    static void apply(DenseMatrix<VT> *& res, const Frame * arg, const char * sel) {
+        // TODO Can we avoid this const_cast?
+        res = const_cast<DenseMatrix<VT> *>(arg->getColumn<VT>(sel));
     }
 };
 
