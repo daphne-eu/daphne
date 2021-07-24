@@ -87,7 +87,7 @@ def Size : TypeAlias<Index, "size">;
 def Seed : TypeAlias<SI64, "seed">;
 
 // TODO Remove SI64 again, it was only added temporarily to make things work.
-def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
+def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>]>;
 
 def VariadicPack : Daphne_Type<"VariadicPack"> {
     let summary = "pack of variadic operands";

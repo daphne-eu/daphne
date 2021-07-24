@@ -348,12 +348,55 @@ def Daphne_CovOp : Daphne_Op<"cov"> {
 // ****************************************************************************
 
 def Daphne_ExtractOp : Daphne_Op<"extract"> {
-    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
+    let summary = "Copies the specified rows and columns from the argument to the result.";
+
+    let description = [{
+        This operation is effectively similar to a combination of `extractRow`
+        and `extractCol`. Please see the documentation of those operations.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_ExtractRowOp : Daphne_Op<"extractRow"> {
+    let summary = "Copies the specified rows from the argument to the result.";
+
+    let description = [{
+        Copies the rows of a data object `source` (matrix or frame) at the
+        positions specified by `selectedRows` to the result. `selectedRows`
+        must be either a scalar or a single-column matrix of positions (row
+        indexes) into `source`, i.e., the entries must be between zero
+        (inclusive) and the number of rows in `source` (exclusive). Beyond that,
+        there are no restrictions.
+
+        Note that `FilterRowOp` is similar, but works with bit vectors instead
+        of positions lists.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows);
     let results = (outs MatrixOrFrame:$res);
 }
 
 def Daphne_ExtractColOp : Daphne_Op<"extractCol"> {
-    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedCols);
+    let summary = "Copies the specified columns from the argument to the result.";
+
+    let description = [{
+        Copies the columns of a data object `source` (matrix or frame) at the
+        positions specified by `selectedCols` to the result. `selectedCols`
+        must be either a scalar or a single-column matrix of positions (column
+        indexes) into `source`, i.e., the entries must be between zero
+        (inclusive) and the number of columns in `source` (exclusive). Beyond
+        that, there are no restrictions.
+
+        Alternatively, `selectedCols` can be a string, in which case the column
+        with that label is extracted from `source` if it is a frame.
+
+        Note that `FilterRowOp` is similar, but works with bit vectors instead
+        of positions lists.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -596,6 +639,26 @@ def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 def Daphne_QueryOp : Daphne_Op<"query"> {
     let arguments = (ins Frame:$arg, StrAttr:$cond);
     let results = (outs Frame:$res);
+}
+
+def Daphne_FilterRowOp : Daphne_Op<"filterRow"> {
+    let summary = "Filters the rows of a data object according to a bit vector";
+
+    let description = [{
+        Filters the rows of a data object (matrix or frame) according to a bit
+        vector. The argument `selectedRows` must be a single-column matrix. All
+        its entries must be zero or one. The value type of `selectedRows` does
+        not need to be boolean, it could also be an integer or floating-point
+        type. `selectedRows` and `source` must have the same number of rows.
+        The *i*-th row of `source` is contained in the result, if the *i*-th
+        entry of `selectedRows` is a one (in its respective value type).
+
+        Note that `ExtractRowOp` is similar, but works with positions lists
+        instead of bit vectors.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Matrix:$selectedRows);
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // Note that ExtractOp can be used to filter rows by a column of bool or a
