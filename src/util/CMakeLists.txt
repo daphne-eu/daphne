@@ -12,13 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_mlir_dialect_library(MLIRDaphneTransforms
-    RewriteToCallKernelOpPass.cpp
-    LowerToLLVMPass.cpp
-
-    DEPENDS
-    MLIRDaphneOpsIncGen
-
-    LINK_COMPONENTS
-    Core
+add_library(Util
+        MurmurHash3.cpp
 )
+target_link_libraries(Util)

@@ -76,5 +76,6 @@ add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/parser)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/kernels)
+add_subdirectory(src/util)
 
 add_subdirectory(test)
