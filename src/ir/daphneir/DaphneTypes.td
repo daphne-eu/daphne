@@ -101,4 +101,14 @@ def VariadicPack : Daphne_Type<"VariadicPack"> {
     let parameters = (ins "::mlir::Type":$containedType);
 }
 
+def Unknown : Daphne_Type<"Unknown"> {
+    let summary = "placeholder for an unknown type";
+    let description = [{
+        This type is meant to be used in situations when a type is not (yet)
+        known. In some cases, it could be replaced by a known type in a
+        compiler pass. In other cases, it might not be known at compile-time at
+        all and the run-time needs to deal with it.
+    }];
+}
+
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

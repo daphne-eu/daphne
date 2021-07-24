@@ -114,6 +114,8 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "String";
     else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
         os << "VariadicPack<" << t.getContainedType() << '>';
+    else if (type.isa<mlir::daphne::UnknownType>())
+        os << "Unknown";
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
@@ -124,7 +126,14 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, Type elementType)
 {
-    if (elementType.isSignedInteger(64) || elementType.isF64() || elementType.isIndex())
+    if (
+        // Value type is unknown.
+        elementType.isa<mlir::daphne::UnknownType>()
+        // Value type is known.
+        || elementType.isSignedInteger(64)
+        || elementType.isF64()
+        || elementType.isIndex()
+    )
         return mlir::success();
     else
         return emitError() << "invalid matrix element type: " << elementType;
@@ -132,5 +141,6 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 
 ::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, std::vector<Type> columnTypes)
 {
+    // TODO Verify the individual column types.
     return mlir::success();
 }
