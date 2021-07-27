@@ -180,17 +180,24 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
         VT * valuesT = tmp->getValues();
 
+        size_t * nnzCol = new size_t[numCols](); // initialized to zeros
         for(size_t i = 0; i < numNonZeros; i++) {
             const size_t colIdx = colIdxsArg[i];
             VT val = valuesArg[i] - valuesRes[colIdx];
             valuesT[colIdx] = func(valuesT[colIdx], val * val);
+            nnzCol[colIdx]++;
         }
 
 
         for(size_t c = 0; c < numCols; c++) {
+            // Take all zeros in the column into account.
+            valuesT[c] += (valuesRes[c] * valuesRes[c]) * (numRows - nnzCol[c]);
+            // Finish computation of stddev.
             valuesT[c] /= numRows;
             valuesT[c] = sqrt(valuesT[c]);
         }
+        
+        delete[] nnzCol;
 
         memcpy(valuesRes, valuesT, numCols * sizeof(VT));
         DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
