@@ -80,7 +80,7 @@ struct AggOpCodeUtils {
             case AggOpCode::STDDEV:
                 return false;
             default:
-                throw std::runtime_error("unknown AggOpCode");
+                throw std::runtime_error("unsupported AggOpCode");
         }
     }
 };

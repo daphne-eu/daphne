@@ -70,6 +70,10 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
         else
+            // TODO Setting the function pointer yields the correct result.
+            // However, since MEAN and STDDEV are not sparse-safe, the program
+            // does not take the same path for doing the summation, and is less
+            // efficient.
             // for MEAN and STDDDEV, we need to sum
             func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
@@ -83,6 +87,8 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
         
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             return;
+        
+        // The op-code is either MEAN or STDDEV.
 
         for(size_t c = 0; c < numCols; c++)
             valuesRes[c] /= numRows;
@@ -97,7 +103,7 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++) {
                 VT val = valuesArg[c] - valuesRes[c];
-                valuesT[c] = func(valuesT[c], val * val);
+                valuesT[c] = valuesT[c] + val * val;
             }
             valuesArg += arg->getRowSkip();
         }
@@ -107,6 +113,8 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesT[c] = sqrt(valuesT[c]);
         }
 
+        // TODO We could avoid copying by returning tmp and destroying res. But
+        // that might be wrong if res was not nullptr initially.
         memcpy(valuesRes, valuesT, numCols * sizeof(VT));
         DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
     }
@@ -131,6 +139,10 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
         else
+            // TODO Setting the function pointer yields the correct result.
+            // However, since MEAN and STDDEV are not sparse-safe, the program
+            // does not take the same path for doing the summation, and is less
+            // efficient.
             // for MEAN and STDDDEV, we need to sum
             func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
@@ -165,11 +177,14 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
                     if(hist[c] < numRows)
                         valuesRes[c] = func(valuesRes[c], 0);
             }
+            
             delete[] hist;
         }
 
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             return;
+        
+        // The op-code is either MEAN or STDDEV.
 
         for(size_t c = 0; c < numCols; c++)
             valuesRes[c] /= arg->getNumRows();
@@ -184,10 +199,9 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         for(size_t i = 0; i < numNonZeros; i++) {
             const size_t colIdx = colIdxsArg[i];
             VT val = valuesArg[i] - valuesRes[colIdx];
-            valuesT[colIdx] = func(valuesT[colIdx], val * val);
+            valuesT[colIdx] = valuesT[colIdx] + val * val;
             nnzCol[colIdx]++;
         }
-
 
         for(size_t c = 0; c < numCols; c++) {
             // Take all zeros in the column into account.
@@ -199,6 +213,8 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         
         delete[] nnzCol;
 
+        // TODO We could avoid copying by returning tmp and destroying res. But
+        // that might be wrong if res was not nullptr initially.
         memcpy(valuesRes, valuesT, numCols * sizeof(VT));
         DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
 
