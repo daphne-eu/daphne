@@ -23,6 +23,7 @@ namespace mlir
 {
     namespace daphne
     {
+        std::unique_ptr<Pass> createInsertDaphneContextPass();
         std::unique_ptr<Pass> createLowerToLLVMPass();
         std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
     } // namespace daphne

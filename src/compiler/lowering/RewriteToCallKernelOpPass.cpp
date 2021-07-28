@@ -75,6 +75,8 @@ namespace
             // strings) when inserted into the typical "const DT *" template of
             // kernel input parameters.
             return "char";
+        else if(t.isa<daphne::DaphneContextType>())
+            return "DaphneContext";
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );
@@ -121,10 +123,23 @@ namespace
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
         }
+        
+        /**
+         * @brief The value of type `DaphneContext` to insert as the first
+         * argument to all kernel calls.
+         */
+        Value dctx;
 
     public:
-        KernelReplacement(MLIRContext * context, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
+        /**
+         * Creates a new KernelReplacement rewrite pattern.
+         * 
+         * @param mctx The MLIR context.
+         * @param dctx The DaphneContext to pass to the kernels.
+         * @param benefit
+         */
+        KernelReplacement(MLIRContext * mctx, Value dctx, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx)
         {
         }
 
@@ -159,6 +174,7 @@ namespace
             // The operands of the CallKernelOp may differ from the operands
             // of the given operation, if it has a variadic operand.
             std::vector<Value> newOperands;
+            
             if(
                 // TODO Unfortunately, one needs to know the exact N for
                 // AtLeastNOperands... There seems to be no simple way to
@@ -215,6 +231,11 @@ namespace
                     callee << "__" << mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
                     newOperands.push_back(op->getOperand(i));
                 }
+            
+            // Inject the current DaphneContext as the last input parameter to
+            // (almost) all kernel calls.
+            if(!llvm::isa<daphne::CreateDaphneContextOp, daphne::DestroyDaphneContextOp>(op))
+                newOperands.push_back(dctx);
 
             // Create a CallKernelOp for the kernel function to call and return
             // success().
@@ -230,19 +251,20 @@ namespace
     };
 
     struct RewriteToCallKernelOpPass
-    : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<ModuleOp>>
+    : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
     {
-        void runOnOperation() final;
+        void runOnFunction() final;
     };
 }
 
-void RewriteToCallKernelOpPass::runOnOperation()
+void RewriteToCallKernelOpPass::runOnFunction()
 {
-    auto module = getOperation();
+    FuncOp func = getFunction();
 
     OwningRewritePatternList patterns(&getContext());
 
-    // convert other operations
+    // Specification of (il)legal dialects/operations. All DaphneIR operations
+    // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
@@ -254,10 +276,26 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::CreateVariadicPackOp,
             daphne::StoreVariadicPackOp
     >();
+    
+    // Determine the DaphneContext valid in the MLIR function being rewritten.
+    mlir::Value dctx = nullptr;
+    auto ops = func.body().front().getOps<daphne::CreateDaphneContextOp>();
+    for(auto op : ops) {
+        if(!dctx)
+            dctx = op.getResult();
+        else
+            throw std::runtime_error(
+                    "function body block contains more than one CreateDaphneContextOp"
+            );
+    }
+    if(!dctx)
+        throw std::runtime_error(
+                "function body block contains no CreateDaphneContextOp"
+        );
 
-    patterns.insert<KernelReplacement>(&getContext());
-
-    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+    // Apply conversion to CallKernelOps.
+    patterns.insert<KernelReplacement>(&getContext(), dctx);
+    if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
 
 }
