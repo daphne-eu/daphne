@@ -34,7 +34,7 @@
 template<class DTRes, class DTArg>
 void checkAggCol(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
-    aggCol<DTRes, DTArg>(opCode, res, arg);
+    aggCol<DTRes, DTArg>(opCode, res, arg, nullptr);
     CHECK(*res == *exp);
 }
 

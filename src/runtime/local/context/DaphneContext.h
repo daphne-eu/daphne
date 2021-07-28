@@ -17,6 +17,11 @@
 #ifndef SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
+// This macro is intended to be used in kernel function signatures, such that
+// we can change the ubiquitous DaphneContext parameter in a single place, if
+// required.
+#define DCTX(varname) const DaphneContext * varname
+
 /**
  * @brief This class carries all kinds of run-time context information.
  * 

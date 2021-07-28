@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMDISTINCTAPPROX_H
 #define SRC_RUNTIME_LOCAL_KERNELS_NUMDISTINCTAPPROX_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <bits/stdint-uintn.h>
 #include <cctype>
 #include <cstddef>
@@ -31,8 +32,9 @@
 #include <tuple>
 #include <util/MurmurHash3.h>
 #include <vector>
+#include <chrono>
 template <class DTArg> struct NumDistinctApprox {
-    static size_t apply(const DTArg *arg, size_t K) = delete;
+    static size_t apply(const DTArg *arg, size_t K, int64_t seed, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -43,8 +45,8 @@ template <class DTArg> struct NumDistinctApprox {
  * @brief Approximates the number of distinct values using K-Minimum Values.
  * Uses the 32-bit MurmurHash3 hashing algorithm.
  */
-template <class DTArg> size_t numDistinctApprox(const DTArg *arg, size_t K) {
-    return NumDistinctApprox<DTArg>::apply(arg, K);
+template <class DTArg> size_t numDistinctApprox(const DTArg *arg, size_t K, int64_t seed, DCTX(ctx)) {
+    return NumDistinctApprox<DTArg>::apply(arg, K, seed, ctx);
 }
 
 // ****************************************************************************
@@ -52,7 +54,10 @@ template <class DTArg> size_t numDistinctApprox(const DTArg *arg, size_t K) {
 // ****************************************************************************
 
 template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
-    static size_t apply(const DenseMatrix<VT> *arg, size_t K, uint64_t seed = 1234567890) {
+    static size_t apply(const DenseMatrix<VT> *arg, size_t K, int64_t seed, DCTX(ctx)) {
+        
+        if (seed == -1)
+            seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
   
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
@@ -84,7 +89,10 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
 };
 
 template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
-    static size_t apply(const CSRMatrix<VT> *arg, size_t K, uint64_t seed = 1234567890) {
+    static size_t apply(const CSRMatrix<VT> *arg, size_t K, int64_t seed, DCTX(ctx)) {
+        
+        if (seed == -1)
+            seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();

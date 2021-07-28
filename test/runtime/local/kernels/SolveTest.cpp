@@ -30,7 +30,7 @@
 template<class DT>
 void checkSolve(const DT* lhs, const DT* rhs, const DT * exp, bool triangLhs) {
     DT *res = nullptr;
-    solve<DT, DT, DT>(res, lhs, rhs, triangLhs);
+    solve<DT, DT, DT>(res, lhs, rhs, triangLhs, nullptr);
     // instead of CHECK(*res == * exp), we use the below approximate comparison
     // because otherwise the float results do not exactly match, while double does
     CHECK(res->getNumRows() == exp->getNumRows());
@@ -57,10 +57,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double))
     });
 
     DT *y = nullptr, *tX = nullptr, *A = nullptr, *b = nullptr;
-    matMul(y, X, w);
-    transpose<DT, DT>(tX, X);
-    matMul(A, tX, X);
-    matMul(b, tX, y);
+    matMul(y, X, w, nullptr);
+    transpose<DT, DT>(tX, X, nullptr);
+    matMul(A, tX, X, nullptr);
+    matMul(b, tX, y, nullptr);
 
     // check solve A x = b for x
     checkSolve(A, b, w, false);

@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
 #define SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <cstddef>
 #include <cstdio>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -24,15 +25,15 @@
 #include <string>
 
 template <class DTArg> struct IsSymmetric {
-    static bool apply(const DTArg *arg) = delete;
+    static bool apply(const DTArg *arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template <class DTArg> bool isSymmetric(const DTArg *arg) {
-    return IsSymmetric<DTArg>::apply(arg);
+template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) {
+    return IsSymmetric<DTArg>::apply(arg, ctx);
 }
 
 // ****************************************************************************
@@ -47,7 +48,7 @@ template <class DTArg> bool isSymmetric(const DTArg *arg) {
  */
 
 template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> *arg) {
+    static bool apply(const DenseMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -79,7 +80,7 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
 };
 
 template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> *arg) {
+    static bool apply(const CSRMatrix<VT> *arg, DCTX(ctx)) {
 
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();

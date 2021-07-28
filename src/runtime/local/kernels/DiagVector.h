@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_DIAGVECTOR_H
 #define SRC_RUNTIME_LOCAL_KERNELS_DIAGVECTOR_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -31,7 +32,7 @@
 
 template<class DTArg>
 struct DiagVector {
-    static void apply(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg) = delete;
+    static void apply(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 
@@ -39,8 +40,8 @@ struct DiagVector {
 // Convenience function
 // ****************************************************************************
 template<class DTArg>
-void diagVector(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg) {
-    DiagVector<DTArg>::apply(res, arg);
+void diagVector(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg, DCTX(ctx)) {
+    DiagVector<DTArg>::apply(res, arg, ctx);
 }
 
 // ****************************************************************************
@@ -53,7 +54,7 @@ void diagVector(DenseMatrix<typename DTArg::VT> *& res, const DTArg * arg) {
 
 template<typename VT>
 struct DiagVector<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         //------handling corner cases -------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         const size_t numRows = arg->getNumRows(); // number of rows
@@ -79,7 +80,7 @@ struct DiagVector<DenseMatrix<VT>> {
 
 template<typename VT>
 struct DiagVector<CSRMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg) {
+    static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         //-------handling corner cases ---------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         const size_t numRows = arg->getNumRows(); // number of rows

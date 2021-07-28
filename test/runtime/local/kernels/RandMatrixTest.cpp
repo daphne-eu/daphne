@@ -40,7 +40,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), 
     for(double sparsity : {0.0, 0.1, 0.5, 0.9, 1.0}) {
         DYNAMIC_SECTION("sparsity = " << sparsity) {
             DT * m = nullptr;
-            randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1);
+            randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1, nullptr);
 
             REQUIRE(m->getNumRows() == numRows);
             REQUIRE(m->getNumCols() == numCols);

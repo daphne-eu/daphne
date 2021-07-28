@@ -31,14 +31,14 @@
 
 template<UnaryOpCode opCode, typename VT>
 void checkEwUnarySca(VT arg, VT exp) {
-    CHECK(EwUnarySca<opCode, VT, VT>::apply(arg) == exp);
-    CHECK(ewUnarySca<VT, VT>(opCode, arg) == exp);
+    CHECK(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr) == exp);
+    CHECK(ewUnarySca<VT, VT>(opCode, arg, nullptr) == exp);
 }
 
 template<UnaryOpCode opCode, typename VT>
 void checkEwUnaryScaNaN(VT arg) {
-    VT res1 = EwUnarySca<opCode, VT, VT>::apply(arg);
-    VT res2 = ewUnarySca<VT, VT>(opCode, arg);
+    VT res1 = EwUnarySca<opCode, VT, VT>::apply(arg, nullptr);
+    VT res2 = ewUnarySca<VT, VT>(opCode, arg, nullptr);
     CHECK(res1 != res1);
     CHECK(res2 != res2);
 }
@@ -75,5 +75,5 @@ TEMPLATE_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS, FP_V
 
 TEMPLATE_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, VALUE_TYPES) {
     using VT = TestType;
-    CHECK_THROWS(ewUnarySca<VT, VT>(static_cast<UnaryOpCode>(999), 0));
+    CHECK_THROWS(ewUnarySca<VT, VT>(static_cast<UnaryOpCode>(999), 0, nullptr));
 }

@@ -35,7 +35,7 @@ TEST_CASE("SetColLabels", TAG_KERNELS) {
     auto f = DataObjectFactory::create<Frame>(4, numCols, schema, nullptr, false);
     
     const char * labelsIn[numCols] = {"ab", "cde", "fghi"};
-    setColLabels(f, labelsIn, numCols);
+    setColLabels(f, labelsIn, numCols, nullptr);
     
     const std::string * labelsOut = f->getLabels();
     for(size_t i = 0; i < numCols; i++)

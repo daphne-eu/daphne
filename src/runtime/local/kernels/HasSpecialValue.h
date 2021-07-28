@@ -16,6 +16,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_HASSPECIALVALUE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_HASSPECIALVALUE_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <cmath>
 #include <cstddef>
 #include <cstdio>
@@ -26,7 +27,7 @@
 #include <type_traits>
 
 template <class DTArg, typename TestType> struct HasSpecialValue {
-    static bool apply(const DTArg *arg, TestType testVal ) = delete;
+    static bool apply(const DTArg *arg, TestType testVal, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -42,12 +43,12 @@ template <class DTArg, typename TestType> struct HasSpecialValue {
  * @param testVal The value to test for in the matrix.
  * @return Returns true when finding a matchin element.
  */
-template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal) { 
-    return HasSpecialValue<DTArg, TestType>::apply(arg, testVal);
+template <class DTArg, typename TestType> bool hasSpecialValue(const DTArg *arg, TestType testVal, DCTX(ctx)) { 
+    return HasSpecialValue<DTArg, TestType>::apply(arg, testVal, ctx);
 }
 
 template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>, TestType> {
-    static bool apply(const DenseMatrix<VT> *arg, TestType testVal) {
+    static bool apply(const DenseMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
 
@@ -76,7 +77,7 @@ template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>
 };
 
 template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, TestType> {
-    static bool apply(const CSRMatrix<VT> *arg, TestType testVal) {
+    static bool apply(const CSRMatrix<VT> *arg, TestType testVal, DCTX(ctx)) {
         auto numRows = arg->getNumRows();
         auto numCols = arg->getNumCols();
         auto numNonZeros = arg->getNumNonZeros();
