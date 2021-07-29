@@ -53,6 +53,7 @@ processModule(ModuleOp module)
 
     if (module) {
         //module->dump(); // print the DaphneIR representation
+#if 0
         PassManager pm(module->getContext());
         pm.addNestedPass<FuncOp>(daphne::createInsertDaphneContextPass());
         pm.addNestedPass<FuncOp>(daphne::createRewriteToCallKernelOpPass());
@@ -64,6 +65,52 @@ processModule(ModuleOp module)
             module->emitError("module pass error");
             return nullptr;
         }
+#else
+        PassManager pm1(module->getContext());
+        pm1.addNestedPass<FuncOp>(daphne::createInsertDaphneContextPass());
+        if (failed(pm1.run(module))) {
+            module->dump();
+            module->emitError("module pass error");
+            return nullptr;
+        }
+        cerr << "Module after InsertDaphneContextPass:" << endl;
+        module.dump();
+        cerr << endl;
+        
+        PassManager pm2(module->getContext());
+        pm2.addNestedPass<FuncOp>(daphne::createRewriteToCallKernelOpPass());
+        if (failed(pm2.run(module))) {
+            module->dump();
+            module->emitError("module pass error");
+            return nullptr;
+        }
+        cerr << "Module after RewriteToCallKernelOpPass:" << endl;
+        module.dump();
+        cerr << endl;
+        
+        PassManager pm3(module->getContext());
+        pm3.addPass(createLowerToCFGPass());
+        if (failed(pm3.run(module))) {
+            module->dump();
+            module->emitError("module pass error");
+            return nullptr;
+        }
+//        cerr << "Module after LowerToCFGPass:" << endl;
+//        module.dump();
+//        cerr << endl;
+        
+        PassManager pm4(module->getContext());
+        pm4.addPass(daphne::createLowerToLLVMPass());
+        if (failed(pm4.run(module))) {
+            module->dump();
+            module->emitError("module pass error");
+            return nullptr;
+        }
+        cerr << "Module after LowerToLLVMPass:" << endl;
+        module.dump();
+        cerr << endl;
+
+#endif
         return module;
     }
     return nullptr;
@@ -138,6 +185,9 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
+    cerr << "Module after parsing:" << endl;
+    moduleOp.dump();
+    cerr << endl;
     
     // Further process the module, including optimization and lowering passes.
     OwningModuleRef module = processModule(moduleOp);

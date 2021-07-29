@@ -490,6 +490,18 @@
     },
     {
         "kernelTemplate": {
+            "header": "InitFooContext.h",
+            "opName": "initFooContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
             "returnType": "void",
