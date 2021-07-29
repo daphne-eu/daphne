@@ -241,12 +241,7 @@
             "opName": "destroyDaphneContext",
             "returnType": "void",
             "templateParams": [],
-            "runtimeParams": [
-                {
-                    "type": "const DaphneContext *",
-                    "name": "ctx"
-                }
-            ]
+            "runtimeParams": []
         },
         "instantiations": [
             []

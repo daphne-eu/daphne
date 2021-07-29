@@ -153,7 +153,7 @@ namespace
             // arguments.
 
             std::stringstream callee;
-            callee << op->getName().stripDialect().str();
+            callee << '_' << op->getName().stripDialect().str();
             
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
@@ -233,8 +233,8 @@ namespace
                 }
             
             // Inject the current DaphneContext as the last input parameter to
-            // (almost) all kernel calls.
-            if(!llvm::isa<daphne::CreateDaphneContextOp, daphne::DestroyDaphneContextOp>(op))
+            // all kernel calls, unless it's a CreateDaphneContextOp.
+            if(!llvm::isa<daphne::CreateDaphneContextOp>(op))
                 newOperands.push_back(dctx);
 
             // Create a CallKernelOp for the kernel function to call and return

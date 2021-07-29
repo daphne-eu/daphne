@@ -44,14 +44,14 @@ void InsertDaphneContextPass::runOnFunction()
     Location loc = builder.getUnknownLoc();
     
     // Insert a CreateDaphneContextOp as the first operation in the block.
-    auto ctx = builder.create<daphne::CreateDaphneContextOp>(
+    builder.create<daphne::CreateDaphneContextOp>(
             loc,
             daphne::DaphneContextType::get(&getContext())
     );
     // Insert a DestroyDaphneContextOp as the last operation in the block, but
     // before the block's terminator.
     builder.setInsertionPoint(b.getTerminator());
-    builder.create<daphne::DestroyDaphneContextOp>(loc, ctx);
+    builder.create<daphne::DestroyDaphneContextOp>(loc);
 }
 
 std::unique_ptr<Pass> daphne::createInsertDaphneContextPass()

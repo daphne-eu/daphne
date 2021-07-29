@@ -764,7 +764,9 @@ def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
 def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
     let summary = "Destroys an instance of a Daphne run-time context.";
 
-    let arguments = (ins DaphneContext:$ctx);
+    // Note that the DaphneContext is automatically injected during the
+    // lowering to kernel calls.
+    let arguments = (ins); // no arguments
     let results = (outs); // no results
 }
 
