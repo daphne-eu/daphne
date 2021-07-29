@@ -42,7 +42,7 @@ struct Solve {
 
 template<class DTRes, class DTLhs, class DTRhs>
 void solve(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool triangLhs, DCTX(ctx)) {
-    Solve<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, triangLhs);
+    Solve<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, triangLhs, ctx);
 }
 
 // ****************************************************************************
