@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -33,7 +34,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct EwBinaryMat {
-    static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) = delete;
+    static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +42,8 @@ struct EwBinaryMat {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
-    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs);
+void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
+    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -55,7 +56,7 @@ void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTR
 
 template<typename VT>
 struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs) {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
@@ -74,7 +75,7 @@ struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
             // matrix op matrix (same size)
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)
-                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c]);
+                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
                 valuesLhs += lhs->getRowSkip();
                 valuesRhs += rhs->getRowSkip();
                 valuesRes += res->getRowSkip();
@@ -84,7 +85,7 @@ struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
             // matrix op row-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)
-                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c]);
+                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
                 valuesLhs += lhs->getRowSkip();
                 valuesRes += res->getRowSkip();
             }
@@ -93,7 +94,7 @@ struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
             // matrix op col-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)
-                    valuesRes[c] = func(valuesLhs[c], valuesRhs[0]);
+                    valuesRes[c] = func(valuesLhs[c], valuesRhs[0], ctx);
                 valuesLhs += lhs->getRowSkip();
                 valuesRhs += rhs->getRowSkip();
                 valuesRes += res->getRowSkip();
@@ -115,7 +116,7 @@ struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs) {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
@@ -160,7 +161,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                         size_t posRes = 0;
                         while(posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
                             if(colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
-                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs]);
+                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
                                 colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                                 posLhs++;
                                 posRhs++;
@@ -223,7 +224,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                         size_t posRes = 0;
                         while(posLhs < nnzRowLhs && posRhs < nnzRowRhs) {
                             if(colIdxsRowLhs[posLhs] == colIdxsRowRhs[posRhs]) {
-                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs]);
+                                valuesRowRes[posRes] = func(valuesRowLhs[posLhs], valuesRowRhs[posRhs], ctx);
                                 colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
                                 posLhs++;
                                 posRhs++;
@@ -256,7 +257,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 
 template<typename VT>
 struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
-    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs) {
+    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
@@ -271,7 +272,7 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->prepareAppend();
         for(size_t r = 0; r < numRows; r++)
             for(size_t c = 0; c < numCols; c++)
-                res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c));
+                res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
         res->finishAppend();
     }
 };

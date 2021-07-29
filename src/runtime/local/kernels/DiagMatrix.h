@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_DIAGMATRIX_H
 #define SRC_RUNTIME_LOCAL_KERNELS_DIAGMATRIX_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -30,7 +31,7 @@
 
 template<class DTRes, class DTArg>
 struct DiagMatrix {
-    static void apply(DTRes *& res, const DTArg * arg) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -38,8 +39,8 @@ struct DiagMatrix {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void diagMatrix(DTRes *& res, const DTArg * arg) {
-    DiagMatrix<DTRes, DTArg>::apply(res, arg);
+void diagMatrix(DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+    DiagMatrix<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
 // ****************************************************************************
@@ -52,7 +53,7 @@ void diagMatrix(DTRes *& res, const DTArg * arg) {
 
 template<typename VT>
 struct DiagMatrix<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         assert((arg->getNumCols() == 1) && "parameter arg must be a column-matrix");
         
         const size_t numRowsCols = arg->getNumRows();

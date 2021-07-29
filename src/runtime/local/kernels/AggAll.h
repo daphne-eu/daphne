@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_AGGALL_H
 #define SRC_RUNTIME_LOCAL_KERNELS_AGGALL_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/AggOpCode.h>
@@ -31,7 +32,7 @@
 
 template<class DT>
 struct AggAll {
-    static typename DT::VT apply(AggOpCode opCode, const DT * arg) = delete;
+    static typename DT::VT apply(AggOpCode opCode, const DT * arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +40,8 @@ struct AggAll {
 // ****************************************************************************
 
 template<class DT>
-typename DT::VT aggAll(AggOpCode opCode, const DT * arg) {
-    return AggAll<DT>::apply(opCode, arg);
+typename DT::VT aggAll(AggOpCode opCode, const DT * arg, DCTX(ctx)) {
+    return AggAll<DT>::apply(opCode, arg, ctx);
 }
 
 // ****************************************************************************
@@ -53,7 +54,7 @@ typename DT::VT aggAll(AggOpCode opCode, const DT * arg) {
 
 template<typename VT>
 struct AggAll<DenseMatrix<VT>> {
-    static VT apply(AggOpCode opCode, const DenseMatrix<VT> * arg) {
+    static VT apply(AggOpCode opCode, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
@@ -66,7 +67,7 @@ struct AggAll<DenseMatrix<VT>> {
         VT agg = AggOpCodeUtils::template getNeutral<VT>(opCode);
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
-                agg = func(agg, valuesArg[c]);
+                agg = func(agg, valuesArg[c], ctx);
             valuesArg += arg->getRowSkip();
         }
 
@@ -80,22 +81,22 @@ struct AggAll<DenseMatrix<VT>> {
 
 template<typename VT>
 struct AggAll<CSRMatrix<VT>> {
-    static VT aggArray(const VT * values, size_t numNonZeros, size_t numCells, EwBinaryScaFuncPtr<VT, VT, VT> func, bool isSparseSafe, VT neutral) {
+    static VT aggArray(const VT * values, size_t numNonZeros, size_t numCells, EwBinaryScaFuncPtr<VT, VT, VT> func, bool isSparseSafe, VT neutral, DCTX(ctx)) {
         if(numNonZeros) {
             VT agg = values[0];
             for(size_t i = 1; i < numNonZeros; i++)
-                agg = func(agg, values[i]);
+                agg = func(agg, values[i], ctx);
 
             if(!isSparseSafe && numNonZeros < numCells)
-                agg = func(agg, 0);
+                agg = func(agg, 0, ctx);
 
             return agg;
         }
         else
-            return func(neutral, 0);
+            return func(neutral, 0, ctx);
     }
     
-    static VT apply(AggOpCode opCode, const CSRMatrix<VT> * arg) {
+    static VT apply(AggOpCode opCode, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
 
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
@@ -106,7 +107,8 @@ struct AggAll<CSRMatrix<VT>> {
                 arg->getNumRows() * arg->getNumCols(),
                 func,
                 AggOpCodeUtils::isSparseSafe(opCode),
-                AggOpCodeUtils::template getNeutral<VT>(opCode)
+                AggOpCodeUtils::template getNeutral<VT>(opCode),
+                ctx
         );
     }
 };

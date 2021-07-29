@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H
 #define SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H
 
+#include <runtime/local/context/DaphneContext.h>
+
 #include <iostream>
 
 // ****************************************************************************
@@ -29,7 +31,7 @@
  * @param arg The value to print.
  */
 template<typename VT>
-void printSca(VT arg) {
+void printSca(VT arg, DCTX(ctx)) {
     std::cout << arg << std::endl;
 }
 

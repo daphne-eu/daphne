@@ -111,4 +111,13 @@ def Unknown : Daphne_Type<"Unknown"> {
     }];
 }
 
+def DaphneContext : Daphne_Type<"DaphneContext"> {
+    let summary = "daphne context";
+    let description = [{
+        This type represents all kinds of run-time context information in one
+        SSA value. This could be things like available hardware resources and
+        global run-time facilities.
+    }];
+}
+
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

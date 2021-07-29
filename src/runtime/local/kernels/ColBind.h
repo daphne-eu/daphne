@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_COLBIND_H
 #define SRC_RUNTIME_LOCAL_KERNELS_COLBIND_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -30,7 +31,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct ColBind {
-    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) = delete;
+    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -38,8 +39,8 @@ struct ColBind {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void colBind(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
-    ColBind<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs);
+void colBind(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
+    ColBind<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -52,7 +53,7 @@ void colBind(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
 
 template<typename VT>
 struct ColBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same number of rows");
         

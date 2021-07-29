@@ -30,7 +30,7 @@
 
 template<class DT>
 void checkDiagVector(const DT * arg, DenseMatrix<typename DT::VT> *res, DenseMatrix<typename DT::VT> * expectedMatrix) {	
-    diagVector<DT>(res, arg);
+    diagVector<DT>(res, arg, nullptr);
     CHECK(*res == *expectedMatrix);
 }
 

@@ -33,7 +33,7 @@
 
 template<class DT>
 void checkAggAll(AggOpCode opCode, const DT * arg, typename DT::VT exp) {
-    typename DT::VT res = aggAll<DT>(opCode, arg);
+    typename DT::VT res = aggAll<DT>(opCode, arg, nullptr);
     CHECK(res == exp);
 }
 

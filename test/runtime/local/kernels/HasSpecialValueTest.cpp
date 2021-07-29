@@ -42,8 +42,8 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - integer", TAG_KERNELS, (DenseMatri
     });
 
     SECTION("hasSpecialValue check if test function is applied correctly.") {
-        CHECK(hasSpecialValue(specialMat, typename DT::VT(1)));
-        CHECK_FALSE(hasSpecialValue(nonSpecialMat, typename DT::VT(1)));
+        CHECK(hasSpecialValue(specialMat, typename DT::VT(1), nullptr));
+        CHECK_FALSE(hasSpecialValue(nonSpecialMat, typename DT::VT(1), nullptr));
     }
 }
 
@@ -67,8 +67,8 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - DenseMatrix-Submatrix.", TAG_KERNE
     );
 
     SECTION("hasSpecialValue for Sub-DenseMatrix") {
-        CHECK(hasSpecialValue(specialMat, typename DT::VT(1)));
-        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1)));
+        CHECK(hasSpecialValue(specialMat, typename DT::VT(1), nullptr));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1), nullptr));
     }
 }
 
@@ -89,8 +89,8 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - CSRMatrix-Submatrix.", TAG_KERNELS
     );
 
     SECTION("hasSpecialValue for Sub-CSRMatrix") {
-        CHECK(hasSpecialValue(specialMat, typename DT::VT(1)));
-        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1)));
+        CHECK(hasSpecialValue(specialMat, typename DT::VT(1), nullptr));
+        CHECK_FALSE(hasSpecialValue(subNonSpecialMat, typename DT::VT(1), nullptr));
     }
 }
 
@@ -121,9 +121,9 @@ TEMPLATE_PRODUCT_TEST_CASE("hasSpecialValue - floating point", TAG_KERNELS, (Den
     });
 
     SECTION("Check for special values std::isnan/std::isinf.") {
-        CHECK(hasSpecialValue(sigNaNMat, sigNaN));
-        CHECK(hasSpecialValue(quietNaNMat, quietNaN));
-        CHECK(hasSpecialValue(infinityMat, inf));
-        CHECK_FALSE(hasSpecialValue(infinityMat, sigNaN));
+        CHECK(hasSpecialValue(sigNaNMat, sigNaN, nullptr));
+        CHECK(hasSpecialValue(quietNaNMat, quietNaN, nullptr));
+        CHECK(hasSpecialValue(infinityMat, inf, nullptr));
+        CHECK_FALSE(hasSpecialValue(infinityMat, sigNaN, nullptr));
     }
 }

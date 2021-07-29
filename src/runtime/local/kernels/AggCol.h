@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_AGGCOL_H
 #define SRC_RUNTIME_LOCAL_KERNELS_AGGCOL_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -34,7 +35,7 @@
 
 template<class DTRes, class DTArg>
 struct AggCol {
-    static void apply(AggOpCode opCode, DTRes *& res, const DTArg * arg) = delete;
+    static void apply(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -42,8 +43,8 @@ struct AggCol {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void aggCol(AggOpCode opCode, DTRes *& res, const DTArg * arg) {
-    AggCol<DTRes, DTArg>::apply(opCode, res, arg);
+void aggCol(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+    AggCol<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
 // ****************************************************************************
@@ -56,7 +57,7 @@ void aggCol(AggOpCode opCode, DTRes *& res, const DTArg * arg) {
 
 template<typename VT>
 struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg) {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
@@ -82,7 +83,7 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
         for(size_t r = 1; r < numRows; r++) {
             valuesArg += arg->getRowSkip();
             for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = func(valuesRes[c], valuesArg[c]);
+                valuesRes[c] = func(valuesRes[c], valuesArg[c], ctx);
         }
         
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
@@ -126,7 +127,7 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg) {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
@@ -154,7 +155,7 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
         if(AggOpCodeUtils::isSparseSafe(opCode)) {
             for(size_t i = 0; i < numNonZeros; i++) {
                 const size_t colIdx = colIdxsArg[i];
-                valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i]);
+                valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i], ctx);
             }
         }
         else {
@@ -170,12 +171,12 @@ struct AggCol<DenseMatrix<VT>, CSRMatrix<VT>> {
             if(arg->getNumRows() > 1) {
                 for(size_t i = numNonZerosFirstRowArg; i < numNonZeros; i++) {
                     const size_t colIdx = colIdxsArg[i];
-                    valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i]);
+                    valuesRes[colIdx] = func(valuesRes[colIdx], valuesArg[i], ctx);
                     hist[colIdx]++;
                 }
                 for(size_t c = 0; c < numCols; c++)
                     if(hist[c] < numRows)
-                        valuesRes[c] = func(valuesRes[c], 0);
+                        valuesRes[c] = func(valuesRes[c], 0, ctx);
             }
             
             delete[] hist;

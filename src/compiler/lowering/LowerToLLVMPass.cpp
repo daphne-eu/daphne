@@ -380,6 +380,11 @@ void DaphneLowerToLLVMPass::runOnOperation()
                 typeConverter.convertType(t.getContainedType())
         );
     });
+    typeConverter.addConversion([&](daphne::DaphneContextType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                IntegerType::get(t.getContext(), 1));
+    });
 
     LLVMConversionTarget target(getContext());
 

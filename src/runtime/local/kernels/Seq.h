@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_SEQ_H
 #define SRC_RUNTIME_LOCAL_KERNELS_SEQ_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -32,7 +33,7 @@
 
 template<class DT>
 struct Seq{
-    static void apply(DT *& res, typename DT::VT start,typename DT::VT end, typename DT::VT inc) = delete;
+    static void apply(DT *& res, typename DT::VT start,typename DT::VT end, typename DT::VT inc, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,8 +41,8 @@ struct Seq{
 // ****************************************************************************
 
 template<class DT>
-void seq(DT *& res, typename DT::VT start, typename DT::VT end, typename DT::VT inc) {
-    Seq<DT>::apply(res, start, end, inc);
+void seq(DT *& res, typename DT::VT start, typename DT::VT end, typename DT::VT inc, DCTX(ctx)) {
+    Seq<DT>::apply(res, start, end, inc, ctx);
 }
 
 // ****************************************************************************
@@ -50,7 +51,7 @@ void seq(DT *& res, typename DT::VT start, typename DT::VT end, typename DT::VT 
 
 template<typename VT>
 struct Seq<DenseMatrix<VT>> {
-        static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc) {
+        static void apply(DenseMatrix<VT> *& res, VT start, VT end, VT inc, DCTX(ctx)) {
             assert(inc == inc && "inc cannot be NaN");   
             assert(start == start && "start cannot be NaN");
             assert(end == end && "end cannot be NaN");
