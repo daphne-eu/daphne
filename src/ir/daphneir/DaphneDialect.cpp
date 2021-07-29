@@ -114,6 +114,8 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "String";
     else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
         os << "VariadicPack<" << t.getContainedType() << '>';
+    else if (type.isa<mlir::daphne::DaphneContextType>())
+        os << "DaphneContext";
     else if (type.isa<mlir::daphne::UnknownType>())
         os << "Unknown";
 };

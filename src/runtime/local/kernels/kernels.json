@@ -187,6 +187,23 @@
     },
     {
         "kernelTemplate": {
+            "header": "CreateDaphneContext.h",
+            "opName": "createDaphneContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "DaphneContext *&",
+                    "name": "res"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateFrame.h",
             "opName": "createFrame",
             "returnType": "void",
@@ -213,6 +230,18 @@
                     "name": "numLabels"
                 }
             ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DestroyDaphneContext.h",
+            "opName": "destroyDaphneContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
         },
         "instantiations": [
             []

@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
-#define SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
+#define SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/Structure.h>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-size_t numRows(const Structure * arg, DCTX(ctx)) {
-    return arg->getNumRows();
+void createDaphneContext(DaphneContext *& res) {
+    res = new DaphneContext();
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H

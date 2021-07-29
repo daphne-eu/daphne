@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_TRANSPOSE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_TRANSPOSE_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -29,7 +30,7 @@
 
 template<class DTRes, class DTArg>
 struct Transpose {
-    static void apply(DTRes *& res, const DTArg * arg) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -37,8 +38,8 @@ struct Transpose {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void transpose(DTRes *& res, const DTArg * arg) {
-    Transpose<DTRes, DTArg>::apply(res, arg);
+void transpose(DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+    Transpose<DTRes, DTArg>::apply(res, arg, ctx);
 }
 
 // ****************************************************************************
@@ -51,7 +52,7 @@ void transpose(DTRes *& res, const DTArg * arg) {
 
 template<typename VT>
 struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -78,7 +79,7 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg) {
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         

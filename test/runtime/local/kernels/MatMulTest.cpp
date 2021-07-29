@@ -28,7 +28,7 @@
 template<class DT>
 void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp) {
     DT * res = nullptr;
-    matMul<DT, DT, DT>(res, lhs, rhs);
+    matMul<DT, DT, DT>(res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
 }
 

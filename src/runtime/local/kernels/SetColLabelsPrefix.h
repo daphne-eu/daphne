@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELSPREFIX_H
 #define SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELSPREFIX_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Frame.h>
 
@@ -28,7 +29,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabelsPrefix(Frame * arg, const char * prefix) {
+void setColLabelsPrefix(Frame * arg, const char * prefix, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     const std::string * oldLabels = arg->getLabels();
     std::string * newLabels = new std::string[numCols];

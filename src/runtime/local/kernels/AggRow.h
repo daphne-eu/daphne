@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
 #define SRC_RUNTIME_LOCAL_KERNELS_AGGROW_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -33,7 +34,7 @@
 
 template<class DTRes, class DTArg>
 struct AggRow {
-    static void apply(AggOpCode opCode, DTRes *& res, const DTArg * arg) = delete;
+    static void apply(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +42,8 @@ struct AggRow {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void aggRow(AggOpCode opCode, DTRes *& res, const DTArg * arg) {
-    AggRow<DTRes, DTArg>::apply(opCode, res, arg);
+void aggRow(AggOpCode opCode, DTRes *& res, const DTArg * arg, DCTX(ctx)) {
+    AggRow<DTRes, DTArg>::apply(opCode, res, arg, ctx);
 }
 
 // ****************************************************************************
@@ -55,7 +56,7 @@ void aggRow(AggOpCode opCode, DTRes *& res, const DTArg * arg) {
 
 template<typename VT>
 struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg) {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
@@ -72,7 +73,7 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         for(size_t r = 0; r < numRows; r++) {
             VT agg = *valuesArg;
             for(size_t c = 1; c < numCols; c++)
-                agg = func(agg, valuesArg[c]);
+                agg = func(agg, valuesArg[c], ctx);
             *valuesRes = agg;
             valuesArg += arg->getRowSkip();
             valuesRes += res->getRowSkip();
@@ -86,7 +87,7 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg) {
+    static void apply(AggOpCode opCode, DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
         
@@ -109,7 +110,8 @@ struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
                     numCols,
                     func,
                     isSparseSafe,
-                    neutral
+                    neutral,
+                    ctx
             );
             valuesRes += res->getRowSkip();
         }

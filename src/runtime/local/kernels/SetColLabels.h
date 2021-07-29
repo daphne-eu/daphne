@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELS_H
 #define SRC_RUNTIME_LOCAL_KERNELS_SETCOLLABELS_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Frame.h>
 
@@ -29,7 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabels(Frame * arg, const char ** labels, size_t numLabels) {
+void setColLabels(Frame * arg, const char ** labels, size_t numLabels, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     if(numLabels != numCols)
         throw std::runtime_error(

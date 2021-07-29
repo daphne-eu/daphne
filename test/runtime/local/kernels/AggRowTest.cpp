@@ -34,7 +34,7 @@
 template<class DTRes, class DTArg>
 void checkAggRow(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
-    aggRow<DTRes, DTArg>(opCode, res, arg);
+    aggRow<DTRes, DTArg>(opCode, res, arg, nullptr);
     CHECK(*res == *exp);
 }
 

@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_TRI_H
 #define SRC_RUNTIME_LOCAL_KERNELS_TRI_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -39,7 +40,7 @@ struct Tri {
      * @param diag Preserves (true) or zeroes (false) the diagonal
      * @param values Preserves (true) or replaces with 1s the remaining elements
      */
-    static void apply(DT *& res, const DT * arg, bool upper, bool diag, bool values) = delete;
+    static void apply(DT *& res, const DT * arg, bool upper, bool diag, bool values, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -47,8 +48,8 @@ struct Tri {
 // ****************************************************************************
 
 template<class DT>
-void tri(DT *& res, const DT * arg, bool upper, bool diag, bool values) {
-    Tri<DT>::apply(res, arg, upper, diag, values);
+void tri(DT *& res, const DT * arg, bool upper, bool diag, bool values, DCTX(ctx)) {
+    Tri<DT>::apply(res, arg, upper, diag, values, ctx);
 }
 
 // ****************************************************************************
@@ -61,7 +62,7 @@ void tri(DT *& res, const DT * arg, bool upper, bool diag, bool values) {
 
 template<typename VT>
 struct Tri<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, bool upper, bool diag, bool values) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, bool upper, bool diag, bool values, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
@@ -97,7 +98,7 @@ struct Tri<DenseMatrix<VT>> {
 
 template<typename VT>
 struct Tri<CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, bool upper, bool diag, bool values) {
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, bool upper, bool diag, bool values, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 

@@ -38,7 +38,7 @@ TEST_CASE("SetColLabelsPrefix", TAG_KERNELS) {
     const std::string * labelsOut;
     
     // Introduces a prefix.
-    setColLabelsPrefix(f, "R");
+    setColLabelsPrefix(f, "R", nullptr);
     
     labelsOut = f->getLabels();
     CHECK(labelsOut[0] == "R.a");
@@ -46,7 +46,7 @@ TEST_CASE("SetColLabelsPrefix", TAG_KERNELS) {
     CHECK(labelsOut[2] == "R.c");
     
     // Changes an existing prefix.
-    setColLabelsPrefix(f, "S");
+    setColLabelsPrefix(f, "S", nullptr);
     
     labelsOut = f->getLabels();
     CHECK(labelsOut[0] == "S.a");

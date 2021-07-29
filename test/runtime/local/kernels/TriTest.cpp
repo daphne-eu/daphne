@@ -31,7 +31,7 @@
 template<class DT>
 void checkTri(const DT * arg, const DT * exp, bool upper, bool diag, bool values) {
     DT * res = nullptr;
-    tri<DT>(res, arg, upper, diag, values);
+    tri<DT>(res, arg, upper, diag, values, nullptr);
     CHECK(*res == *exp);
 }
 

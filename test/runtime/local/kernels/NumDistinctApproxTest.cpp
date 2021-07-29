@@ -44,7 +44,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
         std::generate_n(v.begin(), numElements/100, std::rand);
 
         auto mat10000 = genGivenVals<DT>(100, v);
-        approxResult = numDistinctApprox(mat10000, 64);
+        approxResult = numDistinctApprox(mat10000, 64, 1234567890, nullptr);
         expectedNumDistinct = 100;
     }
 
@@ -58,7 +58,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
         std::generate_n(it, numElements/100, std::rand);
 
         auto matZerosAtStart = genGivenVals<DT>(100, v);
-        approxResult = numDistinctApprox(matZerosAtStart, 64);
+        approxResult = numDistinctApprox(matZerosAtStart, 64, 1234567890, nullptr);
         expectedNumDistinct = 100;
     }
 
@@ -68,7 +68,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox", TAG_KERNELS, (DenseMatrix, CSRMa
         v[0] = VT(1);
         auto twoDistinctValsMat = genGivenVals<DT>(100, v);
 
-        approxResult = numDistinctApprox(twoDistinctValsMat, 64);
+        approxResult = numDistinctApprox(twoDistinctValsMat, 64, 1234567890, nullptr);
         expectedNumDistinct = 2;
 
     }
@@ -103,7 +103,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
             numCols
         );
 
-        approxResult = numDistinctApprox(fullSubMat, 64);
+        approxResult = numDistinctApprox(fullSubMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements;
     }
 
@@ -115,7 +115,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
             numCols
         );
 
-        approxResult = numDistinctApprox(subMat, 64);
+        approxResult = numDistinctApprox(subMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements/100;
 
     }
@@ -128,7 +128,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - Dense-Submatrix", TAG_KERNELS, (
             numCols/10
         );
 
-        approxResult = numDistinctApprox(smallSubMat, 64);
+        approxResult = numDistinctApprox(smallSubMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements/1000;
     }
 
@@ -160,7 +160,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CS
             0,
             numRows
         );
-        approxResult = numDistinctApprox(fullSubMat, 64);
+        approxResult = numDistinctApprox(fullSubMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements;
     }
 
@@ -169,7 +169,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CS
             0,
             numRows/100
         );
-        approxResult = numDistinctApprox(subMat, 64);
+        approxResult = numDistinctApprox(subMat, 64, 1234567890, nullptr);
         expectedNumDistinct = numElements/100;
     }
 
@@ -179,7 +179,7 @@ TEMPLATE_PRODUCT_TEST_CASE("numDistinctApprox - CSR-Submatrix", TAG_KERNELS, (CS
             numRows/100
         );
 
-        approxResult = numDistinctApprox(smallSubMat, 128);
+        approxResult = numDistinctApprox(smallSubMat, 128, 1234567890, nullptr);
         expectedNumDistinct = numElements/100;
     }
 

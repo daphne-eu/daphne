@@ -745,6 +745,32 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
 }
 
 // ****************************************************************************
+// Context handling
+// ****************************************************************************
+
+def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
+    let summary = "Creates an instance of a Daphne run-time context.";
+
+    let description = [{
+        The newly created instance might be partially initialized. The
+        initialization of certain parts/aspects of the context (which are not
+        always relevant) might require additional DaphneIR operations.
+    }];
+
+    let arguments = (ins); // no arguments so far
+    let results = (outs DaphneContext:$ctx);
+}
+
+def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
+    let summary = "Destroys an instance of a Daphne run-time context.";
+
+    // Note that the DaphneContext is automatically injected during the
+    // lowering to kernel calls.
+    let arguments = (ins); // no arguments
+    let results = (outs); // no results
+}
+
+// ****************************************************************************
 // Low-level auxiliary operations
 // ****************************************************************************
 

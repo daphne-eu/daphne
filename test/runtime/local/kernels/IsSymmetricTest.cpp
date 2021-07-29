@@ -80,14 +80,14 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric", TAG_KERNELS, (DenseMatrix, CSRMatrix),
     auto singularMat = genGivenVals<DT>(1, {1});
 
     SECTION("isSymmetric check for symmetrie.") {
-        CHECK(isSymmetric<DT>(symMat));
-        CHECK(isSymmetric<DT>(squareZeroExceptCenterMat));
-        CHECK(isSymmetric<DT>(squareZeroMat));
-        CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat), std::runtime_error);
-        CHECK_FALSE(isSymmetric<DT>(asymMat));
-        CHECK(isSymmetric<DT>(singularMat));
-        CHECK_FALSE(isSymmetric<DT>(squareUpperTriangleMat));
-        CHECK_FALSE(isSymmetric<DT>(squareLowerTriangleMat));
+        CHECK(isSymmetric<DT>(symMat, nullptr));
+        CHECK(isSymmetric<DT>(squareZeroExceptCenterMat, nullptr));
+        CHECK(isSymmetric<DT>(squareZeroMat, nullptr));
+        CHECK_THROWS_AS(isSymmetric<DT>(nonSquareMat, nullptr), std::runtime_error);
+        CHECK_FALSE(isSymmetric<DT>(asymMat, nullptr));
+        CHECK(isSymmetric<DT>(singularMat, nullptr));
+        CHECK_FALSE(isSymmetric<DT>(squareUpperTriangleMat, nullptr));
+        CHECK_FALSE(isSymmetric<DT>(squareLowerTriangleMat, nullptr));
     }
 }
 
@@ -111,8 +111,8 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - DenseMatrix-Submatrix", TAG_KERNELS, D
     );
 
     SECTION("isSymmetric with submatrix.") {
-        CHECK_FALSE(isSymmetric(centerSymMat));
-        CHECK(isSymmetric(symSubMat));
+        CHECK_FALSE(isSymmetric(centerSymMat, nullptr));
+        CHECK(isSymmetric(symSubMat, nullptr));
     }
 }
 
@@ -134,7 +134,7 @@ TEMPLATE_PRODUCT_TEST_CASE("isSymmetric - CSRMatrix-Submatrix", TAG_KERNELS, CSR
     );
 
     SECTION("isSymmetric with submatrix.") {
-        CHECK_THROWS_AS(isSymmetric(centerSymMat), std::runtime_error);
-        CHECK(isSymmetric(symSubMat));
+        CHECK_THROWS_AS(isSymmetric(centerSymMat, nullptr), std::runtime_error);
+        CHECK(isSymmetric(symSubMat, nullptr));
     }
 }

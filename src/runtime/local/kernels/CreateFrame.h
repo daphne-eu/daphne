@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H
 #define SRC_RUNTIME_LOCAL_KERNELS_CREATEFRAME_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
@@ -29,7 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void createFrame(Frame *& res, Structure ** colMats, size_t numColMats, const char ** labels, size_t numLabels) {
+void createFrame(Frame *& res, Structure ** colMats, size_t numColMats, const char ** labels, size_t numLabels, DCTX(ctx)) {
     std::vector<Structure *> colMatsVec;
     for(size_t c = 0; c < numColMats; c++)
         colMatsVec.push_back(colMats[c]);

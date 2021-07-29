@@ -54,8 +54,8 @@ processModule(ModuleOp module)
     if (module) {
         //module->dump(); // print the DaphneIR representation
         PassManager pm(module->getContext());
-
-        pm.addPass(daphne::createRewriteToCallKernelOpPass());
+        pm.addNestedPass<FuncOp>(daphne::createInsertDaphneContextPass());
+        pm.addNestedPass<FuncOp>(daphne::createRewriteToCallKernelOpPass());
         pm.addPass(createLowerToCFGPass());
         pm.addPass(daphne::createLowerToLLVMPass());
 

@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_RANDMATRIX_H
 #define SRC_RUNTIME_LOCAL_KERNELS_RANDMATRIX_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -38,7 +39,7 @@
 
 template<class DTRes, typename VTArg>
 struct RandMatrix {
-    static void apply(DTRes *& res, size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity, int64_t seed) = delete;
+    static void apply(DTRes *& res, size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity, int64_t seed, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -46,8 +47,8 @@ struct RandMatrix {
 // ****************************************************************************
 
 template<class DTRes, typename VTArg>
-void randMatrix(DTRes *& res, size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity, int64_t seed) {
-    RandMatrix<DTRes, VTArg>::apply(res, numRows, numCols, min, max, sparsity, seed);
+void randMatrix(DTRes *& res, size_t numRows, size_t numCols, VTArg min, VTArg max, double sparsity, int64_t seed, DCTX(ctx)) {
+    RandMatrix<DTRes, VTArg>::apply(res, numRows, numCols, min, max, sparsity, seed, ctx);
 }
 
 // ****************************************************************************
@@ -60,7 +61,7 @@ void randMatrix(DTRes *& res, size_t numRows, size_t numCols, VTArg min, VTArg m
 
 template<typename VT>
 struct RandMatrix<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed) {
+    static void apply(DenseMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
         assert(numRows > 0 && "numRows must be > 0");
         assert(numCols > 0 && "numCols must be > 0");
         assert(min <= max && "min must be <= max");
@@ -109,7 +110,7 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
 
 template<typename VT>
 struct RandMatrix<CSRMatrix<VT>, VT> {
-    static void apply(CSRMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed) {
+    static void apply(CSRMatrix<VT> *& res, size_t numRows, size_t numCols, VT min, VT max, double sparsity, int64_t seed, DCTX(ctx)) {
         assert(numRows > 0 && "numRows must be > 0");
         assert(numCols > 0 && "numCols must be > 0");
         assert(min <= max && "min must be <= max");
