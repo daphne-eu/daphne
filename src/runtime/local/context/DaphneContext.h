@@ -20,7 +20,7 @@
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
-#define DCTX(varname) const DaphneContext * varname
+#define DCTX(varname) DaphneContext * varname
 
 /**
  * @brief This class carries all kinds of run-time context information.
@@ -28,7 +28,7 @@
  * An instance of this class is passed to every kernel at run-time. It allows
  * the kernel to retrieve information about the run-time environment.
  */
-class DaphneContext {
+struct DaphneContext {
     // Feel free to extend this class with any kind of run-time information
     // that might be relevant to some kernel. Each kernel can extract the
     // information it requires and does not need to worry about information it
@@ -40,7 +40,6 @@ class DaphneContext {
     
     // So far, there is no context information.
     
-public:
     DaphneContext() {
         //
     }
