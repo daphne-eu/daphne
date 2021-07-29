@@ -48,11 +48,6 @@ void InsertDaphneContextPass::runOnFunction()
             loc,
             daphne::DaphneContextType::get(&getContext())
     );
-    
-    // PoC: Insert initialization of FooContext as part of DaphneContext here.
-    // This would happen in an individual compiler pass.
-    builder.create<daphne::InitFooContextOp>(loc);
-    
     // Insert a DestroyDaphneContextOp as the last operation in the block, but
     // before the block's terminator.
     builder.setInsertionPoint(b.getTerminator());

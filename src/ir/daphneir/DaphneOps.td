@@ -770,11 +770,6 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
     let results = (outs); // no results
 }
 
-def Daphne_InitFooContextOp : Daphne_Op<"initFooContext"> {
-    let arguments = (ins);
-    let results = (outs);
-}
-
 // ****************************************************************************
 // Low-level auxiliary operations
 // ****************************************************************************

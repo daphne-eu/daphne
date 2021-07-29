@@ -17,8 +17,6 @@
 #ifndef SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
-#include <runtime/local/context/FooContext.h>
-
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
@@ -42,19 +40,12 @@ struct DaphneContext {
     
     // So far, there is no context information.
     
-    FooContext * fooCtx;
-    
     DaphneContext() {
-        std::cerr << "DaphneContext() beg" << std::endl;
-        fooCtx = nullptr;
-        std::cerr << "DaphneContext() end" << std::endl;
+        //
     }
     
     ~DaphneContext() {
-        std::cerr << "~DaphneContext() beg" << std::endl;
-        if(fooCtx)
-            delete fooCtx;
-        std::cerr << "~DaphneContext() end" << std::endl;
+        //
     }
 };
 
