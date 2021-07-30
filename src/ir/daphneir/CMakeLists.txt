@@ -13,13 +13,22 @@
 # limitations under the License.
 
 add_mlir_dialect(DaphneOps daphne) # creates the target MLIRDaphneOpsIncGen
-add_mlir_doc(DaphneOps -gen-dialect-doc DaphneoDialect Dialects/)
+add_mlir_doc(DaphneOps -gen-dialect-doc DaphneDialect Dialects/)
+
+add_mlir_interface(DaphneDistributableOpInterface)
+
+set(LLVM_TARGET_DEFINITIONS Passes.td)
+mlir_tablegen(Passes.h.inc -gen-pass-decls -name Daphne)
+add_public_tablegen_target(MLIRDaphneTransformsIncGen)
+
+add_mlir_doc(Passes -gen-pass-doc DaphnePasses Dialects/)
 
 add_mlir_dialect_library(MLIRDaphne
     DaphneDialect.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
+    MLIRDaphneTransformsIncGen
 
     LINK_COMPONENTS
     Core

@@ -29,5 +29,7 @@ add_library(AllKernels SHARED
 )
 target_link_libraries(AllKernels PRIVATE
         DataStructures
+        Proto
+        ProtoDataConverter
         ${OPENBLAS_LIBRARIES}
 )

@@ -21,11 +21,11 @@
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/IR/BlockAndValueMapping.h"
 
 #include <memory>
 #include <utility>
 #include <iostream>
-#include <sstream>
 #include <stdexcept>
 #include <tuple>
 
@@ -57,14 +57,11 @@ namespace
             return "bool";
         else if(t.isIndex())
             return "size_t";
-        else if(t.isa<daphne::MatrixType>())
+        else if(auto matTy = t.dyn_cast<daphne::MatrixType>())
             if(generalizeToStructure)
                 return "Structure";
             else
-                return "DenseMatrix_" + mlirTypeToCppTypeName(
-                        t.dyn_cast<daphne::MatrixType>().getElementType(),
-                        false
-                );
+                return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
         else if(t.isa<daphne::FrameType>())
             if(generalizeToStructure)
                 return "Structure";
@@ -77,6 +74,8 @@ namespace
             return "char";
         else if(t.isa<daphne::DaphneContextType>())
             return "DaphneContext";
+        else if(auto handleTy = t.dyn_cast<daphne::HandleType>())
+            return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );
@@ -87,10 +86,10 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
-            if(llvm::isa<daphne::CreateFrameOp>(op))
+            if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
                 return 2;
-            if(llvm::isa<daphne::SetColLabelsOp>(op))
-                return 2;
+            if(llvm::isa<daphne::DistributedComputeOp>(op))
+                return 1;
             throw std::runtime_error(
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
@@ -117,6 +116,15 @@ namespace
                         idxAndLen.first,
                         idxAndLen.second,
                         isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true};
+                return std::make_tuple(
+                    idxAndLen.first,
+                    idxAndLen.second,
+                    isVariadic[index]
                 );
             }
             throw std::runtime_error(
@@ -231,6 +239,31 @@ namespace
                     callee << "__" << mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
                     newOperands.push_back(op->getOperand(i));
                 }
+
+            if(auto distCompOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
+                MLIRContext newContext;
+                OpBuilder tempBuilder(&newContext);
+                std::string funcName = "dist";
+
+                auto &bodyBlock = distCompOp.body().front();
+                auto funcType = tempBuilder.getFunctionType(
+                    bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
+                auto funcOp = tempBuilder.create<FuncOp>(loc, funcName, funcType);
+
+                BlockAndValueMapping mapper;
+                distCompOp.body().cloneInto(&funcOp.getRegion(), mapper);
+
+                // write recompile region as string constant
+                std::string s;
+                llvm::raw_string_ostream stream(s);
+                funcOp.print(stream);
+
+                auto strTy = daphne::StringType::get(rewriter.getContext());
+                Value
+                    rewriteStr = rewriter.create<daphne::ConstantOp>(loc, strTy, rewriter.getStringAttr(stream.str()));
+                callee << "__" << mlirTypeToCppTypeName(strTy, false);
+                newOperands.push_back(rewriteStr);
+            }
             
             // Inject the current DaphneContext as the last input parameter to
             // all kernel calls, unless it's a CreateDaphneContextOp.
