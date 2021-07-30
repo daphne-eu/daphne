@@ -63,6 +63,7 @@ target_link_libraries(run_tests PRIVATE
     ${dialect_libs}
     DataStructures
     DaphneDSLParser
+    IO
     MLIRDaphne
     Util
     ${OPENBLAS_LIBRARIES}
