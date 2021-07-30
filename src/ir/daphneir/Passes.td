@@ -19,6 +19,10 @@
 
 include "mlir/Pass/PassBase.td"
 
+def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
+    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
+}
+
 def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
     let constructor = "mlir::daphne::createLowerToLLVMPass()";
 }
