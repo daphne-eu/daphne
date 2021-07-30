@@ -180,25 +180,37 @@ grpcDirName=grpc
 grpcInstDir=$(pwd)/$grpcDirName/installed
 if [ ! -d $grpcDirName ]
 then
-  git clone --recurse-submodules -b v1.38.0 https://github.com/grpc/grpc $grpcDirName
-  mkdir -p "$grpcInstDir"
+    # Download gRPC source code.
+    git clone --recurse-submodules -b v1.38.0 https://github.com/grpc/grpc $grpcDirName
+    mkdir -p "$grpcInstDir"
+
+    pushd $grpcDirName
+
+    # Install gRPC and its dependencies.
+    mkdir -p "cmake/build"
+    pushd "cmake/build"
+    cmake \
+      -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DgRPC_INSTALL=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      ../..
+      #-DgRPC_ABSL_PROVIDER=package \
+    make -j4 install
+    popd
+
+    # Install abseil.
+    mkdir -p third_party/abseil-cpp/cmake/build
+    pushd third_party/abseil-cpp/cmake/build
+    cmake -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+        ../..
+    make -j
+    make install
+    popd
+
+    popd
 fi
-pushd $grpcDirName
-
-# Install gRPC and its dependencies
-mkdir -p "cmake/build"
-pushd "cmake/build"
-cmake \
-  -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
-  -DCMAKE_BUILD_TYPE=Release \
-  -DgRPC_INSTALL=ON \
-  -DgRPC_BUILD_TESTS=OFF \
-  ../..
-  #-DgRPC_ABSL_PROVIDER=package \
-
-make -j4 install
-popd
-popd
 
 #------------------------------------------------------------------------------
 # Build MLIR

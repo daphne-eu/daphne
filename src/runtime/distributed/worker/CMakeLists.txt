@@ -12,13 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-find_package(Threads)
+# *****************************************************************************
+# ProtoDataConverter library
+# *****************************************************************************
 
 set(SOURCES ProtoDataConverter.cpp)
 set(LIBS DataStructures Proto)
 
 add_library(ProtoDataConverter ${SOURCES})
 target_link_libraries(ProtoDataConverter PRIVATE ${LIBS})
+
+# *****************************************************************************
+# WorkerImpl library
+# *****************************************************************************
 
 # FIXME: use DaphneIrExecutor target instead
 set(SOURCES WorkerImpl.cpp ../../../compiler/execution/DaphneIrExecutor.cpp)
@@ -44,6 +50,10 @@ add_library(WorkerImpl SHARED ${SOURCES})
 #llvm_update_compile_flags(WorkerImpl)
 target_link_libraries(WorkerImpl PRIVATE ${LIBS})
 #mlir_check_all_link_libraries(WorkerImpl)
+
+# *****************************************************************************
+# DistributedWorker executable
+# *****************************************************************************
 
 add_executable(DistributedWorker main.cpp)
 target_link_libraries(DistributedWorker
