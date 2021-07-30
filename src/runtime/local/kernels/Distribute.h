@@ -26,8 +26,6 @@
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 #include <runtime/distributed/worker/ProtoDataConverter.h>
 
-#include <cblas.h>
-
 #include <cassert>
 #include <cstddef>
 
