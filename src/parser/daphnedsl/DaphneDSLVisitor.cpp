@@ -383,12 +383,12 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
     std::string func = ctx->func->getText();
     mlir::Location loc = builder.getUnknownLoc();
-
+ 
     // Parse arguments.
     std::vector<mlir::Value> args;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
         args.push_back(utils.valueOrError(visit(ctx->expr(i))));
-
+    
     // Create DaphneIR operation for the built-in function.
     return builtins.build(loc, func, args);
 }
@@ -429,10 +429,10 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-
+    
     if(op == "^")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -460,7 +460,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -510,10 +510,10 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         return visit(ctx->bl);
     if(auto lit = ctx->STRING_LITERAL()) {
         std::string val = lit->getText();
-
+        
         // Remove quotation marks.
         val = val.substr(1, val.size() - 2);
-
+        
         // Replace escape sequences.
         val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
         val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
@@ -522,7 +522,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
         val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
         val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
-
+        
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(loc, val)
         );

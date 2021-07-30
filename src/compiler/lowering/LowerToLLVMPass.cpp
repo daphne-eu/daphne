@@ -132,7 +132,7 @@ public:
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
             rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
-
+        
         return success();
     }
 };
@@ -382,10 +382,10 @@ void DaphneLowerToLLVMPass::runOnOperation()
                 typeConverter.convertType(t.getContainedType())
         );
     });
-    typeConverter.addConversion([&](daphne::HandleType matType)
+    typeConverter.addConversion([&](daphne::HandleType t)
     {
       return LLVM::LLVMPointerType::get(
-          IntegerType::get(matType.getContext(), 1));
+          IntegerType::get(t.getContext(), 1));
     });
 
     LLVMConversionTarget target(getContext());

@@ -91,7 +91,7 @@ namespace
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
         }
-
+        
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information. But, for instance, the
         // isVariadic boolean array is automatically generated *within* the
@@ -131,21 +131,21 @@ namespace
                                       PatternRewriter &rewriter) const override
         {
             Location loc = op->getLoc();
-
+            
             // Determine the name of the kernel function to call by convention
             // based on the DaphneIR operation and the types of its results and
             // arguments.
 
             std::stringstream callee;
             callee << op->getName().stripDialect().str();
-
+            
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
                 llvm::isa<daphne::CreateFrameOp>(op) |
                 llvm::isa<daphne::NumCellsOp>(op) |
                 llvm::isa<daphne::NumColsOp>(op) |
                 llvm::isa<daphne::NumRowsOp>(op);
-
+            
             // Append names of result types to the kernel name.
             Operation::result_type_range resultTypes = op->getResultTypes();
             for(size_t i = 0; i < resultTypes.size(); i++)
@@ -170,7 +170,7 @@ namespace
                     const unsigned idx = std::get<0>(odsOpInfo);
                     const unsigned len = std::get<1>(odsOpInfo);
                     const bool isVariadic = std::get<2>(odsOpInfo);
-
+                    
                     callee << "__" << mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
                     if(isVariadic) {
                         // Variadic operand.
