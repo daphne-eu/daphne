@@ -62,9 +62,8 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
     let results = (outs Matrix:$res);
 }
 
-// TODO This can probably be subsumed by ColBindOp.
-def Daphne_CreateFrameOp : Daphne_Op<"createFrame"> {
-    let arguments = (ins Variadic<Matrix>:$cols);
+def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [SameVariadicOperandSize]> {
+    let arguments = (ins Variadic<Matrix>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs Frame:$res);
 }
 
@@ -350,12 +349,55 @@ def Daphne_CovOp : Daphne_Op<"cov"> {
 // ****************************************************************************
 
 def Daphne_ExtractOp : Daphne_Op<"extract"> {
-    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
+    let summary = "Copies the specified rows and columns from the argument to the result.";
+
+    let description = [{
+        This operation is effectively similar to a combination of `extractRow`
+        and `extractCol`. Please see the documentation of those operations.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_ExtractRowOp : Daphne_Op<"extractRow"> {
+    let summary = "Copies the specified rows from the argument to the result.";
+
+    let description = [{
+        Copies the rows of a data object `source` (matrix or frame) at the
+        positions specified by `selectedRows` to the result. `selectedRows`
+        must be either a scalar or a single-column matrix of positions (row
+        indexes) into `source`, i.e., the entries must be between zero
+        (inclusive) and the number of rows in `source` (exclusive). Beyond that,
+        there are no restrictions.
+
+        Note that `FilterRowOp` is similar, but works with bit vectors instead
+        of positions lists.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows);
     let results = (outs MatrixOrFrame:$res);
 }
 
 def Daphne_ExtractColOp : Daphne_Op<"extractCol"> {
-    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedCols);
+    let summary = "Copies the specified columns from the argument to the result.";
+
+    let description = [{
+        Copies the columns of a data object `source` (matrix or frame) at the
+        positions specified by `selectedCols` to the result. `selectedCols`
+        must be either a scalar or a single-column matrix of positions (column
+        indexes) into `source`, i.e., the entries must be between zero
+        (inclusive) and the number of columns in `source` (exclusive). Beyond
+        that, there are no restrictions.
+
+        Alternatively, `selectedCols` can be a string, in which case the column
+        with that label is extracted from `source` if it is a frame.
+
+        Note that `FilterRowOp` is similar, but works with bit vectors instead
+        of positions lists.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -600,6 +642,26 @@ def Daphne_QueryOp : Daphne_Op<"query"> {
     let results = (outs Frame:$res);
 }
 
+def Daphne_FilterRowOp : Daphne_Op<"filterRow"> {
+    let summary = "Filters the rows of a data object according to a bit vector";
+
+    let description = [{
+        Filters the rows of a data object (matrix or frame) according to a bit
+        vector. The argument `selectedRows` must be a single-column matrix. All
+        its entries must be zero or one. The value type of `selectedRows` does
+        not need to be boolean, it could also be an integer or floating-point
+        type. `selectedRows` and `source` must have the same number of rows.
+        The *i*-th row of `source` is contained in the result, if the *i*-th
+        entry of `selectedRows` is a one (in its respective value type).
+
+        Note that `ExtractRowOp` is similar, but works with positions lists
+        instead of bit vectors.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Matrix:$selectedRows);
+    let results = (outs MatrixOrFrame:$res);
+}
+
 // Note that ExtractOp can be used to filter rows by a column of bool or a
 // column of positions.
 
@@ -611,6 +673,20 @@ def Daphne_GroupOp : Daphne_Op<"group"> {
     // TODO Maybe colIdxs should be an attribute.
     let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
     let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
+}
+
+// ****************************************************************************
+// Frame label manipulation
+// ****************************************************************************
+
+def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels"> {
+    let arguments = (ins Frame:$arg, Variadic<StrScalar>:$labels);
+    let results = (outs); // no results
+}
+
+def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix"> {
+    let arguments = (ins Frame:$arg, StrScalar:$prefix);
+    let results = (outs); // no results
 }
 
 // ****************************************************************************
@@ -695,6 +771,32 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOf<[SI64]>:$info);
     let results = (outs MatrixOrFrame:$res);
+}
+
+// ****************************************************************************
+// Context handling
+// ****************************************************************************
+
+def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
+    let summary = "Creates an instance of a Daphne run-time context.";
+
+    let description = [{
+        The newly created instance might be partially initialized. The
+        initialization of certain parts/aspects of the context (which are not
+        always relevant) might require additional DaphneIR operations.
+    }];
+
+    let arguments = (ins); // no arguments so far
+    let results = (outs DaphneContext:$ctx);
+}
+
+def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
+    let summary = "Destroys an instance of a Daphne run-time context.";
+
+    // Note that the DaphneContext is automatically injected during the
+    // lowering to kernel calls.
+    let arguments = (ins); // no arguments
+    let results = (outs); // no results
 }
 
 // ****************************************************************************

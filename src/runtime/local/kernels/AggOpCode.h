@@ -28,6 +28,8 @@ enum class AggOpCode {
     SUM,
     MIN,
     MAX,
+    MEAN,
+    STDDEV,
 };
 
 struct AggOpCodeUtils {
@@ -37,8 +39,11 @@ struct AggOpCodeUtils {
             case AggOpCode::MIN:
             case AggOpCode::MAX:
                 return true;
+            case AggOpCode::MEAN:
+            case AggOpCode::STDDEV:
+                return false;
             default:
-                throw std::runtime_error("unknown AggOpCode");
+                throw std::runtime_error("unsupported AggOpCode");
         }
     }
     
@@ -71,9 +76,11 @@ struct AggOpCodeUtils {
                 return true;
             case AggOpCode::MIN:
             case AggOpCode::MAX:
+            case AggOpCode::MEAN:
+            case AggOpCode::STDDEV:
                 return false;
             default:
-                throw std::runtime_error("unknown AggOpCode");
+                throw std::runtime_error("unsupported AggOpCode");
         }
     }
 };

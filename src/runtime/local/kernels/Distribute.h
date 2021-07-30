@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Handle.h>
@@ -37,7 +38,7 @@
 template<class DT>
 struct Distribute
 {
-    static void apply(Handle<DT> *&res, const DT *mat) = delete;
+    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,9 +46,9 @@ struct Distribute
 // ****************************************************************************
 
 template<class DT>
-void distribute(Handle<DT> *&res, const DT *mat)
+void distribute(Handle<DT> *&res, const DT *mat, DCTX(ctx))
 {
-    Distribute<DT>::apply(res, mat);
+    Distribute<DT>::apply(res, mat, ctx);
 }
 
 // ****************************************************************************
@@ -57,7 +58,7 @@ void distribute(Handle<DT> *&res, const DT *mat)
 template<>
 struct Distribute<DenseMatrix<double>>
 {
-    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat)
+    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");

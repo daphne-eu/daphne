@@ -1,1 +1,2 @@
+// string with escape sequences
 print("ESCAPES:\ntab\ttab\nquote\"\nbackslash\\");

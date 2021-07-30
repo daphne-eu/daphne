@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDCOLLECT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDCOLLECT_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Handle.h>
@@ -36,7 +37,7 @@
 template<class DT>
 struct DistributedCollect
 {
-    static void apply(DT *&res, const Handle<DT> *handle) = delete;
+    static void apply(DT *&res, const Handle<DT> *handle, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,9 +45,9 @@ struct DistributedCollect
 // ****************************************************************************
 
 template<class DT>
-void distributedCollect(DT *&res, const Handle<DT> *handle)
+void distributedCollect(DT *&res, const Handle<DT> *handle, DCTX(ctx))
 {
-    DistributedCollect<DT>::apply(res, handle);
+    DistributedCollect<DT>::apply(res, handle, ctx);
 }
 
 // ****************************************************************************
@@ -56,7 +57,7 @@ void distributedCollect(DT *&res, const Handle<DT> *handle)
 template<>
 struct DistributedCollect<DenseMatrix<double>>
 {
-    static void apply(DenseMatrix<double> *&res, const Handle<DenseMatrix<double>> *handle)
+    static void apply(DenseMatrix<double> *&res, const Handle<DenseMatrix<double>> *handle, DCTX(ctx))
     {
         auto blockSize = DistributedData::BLOCK_SIZE;
         res = DataObjectFactory::create<DenseMatrix<double>>(handle->getRows(), handle->getCols(), false);

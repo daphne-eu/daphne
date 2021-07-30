@@ -17,13 +17,14 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
 #define SRC_RUNTIME_LOCAL_KERNELS_NUMROWS_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Structure.h>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-size_t numRows(const Structure * arg) {
+size_t numRows(const Structure * arg, DCTX(ctx)) {
     return arg->getNumRows();
 }
 

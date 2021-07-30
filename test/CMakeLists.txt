@@ -32,9 +32,8 @@ add_executable(run_tests
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
-
-        # FIXME: it is not possible to include `ReadCsv.h` in two different tests (`WorkerTest.cpp` also uses it)
-        #runtime/local/io/ReadCsvTest.cpp
+        
+        runtime/local/io/ReadCsvTest.cpp
         
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
@@ -47,10 +46,15 @@ add_executable(run_tests
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
+        runtime/local/kernels/HasSpecialValueTest.cpp
+        runtime/local/kernels/IsSymmetricTest.cpp
+        runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
         runtime/local/kernels/SeqTest.cpp
+        runtime/local/kernels/SetColLabelsTest.cpp
+        runtime/local/kernels/SetColLabelsPrefixTest.cpp
         runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
@@ -62,8 +66,10 @@ target_link_libraries(run_tests PRIVATE
     ${dialect_libs}
     DataStructures
     DaphneDSLParser
+    IO
     MLIRDaphne
     WorkerImpl
     Proto
+    Util
     ${OPENBLAS_LIBRARIES}
 )

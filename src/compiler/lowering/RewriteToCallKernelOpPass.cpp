@@ -72,6 +72,8 @@ namespace
             // strings) when inserted into the typical "const DT *" template of
             // kernel input parameters.
             return "char";
+        else if(t.isa<daphne::DaphneContextType>())
+            return "DaphneContext";
         else if(auto handleTy = t.dyn_cast<daphne::HandleType>())
             return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
         throw std::runtime_error(
@@ -84,8 +86,9 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
-            // Example:
-            if(llvm::isa<daphne::CreateFrameOp, daphne::DistributedComputeOp>(op))
+            if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
+                return 2;
+            if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
             throw std::runtime_error(
                     "unsupported operation: " + op->getName().getStringRef().str()
@@ -97,10 +100,18 @@ namespace
         // isVariadic boolean array is automatically generated *within* the
         // getODSOperandIndexAndLength method.
         static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
-            // Example:
             if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {true};
+                static bool isVariadic[] = {true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::SetColLabelsOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -120,10 +131,23 @@ namespace
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
         }
+        
+        /**
+         * @brief The value of type `DaphneContext` to insert as the first
+         * argument to all kernel calls.
+         */
+        Value dctx;
 
     public:
-        KernelReplacement(MLIRContext * context, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
+        /**
+         * Creates a new KernelReplacement rewrite pattern.
+         * 
+         * @param mctx The MLIR context.
+         * @param dctx The DaphneContext to pass to the kernels.
+         * @param benefit
+         */
+        KernelReplacement(MLIRContext * mctx, Value dctx, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx)
         {
         }
 
@@ -137,7 +161,7 @@ namespace
             // arguments.
 
             std::stringstream callee;
-            callee << op->getName().stripDialect().str();
+            callee << '_' << op->getName().stripDialect().str();
             
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
@@ -158,7 +182,14 @@ namespace
             // The operands of the CallKernelOp may differ from the operands
             // of the given operation, if it has a variadic operand.
             std::vector<Value> newOperands;
-            if(op->hasTrait<OpTrait::VariadicOperands>()) {
+            
+            if(
+                // TODO Unfortunately, one needs to know the exact N for
+                // AtLeastNOperands... There seems to be no simple way to
+                // detect if an operation has variadic ODS operands.
+                op->hasTrait<OpTrait::VariadicOperands>() ||
+                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>()
+            ) {
                 // For operations with variadic operands, we replace all
                 // occurrences of a variadic operand by a single operand of
                 // type VariadicPack as well as an operand for the number of
@@ -233,6 +264,11 @@ namespace
                 callee << "__" << mlirTypeToCppTypeName(strTy, false);
                 newOperands.push_back(rewriteStr);
             }
+            
+            // Inject the current DaphneContext as the last input parameter to
+            // all kernel calls, unless it's a CreateDaphneContextOp.
+            if(!llvm::isa<daphne::CreateDaphneContextOp>(op))
+                newOperands.push_back(dctx);
 
             // Create a CallKernelOp for the kernel function to call and return
             // success().
@@ -248,19 +284,20 @@ namespace
     };
 
     struct RewriteToCallKernelOpPass
-    : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<ModuleOp>>
+    : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
     {
-        void runOnOperation() final;
+        void runOnFunction() final;
     };
 }
 
-void RewriteToCallKernelOpPass::runOnOperation()
+void RewriteToCallKernelOpPass::runOnFunction()
 {
-    auto module = getOperation();
+    FuncOp func = getFunction();
 
     OwningRewritePatternList patterns(&getContext());
 
-    // convert other operations
+    // Specification of (il)legal dialects/operations. All DaphneIR operations
+    // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
@@ -272,10 +309,26 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::CreateVariadicPackOp,
             daphne::StoreVariadicPackOp
     >();
+    
+    // Determine the DaphneContext valid in the MLIR function being rewritten.
+    mlir::Value dctx = nullptr;
+    auto ops = func.body().front().getOps<daphne::CreateDaphneContextOp>();
+    for(auto op : ops) {
+        if(!dctx)
+            dctx = op.getResult();
+        else
+            throw std::runtime_error(
+                    "function body block contains more than one CreateDaphneContextOp"
+            );
+    }
+    if(!dctx)
+        throw std::runtime_error(
+                "function body block contains no CreateDaphneContextOp"
+        );
 
-    patterns.insert<KernelReplacement>(&getContext());
-
-    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+    // Apply conversion to CallKernelOps.
+    patterns.insert<KernelReplacement>(&getContext(), dctx);
+    if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
 
 }

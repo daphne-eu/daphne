@@ -1,0 +1,148 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
+#define SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
+
+#include <runtime/local/context/DaphneContext.h>
+#include <cstddef>
+#include <cstdio>
+#include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <string>
+
+template <class DTArg> struct IsSymmetric {
+    static bool apply(const DTArg *arg, DCTX(ctx)) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template <class DTArg> bool isSymmetric(const DTArg *arg, DCTX(ctx)) {
+    return IsSymmetric<DTArg>::apply(arg, ctx);
+}
+
+// ****************************************************************************
+// (Partial) template specializations for different DataTypes
+// ****************************************************************************
+
+/**
+ * @brief Checks for symmetrie of a `DenseMatrix`.
+ *
+ * Checks for symmetrie in a DenseMatrix. Returning early if a check failes, or
+ * the matrix is not square. Singular matrixes are considered square. 
+ */
+
+template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
+    static bool apply(const DenseMatrix<VT> *arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        const VT* values = arg->getValues();
+
+        if (numRows != numCols) {
+            throw std::runtime_error("Provided matrix is not square.");
+        }
+
+        // singular matrix is considered symmetric.
+        if (numRows <= 1 || numCols <= 1) {
+            return true;
+        }
+
+        // TODO add cache-conscious operations
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+            for (size_t colIdx = rowIdx + 1; colIdx < numCols; colIdx++) {
+
+                const VT val1 = arg->get(rowIdx, colIdx);
+                const VT val2 = arg->get(colIdx, rowIdx);
+
+                if (val1 != val2) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+};
+
+template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
+    static bool apply(const CSRMatrix<VT> *arg, DCTX(ctx)) {
+
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if (numRows != numCols) {
+            throw std::runtime_error("Provided matrix is not square.");
+        }
+
+        // Singular matrix is considered symmetric.
+        if (numRows <= 1 || numCols <= 1) {
+            return true;
+        }
+
+        const size_t* rowOffsets = arg->getRowOffsets();
+
+        std::vector<size_t> positions(numRows, -1); // indexes of the column index array.
+
+        for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+
+            const VT* rowA = arg->getValues(rowIdx);
+            const size_t* colIdxsA = arg->getColIdxs(rowIdx);
+            const size_t numNonZerosA = arg->getNumNonZeros(rowIdx);
+
+            for (size_t idx = 0;  idx < numNonZerosA; idx++) {
+                const size_t colIdxA = colIdxsA[idx];
+
+                if (colIdxA <= rowIdx) { // Exit early if diagonal element or before.
+                    continue;
+                }
+
+                positions[rowIdx] = idx;
+                VT valA = rowA[idx];
+
+                // B references the transposed element to compare for symmetrie.
+                const VT* rowB = arg->getValues(colIdxA);
+                const size_t* colIdxsB = arg->getColIdxs(colIdxA);
+                const size_t numNonZerosB = arg->getNumNonZeros(colIdxA);
+
+                positions[colIdxA]++; // colIdxA is rowIdxB
+                const size_t posB = positions[colIdxA];
+
+                if (numNonZerosB <= posB) { // Does next expected element exist?
+                    return false;
+                }
+
+                const size_t colIdxB = colIdxsB[posB];
+                VT valB = rowB[posB];
+
+
+                if( colIdxB != rowIdx || valA != valB) { // Indexes or values differ, not sym.
+                    return false;
+                }
+            }
+
+            const size_t rowLastPos = positions[rowIdx];
+
+            if (rowLastPos == -1 && numNonZerosA != 0) { // Not all elements of this row were iterated over, not sym!
+                return false;
+            }
+        }
+        return true;
+    }
+};
+
+#endif // SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H

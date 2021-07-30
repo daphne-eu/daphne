@@ -156,7 +156,8 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
             EwBinaryMat<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>::apply(BinaryOpCode::ADD,
                 matOrigTimes2,
                 matOrig,
-                matOrig);
+                matOrig,
+                nullptr);
 
             // TODO: epsilon check once it is no longer ensured the same kernel will be used
             REQUIRE(*received == *matOrigTimes2);

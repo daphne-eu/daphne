@@ -13,9 +13,10 @@
 # limitations under the License.
 
 add_mlir_dialect_library(MLIRDaphneTransforms
-    RewriteToCallKernelOpPass.cpp
-    LowerToLLVMPass.cpp
     DistributeComputationsPass.cpp
+    InsertDaphneContextPass.cpp
+    LowerToLLVMPass.cpp
+    RewriteToCallKernelOpPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

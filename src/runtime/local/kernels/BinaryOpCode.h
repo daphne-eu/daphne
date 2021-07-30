@@ -36,6 +36,8 @@ enum class BinaryOpCode {
     // Min/max.
     MIN,
     MAX,
+
+    ISSYM,
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_BINARYOPCODE_H

@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_CHECKEQ_H
 #define SRC_RUNTIME_LOCAL_KERNELS_CHECKEQ_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -29,7 +30,7 @@
 
 template<class DT>
 struct CheckEq {
-    static bool apply(const DT * lhs, const DT * rhs) = delete;
+    static bool apply(const DT * lhs, const DT * rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -47,8 +48,8 @@ struct CheckEq {
  * @return `true` if they are equal, `false` otherwise.
  */
 template<class DT>
-bool checkEq(const DT * lhs, const DT * rhs) {
-    return CheckEq<DT>::apply(lhs, rhs);
+bool checkEq(const DT * lhs, const DT * rhs, DCTX(ctx)) {
+    return CheckEq<DT>::apply(lhs, rhs, ctx);
 };
 
 // ****************************************************************************
@@ -57,7 +58,8 @@ bool checkEq(const DT * lhs, const DT * rhs) {
 
 template<class DT>
 bool operator==(const DT & lhs, const DT & rhs) {
-    return checkEq(&lhs, &rhs);
+    // nullptr might become problematic some day.
+    return checkEq(&lhs, &rhs, nullptr);
 }
 
 // ****************************************************************************
@@ -74,7 +76,7 @@ bool operator==(const DT & lhs, const DT & rhs) {
 
 template<typename VT>
 struct CheckEq<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs) {
+    static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
         if(lhs == rhs)
             return true;
         
@@ -113,7 +115,7 @@ struct CheckEq<DenseMatrix<VT>> {
 
 template<typename VT>
 struct CheckEq<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs) {
+    static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
         if(lhs == rhs)
             return true;
         

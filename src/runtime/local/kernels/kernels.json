@@ -65,7 +65,7 @@
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
         ],
-        "opCodes": ["SUM", "MIN", "MAX"]
+        "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
     },
     {
         "kernelTemplate": {
@@ -187,6 +187,23 @@
     },
     {
         "kernelTemplate": {
+            "header": "CreateDaphneContext.h",
+            "opName": "createDaphneContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "DaphneContext *&",
+                    "name": "res"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateFrame.h",
             "opName": "createFrame",
             "returnType": "void",
@@ -203,8 +220,28 @@
                 {
                     "type": "size_t",
                     "name": "numColMats"
+                },
+                {
+                    "type": "const char **",
+                    "name": "labels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numLabels"
                 }
             ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DestroyDaphneContext.h",
+            "opName": "destroyDaphneContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
         },
         "instantiations": [
             []
@@ -384,6 +421,10 @@
                 {
                     "name": "DTArg",
                     "isDataType": true
+                },
+                {
+                    "name": "DTSel",
+                    "isDataType": true
                 }
             ],
             "runtimeParams": [
@@ -396,14 +437,16 @@
                     "name": "arg"
                 },
                 {
-                    "type": "const DenseMatrix<int64_t> *",
-                    "name": "colIdxs"
+                    "type": "const DTSel *",
+                    "name": "sel"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], "Frame", "char"],
+            [["DenseMatrix", "int64_t"], "Frame", "char"]
         ]
     },
     {
@@ -618,6 +661,52 @@
         "instantiations": [
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SetColLabels.h",
+            "opName": "setColLabels",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char **",
+                    "name": "labels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numLabels"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SetColLabelsPrefix.h",
+            "opName": "setColLabelsPrefix",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "prefix"
+                }
+            ]
+        },
+        "instantiations": [
+            []
         ]
     },
     {

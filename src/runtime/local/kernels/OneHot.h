@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_ONEHOT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_ONEHOT_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -30,7 +31,7 @@
 
 template<class DTRes, class DTArg>
 struct OneHot {
-    static void apply(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -38,8 +39,8 @@ struct OneHot {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void oneHot(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info) {
-    OneHot<DTRes, DTArg>::apply(res, arg, info);
+void oneHot(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
+    OneHot<DTRes, DTArg>::apply(res, arg, info, ctx);
 }
 
 // ****************************************************************************
@@ -52,7 +53,7 @@ void oneHot(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * info) 
 
 template<typename VT>
 struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * info) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * info, DCTX(ctx)) {
         assert((info->getNumRows() == 1) && "parameter info must be a row matrix");
         
         const size_t numColsArg = arg->getNumCols();

@@ -97,7 +97,7 @@ def Size : TypeAlias<Index, "size">;
 def Seed : TypeAlias<SI64, "seed">;
 
 // TODO Remove SI64 again, it was only added temporarily to make things work.
-def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, MatrixOf<[BoolScalar]>]>;
+def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>]>;
 
 def VariadicPack : Daphne_Type<"VariadicPack"> {
     let summary = "pack of variadic operands";
@@ -109,6 +109,25 @@ def VariadicPack : Daphne_Type<"VariadicPack"> {
         converted when lowering to the LLVM dialect.
     }];
     let parameters = (ins "::mlir::Type":$containedType);
+}
+
+def Unknown : Daphne_Type<"Unknown"> {
+    let summary = "placeholder for an unknown type";
+    let description = [{
+        This type is meant to be used in situations when a type is not (yet)
+        known. In some cases, it could be replaced by a known type in a
+        compiler pass. In other cases, it might not be known at compile-time at
+        all and the run-time needs to deal with it.
+    }];
+}
+
+def DaphneContext : Daphne_Type<"DaphneContext"> {
+    let summary = "daphne context";
+    let description = [{
+        This type represents all kinds of run-time context information in one
+        SSA value. This could be things like available hardware resources and
+        global run-time facilities.
+    }];
 }
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD

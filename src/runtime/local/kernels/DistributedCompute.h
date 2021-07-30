@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDCOMPUTE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDCOMPUTE_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Handle.h>
@@ -36,7 +37,7 @@
 template<class DT>
 struct DistributedCompute
 {
-    static void apply(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode) = delete;
+    static void apply(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,9 +45,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DT>
-void distributedCompute(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode)
+void distributedCompute(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode, DCTX(ctx))
 {
-    DistributedCompute<DT>::apply(res, args, num_args, mlirCode);
+    DistributedCompute<DT>::apply(res, args, num_args, mlirCode, ctx);
 }
 
 // ****************************************************************************
@@ -59,7 +60,8 @@ struct DistributedCompute<DenseMatrix<double>>
     static void apply(Handle<DenseMatrix<double>> *&res,
                       const Handle<DenseMatrix<double>> **args,
                       size_t num_args,
-                      const char *mlirCode)
+                      const char *mlirCode,
+                      DCTX(ctx))
     {
         assert(num_args == 2 && "Only binary supported for now");
         auto lhs = args[0];
