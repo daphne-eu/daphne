@@ -78,7 +78,6 @@ void DistributeComputationsPass::runOnOperation()
 
     // convert other operations
     ConversionTarget target(getContext());
-    target.addLegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
