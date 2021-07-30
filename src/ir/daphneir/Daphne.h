@@ -34,6 +34,8 @@
 #include "mlir/IR/Types.h"
 #include "mlir/Support/TypeID.h"
 
+#include "ir/daphneir/DaphneDistributableOpInterface.h"
+
 #include <string>
 #include <utility>
 

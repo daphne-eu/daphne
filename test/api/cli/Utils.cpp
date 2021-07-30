@@ -26,6 +26,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <grpcpp/server.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
+#include <grpcpp/server_builder.h>
 
 std::string readTextFile(const std::string & filePath) {
     std::ifstream ifs(filePath, std::ios::in);
@@ -112,10 +115,19 @@ void compareDaphneToRef(const std::string & scriptFilePath, const std::string & 
 
     REQUIRE(status == StatusCode::SUCCESS);
     CHECK(out.str() == readTextFile(refFilePath.c_str()));
-    CHECK(err.str().empty());
+    CHECK(err.str() == "");
 }
 
 void compareDaphneToRef(const std::string & dirPath, const std::string & name, unsigned idx) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToRef(filePath + ".daphne", filePath + ".txt");
+}
+
+std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl)
+{
+    grpc::ServerBuilder builder;
+    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
+    builder.RegisterService(workerImpl);
+
+    return builder.BuildAndStart();
 }

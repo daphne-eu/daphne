@@ -72,6 +72,7 @@ void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
   static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows,
                     size_t numCols, char delim) {
+    assert(file != nullptr && "File required");
     assert(numRows > 0 && "numRows must be > 0");
     assert(numCols > 0 && "numCols must be > 0");
 

@@ -26,6 +26,8 @@
 enum StatusCode {
     SUCCESS = 0,
     PARSER_ERROR,
+    PASS_ERROR,
+    EXECUTION_ERROR,
 };
 
 #endif //SRC_API_CLI_STATUSCODE_H

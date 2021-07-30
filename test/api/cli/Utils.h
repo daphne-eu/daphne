@@ -21,6 +21,9 @@
 
 #include <string>
 #include <sstream>
+#include <memory>
+#include <grpcpp/server.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
 
 /**
  * @brief Reads the entire contents of a plain text file into a string.
@@ -86,5 +89,13 @@ void checkDaphneStatusCode(const std::string & dirPath, const std::string & name
 void compareDaphneToRef(const std::string & scriptFilePath, const std::string & refFilePath);
 
 void compareDaphneToRef(const std::string & dirPath, const std::string & name, unsigned idx);
+
+/**
+ * @brief Starts a distributed worker locally.
+ *
+ * @param addr The address (usually `0.0.0.0:<port>`) the worker should run on
+ * @return The server (has to be kept around for the whole time the worker is in use)
+ */
+[[nodiscard]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl);
 
 #endif //TEST_API_CLI_UTILS_H

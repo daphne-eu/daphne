@@ -175,6 +175,43 @@ then
 fi
 cd $pwdBeforeOpenBlas
 
+# gRPC
+grpcDirName=grpc
+grpcInstDir=$(pwd)/$grpcDirName/installed
+if [ ! -d $grpcDirName ]
+then
+    # Download gRPC source code.
+    git clone --recurse-submodules -b v1.38.0 https://github.com/grpc/grpc $grpcDirName
+    mkdir -p "$grpcInstDir"
+
+    pushd $grpcDirName
+
+    # Install gRPC and its dependencies.
+    mkdir -p "cmake/build"
+    pushd "cmake/build"
+    cmake \
+      -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DgRPC_INSTALL=ON \
+      -DgRPC_BUILD_TESTS=OFF \
+      ../..
+      #-DgRPC_ABSL_PROVIDER=package \
+    make -j4 install
+    popd
+
+    # Install abseil.
+    mkdir -p third_party/abseil-cpp/cmake/build
+    pushd third_party/abseil-cpp/cmake/build
+    cmake -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
+        -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+        ../..
+    make -j
+    make install
+    popd
+
+    popd
+fi
+
 #------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
@@ -213,7 +250,8 @@ cmake -G Ninja .. \
     -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
     -DANTLR4_RUNTIME_DIR=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
     -DANTLR4_JAR_LOCATION=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrJarName \
-    -DOPENBLAS_INST_DIR=$(pwd)/../$thirdpartyPath/$openBlasDirName/$openBlasInstDirName
+    -DOPENBLAS_INST_DIR=$(pwd)/../$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
+    -DCMAKE_PREFIX_PATH="$grpcInstDir"
 cmake --build . --target $target
 
 

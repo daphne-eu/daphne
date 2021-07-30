@@ -57,6 +57,16 @@ def Frame : Daphne_Type<"Frame"> {
 def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;
 
 // ****************************************************************************
+// Distributed types
+// ****************************************************************************
+def Handle : Daphne_Type<"Handle"> {
+    let summary = "handle to distributed data";
+
+    let parameters = (ins "::mlir::Type":$dataType);
+    let genVerifyDecl = 1;
+}
+
+// ****************************************************************************
 // Value types
 // ****************************************************************************
 

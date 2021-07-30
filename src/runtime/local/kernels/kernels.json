@@ -979,5 +979,91 @@
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "int64_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Distribute.h",
+            "opName": "distribute",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "mat"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedCollect.h",
+            "opName": "distributedCollect",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Handle<DT> *",
+                    "name": "handle"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedCompute.h",
+            "opName": "distributedCompute",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Handle<DT> **",
+                    "name": "args"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numArgs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "mlirCode"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
     }
 ]

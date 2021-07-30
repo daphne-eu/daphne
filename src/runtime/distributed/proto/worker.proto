@@ -14,23 +14,36 @@
  * limitations under the License.
  */
 
-#ifndef SRC_IR_DAPHNEIR_PASSES_H
-#define SRC_IR_DAPHNEIR_PASSES_H
+syntax = "proto3";
 
-#include "mlir/Pass/Pass.h"
+package distributed;
 
-namespace mlir
-{
-    namespace daphne
-    {
-        std::unique_ptr<Pass> createInsertDaphneContextPass();
-        std::unique_ptr<Pass> createLowerToLLVMPass();
-        std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
-        std::unique_ptr<Pass> createDistributeComputationsPass();
+option optimize_for = SPEED;
 
-#define GEN_PASS_REGISTRATION
-#include "ir/daphneir/Passes.h.inc"
-    } // namespace daphne
-} // namespace mlir
+import "data.proto";
 
-#endif //SRC_IR_DAPHNEIR_PASSES_H
+service Worker {
+  rpc Store (Matrix) returns (StoredData) {}
+  rpc Compute (Task) returns (ComputeResult) {}
+  rpc Transfer (StoredData) returns (Matrix) {}
+}
+
+message WorkData {
+  oneof data {
+    double f64 = 1;
+    // TODO: negative integers are not ideal. performance improvements?
+    int64 i64 = 2;
+    float f32 = 3;
+    int32 i32 = 4;
+    StoredData stored = 5;
+  }
+}
+
+message Task {
+  string mlir_code = 1;
+  repeated WorkData inputs = 2;
+}
+
+message ComputeResult {
+  repeated WorkData outputs = 1;
+}

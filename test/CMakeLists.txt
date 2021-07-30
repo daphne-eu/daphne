@@ -19,12 +19,15 @@ add_executable(run_tests
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/distributed/DistributedTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/Utils.cpp
-        
+
+        runtime/distributed/worker/WorkerTest.cpp
+
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
@@ -65,6 +68,8 @@ target_link_libraries(run_tests PRIVATE
     DaphneDSLParser
     IO
     MLIRDaphne
+    WorkerImpl
+    Proto
     Util
     ${OPENBLAS_LIBRARIES}
 )

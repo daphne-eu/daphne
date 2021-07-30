@@ -26,7 +26,7 @@ struct File {
   unsigned long read;
 };
 
-inline struct File *openFile(char *filename) {
+inline struct File *openFile(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
 
   f->identifier = fopen(filename, "r");
