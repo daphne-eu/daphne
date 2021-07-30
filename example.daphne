@@ -30,5 +30,5 @@ print(t(m));
 #Z = m @ t(m);
 #print(Z);
 
-print("Hello world!")
-print("Bye!")
+print("Hello world!");
+print("Bye!");
