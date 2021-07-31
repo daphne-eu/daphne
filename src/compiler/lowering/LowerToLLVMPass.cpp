@@ -17,9 +17,14 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
+#include <mlir/Conversion/LLVMCommon/ConversionTarget.h>
+#include <mlir/Conversion/LLVMCommon/LoweringOptions.h>
+#include <mlir/Conversion/LLVMCommon/TypeConverter.h>
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include <mlir/IR/PatternMatch.h>
+#include <mlir/Transforms/DialectConversion.h>
 
 #include <memory>
 #include <utility>
@@ -98,12 +103,12 @@ public:
             auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
                     op.getOperation(),
                     i8PtrType,
-                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(numChars)),
+                    rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(numChars)),
                     1
             );
             for(size_t i = 0; i < numChars; i++) {
                 std::vector<Value> indices = {
-                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))
+                    rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(i))
                 };
                 rewriter.create<LLVM::StoreOp>(
                         loc,
@@ -219,11 +224,14 @@ public:
 
         auto kernelOperands =
                 allocOutputReferences(loc, rewriter, operands, inputOutputTypes);
-
+        
         // call function
+        // The kernel call has an empty list of return types, because our
+        // kernel(-wrapper)s generally return via parameters.
+        TypeRange ts;
         rewriter.create<CallOp>(
                 loc, kernelRef,
-                /*no return value*/ LLVM::LLVMVoidType::get(rewriter.getContext()),
+                ts,
                 kernelOperands);
         rewriter.replaceOp(op, dereferenceOutputs(loc, rewriter, module,
                                                   operands.size(), kernelOperands));

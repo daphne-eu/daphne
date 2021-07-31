@@ -212,14 +212,14 @@ namespace
                                         rewriter.getContext(),
                                         op->getOperand(idx).getType()
                                 ),
-                                rewriter.getIndexAttr(len)
+                                rewriter.getI64IntegerAttr(len)
                         );
                         for(size_t k = 0; k < len; k++)
                             rewriter.create<daphne::StoreVariadicPackOp>(
                                     loc,
                                     cvpOp,
                                     op->getOperand(idx + k),
-                                    rewriter.getIndexAttr(k)
+                                    rewriter.getI64IntegerAttr(k)
                             );
                         newOperands.push_back(cvpOp);
                         newOperands.push_back(rewriter.create<daphne::ConstantOp>(
