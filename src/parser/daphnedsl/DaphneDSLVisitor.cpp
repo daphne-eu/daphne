@@ -393,12 +393,46 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     return builtins.build(loc, func, args);
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) {
+// TODO Reduce the code duplication with visitRightIdxExtractExpr.
+antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
     mlir::Type objType = obj.getType();
-    if(ctx->rows)
-        throw std::runtime_error("right indexing does not support selecting rows yet");
-    else if(ctx->cols) {
+    if(ctx->rows && ctx->cols)
+        throw std::runtime_error(
+                "currently right indexing supports either rows or columns, "
+                "but not both at the same time"
+        );
+    if(ctx->rows) {
+        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::FilterRowOp>(
+                builder.getUnknownLoc(), objType, obj, rows
+        ));
+    }
+    if(ctx->cols)
+        throw std::runtime_error(
+                "currently right indexing (for filter) supports only rows"
+        );
+    throw std::runtime_error(
+            "right indexing requires the specification of rows and/or columns"
+    );
+}
+
+// TODO Reduce the code duplication with visitRightIdxFilterExpr.
+antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {
+    mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    mlir::Type objType = obj.getType();
+    if(ctx->rows && ctx->cols)
+        throw std::runtime_error(
+                "currently right indexing supports either rows or columns, "
+                "but not both at the same time"
+        );
+    if(ctx->rows) {
+        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractRowOp>(
+                builder.getUnknownLoc(), objType, obj, rows
+        ));
+    }
+    if(ctx->cols) {
         mlir::Value cols = utils.valueOrError(visit(ctx->cols));
         mlir::Type colsType = cols.getType();
         mlir::Type resType;
@@ -417,10 +451,11 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExpr(DaphneDSLGrammarParser::RightI
                 builder.getUnknownLoc(), resType, obj, cols
         ));
     }
-    else
-        // TODO Actually, this would be okay, but we should think about whether
-        // it should be a no-op or a copy.
-        throw std::runtime_error("right indexing requires the specification of rows and/or columns");
+    // TODO Actually, this would be okay, but we should think about whether
+    // it should be a no-op or a copy.
+    throw std::runtime_error(
+            "right indexing requires the specification of rows and/or columns"
+    );
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {
