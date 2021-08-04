@@ -491,6 +491,45 @@
     },
     {
         "kernelTemplate": {
+            "header": "FilterRow.h",
+            "opName": "filterRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTSel",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DenseMatrix<VTSel> *",
+                    "name": "sel"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame", "Frame", "double"],
+            ["Frame", "Frame", "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
             "returnType": "void",

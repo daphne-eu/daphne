@@ -47,6 +47,7 @@ add_executable(run_tests
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
+        runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/HasSpecialValueTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp

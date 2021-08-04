@@ -301,7 +301,7 @@ public:
         return schema;
     }
     
-    const std::string * getLabels() {
+    const std::string * getLabels() const {
         return labels;
     }
     
@@ -335,6 +335,14 @@ public:
     template<typename ValueType>
     const DenseMatrix<ValueType> * getColumn(const std::string & label) const {
         return const_cast<Frame *>(this)->getColumn<ValueType>(label);
+    }
+    
+    void * getColumnRaw(size_t idx) {
+        return columns[idx].get();
+    }
+    
+    const void * getColumnRaw(size_t idx) const {
+        return const_cast<Frame *>(this)->getColumnRaw(idx);
     }
     
     void print(std::ostream & os) const override {
