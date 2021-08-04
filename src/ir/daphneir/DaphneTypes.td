@@ -25,6 +25,20 @@
 class Daphne_Type<string name> : TypeDef<Daphne_Dialect, name>;
 
 // ****************************************************************************
+// Unknown type
+// ****************************************************************************
+
+def Unknown : Daphne_Type<"Unknown"> {
+    let summary = "placeholder for an unknown type";
+    let description = [{
+        This type is meant to be used in situations when a type is not (yet)
+        known. In some cases, it could be replaced by a known type in a
+        compiler pass. In other cases, it might not be known at compile-time at
+        all and the run-time needs to deal with it.
+    }];
+}
+
+// ****************************************************************************
 // Data types
 // ****************************************************************************
 
@@ -38,10 +52,10 @@ def Matrix : Daphne_Type<"Matrix"> {
 
 // TODO We could omit the "Of" and have it default to ScalarType.
 // A type constraint checking if a type is a matrix whose value type is one of
-// the given types.
-// Reuses MLIR's ContainerType constraint in way inspired by MLIR's VectorOf.
+// the given types (whereby Unknown is always allowed automatically).
+// Reuses MLIR's ContainerType constraint in a way inspired by MLIR's VectorOf.
 class MatrixOf<list<Type> allowedTypes> : ContainerType<
-        AnyTypeOf<allowedTypes>,
+        AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
         Matrix.predicate,
         "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()",
         "matrix"
@@ -59,6 +73,7 @@ def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;
 // ****************************************************************************
 // Distributed types
 // ****************************************************************************
+
 def Handle : Daphne_Type<"Handle"> {
     let summary = "handle to distributed data";
 
@@ -109,16 +124,6 @@ def VariadicPack : Daphne_Type<"VariadicPack"> {
         converted when lowering to the LLVM dialect.
     }];
     let parameters = (ins "::mlir::Type":$containedType);
-}
-
-def Unknown : Daphne_Type<"Unknown"> {
-    let summary = "placeholder for an unknown type";
-    let description = [{
-        This type is meant to be used in situations when a type is not (yet)
-        known. In some cases, it could be replaced by a known type in a
-        compiler pass. In other cases, it might not be known at compile-time at
-        all and the run-time needs to deal with it.
-    }];
 }
 
 def DaphneContext : Daphne_Type<"DaphneContext"> {
