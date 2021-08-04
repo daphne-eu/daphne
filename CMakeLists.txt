@@ -72,6 +72,7 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 
 add_subdirectory(src/api/cli)
 add_subdirectory(src/compiler/execution)
+add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/ir/daphneir)
