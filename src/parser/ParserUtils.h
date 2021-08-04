@@ -65,6 +65,11 @@ public:
     mlir::Type matrixOfSizeType;
     
     /**
+     * @brief The placeholder for an unknown type.
+     */
+    mlir::Type unknownType;
+    
+    /**
      * @brief Get a `daphne::MatrixType` with the given value type.
      * @param vt
      * @return 
@@ -93,7 +98,8 @@ public:
             sizeType(builder.getIndexType()),
             boolType(builder.getI1Type()),
             seedType(builder.getIntegerType(64, true)),
-            matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType)))
+            matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
+            unknownType(mlir::daphne::UnknownType::get(builder.getContext()))
     {
         // nothing to do
     }

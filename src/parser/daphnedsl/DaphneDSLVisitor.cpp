@@ -444,7 +444,7 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
         if(objType.isa<mlir::daphne::FrameType>() && colsType.isa<mlir::daphne::StringType>())
             // In this case, we cannot tell the value type of the output at the
             // moment.
-            resType = utils.matrixOf(mlir::daphne::UnknownType::get(builder.getContext()));
+            resType = utils.matrixOf(utils.unknownType);
         else
             resType = objType;
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
