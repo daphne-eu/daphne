@@ -46,6 +46,19 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
 public:
     void runOnFunction() override {
         getFunction().walk([&](Operation * op) {
+            // Type inference.
+            if(returnsUnknownType(op)) {
+                if (auto inferTypesOp = llvm::dyn_cast<daphne::InferTypes>(op))
+                    inferTypesOp.inferTypes();
+                else
+                    // TODO As soon as the run-time can handle unknown
+                    // dat/value types, we do not need to throw here anymore.
+                    throw std::runtime_error(
+                            "some operation has an unknown result type, but "
+                            "does not implement the type inference interface"
+                    );
+            }
+            
             // Frame label inference.
             if (returnsFrameWithUnknownLabels(op)) {
                 if (auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
@@ -54,6 +67,20 @@ public:
                 // only to aid type inference, and for this purpose, we don't
                 // need the labels in all cases.
             }
+        });
+    }
+
+    static bool returnsUnknownType(Operation *op) {
+        return llvm::any_of(op->getResultTypes(), [](Type resType) {
+            if(resType.isa<daphne::UnknownType>())
+                return true;
+            if(auto mt = resType.dyn_cast<daphne::MatrixType>())
+                return mt.getElementType().isa<daphne::UnknownType>();
+            if(auto ft = resType.dyn_cast<daphne::FrameType>())
+                for(Type ct : ft.getColumnTypes())
+                    if(ct.isa<daphne::UnknownType>())
+                        return true;
+            return false;
         });
     }
 

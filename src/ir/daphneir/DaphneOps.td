@@ -21,6 +21,7 @@ include "ir/daphneir/DaphneDialect.td"
 include "ir/daphneir/DaphneTypes.td"
 include "ir/daphneir/DaphneDistributableOpInterface.td"
 include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
+include "ir/daphneir/DaphneInferTypesOpInterface.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -65,7 +66,8 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
 
 def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
     SameVariadicOperandSize,
-    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     let arguments = (ins Variadic<Matrix>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs Frame:$res);
@@ -219,7 +221,10 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 // Comparisons
 // ----------------------------------------------------------------------------
 
-class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []> : Daphne_EwBinaryOp<name, inputScalarType, traits> {
+class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []>
+: Daphne_EwBinaryOp<name, inputScalarType, !listconcat([
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+], traits)> {
     // TODO: We do not enforce (matrix of) boolean output any more, but should
     // think about that again.
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
@@ -385,7 +390,9 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_ExtractColOp : Daphne_Op<"extractCol"> {
+def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
     let description = [{
@@ -640,7 +647,8 @@ def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
 def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 
 def Daphne_GroupJoinOp : Daphne_Op<"groupJoin", [
-    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     // TODO Support arbitrary aggregation functions.
     // TODO Support an arbitrary number of aggregates.
@@ -684,7 +692,8 @@ def Daphne_QueryOp : Daphne_Op<"query"> {
 }
 
 def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
-    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     let summary = "Filters the rows of a data object according to a bit vector";
 

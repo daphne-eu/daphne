@@ -36,6 +36,7 @@
 
 #include "ir/daphneir/DaphneDistributableOpInterface.h"
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
+#include <ir/daphneir/DaphneInferTypesOpInterface.h>
 
 #include <string>
 #include <utility>
