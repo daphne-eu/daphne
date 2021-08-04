@@ -633,6 +633,39 @@ def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
 def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 
+def Daphne_GroupJoinOp : Daphne_Op<"groupJoin"> {
+    // TODO Support arbitrary aggregation functions.
+    // TODO Support an arbitrary number of aggregates.
+    // TODO Support an arbitrary number of join/group columns.
+
+    let summary = [{
+        Group-join of `lhs` and `rhs` on `lhs.lhsOn == rhs.rhsOn` with
+        summation of `rhs.rhsAgg`.
+    }];
+
+    let description = [{
+        Performs a group-join of the input frames `lhs` and `rhs` on
+        `lhs.lhsOn == rhs.rhsOn`, where `lhsOn` and `rhsOn` are column labels
+        in the respective frame, including a summation on `rhs.rhsAgg`, where
+        `rhsAgg` is a column label in `rhs`.
+
+        This is equivalent to an inner join of `lhs` and `rhs` on
+        `lhs.lhsOn == rhs.rhsOn` followed by a grouping of the result on
+        `lhsOn` including a summation on `rhsAgg`.
+
+        The results are:
+        - A two-column frame consisting of (1) the distinct values in
+          `lhsOn`/`rhsOn` that pass the join and (2) the grouped aggregates in
+          `rhsAgg`. The column labels are `lhsOn` and `rhsAgg`.
+        - A column-matrix containing the positions of the tuples in `lhs`
+          corresponding to the pairs in the first result.
+    }];
+
+    let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn, StrScalar:$rhsAgg);
+    // TODO Result `lhsTids` could be made optional.
+    let results = (outs Frame:$res, MatrixOf<[Size]>:$lhsTids);
+}
+
 // ----------------------------------------------------------------------------
 // Selection
 // ----------------------------------------------------------------------------
