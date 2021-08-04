@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include <cassert>
 #include <cstddef>
@@ -78,6 +79,17 @@ struct ColBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesRhs += rowSkipRhs;
             valuesRes += rowSkipRes;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Frame <- Frame, Frame
+// ----------------------------------------------------------------------------
+
+template<>
+struct ColBind<Frame, Frame, Frame> {
+    static void apply(Frame *& res, const Frame * lhs, const Frame * rhs, DCTX(ctx)) {
+        res = DataObjectFactory::create<Frame>(lhs, rhs);
     }
 };
 

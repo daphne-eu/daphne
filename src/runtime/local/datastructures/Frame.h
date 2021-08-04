@@ -138,6 +138,34 @@ class Frame : public Structure {
         initLabels2Idxs();
     }
     
+    Frame(const Frame * lhs, const Frame * rhs) :
+            Structure(lhs->getNumRows(), lhs->getNumCols() + rhs->getNumCols())
+    {
+        if(lhs->getNumRows() != rhs->getNumRows())
+            throw std::runtime_error(
+                    "both input frames must have the same number of rows"
+            );
+        
+        schema = new ValueTypeCode[numCols];
+        labels = new std::string[numCols];
+        columns = new std::shared_ptr<ColByteType>[numCols];
+        
+        const size_t numColsLhs = lhs->getNumCols();
+        const size_t numColsRhs = rhs->getNumCols();
+        
+        for(size_t i = 0; i < numColsLhs; i++) {
+            schema [i] = lhs->schema[i];
+            labels [i] = lhs->labels[i];
+            columns[i] = std::shared_ptr<ColByteType>(lhs->columns[i]);
+        }
+        for(size_t i = 0; i < numColsRhs; i++) {
+            schema [numColsLhs + i] = rhs->schema[i];
+            labels [numColsLhs + i] = rhs->labels[i];
+            columns[numColsLhs + i] = std::shared_ptr<ColByteType>(rhs->columns[i]);
+        }
+        initLabels2Idxs();
+    }
+    
     template<typename VT>
     bool tryValueType(Structure * colMat, ValueTypeCode * schemaSlot, std::shared_ptr<ColByteType> * columnsSlot) {
         if(auto colMat2 = dynamic_cast<DenseMatrix<VT> *>(colMat)) {

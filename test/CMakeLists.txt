@@ -40,6 +40,7 @@ add_executable(run_tests
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
+        runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
