@@ -621,6 +621,23 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createJoinOp<AntiJoinOp>(loc, func, args);
     if(func == "semiJoin")
         return createJoinOp<SemiJoinOp>(loc, func, args);
+    if(func == "groupJoin") {
+        checkNumArgsExact(func, numArgs, 5);
+        mlir::Value lhs = args[0];
+        mlir::Value rhs = args[1];
+        mlir::Value lhsOn = args[2];
+        mlir::Value rhsOn = args[3];
+        mlir::Value rhsAgg = args[4];
+        return builder.create<GroupJoinOp>(
+                loc,
+                FrameType::get(
+                        builder.getContext(),
+                        {utils.unknownType, utils.unknownType}
+                ),
+                utils.matrixOfSizeType,
+                lhs, rhs, lhsOn, rhsOn, rhsAgg
+        ).getResults();
+    }
     
     // ********************************************************************
     // Frame label manipulation

@@ -46,7 +46,7 @@ exprStatement:
     expr ';' ;
 
 assignStatement:
-    var=IDENTIFIER '=' expr ';' ;
+    IDENTIFIER ( ',' IDENTIFIER )* '=' expr ';' ;
 
 ifStatement:
     KW_IF '(' cond=expr ')' thenStmt=statement (KW_ELSE elseStmt=statement)? ;

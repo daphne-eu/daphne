@@ -33,6 +33,20 @@
 #include <cstdlib>
 
 // ****************************************************************************
+// Utilities
+// ****************************************************************************
+
+void handleAssignmentPart(
+        const std::string & var,
+        ScopedSymbolTable & symbolTable,
+        mlir::Value val
+) {
+    if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
+        throw std::runtime_error("trying to assign read-only variable " + var);
+    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(val, false));
+}
+
+// ****************************************************************************
 // Visitor functions
 // ****************************************************************************
 
@@ -56,11 +70,45 @@ antlrcpp::Any DaphneDSLVisitor::visitExprStatement(DaphneDSLGrammarParser::ExprS
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::AssignStatementContext * ctx) {
-    std::string var = ctx->var->getText();
-    if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
-        throw std::runtime_error("trying to assign read-only variable " + var);
-    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(utils.valueOrError(visit(ctx->expr())), false));
-    return nullptr;
+    const size_t numVars = ctx->IDENTIFIER().size();
+    antlrcpp::Any rhsAny = visit(ctx->expr());
+    bool rhsIsRR = rhsAny.is<mlir::ResultRange>();
+    if(numVars == 1) {
+        // A single variable on the left-hand side.
+        if(rhsIsRR)
+            throw std::runtime_error(
+                    "trying to assign multiple results to a single variable"
+            );
+        handleAssignmentPart(
+                ctx->IDENTIFIER(0)->getText(),
+                symbolTable,
+                utils.valueOrError(rhsAny)
+        );
+        return nullptr;
+    }
+    else if(numVars > 1) {
+        // Multiple variables on the left-hand side; the expression must be an
+        // operation returning multiple outputs.
+        if(rhsIsRR) {
+            auto rhsAsRR = rhsAny.as<mlir::ResultRange>();
+            if(rhsAsRR.size() == numVars) {
+                for(size_t i = 0; i < numVars; i++)
+                    handleAssignmentPart(
+                            ctx->IDENTIFIER(i)->getText(), symbolTable, rhsAsRR[i]
+                    );
+                return nullptr;
+            }
+        }
+        throw std::runtime_error(
+                "right-hand side expression of assignment to multiple "
+                "variables must return multiple values, one for each "
+                "variable on the left-hand side"
+        );
+    }
+    assert(
+            false && "the DaphneDSL grammar should prevent zero variables "
+            "on the left-hand side of an assignment"
+    );
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
