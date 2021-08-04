@@ -22,6 +22,7 @@ set(LIBS
         ${dialect_libs}
         ${conversion_libs}
         MLIRDaphne
+        MLIRDaphneInference
         MLIRDaphneTransforms
         MLIRExecutionEngine
         )

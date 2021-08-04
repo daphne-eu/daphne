@@ -59,6 +59,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         pm.addPass(mlir::createLowerToCFGPass());

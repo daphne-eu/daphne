@@ -64,8 +64,19 @@ class MatrixOf<list<Type> allowedTypes> : ContainerType<
 def Frame : Daphne_Type<"Frame"> {
     let summary = "frame";
 
-    let parameters = (ins "std::vector<::mlir::Type>":$columnTypes);
+    let parameters = (ins
+        "std::vector<::mlir::Type>":$columnTypes,
+        "std::vector<std::string> *":$labels
+    );
+
     let genVerifyDecl = 1;
+
+    let builders = [
+        TypeBuilder<(ins "std::vector<::mlir::Type>":$columnTypes), [{
+            // By default, the label information is unknown (nullptr).
+            return Base::get($_ctxt, columnTypes, nullptr);
+        }]>,
+    ];
 }
 
 def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;

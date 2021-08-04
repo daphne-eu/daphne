@@ -111,14 +111,29 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
     if (auto t = type.dyn_cast<mlir::daphne::MatrixType>())
         os << "Matrix<" << t.getElementType() << '>';
     else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
-        std::vector<mlir::Type> cts = t.getColumnTypes();
         os << "Frame<[";
-        if(!cts.empty()) {
-            os << cts[0];
-            for (size_t i = 1; i < cts.size(); i++)
+        // Column types.
+        std::vector<mlir::Type> cts = t.getColumnTypes();
+        for (size_t i = 0; i < cts.size(); i++) {
+            os << cts[i];
+            if(i < cts.size() - 1)
                 os << ", " << cts[i];
         }
-        os << "]>";
+        os << "], ";
+        // Column labels.
+        std::vector<std::string> * labels = t.getLabels();
+        if(labels) {
+            os << '[';
+            for (size_t i = 0; i < labels->size(); i++) {
+                os << '"' << (*labels)[i] << '"';
+                if(i < labels->size() - 1)
+                    os << ", ";
+            }
+            os << ']';
+        }
+        else
+            os << '?';
+        os << '>';
     }
     else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
         os << "Handle<" << handle.getDataType() << ">";
@@ -154,7 +169,11 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
         return emitError() << "invalid matrix element type: " << elementType;
 }
 
-::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, std::vector<Type> columnTypes)
+::mlir::LogicalResult mlir::daphne::FrameType::verify(
+        ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+        std::vector<Type> columnTypes,
+        std::vector<std::string> * labels
+)
 {
     // TODO Verify the individual column types.
     return mlir::success();

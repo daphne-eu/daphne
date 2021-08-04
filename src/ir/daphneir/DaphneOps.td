@@ -20,6 +20,7 @@
 include "ir/daphneir/DaphneDialect.td"
 include "ir/daphneir/DaphneTypes.td"
 include "ir/daphneir/DaphneDistributableOpInterface.td"
+include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -62,7 +63,10 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
     let results = (outs Matrix:$res);
 }
 
-def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [SameVariadicOperandSize]> {
+def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
+    SameVariadicOperandSize,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+]> {
     let arguments = (ins Variadic<Matrix>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs Frame:$res);
 }
@@ -635,7 +639,9 @@ def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
 def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 
-def Daphne_GroupJoinOp : Daphne_Op<"groupJoin"> {
+def Daphne_GroupJoinOp : Daphne_Op<"groupJoin", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+]> {
     // TODO Support arbitrary aggregation functions.
     // TODO Support an arbitrary number of aggregates.
     // TODO Support an arbitrary number of join/group columns.
@@ -677,7 +683,9 @@ def Daphne_QueryOp : Daphne_Op<"query"> {
     let results = (outs Frame:$res);
 }
 
-def Daphne_FilterRowOp : Daphne_Op<"filterRow"> {
+def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+]> {
     let summary = "Filters the rows of a data object according to a bit vector";
 
     let description = [{

@@ -19,6 +19,14 @@
 
 include "mlir/Pass/PassBase.td"
 
+def DistributeComputations : FunctionPass<"distribute-computations"> {
+    let constructor = "mlir::daphne::createDistributeComputationsPass()";
+}
+
+def Inference: FunctionPass<"inference"> {
+    let constructor = "mlir::daphne::createInferencePass()";
+}
+
 def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
     let constructor = "mlir::daphne::createInsertDaphneContextPass()";
 }
@@ -29,10 +37,6 @@ def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
 
 def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
     let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
-}
-
-def DistributeComputations : FunctionPass<"distribute-computations"> {
-    let constructor = "mlir::daphne::createDistributeComputationsPass()";
 }
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD
