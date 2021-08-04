@@ -53,9 +53,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
     }
 
     if (module) {
-        //module->dump(); // print the DaphneIR representation
         mlir::PassManager pm(&context_);
 
+//        pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }

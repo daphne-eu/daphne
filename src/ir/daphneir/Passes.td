@@ -35,6 +35,10 @@ def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
     let constructor = "mlir::daphne::createLowerToLLVMPass()";
 }
 
+def PrintIR : FunctionPass<"print-ir"> {
+    let constructor = "mlir::daphne::createPrintIRPass()";
+}
+
 def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
     let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
 }

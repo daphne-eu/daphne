@@ -19,6 +19,8 @@
 
 #include "mlir/Pass/Pass.h"
 
+#include <string>
+
 namespace mlir
 {
     namespace daphne
@@ -27,6 +29,7 @@ namespace mlir
         std::unique_ptr<Pass> createInferencePass();
         std::unique_ptr<Pass> createInsertDaphneContextPass();
         std::unique_ptr<Pass> createLowerToLLVMPass();
+        std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
         std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
 
 #define GEN_PASS_REGISTRATION
