@@ -273,7 +273,7 @@ class Frame : public Structure {
         delete[] columns;
     }
     
-    size_t getColIdx(const std::string & label) {
+    size_t getColIdx(const std::string & label) const {
         auto it = labels2idxs.find(label);
         if(it != labels2idxs.end())
             return it->second;
@@ -316,9 +316,15 @@ public:
         return schema[idx];
     }
     
+    ValueTypeCode getColumnType(const std::string & label) const {
+        return getColumnType(getColIdx(label));
+    }
+    
     template<typename ValueType>
     DenseMatrix<ValueType> * getColumn(size_t idx) {
         assert((ValueTypeUtils::codeFor<ValueType> == schema[idx]) && "requested value type must match the type of the column");
+        // TODO This breaks the tracking of the ownership. DenseMatrix should
+        // take a std::shared_ptr.
         return DataObjectFactory::create<DenseMatrix<ValueType>>(numRows, 1, reinterpret_cast<ValueType *>(columns[idx].get()));
     }
     

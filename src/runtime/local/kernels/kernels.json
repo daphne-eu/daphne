@@ -570,6 +570,53 @@
     },
     {
         "kernelTemplate": {
+            "header": "GroupJoin.h",
+            "opName": "groupJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VTLhsTid",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "DenseMatrix<VTLhsTid> *&",
+                    "name": "lhsTid"
+                },
+                {
+                    "type": "const Frame *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const Frame *",
+                    "name": "rhs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "lhsOn"
+                },
+                {
+                    "type": "const char *",
+                    "name": "rhsOn"
+                },
+                {
+                    "type": "const char *",
+                    "name": "rhsAgg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["size_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
             "returnType": "void",

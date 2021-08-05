@@ -669,6 +669,8 @@ def Daphne_GroupJoinOp : Daphne_Op<"groupJoin", [
         `lhs.lhsOn == rhs.rhsOn` followed by a grouping of the result on
         `lhsOn` including a summation on `rhsAgg`.
 
+        `lhs.lhsOn` is assumed to be unique.
+
         The results are:
         - A two-column frame consisting of (1) the distinct values in
           `lhsOn`/`rhsOn` that pass the join and (2) the grouped aggregates in
