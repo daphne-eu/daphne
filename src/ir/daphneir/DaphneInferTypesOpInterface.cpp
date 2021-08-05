@@ -84,14 +84,16 @@ void inferTypes_EwCmpOp(EwCmpOp * op) {
 // ****************************************************************************
 
 void daphne::ExtractColOp::inferTypes() {
-    if(auto ft = source().getType().dyn_cast<daphne::FrameType>()) {
+    auto ft = source().getType().dyn_cast<daphne::FrameType>();
+    auto st = selectedCols().getType().dyn_cast<daphne::StringType>();
+    if(ft && st) {
         Type vt = getFrameColumnTypeByLabel(ft, selectedCols());
-        getResult().setType(daphne::MatrixType::get(getContext(), vt));
+        getResult().setType(daphne::FrameType::get(getContext(), {vt}));
     }
     else
         throw std::runtime_error(
                 "currently, ExtractColOp can only infer its type for frame "
-                "inputs"
+                "inputs and a single column name"
         );
 }
 

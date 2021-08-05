@@ -88,14 +88,14 @@ struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
 };
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- Frame, String (column label)
+// Frame <- Frame, String (column label)
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ExtractCol<DenseMatrix<VT>, Frame, char> {
-    static void apply(DenseMatrix<VT> *& res, const Frame * arg, const char * sel, DCTX(ctx)) {
-        // TODO Can we avoid this const_cast?
-        res = const_cast<DenseMatrix<VT> *>(arg->getColumn<VT>(sel));
+template<>
+struct ExtractCol<Frame, Frame, char> {
+    static void apply(Frame *& res, const Frame * arg, const char * sel, DCTX(ctx)) {
+        size_t colIdx = arg->getColumnIdx(sel);
+        res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
     }
 };
 

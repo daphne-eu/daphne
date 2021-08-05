@@ -483,20 +483,13 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
     if(ctx->cols) {
         mlir::Value cols = utils.valueOrError(visit(ctx->cols));
         mlir::Type colsType = cols.getType();
-        mlir::Type resType;
         // TODO Consider all supported value types.
         if(colsType.isInteger(64) || colsType.isF64()) {
             cols = utils.castSizeIf(cols);
             colsType = cols.getType();
         }
-        if(objType.isa<mlir::daphne::FrameType>() && colsType.isa<mlir::daphne::StringType>())
-            // In this case, we cannot tell the value type of the output at the
-            // moment.
-            resType = utils.matrixOf(utils.unknownType);
-        else
-            resType = objType;
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
-                builder.getUnknownLoc(), resType, obj, cols
+                builder.getUnknownLoc(), objType, obj, cols
         ));
     }
     // TODO Actually, this would be okay, but we should think about whether

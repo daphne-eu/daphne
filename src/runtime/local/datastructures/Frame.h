@@ -273,13 +273,6 @@ class Frame : public Structure {
         delete[] columns;
     }
     
-    size_t getColIdx(const std::string & label) const {
-        auto it = labels2idxs.find(label);
-        if(it != labels2idxs.end())
-            return it->second;
-        throw std::runtime_error("column label not found: '" + label + "'");
-    }
-    
 public:
     
     /**
@@ -311,13 +304,20 @@ public:
         initLabels2Idxs();
     }
     
+    size_t getColumnIdx(const std::string & label) const {
+        auto it = labels2idxs.find(label);
+        if(it != labels2idxs.end())
+            return it->second;
+        throw std::runtime_error("column label not found: '" + label + "'");
+    }
+    
     ValueTypeCode getColumnType(size_t idx) const {
         assert((idx < numCols) && "column index is out of bounds");
         return schema[idx];
     }
     
     ValueTypeCode getColumnType(const std::string & label) const {
-        return getColumnType(getColIdx(label));
+        return getColumnType(getColumnIdx(label));
     }
     
     template<typename ValueType>
@@ -335,7 +335,7 @@ public:
     
     template<typename ValueType>
     DenseMatrix<ValueType> * getColumn(const std::string & label) {
-        return getColumn<ValueType>(getColIdx(label));
+        return getColumn<ValueType>(getColumnIdx(label));
     }
     
     template<typename ValueType>
