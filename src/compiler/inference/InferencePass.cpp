@@ -55,7 +55,8 @@ public:
                     // dat/value types, we do not need to throw here anymore.
                     throw std::runtime_error(
                             "some operation has an unknown result type, but "
-                            "does not implement the type inference interface"
+                            "does not implement the type inference interface: "
+                            + op->getName().getStringRef().str()
                     );
             }
             
