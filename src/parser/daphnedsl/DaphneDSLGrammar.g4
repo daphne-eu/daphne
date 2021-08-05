@@ -62,6 +62,7 @@ expr:
     | var=IDENTIFIER # identifierExpr
     | '(' expr ')' # paranthesesExpr
     | func=IDENTIFIER '(' expr (',' expr)* ')' # callExpr
+    | KW_AS '.' DATA_TYPE ('.' VALUE_TYPE)? '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
     | obj=expr '[' (rows=expr)? ',' (cols=expr)? ']' # rightIdxExtractExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
@@ -93,6 +94,7 @@ KW_FOR: 'for';
 KW_IN: 'in';
 KW_TRUE: 'true';
 KW_FALSE: 'false';
+KW_AS: 'as';
 
 fragment DIGIT:
     [0-9] ;
@@ -102,6 +104,12 @@ fragment NON_ZERO_DIGIT:
 
 fragment LETTER:
     [a-zA-Z] ;
+
+DATA_TYPE:
+    ('matrix') ;
+
+VALUE_TYPE:
+    ('f64' | 'f32' | 'si64' | 'si32' | 'si8' | 'ui64' | 'ui32' | 'ui8') ;
 
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;

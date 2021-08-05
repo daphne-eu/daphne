@@ -441,6 +441,32 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     return builtins.build(loc, func, args);
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {
+    mlir::Type resType;
+    
+    std::string dtStr = ctx->DATA_TYPE()->getText();
+    if(dtStr == "matrix") {
+        mlir::Type vt;
+        if(ctx->VALUE_TYPE())
+            vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+        else
+            vt = utils.unknownType;
+        resType = utils.matrixOf(vt);
+    }
+    else if(dtStr == "frame")
+        throw std::runtime_error("casting to a frame is not supported yet");
+    else
+        throw std::runtime_error(
+                "unsupported data type in cast expression: " + dtStr
+        );
+    
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
+            builder.getUnknownLoc(),
+            resType,
+            utils.valueOrError(visit(ctx->expr()))
+    ));
+}
+
 // TODO Reduce the code duplication with visitRightIdxExtractExpr.
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));

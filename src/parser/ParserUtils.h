@@ -136,6 +136,22 @@ public:
     }
     
     // ************************************************************************
+    // Type parsing
+    // ************************************************************************
+    
+    mlir::Type getValueTypeByName(const std::string & name) {
+        if(name == "f64") return builder.getF64Type();
+        if(name == "f32") return builder.getF32Type();
+        if(name == "si64") return builder.getIntegerType(64, true);
+        if(name == "si32") return builder.getIntegerType(32, true);
+        if(name == "si8") return builder.getIntegerType(8, true);
+        if(name == "ui64") return builder.getIntegerType(64, false);
+        if(name == "ui32") return builder.getIntegerType(32, false);
+        if(name == "ui8") return builder.getIntegerType(8, false);
+        throw std::runtime_error("unsupported value type: " + name);
+    }
+    
+    // ************************************************************************
     // Misc
     // ************************************************************************
     
