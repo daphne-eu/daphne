@@ -491,6 +491,46 @@
     },
     {
         "kernelTemplate": {
+            "header": "ExtractRow.h",
+            "opName": "extractRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTSel",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DenseMatrix<VTSel> *",
+                    "name": "sel"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame", "Frame", "double"],
+            ["Frame", "Frame", "int64_t"],
+            ["Frame", "Frame", "size_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "FilterRow.h",
             "opName": "filterRow",
             "returnType": "void",
