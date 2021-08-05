@@ -967,10 +967,6 @@
                 {
                     "type": "const DTRhs *",
                     "name": "rhs"
-                },
-                {
-                    "type": "bool",
-                    "name": "triangLhs"
                 }
             ]
         },

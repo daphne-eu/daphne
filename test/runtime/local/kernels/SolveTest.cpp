@@ -28,13 +28,14 @@
 #include <vector>
 
 template<class DT>
-void checkSolve(const DT* lhs, const DT* rhs, const DT * exp, bool triangLhs) {
+void checkSolve(const DT* lhs, const DT* rhs, const DT * exp) {
     DT *res = nullptr;
-    solve<DT, DT, DT>(res, lhs, rhs, triangLhs, nullptr);
+    solve<DT, DT, DT>(res, lhs, rhs, nullptr);
     // instead of CHECK(*res == * exp), we use the below approximate comparison
     // because otherwise the float results do not exactly match, while double does
     CHECK(res->getNumRows() == exp->getNumRows());
     CHECK(res->getNumCols() == exp->getNumCols());
+    // TODO Bug: this compares only the first pair of values.
     CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(exp->getValues()));
 }
 
@@ -63,7 +64,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double))
     matMul(b, tX, y, nullptr);
 
     // check solve A x = b for x
-    checkSolve(A, b, w, false);
+    checkSolve(A, b, w);
 
     DataObjectFactory::destroy(X);
     DataObjectFactory::destroy(w);

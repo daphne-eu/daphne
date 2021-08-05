@@ -33,7 +33,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct Solve {
-    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool triangLhs, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +41,8 @@ struct Solve {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void solve(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool triangLhs, DCTX(ctx)) {
-    Solve<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, triangLhs, ctx);
+void solve(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
+    Solve<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -55,7 +55,7 @@ void solve(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool triangLhs, D
 
 template<>
 struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, bool triangLhs, DCTX(ctx)) {
+    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, DCTX(ctx)) {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nr2 = rhs->getNumRows();
@@ -80,7 +80,7 @@ struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
 
 template<>
 struct Solve<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, bool triangLhs, DCTX(ctx)) {
+    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, DCTX(ctx)) {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nr2 = rhs->getNumRows();
