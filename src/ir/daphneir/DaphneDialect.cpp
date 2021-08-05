@@ -117,7 +117,7 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         for (size_t i = 0; i < cts.size(); i++) {
             os << cts[i];
             if(i < cts.size() - 1)
-                os << ", " << cts[i];
+                os << ", ";
         }
         os << "], ";
         // Column labels.
