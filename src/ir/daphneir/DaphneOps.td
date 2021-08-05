@@ -371,7 +371,9 @@ def Daphne_ExtractOp : Daphne_Op<"extract"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_ExtractRowOp : Daphne_Op<"extractRow"> {
+def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+]> {
     let summary = "Copies the specified rows from the argument to the result.";
 
     let description = [{
@@ -391,6 +393,7 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow"> {
 }
 
 def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
@@ -440,12 +443,14 @@ def Daphne_TransposeOp : Daphne_Op<"transpose"> {
     ];
 }
 
-class Daphne_BindOp<string name> : Daphne_Op<name> {
+class Daphne_BindOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
     let arguments = (ins MatrixOrFrame:$lhs, MatrixOrFrame:$rhs);
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_ColBindOp : Daphne_BindOp<"colBind">;
+def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+]>;
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind">;
 
 def Daphne_ReverseOp : Daphne_Op<"reverse"> {
