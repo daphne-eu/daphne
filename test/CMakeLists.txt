@@ -33,6 +33,7 @@ add_executable(run_tests
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         
+        runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
         
         runtime/local/kernels/AggAllTest.cpp
