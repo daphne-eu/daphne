@@ -425,7 +425,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::Iden
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext * ctx) {
-    return visitChildren(ctx);
+    return utils.valueOrError(visit(ctx->expr()));
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
