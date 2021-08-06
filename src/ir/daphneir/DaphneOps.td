@@ -372,7 +372,8 @@ def Daphne_ExtractOp : Daphne_Op<"extract"> {
 }
 
 def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
-    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 

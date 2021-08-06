@@ -158,6 +158,10 @@ void daphne::EwGeOp::inferTypes() {
     return inferTypes_EwCmpOp(this);
 }
 
+void daphne::ExtractRowOp::inferTypes() {
+    getResult().setType(source().getType());
+}
+
 void daphne::FilterRowOp::inferTypes() {
     getResult().setType(source().getType());
 }
