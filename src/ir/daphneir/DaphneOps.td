@@ -449,7 +449,8 @@ class Daphne_BindOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, tr
 }
 
 def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
-    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]>;
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind">;
 
@@ -759,7 +760,9 @@ def Daphne_ToStringOp : Daphne_Op<"toString"> {
     let results = (outs StrScalar:$res);
 }
 
-def Daphne_CastOp : Daphne_Op<"cast"> {
+def Daphne_CastOp : Daphne_Op<"cast", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
     let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$arg);

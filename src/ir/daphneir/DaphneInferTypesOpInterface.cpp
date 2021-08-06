@@ -83,6 +83,36 @@ void inferTypes_EwCmpOp(EwCmpOp * op) {
 // Type inference implementations
 // ****************************************************************************
 
+void daphne::CastOp::inferTypes() {
+    auto ftArg = arg().getType().dyn_cast<daphne::FrameType>();
+    auto mtRes = res().getType().dyn_cast<daphne::MatrixType>();
+    if(ftArg && mtRes && mtRes.getElementType().isa<daphne::UnknownType>()) {
+        std::vector<Type> ctsArg = ftArg.getColumnTypes();
+        if(ctsArg.size() == 1)
+            res().setType(daphne::MatrixType::get(getContext(), ctsArg[0]));
+        else
+            throw std::runtime_error(
+                    "currently CastOp cannot infer the value type of its "
+                    "output matrix, if the input is a multi-column frame"
+            );
+    }
+}
+
+void daphne::ColBindOp::inferTypes() {
+    auto ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
+    auto ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
+    if(ftLhs && ftRhs) {
+        std::vector<Type> newColumnTypes;
+        for(Type t : ftLhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        for(Type t : ftRhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        getResult().setType(
+                daphne::FrameType::get(getContext(), newColumnTypes)
+        );
+    }
+}
+
 void daphne::ExtractColOp::inferTypes() {
     auto ft = source().getType().dyn_cast<daphne::FrameType>();
     auto st = selectedCols().getType().dyn_cast<daphne::StringType>();
