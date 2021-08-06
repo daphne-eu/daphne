@@ -514,8 +514,20 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
             cols = utils.castSizeIf(cols);
             colsType = cols.getType();
         }
+        mlir::Type resType;
+        if(objType.isa<mlir::daphne::MatrixType>())
+            // Data type and value type remain the same.
+            resType = objType;
+        else if(objType.isa<mlir::daphne::FrameType>())
+            // Data type remains the same, but the value type of the result's
+            // single column is currently unknown.
+            // TODO If the column is selected by position, we could know its
+            // type already here.
+            resType = mlir::daphne::FrameType::get(
+                    builder.getContext(), {utils.unknownType}
+            );
         return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
-                builder.getUnknownLoc(), objType, obj, cols
+                builder.getUnknownLoc(), resType, obj, cols
         ));
     }
     // TODO Actually, this would be okay, but we should think about whether
