@@ -45,7 +45,9 @@ Type getFrameColumnTypeByLabel(daphne::FrameType ft, Value label) {
                         // Found the label.
                         return colTypes[i];
                 // Did not find the label.
-                throw std::runtime_error("the specified label was not found");
+                throw std::runtime_error(
+                        "the specified label was not found: '" + label + "'"
+                );
             }
             else
                 // The column labels are unknown, so we cannot tell what type
