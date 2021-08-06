@@ -107,6 +107,37 @@
     },
     {
         "kernelTemplate": {
+            "header": "CastObj.h",
+            "opName": "castObj",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], "Frame"],
+            [["DenseMatrix", "int64_t"], "Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CastSca.h",
             "opName": "castSca",
             "returnType": "VTRes",
