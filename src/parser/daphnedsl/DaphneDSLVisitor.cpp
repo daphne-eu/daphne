@@ -444,20 +444,29 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {
     mlir::Type resType;
     
-    std::string dtStr = ctx->DATA_TYPE()->getText();
-    if(dtStr == "matrix") {
-        mlir::Type vt;
-        if(ctx->VALUE_TYPE())
-            vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+    if(ctx->DATA_TYPE()) {
+        std::string dtStr = ctx->DATA_TYPE()->getText();
+        if(dtStr == "matrix") {
+            mlir::Type vt;
+            if(ctx->VALUE_TYPE())
+                vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+            else
+                vt = utils.unknownType;
+            resType = utils.matrixOf(vt);
+        }
+        else if(dtStr == "frame")
+            throw std::runtime_error("casting to a frame is not supported yet");
         else
-            vt = utils.unknownType;
-        resType = utils.matrixOf(vt);
+            throw std::runtime_error(
+                    "unsupported data type in cast expression: " + dtStr
+            );
     }
-    else if(dtStr == "frame")
-        throw std::runtime_error("casting to a frame is not supported yet");
+    else if(ctx->VALUE_TYPE())
+        resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
     else
         throw std::runtime_error(
-                "unsupported data type in cast expression: " + dtStr
+                "casting requires the specification of the target data and/or "
+                "value type"
         );
     
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
