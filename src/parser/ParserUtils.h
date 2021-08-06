@@ -18,6 +18,7 @@
 #define SRC_PARSER_PARSERUTILS_H
 
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 
 #include "antlr4-runtime.h"
 
@@ -149,6 +150,20 @@ public:
         if(name == "ui32") return builder.getIntegerType(32, false);
         if(name == "ui8") return builder.getIntegerType(8, false);
         throw std::runtime_error("unsupported value type: " + name);
+    }
+    
+    mlir::Type mlirTypeForCode(ValueTypeCode type) {
+        switch(type) {
+            case ValueTypeCode::SI8:  return builder.getIntegerType(8, true);
+            case ValueTypeCode::SI32: return builder.getIntegerType(32, true);
+            case ValueTypeCode::SI64: return builder.getIntegerType(64, true);
+            case ValueTypeCode::UI8:  return builder.getIntegerType(8, false);
+            case ValueTypeCode::UI32: return builder.getIntegerType(32, false);
+            case ValueTypeCode::UI64: return builder.getIntegerType(64, false);
+            case ValueTypeCode::F32: return builder.getF32Type();
+            case ValueTypeCode::F64: return builder.getF64Type();
+            default: throw std::runtime_error("unknown value type code");
+        }
     }
     
     // ************************************************************************

@@ -57,6 +57,7 @@ add_executable(run_tests
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
+        runtime/local/kernels/ReadTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp

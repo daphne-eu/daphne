@@ -822,6 +822,32 @@
     },
     {
         "kernelTemplate": {
+            "header": "Read.h",
+            "opName": "read",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "filename"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "SetColLabels.h",
             "opName": "setColLabels",
             "returnType": "void",

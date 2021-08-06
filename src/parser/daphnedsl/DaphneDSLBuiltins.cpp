@@ -17,6 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/io/FileMetaData.h>
 
 #include "antlr4-runtime.h"
 
@@ -694,7 +695,39 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, args[0]
         );
     }
-    // TODO read/write
+    if(func == "read") {
+        checkNumArgsExact(func, numArgs, 1);
+        
+        mlir::Value filename = args[0];
+        std::string filenameStr;
+        bool found = false;
+        
+        // TODO Make getConstantString() from DaphneInferFrameLabelsOpInterface
+        // a central utility and use it here.
+        if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(filename.getDefiningOp()))
+            if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
+                filenameStr = strAttr.getValue().str();
+                found = true;
+            }
+        if(!found)
+            throw std::runtime_error(
+                    "built-in function read requires the filename to be a "
+                    "string constant"
+            );
+        
+        FileMetaData fmd = FileMetaData::ofFile(filenameStr);
+        std::vector<mlir::Type> cts;
+        for(ValueTypeCode vtc : fmd.schema)
+            cts.push_back(utils.mlirTypeForCode(vtc));
+        auto labels = new std::vector<std::string>(fmd.labels);
+        
+        return static_cast<mlir::Value>(builder.create<ReadOp>(
+                loc,
+                mlir::daphne::FrameType::get(builder.getContext(), cts, labels),
+                filename
+        ));
+    }
+    // TODO write
     
     // ********************************************************************
     // Data preprocessing
