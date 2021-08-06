@@ -154,13 +154,17 @@ mlir::Value DaphneDSLBuiltins::createCumAggOp(mlir::Location loc, const std::str
     ));
 }
 
+#if 0
 template<class BindOp>
 mlir::Value DaphneDSLBuiltins::createBindOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 2);
     return static_cast<mlir::Value>(builder.create<BindOp>(
+            // TODO This is not Frame-aware (for ColBindOp, we need to concat
+            // the column types.
             loc, args[0].getType(), args[0], args[1]
     ));
 }
+#endif
 
 template<class TheOp>
 mlir::Value DaphneDSLBuiltins::createSameTypeUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
@@ -485,10 +489,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, args[0]
         ));
     }
-    if(func == "cbind")
+    if(func == "cbind") {
+#if 0
         return createBindOp<ColBindOp>(loc, func, args);
-    if(func == "rbind")
+#else
+        checkNumArgsExact(func, numArgs, 2);
+        auto op = builder.create<ColBindOp>(
+                loc, args[0].getType(), args[0], args[1]
+        );
+        op.inferTypes();
+        return static_cast<mlir::Value>(op);
+#endif
+    }
+    if(func == "rbind") {
+#if 0
         return createBindOp<RowBindOp>(loc, func, args);
+#else
+        checkNumArgsExact(func, numArgs, 2);
+        return static_cast<mlir::Value>(builder.create<RowBindOp>(
+                loc, args[0].getType(), args[0], args[1]
+        ));
+#endif
+    }
     if(func == "reverse")
         return createSameTypeUnaryOp<ReverseOp>(loc, func, args);
     if(func == "order") {
