@@ -26,6 +26,9 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
 
+#include <string>
+#include <unordered_map>
+
 class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
     // By inheriting from DaphneSQLGrammarVisitor (as opposed to
     // DaphneSQLGrammarBaseVisitor), we ensure that any newly added visitor
@@ -36,9 +39,19 @@ class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
      * The OpBuilder used to generate DaphneIR operations.
      */
     mlir::OpBuilder builder;
+    mlir::Value currentFrame;
     int i_se = 0;
     std::vector<std::vector<std::string>> fj_order;
 
+    std::unordered_map <std::string, mlir::Value> view;
+    std::unordered_map <std::string, mlir::Value> alias;
+
+    void registerAlias(mlir::Value arg, std::string name);
+
+    // std::vector<std::string> getNames(mlir::Value val);
+    mlir::Value fetchMLIR(std::string name);    //looks name up in alias and view
+    mlir::Value fetchAlias(std::string name);   //looks name up only in alias
+    bool hasMLIR(std::string name);
     /**
      * Maps a variable name from the input DaphneSQL script to the MLIR SSA
      * value that has been assigned to it most recently.
@@ -47,9 +60,16 @@ class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
 
 public:
     DaphneSQLVisitor(mlir::OpBuilder & builder) : builder(builder) {
-        //
+        // std::cout << "SQL Visitor without View setting\n\n";
     };
 
+    DaphneSQLVisitor(
+        mlir::OpBuilder & builder,
+        std::unordered_map <std::string, mlir::Value> view_arg
+    ) : builder(builder) {
+        view = view_arg;
+        // std::cout << "SQL Visitor with View setting\n\n";
+    };
 
     antlrcpp::Any visitScript(DaphneSQLGrammarParser::ScriptContext * ctx) override;
 
@@ -123,35 +143,12 @@ public:
     //retrurns string which needs to be looked up before use. This has todo with the implementation of from/join
     antlrcpp::Any visitTableReference(DaphneSQLGrammarParser::TableReferenceContext * ctx) override;
 
+    //*
+    antlrcpp::Any visitStringIdent(DaphneSQLGrammarParser::StringIdentContext * ctx) override;
+    //*/
     /*
-    antlrcpp::Any visitStringIdent(DaphneSQLGrammarParser::IdentContext * ctx) {
-
-        std::string var = atol(ctx->IDENTIFIER()->getText());
-        if(ctx->frame){
-            try {
-                return static_cast<mlir::Value>(
-                    builder.create<mlir::daphne::GetOp>(
-                        loc,
-                        valueOrError(symbolTable.get(frame)),
-                        builder.getStringAttr(var)
-                    )
-                );
-            }
-            catch(std::runtime_error &) {
-                throw std::runtime_error("Frame " + frame + " referenced before assignment");
-            }
-        }
-        try {
-            return symbolTable.get(var);
-        }
-        catch(std::runtime_error &) {
-            throw std::runtime_error("variable " + var + " referenced before assignment");
-        }
-    }
-    */
-
     antlrcpp::Any visitIntIdent(DaphneSQLGrammarParser::IntIdentContext * ctx) override;
-
+    //*/
     antlrcpp::Any visitLiteral(DaphneSQLGrammarParser::LiteralContext * ctx) override;
 
 

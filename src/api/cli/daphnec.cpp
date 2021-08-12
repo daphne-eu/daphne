@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <api/cli/StatusCode.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -34,7 +33,6 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
-#include <exception>
 #include <iostream>
 #include <memory>
 
@@ -56,6 +54,8 @@ processModule(ModuleOp module)
         //module->dump(); // print the DaphneIR representation
         PassManager pm(module->getContext());
 
+        pm.addPass(daphne::createRewriteSqlOpPass());   //calls SQL Parser
+        pm.addPass(daphne::createLowerRelationalAlgebraToDaphneOpPass());
         pm.addPass(daphne::createRewriteToCallKernelOpPass());
         pm.addPass(createLowerToCFGPass());
         pm.addPass(daphne::createLowerToLLVMPass());
@@ -132,20 +132,15 @@ main(int argc, char** argv)
     // Parse the input file and generate the corresponding DaphneIR operations
     // inside the module, assuming DaphneDSL as the input format.
     DaphneDSLParser parser;
-    try {
-        parser.parseFile(builder, inputFile);
-    }
-    catch(std::exception & e) {
-        std::cerr << "Parser error: " << e.what() << std::endl;
-        return StatusCode::PARSER_ERROR;
-    }
-    
+    std::cout << "Error before here" << std::endl;
+    parser.parseFile(builder, inputFile);
+    moduleOp->dump();
     // Further process the module, including optimization and lowering passes.
     OwningModuleRef module = processModule(moduleOp);
-    
+
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
     execJIT(module);
 
-    return StatusCode::SUCCESS;
+    return 0;
 }

@@ -23,9 +23,21 @@
 
 #include <istream>
 
-struct DaphneSQLParser : public Parser {
+#include <string>
+#include <unordered_map>
+// #include "mlir/IR/Value.h"
 
+
+struct DaphneSQLParser : public Parser {
+    std::unordered_map <std::string, mlir::Value> view;
+    void setView(std::unordered_map <std::string, mlir::Value> view);
+    //
+    // DaphneSQLParser(std::unordered_map <std::string, mlir:Value> tables):Parser(){
+    //
+    // }
+    // void parseStream(mlir::OpBuilder & builder, std::istream & stream, std::unordered_map<std::string, mlir::Value> &tables) override;
     void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
+
 
 };
 

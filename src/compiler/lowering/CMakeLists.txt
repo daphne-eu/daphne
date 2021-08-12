@@ -13,7 +13,8 @@
 # limitations under the License.
 
 add_mlir_dialect_library(MLIRDaphneTransforms
-    RewriteToDaphneOpPass.cpp
+    RewriteSqlOpPass.cpp
+    LowerRelationalAlgebraToDaphneOpPass.cpp
     RewriteToCallKernelOpPass.cpp
     LowerToLLVMPass.cpp
 

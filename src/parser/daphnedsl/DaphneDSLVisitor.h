@@ -33,34 +33,34 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     // DaphneDSLGrammarBaseVisitor), we ensure that any newly added visitor
     // function (e.g. after a change to the grammar file) needs to be
     // considered here. This is to force us not to forget anything.
-    
+
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
     mlir::OpBuilder & builder;
-    
+
     /**
      * Maps a variable name from the input DaphneDSL script to the MLIR SSA
      * value that has been assigned to it most recently.
      */
     ScopedSymbolTable symbolTable;
-    
+
     /**
      * @brief General utilities for parsing to DaphneIR.
      */
     ParserUtils utils;
-    
+
     /**
      * @brief Utility for creating DaphneIR operations for DaphneDSL built-in
      * functions.
      */
     DaphneDSLBuiltins builtins;
-    
+
 public:
     DaphneDSLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder), builtins(builder) {
         //
     };
-    
+
     antlrcpp::Any visitScript(DaphneDSLGrammarParser::ScriptContext * ctx) override;
 
     antlrcpp::Any visitStatement(DaphneDSLGrammarParser::StatementContext * ctx) override;
@@ -86,15 +86,15 @@ public:
     antlrcpp::Any visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) override;
 
     antlrcpp::Any visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) override;
-    
+
     antlrcpp::Any visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) override;
-    
+
     antlrcpp::Any visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) override;
-    
+
     antlrcpp::Any visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) override;
-    
+
     antlrcpp::Any visitAddExpr(DaphneDSLGrammarParser::AddExprContext * ctx) override;
-    
+
     antlrcpp::Any visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext * ctx) override;
 
     antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) override;

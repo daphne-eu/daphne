@@ -52,17 +52,6 @@ class TypesMatchOrOneIsMatrixOfOther<string a, string b> : PredOpTrait<
 class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
-// ****************************************************************************
-// Daphne Special Function Definition
-// ****************************************************************************
-
-class Daphne_SpecialFunctionOp<string name, Type scalarType, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-        let arguments = (ins scalarType:$script);
-        let results = (outs Frame:$res);
-}
-
-def Daphne_SQLOp : Daphne_SpecialFunctionOp<"sql", StrScalar>{
-}
 
 // ****************************************************************************
 // Data generation
@@ -571,6 +560,11 @@ def Daphne_CTableOp : Daphne_Op<"ctable"> {
 def Daphne_SqlOp : Daphne_Op<"sql"> {
     let arguments = (ins StrAttr:$sql);
     let results = (outs Frame:$res);
+}
+
+def Daphne_RegisterOp : Daphne_Op<"register"> {
+    let arguments = (ins StrAttr:$view, MatrixOrFrame:$arg);
+    let results = (outs); // no results
 }
 
 // ----------------------------------------------------------------------------

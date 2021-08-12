@@ -14,6 +14,17 @@
  * limitations under the License.
  */
 
+/*
+ *  TODO:
+ *      1: Relational Algebra
+ *          This will make it possible for annother pass for reordering
+ *          Operations and lowering them to Daphne, so that other languages
+ *          Can use it.
+ *      2: Named Columns
+ *          Renameing column operations, such that a projection works
+ */
+
+
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnesql/DaphneSQLVisitor.h>
 #include <parser/ScopedSymbolTable.h>
@@ -27,9 +38,11 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <sstream>
 
 #include <cstdint>
 #include <cstdlib>
+#include <regex>
 
 // ****************************************************************************
 // Helper functions
@@ -41,6 +54,55 @@ mlir::Value valueOrError(antlrcpp::Any a) {
     throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
 }
 
+void DaphneSQLVisitor::registerAlias(mlir::Value arg, std::string name){
+    alias[name] = arg;
+}
+
+mlir::Value fetch(std::unordered_map <std::string, mlir::Value> x, std::string name){
+    auto search = x.find(name);
+    if(search != x.end()){
+        return search->second;
+    }
+    return NULL;
+}
+
+mlir::Value DaphneSQLVisitor::fetchAlias(std::string name){
+    std::cout << "Fetch <" << name << "> from alias\n";
+
+    mlir::Value res = fetch(alias, name);
+    if(res != NULL){
+        return res;
+    }
+
+    std::stringstream x;
+    x << "Error: " << name << " was not registered with the Function registerView\n";
+    throw std::runtime_error(x.str());
+}
+
+mlir::Value DaphneSQLVisitor::fetchMLIR(std::string name){
+    std::cout << "FetchMLIR ";
+    mlir::Value res = fetch(alias, name);
+    if(res != NULL){
+        // std::cout << "<" << name << "> from alias\n";
+        return res;
+    }
+    res = fetch(view, name);
+    if(res != NULL){
+        // std::cout << "<" << name << "> from view\n";
+        return res;
+    }
+    std::cout << std::endl;
+    std::stringstream x;
+    x << "Error: " << name << " was not registered with the Function \"registerView\" or were given an alias\n";
+    throw std::runtime_error(x.str());
+}
+
+bool DaphneSQLVisitor::hasMLIR(std::string name){
+    auto searchview = view.find(name);
+    auto searchalias = alias.find(name);
+    return (searchview != view.end() || searchalias != alias.end());
+}
+
 // ****************************************************************************
 // Visitor functions
 // ****************************************************************************
@@ -50,6 +112,7 @@ antlrcpp::Any DaphneSQLVisitor::visitScript(DaphneSQLGrammarParser::ScriptContex
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitSql(DaphneSQLGrammarParser::SqlContext * ctx) {
+
     return visitChildren(ctx);
 }
 
@@ -63,73 +126,58 @@ antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext 
 //PROBLEM: due to new frame the indices are messed up. with named columns this wouldnn't be an issue
 //it would be good to know the columns that we want to keep before we execute the joins.
 //this would
+
+
+
+//TODO:
+//  1: Implement where
+//  2: Relational Alg
+//  3: Rest
 antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContext * ctx){
-    /*
+
     mlir::Value res;
-    mlir::Value bigframe;
     try{
-        //TODO JOIN
-        bigframe = valueOrError(visit(ctx->fromExpr()));
-    }catch(std::runtime_error &){
-        throw std::runtime_error("Error during From statement. Couldn't create Frame.");
+        currentFrame = valueOrError(visit(ctx->fromExpr()));
+    }catch(std::runtime_error & e){
+        std::stringstream err_msg;
+        err_msg << "Error during From statement. Couldn't create Frame.\n\t\t" << e.what();
+
+        throw std::runtime_error(err_msg.str());
     }
 
-    //TODO where
-    //HERE WOULD BE WHERE and co.
+    //TODO: WHERE Statement. This would be a good place for it.
 
-    for(int i = 0; i < ctx->selectExpr().size(); i++){
-        antlrcpp::Any se_name = visit(ctx->selectExpr(i));  //returns frame name ref
-        std::string se_name_str = se_name.as<std::string>();
-        std::string scopename = "-" + i_se;
-        scopename.append("-");
-        scopename.append(se_name_str);
-
-        mlir::Value se_id;
+    //TODO> rework
+    mlir::Location loc = builder.getUnknownLoc();
+    res = valueOrError(visit(ctx->selectExpr(0)));
+    for(auto i = 1; i < ctx->selectExpr().size(); i++){
+        mlir::Value add;
         try{
-            se_id = valueOrError(symbolTable.get(scopename));
-        }catch(std::runtime_error &){
-            throw std::runtime_error("Error during From statement. Couldn't create Frame.");
+            add = valueOrError(visit(ctx->selectExpr(i)));
+        }catch(std::runtime_error &e){
+            std::stringstream err_msg;
+            err_msg << "Something vent wrong in SelectExpr.\n\t\t" << e.what();
+            throw std::runtime_error(err_msg.str());
         }
-
-        mlir::Location loc = builder.getUnknownLoc();
-        for(int v = 0; v < fj_order.size(); v++){
-            if(se_name_str.compare(fj_order.at(v).at(0)) == 0 || (fj_order.at(v).size() > 1 && se_name_str.compare(fj_order.at(v).at(1)) == 0)){
-                break;
-            }else{
-                mlir::Value c_count = static_cast<mlir::Value>(
-                    builder.create<mlir::daphne::NumColOp>(
-                        loc,
-                        valueOrError(symbolTable.get(fj_order.at(v).at(0)))
-                    )
-                );
-                se_id = static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, se_id, c_count));
-            }
+        try{
+            res = static_cast<mlir::Value>(
+                builder.create<mlir::daphne::InsertColumnOp>(
+                    loc,
+                    res.getType(),
+                    res,
+                    res,
+                    add
+                )
+            );
+        }catch(std::runtime_error & e){
+            std::stringstream err_msg;
+            err_msg << "Error during SELECT statement. Couldn't Insert Extracted Columns.\n\t\t" << e.what();
+            throw std::runtime_error(err_msg.str());
         }
-        //TODO correct implementation needed
-        // extract column from join result
-        mlir::Value ex = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ExtractColumnOp>(
-                loc,
-                bigframe,
-                se_id
-            )
-        );
-
-        //TODO correct implementation needed
-        // insert extracted column into result
-        res = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::InsertColumnOp>(
-                loc,
-                res,
-                bigframe,
-                ex
-            )
-        );
     }
-
     // symbolTable.put(symbolTable.popScope());
     return res;
-    */
+    // return nullptr;
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitSubquery(DaphneSQLGrammarParser::SubqueryContext * ctx) {
@@ -141,31 +189,52 @@ antlrcpp::Any DaphneSQLVisitor::visitSubqueryExpr(DaphneSQLGrammarParser::Subque
     return nullptr;
 }
 
-
+//TODO
+//  1. We need to log the names of the tables somehow. OR DO WE?
+//      Reason right now was that we didn't have labeled data.
+//      But with labels we still need to have aliases for them so we can project
+//      later. For now we don't use them.
 antlrcpp::Any DaphneSQLVisitor::visitTableIdentifierExpr(DaphneSQLGrammarParser::TableIdentifierExprContext *ctx){
-    std::vector<std::string> var_name = visit(ctx->var).as<std::vector<std::string>>();
+    // std::vector<std::string> var_name = visit(ctx->var).as<std::vector<std::string>>();
     try{
-        mlir::Value var = valueOrError(symbolTable.get(var_name.at(0)));
-        fj_order.push_back(var_name);
+        mlir::Value var = valueOrError(visit(ctx->var));
+        // mlir::Value var = fetchMLIR(var_name.at(0));
+        // fj_order.push_back(var_name);
         return var;
     }catch(std::runtime_error &){
-        throw std::runtime_error("Error during From statement. Couldn't create Frame.");
+        std::stringstream err_msg;
+        err_msg << "Error during From statement. Couldn't find Frame.";
+        throw std::runtime_error(err_msg.str());
     }
 
 
 }
+
 //saving every operation into symboltable should make it possible for easier code reordering. and easier selection.
+//TODO:
+//  1. Same as No. 1 of visitTableIdentifierExpr.
 antlrcpp::Any DaphneSQLVisitor::visitCartesianExpr(DaphneSQLGrammarParser::CartesianExprContext * ctx)
 {
     try{
-        antlrcpp::Any lhs = valueOrError(visit(ctx->lhs));
+        mlir::Value lhs = valueOrError(visit(ctx->lhs));
 
-        std::vector<std::string> rhs_name = visit(ctx->rhs).as<std::vector<std::string>>();
-        antlrcpp::Any rhs = valueOrError(symbolTable.get(rhs_name.at(0)));
-        fj_order.push_back(rhs_name);
+        // std::vector<std::string> rhs_name = visit(ctx->rhs).as<std::vector<std::string>>();
+        // std::cout << "ERR1" << std::endl;
+        // antlrcpp::Any rhs = valueOrError(symbolTable.get(rhs_name.at(0)));
+        mlir::Value rhs = valueOrError(visit(ctx->rhs));
+        // fj_order.push_back(rhs_name);
+
         //creating join code
-        // mlir::Value co = static_cast<mlir::Value>(builder.create<mlir::daphne::CartesianOp>(lhs, rhs));
-        return nullptr;// return co;
+        mlir::Location loc = builder.getUnknownLoc();
+        mlir::Value cOp = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::CartesianOp>(
+                loc,
+                lhs.getType(),
+                lhs,
+                rhs)
+            );
+        // return nullptr;
+        return cOp;
     }catch(std::runtime_error &){
         throw std::runtime_error("Unexpected Error during cartesian operation");
     }
@@ -217,10 +286,6 @@ antlrcpp::Any DaphneSQLVisitor::visitCmpExpr(DaphneSQLGrammarParser::CmpExprCont
 
 antlrcpp::Any DaphneSQLVisitor::visitLogicalExpr(DaphneSQLGrammarParser::LogicalExprContext * ctx) {}
 */
-//TODO when columns get names than this has to be updated
-antlrcpp::Any DaphneSQLVisitor::visitSelectExpr(DaphneSQLGrammarParser::SelectExprContext * ctx) {
-    return visitChildren(ctx);
-}
 
 
 //Needs to put it's own value into the scope again (this means that it is in the current scope)
@@ -228,59 +293,112 @@ antlrcpp::Any DaphneSQLVisitor::visitSelectExpr(DaphneSQLGrammarParser::SelectEx
 //retrurns string which needs to be looked up before use. This has todo with the implementation of from/join
 //TODO: needs to check if var name already in use in this scope
 antlrcpp::Any DaphneSQLVisitor::visitTableReference(DaphneSQLGrammarParser::TableReferenceContext * ctx) {
-    std::vector<std::string> names;
+    // std::vector<std::string> names;
     std::string var = ctx->var->getText();
-    names.push_back(var);
+    // names.push_back(var);
     try {
-        antlrcpp::Any res = symbolTable.get(var);
-        symbolTable.put(var, ScopedSymbolTable::SymbolInfo(res, true));
+        mlir::Value res = fetchMLIR(var);
+        registerAlias(res, var);
+        // symbolTable.put(var, ScopedSymbolTable::SymbolInfo(res, true));
         if(ctx->aka){
-            symbolTable.put(ctx->aka->getText(), ScopedSymbolTable::SymbolInfo(res, true));
-            names.push_back(ctx->aka->getText());
+            registerAlias(res, ctx->aka->getText());
+            // symbolTable.put(ctx->aka->getText(), ScopedSymbolTable::SymbolInfo(res, true));
+            // names.push_back(ctx->aka->getText());
         }
-        return names;
+        return res;
     }
     catch(std::runtime_error &) {
         throw std::runtime_error("Frame " + var + " referenced before assignment");
     }
 }
 
-/*
-antlrcpp::Any DaphneSQLVisitor::visitStringIdent(DaphneSQLGrammarParser::IdentContext * ctx) {
 
-    std::string var = atol(ctx->IDENTIFIER()->getText());
+//TODO:
+//  1. Relational Alg: Not just return. Create an Operation to rename the column
+//      to the alias that get set here, or the Select term.
+//****
+//* Returns what selectIdent (stringIdent/intIdent) returns.
+//*     This is a SSA to ExtractColumn Operation.
+//* Callee: visitSelect
+//* TODO: Return Rename Operation SSA based on this Operation
+//****
+antlrcpp::Any DaphneSQLVisitor::visitSelectExpr(DaphneSQLGrammarParser::SelectExprContext * ctx) {
+    return visitChildren(ctx);
+}//*/
+
+//TODO:
+//  1. Do we need the frameSSA var or is just currentFrame okay?
+//  2. Do we need this Function or should we move the content to SelectExpr?
+//  3. Is it possible to check if the label exists?
+//  4. How does the String stuff work?
+//  5. Relational Alg: Change ExtractOp to something like: Projection followed by
+//      Rename Operation. => this would legitimize the seperation of SelectExpr
+//      and this function.
+//  6. For the rename we need to return getSTR too so the rename always renames the rows.
+
+//****
+//* Returns
+//*     A SSA to ExtractColumn Operation.
+//* Callee: visitSelectExpr
+//****
+antlrcpp::Any DaphneSQLVisitor::visitStringIdent(DaphneSQLGrammarParser::StringIdentContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+
+    std::string getSTR;
+    std::string columnSTR = ctx->var->getText();
+    std::string frameSTR = "";
+
+    mlir::Value frameSSA = currentFrame;     //TODO: define currentFrame;
+    mlir::Value getSSA;
+
     if(ctx->frame){
-        try {
-            return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::GetOp>(
-                    loc,
-                    valueOrError(symbolTable.get(frame)),
-                    builder.getStringAttr(var)
-                )
-            );
+        if(!hasMLIR(ctx->frame->getText())){ //we can do this, because the frame we reference musst be known.
+            throw std::runtime_error("Unknown Frame: " + ctx->frame->getText() + " use before declaration during selection");
         }
-        catch(std::runtime_error &) {
-            throw std::runtime_error("Frame " + frame + " referenced before assignment");
-        }
+        frameSTR = ctx->frame->getText() + ".";
     }
-    try {
-        return symbolTable.get(var);
-    }
-    catch(std::runtime_error &) {
-        throw std::runtime_error("variable " + var + " referenced before assignment");
-    }
-}
-*/
 
+    getSTR = frameSTR+columnSTR;
+    // Remove quotation marks.
+    // getSTR = getSTR.substr(1, getSTR.size() - 2); //not needed
+
+    // Replace escape sequences.
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\b)"), "\b");
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\f)"), "\f");
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\n)"), "\n");
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\r)"), "\r");
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\t)"), "\t");
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\\")"), "\"");
+    getSTR = std::regex_replace(getSTR, std::regex(R"(\\\\)"), "\\");
+    getSSA = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(loc, getSTR)
+    );
+
+    try{
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ExtractColOp>(
+                loc,
+                frameSSA.getType(),
+                frameSSA,
+                getSSA    //Probs doesn't work
+            )
+        );
+    }catch(std::runtime_error &) {
+        throw std::runtime_error("Unexpected Error. Couldn't create Extract Operation for Select");
+    }
+}//*/
+/*
 // TODO: make to fit select
 // TODO: Better Throw
+// TODO: MAKE TO FIT unordered/map URGENT!
+//COMPLETE REWORK or DISCARD
 antlrcpp::Any DaphneSQLVisitor::visitIntIdent(DaphneSQLGrammarParser::IntIdentContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 
     std::string frame = ctx->frame->getText();
     int64_t id = atol(ctx->INT_POSITIVE_LITERAL()->getText().c_str());
 
-    if(!symbolTable.has(frame)){
+    if(!hasMLIR(frame)){
         throw std::runtime_error("Unknown Frame: " + frame + " use before declaration");
     }
     try {
@@ -303,7 +421,7 @@ antlrcpp::Any DaphneSQLVisitor::visitIntIdent(DaphneSQLGrammarParser::IntIdentCo
         throw std::runtime_error("Problem with given ID for Select Identifier");
     }
 }
-
+// */
 antlrcpp::Any DaphneSQLVisitor::visitLiteral(DaphneSQLGrammarParser::LiteralContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
     if(auto lit = ctx->INT_LITERAL()) {

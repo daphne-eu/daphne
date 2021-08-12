@@ -30,14 +30,20 @@
 
 #include <istream>
 
-void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
-    mlir::Location loc = builder.getUnknownLoc();
 
+
+void DaphneSQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
+    view = arg;
+}
+
+void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){
+    //}, std::unordered_map<std::string, mlir::Value>& tables) {
+    mlir::Location loc = builder.getUnknownLoc();
     // Create a single "main"-function and insert DaphneIR operations into it.
-    auto * funcBlock = new mlir::Block();
+    // auto * funcBlock = new mlir::Block();
     {
-        mlir::OpBuilder::InsertionGuard guard(builder);
-        builder.setInsertionPoint(funcBlock, funcBlock->begin());
+        // mlir::OpBuilder::InsertionGuard guard(builder);
+        // builder.setInsertionPoint(funcBlock, funcBlock->begin());
 
         // Run ANTLR-based DaphneSQL parser.
         antlr4::ANTLRInputStream input(stream);
@@ -45,18 +51,17 @@ void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         DaphneSQLGrammarLexer lexer(&input);
         antlr4::CommonTokenStream tokens(&lexer);
         DaphneSQLGrammarParser parser(&tokens);
-        DaphneSQLGrammarParser::ScriptContext * ctx = parser.script();
-        DaphneSQLVisitor visitor(builder);
-        visitor.visitScript(ctx);
+        DaphneSQLGrammarParser::SqlContext * ctx = parser.sql();
+        DaphneSQLVisitor visitor(builder, view);
+        visitor.visitSql(ctx);
 
-        builder.create<mlir::daphne::ReturnOp>(loc);
     }
-    auto * terminator = funcBlock->getTerminator();
-    auto funcType = mlir::FunctionType::get(
-            builder.getContext(),
-            funcBlock->getArgumentTypes(),
-            terminator->getOperandTypes()
-    );
-    // auto func = builder.create<mlir::FuncOp>(loc, "_mlir__mlir_ciface_main", funcType);
+    // auto * terminator = funcBlock->getTerminator();
+    // auto funcType = mlir::FunctionType::get(
+    //         builder.getContext(),
+    //         funcBlock->getArgumentTypes(),
+    //         terminator->getOperandTypes()
+    // );
+    // auto func = builder.create<mlir::FuncOp>(loc, "sql", funcType);
     // func.push_back(funcBlock);
 }

@@ -30,13 +30,13 @@
 
 void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
     mlir::Location loc = builder.getUnknownLoc();
-    
+
     // Create a single "main"-function and insert DaphneIR operations into it.
     auto * funcBlock = new mlir::Block();
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(funcBlock, funcBlock->begin());
-        
+
         // Run ANTLR-based DaphneDSL parser.
         antlr4::ANTLRInputStream input(stream);
         input.name = "whateverFile"; // TODO
@@ -46,7 +46,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
         DaphneDSLVisitor visitor(builder);
         visitor.visitScript(ctx);
-        
+
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto * terminator = funcBlock->getTerminator();

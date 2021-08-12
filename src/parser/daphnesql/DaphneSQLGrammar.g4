@@ -91,9 +91,10 @@ tableReference:
 
 //add string identifier as soon as
 selectIdent:
-    /* (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
-    |  */
-    frame=IDENTIFIER ('[' colnumber=INT_POSITIVE_LITERAL ']'|DOT colnumber=INT_POSITIVE_LITERAL) #intIdent
+    //*
+     (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
+    //|  //*/
+    //frame=IDENTIFIER ('[' colnumber=INT_POSITIVE_LITERAL ']'|DOT colnumber=INT_POSITIVE_LITERAL) #intIdent
     ;
 
 literal:

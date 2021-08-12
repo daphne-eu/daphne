@@ -23,6 +23,7 @@
 
 #include <mlir/Dialect/SCF/SCF.h>
 
+#include <regex>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -30,22 +31,6 @@
 
 #include <cstdint>
 #include <cstdlib>
-
-// ****************************************************************************
-// Helper functions
-// ****************************************************************************
-
-mlir::Value valueOrError(antlrcpp::Any a) {
-    if(a.is<mlir::Value>())
-        return a.as<mlir::Value>();
-    throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
-}
-
-mlir::Value DaphneDSLVisitor::castIf(mlir::Location loc, mlir::Type t, mlir::Value v) {
-    if(v.getType() == t)
-        return v;
-    return builder.create<mlir::daphne::CastOp>(loc, t, v);
-}
 
 // ****************************************************************************
 // Visitor functions
@@ -74,12 +59,12 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
     std::string var = ctx->var->getText();
     if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
         throw std::runtime_error("trying to assign read-only variable " + var);
-    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(valueOrError(visit(ctx->expr())), false));
+    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(utils.valueOrError(visit(ctx->expr())), false));
     return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
-    mlir::Value cond = valueOrError(visit(ctx->cond));
+    mlir::Value cond = utils.valueOrError(visit(ctx->cond));
 
     mlir::Location loc = builder.getUnknownLoc();
 
@@ -189,13 +174,13 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         // Make the body's updates visible to the condition.
         symbolTable.put(ow);
 
-        cond = valueOrError(visit(ctx->cond));
+        cond = utils.valueOrError(visit(ctx->cond));
 
         symbolTable.popScope();
     }
     else { // It's a while loop.
         builder.setInsertionPointToEnd(beforeBlock);
-        cond = valueOrError(visit(ctx->cond));
+        cond = utils.valueOrError(visit(ctx->cond));
 
         builder.setInsertionPointToEnd(afterBlock);
         symbolTable.pushScope();
@@ -271,13 +256,13 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     mlir::Type t = builder.getIntegerType(64, true);
 
     // Parse from, to, and step.
-    mlir::Value from = castIf(loc, t, valueOrError(visit(ctx->from)));
-    mlir::Value to = castIf(loc, t, valueOrError(visit(ctx->to)));
+    mlir::Value from = utils.castIf(t, utils.valueOrError(visit(ctx->from)));
+    mlir::Value to = utils.castIf(t, utils.valueOrError(visit(ctx->to)));
     mlir::Value step;
     mlir::Value direction; // count upwards (+1) or downwards (-1)
     if(ctx->step) {
         // If the step is given, parse it and derive the counting direction.
-        step = castIf(loc, t, valueOrError(visit(ctx->step)));
+        step = utils.castIf(t, utils.valueOrError(visit(ctx->step)));
         direction = builder.create<mlir::daphne::EwSignOp>(loc, t, step);
     }
     else {
@@ -289,7 +274,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
                 builder.create<mlir::daphne::EwMulOp>(
                         loc,
                         builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(t, 2)),
-                        castIf(loc, t, builder.create<mlir::daphne::EwGeOp>(loc, to, from))
+                        utils.castIf(t, builder.create<mlir::daphne::EwGeOp>(loc, to, from))
                 )
         );
         direction = step;
@@ -304,9 +289,9 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     // Compensate for the fact that SCF's ForOp expects its parameters to be of
     // MLIR's IndexType.
     mlir::Type idxType = builder.getIndexType();
-    from = castIf(loc, idxType, from);
-    to   = castIf(loc, idxType, to);
-    step = castIf(loc, idxType, step);
+    from = utils.castIf(idxType, from);
+    to   = utils.castIf(idxType, to);
+    step = utils.castIf(idxType, step);
 
     auto ip = builder.saveInsertionPoint();
 
@@ -324,7 +309,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
             ScopedSymbolTable::SymbolInfo(
                     // Un-compensate for counting direction.
                     builder.create<mlir::daphne::EwMulOp>(
-                            loc, castIf(loc, t, ph), direction
+                            loc, utils.castIf(t, ph), direction
                     ),
                     true // the for-loop's induction variable is read-only
             )
@@ -396,52 +381,42 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
-    // TODO Reduce the code duplication here.
     std::string func = ctx->func->getText();
-    const size_t numArgs = ctx->expr().size();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Type sizeType = builder.getIndexType();
-    if(func == "print") {
-        if(numArgs != 1)
-            throw std::runtime_error("function print expects exactly 1 argument(s)");
-        return builder.create<mlir::daphne::PrintOp>(
-                loc, valueOrError(visit(ctx->expr(0)))
-        );
+
+    // Parse arguments.
+    std::vector<mlir::Value> args;
+    for(unsigned i = 0; i < ctx->expr().size(); i++)
+        args.push_back(utils.valueOrError(visit(ctx->expr(i))));
+
+    // Create DaphneIR operation for the built-in function.
+    return builtins.build(loc, func, args);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) {
+    mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    if(ctx->rows)
+        throw std::runtime_error("right indexing does not support selecting rows yet");
+    else if(ctx->cols) {
+        mlir::Value cols = utils.valueOrError(visit(ctx->cols));
+        mlir::Type t = cols.getType();
+        if(t.isInteger(64) || t.isF64()) // TODO consider all supported value types
+            cols = utils.castSizeIf(cols);
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
+                builder.getUnknownLoc(), obj.getType(), obj, cols
+        ));
     }
-    if(func == "rand") {
-        if(numArgs != 6)
-            throw std::runtime_error("function rand expects exactly 6 argument(s)");
-        mlir::Value numRows = castIf(loc, sizeType, valueOrError(visit(ctx->expr(0))));
-        mlir::Value numCols = castIf(loc, sizeType, valueOrError(visit(ctx->expr(1))));
-        mlir::Value min = valueOrError(visit(ctx->expr(2)));
-        mlir::Value max = valueOrError(visit(ctx->expr(3)));
-        mlir::Value sparsity = valueOrError(visit(ctx->expr(4)));
-        mlir::Value seed = valueOrError(visit(ctx->expr(5)));
-        return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::RandMatrixOp>(
-                        loc,
-                        mlir::daphne::MatrixType::get(builder.getContext(), min.getType()),
-                        numRows, numCols, min, max, sparsity, seed
-                )
-        );
-    }
-    if(func == "t") {
-        if(numArgs != 1)
-            throw std::runtime_error("function t expects exactly 1 argument(s)");
-        return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::TransposeOp>(
-                        loc, valueOrError(visit(ctx->expr(0)))
-                )
-        );
-    }
-    throw std::runtime_error("unexpected func");
+    else
+        // TODO Actually, this would be okay, but we should think about whether
+        // it should be a no-op or a copy.
+        throw std::runtime_error("right indexing requires the specification of rows and/or columns");
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "@")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs));
@@ -449,11 +424,23 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     throw std::runtime_error("unexpected op symbol");
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+
+    if(op == "^")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+
+    throw std::runtime_error("unexpected op symbol");
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "*")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
@@ -466,11 +453,13 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
 antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "+")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+    if(op == "-")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -478,8 +467,8 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
 antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext * ctx) {
     std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = valueOrError(visit(ctx->rhs));
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "==")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
@@ -517,5 +506,44 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                 )
         );
     }
+    if(ctx->bl)
+        return visit(ctx->bl);
+    if(auto lit = ctx->STRING_LITERAL()) {
+        std::string val = lit->getText();
+
+        // Remove quotation marks.
+        val = val.substr(1, val.size() - 2);
+
+        // Replace escape sequences.
+        val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
+        val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
+        val = std::regex_replace(val, std::regex(R"(\\n)"), "\n");
+        val = std::regex_replace(val, std::regex(R"(\\r)"), "\r");
+        val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
+        val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
+        val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
+
+        return static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(loc, val)
+        );
+    }
     throw std::runtime_error("unexpected literal");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+    bool val;
+    if(ctx->KW_TRUE())
+        val = true;
+    else if(ctx->KW_FALSE())
+        val = false;
+    else
+        throw std::runtime_error("unexpected bool literal");
+
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getBoolAttr(val)
+        )
+    );
 }

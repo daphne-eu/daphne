@@ -59,8 +59,8 @@ void DaphneDSLBuiltins::checkNumArgsMin(const std::string & func, size_t numArgs
 void DaphneDSLBuiltins::checkNumArgsEven(const std::string & func, size_t numArgs) {
     if(numArgs % 2)
         throw std::runtime_error(
-                "built-in function '" + func + 
-                "' expects an even number of arguments, but got " + 
+                "built-in function '" + func +
+                "' expects an even number of arguments, but got " +
                 std::to_string(numArgs)
         );
 }
@@ -98,7 +98,7 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
     checkNumArgsExact(func, args.size(), 2);
     if(auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>()) {
         llvm::APInt axis = co.value().dyn_cast<mlir::IntegerAttr>().getValue();
-        if(axis == 0) 
+        if(axis == 0)
             return static_cast<mlir::Value>(
                     builder.create<RowAggOp>(
                             loc, args[0].getType(), args[0]
@@ -217,7 +217,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     using namespace mlir::daphne;
 
     const size_t numArgs = args.size();
-    
+
     // Basically, for each DaphneDSL built-in function we need to:
     // - check if the number of provided arguments is valid
     // - if required by the DaphneIR operation to be created: ensure that the
@@ -225,9 +225,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // - create and return the DaphneIR operation represented by the DaphneDSL
     //   built-in function (including the inference of the result type)
     // TODO Outsource the result type inference (issue #44) in an MLIR way.
-    
+
     // Note that some built-in functions require some more advanced steps.
-    
+
     // There are several groups of DaphneIR operations that are very similar
     // w.r.t. their arguments and results; so there are specific template
     // functions for creating them.
@@ -523,7 +523,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Extended relational algebra
     // ********************************************************************
-    
+
     // ----------------------------------------------------------------------------
     // Entire SQL query
     // ----------------------------------------------------------------------------
@@ -536,6 +536,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 // TODO How to know the column types, or how to not need to
                 // know them here? For now, we just leave them blank here.
                 std::vector<mlir::Type> colTypes;
+                colTypes.push_back(builder.getF64Type()); // Hardcoded because otherwise no idea how it works
                 co.erase();
                 return static_cast<mlir::Value>(builder.create<SqlOp>(
                         loc,
@@ -545,6 +546,24 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             }
         }
         throw std::runtime_error("SqlOp requires a SQL query as a constant string");
+    }
+
+    if(func == "registerView") {
+        checkNumArgsExact(func, numArgs, 2);
+        auto co = args[0].getDefiningOp<mlir::daphne::ConstantOp>();
+        mlir::Attribute attr = co.value();
+        mlir::Value view = args[1];
+        if(attr.isa<mlir::StringAttr>()) {
+            co.erase();
+            return builder.create<RegisterOp>(
+                    loc,
+                    attr.dyn_cast<mlir::StringAttr>(),
+                    view
+            );
+        }
+
+        throw std::runtime_error("registerView requires a Viewname as a constant string, and a something that get's assigned to that name.");
+
     }
 
     // --------------------------------------------------------------------
@@ -601,11 +620,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         );
     }
     // TODO read/write
-    
+
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************
-    
+
     if(func == "oneHot") {
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value arg = args[0];
