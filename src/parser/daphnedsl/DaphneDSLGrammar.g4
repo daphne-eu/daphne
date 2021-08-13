@@ -111,17 +111,19 @@ DATA_TYPE:
 VALUE_TYPE:
     ('f64' | 'f32' | 'si64' | 'si32' | 'si8' | 'ui64' | 'ui32' | 'ui8') ;
 
-IDENTIFIER:
-    (LETTER | '_')(LETTER | '_' | DIGIT)* ;
-
 INT_LITERAL:
     ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
 
 FLOAT_LITERAL:
-    '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ ;
+    ('nan' | '-'? 'inf' | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ );
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';
+
+// Identifiers should come last to disallow any of the above tokens (e.g.
+// "matrix", "nan", etc.) as valid identifiers.
+IDENTIFIER:
+    (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
 fragment ESCAPE_SEQ: '\\' [bfnrt"\\];
 

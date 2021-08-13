@@ -35,6 +35,6 @@ const std::string dirPath = "test/api/cli/literals/";
     }
 
 MAKE_TEST_CASE("int", 5)
-MAKE_TEST_CASE("float", 3)
+MAKE_TEST_CASE("float", 6)
 MAKE_TEST_CASE("bool", 2)
 MAKE_TEST_CASE("string", 3)

@@ -23,6 +23,7 @@
 
 #include <mlir/Dialect/SCF/SCF.h>
 
+#include <limits>
 #include <regex>
 #include <set>
 #include <stdexcept>
@@ -621,6 +622,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) {
+    // TODO The creation of the ConstantOps could be simplified: We don't need
+    // to create attributes here, since there are custom builder methods for
+    // primitive C++ data types.
     mlir::Location loc = builder.getUnknownLoc();
     if(auto lit = ctx->INT_LITERAL()) {
         int64_t val = atol(lit->getText().c_str());
@@ -632,7 +636,16 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         );
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
-        double val = atof(lit->getText().c_str());
+        const std::string litStr = lit->getText();
+        double val;
+        if(litStr == "nan")
+            val = std::numeric_limits<double>::quiet_NaN();
+        else if(litStr == "inf")
+            val = std::numeric_limits<double>::infinity();
+        else if(litStr == "-inf")
+            val = -std::numeric_limits<double>::infinity();
+        else
+            val = atof(litStr.c_str());
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(
                         loc,
