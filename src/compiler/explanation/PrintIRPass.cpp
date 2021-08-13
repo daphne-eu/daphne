@@ -41,7 +41,7 @@ public:
 };
 
 void PrintIRPass::runOnOperation() {
-    std::cout << message << std::endl;
+    std::cerr << message << std::endl;
     
     auto module = getOperation();
     module.dump();
