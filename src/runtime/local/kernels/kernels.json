@@ -848,6 +848,49 @@
     },
     {
         "kernelTemplate": {
+            "header": "Replace.h",
+            "opName": "replace",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "VT",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "VT",
+                    "name": "pattern"
+                },
+                {
+                    "type": "VT",
+                    "name": "replacement"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "SetColLabels.h",
             "opName": "setColLabels",
             "returnType": "void",
