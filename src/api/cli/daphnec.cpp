@@ -26,6 +26,8 @@
 #include <exception>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include <cstdlib>
 #include <cstring>
@@ -33,16 +35,52 @@
 using namespace std;
 using namespace mlir;
 
+void printHelp(const std::string & cmd) {
+    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}]" << endl;
+}
+
 int
 main(int argc, char** argv)
 {
-    if (argc != 2 || !strcmp(argv[1], "-h") || !strcmp(argv[1], "--help")) {
-        cout << "Usage: " << argv[0] << " FILE" << endl;
+    // Parse command line arguments.
+    // TODO Rather than implementing this ourselves, we should use some library
+    // (see issue #105).
+    std::vector<std::string> args(argv, argv + argc);
+    string inputFile;
+    unordered_map<string, string> scriptArgs;
+    if(argc < 2) {
+        printHelp(args[0]);
         exit(1);
     }
-
-    // Parse command line arguments.
-    string inputFile(argv[1]);
+    else {
+        if(args[1] == "-h" || args[1] == "--help") {
+            printHelp(args[0]);
+            exit(0);
+        }
+        else {
+            inputFile = args[1];
+            if(argc > 2) {
+                if(args[2] == "--args") {
+                    for(int i = 3; i < argc; i++) {
+                        const std::string pair = args[i];
+                        size_t pos = pair.find("=");
+                        if(pos == pair.npos) {
+                            printHelp(args[0]);
+                            exit(1);
+                        }
+                        scriptArgs.emplace(
+                            pair.substr(0, pos), // arg name
+                            pair.substr(pos + 1, pair.size()) // arg value
+                        );
+                    }
+                }
+                else {
+                    printHelp(args[0]);
+                    exit(1);
+                }
+            }
+        }
+    }
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"));
@@ -57,7 +95,7 @@ main(int argc, char** argv)
 
     // Parse the input file and generate the corresponding DaphneIR operations
     // inside the module, assuming DaphneDSL as the input format.
-    DaphneDSLParser parser;
+    DaphneDSLParser parser(scriptArgs);
     try {
         parser.parseFile(builder, inputFile);
     }

@@ -19,6 +19,7 @@
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
+#include "DaphneDSLGrammarLexer.h"
 #include "DaphneDSLGrammarParser.h"
 
 #include <mlir/Dialect/SCF/SCF.h>
@@ -26,6 +27,7 @@
 #include <limits>
 #include <regex>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -413,6 +415,30 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
 
 antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) {
     return visitChildren(ctx);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprContext * ctx) {
+    // Retrieve the name of the referenced CLI argument.
+    std::string arg = ctx->arg->getText();
+    
+    // Find out if this argument was specified on the comman line.
+    auto it = args.find(arg);
+    if(it == args.end())
+        throw std::runtime_error(
+                "argument " + arg + " referenced, but not provided as a "
+                "command line argument"
+        );
+
+    // Parse the string that was passed as the value for this argument on the
+    // command line as a DaphneDSL literal.
+    std::istringstream stream(it->second);
+    antlr4::ANTLRInputStream input(stream);
+    input.name = "argument"; // TODO Does this make sense?
+    DaphneDSLGrammarLexer lexer(&input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    DaphneDSLGrammarParser parser(&tokens);
+    DaphneDSLGrammarParser::LiteralContext * literalCtx = parser.literal();
+    return visitLiteral(literalCtx);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {

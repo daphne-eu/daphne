@@ -24,6 +24,7 @@ add_executable(run_tests
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
+        api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/Utils.cpp
 
         runtime/distributed/worker/WorkerTest.cpp

@@ -59,6 +59,7 @@ forStatement:
 
 expr:
     literal # literalExpr
+    | '$' arg=IDENTIFIER # argExpr
     | var=IDENTIFIER # identifierExpr
     | '(' expr ')' # paranthesesExpr
     | func=IDENTIFIER '(' expr (',' expr)* ')' # callExpr

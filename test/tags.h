@@ -31,6 +31,7 @@
 #define TAG_OPERATIONS "[operations]"
 #define TAG_PARSER "[parser]"
 #define TAG_SCOPING "[scoping]"
+#define TAG_SCRIPTARGS "[scriptargs]"
 
 #endif //TEST_TAGS_H
 
