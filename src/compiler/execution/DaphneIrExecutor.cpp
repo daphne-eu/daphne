@@ -55,15 +55,18 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
     if (module) {
         mlir::PassManager pm(&context_);
 
-//        pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
+
         pm.addPass(mlir::createLowerToCFGPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
 
         if (failed(pm.run(module))) {
             module->dump();
