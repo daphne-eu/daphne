@@ -29,7 +29,7 @@ const std::string dirPath = "test/api/cli/literals/";
     TEST_CASE(name, TAG_LITERALS) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRef(dirPath, name, i); \
+                compareDaphneToRefSimple(dirPath, name, i); \
             } \
         } \
     }

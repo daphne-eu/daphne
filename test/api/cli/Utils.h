@@ -18,12 +18,24 @@
 #define TEST_API_CLI_UTILS_H
 
 #include <api/cli/StatusCode.h>
-
-#include <string>
-#include <sstream>
-#include <memory>
-#include <grpcpp/server.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
+
+#include <catch.hpp>
+
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+
+#include <grpcpp/server.h>
+
+#include <memory>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+
+// TODO In all (run/check/compare)Daphne... functions, we might not need to
+// explicitly specify the scriptPath as a parameter, since it could be subsumed
+// by the parameter pack. Check if this is possible in all cases and simplify.
 
 /**
  * @brief Reads the entire contents of a plain text file into a string.
@@ -49,7 +61,55 @@ std::string readTextFile(const std::string & filePath);
  * normally.
  */
 template<typename... Args>
-int runProgram(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args);
+int runProgram(std::stringstream & out, std::stringstream & err, const char * execPath, Args ... args) {
+    int linkOut[2]; // pipe ends for stdout
+    int linkErr[2]; // pipe ends for stderr
+    char buf[1024]; // internal buffer for reading from the pipes
+    
+    // Try to create the pipes.
+    if(pipe(linkOut) == -1)
+        throw std::runtime_error("could not create pipe");
+    if(pipe(linkErr) == -1)
+        throw std::runtime_error("could not create pipe");
+    
+    // Try to create the child process.
+    pid_t p = fork();
+    
+    if(p == -1)
+        throw std::runtime_error("could not create child process");
+    else if(p) { // parent
+        // Close write end of pipes.
+        close(linkOut[1]);
+        close(linkErr[1]);
+        
+        // Read data from stdout and stderr of the child from the pipes.
+        ssize_t numBytes;
+        while(numBytes = read(linkOut[0], buf, sizeof(buf)))
+            out.write(buf, numBytes);
+        while(numBytes = read(linkErr[0], buf, sizeof(buf)))
+            err.write(buf, numBytes);
+        
+        // Wait for child's termination.
+        int status;
+        waitpid(p, &status, 0);
+        return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
+    }
+    else { // child
+        // Redirect stdout and stderr to the pipe.
+        dup2(linkOut[1], STDOUT_FILENO);
+        dup2(linkErr[1], STDERR_FILENO);
+        close(linkOut[0]);
+        close(linkOut[1]);
+        close(linkErr[0]);
+        close(linkErr[1]);
+        
+        // Execute other program.
+        execl(execPath, args..., static_cast<char *>(nullptr));
+        
+        // execl does not return, unless it failed.
+        throw std::runtime_error("could not execute the program");
+    }
+}
 
 /**
  * @brief Executes the given DaphneDSL script with the command line interface
@@ -58,21 +118,65 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
  * @param out The stream where to direct the program's standard output.
  * @param err The stream where to direct the program's standard error.
  * @param scriptPath The path to the DaphneDSL script file to execute.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
  * @return The status code returned by the process, or `-1` if it did not exit
  * normally.
  */
-int runDaphne(std::stringstream & out, std::stringstream & err, const char * scriptPath);
+template<typename... Args>
+int runDaphne(std::stringstream & out, std::stringstream & err, const char * scriptPath, Args ... args) {
+    return runProgram(out, err, "build/bin/daphnec", "daphnec", scriptPath, args...);
+}
 
 /**
  * @brief Checks whether executing the given DaphneDSL script with the command
  * line interface of the DAPHNE Prototype returns the given status code.
  * 
- * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * @param exp The expected status code.
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
  */
-void checkDaphneStatusCode(const std::string & scriptFilePath, StatusCode exp);
+template<typename... Args>
+void checkDaphneStatusCode(StatusCode exp, const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, scriptFilePath.c_str(), args...);
 
-void checkDaphneStatusCode(const std::string & dirPath, const std::string & name, unsigned idx, StatusCode exp);
+    REQUIRE(status == exp);
+}
+
+template<typename... Args>
+void checkDaphneStatusCodeSimple(StatusCode exp, const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    checkDaphneStatusCode(exp, dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
+}
+
+/**
+ * @brief Compares the standard output of executing the given DaphneDSL script
+ * with the command line interface of the DAPHNE Prototype to a reference text.
+ * 
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ * 
+ * @param exp The expected output on stdout.
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * output.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void compareDaphneToStr(const std::string & exp, const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, scriptFilePath.c_str(), args...);
+
+    REQUIRE(status == StatusCode::SUCCESS);
+    CHECK(out.str() == exp);
+    CHECK(err.str() == "");
+}
 
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
@@ -82,13 +186,23 @@ void checkDaphneStatusCode(const std::string & dirPath, const std::string & name
  * Also checks that the status code indicates a successful execution and that
  * nothing was printed to standard error.
  * 
- * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * @param refFilePath The path to the plain text file containing the reference
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
  * output.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
  */
-void compareDaphneToRef(const std::string & scriptFilePath, const std::string & refFilePath);
+template<typename... Args>
+void compareDaphneToRef(const std::string & refFilePath, const std::string & scriptFilePath, Args ... args) {
+    return compareDaphneToStr(readTextFile(refFilePath.c_str()), scriptFilePath, args...);
+}
 
-void compareDaphneToRef(const std::string & dirPath, const std::string & name, unsigned idx);
+template<typename... Args>
+void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    const std::string filePath = dirPath + name + '_' + std::to_string(idx);
+    compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
+}
 
 /**
  * @brief Starts a distributed worker locally.

@@ -29,7 +29,7 @@ const std::string dirPath = "test/api/cli/controlflow/";
     TEST_CASE(name, TAG_CONTROLFLOW) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRef(dirPath, name, i); \
+                compareDaphneToRefSimple(dirPath, name, i); \
             } \
         } \
     }
