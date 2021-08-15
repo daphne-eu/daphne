@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_VECTORIZED_TASKS_H
 #define SRC_RUNTIME_LOCAL_VECTORIZED_TASKS_H
 
+#include <runtime/local/datastructures/DenseMatrix.h>
+
 class Task {
 public:
     virtual ~Task() = default;
@@ -33,15 +35,31 @@ public:
 };
 
 // single operation task (multi-threaded operations)
+template <class VT>
 class SingleOpTask : public Task {
 private:
+	void (*_func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*);
+    DenseMatrix<VT>* _res;
+    DenseMatrix<VT>* _input1;
+    DenseMatrix<VT>* _input2;
     uint64_t _rl;    // row lower index
     uint64_t _ru;    // row upper index
     uint64_t _bsize; // batch size (data binding)
 
 public:
-    SingleOpTask(); //TODO void** inputs, void* output, function pointer
-    SingleOpTask(uint64_t rl, uint64_t ru, uint64_t bsize) {
+    SingleOpTask();
+
+    SingleOpTask(uint64_t rl, uint64_t ru, uint64_t bsize) :
+        SingleOpTask(nullptr, nullptr, nullptr, nullptr, rl, ru, bsize) {}
+
+    SingleOpTask(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
+        DenseMatrix<VT>* res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2,
+        uint64_t rl, uint64_t ru, uint64_t bsize)
+    {
+        _func = func;
+        _res = res;
+        _input1 = input1;
+        _input2 = input2;
         _rl = rl;
         _ru = ru;
         _bsize = bsize;
@@ -50,7 +68,18 @@ public:
     ~SingleOpTask() override = default;
 
     void execute() override {
-        //TODO basic implementation
+       for( uint64_t r = _rl; r < _ru; r+=_bsize ) {
+           //create zero-copy views of inputs/outputs
+           uint64_t r2 = std::max(r+_bsize, _ru);
+           DenseMatrix<VT>* lres = _res->slice(r, r2);
+           DenseMatrix<VT>* linput1 = _input1->slice(r, r2);
+           DenseMatrix<VT>* linput2 = (_input2->getNumRows()==1) ?
+               _input2 : _input2->slice(r, r2); //broadcasting
+           //execute function on given data binding (batch size)
+           _func(lres, linput1, linput2);
+           //cleanup
+           //TODO cant't delete views without destroying the underlying arrays + private
+       }
     }
 };
 
