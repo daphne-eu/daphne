@@ -33,6 +33,6 @@ const std::string dirPath = "test/api/cli/vectorized/";
         } \
     }
 
-// MAKE_TEST_CASE("runMatmult") FIXME coredump matmult symbol not found
+MAKE_TEST_CASE("runMatMult")
 // MAKE_TEST_CASE("runEwUnary") FIXME coredump unary-ops symbol not found
 MAKE_TEST_CASE("runEwBinary")
