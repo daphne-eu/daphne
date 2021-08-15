@@ -131,6 +131,10 @@ template <> struct ReadCsv<Frame> {
     std::string cell;
     size_t row = 0, col = 0;
 
+    uint8_t ** rawCols = new uint8_t * [numCols];
+    for(size_t i = 0; i < numCols; i++)
+        rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
+    
     while (1) {
       line = getLine(file);
       if (line == NULL)
@@ -142,42 +146,42 @@ template <> struct ReadCsv<Frame> {
         case ValueTypeCode::SI8:
           int8_t val_si8;
           convert(cell, &val_si8);
-          res->getColumn<int8_t>(col)->set(row, 0, val_si8);
+          reinterpret_cast<int8_t *>(rawCols[col])[row] = val_si8;
           break;
         case ValueTypeCode::SI32:
           int32_t val_si32;
           convert(cell, &val_si32);
-          res->getColumn<int32_t>(col)->set(row, 0, val_si32);
+          reinterpret_cast<int32_t *>(rawCols[col])[row] = val_si32;
           break;
         case ValueTypeCode::SI64:
           int64_t val_si64;
           convert(cell, &val_si64);
-          res->getColumn<int64_t>(col)->set(row, 0, val_si64);
+          reinterpret_cast<int64_t *>(rawCols[col])[row] = val_si64;
           break;
         case ValueTypeCode::UI8:
           uint8_t val_ui8;
           convert(cell, &val_ui8);
-          res->getColumn<uint8_t>(col)->set(row, 0, val_ui8);
+          reinterpret_cast<uint8_t *>(rawCols[col])[row] = val_ui8;
           break;
         case ValueTypeCode::UI32:
           uint32_t val_ui32;
           convert(cell, &val_ui32);
-          res->getColumn<uint32_t>(col)->set(row, 0, val_ui32);
+          reinterpret_cast<uint32_t *>(rawCols[col])[row] = val_ui32;
           break;
         case ValueTypeCode::UI64:
           uint64_t val_ui64;
           convert(cell, &val_ui64);
-          res->getColumn<uint64_t>(col)->set(row, 0, val_ui64);
+          reinterpret_cast<uint64_t *>(rawCols[col])[row] = val_ui64;
           break;
         case ValueTypeCode::F32:
           float val_f32;
           convert(cell, &val_f32);
-          res->getColumn<float>(col)->set(row, 0, val_f32);
+          reinterpret_cast<float *>(rawCols[col])[row] = val_f32;
           break;
         case ValueTypeCode::F64:
           double val_f64;
           convert(cell, &val_f64);
-          res->getColumn<double>(col)->set(row, 0, val_f64);
+          reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
           break;
         }
 
