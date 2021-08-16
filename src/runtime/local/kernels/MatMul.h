@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_MATMUL_H
 #define SRC_RUNTIME_LOCAL_KERNELS_MATMUL_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -31,7 +32,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct MatMul {
-    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) = delete;
+    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +40,8 @@ struct MatMul {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
-    MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs);
+void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
+    MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -53,7 +54,7 @@ void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs) {
 
 template<>
 struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs) {
+    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, DCTX(ctx)) {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nr2 = rhs->getNumRows();
@@ -78,7 +79,7 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
 
 template<>
 struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs) {
+    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, DCTX(ctx)) {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nr2 = rhs->getNumRows();

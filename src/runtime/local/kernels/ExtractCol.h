@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -28,9 +29,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
+template<class DTRes, class DTArg, class DTSel>
 struct ExtractCol {
-    static void apply(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * sel) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,9 +42,9 @@ struct ExtractCol {
 // with the rest of the code and DaphneIR (even though int64_t also makes
 // sense), but currently, it would be too hard to get a matrix of size_t via
 // DaphneDSL, since we do not have value type casts yet.
-template<class DTRes, class DTArg>
-void extractCol(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * sel) {
-    ExtractCol<DTRes, DTArg>::apply(res, arg, sel);
+template<class DTRes, class DTArg, class DTSel>
+void extractCol(DTRes *& res, const DTArg * arg, const DTSel * sel, DCTX(ctx)) {
+    ExtractCol<DTRes, DTArg, DTSel>::apply(res, arg, sel, ctx);
 }
 
 // ****************************************************************************
@@ -51,12 +52,12 @@ void extractCol(DTRes *& res, const DTArg * arg, const DenseMatrix<int64_t> * se
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix
+// DenseMatrix <- DenseMatrix, DenseMatrix (positions)
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * sel) {
+struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * sel, DCTX(ctx)) {
         assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
         
         const size_t numColsArg = arg->getNumCols();
@@ -83,6 +84,18 @@ struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>> {
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes;
         }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// Frame <- Frame, String (column label)
+// ----------------------------------------------------------------------------
+
+template<>
+struct ExtractCol<Frame, Frame, char> {
+    static void apply(Frame *& res, const Frame * arg, const char * sel, DCTX(ctx)) {
+        size_t colIdx = arg->getColumnIdx(sel);
+        res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
     }
 };
 

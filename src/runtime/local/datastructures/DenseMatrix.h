@@ -50,7 +50,7 @@ class DenseMatrix : public Matrix<ValueType>
     
     size_t rowSkip;
     std::shared_ptr<ValueType> values;
-    
+
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
     
@@ -129,7 +129,7 @@ class DenseMatrix : public Matrix<ValueType>
     virtual ~DenseMatrix() {
         // nothing to do
     }
-    
+
     size_t pos(size_t rowIdx, size_t colIdx) const {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
@@ -176,6 +176,10 @@ public:
     ValueType * getValues()
     {
         return values.get();
+    }
+    
+    std::shared_ptr<ValueType> getValuesSharedPtr() {
+        return values;
     }
     
     ValueType get(size_t rowIdx, size_t colIdx) const override {

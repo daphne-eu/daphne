@@ -35,7 +35,7 @@
 template<class DT>
 void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const DT * exp) {
     DT * res = nullptr;
-    ewBinaryMat<DT, DT, DT>(opCode, res, lhs, rhs);
+    ewBinaryMat<DT, DT, DT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
 }
 
@@ -276,5 +276,5 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     using DT = TestType;
     DT * res = nullptr;
     auto m = genGivenVals<DT>(1, {1});
-    CHECK_THROWS(ewBinaryMat<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m));
+    CHECK_THROWS(ewBinaryMat<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m, nullptr));
 }

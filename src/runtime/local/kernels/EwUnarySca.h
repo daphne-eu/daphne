@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
 #define SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 
 #include <limits>
@@ -34,7 +35,7 @@ template<UnaryOpCode opCode, class VTRes, class VTArg>
 // elementwise operations on matrices, where we want to be able to avoid the
 // overhead of interpreting the opCode for each value at run-time.
 struct EwUnarySca {
-    static VTRes apply(VTArg arg) = delete;
+    static VTRes apply(VTArg arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,7 +46,7 @@ struct EwUnarySca {
  * @brief A function pointer to a unary function on scalars.
  */
 template<typename VTRes, typename VTArg>
-using EwUnaryScaFuncPtr = VTRes (*)(VTArg);
+using EwUnaryScaFuncPtr = VTRes (*)(VTArg, DCTX());
 
 /**
  * @brief Returns the unary function on scalars for the specified unary
@@ -80,8 +81,8 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
  * @return The result of the unary operation.
  */
 template<typename TRes, typename TArg>
-TRes ewUnarySca(UnaryOpCode opCode, TArg arg) {
-    return getEwUnaryScaFuncPtr<TRes, TArg>(opCode)(arg);
+TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
+    return getEwUnaryScaFuncPtr<TRes, TArg>(opCode)(arg, ctx);
 }
 
 // ****************************************************************************
@@ -91,7 +92,7 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg) {
 #define MAKE_EW_UNARY_SCA(opCode, expr) \
     template<typename TRes, typename TArg> \
     struct EwUnarySca<opCode, TRes, TArg> { \
-        inline static TRes apply(TArg arg) { \
+        inline static TRes apply(TArg arg, DCTX(ctx)) { \
             return expr; \
         } \
     };

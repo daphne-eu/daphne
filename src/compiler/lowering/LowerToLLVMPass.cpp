@@ -79,7 +79,60 @@ public:
     matchAndRewrite(daphne::ConstantOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
-        rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+        Location loc = op->getLoc();
+        if(auto strAttr = op.value().dyn_cast<StringAttr>()) {
+            StringRef sr = strAttr.getValue();
+#if 1
+            // MLIR does not have direct support for strings. Thus, if this is
+            // a string constant, we create an array large enough to store the
+            // string (including a trailing null character). Then, we store all
+            // characters of the string constant to that array one by one. The
+            // SSA value of the constant is replaced by a pointer to i8
+            // pointing to the allocated buffer.
+            Type i8PtrType = LLVM::LLVMPointerType::get(
+                    IntegerType::get(rewriter.getContext(), 8)
+            );
+            const size_t numChars = sr.size() + 1; // +1 for trailing '\0'
+            const std::string str = sr.str();
+            const char * chars = str.c_str();
+            auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
+                    op.getOperation(),
+                    i8PtrType,
+                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(numChars)),
+                    1
+            );
+            for(size_t i = 0; i < numChars; i++) {
+                std::vector<Value> indices = {
+                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))
+                };
+                rewriter.create<LLVM::StoreOp>(
+                        loc,
+                        rewriter.create<ConstantOp>(
+                                loc, rewriter.getI8IntegerAttr(chars[i])
+                        ),
+                        rewriter.create<LLVM::GEPOp>(
+                                op->getLoc(), i8PtrType, allocaOp, indices
+                        )
+                );
+            }
+#else
+            // Alternatively, we could create a global string, which would
+            // yield a poiner to i8, too. However, we would need to choose a
+            // unique name.
+            rewriter.replaceOp(
+                    op.getOperation(),
+                    LLVM::createGlobalString(
+                            loc, rewriter, "someName", sr,
+                            LLVM::Linkage::Private // TODO Does that make sense?
+                    )
+            );
+#endif
+        }
+        else
+            // Constants of all other types are lowered to an mlir::ConstantOp.
+            // Note that this is a different op than mlir::daphne::ConstantOp!
+            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+        
         return success();
     }
 };
@@ -215,18 +268,73 @@ private:
             // element with a null pointer (required by the kernels). Otherwise
             // (i.e. when it represents a scalar), initialization is not
             // required.
-            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>())
+            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>()) {
+                auto elType = inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType();
                 rewriter.create<LLVM::StoreOp>(
-                        loc,
-                        rewriter.create<LLVM::NullOp>(
-                                loc, LLVM::LLVMPointerType::get(IntegerType::get(rewriter.getContext(), 1))
-                        ),
-                        allocaOp
+                    loc,
+                    rewriter.create<LLVM::NullOp>(loc, elType),
+                    allocaOp
                 );
+            }
         }
         for(auto op : operands)
             kernelOperands.push_back(op);
         return kernelOperands;
+    }
+};
+
+/**
+ * @brief Rewrites `daphne::CreateVariadicPackOp` to `LLVM::AllocaOp` to create
+ * an array for the required number of occurrences of a variadic operand.
+ */
+class CreateVariadicPackOpLowering : public OpConversionPattern<daphne::CreateVariadicPackOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::CreateVariadicPackOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        Type contType = op.res().getType().dyn_cast<daphne::VariadicPackType>().getContainedType();
+        Type convType = typeConverter->convertType(contType);
+        rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
+                op.getOperation(),
+                LLVM::LLVMPointerType::get(convType),
+                rewriter.create<ConstantOp>(op->getLoc(), op.numElementsAttr()),
+                1
+        );
+        return success();
+    }
+};
+
+/**
+ * @brief Rewrites `daphne::StoreVariadicPackOp` to `LLVM::StoreOp` to store
+ * an occurrence of a variadic operand to the respective position in an array
+ * created by lowering `daphne::CreateVariadicPackOp`.
+ */
+class StoreVariadicPackOpLowering : public OpConversionPattern<daphne::StoreVariadicPackOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::StoreVariadicPackOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        mlir::Location loc = op->getLoc();
+        mlir::Value pack = operands[0];
+        mlir::Value item = operands[1];
+        std::vector<Value> indices = {
+            rewriter.create<ConstantOp>(loc, op.posAttr())
+        };
+        auto addr = rewriter.create<LLVM::GEPOp>(
+                loc, pack.getType(), pack, indices
+        );
+        rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
+                op.getOperation(), item, addr
+        );
+        return success();
     }
 };
 
@@ -250,7 +358,9 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     OwningRewritePatternList patterns(&getContext());
 
-    LLVMTypeConverter typeConverter(&getContext());
+    LowerToLLVMOptions llvmOptions(&getContext());
+    llvmOptions.emitCWrappers = true;
+    LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
     {
         return LLVM::LLVMPointerType::get(
@@ -259,7 +369,28 @@ void DaphneLowerToLLVMPass::runOnOperation()
     typeConverter.addConversion([&](daphne::FrameType t)
     {
         return LLVM::LLVMPointerType::get(
-                IntegerType::get(t.getContext(), 2));
+                IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::StringType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                IntegerType::get(t.getContext(), 8));
+    });
+    typeConverter.addConversion([&](daphne::VariadicPackType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                typeConverter.convertType(t.getContainedType())
+        );
+    });
+    typeConverter.addConversion([&](daphne::DaphneContextType t)
+    {
+        return LLVM::LLVMPointerType::get(
+                IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::HandleType t)
+    {
+      return LLVM::LLVMPointerType::get(
+          IntegerType::get(t.getContext(), 1));
     });
 
     LLVMConversionTarget target(getContext());
@@ -269,8 +400,15 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
-    patterns.insert<CallKernelOpLowering>(typeConverter, &getContext());
-    patterns.insert<ConstantOpLowering, ReturnOpLowering>(&getContext());
+    patterns.insert<
+            CallKernelOpLowering,
+            CreateVariadicPackOpLowering
+    >(typeConverter, &getContext());
+    patterns.insert<
+            ConstantOpLowering,
+            ReturnOpLowering,
+            StoreVariadicPackOpLowering
+    >(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.

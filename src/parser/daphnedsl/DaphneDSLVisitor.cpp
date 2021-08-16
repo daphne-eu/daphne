@@ -33,6 +33,20 @@
 #include <cstdlib>
 
 // ****************************************************************************
+// Utilities
+// ****************************************************************************
+
+void handleAssignmentPart(
+        const std::string & var,
+        ScopedSymbolTable & symbolTable,
+        mlir::Value val
+) {
+    if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
+        throw std::runtime_error("trying to assign read-only variable " + var);
+    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(val, false));
+}
+
+// ****************************************************************************
 // Visitor functions
 // ****************************************************************************
 
@@ -56,11 +70,45 @@ antlrcpp::Any DaphneDSLVisitor::visitExprStatement(DaphneDSLGrammarParser::ExprS
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::AssignStatementContext * ctx) {
-    std::string var = ctx->var->getText();
-    if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
-        throw std::runtime_error("trying to assign read-only variable " + var);
-    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(utils.valueOrError(visit(ctx->expr())), false));
-    return nullptr;
+    const size_t numVars = ctx->IDENTIFIER().size();
+    antlrcpp::Any rhsAny = visit(ctx->expr());
+    bool rhsIsRR = rhsAny.is<mlir::ResultRange>();
+    if(numVars == 1) {
+        // A single variable on the left-hand side.
+        if(rhsIsRR)
+            throw std::runtime_error(
+                    "trying to assign multiple results to a single variable"
+            );
+        handleAssignmentPart(
+                ctx->IDENTIFIER(0)->getText(),
+                symbolTable,
+                utils.valueOrError(rhsAny)
+        );
+        return nullptr;
+    }
+    else if(numVars > 1) {
+        // Multiple variables on the left-hand side; the expression must be an
+        // operation returning multiple outputs.
+        if(rhsIsRR) {
+            auto rhsAsRR = rhsAny.as<mlir::ResultRange>();
+            if(rhsAsRR.size() == numVars) {
+                for(size_t i = 0; i < numVars; i++)
+                    handleAssignmentPart(
+                            ctx->IDENTIFIER(i)->getText(), symbolTable, rhsAsRR[i]
+                    );
+                return nullptr;
+            }
+        }
+        throw std::runtime_error(
+                "right-hand side expression of assignment to multiple "
+                "variables must return multiple values, one for each "
+                "variable on the left-hand side"
+        );
+    }
+    assert(
+            false && "the DaphneDSL grammar should prevent zero variables "
+            "on the left-hand side of an assignment"
+    );
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
@@ -377,7 +425,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::Iden
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::ParanthesesExprContext * ctx) {
-    return visitChildren(ctx);
+    return utils.valueOrError(visit(ctx->expr()));
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
@@ -393,23 +441,109 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     return builtins.build(loc, func, args);
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitRightIdxExpr(DaphneDSLGrammarParser::RightIdxExprContext * ctx) {
+antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {
+    mlir::Type resType;
+    
+    if(ctx->DATA_TYPE()) {
+        std::string dtStr = ctx->DATA_TYPE()->getText();
+        if(dtStr == "matrix") {
+            mlir::Type vt;
+            if(ctx->VALUE_TYPE())
+                vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+            else
+                vt = utils.unknownType;
+            resType = utils.matrixOf(vt);
+        }
+        else if(dtStr == "frame")
+            throw std::runtime_error("casting to a frame is not supported yet");
+        else
+            throw std::runtime_error(
+                    "unsupported data type in cast expression: " + dtStr
+            );
+    }
+    else if(ctx->VALUE_TYPE())
+        resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+    else
+        throw std::runtime_error(
+                "casting requires the specification of the target data and/or "
+                "value type"
+        );
+    
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
+            builder.getUnknownLoc(),
+            resType,
+            utils.valueOrError(visit(ctx->expr()))
+    ));
+}
+
+// TODO Reduce the code duplication with visitRightIdxExtractExpr.
+antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
-    if(ctx->rows)
-        throw std::runtime_error("right indexing does not support selecting rows yet");
-    else if(ctx->cols) {
-        mlir::Value cols = utils.valueOrError(visit(ctx->cols));
-        mlir::Type t = cols.getType();
-        if(t.isInteger(64) || t.isF64()) // TODO consider all supported value types
-            cols = utils.castSizeIf(cols);
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
-                builder.getUnknownLoc(), obj.getType(), obj, cols
+    mlir::Type objType = obj.getType();
+    if(ctx->rows && ctx->cols)
+        throw std::runtime_error(
+                "currently right indexing supports either rows or columns, "
+                "but not both at the same time"
+        );
+    if(ctx->rows) {
+        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::FilterRowOp>(
+                builder.getUnknownLoc(), objType, obj, rows
         ));
     }
-    else
-        // TODO Actually, this would be okay, but we should think about whether
-        // it should be a no-op or a copy.
-        throw std::runtime_error("right indexing requires the specification of rows and/or columns");
+    if(ctx->cols)
+        throw std::runtime_error(
+                "currently right indexing (for filter) supports only rows"
+        );
+    throw std::runtime_error(
+            "right indexing requires the specification of rows and/or columns"
+    );
+}
+
+// TODO Reduce the code duplication with visitRightIdxFilterExpr.
+antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {
+    mlir::Value obj = utils.valueOrError(visit(ctx->obj));
+    mlir::Type objType = obj.getType();
+    if(ctx->rows && ctx->cols)
+        throw std::runtime_error(
+                "currently right indexing supports either rows or columns, "
+                "but not both at the same time"
+        );
+    if(ctx->rows) {
+        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractRowOp>(
+                builder.getUnknownLoc(), objType, obj, rows
+        ));
+    }
+    if(ctx->cols) {
+        mlir::Value cols = utils.valueOrError(visit(ctx->cols));
+        mlir::Type colsType = cols.getType();
+        // TODO Consider all supported value types.
+        if(colsType.isInteger(64) || colsType.isF64()) {
+            cols = utils.castSizeIf(cols);
+            colsType = cols.getType();
+        }
+        mlir::Type resType;
+        if(objType.isa<mlir::daphne::MatrixType>())
+            // Data type and value type remain the same.
+            resType = objType;
+        else if(objType.isa<mlir::daphne::FrameType>())
+            // Data type remains the same, but the value type of the result's
+            // single column is currently unknown.
+            // TODO If the column is selected by position, we could know its
+            // type already here.
+            resType = mlir::daphne::FrameType::get(
+                    builder.getContext(), {utils.unknownType}
+            );
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
+                builder.getUnknownLoc(), resType, obj, cols
+        ));
+    }
+    // TODO Actually, this would be okay, but we should think about whether
+    // it should be a no-op or a copy.
+    throw std::runtime_error(
+            "right indexing requires the specification of rows and/or columns"
+    );
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {

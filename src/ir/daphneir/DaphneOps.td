@@ -19,6 +19,9 @@
 
 include "ir/daphneir/DaphneDialect.td"
 include "ir/daphneir/DaphneTypes.td"
+include "ir/daphneir/DaphneDistributableOpInterface.td"
+include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
+include "ir/daphneir/DaphneInferTypesOpInterface.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -62,9 +65,12 @@ def Daphne_FillOp : Daphne_Op<"fill"> {
     let results = (outs Matrix:$res);
 }
 
-// TODO This can probably be subsumed by ColBindOp.
-def Daphne_FrameOp : Daphne_Op<"frame"> {
-    let arguments = (ins Variadic<Matrix>:$cols);
+def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
+    SameVariadicOperandSize,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let arguments = (ins Variadic<Matrix>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs Frame:$res);
 }
 
@@ -163,8 +169,10 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
 // Elementwise binary
 // ****************************************************************************
 
+// TODO Temporarily commented, because otherwise it cannot handle UnknownType.
 class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
-: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
+//: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
+: Daphne_Op<name, traits> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
 
@@ -181,7 +189,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [DeclareOpInterfaceMethods<DistributableOpInterface>]>;
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
@@ -214,7 +222,10 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 // Comparisons
 // ----------------------------------------------------------------------------
 
-class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []> : Daphne_EwBinaryOp<name, inputScalarType, traits> {
+class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []>
+: Daphne_EwBinaryOp<name, inputScalarType, !listconcat([
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+], traits)> {
     // TODO: We do not enforce (matrix of) boolean output any more, but should
     // think about that again.
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
@@ -350,12 +361,61 @@ def Daphne_CovOp : Daphne_Op<"cov"> {
 // ****************************************************************************
 
 def Daphne_ExtractOp : Daphne_Op<"extract"> {
-    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
+    let summary = "Copies the specified rows and columns from the argument to the result.";
+
+    let description = [{
+        This operation is effectively similar to a combination of `extractRow`
+        and `extractCol`. Please see the documentation of those operations.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_ExtractColOp : Daphne_Op<"extractCol"> {
-    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedCols);
+def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Copies the specified rows from the argument to the result.";
+
+    let description = [{
+        Copies the rows of a data object `source` (matrix or frame) at the
+        positions specified by `selectedRows` to the result. `selectedRows`
+        must be either a scalar or a single-column matrix of positions (row
+        indexes) into `source`, i.e., the entries must be between zero
+        (inclusive) and the number of rows in `source` (exclusive). Beyond that,
+        there are no restrictions.
+
+        Note that `FilterRowOp` is similar, but works with bit vectors instead
+        of positions lists.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Selection:$selectedRows);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Copies the specified columns from the argument to the result.";
+
+    let description = [{
+        Copies the columns of a data object `source` (matrix or frame) at the
+        positions specified by `selectedCols` to the result. `selectedCols`
+        must be either a scalar or a single-column matrix of positions (column
+        indexes) into `source`, i.e., the entries must be between zero
+        (inclusive) and the number of columns in `source` (exclusive). Beyond
+        that, there are no restrictions.
+
+        Alternatively, `selectedCols` can be a string, in which case the column
+        with that label is extracted from `source` if it is a frame.
+
+        Note that `FilterRowOp` is similar, but works with bit vectors instead
+        of positions lists.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -390,12 +450,15 @@ def Daphne_TransposeOp : Daphne_Op<"transpose"> {
     ];
 }
 
-class Daphne_BindOp<string name> : Daphne_Op<name> {
+class Daphne_BindOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
     let arguments = (ins MatrixOrFrame:$lhs, MatrixOrFrame:$rhs);
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_ColBindOp : Daphne_BindOp<"colBind">;
+def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]>;
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind">;
 
 def Daphne_ReverseOp : Daphne_Op<"reverse"> {
@@ -601,6 +664,44 @@ def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
 def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 
+def Daphne_GroupJoinOp : Daphne_Op<"groupJoin", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    // TODO Support arbitrary aggregation functions.
+    // TODO Support an arbitrary number of aggregates.
+    // TODO Support an arbitrary number of join/group columns.
+
+    let summary = [{
+        Group-join of `lhs` and `rhs` on `lhs.lhsOn == rhs.rhsOn` with
+        summation of `rhs.rhsAgg`.
+    }];
+
+    let description = [{
+        Performs a group-join of the input frames `lhs` and `rhs` on
+        `lhs.lhsOn == rhs.rhsOn`, where `lhsOn` and `rhsOn` are column labels
+        in the respective frame, including a summation on `rhs.rhsAgg`, where
+        `rhsAgg` is a column label in `rhs`.
+
+        This is equivalent to an inner join of `lhs` and `rhs` on
+        `lhs.lhsOn == rhs.rhsOn` followed by a grouping of the result on
+        `lhsOn` including a summation on `rhsAgg`.
+
+        `lhs.lhsOn` is assumed to be unique.
+
+        The results are:
+        - A two-column frame consisting of (1) the distinct values in
+          `lhsOn`/`rhsOn` that pass the join and (2) the grouped aggregates in
+          `rhsAgg`. The column labels are `lhsOn` and `rhsAgg`.
+        - A column-matrix containing the positions of the tuples in `lhs`
+          corresponding to the pairs in the first result.
+    }];
+
+    let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn, StrScalar:$rhsAgg);
+    // TODO Result `lhsTids` could be made optional.
+    let results = (outs Frame:$res, MatrixOf<[Size]>:$lhsTids);
+}
+
 // ----------------------------------------------------------------------------
 // Selection
 // ----------------------------------------------------------------------------
@@ -608,6 +709,29 @@ def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
 def Daphne_QueryOp : Daphne_Op<"query"> {
     let arguments = (ins Frame:$arg, StrAttr:$cond);
     let results = (outs Frame:$res);
+}
+
+def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let summary = "Filters the rows of a data object according to a bit vector";
+
+    let description = [{
+        Filters the rows of a data object (matrix or frame) according to a bit
+        vector. The argument `selectedRows` must be a single-column matrix. All
+        its entries must be zero or one. The value type of `selectedRows` does
+        not need to be boolean, it could also be an integer or floating-point
+        type. `selectedRows` and `source` must have the same number of rows.
+        The *i*-th row of `source` is contained in the result, if the *i*-th
+        entry of `selectedRows` is a one (in its respective value type).
+
+        Note that `ExtractRowOp` is similar, but works with positions lists
+        instead of bit vectors.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Matrix:$selectedRows);
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // Note that ExtractOp can be used to filter rows by a column of bool or a
@@ -624,6 +748,20 @@ def Daphne_GroupOp : Daphne_Op<"group"> {
 }
 
 // ****************************************************************************
+// Frame label manipulation
+// ****************************************************************************
+
+def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels"> {
+    let arguments = (ins Frame:$arg, Variadic<StrScalar>:$labels);
+    let results = (outs); // no results
+}
+
+def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix"> {
+    let arguments = (ins Frame:$arg, StrScalar:$prefix);
+    let results = (outs); // no results
+}
+
+// ****************************************************************************
 // Conversions, casts, and copying
 // ****************************************************************************
 
@@ -634,7 +772,9 @@ def Daphne_ToStringOp : Daphne_Op<"toString"> {
     let results = (outs StrScalar:$res);
 }
 
-def Daphne_CastOp : Daphne_Op<"cast"> {
+def Daphne_CastOp : Daphne_Op<"cast", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
     let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$arg);
@@ -644,6 +784,34 @@ def Daphne_CastOp : Daphne_Op<"cast"> {
 def Daphne_CopyOp : Daphne_Op<"copy"> {
     let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs MatrixOrFrame:$res);
+}
+
+// ****************************************************************************
+// Distributed Operations
+// ****************************************************************************
+
+def Daphne_DistributeOp : Daphne_Op<"distribute"> {
+    let arguments = (ins Matrix:$mat);
+    let results = (outs Handle:$res);
+}
+
+def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect]> {
+    let arguments = (ins Variadic<Handle>:$args);
+    let results = (outs Variadic<Handle>:$res);
+    let regions = (region SizedRegion<1>:$body);
+}
+
+// TODO: Map Keys Operation
+
+def Daphne_DistributedCollectOp : Daphne_Op<"distributedCollect", [NoSideEffect]> {
+    let arguments = (ins Handle:$arg);
+    let results = (outs AnyType:$res);
+
+    let builders = [
+        OpBuilder<(ins "Value":$value), [{
+            build($_builder, $_state, value.getType().cast<HandleType>().getDataType(), value);
+        }]>,
+    ];
 }
 
 // ****************************************************************************
@@ -677,6 +845,46 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOf<[SI64]>:$info);
     let results = (outs MatrixOrFrame:$res);
+}
+
+// ****************************************************************************
+// Context handling
+// ****************************************************************************
+
+def Daphne_CreateDaphneContextOp : Daphne_Op<"createDaphneContext"> {
+    let summary = "Creates an instance of a Daphne run-time context.";
+
+    let description = [{
+        The newly created instance might be partially initialized. The
+        initialization of certain parts/aspects of the context (which are not
+        always relevant) might require additional DaphneIR operations.
+    }];
+
+    let arguments = (ins); // no arguments so far
+    let results = (outs DaphneContext:$ctx);
+}
+
+def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
+    let summary = "Destroys an instance of a Daphne run-time context.";
+
+    // Note that the DaphneContext is automatically injected during the
+    // lowering to kernel calls.
+    let arguments = (ins); // no arguments
+    let results = (outs); // no results
+}
+
+// ****************************************************************************
+// Low-level auxiliary operations
+// ****************************************************************************
+
+def Daphne_CreateVariadicPackOp : Daphne_Op<"createVariadicPack"> {
+    let arguments = (ins IndexAttr:$numElements);
+    let results = (outs VariadicPack:$res);
+}
+
+def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
+    let arguments = (ins VariadicPack:$pack, AnyType:$item, IndexAttr:$pos);
+    let results = (outs); // no results
 }
 
 // ****************************************************************************
@@ -715,7 +923,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let hasFolder = 1;
 }
 
-def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, HasParent<"FuncOp">]> {
+def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, ParentOneOf<["FuncOp", "DistributedComputeOp"]>]> {
     let summary = "return operation";
 
     let arguments = (ins Variadic<AnyType>:$operands);

@@ -34,8 +34,13 @@
 #include "mlir/IR/Types.h"
 #include "mlir/Support/TypeID.h"
 
+#include "ir/daphneir/DaphneDistributableOpInterface.h"
+#include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
+#include <ir/daphneir/DaphneInferTypesOpInterface.h>
+
 #include <string>
 #include <utility>
+#include <vector>
 
 // ... the following tablegen'erated headers.
 #define GET_TYPEDEF_CLASSES

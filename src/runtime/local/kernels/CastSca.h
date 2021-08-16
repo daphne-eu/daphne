@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H
 #define SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H
 
+#include <runtime/local/context/DaphneContext.h>
+
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
@@ -28,7 +30,7 @@
  * @return The casted value.
  */
 template<typename VTRes, typename VTArg>
-VTRes castSca(VTArg arg) {
+VTRes castSca(VTArg arg, DCTX(ctx)) {
     return static_cast<VTRes>(arg);
 }
 

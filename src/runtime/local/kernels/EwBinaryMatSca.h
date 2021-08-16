@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMATSCA_H
 #define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMATSCA_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
@@ -33,7 +34,7 @@
 
 template<class DTRes, class DTLhs, typename VTRhs>
 struct EwBinaryMatSca {
-    static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs) = delete;
+    static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,8 +42,8 @@ struct EwBinaryMatSca {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, typename VTRhs>
-void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs) {
-    EwBinaryMatSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs);
+void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
+    EwBinaryMatSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -55,7 +56,7 @@ void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs 
 
 template<typename VT>
 struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs) {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         
@@ -69,7 +70,7 @@ struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = func(valuesLhs[c], rhs);
+                valuesRes[c] = func(valuesLhs[c], rhs, ctx);
             valuesLhs += lhs->getRowSkip();
             valuesRes += res->getRowSkip();
         }
@@ -82,7 +83,7 @@ struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 
 template<typename VT>
 struct EwBinaryMatSca<Matrix<VT>, Matrix<VT>, VT> {
-    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, VT rhs) {
+    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, VT rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         

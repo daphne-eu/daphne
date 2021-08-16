@@ -29,7 +29,7 @@
 template<class DT>
 void checkTranspose(const DT * arg, const DT * exp) {
     DT * res = nullptr;
-    transpose<DT, DT>(res, arg);
+    transpose<DT, DT>(res, arg, nullptr);
     CHECK(*res == *exp);
 }
 

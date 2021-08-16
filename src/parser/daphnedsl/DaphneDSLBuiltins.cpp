@@ -14,8 +14,10 @@
  * limitations under the License.
  */
 
-#include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <ir/daphneir/Daphne.h>
+#include <parser/daphnedsl/DaphneDSLBuiltins.h>
+#include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/io/FileMetaData.h>
 
 #include "antlr4-runtime.h"
 
@@ -153,13 +155,17 @@ mlir::Value DaphneDSLBuiltins::createCumAggOp(mlir::Location loc, const std::str
     ));
 }
 
+#if 0
 template<class BindOp>
 mlir::Value DaphneDSLBuiltins::createBindOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 2);
     return static_cast<mlir::Value>(builder.create<BindOp>(
+            // TODO This is not Frame-aware (for ColBindOp, we need to concat
+            // the column types.
             loc, args[0].getType(), args[0], args[1]
     ));
 }
+#endif
 
 template<class TheOp>
 mlir::Value DaphneDSLBuiltins::createSameTypeUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
@@ -247,11 +253,49 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
     if(func == "frame") {
         checkNumArgsMin(func, numArgs, 1);
+        // Determine which arguments are column matrices and which are labels.
         std::vector<mlir::Type> colTypes;
-        for(auto arg : args)
-            colTypes.push_back(arg.getType().dyn_cast<MatrixType>().getElementType());
+        std::vector<mlir::Value> cols;
+        std::vector<mlir::Value> labels;
+        bool expectCol = true;
+        for(auto arg : args) {
+            mlir::Type t = arg.getType();
+            auto mt = t.dyn_cast<MatrixType>();
+            if(expectCol && mt) {
+                colTypes.push_back(mt.getElementType());
+                cols.push_back(arg);
+            }
+            else if(t.isa<mlir::daphne::StringType>()) {
+                expectCol = false;
+                labels.push_back(arg);
+            }
+            else
+                throw std::runtime_error(
+                        "arguments to frame() built-in function must be one or "
+                        "more matrices optionally followed by equally many "
+                        "strings"
+                );
+        }
+        // Use default labels, if necessary.
+        const size_t numCols = cols.size();
+        const size_t numLabels = labels.size();
+        if(!numLabels)
+            for(size_t i = 0; i < numCols; i++) {
+                const std::string dl(Frame::getDefaultLabel(i));
+                labels.push_back(builder.create<ConstantOp>(
+                        loc, dl
+                ));
+            }
+        else if(numLabels != numCols)
+            throw std::runtime_error(
+                    "frame built-in function expects either no column labels "
+                    "or as many labels as columns"
+            );
+        // Create CreateFrameOp.
         mlir::Type t = FrameType::get(builder.getContext(), colTypes);
-        return static_cast<mlir::Value>(builder.create<FrameOp>(loc, t, args));
+        return static_cast<mlir::Value>(
+                builder.create<CreateFrameOp>(loc, t, cols, labels)
+        );
     }
     if(func == "diagMatrix")
         return createSameTypeUnaryOp<DiagMatrixOp>(loc, func, args);
@@ -446,10 +490,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, args[0]
         ));
     }
-    if(func == "cbind")
+    if(func == "cbind") {
+#if 0
         return createBindOp<ColBindOp>(loc, func, args);
-    if(func == "rbind")
-        return createBindOp<ColBindOp>(loc, func, args);
+#else
+        checkNumArgsExact(func, numArgs, 2);
+        auto op = builder.create<ColBindOp>(
+                loc, args[0].getType(), args[0], args[1]
+        );
+        op.inferTypes();
+        return static_cast<mlir::Value>(op);
+#endif
+    }
+    if(func == "rbind") {
+#if 0
+        return createBindOp<RowBindOp>(loc, func, args);
+#else
+        checkNumArgsExact(func, numArgs, 2);
+        return static_cast<mlir::Value>(builder.create<RowBindOp>(
+                loc, args[0].getType(), args[0], args[1]
+        ));
+#endif
+    }
     if(func == "reverse")
         return createSameTypeUnaryOp<ReverseOp>(loc, func, args);
     if(func == "order") {
@@ -601,6 +663,39 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createJoinOp<AntiJoinOp>(loc, func, args);
     if(func == "semiJoin")
         return createJoinOp<SemiJoinOp>(loc, func, args);
+    if(func == "groupJoin") {
+        checkNumArgsExact(func, numArgs, 5);
+        mlir::Value lhs = args[0];
+        mlir::Value rhs = args[1];
+        mlir::Value lhsOn = args[2];
+        mlir::Value rhsOn = args[3];
+        mlir::Value rhsAgg = args[4];
+        return builder.create<GroupJoinOp>(
+                loc,
+                FrameType::get(
+                        builder.getContext(),
+                        {utils.unknownType, utils.unknownType}
+                ),
+                utils.matrixOfSizeType,
+                lhs, rhs, lhsOn, rhsOn, rhsAgg
+        ).getResults();
+    }
+
+    // ********************************************************************
+    // Frame label manipulation
+    // ********************************************************************
+
+    if(func == "setColLabels") {
+        checkNumArgsMin(func, numArgs, 2);
+        std::vector<mlir::Value> labels;
+        for(size_t i = 1; i < numArgs; i++)
+            labels.push_back(args[i]);
+        return builder.create<SetColLabelsOp>(loc, args[0], labels);
+    }
+    if(func == "setColLabelsPrefix") {
+        checkNumArgsExact(func, numArgs, 2);
+        return builder.create<SetColLabelsPrefixOp>(loc, args[0], args[1]);
+    }
 
     // ********************************************************************
     // Conversions, casts, and copying
@@ -619,7 +714,39 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, args[0]
         );
     }
-    // TODO read/write
+    if(func == "read") {
+        checkNumArgsExact(func, numArgs, 1);
+
+        mlir::Value filename = args[0];
+        std::string filenameStr;
+        bool found = false;
+
+        // TODO Make getConstantString() from DaphneInferFrameLabelsOpInterface
+        // a central utility and use it here.
+        if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(filename.getDefiningOp()))
+            if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
+                filenameStr = strAttr.getValue().str();
+                found = true;
+            }
+        if(!found)
+            throw std::runtime_error(
+                    "built-in function read requires the filename to be a "
+                    "string constant"
+            );
+
+        FileMetaData fmd = FileMetaData::ofFile(filenameStr);
+        std::vector<mlir::Type> cts;
+        for(ValueTypeCode vtc : fmd.schema)
+            cts.push_back(utils.mlirTypeForCode(vtc));
+        auto labels = new std::vector<std::string>(fmd.labels);
+
+        return static_cast<mlir::Value>(builder.create<ReadOp>(
+                loc,
+                mlir::daphne::FrameType::get(builder.getContext(), cts, labels),
+                filename
+        ));
+    }
+    // TODO write
 
     // ********************************************************************
     // Data preprocessing

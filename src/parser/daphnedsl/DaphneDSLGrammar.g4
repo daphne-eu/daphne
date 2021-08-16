@@ -46,7 +46,7 @@ exprStatement:
     expr ';' ;
 
 assignStatement:
-    var=IDENTIFIER '=' expr ';' ;
+    IDENTIFIER ( ',' IDENTIFIER )* '=' expr ';' ;
 
 ifStatement:
     KW_IF '(' cond=expr ')' thenStmt=statement (KW_ELSE elseStmt=statement)? ;
@@ -62,7 +62,9 @@ expr:
     | var=IDENTIFIER # identifierExpr
     | '(' expr ')' # paranthesesExpr
     | func=IDENTIFIER '(' expr (',' expr)* ')' # callExpr
-    | obj=expr '[' (rows=expr)? ',' (cols=expr)? ']' # rightIdxExpr
+    | KW_AS ('.' DATA_TYPE)? ('.' VALUE_TYPE)? '(' expr ')' # castExpr
+    | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
+    | obj=expr '[' (rows=expr)? ',' (cols=expr)? ']' # rightIdxExtractExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
     | lhs=expr op=('*'|'/') rhs=expr # mulExpr
@@ -92,6 +94,7 @@ KW_FOR: 'for';
 KW_IN: 'in';
 KW_TRUE: 'true';
 KW_FALSE: 'false';
+KW_AS: 'as';
 
 fragment DIGIT:
     [0-9] ;
@@ -102,6 +105,12 @@ fragment NON_ZERO_DIGIT:
 fragment LETTER:
     [a-zA-Z] ;
 
+DATA_TYPE:
+    ('matrix') ;
+
+VALUE_TYPE:
+    ('f64' | 'f32' | 'si64' | 'si32' | 'si8' | 'ui64' | 'ui32' | 'ui8') ;
+
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
@@ -109,11 +118,15 @@ INT_LITERAL:
     ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
 
 FLOAT_LITERAL:
-    '-'? (NON_ZERO_DIGIT DIGIT*)? '.' DIGIT* ;
+    '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ ;
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';
 
 fragment ESCAPE_SEQ: '\\' [bfnrt"\\];
 
+// Comments, whitespaces and new line
+SCRIPT_STYLE_LINE_COMMENT : '#' ~('\r' | '\n')* -> skip;
+C_STYLE_LINE_COMMENT : '//' ~('\r' | '\n')* -> skip;
+MULTILINE_BLOCK_COMMENT : '/*' .*? '*/' -> skip;
 WS: [ \t\r\n]+ -> skip;

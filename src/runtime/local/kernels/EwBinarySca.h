@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H
 #define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYSCA_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 
 #include <algorithm>
@@ -34,7 +35,7 @@ template<BinaryOpCode opCode, class VTRes, class VTLhs, class VTRhs>
 // elementwise operations on matrices, where we want to be able to avoid the
 // overhead of interpreting the opCode for each pair of values at run-time.
 struct EwBinarySca {
-    static VTRes apply(VTLhs lhs, VTRhs rhs) = delete;
+    static VTRes apply(VTLhs lhs, VTRhs rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,7 +46,7 @@ struct EwBinarySca {
  * @brief A function pointer to a binary function on scalars.
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
-using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs);
+using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
 
 /**
  * @brief Returns the binary function on scalars for the specified binary
@@ -93,8 +94,8 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
  * @return The result of the binary operation.
  */
 template<typename TRes, typename TLhs, typename TRhs>
-TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
-    return getEwBinaryScaFuncPtr<TRes, TLhs, TRhs>(opCode)(lhs, rhs);
+TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs, DCTX(ctx)) {
+    return getEwBinaryScaFuncPtr<TRes, TLhs, TRhs>(opCode)(lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -104,7 +105,7 @@ TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs) {
 #define MAKE_EW_BINARY_SCA(opCode, expr) \
     template<typename TRes, typename TLhs, typename TRhs> \
     struct EwBinarySca<opCode, TRes, TLhs, TRhs> { \
-        inline static TRes apply(TLhs lhs, TRhs rhs) { \
+        inline static TRes apply(TLhs lhs, TRhs rhs, DCTX(ctx)) { \
             return expr; \
         } \
     };

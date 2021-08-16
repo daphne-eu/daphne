@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
 #define SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
 
+#include <runtime/local/context/DaphneContext.h>
+
 #include <iostream>
 
 // ****************************************************************************
@@ -32,8 +34,13 @@
  * @param arg The data object to print.
  */
 template<class DT>
-void printObj(const DT * arg) {
+void printObj(const DT * arg, DCTX(ctx)) {
     arg->print(std::cout);
+}
+
+template<>
+void printObj(const char * arg, DCTX(ctx)) {
+    std::cout << arg << std::endl;
 }
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H

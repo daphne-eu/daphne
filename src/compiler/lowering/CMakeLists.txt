@@ -15,11 +15,14 @@
 add_mlir_dialect_library(MLIRDaphneTransforms
     RewriteSqlOpPass.cpp
     LowerRelationalAlgebraToDaphneOpPass.cpp
-    RewriteToCallKernelOpPass.cpp
+    DistributeComputationsPass.cpp
+    InsertDaphneContextPass.cpp
     LowerToLLVMPass.cpp
+    RewriteToCallKernelOpPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
+    MLIRDaphneTransformsIncGen
 
     LINK_COMPONENTS
     Core

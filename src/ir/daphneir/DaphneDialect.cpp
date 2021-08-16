@@ -89,6 +89,16 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         }
         return FrameType::get(parser.getBuilder().getContext(), cts);
     }
+    else if (keyword == "Handle") {
+        mlir::Type dataType;
+        if (parser.parseLess() || parser.parseType(dataType) || parser.parseGreater()) {
+            return nullptr;
+        }
+        return mlir::daphne::HandleType::get(parser.getBuilder().getContext(), dataType);
+    }
+    else if (keyword == "String") {
+        return StringType::get(parser.getBuilder().getContext());
+    }
     else {
         parser.emitError(parser.getCurrentLocation()) << "Parsing failed, keyword `" << keyword << "` not recognized!";
         return nullptr;
@@ -98,17 +108,44 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
-    if (type.isa<mlir::daphne::MatrixType>())
-        os << "Matrix<" << type.dyn_cast<mlir::daphne::MatrixType>().getElementType() << '>';
-    else if (type.isa<mlir::daphne::FrameType>()) {
-        std::vector<mlir::Type> cts = type.dyn_cast<mlir::daphne::FrameType>().getColumnTypes();
-        os << "Frame<[" << cts[0];
-        for (size_t i = 1; i < cts.size(); i++)
-            os << ", " << cts[i];
-        os << "]>";
+    if (auto t = type.dyn_cast<mlir::daphne::MatrixType>())
+        os << "Matrix<" << t.getElementType() << '>';
+    else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
+        os << "Frame<[";
+        // Column types.
+        std::vector<mlir::Type> cts = t.getColumnTypes();
+        for (size_t i = 0; i < cts.size(); i++) {
+            os << cts[i];
+            if(i < cts.size() - 1)
+                os << ", ";
+        }
+        os << "], ";
+        // Column labels.
+        std::vector<std::string> * labels = t.getLabels();
+        if(labels) {
+            os << '[';
+            for (size_t i = 0; i < labels->size(); i++) {
+                os << '"' << (*labels)[i] << '"';
+                if(i < labels->size() - 1)
+                    os << ", ";
+            }
+            os << ']';
+        }
+        else
+            os << '?';
+        os << '>';
+    }
+    else if (auto handle = type.dyn_cast<mlir::daphne::HandleType>()) {
+        os << "Handle<" << handle.getDataType() << ">";
     }
     else if (type.isa<mlir::daphne::StringType>())
         os << "String";
+    else if (auto t = type.dyn_cast<mlir::daphne::VariadicPackType>())
+        os << "VariadicPack<" << t.getContainedType() << '>';
+    else if (type.isa<mlir::daphne::DaphneContextType>())
+        os << "DaphneContext";
+    else if (type.isa<mlir::daphne::UnknownType>())
+        os << "Unknown";
 };
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
@@ -119,13 +156,57 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, Type elementType)
 {
-    if (elementType.isSignedInteger(64) || elementType.isF64() || elementType.isIndex())
+    if (
+        // Value type is unknown.
+        elementType.isa<mlir::daphne::UnknownType>()
+        // Value type is known.
+        || elementType.isSignedInteger(64)
+        || elementType.isF64()
+        || elementType.isIndex()
+    )
         return mlir::success();
     else
         return emitError() << "invalid matrix element type: " << elementType;
 }
 
-::mlir::LogicalResult mlir::daphne::FrameType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, std::vector<Type> columnTypes)
+::mlir::LogicalResult mlir::daphne::FrameType::verify(
+        ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+        std::vector<Type> columnTypes,
+        std::vector<std::string> * labels
+)
 {
+    // TODO Verify the individual column types.
     return mlir::success();
+}
+
+::mlir::LogicalResult mlir::daphne::HandleType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+                                                       Type dataType)
+{
+    if (dataType.isa<MatrixType>()) {
+        return mlir::success();
+    }
+    else
+        return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+std::vector<mlir::Value> mlir::daphne::EwAddOp::createEquivalentDistributedDAG(mlir::OpBuilder &builder,
+                                                                               mlir::ValueRange distributedInputs)
+{
+    auto compute = builder.create<daphne::DistributedComputeOp>(getLoc(),
+        ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
+        distributedInputs);
+    auto &block = compute.body().emplaceBlock();
+    auto argLhs = block.addArgument(distributedInputs[0].getType().cast<HandleType>().getDataType());
+    auto argRhs = block.addArgument(distributedInputs[1].getType().cast<HandleType>().getDataType());
+
+    {
+        mlir::OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPoint(&block, block.begin());
+
+        auto addOp = builder.create<EwAddOp>(getLoc(), argLhs, argRhs);
+        builder.create<ReturnOp>(getLoc(), ArrayRef<Value>{addOp});
+    }
+
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(getLoc(), compute.getResult(0))});
+    return ret;
 }

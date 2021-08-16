@@ -29,6 +29,9 @@
 
 
 struct DaphneSQLParser : public Parser {
+
+    // DaphneSQLParser () : Parser(){};
+
     std::unordered_map <std::string, mlir::Value> view;
     void setView(std::unordered_map <std::string, mlir::Value> view);
     //

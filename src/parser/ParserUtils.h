@@ -18,6 +18,7 @@
 #define SRC_PARSER_PARSERUTILS_H
 
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 
 #include "antlr4-runtime.h"
 
@@ -65,6 +66,11 @@ public:
     mlir::Type matrixOfSizeType;
     
     /**
+     * @brief The placeholder for an unknown type.
+     */
+    mlir::Type unknownType;
+    
+    /**
      * @brief Get a `daphne::MatrixType` with the given value type.
      * @param vt
      * @return 
@@ -93,7 +99,8 @@ public:
             sizeType(builder.getIndexType()),
             boolType(builder.getI1Type()),
             seedType(builder.getIntegerType(64, true)),
-            matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType)))
+            matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
+            unknownType(mlir::daphne::UnknownType::get(builder.getContext()))
     {
         // nothing to do
     }
@@ -127,6 +134,36 @@ public:
     
     mlir::Value castSeedIf(mlir::Value v) {
         return castIf(seedType, v);
+    }
+    
+    // ************************************************************************
+    // Type parsing
+    // ************************************************************************
+    
+    mlir::Type getValueTypeByName(const std::string & name) {
+        if(name == "f64") return builder.getF64Type();
+        if(name == "f32") return builder.getF32Type();
+        if(name == "si64") return builder.getIntegerType(64, true);
+        if(name == "si32") return builder.getIntegerType(32, true);
+        if(name == "si8") return builder.getIntegerType(8, true);
+        if(name == "ui64") return builder.getIntegerType(64, false);
+        if(name == "ui32") return builder.getIntegerType(32, false);
+        if(name == "ui8") return builder.getIntegerType(8, false);
+        throw std::runtime_error("unsupported value type: " + name);
+    }
+    
+    mlir::Type mlirTypeForCode(ValueTypeCode type) {
+        switch(type) {
+            case ValueTypeCode::SI8:  return builder.getIntegerType(8, true);
+            case ValueTypeCode::SI32: return builder.getIntegerType(32, true);
+            case ValueTypeCode::SI64: return builder.getIntegerType(64, true);
+            case ValueTypeCode::UI8:  return builder.getIntegerType(8, false);
+            case ValueTypeCode::UI32: return builder.getIntegerType(32, false);
+            case ValueTypeCode::UI64: return builder.getIntegerType(64, false);
+            case ValueTypeCode::F32: return builder.getF32Type();
+            case ValueTypeCode::F64: return builder.getF64Type();
+            default: throw std::runtime_error("unknown value type code");
+        }
     }
     
     // ************************************************************************

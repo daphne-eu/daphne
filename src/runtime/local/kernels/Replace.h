@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_REPLACE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_REPLACE_H
 
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -31,7 +32,7 @@
 
 template<class DTRes, class DTArg, typename VT>
 struct Replace {
-    static void apply(DTRes *& res, const DTArg * arg, VT pattern, VT replacement) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, VT pattern, VT replacement, DCTX(ctx)) = delete;
 };
 
 
@@ -39,8 +40,8 @@ struct Replace {
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg, typename VT>
-void replace(DTRes *& res, const DTArg * arg, VT pattern, VT replacement ) {
-    Replace<DTRes, DTArg, VT>::apply(res, arg, pattern, replacement);
+void replace(DTRes *& res, const DTArg * arg, VT pattern, VT replacement, DCTX(ctx)) {
+    Replace<DTRes, DTArg, VT>::apply(res, arg, pattern, replacement, ctx);
 }
 
 // ****************************************************************************
@@ -53,7 +54,7 @@ void replace(DTRes *& res, const DTArg * arg, VT pattern, VT replacement ) {
 
 template<typename VT>
 struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, VT pattern, VT replacement) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, VT pattern, VT replacement, DCTX(ctx)) {
         //------handling corner cases -------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         // variable declaration
@@ -132,7 +133,7 @@ struct Replace<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 
 template<typename VT>
 struct Replace<CSRMatrix<VT>, CSRMatrix<VT>, VT> {
-    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, VT pattern, VT replacement) {
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, VT pattern, VT replacement, DCTX(ctx)) {
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         assert(pattern!=0&& "pattern equals zero"); // this case is not supported for now
         const size_t numRows = arg->getNumRows();

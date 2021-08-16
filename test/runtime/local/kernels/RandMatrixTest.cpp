@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/RandMatrix.h>
@@ -27,65 +28,38 @@
 #include <cmath>
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("RandMatrix, full/empty", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
     
-    const size_t numRows = 3;
-    const size_t numCols = 4;
+    const size_t numRows = 100;
+    const size_t numCols = 50;
     const VT min = 100;
     const VT max = 200;
-    
-    DT * m = nullptr;
-    
-    SECTION("full") {
-        randMatrix<DT, VT>(m, numRows, numCols, min, max, 1.0, -1);
 
-        REQUIRE(m->getNumRows() == numRows);
-        REQUIRE(m->getNumCols() == numCols);
+    for(double sparsity : {0.0, 0.1, 0.5, 0.9, 1.0}) {
+        DYNAMIC_SECTION("sparsity = " << sparsity) {
+            DT * m = nullptr;
+            randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1, nullptr);
 
-        for(size_t r = 0; r < numRows; r++)
-            for(size_t c = 0; c < numCols; c++) {
-                CHECK(m->get(r, c) >= min);
-                CHECK(m->get(r, c) <= max);
-            }
+            REQUIRE(m->getNumRows() == numRows);
+            REQUIRE(m->getNumCols() == numCols);
+
+            size_t numNonZeros = 0;
+            for(size_t r = 0; r < numRows; r++)
+                for(size_t c = 0; c < numCols; c++) {
+                    const VT v = m->get(r, c);
+                    if(v) {
+                        CHECK(v >= min);
+                        CHECK(v <= max);
+                        numNonZeros++;
+                    }
+                }
+
+            const double sparsityFound = static_cast<double>(numNonZeros) / (numRows * numCols);
+            CHECK(abs(sparsityFound - sparsity) < 0.001);
+
+            DataObjectFactory::destroy(m);
+        }
     }
-    SECTION("empty") {
-        randMatrix<DT, VT>(m, numRows, numCols, min, max, 0.0, -1);
-
-        REQUIRE(m->getNumRows() == numRows);
-        REQUIRE(m->getNumCols() == numCols);
-
-        for(size_t r = 0; r < numRows; r++)
-            for(size_t c = 0; c < numCols; c++) {
-                CHECK(m->get(r, c) == 0);
-            }
-    }
-    
-    DataObjectFactory::destroy(m);
-}
-
-TEMPLATE_PRODUCT_TEST_CASE("RandMatrix, sparse", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
-    
-    const size_t numRows = 1000;
-    const size_t numCols = 1000;
-    const VT min = 100;
-    const VT max = 200;
-    const double sparsity = 0.9;
-    
-    DT * m = nullptr;
-    randMatrix<DT, VT>(m, numRows, numCols, min, max, sparsity, -1);
-
-    size_t numNonZeros = 0;
-    for(size_t r = 0; r < numRows; r++)
-        for(size_t c = 0; c < numCols; c++)
-            if(m->get(r, c) != 0)
-                numNonZeros++;
-    
-    const double sparsityFound = static_cast<double>(numNonZeros) / (numRows * numCols);
-    CHECK(abs(sparsityFound - sparsity) < 0.001);
-        
-    DataObjectFactory::destroy(m);
 }

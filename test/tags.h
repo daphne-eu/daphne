@@ -24,9 +24,13 @@
 
 #define TAG_CONTROLFLOW "[controlflow]"
 #define TAG_DATASTRUCTURES "[datastructures]"
+#define TAG_DISTRIBUTED "[distributed]"
+#define TAG_IO "[io]"
 #define TAG_KERNELS "[kernels]"
-#define TAG_SCOPING "[scoping]"
+#define TAG_LITERALS "[literals]"
+#define TAG_OPERATIONS "[operations]"
 #define TAG_PARSER "[parser]"
+#define TAG_SCOPING "[scoping]"
 
 #endif //TEST_TAGS_H
 

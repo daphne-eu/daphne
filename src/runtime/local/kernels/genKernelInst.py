@@ -63,7 +63,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     # The function wrapping the generated kernel instantiation always has
     # the return type void. If the considered kernel returns a scalar value,
     # we prepend an additional run-time parameter. 
-    extendedRuntimeParams = [{"name": DEFAULT_NEWRESPARAM, "type": "{} *".format(returnType)}] if (returnType != "void") else []
+    extendedRuntimeParams = [
+        {"name": DEFAULT_NEWRESPARAM, "type": "{} *".format(returnType), "isOutput": True}
+    ] if (returnType != "void") else []
     # Add all run-time parameters of the kernel. We need to copy, because
     # we apply string replacements to the types.
     extendedRuntimeParams.extend([rp.copy() for rp in runtimeParams])
@@ -74,17 +76,35 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             if isinstance(templateValues[tpIdx], list):
                 rp["type"] = rp["type"].replace("typename {}::VT".format(tp["name"]), templateValues[tpIdx][1])
             rp["type"] = rp["type"].replace(tp["name"], templateArgToCppType[tp["name"]])
-        rp["type"] = rp["type"].replace("*&", "**")
+        if rp["type"].endswith("*&"):
+            rp["type"] = rp["type"][:-2] + "**"
+            rp["isOutput"] = True
+        elif "isOutput" not in rp:
+            rp["isOutput"] = False
+            
+    isCreateDaphneContext = opName == "createDaphneContext"
     
     #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
-    typesForName = "__".join([rp["type"].replace("const ", "").replace(" **", "").replace(" *", "").replace("<", "_").replace(">", "") for rp in extendedRuntimeParams])
-    params = ", ".join(["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams])
+    typesForName = "__".join([
+        rp["type"]
+        .replace("const ", "")
+        .replace(" **", "" if rp["isOutput"] else "_variadic")
+        .replace(" *", "")
+        .replace("<", "_").replace(">", "")
+        for rp in extendedRuntimeParams
+    ])
+    if typesForName != "":
+        typesForName = "__" + typesForName
+    params = ", ".join(
+            ["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams] +
+            ([] if isCreateDaphneContext else ["DCTX(ctx)"])
+    )
 
     def generateFunction(opCode):
         # Obtain the name of the function to be generated from the opName by
         # removing suffices "Sca"/"Mat"/"Obj" (they are not required here), and
         # potentially by inserting the opCode into the name.
-        funcName = opName
+        funcName = "_" + opName
         while funcName[-3:] in ["Sca", "Mat", "Obj"]:
             funcName = funcName[:-3]
         if opCode is not None:
@@ -94,7 +114,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
         
         # Signature of the function wrapping the kernel instantiation.
-        outFile.write(INDENT + "void {}__{}({}) {{\n".format(funcName, typesForName, params))
+        outFile.write(INDENT + "void {}{}({}) {{\n".format(
+                funcName,
+                typesForName,
+                # Run-time parameters, possibly including DaphneContext:
+                params
+        ))
         
         # List of parameters for the call.
         if opCode is None:
@@ -102,22 +127,25 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         else:
             callParams = ["{}::{}".format(opCodeType, opCode)]
         callParams.extend([
-            # Dereference double pointer.
-            "{}{}".format("*" if rp["type"].endswith("**") else "", rp["name"])
+            # Dereference double pointer for output parameters.
+            "{}{}".format("*" if (rp["type"].endswith("**") and rp["isOutput"]) else "", rp["name"])
             for rp
             in extendedRuntimeParams[(0 if returnType == "void" else 1):]
         ])
+        
+        # List of template parameters for the call.
+        callTemplateParams = [toCppType(tv) for tv in templateValues]
         
         # Body of that function: delegate to the kernel instantiation.
         outFile.write(2 * INDENT)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
-        outFile.write("{}<{}>({});\n".format(
+        outFile.write("{}{}({});\n".format(
                 opName,
-                # Template parameters:
-                ", ".join([toCppType(tv) for tv in templateValues]),
-                # Run-time parameters:
-                ", ".join(callParams)
+                # Template parameters, if the kernel is a template:
+                "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
+                # Run-time parameters, possibly including DaphneContext:
+                ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"] )),
         ))
         outFile.write(INDENT + "}\n")
     
@@ -154,6 +182,7 @@ if __name__ == "__main__":
 
     with open(outFilePath, "w") as outFile:
         outFile.write("// This file was generated by {}. Don't edit manually!\n\n".format(sys.argv[0]))
+        outFile.write("#include <runtime/local/context/DaphneContext.h>\n\n")
         for kernelInfo in kernelsInfo:
             kernelTemplateInfo = kernelInfo["kernelTemplate"]
             # Comment reporting the kernel name.

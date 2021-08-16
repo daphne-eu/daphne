@@ -65,7 +65,7 @@
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
         ],
-        "opCodes": ["SUM", "MIN", "MAX"]
+        "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
     },
     {
         "kernelTemplate": {
@@ -104,6 +104,37 @@
             [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
         ],
         "opCodes": ["SUM", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CastObj.h",
+            "opName": "castObj",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], "Frame"],
+            [["DenseMatrix", "int64_t"], "Frame"]
+        ]
     },
     {
         "kernelTemplate": {
@@ -182,7 +213,70 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame", "Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CreateDaphneContext.h",
+            "opName": "createDaphneContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "DaphneContext *&",
+                    "name": "res"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CreateFrame.h",
+            "opName": "createFrame",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "Structure **",
+                    "name": "colMats"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numColMats"
+                },
+                {
+                    "type": "const char **",
+                    "name": "labels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numLabels"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DestroyDaphneContext.h",
+            "opName": "destroyDaphneContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "instantiations": [
+            []
         ]
     },
     {
@@ -359,6 +453,10 @@
                 {
                     "name": "DTArg",
                     "isDataType": true
+                },
+                {
+                    "name": "DTSel",
+                    "isDataType": true
                 }
             ],
             "runtimeParams": [
@@ -371,14 +469,15 @@
                     "name": "arg"
                 },
                 {
-                    "type": "const DenseMatrix<int64_t> *",
-                    "name": "colIdxs"
+                    "type": "const DTSel *",
+                    "name": "sel"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame", "char"]
         ]
     },
     {
@@ -418,6 +517,132 @@
         "instantiations": [
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ExtractRow.h",
+            "opName": "extractRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTSel",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DenseMatrix<VTSel> *",
+                    "name": "sel"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame", "Frame", "double"],
+            ["Frame", "Frame", "int64_t"],
+            ["Frame", "Frame", "size_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "FilterRow.h",
+            "opName": "filterRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTSel",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DenseMatrix<VTSel> *",
+                    "name": "sel"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame", "Frame", "double"],
+            ["Frame", "Frame", "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "GroupJoin.h",
+            "opName": "groupJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "VTLhsTid",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "DenseMatrix<VTLhsTid> *&",
+                    "name": "lhsTid"
+                },
+                {
+                    "type": "const Frame *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const Frame *",
+                    "name": "rhs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "lhsOn"
+                },
+                {
+                    "type": "const char *",
+                    "name": "rhsOn"
+                },
+                {
+                    "type": "const char *",
+                    "name": "rhsAgg"
+                }
+            ]
+        },
+        "instantiations": [
+            ["int64_t"],
+            ["size_t"]
         ]
     },
     {
@@ -539,7 +764,9 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"]],
+            ["Frame"],
+            ["char"]
         ]
     },
     {
@@ -591,6 +818,78 @@
         "instantiations": [
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Read.h",
+            "opName": "read",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "filename"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SetColLabels.h",
+            "opName": "setColLabels",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char **",
+                    "name": "labels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numLabels"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SetColLabelsPrefix.h",
+            "opName": "setColLabelsPrefix",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "prefix"
+                }
+            ]
+        },
+        "instantiations": [
+            []
         ]
     },
     {
@@ -699,22 +998,16 @@
             "header": "NumCols.h",
             "opName": "numCols",
             "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DT",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DT *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            []
         ]
     },
     {
@@ -722,22 +1015,16 @@
             "header": "NumRows.h",
             "opName": "numRows",
             "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DT",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DT *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            []
         ]
     },
     {
@@ -745,22 +1032,16 @@
             "header": "NumCells.h",
             "opName": "numCells",
             "returnType": "size_t",
-            "templateParams": [
-                {
-                    "name": "DT",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DT *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            []
         ]
     },
     {
@@ -829,10 +1110,6 @@
                 {
                     "type": "const DTRhs *",
                     "name": "rhs"
-                },
-                {
-                    "type": "bool",
-                    "name": "triangLhs"
                 }
             ]
         },
@@ -880,6 +1157,92 @@
             [["DenseMatrix", "int64_t"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Distribute.h",
+            "opName": "distribute",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "mat"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedCollect.h",
+            "opName": "distributedCollect",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Handle<DT> *",
+                    "name": "handle"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedCompute.h",
+            "opName": "distributedCompute",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Handle<DT> **",
+                    "name": "args"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numArgs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "mlirCode"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
         ]
     }
 ]
