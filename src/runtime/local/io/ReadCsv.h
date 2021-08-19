@@ -80,6 +80,9 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
       res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
     }
 
+    // TODO Improve the performance in the same way as we did it for reading
+    // frames.
+    
     char *line;
     std::stringstream lineStream;
     std::string cell;
@@ -96,7 +99,7 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
 
       while (std::getline(lineStream, cell, delim)) {
         VT val;
-        convert(cell, &val);
+        convertStr(cell, &val);
         res->set(row, col, val);
         if (++col >= numCols) {
           break;
@@ -127,60 +130,61 @@ template <> struct ReadCsv<Frame> {
     }
 
     char *line;
-    std::stringstream lineStream;
-    std::string cell;
     size_t row = 0, col = 0;
 
     uint8_t ** rawCols = new uint8_t * [numCols];
-    for(size_t i = 0; i < numCols; i++)
+    ValueTypeCode * colTypes = new ValueTypeCode[numCols];
+    for(size_t i = 0; i < numCols; i++) {
         rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
-    
+        colTypes[i] = res->getColumnType(i);
+    }
+
     while (1) {
       line = getLine(file);
       if (line == NULL)
         break;
-      lineStream.str(std::string(line));
 
-      while (std::getline(lineStream, cell, delim)) {
-        switch (res->getColumnType(col)) {
+      size_t pos = 0;
+      while (1) {
+        switch (colTypes[col]) {
         case ValueTypeCode::SI8:
           int8_t val_si8;
-          convert(cell, &val_si8);
+          convertCstr(line + pos, &val_si8);
           reinterpret_cast<int8_t *>(rawCols[col])[row] = val_si8;
           break;
         case ValueTypeCode::SI32:
           int32_t val_si32;
-          convert(cell, &val_si32);
+          convertCstr(line + pos, &val_si32);
           reinterpret_cast<int32_t *>(rawCols[col])[row] = val_si32;
           break;
         case ValueTypeCode::SI64:
           int64_t val_si64;
-          convert(cell, &val_si64);
+          convertCstr(line + pos, &val_si64);
           reinterpret_cast<int64_t *>(rawCols[col])[row] = val_si64;
           break;
         case ValueTypeCode::UI8:
           uint8_t val_ui8;
-          convert(cell, &val_ui8);
+          convertCstr(line + pos, &val_ui8);
           reinterpret_cast<uint8_t *>(rawCols[col])[row] = val_ui8;
           break;
         case ValueTypeCode::UI32:
           uint32_t val_ui32;
-          convert(cell, &val_ui32);
+          convertCstr(line + pos, &val_ui32);
           reinterpret_cast<uint32_t *>(rawCols[col])[row] = val_ui32;
           break;
         case ValueTypeCode::UI64:
           uint64_t val_ui64;
-          convert(cell, &val_ui64);
+          convertCstr(line + pos, &val_ui64);
           reinterpret_cast<uint64_t *>(rawCols[col])[row] = val_ui64;
           break;
         case ValueTypeCode::F32:
           float val_f32;
-          convert(cell, &val_f32);
+          convertCstr(line + pos, &val_f32);
           reinterpret_cast<float *>(rawCols[col])[row] = val_f32;
           break;
         case ValueTypeCode::F64:
           double val_f64;
-          convert(cell, &val_f64);
+          convertCstr(line + pos, &val_f64);
           reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
           break;
         }
@@ -188,14 +192,23 @@ template <> struct ReadCsv<Frame> {
         if (++col >= numCols) {
           break;
         }
+        
+        // TODO We could even exploit the fact that the strtoX functions can
+        // return a pointer to the first character after the parsed input, then
+        // we wouldn't have to search for that ourselves, just would need to
+        // check if it is really the delimiter.
+        while(line[pos] != delim) pos++;
+        pos++; // skip delimiter
       }
 
-      lineStream.clear();
       if (++row >= numRows) {
         break;
       }
       col = 0;
     }
+    
+    delete[] rawCols;
+    delete[] colTypes;
   }
 };
 

@@ -15,27 +15,3 @@
  */
 
 #include <runtime/local/io/utils.h>
-
-#include <limits>
-#include <stdexcept>
-
-void convert(std::string const &x, double *v) {
-  try {
-    *v = stod(x);
-  } catch (const std::invalid_argument &) {
-    *v = std::numeric_limits<double>::quiet_NaN();
-  }
-}
-void convert(std::string const &x, float *v) {
-  try {
-    *v = stof(x);
-  } catch (const std::invalid_argument &) {
-    *v = std::numeric_limits<float>::quiet_NaN();
-  }
-}
-void convert(std::string const &x, int8_t *v) { *v = stoi(x); }
-void convert(std::string const &x, int32_t *v) { *v = stoi(x); }
-void convert(std::string const &x, int64_t *v) { *v = stoi(x); }
-void convert(std::string const &x, uint8_t *v) { *v = stoi(x); }
-void convert(std::string const &x, uint32_t *v) { *v = stoi(x); }
-void convert(std::string const &x, uint64_t *v) { *v = stoi(x); }

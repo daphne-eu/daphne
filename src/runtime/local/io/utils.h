@@ -17,18 +17,55 @@
 #ifndef SRC_RUNTIME_LOCAL_IO_UTILS_H
 #define SRC_RUNTIME_LOCAL_IO_UTILS_H
 
+#include <limits>
+#include <stdexcept>
 #include <string>
 
 #include <cstdint>
 
-void convert(std::string const &x, double *v);
-void convert(std::string const &x, float *v);
-void convert(std::string const &x, int8_t *v);
-void convert(std::string const &x, int32_t *v);
-void convert(std::string const &x, int64_t *v);
-void convert(std::string const &x, uint8_t *v);
-void convert(std::string const &x, uint32_t *v);
-void convert(std::string const &x, uint64_t *v);
+// Conversion of std::string.
+
+inline void convertStr(std::string const &x, double *v) {
+  try {
+    *v = stod(x);
+  } catch (const std::invalid_argument &) {
+    *v = std::numeric_limits<double>::quiet_NaN();
+  }
+}
+inline void convertStr(std::string const &x, float *v) {
+  try {
+    *v = stof(x);
+  } catch (const std::invalid_argument &) {
+    *v = std::numeric_limits<float>::quiet_NaN();
+  }
+}
+inline void convertStr(std::string const &x, int8_t *v) { *v = stoi(x); }
+inline void convertStr(std::string const &x, int32_t *v) { *v = stoi(x); }
+inline void convertStr(std::string const &x, int64_t *v) { *v = stoi(x); }
+inline void convertStr(std::string const &x, uint8_t *v) { *v = stoi(x); }
+inline void convertStr(std::string const &x, uint32_t *v) { *v = stoi(x); }
+inline void convertStr(std::string const &x, uint64_t *v) { *v = stoi(x); }
+
+// Conversion of char *.
+
+inline void convertCstr(const char * x, double *v) {
+  char * end;
+  *v = strtod(x, &end);
+  if(x == end)
+    *v = std::numeric_limits<double>::quiet_NaN();
+}
+inline void convertCstr(const char * x, float *v) {
+  char * end;
+  *v = strtof(x, &end);
+  if(x == end)
+    *v = std::numeric_limits<float>::quiet_NaN();
+}
+inline void convertCstr(const char * x, int8_t *v) { *v = atoi(x); }
+inline void convertCstr(const char * x, int32_t *v) { *v = atoi(x); }
+inline void convertCstr(const char * x, int64_t *v) { *v = atoi(x); }
+inline void convertCstr(const char * x, uint8_t *v) { *v = atoi(x); }
+inline void convertCstr(const char * x, uint32_t *v) { *v = atoi(x); }
+inline void convertCstr(const char * x, uint64_t *v) { *v = atoi(x); }
 
 #endif // SRC_RUNTIME_LOCAL_IO_UTILS_H
 
