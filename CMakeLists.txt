@@ -19,6 +19,8 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
 set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
 
+add_compile_options(-O3) # use high optimization level for all targets
+
 # *****************************************************************************
 # Related to MLIR/LLVM
 # *****************************************************************************
