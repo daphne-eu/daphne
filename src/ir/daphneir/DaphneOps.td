@@ -490,6 +490,11 @@ def Daphne_SvdOp : Daphne_Op<"svd"> {
     let results = (outs MatrixOf<[FloatScalar]>:$u, MatrixOf<[FloatScalar]>:$s, MatrixOf<[FloatScalar]>:$v);
 }
 
+def Daphne_FooOp : Daphne_Op<"foo"> {
+    let arguments = (ins SI64:$arg);
+    let results = (outs SI64:$res1, SI64:$res2);
+}
+
 // ****************************************************************************
 // Deep neural network
 // ****************************************************************************

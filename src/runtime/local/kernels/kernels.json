@@ -1,6 +1,31 @@
 [
     {
         "kernelTemplate": {
+            "header": "Foo.h",
+            "opName": "foo",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "int64_t *",
+                    "name": "res1"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "res2"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "AggAll.h",
             "opName": "aggAll",
             "returnType": "typename DT::VT",

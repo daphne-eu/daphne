@@ -336,6 +336,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 )
         );
     }
+    if(func == "foo") {
+        checkNumArgsExact(func, numArgs, 1);
+        return builder.create<FooOp>(
+                loc, builder.getIntegerType(64, true), builder.getIntegerType(64, true), args[0]
+        ).getResults();
+    }
 
     // ********************************************************************
     // Matrix/frame dimensions
