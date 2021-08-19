@@ -32,6 +32,7 @@
 
 #include <cstdint>
 
+
 /**
  * @brief Runs the extractRow-kernel with small input data and performs various
  * checks.
@@ -122,3 +123,86 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t, uint32_t)
     DataObjectFactory::destroy(arg);
     DataObjectFactory::destroy(res);
 }
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double naive", TAG_KERNELS,uint32_t){
+    auto argMatrix = genGivenVals<DenseMatrix<double>>(4, {
+        1.0, 10.0, 3.0, 7.0, 7.0, 7.0,
+        17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
+        7.0, 7.0, 1.0, 2.0, 3.0, 7.0,
+        7.0, 7.0, 7.0, 1.0, 2.0, 3.0,
+        });
+    auto selMatrix = genGivenVals<DenseMatrix<uint32_t>>(4, {
+        0,
+        1,
+        2,
+        3,
+        });
+    DenseMatrix<double>*  resMatrix=nullptr;     
+    extractRow<DenseMatrix<double>,DenseMatrix<double>, uint32_t>(resMatrix, argMatrix, selMatrix, nullptr);
+    CHECK(*resMatrix ==*argMatrix);
+    DataObjectFactory::destroy(argMatrix);
+    DataObjectFactory::destroy(resMatrix);
+}
+
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int unordered", TAG_KERNELS,uint32_t){
+    auto argMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
+        1, 10, 3, 7, 7, 7,
+        17, 1, 2, 3, 7, 7,
+        7, 7, 1, 2, 3, 7,
+        7, 7, 7, 1, 2, 3,
+        }); 
+    auto selMatrix = genGivenVals<DenseMatrix<uint32_t>>(4, {
+        2,  
+        3,  
+        0,  
+        1,  
+        });
+     
+    DenseMatrix<int64_t>*  resMatrix=nullptr;
+    DenseMatrix<int64_t>* expMatrix =  genGivenVals<DenseMatrix<int64_t>>(4, {
+        7, 7, 1, 2, 3, 7,
+        7, 7, 7, 1, 2, 3,
+        1, 10, 3, 7, 7, 7,
+        17, 1, 2, 3, 7, 7
+        });
+    
+    extractRow<DenseMatrix<int64_t>,DenseMatrix<int64_t>, uint32_t>(resMatrix, argMatrix, selMatrix, nullptr);
+    CHECK(*resMatrix ==*expMatrix);
+    DataObjectFactory::destroy(argMatrix);
+    DataObjectFactory::destroy(resMatrix);
+    DataObjectFactory::destroy(expMatrix);
+}
+
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int repeated with initialized resMatrix", TAG_KERNELS,uint32_t){
+    auto argMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
+        1, 10, 3, 7, 7, 7,
+        17, 1, 2, 3, 7, 7,
+        7, 7, 1, 2, 3, 7,
+        7, 7, 7, 1, 2, 3,
+        });
+    auto selMatrix = genGivenVals<DenseMatrix<uint32_t>>(4, {
+        1,
+        1,
+        1, 
+        1,
+        });
+
+    DenseMatrix<int64_t>*  resMatrix= genGivenVals<DenseMatrix<int64_t>>(4, {
+        7, 0, 0, 2, 3, 7,
+        7, 7, 7, 1, 2, 3,
+        1, 10, 3, -7, -7, 7,
+        17, 1, 2, 3, 7, 7
+        });
+    DenseMatrix<int64_t>* expMatrix =genGivenVals<DenseMatrix<int64_t>>(4, {
+        17, 1, 2, 3, 7, 7,
+        17, 1, 2, 3, 7, 7,
+        17, 1, 2, 3, 7, 7,
+        17, 1, 2, 3, 7, 7,
+        });
+
+    extractRow<DenseMatrix<int64_t>,DenseMatrix<int64_t>, uint32_t>(resMatrix, argMatrix, selMatrix, nullptr);
+    CHECK(*resMatrix ==*expMatrix);
+    DataObjectFactory::destroy(argMatrix);
+    DataObjectFactory::destroy(resMatrix);
+    DataObjectFactory::destroy(expMatrix);
+}
+
