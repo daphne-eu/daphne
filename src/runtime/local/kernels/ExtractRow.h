@@ -145,7 +145,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t numInputRows = arg->getNumRows();
         const size_t numInputCols = arg->getNumCols();   
         if(res ==nullptr){
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numInputRows, numInputCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsInSel, numInputCols, false);
         }
         else if(res->getNumRows() != numRowsInSel || res->getNumCols() != numInputCols){
             // TODO what is the best strategy: throw a warning or just re-allocate?

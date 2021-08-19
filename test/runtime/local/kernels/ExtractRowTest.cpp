@@ -143,6 +143,41 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double naive", TAG_KERNELS,uint32_t
     DataObjectFactory::destroy(resMatrix);
 }
 
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double expanding", TAG_KERNELS,uint32_t){
+    auto argMatrix = genGivenVals<DenseMatrix<double>>(4, {
+        1.0, 10.0, 3.0, 7.0, 7.0, 7.0,
+        17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
+        7.0, 7.0, 1.0, 2.0, 3.0, 7.0,
+        7.0, 7.0, 7.0, 1.0, 2.0, 3.0,
+        });
+    auto selMatrix = genGivenVals<DenseMatrix<uint32_t>>(8, {
+        0,
+        1,
+        2,
+        3,
+        0,
+        1,
+        2,
+        3,
+        });
+    auto expMatrix = genGivenVals<DenseMatrix<double>>(8, {
+        1.0, 10.0, 3.0, 7.0, 7.0, 7.0,
+        17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
+        7.0, 7.0, 1.0, 2.0, 3.0, 7.0,
+        7.0, 7.0, 7.0, 1.0, 2.0, 3.0,
+        1.0, 10.0, 3.0, 7.0, 7.0, 7.0,
+        17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
+        7.0, 7.0, 1.0, 2.0, 3.0, 7.0,
+        7.0, 7.0, 7.0, 1.0, 2.0, 3.0,
+        });
+    DenseMatrix<double>*  resMatrix=nullptr;     
+    extractRow<DenseMatrix<double>,DenseMatrix<double>, uint32_t>(resMatrix, argMatrix, selMatrix, nullptr);
+    CHECK(*resMatrix ==*expMatrix);
+    DataObjectFactory::destroy(argMatrix);
+    DataObjectFactory::destroy(resMatrix);
+    DataObjectFactory::destroy(expMatrix);
+}
+
 TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int unordered", TAG_KERNELS,uint32_t){
     auto argMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
         1, 10, 3, 7, 7, 7,
