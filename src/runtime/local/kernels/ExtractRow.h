@@ -127,6 +127,7 @@ struct ExtractRow<Frame, Frame, VTSel> {
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
+
 template<typename VT, typename VTSel>
 struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
@@ -143,14 +144,12 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t numRowsInSel = sel->getNumRows();
         const size_t numInputRows = arg->getNumRows();
         const size_t numInputCols = arg->getNumCols();   
-        if(numRowsInSel > numInputRows){
-            throw std::runtime_error("number of rows in sel must be less than or equal number of rows in arg"); 
-        }
         if(res ==nullptr){
             res = DataObjectFactory::create<DenseMatrix<VT>>(numInputRows, numInputCols, false);
         }
         else if(res->getNumRows() != numRowsInSel || res->getNumCols() != numInputCols){
-            throw std::runtime_error("res is not null, but it has wrong numCols and numRows"); // what is the best strategy: throw a warning or just re-allocate 
+            // TODO what is the best strategy: throw a warning or just re-allocate?
+            throw std::runtime_error("res is not null, but it has wrong numCols and numRows");
         }
         
         //Main Logic
@@ -158,6 +157,8 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const VTSel * rowsInSel = sel->getValues();
         for(size_t r = 0; r < numRowsInSel; r++){
             const VTSel valSelectedRow = rowsInSel[r];  // only one column
+            // TODO For performance reasons, we might skip such checks or make
+            // them optional somehow, but it is okay for now.
             if(valSelectedRow!=valSelectedRow || valSelectedRow < 0 || valSelectedRow > numInputRows-1){
                 throw std::runtime_error("sel cannot have NaN nor negative nor value that is greater than numRows in arg");
             }  
