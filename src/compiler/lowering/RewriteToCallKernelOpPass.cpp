@@ -38,10 +38,6 @@ namespace
     // TODO We might want to merge this with ValueTypeUtils, and maybe place it
     // somewhere central.
     std::string mlirTypeToCppTypeName(Type t, bool generalizeToStructure) {
-//    	std::string Str;
-//    	llvm::raw_string_ostream OS(Str);
-//    	t.print(OS);
-//    	std::cout << OS.str() << std::endl;
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -194,8 +190,8 @@ namespace
 			}
 			else
 #endif
-			//            	callee << '_' << op->getName().stripDialect().str();
             	callee << '_' << op_name;
+//            std::cout << "callee: " << callee.str() << std::endl;
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
                 llvm::isa<daphne::CreateFrameOp>(op) |

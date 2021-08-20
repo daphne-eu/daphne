@@ -23,8 +23,9 @@
 #include <cuda_runtime_api.h>
 #include <cublas_v2.h>
 #include <cusparse_v2.h>
+#include <cudnn.h>
 
-#define CHECK_CUDART(call)                                                \
+#define CHECK_CUDART(call) 												  \
   do {                                                                    \
     cudaError_t status = call;                                            \
     if (status != cudaSuccess) {                                          \
@@ -34,7 +35,7 @@
     }                                                                     \
   } while (0)
 
-#define CHECK_CUBLAS(call)                                                \
+#define CHECK_CUBLAS(call) 											      \
   do {                                                                    \
     cublasStatus_t status = call;                                         \
     if (status != CUBLAS_STATUS_SUCCESS) {                                \
@@ -53,6 +54,16 @@
 			<< "())" << std::endl;                                                 \
 		}                                                                           \
 	} while (0)
+
+#define CHECK_CUDNN(call)												  \
+  do {                                                                    \
+    cudnnStatus_t status = call;                                          \
+    if (status != CUDNN_STATUS_SUCCESS) {                                 \
+      std::cout << "(CUDNN) returned " <<  cudnnGetErrorString(status);   \
+      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
+                << "())" << std::endl;                                    \
+    }                                                                     \
+  } while (0)
 
 #include <string_view>
 

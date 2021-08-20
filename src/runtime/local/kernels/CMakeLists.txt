@@ -14,9 +14,6 @@
 
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
-message(STATUS ${PROJECT_BINARY_DIR})
-message(STATUS ${PROJECT_SOURCE_DIR})
-
 add_custom_command(
         OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
         COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
@@ -27,7 +24,9 @@ add_custom_command(
 
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled
 # user program.
-add_library(AllKernels SHARED ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp)
+add_library(AllKernels SHARED
+            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+            Pooling.cpp)
 target_link_libraries(AllKernels PUBLIC DataStructures IO Proto ProtoDataConverter LLVMSupport
         ${OPENBLAS_LIBRARIES})
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
@@ -38,9 +37,15 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/)
     set(CUDAKernels_SRC ${PREFIX}/kernels/CUDA_kernel_instantiations.cpp ${PREFIX}/kernels/CUDA_MatMul.cpp
-            ${PREFIX}/context/CUDAContext.cpp)
+			${PREFIX}/kernels/CUDA_Pooling.cpp ${PREFIX}/context/CUDAContext.cpp)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
-    target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse)
+
+	# search "custom" cudnn lib in CUDA SDK dir
+    set(lib_name cudnn)
+    find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
+			PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
+
+    target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse ${CUDA_cudnn_LIBRARY})
 	#    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()

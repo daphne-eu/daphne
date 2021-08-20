@@ -35,6 +35,10 @@ class CUDAContext {
 	cublasHandle_t cublas_handle = nullptr;
 
 	cusparseHandle_t cusparse_handle = nullptr;
+
+	// cuDNN API
+	cudnnHandle_t cudnn_handle;
+
 	// cublasLt API
 //	cublasLtHandle_t cublaslt_Handle = nullptr;
 //	void* cublas_workspace{};
@@ -58,8 +62,17 @@ public:
 //	[[nodiscard]] void* getCublasWorkspacePtr() const { return cublas_workspace; }
 //	[[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
 	[[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
+	[[nodiscard]] cudnnHandle_t  getCuDNNHandle() const { return cudnn_handle; }
 
 	~CUDAContext();
+
+	int convAlgorithm = -1;
+	cudnnPoolingDescriptor_t pooling_desc;
+	cudnnDataType_t data_type = CUDNN_DATA_DOUBLE;
+	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{};
+	cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
+	cudnnFilterDescriptor_t filterDesc;
+	cudnnConvolutionDescriptor_t convDesc;
 
 private:
 	void init();

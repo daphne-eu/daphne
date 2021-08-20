@@ -565,32 +565,20 @@ def Daphne_Conv2DBackwardDataOp : Daphne_Op<"conv2DBackwardData"> {
 // ----------------------------------------------------------------------------
 
 class Daphne_PoolForwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-    let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
-        // input shape
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input,
+        // input shape (NCHW)
         Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // pool shape
-        Size:$poolHeight, Size:$poolWidth
-    );
-}
+        // pool shape (ToDo: optional, default filter size 2x2)
+        Size:$poolHeight, Size:$poolWidth,
+		// filter application properties (ToDo: optional, default stride=1x1, padding=0x0)
+		Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth
+	);
 
-class Daphne_PoolBackwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-    let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$output,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
-        // input shape
-        Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // pool shape
-        Size:$poolHeight, Size:$poolWidth
-    );
+    let results = (outs MatrixOf<[FloatScalar]>:$data, Size:$outHeight, Size:$outWidth);
 }
 
 def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward">;
 def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward">;
-
-def Daphne_MaxPoolBackwardOp : Daphne_PoolBackwardOp<"maxPoolBackward">;
-def Daphne_AvgPoolBackwardOp : Daphne_PoolBackwardOp<"avgPoolBackward">;
 
 // ****************************************************************************
 // Other matrix operations

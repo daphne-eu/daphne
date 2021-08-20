@@ -97,7 +97,10 @@ class DaphneDSLBuiltins {
     
     template<class JoinOp>
     mlir::Value createJoinOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
-    
+
+    template<class PoolOp>
+	mlir::ResultRange createPoolFwdOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
+
     // ************************************************************************
     // Other utilities
     // ************************************************************************
