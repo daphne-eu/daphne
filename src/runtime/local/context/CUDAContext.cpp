@@ -46,15 +46,17 @@ CUDAContext* CUDAContext::create(int device_id) {
 }
 
 void CUDAContext::destroy() {
-//#ifndef NDEBUG
+#ifndef NDEBUG
 	std::cout << "Destroying CUDA context..." << std::endl;
-//#endif
+#endif
 	CHECK_CUBLAS(cublasDestroy(cublas_handle));
 	CHECK_CUSPARSE(cusparseDestroy(cusparse_handle));
 	CHECK_CUDNN(cudnnDestroy(cudnn_handle));
 	CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pooling_desc));
 	CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_tensor_desc));
 	CHECK_CUDNN(cudnnDestroyTensorDescriptor(dst_tensor_desc));
+	CHECK_CUDNN(cudnnDestroyTensorDescriptor(bn_tensor_desc));
+	CHECK_CUDNN(cudnnDestroyActivationDescriptor(activation_desc));
 	CHECK_CUDNN(cudnnDestroyConvolutionDescriptor(conv_desc));
 	CHECK_CUDNN(cudnnDestroyFilterDescriptor(filter_desc));
 
@@ -74,6 +76,8 @@ void CUDAContext::init() {
 	CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pooling_desc));
 	CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_tensor_desc));
 	CHECK_CUDNN(cudnnCreateTensorDescriptor(&dst_tensor_desc));
+	CHECK_CUDNN(cudnnCreateTensorDescriptor(&bn_tensor_desc));
+	CHECK_CUDNN(cudnnCreateActivationDescriptor(&activation_desc));
 	CHECK_CUDNN(cudnnCreateConvolutionDescriptor(&conv_desc));
 	CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc));
 

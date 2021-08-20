@@ -71,12 +71,16 @@ public:
 	int convAlgorithm = -1;
 	cudnnPoolingDescriptor_t pooling_desc;
 	cudnnDataType_t data_type = CUDNN_DATA_DOUBLE;
-	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{};
+	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
 	cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
 	cudnnFilterDescriptor_t filter_desc;
+	cudnnActivationDescriptor_t  activation_desc;
 	cudnnConvolutionDescriptor_t conv_desc;
 	cudnnFilterDescriptor_t filterDesc;
 	cudnnConvolutionDescriptor_t convDesc;
+
+	cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
+
 
 private:
 	void init();

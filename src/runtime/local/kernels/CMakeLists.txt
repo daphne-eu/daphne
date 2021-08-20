@@ -36,8 +36,16 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/)
-    set(CUDAKernels_SRC ${PREFIX}/kernels/CUDA_kernel_instantiations.cpp ${PREFIX}/kernels/CUDA_MatMul.cpp
-			${PREFIX}/kernels/CUDA_Pooling.cpp ${PREFIX}/context/CUDAContext.cpp ${PREFIX}/kernels/CUDA_Convolution.cpp)
+    set(CUDAKernels_SRC
+			${PREFIX}/kernels/CUDA_Activation.cpp
+			${PREFIX}/kernels/CUDA_Affine.cpp
+			${PREFIX}/kernels/CUDA_BatchNorm.cpp
+			${PREFIX}/kernels/CUDA_BiasAdd.cpp
+			${PREFIX}/kernels/CUDA_Convolution.cpp
+			${PREFIX}/kernels/CUDA_kernel_instantiations.cpp
+			${PREFIX}/kernels/CUDA_MatMul.cpp
+			${PREFIX}/kernels/CUDA_Pooling.cpp ${PREFIX}/context/CUDAContext.cpp
+			${PREFIX}/kernels/CUDA_Softmax.cpp)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
