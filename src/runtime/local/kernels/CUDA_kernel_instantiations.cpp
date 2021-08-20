@@ -81,46 +81,48 @@ extern "C" {
 	 }
 
 	// -----------------------------------------------------------------------------------------------------------------
-	void _biasAddForward__DenseMatrix_float__DenseMatrix_float__DenseMatrix_float(DenseMatrix<float>** res,
+	void _biasAddForward_CUDA__DenseMatrix_float__DenseMatrix_float__DenseMatrix_float(DenseMatrix<float>** res,
 			const DenseMatrix<float>* input_data, const DenseMatrix<float>* bias, DCTX(ctx)) {
 		DNN::CUDA::BiasAddForward<DenseMatrix<float>, DenseMatrix<float>>::apply(*res, input_data, bias, ctx);
 	}
 
-	void _biasAddForward__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double(DenseMatrix<double>** res,
+	void _biasAddForward_CUDA__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double(DenseMatrix<double>** res,
 			const DenseMatrix<double>* input_data, const DenseMatrix<double>* bias, DCTX(ctx)) {
 		DNN::CUDA::BiasAddForward<DenseMatrix<double>, DenseMatrix<double>>::apply(*res, input_data, bias, ctx);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	void _conv2DForward_CUDA__DenseMatrix_float__size_t__size_t__DenseMatrix_float__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
+	void _conv2DForward_CUDA__DenseMatrix_float__size_t__size_t__DenseMatrix_float__DenseMatrix_float__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
+//	void _conv2DForward_CUDA__DenseMatrix_float__size_t__size_t__DenseMatrix_float__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
 			 (DenseMatrix<float>** res, size_t* res_h, size_t* res_w,  const DenseMatrix<float>* input_data,
-			  const DenseMatrix<float>* filter_data, const size_t batch_size, const size_t num_channels,
-			  const size_t img_h, const size_t img_w, const size_t filter_h, const size_t filter_w,
-			  const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w, DCTX(ctx))
+			  const DenseMatrix<float>* filter_data, const DenseMatrix<float>* bias, const size_t batch_size,
+			  const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
+			  const size_t filter_w, const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w,
+			  DCTX(ctx))
 	{
-		std::cout<<"conv2dForward" << std::endl;
 		Convolution::Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>::apply(*res, *res_h, *res_w, input_data,
-				filter_data, batch_size, num_channels, img_h, img_w, filter_h, filter_w, stride_h, stride_w, pad_h, pad_w,
-				ctx);
+				filter_data, bias, batch_size, num_channels, img_h, img_w, filter_h, filter_w, stride_h, stride_w, pad_h,
+				pad_w, ctx);
+	}
+	void _conv2DForward_CUDA__DenseMatrix_double__size_t__size_t__DenseMatrix_double__DenseMatrix_double__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
+			(DenseMatrix<double>** res, size_t* res_h, size_t* res_w, const DenseMatrix<double>* input_data,
+			const DenseMatrix<double>* filter_data, const DenseMatrix<double>* bias, const size_t batch_size,
+			const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
+			const size_t filter_w, const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w,
+			DCTX(ctx))
+	{
+		Convolution::Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>::apply(*res, *res_h, *res_w, input_data,
+				filter_data, bias, batch_size, num_channels, img_h, img_w, filter_h, filter_w, stride_h, stride_w, pad_h,
+				pad_w, ctx);
 	}
 
-	  void _conv2DForward_CUDA__DenseMatrix_double__size_t__size_t__DenseMatrix_double__DenseMatrix_double__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
-			  (DenseMatrix<double>** res, size_t* res_h, size_t* res_w, const DenseMatrix<double>* input_data,
-			   const DenseMatrix<double>* filter_data, const size_t batch_size, const size_t num_channels,
-			   const size_t img_h, const size_t img_w, const size_t filter_h, const size_t filter_w,
-			   const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w, DCTX(ctx))
-	   {
-		Convolution::Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>::apply(*res, *res_h, *res_w, input_data,
-				filter_data, batch_size, num_channels, img_h, img_w, filter_h, filter_w, stride_h, stride_w, pad_h, pad_w, ctx);
-	   }
-
 	// -----------------------------------------------------------------------------------------------------------------
-	   void _initCUDAContext(DCTX(ctx)) {
+	void _initCUDAContext(DCTX(ctx)) {
 		initCUDAContext(ctx);
 	}
 
 	// -----------------------------------------------------------------------------------------------------------------
-	void _matMul_CUDA__DenseMatrix_float__DenseMatrix_float__DenseMatrix_float(DenseMatrix<float>** res,
+	void _matMul_CUDA__DenseMatrix_float__DenseMatrix_double__DenseMatrix_float(DenseMatrix<float>** res,
 				const DenseMatrix<float>* lhs, const DenseMatrix<float>* rhs, DCTX(ctx)) {
 		MatMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>::apply(*res, lhs, rhs, ctx);
 	}

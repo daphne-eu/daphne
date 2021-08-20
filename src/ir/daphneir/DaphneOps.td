@@ -521,6 +521,51 @@ def Daphne_SvdOp : Daphne_Op<"svd"> {
 // way to specify the *common* arguments just once?
 
 // ----------------------------------------------------------------------------
+// Activation
+// ----------------------------------------------------------------------------
+
+class Daphne_ActivationForwardOp<string name, list<OpTrait> traits = []> :
+        Daphne_Op<name, traits> {
+	let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
+
+	let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
+
+def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"reluForward">;
+
+// ----------------------------------------------------------------------------
+// Affine
+// ----------------------------------------------------------------------------
+
+def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
+	let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
+			MatrixOf<[FloatScalar]>:$bias);
+
+	let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
+
+// ----------------------------------------------------------------------------
+// Batch Normalization
+// ----------------------------------------------------------------------------
+
+def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
+	let arguments = (ins
+			MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
+			MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, F64:$eps);
+	let results = (outs MatrixOf<[FloatScalar]>:$output);
+}
+
+// ----------------------------------------------------------------------------
+// Bias Addition
+// ----------------------------------------------------------------------------
+
+def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward"> {
+	let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$bias);
+
+	let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
+
+// ----------------------------------------------------------------------------
 // Convolution
 // ----------------------------------------------------------------------------
 
@@ -578,6 +623,15 @@ class Daphne_PoolForwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<n
 
 def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward">;
 def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward">;
+
+// ----------------------------------------------------------------------------
+// Softmax
+// ----------------------------------------------------------------------------
+def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward"> {
+	let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
+
+	let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
 
 // ****************************************************************************
 // Other matrix operations

@@ -175,11 +175,9 @@ namespace
             std::stringstream callee;
             std::string_view op_name{op->getName().stripDialect().data()};
 #ifdef USE_CUDA
-//            std::string_view arg_sv("matMul");
-//            if(op_name.compare(arg_sv) == 0) {
 			//ToDo: this will go away with a gpu ops rewrite pass
-			std::array<std::string_view, 7> gpu_ops({ "avgPoolForward", "batchNorm", "conv", "matMul", "maxPoolForward",
-					"relu", "softmax"});
+			std::array<std::string_view, 9> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
+					"biasAddForward", "conv2DForward", "matMul", "maxPoolForward", "reluForward", "softmaxForward"});
 //			std::cout << op_name << std::endl;
 			if(cfg.use_cuda) {
 				if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {

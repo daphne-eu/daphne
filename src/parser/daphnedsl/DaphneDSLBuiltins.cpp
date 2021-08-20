@@ -219,7 +219,36 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
-mlir::Value DaphneDSLBuiltins::createConv2dOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>&
+mlir::Value DaphneDSLBuiltins::createAffineFwdOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>& args) {
+	const size_t numArgs = args.size();
+	checkNumArgsExact(func, numArgs, 3);
+
+	mlir::Value input_data = args[0];
+	mlir::Value weights_data = args[1];
+	mlir::Value bias_data = args[2];
+
+	return static_cast<mlir::Value>(builder.create<mlir::daphne::AffineForwardOp>(loc, input_data.getType(), input_data,
+		weights_data, bias_data));
+}
+
+mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, const std::string &func,
+		const std::vector<mlir::Value> &args) {
+	const size_t numArgs = args.size();
+	checkNumArgsExact(func, numArgs, 6);
+
+	mlir::Value input_data = args[0];
+	mlir::Value gamma = args[1];
+	mlir::Value beta = args[2];
+
+	mlir::Value ema_mean = args[3];
+	mlir::Value ema_var = args[4];
+	mlir::Value eps = args[5];
+
+	return  static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DTestForwardOp>(loc, input_data.getType(),
+			input_data, gamma, beta, ema_mean, ema_var, eps));
+}
+
+mlir::ResultRange DaphneDSLBuiltins::createConv2dFwdOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>&
 		args) {
 	const size_t numArgs = args.size();
 	checkNumArgsBetween(func, numArgs, 12, 13);
@@ -656,17 +685,46 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Deep neural network
     // ********************************************************************
-	if (func == "conv2d") { return createConv2dOp(loc, func, args); }
+
+    if (func == "affine") {
+    	return createAffineFwdOp(loc, func, args);
+    }
+
+    if(func == "avg_pool2d") {
+    	return createPoolFwdOp<AvgPoolForwardOp>(loc, func, args);
+    }
+
+    if(func == "batch_norm2d") {
+    	return createBatchNorm2dTestFwdOp(loc, func, args);
+    }
+
+    if (func == "biasAdd") {
+    	checkNumArgsExact(func, numArgs, 2);
+    	mlir::Value input_data = args[0];
+    	mlir::Value bias = args[1];
+    	return static_cast<mlir::Value>(builder.create<mlir::daphne::BiasAddForwardOp>(loc, input_data.getType(),
+				input_data, bias));
+    }
 
 	if(func == "conv2d") {
 		return createConv2dFwdOp(loc, func, args);
 	}
 
-	if(func == "avg_pool2d")
-		return createPoolOp<AvgPoolForwardOp>(loc, func, args);
+	if(func == "max_pool2d") {
+		return createPoolFwdOp<MaxPoolForwardOp>(loc, func, args);
+	}
 
-	if(func == "max_pool2d")
-		return createPoolOp<MaxPoolForwardOp>(loc, func, args);
+	if (func == "relu") {
+		checkNumArgsExact(func, numArgs, 1);
+		mlir::Value input_data = args[0];
+		return static_cast<mlir::Value>(builder.create<mlir::daphne::ReluForwardOp>(loc, input_data.getType(), input_data));
+	}
+
+	if (func == "softmax") {
+		checkNumArgsExact(func, numArgs, 1);
+		mlir::Value input_data = args[0];
+		return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
+	}
 
     // ********************************************************************
     // Other matrix operations
