@@ -63,8 +63,10 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
                                  const ::distributed::Task *request,
                                  ::distributed::ComputeResult *response)
 {
+	// ToDo: user config
+	DaphneUserConfig cfg{false};
     // TODO Decide if vectorized pipelines should be used on this worker.
-    DaphneIrExecutor executor(false, false);
+    DaphneIrExecutor executor(false, false, cfg);
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {

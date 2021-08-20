@@ -27,9 +27,9 @@ def Inference: FunctionPass<"inference"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }
 
-def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
-    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
-}
+//def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
+//	let constructor = "mlir::daphne::createInsertDaphneContextPass()";
+//}
 
 def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
     let constructor = "mlir::daphne::createLowerToLLVMPass()";
@@ -39,8 +39,12 @@ def PrintIR : FunctionPass<"print-ir"> {
     let constructor = "mlir::daphne::createPrintIRPass()";
 }
 
-def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
-    let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
+//def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
+//    let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
+//}
+
+def InsertCUDAOps : FunctionPass<"insert-CUDA-ops"> {
+	let constructor = "mlir::daphne::createCUDAOpsPass()";
 }
 
 def VectorizeComputations : FunctionPass<"vectorize-computations"> {

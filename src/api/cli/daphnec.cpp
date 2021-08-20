@@ -15,6 +15,7 @@
  */
 
 #include <api/cli/StatusCode.h>
+#include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 
@@ -23,11 +24,16 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 
+#ifdef USE_CUDA
+	#include "runtime/local/kernels/CUDA_HostUtils.h"
+#endif
+
 #include <exception>
 #include <iostream>
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <string_view>
 
 #include <cstdlib>
 #include <cstring>
@@ -86,8 +92,27 @@ main(int argc, char** argv)
         }
     }
 
+    DaphneUserConfig user_config;
+//    user_config.build_output_dir = "build/lib/Debug";
+#ifdef USE_CUDA
+	for(auto i = 0; i < argc; ++i) {
+		std::string_view arg_sv(argv[i]);
+		if(arg_sv.compare("-cuda"sv) == 0) {
+			std::cout << "-cuda flag provided" << std::endl;
+			int device_count;
+  			CHECK_CUDART(cudaGetDeviceCount(&device_count));
+  			if(device_count < 1)
+  				std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+			else { // NOLINT(readability-misleading-indentation)
+				std::cout << "Available CUDA devices: " << device_count << std::endl;
+				user_config.use_cuda = true;
+			}
+		}
+	}
+#endif
+
     // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines);
+    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

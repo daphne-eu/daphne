@@ -954,6 +954,12 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
     let results = (outs); // no results
 }
 
+
+def Daphne_InitCUDAContextOp : Daphne_Op<"initCUDAContext"> {
+	let arguments = (ins);
+	let results = (outs);
+}
+
 // ****************************************************************************
 // Vectorized operations
 // ****************************************************************************

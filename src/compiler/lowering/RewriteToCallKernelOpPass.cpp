@@ -27,6 +27,7 @@
 #include <utility>
 #include <iostream>
 #include <stdexcept>
+#include <string_view>
 #include <tuple>
 
 using namespace mlir;
@@ -37,6 +38,10 @@ namespace
     // TODO We might want to merge this with ValueTypeUtils, and maybe place it
     // somewhere central.
     std::string mlirTypeToCppTypeName(Type t, bool generalizeToStructure) {
+//    	std::string Str;
+//    	llvm::raw_string_ostream OS(Str);
+//    	t.print(OS);
+//    	std::cout << OS.str() << std::endl;
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -137,23 +142,28 @@ namespace
                     "unsupported operation: " + op->getName().getStringRef().str()
             );
         }
-        
+
         /**
          * @brief The value of type `DaphneContext` to insert as the first
          * argument to all kernel calls.
          */
         Value dctx;
 
+        /**
+		 * @brief User configuration influencing the rewrite pass
+		 */
+        const DaphneUserConfig& cfg;
     public:
         /**
          * Creates a new KernelReplacement rewrite pattern.
-         * 
+         *
          * @param mctx The MLIR context.
          * @param dctx The DaphneContext to pass to the kernels.
          * @param benefit
          */
-        KernelReplacement(MLIRContext * mctx, Value dctx, PatternBenefit benefit = 1)
-        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx)
+        KernelReplacement(MLIRContext * mctx, Value dctx, const DaphneUserConfig& cfg,
+				PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx), cfg(cfg)
         {
         }
 
@@ -167,8 +177,25 @@ namespace
             // arguments.
 
             std::stringstream callee;
-            callee << '_' << op->getName().stripDialect().str();
-            
+            std::string_view op_name{op->getName().stripDialect().data()};
+#ifdef USE_CUDA
+//            std::string_view arg_sv("matMul");
+//            if(op_name.compare(arg_sv) == 0) {
+			//ToDo: this will go away with a gpu ops rewrite pass
+			std::array<std::string_view, 7> gpu_ops({ "avgPoolForward", "batchNorm", "conv", "matMul", "maxPoolForward",
+					"relu", "softmax"});
+//			std::cout << op_name << std::endl;
+			if(cfg.use_cuda) {
+				if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
+					callee << '_' << op_name << "_CUDA";
+				}
+				else
+					callee << '_' << op_name;
+			}
+			else
+#endif
+			//            	callee << '_' << op->getName().stripDialect().str();
+            	callee << '_' << op_name;
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
                 llvm::isa<daphne::CreateFrameOp>(op) |
@@ -188,7 +215,7 @@ namespace
             // The operands of the CallKernelOp may differ from the operands
             // of the given operation, if it has a variadic operand.
             std::vector<Value> newOperands;
-            
+
             if(
                 // TODO Unfortunately, one needs to know the exact N for
                 // AtLeastNOperands... There seems to be no simple way to
@@ -220,7 +247,7 @@ namespace
                                 ),
                                 rewriter.getIndexAttr(len)
                         );
-                        for(size_t k = 0; k < len; k++)
+                        for(int64_t k = 0; k < len; k++)
                             rewriter.create<daphne::StoreVariadicPackOp>(
                                     loc,
                                     cvpOp,
@@ -270,7 +297,7 @@ namespace
                 callee << "__" << mlirTypeToCppTypeName(strTy, false);
                 newOperands.push_back(rewriteStr);
             }
-            
+
             // Inject the current DaphneContext as the last input parameter to
             // all kernel calls, unless it's a CreateDaphneContextOp.
             if(!llvm::isa<daphne::CreateDaphneContextOp>(op))
@@ -292,6 +319,8 @@ namespace
     struct RewriteToCallKernelOpPass
     : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
     {
+    	const DaphneUserConfig& cfg;
+    	explicit RewriteToCallKernelOpPass(const DaphneUserConfig& cfg) : cfg(cfg) { }
         void runOnFunction() final;
     };
 }
@@ -338,13 +367,13 @@ void RewriteToCallKernelOpPass::runOnFunction()
     });
 
     // Apply conversion to CallKernelOps.
-    patterns.insert<KernelReplacement>(&getContext(), dctx);
+    patterns.insert<KernelReplacement>(&getContext(), dctx, cfg);
     if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
 
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass()
+std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg)
 {
-    return std::make_unique<RewriteToCallKernelOpPass>();
+    return std::make_unique<RewriteToCallKernelOpPass>(cfg);
 }
