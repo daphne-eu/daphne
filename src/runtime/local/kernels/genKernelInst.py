@@ -45,7 +45,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     returnType = kernelTemplateInfo["returnType"]
     templateParams = kernelTemplateInfo["templateParams"]
     runtimeParams = kernelTemplateInfo["runtimeParams"]
-    if opCodes is not None:
+    if opCodes is not None:# and opName != "PoolForward":
         # We assume that the op-code is the first run-time parameter.
         opCodeType = runtimeParams[0]["type"]
         runtimeParams = runtimeParams[1:]
@@ -81,9 +81,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             rp["isOutput"] = True
         elif "isOutput" not in rp:
             rp["isOutput"] = False
-            
+
     isCreateDaphneContext = opName == "createDaphneContext"
-    
+
     #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
         rp["type"]
@@ -109,9 +109,17 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             funcName = funcName[:-3]
         if opCode is not None:
             # We assume that the name of the op-code type ends with "OpCode".
-            opCodeWord = opCodeType[:-len("OpCode")]
-            funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
-            funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+            if funcName == "_PoolForward":
+                funcName = "_" + opCode.lower() + funcName[1:]
+            else:
+                print("funcName: " + funcName)
+                print("opCodeType: " + opCodeType)
+                print("opCode: " + opCode)
+                opCodeWord = opCodeType[:-len("OpCode")]
+                funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
+                print(funcName)
+                funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+                print(funcName)
         
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}{}({}) {{\n".format(
@@ -122,7 +130,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         ))
         
         # List of parameters for the call.
-        if opCode is None:
+        if opCode is None:# and funcName != "PoolForward":
             callParams = []
         else:
             callParams = ["{}::{}".format(opCodeType, opCode)]
@@ -140,13 +148,33 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         outFile.write(2 * INDENT)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
-        outFile.write("{}{}({});\n".format(
-                opName,
-                # Template parameters, if the kernel is a template:
-                "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
-                # Run-time parameters, possibly including DaphneContext:
-                ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"] )),
-        ))
+
+        # to avoid compilation warnings
+        if opName == "ewBinarySca" and opCode == "MUL":
+            outFile.write("{}<{}>::apply({});\n".format(
+                "EwBinarySca",
+                # Template parameters:
+                ", ".join(["BinaryOpCode::MUL"]+[toCppType(tv) for tv in templateValues]),
+                # Run-time parameters:
+                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"] )),
+            ))
+        elif opName == "PoolForward":
+            outFile.write("{}<{}>::apply({});\n".format(
+                "Pooling::Forward",
+                # Template parameters:
+                ", ".join(["Pooling::"+opCode]+[toCppType(tv) for tv in templateValues]),
+                # Run-time parameters:
+                ", ".join(([] if isCreateDaphneContext else ["ctx"] ) + callParams[1:]),
+
+            ))
+        else:
+            outFile.write("{}{}({});\n".format(
+                    opName,
+                    # Template parameters, if the kernel is a template:
+                    "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
+                    # Run-time parameters, possibly including DaphneContext:
+                    ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"] )),
+            ))
         outFile.write(INDENT + "}\n")
     
     # Generate the function(s).

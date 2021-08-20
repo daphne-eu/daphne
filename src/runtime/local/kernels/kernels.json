@@ -174,6 +174,9 @@
             ["bool", "double"],
             ["bool", "int64_t"],
             ["bool", "size_t"],
+            ["uint32_t", "int64_t"],
+            ["uint64_t", "int64_t"],
+            ["uint8_t", "int64_t"],
             ["bool", "bool"]
         ]
     },
@@ -1588,5 +1591,51 @@
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Pooling.h",
+            "opName": "PoolForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "PoolOpCode",
+                    "name": "opcode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                { "type": "uint64_t", "name": "batch_size" },
+                { "type": "uint32_t", "name": "num_channls"},
+                { "type": "uint32_t", "name": "img_h"},
+                { "type": "uint32_t", "name": "img_w"},
+                { "type": "uint32_t", "name": "pool_h"},
+                { "type": "uint32_t", "name": "pool_w"},
+                { "type": "uint32_t", "name": "stride_h"},
+                { "type": "uint32_t", "name": "stride_w"},
+                { "type": "uint32_t", "name": "pad_h"},
+                { "type": "uint32_t", "name": "pad_w"}
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ],
+        "opCodes": ["AVG", "MAX"]
     }
 ]

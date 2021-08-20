@@ -40,7 +40,6 @@ CUDAContext* CUDAContext::create(int device_id) {
 		return nullptr;
 	}
 
-
 	auto* context = new CUDAContext(device_id);
 	context->init();
 	return context;
@@ -51,7 +50,11 @@ void CUDAContext::destroy() {
 	std::cout << "Destroying CUDA context..." << std::endl;
 //#endif
 	CHECK_CUBLAS(cublasDestroy(cublas_handle));
-	CHECK_CUSPARSE( cusparseDestroy(cusparse_handle));
+	CHECK_CUSPARSE(cusparseDestroy(cusparse_handle));
+	CHECK_CUDNN(cudnnDestroy(cudnn_handle));
+	CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pooling_desc));
+	CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_tensor_desc));
+	CHECK_CUDNN(cudnnDestroyTensorDescriptor(dst_tensor_desc));
 //	CHECK_CUDART(cudaFree(cublas_workspace));
 //	CHECK_CUBLAS(cublasLtDestroy(ltHandle));
 }
@@ -64,6 +67,10 @@ void CUDAContext::init() {
 
 	CHECK_CUBLAS(cublasCreate(&cublas_handle));
 	CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
+	CHECK_CUDNN(cudnnCreate(&cudnn_handle));
+	CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pooling_desc));
+	CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_tensor_desc));
+	CHECK_CUDNN(cudnnCreateTensorDescriptor(&dst_tensor_desc));
 
 //	CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //	CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));

@@ -30,7 +30,6 @@
 
 #include <exception>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <unordered_map>
 #include <string_view>
@@ -71,8 +70,8 @@ main(int argc, char** argv)
                     int i;
                     for(i = argPos + 1; i < argc; i++) {
                         const std::string pair = args[i];
-                        size_t pos = pair.find("=");
-                        if(pos == pair.npos)
+                        size_t pos = pair.find('=');
+                        if(pos == std::string::npos)
                             break;
                         scriptArgs.emplace(
                             pair.substr(0, pos), // arg name
@@ -95,9 +94,9 @@ main(int argc, char** argv)
     DaphneUserConfig user_config;
 //    user_config.build_output_dir = "build/lib/Debug";
 #ifdef USE_CUDA
-	for(auto i = 0; i < argc; ++i) {
-		std::string_view arg_sv(argv[i]);
-		if(arg_sv.compare("-cuda"sv) == 0) {
+	auto it = scriptArgs.find("cuda");
+	if(it != scriptArgs.end()) {
+		if(it->second == "1") {
 			std::cout << "-cuda flag provided" << std::endl;
 			int device_count;
   			CHECK_CUDART(cudaGetDeviceCount(&device_count));

@@ -219,6 +219,29 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
+template<class PoolOp>
+mlir::ResultRange DaphneDSLBuiltins::createPoolFwdOp(mlir::Location loc, const std::string& func,
+		const std::vector<mlir::Value>&	args) {
+	const size_t numArgs = args.size();
+	checkNumArgsExact(func, numArgs, 11);
+
+	mlir::Value input_data = args[0];
+	mlir::Value num_images = utils.castSizeIf(args[1]);
+	mlir::Value num_channels = utils.castSizeIf(args[2]);
+	mlir::Value img_height = utils.castSizeIf(args[3]);
+	mlir::Value img_width = utils.castSizeIf(args[4]);
+	mlir::Value pool_h = utils.castSizeIf(args[5]);
+	mlir::Value pool_w = utils.castSizeIf(args[6]);
+	mlir::Value stride_h = utils.castSizeIf(args[7]);
+	mlir::Value stride_w = utils.castSizeIf(args[8]);
+	mlir::Value padding_h = utils.castSizeIf(args[9]);
+	mlir::Value padding_w = utils.castSizeIf(args[10]);
+
+	return builder.create<PoolOp>(loc, input_data.getType(), utils.sizeType, utils.sizeType,
+			input_data, num_images, num_channels, img_height, img_width, pool_h, pool_w, stride_h, stride_w, padding_h,
+			padding_w).getResults();
+}
+
 // ****************************************************************************
 // Other utilities
 // ****************************************************************************
@@ -601,7 +624,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Deep neural network
     // ********************************************************************
 
-    // TODO Add built-in functions for those.
+	if(func == "avg_pool2d")
+		return createPoolOp<AvgPoolForwardOp>(loc, func, args);
+
+	if(func == "max_pool2d")
+		return createPoolOp<MaxPoolForwardOp>(loc, func, args);
 
     // ********************************************************************
     // Other matrix operations
@@ -828,7 +855,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------
-    
+
     if(func == "openFile") {
         checkNumArgsExact(func, numArgs, 1);
         mlir::Value filename = args[0];
@@ -864,7 +891,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value numRows = utils.castSizeIf(args[1]);
         mlir::Value numCols = utils.castSizeIf(args[2]);
         mlir::Value delim = args[3];
-        
+
         // TODO Currently, this always assumes double as the value type. We
         // need to connect this to our FileMetaData mechanism, but for that, we
         // require the file name, which is not known here in the current design.
@@ -873,7 +900,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 fileOrDescriptor, numRows, numCols, delim
         ));
     }
-    
+
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************
@@ -886,11 +913,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg.getType(), arg, info
         ));
     }
-    
+
     // ********************************************************************
     // Measurements
     // ********************************************************************
-    
+
     if(func == "now") {
         checkNumArgsExact(func, numArgs, 0);
         return static_cast<mlir::Value>(builder.create<NowOp>(
