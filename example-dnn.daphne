@@ -1,0 +1,19 @@
+X = rand(1, 9, 1.0, 10.0, 1.0, 42);
+F = rand(1, 4, 1.0, 10.0, 1.0, 42);
+print("X:");
+print(X);
+print("F:");
+print(F);
+
+X_max = max_pool2d(X, 1, 1, 3, 3, 2, 2, 1, 1, 0, 0);
+X_avg = avg_pool2d(X, 1, 1, 3, 3, 2, 2, 1, 1, 0, 0);
+X_conv, Hout, Wout = conv2d(X, F, 1, 1, 3, 3, 2, 2, 1, 1, 0, 0);
+print("X_max:");
+print(X_max);
+print("X_avg:");
+print(X_avg);
+print("X_conv:");
+print(X_conv);
+print("conv dims:");
+print(Hout);
+print(Wout);

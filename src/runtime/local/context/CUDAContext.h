@@ -49,6 +49,7 @@ public:
 	CUDAContext() =delete;
 	CUDAContext(const CUDAContext&) =delete;
 	CUDAContext& operator=(const CUDAContext&) =delete;
+	~CUDAContext();
 
 //	static std::unique_ptr<CUDAContext> create(int device_id);
 	static CUDAContext* create(int device_id);
@@ -64,13 +65,16 @@ public:
 	[[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
 	[[nodiscard]] cudnnHandle_t  getCuDNNHandle() const { return cudnn_handle; }
 
-	~CUDAContext();
+	template<class T>
+	cudnnDataType_t getCUDNNDataType() const;
 
 	int convAlgorithm = -1;
 	cudnnPoolingDescriptor_t pooling_desc;
 	cudnnDataType_t data_type = CUDNN_DATA_DOUBLE;
 	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{};
 	cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
+	cudnnFilterDescriptor_t filter_desc;
+	cudnnConvolutionDescriptor_t conv_desc;
 	cudnnFilterDescriptor_t filterDesc;
 	cudnnConvolutionDescriptor_t convDesc;
 

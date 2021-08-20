@@ -55,6 +55,9 @@ void CUDAContext::destroy() {
 	CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pooling_desc));
 	CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_tensor_desc));
 	CHECK_CUDNN(cudnnDestroyTensorDescriptor(dst_tensor_desc));
+	CHECK_CUDNN(cudnnDestroyConvolutionDescriptor(conv_desc));
+	CHECK_CUDNN(cudnnDestroyFilterDescriptor(filter_desc));
+
 //	CHECK_CUDART(cudaFree(cublas_workspace));
 //	CHECK_CUBLAS(cublasLtDestroy(ltHandle));
 }
@@ -71,7 +74,22 @@ void CUDAContext::init() {
 	CHECK_CUDNN(cudnnCreatePoolingDescriptor(&pooling_desc));
 	CHECK_CUDNN(cudnnCreateTensorDescriptor(&src_tensor_desc));
 	CHECK_CUDNN(cudnnCreateTensorDescriptor(&dst_tensor_desc));
+	CHECK_CUDNN(cudnnCreateConvolutionDescriptor(&conv_desc));
+	CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc));
 
 //	CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //	CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
+}
+
+template<class T>
+cudnnDataType_t CUDAContext::getCUDNNDataType() const {}
+
+template<>
+cudnnDataType_t CUDAContext::getCUDNNDataType<float>() const {
+	return CUDNN_DATA_FLOAT;
+}
+
+template<>
+cudnnDataType_t CUDAContext::getCUDNNDataType<double>() const {
+	return CUDNN_DATA_DOUBLE;
 }

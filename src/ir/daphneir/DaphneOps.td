@@ -526,14 +526,13 @@ def Daphne_SvdOp : Daphne_Op<"svd"> {
 
 def Daphne_Conv2DForwardOp : Daphne_Op<"conv2DForward"> {
     let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
+		MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
         // input shape
         Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // filter shape
-        Size:$filterNumFilters, Size:$filterNumChannels, Size:$filterHeight, Size:$filterWidth
-    );
-    let results = (outs MatrixOf<[FloatScalar]>:$output);
+        // filter shape (num filters & channels is encoded in dimensions of filter matrix (-> [F,C*H*W]))
+        Size:$filterHeight, Size:$filterWidth, Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$output, Size:$outHeight, Size:$outWidth);
 }
 
 def Daphne_Conv2DBackwardFilterOp : Daphne_Op<"conv2DBackwardFilter"> {
