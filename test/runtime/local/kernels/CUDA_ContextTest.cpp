@@ -14,21 +14,17 @@
  * limitations under the License.
  */
 
-x = 1;
-y = 2;
-print(x + y);
 
-# Creating a random 2x3 matrix
-m = rand(2, 3, 100.0, 200.0, 1.0, -1);
-print(m);
-print(m + m);
+#include <runtime/local/kernels/CUDA_InitContext.h>
 
-// Print transpose of matrix
-print(t(m));
+#include <tags.h>
 
-# Comments are useful to temporarily disable code blocks like this matMul
-Z = m @ t(m);
-print(Z);
+#include <catch.hpp>
 
-print("Hello world!");
-print("Bye!");
+TEST_CASE("initCUDAContext", TAG_KERNELS) {
+	auto dctx = new DaphneContext();
+	initCUDAContext(dctx);
+	auto p = dctx->getCUDAContext(0)->getDeviceProperties();
+	CHECK(p);
+	delete dctx;
+}

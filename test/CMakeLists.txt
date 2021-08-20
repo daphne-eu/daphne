@@ -15,7 +15,7 @@
 include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
-add_executable(run_tests
+set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
@@ -27,9 +27,7 @@ add_executable(run_tests
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
-
         runtime/distributed/worker/WorkerTest.cpp
-
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
@@ -72,17 +70,23 @@ add_executable(run_tests
         
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
 )
+
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    list(APPEND TEST_SOURCES runtime/local/kernels/CUDA_MatMulTest.cpp runtime/local/kernels/CUDA_ContextTest.cpp)
+endif()
+
+add_executable(run_tests
+    ${TEST_SOURCES}
+)
 add_dependencies(run_tests daphnec)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-target_link_libraries(run_tests PRIVATE
-    ${dialect_libs}
-    DataStructures
-    DaphneDSLParser
-    IO
-    MLIRDaphne
-    WorkerImpl
-    Proto
-    Util
-    ${OPENBLAS_LIBRARIES}
-)
+set(LIBS ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    target_include_directories(run_tests PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    list(APPEND LIBS CUDAKernels CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse)
+endif()
+
+target_link_libraries(run_tests PRIVATE ${LIBS})

@@ -34,9 +34,10 @@
 
 #include <exception>
 #include <memory>
+#include <utility>
 
-DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized)
-: distributed_(distributed), vectorized_(vectorized)
+DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUserConfig  cfg)
+: distributed_(distributed), vectorized_(vectorized), user_config_(std::move(cfg))
 {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
@@ -63,10 +64,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         if(vectorized_)
             pm.addPass(mlir::daphne::createVectorizeComputationsPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
         pm.addPass(mlir::createLowerToCFGPass());
@@ -92,6 +93,12 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         llvm::SmallVector<llvm::StringRef, 1> sharedLibRefs;
         // TODO Find these at run-time.
         sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
+//		sharedLibRefs.push_back("build/lib/Debug/libAllKernels.so");
+#ifdef USE_CUDA
+		if(user_config_.use_cuda)
+//			sharedLibRefs.push_back("build/lib/Debug/libCUDAKernels.so");
+			sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
+#endif
         registerLLVMDialectTranslation(context_);
         // module.dump();
         auto maybeEngine = mlir::ExecutionEngine::create(

@@ -14,19 +14,23 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
+#ifndef DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H
+#define DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H
 
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/CUDAContext.h>
+
+#include <iostream> // remove
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-void createDaphneContext(DaphneContext *& res) {
-    res = new DaphneContext();
+static void initCUDAContext(DCTX(ctx)) {
+	std::cerr << "ToDo: provide user config to initCUDAContext" << std::endl;
+	ctx->cuda_contexts.push_back(CUDAContext::create(0));
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
+#endif //DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H

@@ -26,3 +26,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LINK_COMPONENTS
     Core
 )
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    include_directories(${CUDAToolkit_INCLUDE_DIRS})
+endif()
