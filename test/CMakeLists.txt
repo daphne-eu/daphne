@@ -69,8 +69,9 @@ add_executable(run_tests
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
-        
+                
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
+        runtime/local/kernels/CheckEqApproxTest.cpp
 )
 add_dependencies(run_tests daphnec)
 
