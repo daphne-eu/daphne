@@ -46,6 +46,7 @@ set(TEST_SOURCES
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
+        runtime/local/kernels/DNNConvolutionTest.cpp
         runtime/local/kernels/DNNPoolingTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp

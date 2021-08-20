@@ -219,6 +219,37 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
+mlir::Value DaphneDSLBuiltins::createConv2dOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>&
+		args) {
+	const size_t numArgs = args.size();
+	checkNumArgsBetween(func, numArgs, 12, 13);
+
+	mlir::Value input_data = args[0];
+	mlir::Value filter_data = args[1];
+	mlir::Value num_images = utils.castSizeIf(args[2]);
+	mlir::Value num_channels = utils.castSizeIf(args[3]);
+	mlir::Value img_height = utils.castSizeIf(args[4]);
+	mlir::Value img_width = utils.castSizeIf(args[5]);
+
+	mlir::Value filter_h = utils.castSizeIf(args[6]);
+	mlir::Value filter_w = utils.castSizeIf(args[7]);
+	mlir::Value stride_h = utils.castSizeIf(args[8]);
+	mlir::Value stride_w = utils.castSizeIf(args[9]);
+	mlir::Value padding_h = utils.castSizeIf(args[10]);
+	mlir::Value padding_w = utils.castSizeIf(args[11]);
+	if (numArgs == 12) {
+		return builder.create<mlir::daphne::Conv2DForwardOp>(loc, input_data.getType(), utils.sizeType, utils.sizeType,
+				input_data, filter_data, filter_data, num_images, num_channels, img_height, img_width, filter_h, filter_w, stride_h,
+				stride_w, padding_h, padding_w).getResults();
+	}
+	else {
+		mlir::Value bias = args[12];
+		return builder.create<mlir::daphne::Conv2DForwardOp>(loc, input_data.getType(), utils.sizeType, utils.sizeType,
+				input_data, filter_data, bias, num_images, num_channels, img_height, img_width, filter_h, filter_w, stride_h,
+				stride_w, padding_h, padding_w).getResults();
+	}
+}
+
 template<class PoolOp>
 mlir::ResultRange DaphneDSLBuiltins::createPoolFwdOp(mlir::Location loc, const std::string& func,
 		const std::vector<mlir::Value>&	args) {
@@ -623,6 +654,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Deep neural network
     // ********************************************************************
+	if (func == "conv2d") { return createConv2dOp(loc, func, args); }
+
+	if(func == "conv2d") {
+		return createConv2dFwdOp(loc, func, args);
+	}
 
 	if(func == "avg_pool2d")
 		return createPoolOp<AvgPoolForwardOp>(loc, func, args);
