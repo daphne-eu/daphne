@@ -843,6 +843,9 @@
             ]
         },
         "instantiations": [
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
             ["Frame"]
         ]
     },

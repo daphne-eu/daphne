@@ -19,6 +19,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/FileMetaData.h>
@@ -45,6 +46,26 @@ void read(DTRes *& res, const char * filename, DCTX(ctx)) {
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Read<DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *& res, const char * filename, DCTX(ctx)) {
+        FileMetaData fmd = FileMetaData::ofFile(filename);
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(
+                    fmd.numRows, fmd.numCols, false
+            );
+        
+        File * file = openFile(filename);
+        readCsv(res, file, fmd.numRows, fmd.numCols, ',');
+        closeFile(file);
+    }
+};
 
 // ----------------------------------------------------------------------------
 // Frame
