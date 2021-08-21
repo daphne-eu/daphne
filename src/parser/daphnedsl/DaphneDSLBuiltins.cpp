@@ -716,11 +716,21 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             );
         
         FileMetaData fmd = FileMetaData::ofFile(filenameStr);
-        std::vector<mlir::Type> cts;
-        for(ValueTypeCode vtc : fmd.schema)
-            cts.push_back(utils.mlirTypeForCode(vtc));
-        auto labels = new std::vector<std::string>(fmd.labels);
         
+        std::vector<mlir::Type> cts;
+        if(fmd.isSingleValueType)
+            for(size_t i = 0; i < fmd.numCols; i++)
+                cts.push_back(utils.mlirTypeForCode(fmd.schema[0]));
+        else
+            for(ValueTypeCode vtc : fmd.schema)
+                cts.push_back(utils.mlirTypeForCode(vtc));
+        
+        std::vector<std::string> * labels;
+        if(fmd.labels.empty())
+            labels = nullptr;
+        else
+            labels = new std::vector<std::string>(fmd.labels);
+            
         return static_cast<mlir::Value>(builder.create<ReadOp>(
                 loc,
                 mlir::daphne::FrameType::get(builder.getContext(), cts, labels),

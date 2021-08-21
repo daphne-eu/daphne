@@ -35,15 +35,21 @@
 struct FileMetaData {
     const size_t numRows;
     const size_t numCols;
+    bool isSingleValueType;
     std::vector<ValueTypeCode> schema;
     std::vector<std::string> labels;
     
     FileMetaData(
             size_t numRows,
             size_t numCols,
+            bool isSingleValueType,
             std::vector<ValueTypeCode> schema,
             std::vector<std::string> labels
-    ) : numRows(numRows), numCols(numCols), schema(schema), labels(labels) {
+    ) :
+            numRows(numRows), numCols(numCols),
+            isSingleValueType(isSingleValueType), schema(schema),
+            labels(labels)
+    {
         //
     }
     
@@ -71,9 +77,13 @@ struct FileMetaData {
         
         ifs.getline(buf, bufSize, ',');
         const size_t numCols = atoll(buf);
+        
+        ifs.getline(buf, bufSize, ',');
+        const bool isSingleValueType = atoi(buf);
 
-        std::vector<ValueTypeCode> schema;;
-        for(size_t i = 0; i < numCols; i++) {
+        std::vector<ValueTypeCode> schema;
+        const size_t expectedNumColTypes = isSingleValueType ? 1 : numCols;
+        for(size_t i = 0; i < expectedNumColTypes; i++) {
             ifs.getline(buf, bufSize, ',');
             ValueTypeCode vtc;
                  if(!strncmp(buf, "f64" , bufSize)) vtc = ValueTypeCode::F64;
@@ -90,14 +100,23 @@ struct FileMetaData {
                 );
             schema.push_back(vtc);
         }
-
+        
         std::vector<std::string> labels;
-        for(size_t i = 0; i < numCols; i++) {
-            ifs.getline(buf, bufSize, ',');
-            labels.push_back(buf);
+        
+        // Labels are optional.
+        const std::streamoff pos = ifs.tellg();
+        ifs.seekg(0, std::ios_base::end);
+        if(pos != ifs.tellg()) {
+            // If we have not reached the end of the stream yet.
+            ifs.seekg(pos, std::ios_base::beg);
+            for(size_t i = 0; i < numCols; i++) {
+                ifs.getline(buf, bufSize, ',');
+                labels.push_back(buf);
+            }
         }
+        // else: labels remains empty
 
-        return FileMetaData(numRows, numCols, schema, labels);
+        return FileMetaData(numRows, numCols, isSingleValueType, schema, labels);
     }
 };
 

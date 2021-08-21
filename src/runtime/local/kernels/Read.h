@@ -55,16 +55,32 @@ struct Read<Frame> {
     static void apply(Frame *& res, const char * filename, DCTX(ctx)) {
         FileMetaData fmd = FileMetaData::ofFile(filename);
         
+        ValueTypeCode * schema;
+        if(fmd.isSingleValueType) {
+            schema = new ValueTypeCode[fmd.numCols];
+            for(size_t i = 0; i < fmd.numCols; i++)
+                schema[i] = fmd.schema[0];
+        }
+        else
+            schema = fmd.schema.data();
+        
+        std::string * labels;
+        if(fmd.labels.empty())
+            labels = nullptr;
+        else
+            labels = fmd.labels.data();
+        
         if(res == nullptr)
             res = DataObjectFactory::create<Frame>(
-                    fmd.numRows, fmd.numCols,
-                    fmd.schema.data(), fmd.labels.data(),
-                    false
+                    fmd.numRows, fmd.numCols, schema, labels, false
             );
         
         File * file = openFile(filename);
-        readCsv(res, file, fmd.numRows, fmd.numCols, ',', fmd.schema.data());
+        readCsv(res, file, fmd.numRows, fmd.numCols, ',', schema);
         closeFile(file);
+        
+        if(fmd.isSingleValueType)
+            delete[] schema;
     }
 };
 

@@ -23,15 +23,56 @@
 
 #include <vector>
 
-TEST_CASE("FileMetaData::ofFile", TAG_IO) {
-    FileMetaData fmd = FileMetaData::ofFile("./test/runtime/local/io/SomeFile.csv");
+TEST_CASE("FileMetaData::ofFile (individual column types, labels given)", TAG_IO) {
+    FileMetaData fmd = FileMetaData::ofFile("./test/runtime/local/io/SomeFile0.csv");
     
     CHECK(fmd.numRows == 5);
-    CHECK(fmd.numCols == 3);
+    REQUIRE(fmd.numCols == 3);
+    CHECK_FALSE(fmd.isSingleValueType);
+    REQUIRE(fmd.schema.size() == fmd.numCols);
     CHECK(fmd.schema[0] == ValueTypeCode::SI64);
     CHECK(fmd.schema[1] == ValueTypeCode::F64);
     CHECK(fmd.schema[2] == ValueTypeCode::UI32);
+    REQUIRE(fmd.labels.size() == fmd.numCols);
     CHECK(fmd.labels[0] == "a");
     CHECK(fmd.labels[1] == "bc");
     CHECK(fmd.labels[2] == "def");
+}
+
+TEST_CASE("FileMetaData::ofFile (single value type, labels given)", TAG_IO) {
+    FileMetaData fmd = FileMetaData::ofFile("./test/runtime/local/io/SomeFile1.csv");
+    
+    CHECK(fmd.numRows == 5);
+    REQUIRE(fmd.numCols == 3);
+    CHECK(fmd.isSingleValueType);
+    REQUIRE(fmd.schema.size() == 1);
+    CHECK(fmd.schema[0] == ValueTypeCode::F32);
+    REQUIRE(fmd.labels.size() == fmd.numCols);
+    CHECK(fmd.labels[0] == "a");
+    CHECK(fmd.labels[1] == "bc");
+    CHECK(fmd.labels[2] == "def");
+}
+
+TEST_CASE("FileMetaData::ofFile (individual column types, labels not given)", TAG_IO) {
+    FileMetaData fmd = FileMetaData::ofFile("./test/runtime/local/io/SomeFile2.csv");
+    
+    CHECK(fmd.numRows == 5);
+    REQUIRE(fmd.numCols == 3);
+    CHECK_FALSE(fmd.isSingleValueType);
+    REQUIRE(fmd.schema.size() == fmd.numCols);
+    CHECK(fmd.schema[0] == ValueTypeCode::SI64);
+    CHECK(fmd.schema[1] == ValueTypeCode::F64);
+    CHECK(fmd.schema[2] == ValueTypeCode::UI32);
+    REQUIRE(fmd.labels.empty());
+}
+
+TEST_CASE("FileMetaData::ofFile (single value type, labels not given)", TAG_IO) {
+    FileMetaData fmd = FileMetaData::ofFile("./test/runtime/local/io/SomeFile3.csv");
+    
+    CHECK(fmd.numRows == 5);
+    REQUIRE(fmd.numCols == 3);
+    CHECK(fmd.isSingleValueType);
+    REQUIRE(fmd.schema.size() == 1);
+    CHECK(fmd.schema[0] == ValueTypeCode::F32);
+    REQUIRE(fmd.labels.empty());
 }
