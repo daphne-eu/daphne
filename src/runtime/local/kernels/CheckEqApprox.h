@@ -55,6 +55,7 @@ bool checkEqApprox(const DT * lhs, const DT * rhs, double esp, DCTX(ctx)) {
     return CheckEqApprox<DT>::apply(lhs, rhs, esp, ctx);
 };
 
+/*
 // ****************************************************************************
 // Operator == for matrices of the same type
 // ****************************************************************************
@@ -65,6 +66,7 @@ bool operator==(const DT & lhs, const DT & rhs) {
     // nullptr might become problematic some day.
     return checkEqApprox(&lhs, &rhs, eps, nullptr);
 }
+*/
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
