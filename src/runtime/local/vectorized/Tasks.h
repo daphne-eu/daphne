@@ -97,23 +97,11 @@ private:
     uint64_t _bsize; // batch size (data binding)
 
 public:
-    CompiledPipelineTask();
-
-    CompiledPipelineTask(uint64_t rl, uint64_t ru, uint64_t bsize) :
-        CompiledPipelineTask(nullptr, nullptr, nullptr, nullptr, rl, ru, bsize) {}
-
-    CompiledPipelineTask(std::function<void(DenseMatrix<VT>***, DenseMatrix<VT>**)> func,
-                 DenseMatrix<VT>* res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2,
-                 uint64_t rl, uint64_t ru, uint64_t bsize)
-    {
-        _func = func;
-        _res = res;
-        _input1 = input1;
-        _input2 = input2;
-        _rl = rl;
-        _ru = ru;
-        _bsize = bsize;
-    }
+    CompiledPipelineTask(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> func,
+                         DenseMatrix<VT> *res, DenseMatrix<VT> *input1, DenseMatrix<VT> *input2,
+                         uint64_t rl, uint64_t ru, uint64_t bsize)
+        : _func(func), _res(res), _input1(input1), _input2(input2), _rl(rl), _ru(ru), _bsize(bsize)
+    {}
 
     ~CompiledPipelineTask() override = default;
 
