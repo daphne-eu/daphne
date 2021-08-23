@@ -43,4 +43,8 @@ def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
     let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
 }
 
+def VectorizeComputations : FunctionPass<"vectorize-computations"> {
+    let constructor = "mlir::daphne::createVectorizeComputationsPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

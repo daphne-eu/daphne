@@ -15,9 +15,16 @@
 add_mlir_dialect(DaphneOps daphne) # creates the target MLIRDaphneOpsIncGen
 add_mlir_doc(DaphneOps -gen-dialect-doc DaphneDialect Dialects/)
 
+set(LLVM_TARGET_DEFINITIONS DaphneOps.td)
+mlir_tablegen(DaphneOpsEnums.h.inc -gen-enum-decls)
+mlir_tablegen(DaphneOpsEnums.cpp.inc -gen-enum-defs)
+add_public_tablegen_target(MLIRDaphneOpsEnumsIncGen)
+add_dependencies(mlir-headers MLIRDaphneOpsEnumsIncGen)
+
 add_mlir_interface(DaphneDistributableOpInterface)
 add_mlir_interface(DaphneInferFrameLabelsOpInterface)
 add_mlir_interface(DaphneInferTypesOpInterface)
+add_mlir_interface(DaphneVectorizableOpInterface)
 
 set(LLVM_TARGET_DEFINITIONS Passes.td)
 mlir_tablegen(Passes.h.inc -gen-pass-decls -name Daphne)
@@ -29,6 +36,7 @@ add_mlir_dialect_library(MLIRDaphne
     DaphneDialect.cpp
     DaphneInferFrameLabelsOpInterface.cpp
     DaphneInferTypesOpInterface.cpp
+    DaphneVectorizableOpInterface.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

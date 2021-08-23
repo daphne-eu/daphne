@@ -31,6 +31,7 @@
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Target/LLVMIR/ModuleTranslation.h"
 
 #include <exception>
 #include <memory>
@@ -55,12 +56,14 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
     if (module) {
         mlir::PassManager pm(&context_);
 
+        //llvm::DebugFlag = true;
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
+        pm.addPass(mlir::daphne::createVectorizeComputationsPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 

@@ -1348,5 +1348,47 @@
         "instantiations": [
             [["DenseMatrix", "double"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "VectorizedPipeline.h",
+            "opName": "vectorizedPipeline",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                },
+                {
+                    "type": "void *",
+                    "name": "fun"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
     }
 ]
