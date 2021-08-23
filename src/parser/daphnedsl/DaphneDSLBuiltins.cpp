@@ -690,9 +690,16 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
 
     if(func == "print") {
-        checkNumArgsExact(func, numArgs, 1);
+        checkNumArgsBetween(func, numArgs, 1, 3);
+        mlir::Value arg = args[0];
+        mlir::Value newline = (numArgs < 2)
+                ? builder.create<ConstantOp>(loc, builder.getBoolAttr(true))
+                : utils.castBoolIf(args[1]);
+        mlir::Value err = (numArgs < 3)
+                ? builder.create<ConstantOp>(loc, builder.getBoolAttr(false))
+                : utils.castBoolIf(args[2]);
         return builder.create<PrintOp>(
-                loc, args[0]
+                loc, arg, newline, err
         );
     }
     if(func == "readFrame" || func == "readMatrix") {

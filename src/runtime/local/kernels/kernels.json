@@ -734,6 +734,14 @@
                 {
                     "type": "VT",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "newline"
+                },
+                {
+                    "type": "bool",
+                    "name": "err"
                 }
             ]
         },
@@ -759,6 +767,14 @@
                 {
                     "type": "const DT *",
                     "name": "arg"
+                },
+                {
+                    "type": "bool",
+                    "name": "newline"
+                },
+                {
+                    "type": "bool",
+                    "name": "err"
                 }
             ]
         },

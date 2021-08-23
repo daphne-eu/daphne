@@ -31,8 +31,11 @@
  * @param arg The value to print.
  */
 template<typename VT>
-void printSca(VT arg, DCTX(ctx)) {
-    std::cout << arg << std::endl;
+void printSca(VT arg, bool newline, bool err, DCTX(ctx)) {
+    std::ostream & os = err ? std::cerr : std::cout;
+    os << arg;
+    if(newline)
+        os << std::endl;
 }
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTSCA_H
