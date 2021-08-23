@@ -1374,11 +1374,11 @@
                     "name": "res"
                 },
                 {
-                    "type": "const DTLhs *",
+                    "type": "DTLhs *",
                     "name": "lhs"
                 },
                 {
-                    "type": "const DTRhs *",
+                    "type": "DTRhs *",
                     "name": "rhs"
                 },
                 {

@@ -39,7 +39,7 @@ template<class DTRes, class DTLhs, class DTRhs>
 struct VectorizedPipeline
 {
     static void
-    apply(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, void *fun, DCTX(ctx)) = delete;
+    apply(DTRes *&res, DTLhs *lhs, DTRhs *rhs, void *fun, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -47,7 +47,7 @@ struct VectorizedPipeline
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void vectorizedPipeline(DTRes *&res, const DTLhs *lhs, const DTRhs *rhs, void *fun, DCTX(ctx))
+void vectorizedPipeline(DTRes *&res, DTLhs *lhs, DTRhs *rhs, void *fun, DCTX(ctx))
 {
     VectorizedPipeline<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, fun, ctx);
 }
@@ -60,20 +60,15 @@ template<>
 struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>
 {
     static void apply(DenseMatrix<double> *&res,
-                      const DenseMatrix<double> *lhs,
-                      const DenseMatrix<double> *rhs,
+                      DenseMatrix<double> *lhs,
+                      DenseMatrix<double> *rhs,
                       void *fun, DCTX(ctx))
     {
-        /*MTWrapper<double> *wrapper = new MTWrapper<double>(4);
-        wrapper->execute([&](DenseMatrix<double> *lambRes, DenseMatrix<double> *lambLhs, DenseMatrix<double> *lambRhs)
-        {
-
-        }, res, lhs, rhs, false);*/
-        void **outputs[] = {reinterpret_cast<void **>(&res)};
-        void *inputs[] = {reinterpret_cast<void *>(const_cast<DenseMatrix<double> *>(lhs)),
-                          reinterpret_cast<void *>(const_cast<DenseMatrix<double> *>(rhs))};
-        auto function = reinterpret_cast<void (*)(void ***, void **)>(fun);
-        function(outputs, inputs);
+        MTWrapper<double> *wrapper = new MTWrapper<double>();
+        auto function =
+            std::function<void(DenseMatrix<double> ***, DenseMatrix<double> **)>(
+                reinterpret_cast<void (*)(DenseMatrix<double> ***, DenseMatrix<double> **)>(fun));
+        wrapper->execute(function, res, lhs, rhs, false);
     }
 };
 
