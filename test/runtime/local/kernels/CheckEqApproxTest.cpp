@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <runtime/local/kernels/CheckEqApprox.h>
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -45,19 +45,19 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (CSR
     };
     auto m1 = genGivenVals<DT>(4, vals);
     SECTION("same inst") {
-        CHECK(*m1 == *m1);
+        CHECK(checkEqApprox(m1, m1,0.00001, nullptr)); 
     }
     SECTION("diff inst, same size, same cont") {
         auto m2 = genGivenVals<DT>(4, vals);
-        CHECK(*m1 == *m2);
+        CHECK(checkEqApprox(m1, m2,0.00001, nullptr));
     }
     SECTION("diff inst, diff size, same cont") {
         auto m2 = genGivenVals<DT>(6, vals);
-        CHECK_FALSE(*m1 == *m2);
+        CHECK_FALSE(checkEqApprox(m1, m2,0.00001, nullptr));
     }
     SECTION("diff inst, same size, accepted difference default ESP") {
         auto m2 = genGivenVals<DT>(4, vals2);
-        CHECK(*m1 == *m2);
+        CHECK(checkEqApprox(m1, m2,0.00001, nullptr));
     }
     SECTION("diff inst, same size, accepted difference defined ESP") {
         auto m2 = genGivenVals<DT>(4, vals2);
@@ -68,8 +68,10 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (CSR
         CHECK_FALSE(checkEqApprox<DT>(m1, m2,0.0000000000001, nullptr)); 
     }
 }
-/*    
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (DenseMatrix), (doubl)) {
+   
+
+
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (DenseMatrix), (double)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -80,144 +82,26 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (Den
         1, 2, 0, 0, 0, 0,
         3, 4, 0, 0, 1, 2,
     };
+    std::vector<typename DT::VT> vals2 = { 
+        1.001, 2, 2, 2, 0, 0,
+        3, 4, 4.001, 4, 1, 2,
+        0, 0, 0, 0, 3, 4,
+        0, 0, 0, 0, 0, 0,
+        1, 2, 0, 0, 0, 0,
+        3, 4, 0, 0, 1, 2,
+    };    
+
     auto orig1 = genGivenVals<DT>(6, vals);
+    auto orig2 = genGivenVals<DT>(6, vals2); 
     
     SECTION("same inst") {
         auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        CHECK(*view1 == *view1);
+        CHECK(checkEqApprox(view1, view1,0.00001, nullptr));
     }
-    SECTION("diff inst, same size, same cont, same orig") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        auto view3 = DataObjectFactory::create<DT>(orig1, 1, 3, 4, 6);
-        CHECK(*view1 == *view2);
-        CHECK(*view1 == *view3);
-    }
-    SECTION("diff inst, same size, same cont, diff orig") {
-        auto orig2 = genGivenVals<DT>(6, vals);
+    SECTION("same view on different equal matrices") {
         auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
         auto view2 = DataObjectFactory::create<DT>(orig2, 0, 2, 0, 2);
-        auto view3 = DataObjectFactory::create<DT>(orig2, 1, 3, 4, 6);
-        CHECK(*view1 == *view2);
-        CHECK(*view1 == *view3);
-    }
-    SECTION("diff inst, same size, same cont, overlap") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 1, 3);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 0, 2, 2, 4);
-        CHECK(*view1 == *view2);
-    }
-    SECTION("diff inst, same size, diff cont") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 4, 6, 4, 6);
-        CHECK_FALSE(*view1 == *view2);
-    }
-    SECTION("diff inst, diff size, diff cont") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 0, 3, 0, 2);
-        CHECK_FALSE(*view1 == *view2);
+        CHECK(checkEqApprox(view1, view2,0.01, nullptr));
+        CHECK_FALSE(checkEqApprox(view1, view2,0.000000001, nullptr));
     }
 }
-
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (CSRMatrix), (double)) {
-    using DT = TestType;
-    
-    std::vector<typename DT::VT> vals = {
-        0, 0, 0, 0,
-        0, 1, 0, 2,
-        3, 0, 0, 0,
-        0, 0, 4, 5,
-        0, 0, 0, 0,
-        3, 0, 0, 0,
-        0, 0, 4, 5,
-        0, 0, 4, 5,
-        0, 0, 4, 5,
-    };
-    auto orig1 = genGivenVals<DT>(9, vals);
-    
-    SECTION("same inst") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 1, 4);
-        CHECK(*view1 == *view1);
-    }
-    SECTION("diff inst, same size, same cont, same orig") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 2, 4);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 2, 4);
-        auto view3 = DataObjectFactory::create<DT>(orig1, 5, 7);
-        CHECK(*view1 == *view2);
-        CHECK(*view1 == *view3);
-    }
-    SECTION("diff inst, same size, same cont, diff orig") {
-        auto orig2 = genGivenVals<DT>(9, vals);
-        auto view1 = DataObjectFactory::create<DT>(orig1, 2, 4);
-        auto view2 = DataObjectFactory::create<DT>(orig2, 2, 4);
-        auto view3 = DataObjectFactory::create<DT>(orig2, 5, 7);
-        CHECK(*view1 == *view2);
-        CHECK(*view1 == *view3);
-    }
-    SECTION("diff inst, same size, same cont, overlap") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 6, 8);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 7, 9);
-        CHECK(*view1 == *view2);
-    }
-    SECTION("diff inst, same size, diff cont") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 3);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 3, 6);
-        CHECK_FALSE(*view1 == *view2);
-    }
-    SECTION("diff inst, diff size, diff cont") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 3);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 3, 7);
-        CHECK_FALSE(*view1 == *view2);
-    }
-}
-
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
-    using DT = TestType;
-    
-    std::vector<typename DT::VT> vals = {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    };
-    auto orig1 = genGivenVals<DT>(3, vals);
-    
-    SECTION("orig, diff inst, same size") {
-        auto orig2 = genGivenVals<DT>(3, vals);
-        CHECK(*orig1 == *orig2);
-    }
-    SECTION("view, diff inst, same size") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 4);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 1, 3, 0, 4);
-        CHECK(*view1 == *view2);
-    }
-    SECTION("view, diff inst, diff size") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 1, 0, 4);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 1, 3, 0, 4);
-        CHECK_FALSE(*view1 == *view2);
-    }
-}
-
-TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
-    using DT = TestType;
-    
-    std::vector<typename DT::VT> vals = {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    };
-    auto orig1 = genGivenVals<DT>(3, vals);
-    
-    SECTION("orig, diff inst, same size") {
-        auto orig2 = genGivenVals<DT>(3, vals);
-        CHECK(*orig1 == *orig2);
-    }
-    SECTION("view, diff inst, same size") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 1, 3);
-        CHECK(*view1 == *view2);
-    }
-    SECTION("view, diff inst, diff size") {
-        auto view1 = DataObjectFactory::create<DT>(orig1, 0, 1);
-        auto view2 = DataObjectFactory::create<DT>(orig1, 1, 3);
-        CHECK_FALSE(*view1 == *view2);
-    }
-}*/
