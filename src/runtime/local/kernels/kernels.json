@@ -686,6 +686,18 @@
     },
     {
         "kernelTemplate": {
+            "header": "Now.h",
+            "opName": "now",
+            "returnType": "int64_t",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "OneHot.h",
             "opName": "oneHot",
             "returnType": "void",

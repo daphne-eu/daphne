@@ -769,6 +769,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg.getType(), arg, info
         ));
     }
+    
+    // ********************************************************************
+    // Measurements
+    // ********************************************************************
+    
+    if(func == "now") {
+        checkNumArgsExact(func, numArgs, 0);
+        return static_cast<mlir::Value>(builder.create<NowOp>(
+                loc, builder.getIntegerType(64, true)
+        ));
+    }
 
     // ********************************************************************
 

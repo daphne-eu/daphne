@@ -837,6 +837,23 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot"> {
 }
 
 // ****************************************************************************
+// Measurements
+// ****************************************************************************
+
+def Daphne_NowOp : Daphne_Op<"now"> {
+    let summary = "Returns the current time since the epoch in nano seconds.";
+    let description = [{
+        Take care if you use this for time measurements! This is currently just
+        a quick and somewhat dirty approach. Once we have compiler passes that
+        could reorder operations, you might not measure the time you expect
+        anymore!
+    }];
+
+    let arguments = (ins); // no arguments
+    let results = (outs SI64);
+}
+
+// ****************************************************************************
 // Context handling
 // ****************************************************************************
 
