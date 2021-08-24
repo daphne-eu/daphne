@@ -18,6 +18,7 @@
 #define SRC_PARSER_DAPHNEDSL_DAPHNEDSLBUILTINS_H
 
 #include <parser/ParserUtils.h>
+#include <runtime/local/io/FileMetaData.h>
 
 #include "antlr4-runtime.h"
 
@@ -96,6 +97,12 @@ class DaphneDSLBuiltins {
     
     template<class JoinOp>
     mlir::Value createJoinOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
+    
+    // ************************************************************************
+    // Other utilities
+    // ************************************************************************
+    
+    FileMetaData getFileMetaData(const std::string & func, mlir::Value filename);
     
     // ************************************************************************
     

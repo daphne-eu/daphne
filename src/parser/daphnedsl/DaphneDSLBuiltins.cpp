@@ -219,6 +219,30 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
+// ****************************************************************************
+// Other utilities
+// ****************************************************************************
+
+FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
+    std::string filenameStr;
+    bool found = false;
+
+    // TODO Make getConstantString() from DaphneInferFrameLabelsOpInterface
+    // a central utility and use it here.
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(filename.getDefiningOp()))
+        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
+            filenameStr = strAttr.getValue().str();
+            found = true;
+        }
+    if(!found)
+        throw std::runtime_error(
+                "built-in function " + func + " requires the filename to be a "
+                "string constant"
+        );
+
+    return FileMetaData::ofFile(filenameStr);
+}
+
 antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     using namespace mlir::daphne;
 
@@ -689,6 +713,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Input/output
     // ********************************************************************
 
+    // --------------------------------------------------------------------
+    // High-level
+    // --------------------------------------------------------------------
+
     if(func == "print") {
         checkNumArgsBetween(func, numArgs, 1, 3);
         mlir::Value arg = args[0];
@@ -706,23 +734,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 1);
         
         mlir::Value filename = args[0];
-        std::string filenameStr;
-        bool found = false;
-        
-        // TODO Make getConstantString() from DaphneInferFrameLabelsOpInterface
-        // a central utility and use it here.
-        if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(filename.getDefiningOp()))
-            if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
-                filenameStr = strAttr.getValue().str();
-                found = true;
-            }
-        if(!found)
-            throw std::runtime_error(
-                    "built-in function read requires the filename to be a "
-                    "string constant"
-            );
-        
-        FileMetaData fmd = FileMetaData::ofFile(filenameStr);
+        FileMetaData fmd = getFileMetaData(func, filename);
         
         mlir::Type resType;
         
@@ -756,6 +768,55 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         ));
     }
     // TODO write
+
+    // --------------------------------------------------------------------
+    // Low-level
+    // --------------------------------------------------------------------
+    
+    if(func == "openFile") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value filename = args[0];
+        return static_cast<mlir::Value>(builder.create<OpenFileOp>(
+                loc, FileType::get(builder.getContext()), filename
+        ));
+    }
+    if(func == "openDevice") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value device = args[0];
+        return static_cast<mlir::Value>(builder.create<OpenDeviceOp>(
+                loc, TargetType::get(builder.getContext()), device
+        ));
+    }
+    if(func == "openFileOnTarget") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value target = args[0];
+        mlir::Value filename = args[1];
+        return static_cast<mlir::Value>(builder.create<OpenFileOnTargetOp>(
+                loc, DescriptorType::get(builder.getContext()), target, filename
+        ));
+    }
+    if(func == "close") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value fileOrTarget = args[0];
+        return builder.create<CloseOp>(
+                loc, fileOrTarget
+        );
+    }
+    if(func == "readCsv") {
+        checkNumArgsExact(func, numArgs, 4);
+        mlir::Value fileOrDescriptor = args[0];
+        mlir::Value numRows = utils.castSizeIf(args[1]);
+        mlir::Value numCols = utils.castSizeIf(args[2]);
+        mlir::Value delim = args[3];
+        
+        // TODO Currently, this always assumes double as the value type. We
+        // need to connect this to our FileMetaData mechanism, but for that, we
+        // require the file name, which is not known here in the current design.
+        return static_cast<mlir::Value>(builder.create<ReadCsvOp>(
+                loc, utils.matrixOf(builder.getF64Type()),
+                fileOrDescriptor, numRows, numCols, delim
+        ));
+    }
     
     // ********************************************************************
     // Data preprocessing

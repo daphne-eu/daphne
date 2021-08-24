@@ -76,6 +76,12 @@ namespace
             return "DaphneContext";
         else if(auto handleTy = t.dyn_cast<daphne::HandleType>())
             return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
+        else if(t.isa<daphne::FileType>())
+            return "File";
+        else if(t.isa<daphne::DescriptorType>())
+            return "Descriptor";
+        else if(t.isa<daphne::TargetType>())
+            return "Target";
         throw std::runtime_error(
                 "no C++ type name known for the given MLIR type"
         );

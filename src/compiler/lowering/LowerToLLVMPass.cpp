@@ -392,6 +392,21 @@ void DaphneLowerToLLVMPass::runOnOperation()
       return LLVM::LLVMPointerType::get(
           IntegerType::get(t.getContext(), 1));
     });
+    typeConverter.addConversion([&](daphne::FileType t)
+    {
+      return LLVM::LLVMPointerType::get(
+          IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::DescriptorType t)
+    {
+      return LLVM::LLVMPointerType::get(
+          IntegerType::get(t.getContext(), 1));
+    });
+    typeConverter.addConversion([&](daphne::TargetType t)
+    {
+      return LLVM::LLVMPointerType::get(
+          IntegerType::get(t.getContext(), 1));
+    });
 
     LLVMConversionTarget target(getContext());
 

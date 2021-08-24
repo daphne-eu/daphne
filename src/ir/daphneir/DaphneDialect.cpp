@@ -144,6 +144,12 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "VariadicPack<" << t.getContainedType() << '>';
     else if (type.isa<mlir::daphne::DaphneContextType>())
         os << "DaphneContext";
+    else if (type.isa<mlir::daphne::FileType>())
+        os << "File";
+    else if (type.isa<mlir::daphne::DescriptorType>())
+        os << "Descriptor";
+    else if (type.isa<mlir::daphne::TargetType>())
+        os << "Target";
     else if (type.isa<mlir::daphne::UnknownType>())
         os << "Unknown";
 };

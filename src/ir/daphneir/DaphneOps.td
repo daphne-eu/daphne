@@ -807,6 +807,10 @@ def Daphne_DistributedCollectOp : Daphne_Op<"distributedCollect", [NoSideEffect]
 // Input/output
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// High-level
+// ----------------------------------------------------------------------------
+
 def Daphne_PrintOp : Daphne_Op<"print"> {
     // TODO We might change it to only accept scalars here and enforce toString
     // for matrices and frames. But currently, we need it like that for the
@@ -825,6 +829,39 @@ def Daphne_ReadOp : Daphne_Op<"read"> {
 def Daphne_WriteOp : Daphne_Op<"write"> {
     let arguments = (ins StrScalar:$fileName, MatrixOrFrame:$arg);
     let results = (outs); // no results
+}
+
+// ----------------------------------------------------------------------------
+// Low-level
+// ----------------------------------------------------------------------------
+
+def Daphne_OpenFileOp : Daphne_Op<"openFile"> {
+    let arguments = (ins StrScalar:$filename);
+    let results = (outs File:$res);
+}
+
+def Daphne_OpenDeviceOp : Daphne_Op<"openDevice"> {
+    let arguments = (ins StrScalar:$device);
+    let results = (outs Target:$res);
+}
+
+def Daphne_OpenFileOnTargetOp : Daphne_Op<"openFileOnTarget"> {
+    let arguments = (ins Target:$target, StrScalar:$filename);
+    let results = (outs Descriptor:$res);
+}
+
+def Daphne_CloseOp : Daphne_Op<"close"> {
+    let arguments = (ins AnyTypeOf<[File, Target]>);
+    let results = (outs); // no results
+}
+
+def Daphne_ReadCsvOp : Daphne_Op<"readCsv"> {
+    let arguments = (ins
+        AnyTypeOf<[File, Descriptor]>:$input,
+        Size:$numRows, Size:$numCols,
+        StrScalar:$delim
+    );
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // ****************************************************************************
