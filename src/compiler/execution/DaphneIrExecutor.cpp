@@ -62,10 +62,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
-        if (!distributed_) {
-            // TODO: add cli argument for activation/deactivation
-            pm.addPass(mlir::daphne::createVectorizeComputationsPass());
-        }
+        // TODO: add cli argument for activation/deactivation
+        pm.addPass(mlir::daphne::createVectorizeComputationsPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
