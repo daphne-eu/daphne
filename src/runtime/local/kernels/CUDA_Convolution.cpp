@@ -22,15 +22,12 @@ namespace Convolution {
 			const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
 			const size_t filter_w, const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w, DCTX(dctx))
 	{
-		std::cout << "w00t" << std::endl;
-		std::cout << "in rows: " << data->getNumRows() << " in cols: " << data->getNumCols() << " num_channels=" << num_channels << " img_h=" << img_h << std::endl;
-		assert(data->getNumRows() == batch_size && "Convolution: input rows must match batch_size");
-		assert(data->getNumCols() == (num_channels * img_h * img_w) && "Convolution: input cols must match C*H*W");
+//		assert(data->getNumRows() == batch_size && "Convolution: input rows must match batch_size");
+//		assert(data->getNumCols() == (num_channels * img_h * img_w) && "Convolution: input cols must match C*H*W");
 
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		auto F = filter->getNumRows(); // num filters
-		std::cout << "w00t1" << std::endl;
 		VT blend_alpha = 1;
 		VT blend_beta = 0;
 
@@ -93,12 +90,12 @@ namespace Convolution {
 			cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT];
 
 			// Setup for findFastest call
-#ifndef NDEBUG
+#ifdef NDEBUG
 			std::cout << "Testing cudnnFindConvolutionForwardAlgorithm ...\n";
 #endif
-			CHECK_CUDNN(cudnnFindConvolutionForwardAlgorithm(ctx->getCuDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
-					ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
-#ifndef NDEBUG
+			CHECK_CUDNN(cudnnFindConvolutionForwardAlgorithm(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
+															 ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
+#ifdef NDEBUG
 			for(int algoIndex = 0; algoIndex < returnedAlgoCount; ++algoIndex) {
 				std::cout << "^^^^ " << cudnnGetErrorString(results[algoIndex].status) << " for Algo: "
 						<<  results[algoIndex].algo << ": " << results[algoIndex].time << " time requiring "
@@ -114,15 +111,15 @@ namespace Convolution {
 
 		size_t workspace_sizeInBytes=0;
 		void* workSpace=nullptr;
-		CHECK_CUDNN(cudnnGetConvolutionForwardWorkspaceSize(ctx->getCuDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
+		CHECK_CUDNN(cudnnGetConvolutionForwardWorkspaceSize(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
 															ctx->conv_desc, ctx->dst_tensor_desc, algo, &workspace_sizeInBytes));
 
 		if (workspace_sizeInBytes!=0)
 			CHECK_CUDART(cudaMalloc(&workSpace,workspace_sizeInBytes));
 
-		CHECK_CUDNN(cudnnConvolutionForward(ctx->getCuDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_input,
-				ctx->filter_desc, d_filter, ctx->conv_desc, algo, workSpace, workspace_sizeInBytes, &blend_beta,
-				ctx->dst_tensor_desc, d_res));
+		CHECK_CUDNN(cudnnConvolutionForward(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_input,
+											ctx->filter_desc, d_filter, ctx->conv_desc, algo, workSpace, workspace_sizeInBytes, &blend_beta,
+											ctx->dst_tensor_desc, d_res));
 
 		if (workspace_sizeInBytes!=0)
 			CHECK_CUDART(cudaFree(workSpace));

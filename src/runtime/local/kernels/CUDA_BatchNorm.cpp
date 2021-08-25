@@ -54,17 +54,17 @@ namespace BatchNorm {
 		CHECK_CUDART(cudaMemcpy(d_ema_mean, ema_mean->getValues(),  aux_buf_size, cudaMemcpyHostToDevice));
 		CHECK_CUDART(cudaMemcpy(d_ema_var, ema_var->getValues(),  aux_buf_size, cudaMemcpyHostToDevice));
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->data_type, nr1, num_channels, H, H));
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->data_type, nr1, num_channels, H, H));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), nr1, num_channels, H, H));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), nr1, num_channels, H, H));
 
 		if (res == nullptr) {
 			res = DataObjectFactory::create<DTRes>(nr1, nc1, false);
 		}
 
 		CHECK_CUDNN(cudnnDeriveBNTensorDescriptor(ctx->bn_tensor_desc, ctx->src_tensor_desc, ctx->bn_mode));
-		CHECK_CUDNN(cudnnBatchNormalizationForwardInference(ctx->getCuDNNHandle(), ctx->bn_mode, &blend_alpha,
-					&blend_beta, ctx->src_tensor_desc, d_input, ctx->dst_tensor_desc, d_res, ctx->bn_tensor_desc,
-					d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
+		CHECK_CUDNN(cudnnBatchNormalizationForwardInference(ctx->getCUDNNHandle(), ctx->bn_mode, &blend_alpha,
+															&blend_beta, ctx->src_tensor_desc, d_input, ctx->dst_tensor_desc, d_res, ctx->bn_tensor_desc,
+															d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
 
 		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, data_buf_size, cudaMemcpyDeviceToHost));
 

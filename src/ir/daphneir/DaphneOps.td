@@ -551,7 +551,7 @@ def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
 def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
 	let arguments = (ins
 			MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
-			MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, F64:$eps);
+			MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
 	let results = (outs MatrixOf<[FloatScalar]>:$output);
 }
 

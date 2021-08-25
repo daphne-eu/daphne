@@ -35,9 +35,9 @@ namespace Softmax {
 		VT alpha = 1;
 		VT beta = 0;
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->data_type, n, d, 1, 1));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->data_type, n, d, 1, 1));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
 
 
 		if (res == nullptr) {
@@ -48,8 +48,8 @@ namespace Softmax {
 //			resize(n*c*h*w, dstData);
 			CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), n * d * sizeOfDataType));
 
-		CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCuDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-				&alpha, ctx->src_tensor_desc, d_input, &beta, ctx->dst_tensor_desc, d_res));
+		CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCUDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+										&alpha, ctx->src_tensor_desc, d_input, &beta, ctx->dst_tensor_desc, d_res));
 
 		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, n*d*sizeOfDataType, cudaMemcpyDeviceToHost));
 
