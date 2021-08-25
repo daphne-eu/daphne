@@ -168,6 +168,8 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
         elementType.isa<mlir::daphne::UnknownType>()
         // Value type is known.
         || elementType.isSignedInteger(64)
+        || elementType.isUnsignedInteger(8)
+        || elementType.isF32()
         || elementType.isF64()
         || elementType.isIndex()
     )
