@@ -63,7 +63,8 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
                                  const ::distributed::Task *request,
                                  ::distributed::ComputeResult *response)
 {
-    DaphneIrExecutor executor(false);
+    // TODO Decide if vectorized pipelines should be used on this worker.
+    DaphneIrExecutor executor(false, false);
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {

@@ -36,7 +36,7 @@ using namespace std;
 using namespace mlir;
 
 void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}]" << endl;
+    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec]" << endl;
 }
 
 int
@@ -48,6 +48,7 @@ main(int argc, char** argv)
     std::vector<std::string> args(argv, argv + argc);
     string inputFile;
     unordered_map<string, string> scriptArgs;
+    bool useVectorizedPipelines = false;
     if(argc < 2) {
         printHelp(args[0]);
         exit(1);
@@ -59,20 +60,23 @@ main(int argc, char** argv)
         }
         else {
             inputFile = args[1];
-            if(argc > 2) {
-                if(args[2] == "--args") {
-                    for(int i = 3; i < argc; i++) {
+            for(int argPos = 2; argPos < argc; argPos++) {
+                if(args[argPos] == "--args") {
+                    int i;
+                    for(i = argPos + 1; i < argc; i++) {
                         const std::string pair = args[i];
                         size_t pos = pair.find("=");
-                        if(pos == pair.npos) {
-                            printHelp(args[0]);
-                            exit(1);
-                        }
+                        if(pos == pair.npos)
+                            break;
                         scriptArgs.emplace(
                             pair.substr(0, pos), // arg name
                             pair.substr(pos + 1, pair.size()) // arg value
                         );
                     }
+                    argPos = i - 1;
+                }
+                else if(args[argPos] == "--vec") {
+                    useVectorizedPipelines = true;
                 }
                 else {
                     printHelp(args[0]);
@@ -83,7 +87,7 @@ main(int argc, char** argv)
     }
 
     // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"));
+    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

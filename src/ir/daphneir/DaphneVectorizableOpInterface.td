@@ -1,0 +1,50 @@
+/*
+ *  Copyright 2021 The DAPHNE Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+#ifndef SRC_IR_DAPHNEIR_DAPHNEVECTORIZABLEOPINTERFACE_TD
+#define SRC_IR_DAPHNEIR_DAPHNEVECTORIZABLEOPINTERFACE_TD
+
+include "mlir/IR/OpBase.td"
+
+def VECTOR_SPLIT_ROWS : I64EnumAttrCase<"ROWS", 1>;
+
+def VectorSplitAttr : I64EnumAttr<"VectorSplit", "", [VECTOR_SPLIT_ROWS]> {
+    let cppNamespace = "::mlir::daphne";
+}
+
+def VECTOR_COMBINE_ROWS : I64EnumAttrCase<"ROWS", 1>;
+
+def VectorCombineAttr : I64EnumAttr<"VectorCombine", "", [VECTOR_COMBINE_ROWS]> {
+    let cppNamespace = "::mlir::daphne";
+}
+
+def VectorizableOpInterface : OpInterface<"Vectorizable"> {
+    let description = [{
+        Enables the computation in the form of vectors.
+    }];
+
+    let methods = [
+        InterfaceMethod<"Get the vector split kind for each input.",
+                        "std::vector<daphne::VectorSplit>", "getVectorSplits", (ins)>,
+        InterfaceMethod<"Get the vector combine kind for each output.",
+                        "std::vector<daphne::VectorCombine>", "getVectorCombines", (ins)>,
+        // TODO: for complex operations (non element-wise) where the computation per vector is not equal to the operation
+        //  itself on the whole input, we will require a new method generating the operations in the pipeline. This is
+        //  the same behaviour as with `Distributable` Ops, and therefore combining them might make sense.
+    ];
+}
+
+#endif // SRC_IR_DAPHNEIR_DAPHNEVECTORIZABLEOPINTERFACE_TD

@@ -22,6 +22,7 @@ include "ir/daphneir/DaphneTypes.td"
 include "ir/daphneir/DaphneDistributableOpInterface.td"
 include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
 include "ir/daphneir/DaphneInferTypesOpInterface.td"
+include "ir/daphneir/DaphneVectorizableOpInterface.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -171,7 +172,8 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
 // TODO Temporarily commented, because otherwise it cannot handle UnknownType.
 class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 //: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [DeclareOpInterfaceMethods<DistributableOpInterface>,
+            DeclareOpInterfaceMethods<VectorizableOpInterface>])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
 
@@ -188,7 +190,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [DeclareOpInterfaceMethods<DistributableOpInterface>]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar>;
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
@@ -924,6 +926,19 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 }
 
 // ****************************************************************************
+// Vectorized operations
+// ****************************************************************************
+
+def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline"> {
+    let summary = "Performs multi-threaded vector-wise computations of the input.";
+
+    // TODO: will probably take `DaphneContext` as input for the number of threads etc.
+    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>);
+    let results = (outs Variadic<MatrixOrFrame>);
+    let regions = (region SizedRegion<1>:$body);
+}
+
+// ****************************************************************************
 // Low-level auxiliary operations
 // ****************************************************************************
 
@@ -973,7 +988,7 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
     let hasFolder = 1;
 }
 
-def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, ParentOneOf<["FuncOp", "DistributedComputeOp"]>]> {
+def Daphne_ReturnOp : Daphne_Op<"return", [NoSideEffect, Terminator, ReturnLike, ParentOneOf<["FuncOp", "DistributedComputeOp", "VectorizedPipelineOp"]>]> {
     let summary = "return operation";
 
     let arguments = (ins Variadic<AnyType>:$operands);

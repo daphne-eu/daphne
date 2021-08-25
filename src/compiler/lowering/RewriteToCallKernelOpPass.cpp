@@ -313,9 +313,10 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::ReturnOp,
             daphne::CallKernelOp,
             daphne::CreateVariadicPackOp,
-            daphne::StoreVariadicPackOp
+            daphne::StoreVariadicPackOp,
+            daphne::VectorizedPipelineOp
     >();
-    
+
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = nullptr;
     auto ops = func.body().front().getOps<daphne::CreateDaphneContextOp>();
