@@ -64,6 +64,7 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
         MAKE_CASE(UnaryOpCode::SQRT)
         // Rounding.
         MAKE_CASE(UnaryOpCode::FLOOR)
+        MAKE_CASE(UnaryOpCode::CEIL)
         #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown UnaryOpCode");
@@ -104,7 +105,8 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::SIGN, (arg == 0) ? 0 : ((arg < 0) ? -1 : ((arg > 
 MAKE_EW_UNARY_SCA(UnaryOpCode::SQRT, sqrt(arg));
 // Rounding.
 MAKE_EW_UNARY_SCA(UnaryOpCode::FLOOR, floor(arg));
-        
+MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
+
 #undef MAKE_EW_UNARY_SCA
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H

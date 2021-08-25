@@ -17,12 +17,15 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
 #define SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
 
+#pragma once
+
 enum class UnaryOpCode {
     // Arithmetic/general math.
     SIGN, // signum (-1, 0, +1)
     SQRT,
     // Rounding.
     FLOOR,
+    CEIL,
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
