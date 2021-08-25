@@ -30,7 +30,7 @@ const std::string dirPath = "test/api/cli/vectorized/";
     TEST_CASE(name, TAG_OPERATIONS) { \
         DYNAMIC_SECTION(name << ".daphne") { \
             const std::string prefix = dirPath+name; \
-            compareDaphneToRef(prefix+".txt", prefix+".daphne"); \
+            compareDaphneToRef(prefix+".txt", prefix+".daphne", "--vec"); \
         } \
     }
 
