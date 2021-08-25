@@ -23,21 +23,15 @@ namespace Activation {
 		using VT = typename DTRes::VT;
 		const size_t nr1 = data->getNumRows();
 		const size_t nc1 = data->getNumCols();
-		VT blend_alpha = 1;
-		VT blend_beta = 0;
-		VT* d_input;
-		VT* d_res;
-		size_t sizeOfDataType = sizeof(VT);
-		size_t data_buf_size = nr1 * nc1 * sizeOfDataType;
+		const VT blend_alpha = 1;
+		const VT blend_beta = 0;
+		const VT* d_input = data->getValuesCUDA();
 
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_input), data_buf_size));
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), data_buf_size));
-
+//		std::cerr << " ----------  relu ----------- " << std::endl;
 		if (res == nullptr) {
-			res = DataObjectFactory::create<DTRes>(nr1, nc1, false);
+			res = DataObjectFactory::create<DTRes>(nr1, nc1, false, ALLOCATION_TYPE::CUDA_ALLOC);
 		}
-
-		CHECK_CUDART(cudaMemcpy(d_input, data->getValues(),  data_buf_size, cudaMemcpyHostToDevice));
+		VT* d_res = res->getValuesCUDA();
 
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1, nr1, nc1));
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1, nr1, nc1));
@@ -45,12 +39,7 @@ namespace Activation {
 		CHECK_CUDNN(cudnnSetActivationDescriptor(ctx->activation_desc, OP::getActivationType(), CUDNN_PROPAGATE_NAN, 0.0));
 
 		CHECK_CUDNN(cudnnActivationForward(ctx->getCUDNNHandle(), ctx->activation_desc, &blend_alpha, ctx->src_tensor_desc,
-										   d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
-
-		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, data_buf_size, cudaMemcpyDeviceToHost));
-
-		CHECK_CUDART(cudaFree(d_input));
-		CHECK_CUDART(cudaFree(d_res));
+				d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
 	}
 
 	template struct Forward_CUDA<ReLU, DenseMatrix<float>, DenseMatrix<float>>;

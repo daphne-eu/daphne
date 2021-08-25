@@ -20,41 +20,25 @@ namespace Softmax {
 
 	template<typename DTRes, typename DTArg>
 	void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-
+//		std::cerr << " ----------  softmax ----------- " << std::endl;
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		int n = data->getNumRows();
 		int d = data->getNumCols();
-		VT* d_input;
-		VT* d_res;
-		size_t sizeOfDataType = sizeof(VT);
-
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_input), n*d*sizeOfDataType));
-		CHECK_CUDART(cudaMemcpy(d_input, data->getValues(), n*d*sizeOfDataType, cudaMemcpyHostToDevice));
-
-		VT alpha = 1;
-		VT beta = 0;
+		const VT blend_alpha = 1;
+		const VT blend_beta = 0;
+		const VT* d_input = data->getValuesCUDA();
 
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
-
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
 
-
 		if (res == nullptr) {
-			res = DataObjectFactory::create<DTRes>(n,d, false);
-			CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), static_cast<unsigned long>(n) * d * sizeOfDataType));
+			res = DataObjectFactory::create<DTRes>(n,d, false, ALLOCATION_TYPE::CUDA_ALLOC);
 		}
-		else
-//			resize(n*c*h*w, dstData);
-			CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), n * d * sizeOfDataType));
+		VT* d_res = res->getValuesCUDA();
 
 		CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCUDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-										&alpha, ctx->src_tensor_desc, d_input, &beta, ctx->dst_tensor_desc, d_res));
-
-		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, n*d*sizeOfDataType, cudaMemcpyDeviceToHost));
-
-		CHECK_CUDART(cudaFree(d_input));
-		CHECK_CUDART(cudaFree(d_res));
+				&blend_alpha, ctx->src_tensor_desc, d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
 	}
 
 	template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;

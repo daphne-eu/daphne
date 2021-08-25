@@ -24,23 +24,18 @@ namespace Pooling {
 			const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
 			const size_t pad_w, DCTX(dctx))
 	{
+//		std::cerr << " ----------  pool ----------- " << std::endl;
 		using VT = typename DTRes::VT;
 		auto ctx = dctx->getCUDAContext(0);
-		VT blend_alpha = 1;
-		VT blend_beta = 0;
-		VT* d_input;
-		VT* d_res;
-		size_t sizeOfDataType = sizeof(VT);
-		size_t data_buf_size = batch_size * num_channels * img_h * img_w * sizeOfDataType;
-
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_input), data_buf_size));
-		CHECK_CUDART(cudaMemcpy(d_input, data->getValues(),  data_buf_size, cudaMemcpyHostToDevice));
+		const VT blend_alpha = 1;
+		const VT blend_beta = 0;
+		const VT* d_input = data->getValuesCUDA();
 
 		CHECK_CUDNN(cudnnSetPooling2dDescriptor(ctx->pooling_desc, OP<VT>::isMAX() ? CUDNN_POOLING_MAX :
 				CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING, CUDNN_PROPAGATE_NAN, pool_h, pool_w, pad_h, pad_w, stride_h,
 				stride_w));
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->data_type, batch_size,
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), batch_size,
 				num_channels, img_h, img_w));
 
 		const int tensorDims = 4;
@@ -50,21 +45,16 @@ namespace Pooling {
 
 		int n = tensorOuputDimA[0]; int c = tensorOuputDimA[1];
 		int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->data_type, n, c, h, w));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, c, h, w));
 
+//		std::cout << " creating res matrix for pooling: " << batch_size << " " << c << " " << h << " " << w << std::endl;
 		if (res == nullptr) {
-			res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false);
+			res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false, ALLOCATION_TYPE::CUDA_ALLOC);
 		}
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), n * c * h * w * sizeOfDataType));
+		VT* d_res = res->getValuesCUDA();
 
 		CHECK_CUDNN(cudnnPoolingForward(ctx->getCUDNNHandle(), ctx->pooling_desc, &blend_alpha, ctx->src_tensor_desc,
 										d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
-
-		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, n * c * h * w * sizeOfDataType, cudaMemcpyDeviceToHost));
-		res_h = h;
-		res_w = w;
-		cudaFree(d_input);
-		cudaFree(d_res);
 	}
 
 	template struct Forward_CUDA<AVG, DenseMatrix<float>, DenseMatrix<float>>;

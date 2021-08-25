@@ -17,15 +17,17 @@
 #include "runtime/local/context/CUDAContext.h"
 
 CUDAContext::~CUDAContext() {
+#ifdef NDEBUG
 	std::cout << "destructing CUDAContext" << std::endl;
+#endif
 	if(cublas_handle) destroy();
 }
 
 //std::unique_ptr<CUDAContext> CUDAContext::create(int device_id) {
 CUDAContext* CUDAContext::create(int device_id) {
-#ifndef NDEBUG
-	std::cout << "creating CUDA context..." << std::endl;
-#endif
+//#ifndef NDEBUG
+//	std::cout << "creating CUDA context..." << std::endl;
+//#endif
 //	std::unique_ptr<CUDAContext> context = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
 	int device_count = -1;
 	CHECK_CUDART(cudaGetDeviceCount(&device_count));
@@ -46,7 +48,7 @@ CUDAContext* CUDAContext::create(int device_id) {
 }
 
 void CUDAContext::destroy() {
-#ifndef NDEBUG
+#ifdef NDEBUG
 	std::cout << "Destroying CUDA context..." << std::endl;
 #endif
 	CHECK_CUBLAS(cublasDestroy(cublas_handle));
@@ -60,6 +62,7 @@ void CUDAContext::destroy() {
 	CHECK_CUDNN(cudnnDestroyConvolutionDescriptor(conv_desc));
 	CHECK_CUDNN(cudnnDestroyFilterDescriptor(filter_desc));
 
+	CHECK_CUDART(cudaFree(cudnn_workspace));
 //	CHECK_CUDART(cudaFree(cublas_workspace));
 //	CHECK_CUBLAS(cublasLtDestroy(ltHandle));
 }
@@ -69,7 +72,9 @@ void CUDAContext::init() {
 	CHECK_CUDART(cudaSetDevice(device_id));
 	CHECK_CUDART(cudaGetDeviceProperties(&device_properties, device_id));
 	std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
-
+	size_t available; size_t total;
+	cudaMemGetInfo(&available, &total);
+	std::cout << "available mem: " << available << " total mem: " << total << std::endl;
 	CHECK_CUBLAS(cublasCreate(&cublas_handle));
 	CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
 	CHECK_CUDNN(cudnnCreate(&cudnn_handle));
@@ -81,12 +86,11 @@ void CUDAContext::init() {
 	CHECK_CUDNN(cudnnCreateConvolutionDescriptor(&conv_desc));
 	CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc));
 
+	getCUDNNWorkspace(64 * 1024 * 1024);
+
 //	CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //	CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
 }
-
-template<class T>
-cudnnDataType_t CUDAContext::getCUDNNDataType() const {}
 
 template<>
 cudnnDataType_t CUDAContext::getCUDNNDataType<float>() const {
@@ -96,4 +100,30 @@ cudnnDataType_t CUDAContext::getCUDNNDataType<float>() const {
 template<>
 cudnnDataType_t CUDAContext::getCUDNNDataType<double>() const {
 	return CUDNN_DATA_DOUBLE;
+}
+
+template<>
+cudaDataType CUDAContext::getCUSparseDataType<float>() const {
+	return CUDA_R_32F;
+}
+
+template<>
+cudaDataType CUDAContext::getCUSparseDataType<double>() const {
+	return CUDA_R_64F;
+}
+
+void* CUDAContext::getCUDNNWorkspace(size_t size) {
+	if (size > cudnn_workspace_size) {
+		//#ifdef NDEBUG
+		std::cerr << "Allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
+		//#endif
+		CHECK_CUDART(cudaMalloc(&cudnn_workspace, size));
+		cudnn_workspace_size = size;
+	}
+	//#ifdef NDEBUG
+//	else {
+//		std::cerr << "Not allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
+//	}
+	//#endif
+	return cudnn_workspace;
 }

@@ -25,24 +25,15 @@ namespace Convolution {
 //		assert(data->getNumRows() == batch_size && "Convolution: input rows must match batch_size");
 //		assert(data->getNumCols() == (num_channels * img_h * img_w) && "Convolution: input cols must match C*H*W");
 
+//std::cerr << " ----------  conv ----------- " << std::endl;
+
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		auto F = filter->getNumRows(); // num filters
-		VT blend_alpha = 1;
+		const VT blend_alpha = 1;
 		VT blend_beta = 0;
-
-		VT* d_input;
-		VT* d_filter;
-		VT* d_res;
-		size_t sizeOfDataType = sizeof(VT);
-		size_t data_buf_size = data->getNumRows() * data->getNumCols() * sizeOfDataType;
-		size_t filter_buf_size = filter->getNumRows() * filter->getNumCols() * sizeOfDataType;
-
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_input), data_buf_size));
-		CHECK_CUDART(cudaMemcpy(d_input, data->getValues(),  data_buf_size, cudaMemcpyHostToDevice));
-
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_filter), filter_buf_size));
-		CHECK_CUDART(cudaMemcpy(d_filter, filter->getValues(), filter_buf_size, cudaMemcpyHostToDevice));
+		const VT* d_input = data->getValuesCUDA();
+		const VT* d_filter = filter->getValuesCUDA();
 
 		cudnnConvolutionFwdAlgo_t algo;
 
@@ -56,7 +47,7 @@ namespace Convolution {
 		CHECK_CUDNN(cudnnSetFilterNdDescriptor(ctx->filter_desc, ctx->template getCUDNNDataType<VT>(), CUDNN_TENSOR_NCHW, tensorDims, filterDimA));
 
 		const int convDims = 2;
-		int padA[convDims] = {static_cast<int>(pad_h), static_cast<int>(pad_h)};
+		int padA[convDims] = {static_cast<int>(pad_h), static_cast<int>(pad_w)};
 		int filterStrideA[convDims] = { static_cast<int>(stride_h), static_cast<int>(stride_w)};
 		int upscaleA[convDims] = {1,1};
 		cudnnDataType_t convDataType = ctx->template getCUDNNDataType<VT>();
@@ -76,72 +67,63 @@ namespace Convolution {
 		int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
 		res_h = h;
 		res_w = w;
-		size_t out_buf_size = n * c * h * w * sizeOfDataType;
+//		size_t out_buf_size = n * c * h * w * sizeOfDataType;
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->template getCUDNNDataType<VT>(), n, c, h, w));
 
 		if (res == nullptr) {
-			res = DataObjectFactory::create<DTRes>(batch_size, c*h*w, false);
+			res = DataObjectFactory::create<DTRes>(batch_size, c*h*w, false, ALLOCATION_TYPE::CUDA_ALLOC);
 		}
-		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), out_buf_size));
-
-		if (ctx->convAlgorithm < 0) {
+		VT* d_res = res->getValuesCUDA();
+		if (ctx->conv_algorithm < 0) {
 			int requestedAlgoCount = CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
 			int returnedAlgoCount = -1;
 			cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT];
 
 			// Setup for findFastest call
-#ifdef NDEBUG
-			std::cout << "Testing cudnnFindConvolutionForwardAlgorithm ...\n";
-#endif
+//#ifndef NDEBUG
+//			std::cout << "Testing cudnnFindConvolutionForwardAlgorithm ...\n";
+//#endif
 			CHECK_CUDNN(cudnnFindConvolutionForwardAlgorithm(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
 															 ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
-#ifdef NDEBUG
-			for(int algoIndex = 0; algoIndex < returnedAlgoCount; ++algoIndex) {
-				std::cout << "^^^^ " << cudnnGetErrorString(results[algoIndex].status) << " for Algo: "
-						<<  results[algoIndex].algo << ": " << results[algoIndex].time << " time requiring "
-						<< results[algoIndex].memory << " memory\n" << std::endl;
-
-			}
-#endif
+//#ifndef NDEBUG
+//			for(int algoIndex = 0; algoIndex < returnedAlgoCount; ++algoIndex) {
+//				std::cout << "^^^^ " << cudnnGetErrorString(results[algoIndex].status) << " for Algo: "
+//						<<  results[algoIndex].algo << ": " << results[algoIndex].time << " time requiring "
+//						<< results[algoIndex].memory << " memory\n" << std::endl;
+//
+//			}
+//#endif
 			algo = results[0].algo;
+			ctx->conv_algorithm = algo;
 		}
 		else {
-			algo = static_cast<cudnnConvolutionFwdAlgo_t>(ctx->convAlgorithm);
+			algo = static_cast<cudnnConvolutionFwdAlgo_t>(ctx->conv_algorithm);
 		}
 
 		size_t workspace_sizeInBytes=0;
-		void* workSpace=nullptr;
+		void* work_space=nullptr;
 		CHECK_CUDNN(cudnnGetConvolutionForwardWorkspaceSize(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
 															ctx->conv_desc, ctx->dst_tensor_desc, algo, &workspace_sizeInBytes));
 
-		if (workspace_sizeInBytes!=0)
-			CHECK_CUDART(cudaMalloc(&workSpace,workspace_sizeInBytes));
+		if (workspace_sizeInBytes!=0) {
+			work_space = ctx->getCUDNNWorkspace(workspace_sizeInBytes);
+		}
 
 		CHECK_CUDNN(cudnnConvolutionForward(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_input,
-											ctx->filter_desc, d_filter, ctx->conv_desc, algo, workSpace, workspace_sizeInBytes, &blend_beta,
-											ctx->dst_tensor_desc, d_res));
-
-		if (workspace_sizeInBytes!=0)
-			CHECK_CUDART(cudaFree(workSpace));
+				ctx->filter_desc, d_filter, ctx->conv_desc, algo, work_space, workspace_sizeInBytes, &blend_beta,
+				ctx->dst_tensor_desc, d_res));
 
 		if(bias != filter) {
-			VT* d_bias;
-			CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_bias), bias->getNumCols() * sizeOfDataType));
-			CHECK_CUDART(cudaMemcpy(d_bias, bias->getValues(), bias->getNumCols() * sizeOfDataType, cudaMemcpyHostToDevice));
+			const VT* d_bias = bias->getValuesCUDA();
+//			CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_bias), bias->getNumCols() * sizeOfDataType));
+//			CHECK_CUDART(cudaMemcpy(d_bias, bias->getValues(), bias->getNumCols() * sizeOfDataType, cudaMemcpyHostToDevice));
 
 			CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1,
 												   c, 1, 1));
 			blend_beta = 1;
 			CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
 									   ctx->dst_tensor_desc, d_res));
-			CHECK_CUDART(cudaFree(d_bias));
 		}
-
-		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, out_buf_size, cudaMemcpyDeviceToHost));
-
-		CHECK_CUDART(cudaFree(d_input));
-		CHECK_CUDART(cudaFree(d_filter));
-		CHECK_CUDART(cudaFree(d_res));
 	}
 
 	template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;

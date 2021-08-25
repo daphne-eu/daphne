@@ -59,8 +59,8 @@
   do {                                                                    \
     cudnnStatus_t status = call;                                          \
     if (status != CUDNN_STATUS_SUCCESS) {                                 \
-      std::cout << "(CUDNN) returned " <<  cudnnGetErrorString(status);   \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
+      std::cerr << "(CUDNN) returned " <<  cudnnGetErrorString(status);   \
+      std::cerr << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
                 << "())" << std::endl;                                    \
     }                                                                     \
   } while (0)

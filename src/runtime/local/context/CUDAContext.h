@@ -37,7 +37,11 @@ class CUDAContext {
 	cusparseHandle_t cusparse_handle = nullptr;
 
 	// cuDNN API
-	cudnnHandle_t cudnn_handle;
+	cudnnHandle_t cudnn_handle{};
+
+	// preallocate 64MB
+	size_t cudnn_workspace_size{};
+	void* cudnn_workspace{};
 
 	// cublasLt API
 //	cublasLtHandle_t cublaslt_Handle = nullptr;
@@ -66,19 +70,21 @@ public:
 	[[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
 
 	template<class T>
-	cudnnDataType_t getCUDNNDataType() const;
+	[[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
 
-	int convAlgorithm = -1;
-	cudnnPoolingDescriptor_t pooling_desc;
-	cudnnDataType_t data_type = CUDNN_DATA_DOUBLE;
+	template<class T>
+	[[nodiscard]] cudaDataType getCUSparseDataType() const;
+
+	void* getCUDNNWorkspace(size_t size);
+
+	int conv_algorithm = -1;
+	cudnnPoolingDescriptor_t pooling_desc{};
 	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
 	cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
-	cudnnFilterDescriptor_t filter_desc;
-	cudnnActivationDescriptor_t  activation_desc;
-	cudnnConvolutionDescriptor_t conv_desc;
-	cudnnFilterDescriptor_t filterDesc;
-	cudnnConvolutionDescriptor_t convDesc;
-
+	cudnnFilterDescriptor_t filter_desc{};
+	cudnnActivationDescriptor_t  activation_desc{};
+	cudnnConvolutionDescriptor_t conv_desc{};
+	cudnnFilterDescriptor_t filterDesc{};
 	cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
 

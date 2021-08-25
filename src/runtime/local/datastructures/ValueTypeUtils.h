@@ -80,5 +80,11 @@ template<> const std::string ValueTypeUtils::irNameFor<uint64_t>;
 template<> const std::string ValueTypeUtils::irNameFor<float>;
 template<> const std::string ValueTypeUtils::irNameFor<double>;
 
+enum class ALLOCATION_TYPE {
+	HOST_ALLOC,
+	CUDA_ALLOC,
+	NUM_ALLOC_TYPES
+};
+
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_VALUETYPEUTILS_H
 
