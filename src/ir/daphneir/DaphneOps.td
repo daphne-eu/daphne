@@ -928,12 +928,12 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 // ****************************************************************************
 
 def Daphne_CreateVariadicPackOp : Daphne_Op<"createVariadicPack"> {
-    let arguments = (ins IndexAttr:$numElements);
+    let arguments = (ins I64Attr:$numElements);
     let results = (outs VariadicPack:$res);
 }
 
 def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
-    let arguments = (ins VariadicPack:$pack, AnyType:$item, IndexAttr:$pos);
+    let arguments = (ins VariadicPack:$pack, AnyType:$item, I64Attr:$pos);
     let results = (outs); // no results
 }
 

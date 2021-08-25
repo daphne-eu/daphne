@@ -19,6 +19,7 @@
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
+#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
