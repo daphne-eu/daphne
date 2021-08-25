@@ -57,8 +57,8 @@ namespace Pooling {
 		}
 		CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), n * c * h * w * sizeOfDataType));
 
-		CHECK_CUDNN(cudnnPoolingForward(ctx->getCuDNNHandle(), ctx->pooling_desc, &blend_alpha, ctx->src_tensor_desc,
-				d_input, &blend_beta,ctx->dst_tensor_desc, d_res));
+		CHECK_CUDNN(cudnnPoolingForward(ctx->getCUDNNHandle(), ctx->pooling_desc, &blend_alpha, ctx->src_tensor_desc,
+										d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
 
 		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, n * c * h * w * sizeOfDataType, cudaMemcpyDeviceToHost));
 		res_h = h;

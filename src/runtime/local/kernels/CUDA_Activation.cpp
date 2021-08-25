@@ -39,13 +39,13 @@ namespace Activation {
 
 		CHECK_CUDART(cudaMemcpy(d_input, data->getValues(),  data_buf_size, cudaMemcpyHostToDevice));
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->data_type, 1, 1, nr1, nc1));
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->data_type, 1, 1, nr1, nc1));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1, nr1, nc1));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1, nr1, nc1));
 
 		CHECK_CUDNN(cudnnSetActivationDescriptor(ctx->activation_desc, OP::getActivationType(), CUDNN_PROPAGATE_NAN, 0.0));
 
-		CHECK_CUDNN(cudnnActivationForward(ctx->getCuDNNHandle(), ctx->activation_desc, &blend_alpha, ctx->src_tensor_desc,
-				d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
+		CHECK_CUDNN(cudnnActivationForward(ctx->getCUDNNHandle(), ctx->activation_desc, &blend_alpha, ctx->src_tensor_desc,
+										   d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
 
 		CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, data_buf_size, cudaMemcpyDeviceToHost));
 

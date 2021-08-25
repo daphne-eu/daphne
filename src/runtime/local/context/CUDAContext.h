@@ -63,7 +63,7 @@ public:
 //	[[nodiscard]] void* getCublasWorkspacePtr() const { return cublas_workspace; }
 //	[[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
 	[[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
-	[[nodiscard]] cudnnHandle_t  getCuDNNHandle() const { return cudnn_handle; }
+	[[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
 
 	template<class T>
 	cudnnDataType_t getCUDNNDataType() const;
