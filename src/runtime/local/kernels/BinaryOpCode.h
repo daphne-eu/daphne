@@ -24,7 +24,7 @@ enum class BinaryOpCode {
     MUL, // multiplication
     DIV, // division
     POW, // to the power of
-    
+    MOD, // modulus
     // Comparisons.
     EQ,  // equal
     NEQ, // not equal

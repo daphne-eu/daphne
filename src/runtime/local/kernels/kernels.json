@@ -167,6 +167,7 @@
             ["float", "uint32_t"],
             ["float", "int64_t"],
             ["int64_t", "double"],
+            ["int64_t", "float"],
             ["int64_t", "int64_t"],
             ["int64_t", "size_t"],
             ["int64_t", "uint32_t"],
@@ -475,7 +476,7 @@
             ["bool", "double", "double"],
             ["bool", "int64_t", "int64_t"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -1654,3 +1655,4 @@
         "opCodes": ["AVG", "MAX"]
     }
 ]
+

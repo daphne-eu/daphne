@@ -472,6 +472,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createEwUnaryOp<EwExpOp>(loc, func, args);
     if(func == "ln")
         return createEwUnaryOp<EwLnOp>(loc, func, args);
+    if(func == "mod")
+    	return createEwBinaryOp<EwModOp>(loc, func, args);
     if(func == "sqrt")
         return createEwUnaryOp<EwSqrtOp>(loc, func, args);
 
