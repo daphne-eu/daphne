@@ -172,7 +172,8 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
 // TODO Temporarily commented, because otherwise it cannot handle UnknownType.
 class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 //: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
-: Daphne_Op<name, traits> {
+: Daphne_Op<name, !listconcat(traits, [DeclareOpInterfaceMethods<DistributableOpInterface>,
+            DeclareOpInterfaceMethods<VectorizableOpInterface>])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
 
@@ -189,8 +190,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [DeclareOpInterfaceMethods<DistributableOpInterface>,
-    DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar>;
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;

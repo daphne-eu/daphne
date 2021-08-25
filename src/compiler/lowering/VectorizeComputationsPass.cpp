@@ -19,10 +19,12 @@
 
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
 #include <utility>
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 using namespace mlir;
 
@@ -68,10 +70,14 @@ void VectorizeComputationsPass::runOnOperation()
 
     // convert other operations
     ConversionTarget target(getContext());
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
-      return !llvm::isa<daphne::Vectorizable>(op) || op->getParentOfType<daphne::VectorizedPipelineOp>();
+      // TODO: support scalars
+      return !llvm::isa<daphne::Vectorizable>(op) || op->getParentOfType<daphne::VectorizedPipelineOp>()
+          || llvm::any_of(op->getOperandTypes(), [&](Type ty)
+          { return !ty.isa<daphne::MatrixType>(); });
     });
 
     patterns.insert<Vectorize>(&getContext());

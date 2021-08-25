@@ -33,18 +33,50 @@ using namespace mlir;
 
 template<class EwBinaryOp>
 std::vector<daphne::VectorSplit> getVectorSplits_EwBinaryOp(EwBinaryOp * op) {
+    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::ROWS};
 }
 template<class EwBinaryOp>
 std::vector<daphne::VectorCombine> getVectorCombines_EwBinaryOp(EwBinaryOp * op) {
+    return {daphne::VectorCombine::ROWS};
 }
 
 // ****************************************************************************
 // Vector split and combine implementations
 // ****************************************************************************
 
-std::vector<daphne::VectorSplit> daphne::EwAddOp::getVectorSplits() {
-    return getVectorSplits_EwBinaryOp(this);
-}
-std::vector<daphne::VectorCombine> daphne::EwAddOp::getVectorCombines() {
-    return getVectorCombines_EwBinaryOp(this);
-}
+#define IMPL_SPLIT_COMBINE_EWBINARYOP(OP) \
+    std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { \
+        return getVectorSplits_EwBinaryOp(this); \
+    } \
+    std::vector<daphne::VectorCombine> daphne::OP::getVectorCombines() { \
+        return getVectorCombines_EwBinaryOp(this); \
+    }
+
+// Arithmetic
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwAddOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwSubOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwMulOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwDivOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwPowOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwModOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwLogOp)
+
+// Min/max
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwMinOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwMaxOp)
+
+// Logical
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwAndOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwOrOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwXorOp)
+
+// Strings
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwConcatOp)
+
+// Comparisons
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwEqOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwNeqOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwLtOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwLeOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwGtOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(EwGeOp)

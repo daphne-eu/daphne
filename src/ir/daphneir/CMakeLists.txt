@@ -34,6 +34,7 @@ add_mlir_doc(Passes -gen-pass-doc DaphnePasses Dialects/)
 
 add_mlir_dialect_library(MLIRDaphne
     DaphneDialect.cpp
+    DaphneDistributableOpInterface.cpp
     DaphneInferFrameLabelsOpInterface.cpp
     DaphneInferTypesOpInterface.cpp
     DaphneVectorizableOpInterface.cpp

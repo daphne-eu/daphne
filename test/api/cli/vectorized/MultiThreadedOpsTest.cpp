@@ -25,6 +25,7 @@
 
 const std::string dirPath = "test/api/cli/vectorized/";
 
+// TODO: check if `vectorizedPipeline` is used and compare vectorization with no vectorization instead of file
 #define MAKE_TEST_CASE(name) \
     TEST_CASE(name, TAG_OPERATIONS) { \
         DYNAMIC_SECTION(name << ".daphne") { \
@@ -33,6 +34,6 @@ const std::string dirPath = "test/api/cli/vectorized/";
         } \
     }
 
-MAKE_TEST_CASE("runMatMult")
+// MAKE_TEST_CASE("runMatMult") TODO matmult
 // MAKE_TEST_CASE("runEwUnary") FIXME coredump unary-ops symbol not found
 MAKE_TEST_CASE("runEwBinary")

@@ -194,25 +194,3 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
     else
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
 }
-
-std::vector<mlir::Value> mlir::daphne::EwAddOp::createEquivalentDistributedDAG(mlir::OpBuilder &builder,
-                                                                               mlir::ValueRange distributedInputs)
-{
-    auto compute = builder.create<daphne::DistributedComputeOp>(getLoc(),
-        ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
-        distributedInputs);
-    auto &block = compute.body().emplaceBlock();
-    auto argLhs = block.addArgument(distributedInputs[0].getType().cast<HandleType>().getDataType());
-    auto argRhs = block.addArgument(distributedInputs[1].getType().cast<HandleType>().getDataType());
-
-    {
-        mlir::OpBuilder::InsertionGuard guard(builder);
-        builder.setInsertionPoint(&block, block.begin());
-
-        auto addOp = builder.create<EwAddOp>(getLoc(), argLhs, argRhs);
-        builder.create<ReturnOp>(getLoc(), ArrayRef<Value>{addOp});
-    }
-
-    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(getLoc(), compute.getResult(0))});
-    return ret;
-}

@@ -110,11 +110,12 @@ public:
         // create tasks and close input
         // TODO UNIBAS - integration hook scheduling
         uint64_t rlen = input1->getNumRows();
-        uint64_t blksize = (uint64_t)ceil((double)rlen/_numThreads/4);
+        // every thread gets 4 tasks (computation is rounded up)
+        uint64_t blksize = (((rlen - 1) / _numThreads + 1) - 1) / 4 + 1;
         uint64_t batchsize = 1; // row-at-a-time
-        for(uint32_t k=0; (k<_numThreads*4) & (k*blksize<rlen); k++) {
+        for(uint32_t k = 0; k * blksize < rlen; k++) {
             q->enqueueTask(new CompiledPipelineTask<VT>(
-                func, res, input1, input2, k*blksize, std::min((k+1)*blksize,rlen), batchsize));
+                func, res, input1, input2, k * blksize, std::min((k + 1) * blksize, rlen), batchsize));
         }
         q->closeInput();
 

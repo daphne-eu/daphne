@@ -19,18 +19,11 @@
 
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
 #include <utility>
-
-namespace mlir
-{
-namespace daphne
-{
-#include "ir/daphneir/DaphneDistributableOpInterface.cpp.inc"
-}
-}
 
 using namespace mlir;
 
@@ -78,6 +71,7 @@ void DistributeComputationsPass::runOnOperation()
 
     // convert other operations
     ConversionTarget target(getContext());
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
@@ -88,7 +82,6 @@ void DistributeComputationsPass::runOnOperation()
 
     if (failed(applyFullConversion(module, target, std::move(patterns))))
         signalPassFailure();
-    //module.dump();
 }
 
 std::unique_ptr<Pass> daphne::createDistributeComputationsPass()

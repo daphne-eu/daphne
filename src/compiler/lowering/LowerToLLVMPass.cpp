@@ -179,15 +179,7 @@ public:
         else
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
-            if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
-                auto ty = IntegerType::get(getContext(), iTy.getWidth());
-                rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(),
-                    ty,
-                    IntegerAttr::get(ty, op.value().cast<IntegerAttr>().getValue()));
-            }
-            else {
-                rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
-            }
+            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
 
         return success();
     }
@@ -451,7 +443,6 @@ public:
             auto oldReturn = funcBlock.getTerminator();
             rewriter.setInsertionPoint(oldReturn);
 
-            auto cst0 = rewriter.create<ConstantOp>(loc, rewriter.getI32IntegerAttr(0));
             for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
                 auto retVal = oldReturn->getOperand(i);
                 // TODO: check how the GEPOp works exactly, and if this can be written better
@@ -459,7 +450,7 @@ public:
                     rewriter.create<LLVM::GEPOp>(op->getLoc(),
                         pppI1Ty,
                         returnRef,
-                        ArrayRef<Value>({rewriter.create<ConstantOp>(loc, rewriter.getI32IntegerAttr(i))}));
+                        ArrayRef<Value>({rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
                 auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
                 rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
             }
@@ -478,7 +469,7 @@ public:
                     ptrPtrI1Ty,
                     inputsArg,
                     ArrayRef<Value>({
-                        rewriter.create<ConstantOp>(loc, rewriter.getI32IntegerAttr(i))}));
+                        rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
                 // TODO: cast for scalars etc.
                 funcBlock.getArgument(0).replaceAllUsesWith(rewriter.create<LLVM::LoadOp>(loc, addr));
                 funcBlock.eraseArgument(0);

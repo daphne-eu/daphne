@@ -71,7 +71,7 @@ public:
     void execute() override {
        for( uint64_t r = _rl; r < _ru; r+=_bsize ) {
            //create zero-copy views of inputs/outputs
-           uint64_t r2 = std::max(r+_bsize, _ru);
+           uint64_t r2 = std::min(r+_bsize, _ru);
            DenseMatrix<VT>* lres = _res->slice(r, r2);
            DenseMatrix<VT>* linput1 = _input1->slice(r, r2);
            DenseMatrix<VT>* linput2 = (_input2->getNumRows()==1) ?
@@ -108,7 +108,7 @@ public:
     void execute() override {
         for( uint64_t r = _rl; r < _ru; r+=_bsize ) {
             //create zero-copy views of inputs/outputs
-            uint64_t r2 = std::max(r+_bsize, _ru);
+            uint64_t r2 = std::min(r+_bsize, _ru);
             DenseMatrix<VT>* lres = nullptr;
             DenseMatrix<VT>* linput1 = _input1->slice(r, r2);
             DenseMatrix<VT>* linput2 = (_input2->getNumRows()==1) ?
@@ -119,14 +119,14 @@ public:
             //execute function on given data binding (batch size)
             _func(outputs, inputs);
             //TODO: in-place computation via better compiled pipelines
-            auto slice = _res->slice(_rl, r2);
+            auto slice = _res->slice(r, r2);
             for(auto i = 0u; i < slice->getNumRows(); ++i) {
                 for(auto j = 0u; j < slice->getNumCols(); ++j) {
                     slice->set(i, j, lres->get(i, j));
                 }
             }
             //cleanup
-            //TODO cant't delete views without destroying the underlying arrays + private
+            DataObjectFactory::destroy(lres);
         }
     }
 };
