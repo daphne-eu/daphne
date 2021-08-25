@@ -219,6 +219,31 @@
     },
     {
         "kernelTemplate": {
+            "header": "Concat.h",
+            "opName": "concat",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "char *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const char *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateDaphneContext.h",
             "opName": "createDaphneContext",
             "returnType": "void",

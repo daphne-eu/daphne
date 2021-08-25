@@ -447,6 +447,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "max")
         return createEwBinaryOp<EwMaxOp>(loc, func, args);
 
+    // --------------------------------------------------------------------
+    // Strings
+    // --------------------------------------------------------------------
+    
+    if(func == "concat") {
+        checkNumArgsExact(func, numArgs, 2);
+        return static_cast<mlir::Value>(builder.create<ConcatOp>(
+                loc, StringType::get(builder.getContext()), args[0], args[1]
+        ));
+    }
+
     // ********************************************************************
     // Aggregation and statistical
     // ********************************************************************

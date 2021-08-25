@@ -217,6 +217,13 @@ def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntSca
 
 def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 
+// TODO This is just a quick and dirty solution that should be properly
+// integrated with EwConcatOp above.
+def Daphne_ConcatOp : Daphne_Op<"concat"> {
+    let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
+    let results = (outs StrScalar:$res);
+}
+
 // ----------------------------------------------------------------------------
 // Comparisons
 // ----------------------------------------------------------------------------
