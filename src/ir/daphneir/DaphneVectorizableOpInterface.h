@@ -14,26 +14,11 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H
-#define SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H
+#ifndef SRC_IR_DAPHNEIR_DAPHNEVECTORIZABLEOPINTERFACE_H
+#define SRC_IR_DAPHNEIR_DAPHNEVECTORIZABLEOPINTERFACE_H
 
-#include "mlir/IR/BuiltinOps.h"
-#include "mlir/ExecutionEngine/ExecutionEngine.h"
+namespace mlir::daphne {
+#include <ir/daphneir/DaphneVectorizableOpInterface.h.inc>
+}
 
-class DaphneIrExecutor
-{
-public:
-    DaphneIrExecutor(bool distributed, bool vectorized);
-
-    bool runPasses(mlir::ModuleOp module);
-    std::unique_ptr<mlir::ExecutionEngine> createExecutionEngine(mlir::ModuleOp module);
-
-    mlir::MLIRContext *getContext()
-    { return &context_; }
-private:
-    mlir::MLIRContext context_;
-    bool distributed_;
-    bool vectorized_;
-};
-
-#endif //SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H
+#endif // SRC_IR_DAPHNEIR_DAPHNEVECTORIZABLEOPINTERFACE_H

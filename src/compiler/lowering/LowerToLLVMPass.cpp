@@ -20,6 +20,7 @@
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/IR/BlockAndValueMapping.h"
 
 #include <memory>
 #include <utility>
@@ -55,6 +56,53 @@ using AddOpLowering = BinaryOpLowering<daphne::AddOp, AddIOp, AddFOp>;
 using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
 using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
 #endif
+
+// TODO We might want to merge this with ValueTypeUtils, and maybe place it
+// somewhere central.
+std::string mlirTypeToCppTypeName(Type t, bool generalizeToStructure) {
+    if(t.isF64())
+        return "double";
+    else if(t.isF32())
+        return "float";
+    else if(t.isSignedInteger(8))
+        return "int8_t";
+    else if(t.isSignedInteger(32))
+        return "int32_t";
+    else if(t.isSignedInteger(64))
+        return "int64_t";
+    else if(t.isUnsignedInteger(8))
+        return "uint8_t";
+    else if(t.isUnsignedInteger(32))
+        return "uint32_t";
+    else if(t.isUnsignedInteger(64))
+        return "uint64_t";
+    else if(t.isSignlessInteger(1))
+        return "bool";
+    else if(t.isIndex())
+        return "size_t";
+    else if(auto matTy = t.dyn_cast<daphne::MatrixType>())
+        if(generalizeToStructure)
+            return "Structure";
+        else
+            return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+    else if(t.isa<daphne::FrameType>())
+        if(generalizeToStructure)
+            return "Structure";
+        else
+            return "Frame";
+    else if(t.isa<daphne::StringType>())
+        // This becomes "const char *" (which makes perfect sense for
+        // strings) when inserted into the typical "const DT *" template of
+        // kernel input parameters.
+        return "char";
+    else if(t.isa<daphne::DaphneContextType>())
+        return "DaphneContext";
+    else if(auto handleTy = t.dyn_cast<daphne::HandleType>())
+        return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
+    throw std::runtime_error(
+        "no C++ type name known for the given MLIR type"
+    );
+}
 
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
@@ -132,7 +180,7 @@ public:
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
             rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
-        
+
         return success();
     }
 };
@@ -338,6 +386,135 @@ public:
     }
 };
 
+class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::VectorizedPipelineOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::VectorizedPipelineOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        auto loc = op->getLoc();
+        LLVM::LLVMFuncOp fOp;
+        {
+            OpBuilder::InsertionGuard ig(rewriter);
+            auto moduleOp = op->getParentOfType<ModuleOp>();
+            auto &moduleBody = moduleOp.body().front();
+            rewriter.setInsertionPointToStart(&moduleBody);
+
+            static auto ix = 0;
+            std::string funcName = "_vect" + std::to_string(++ix);
+
+            auto &bodyBlock = op.body().front();
+
+            // TODO: multi-input multi-return support
+            auto i1Ty = IntegerType::get(getContext(), 1);
+            auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
+            auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
+            auto pppI1Ty = LLVM::LLVMPointerType::get(ptrPtrI1Ty);
+            // TODO: pass daphne context to function
+            auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()),
+                {/*outputs...*/pppI1Ty, /*inputs...*/ptrPtrI1Ty});
+
+            fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
+
+            BlockAndValueMapping mapper;
+            op.body().cloneInto(&fOp.body(), mapper);
+
+            auto &funcBlock = fOp.body().front();
+
+            rewriter.setInsertionPointToStart(&funcBlock);
+            // TODO: we should not create a new daphneContext, instead pass the one created in the main function
+            auto createDaphneFnName = "_createDaphneContext__DaphneContext";
+            Value daphneContext = rewriter
+                .create<daphne::CallKernelOp>(loc,
+                    createDaphneFnName, ValueRange({}), TypeRange({ptrI1Ty}))
+                .getResult(0);
+            for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
+                if (callKernelOp.callee() != createDaphneFnName) {
+                    callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
+                }
+            }
+
+            auto ip = rewriter.saveInsertionPoint();
+            // Update function block to write return value by reference instead
+            auto returnRef = funcBlock.addArgument(pppI1Ty);
+            auto oldReturn = funcBlock.getTerminator();
+            rewriter.setInsertionPoint(oldReturn);
+
+            for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
+                auto retVal = oldReturn->getOperand(i);
+                // TODO: check how the GEPOp works exactly, and if this can be written better
+                auto addr1 =
+                    rewriter.create<LLVM::GEPOp>(op->getLoc(),
+                        pppI1Ty,
+                        returnRef,
+                        ArrayRef<Value>({rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
+                rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
+            }
+            rewriter.create<daphne::CallKernelOp>(loc,
+                "_destroyDaphneContext",
+                ArrayRef<Value>({daphneContext}));
+            rewriter.create<ReturnOp>(loc);
+            oldReturn->erase();
+
+            // Extract inputs from array containing them and remove the block arguments matching the old inputs of the
+            // `VectorizedPipelineOp`
+            rewriter.restoreInsertionPoint(ip);
+            auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty);
+            for(auto i = 0u; i < operands.size(); ++i) {
+                auto addr = rewriter.create<LLVM::GEPOp>(loc,
+                    ptrPtrI1Ty,
+                    inputsArg,
+                    ArrayRef<Value>({
+                        rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                // TODO: cast for scalars etc.
+                funcBlock.getArgument(0).replaceAllUsesWith(rewriter.create<LLVM::LoadOp>(loc, addr));
+                funcBlock.eraseArgument(0);
+            }
+        }
+
+        auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
+
+        std::stringstream callee;
+        callee << '_' << op->getName().stripDialect().str();
+
+        // Append names of result types to the kernel name.
+        Operation::result_type_range resultTypes = op->getResultTypes();
+        for(size_t i = 0; i < resultTypes.size(); i++)
+            callee << "__" << mlirTypeToCppTypeName(resultTypes[i], false);
+
+        // Append names of operand types to the kernel name. Variadic
+        // operands, which can have an arbitrary number of occurrences, are
+        // treated specially.
+        Operation::operand_type_range operandTypes = op->getOperandTypes();
+        // The operands of the CallKernelOp may differ from the operands
+        // of the given operation, if it has a variadic operand.
+        std::vector<Value> newOperands;
+        // TODO: variadic
+        for(size_t i = 0; i < operandTypes.size(); i++) {
+            callee << "__" << mlirTypeToCppTypeName(operandTypes[i], false);
+            newOperands.push_back(op->getOperand(i));
+        }
+        // TODO: pass function pointer with special placeholder
+        callee << "__void";
+        newOperands.push_back(fnPtr);
+
+        // Create a CallKernelOp for the kernel function to call and return
+        // success().
+        auto kernel = rewriter.create<daphne::CallKernelOp>(
+            loc,
+            callee.str(),
+            newOperands,
+            op->getResultTypes()
+        );
+        rewriter.replaceOp(op, kernel.getResults());
+        return success();
+    }
+};
+
 namespace
 {
     struct DaphneLowerToLLVMPass
@@ -417,7 +594,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     patterns.insert<
             CallKernelOpLowering,
-            CreateVariadicPackOpLowering
+            CreateVariadicPackOpLowering,
+            VectorizedPipelineOpLowering
     >(typeConverter, &getContext());
     patterns.insert<
             ConstantOpLowering,
@@ -425,9 +603,20 @@ void DaphneLowerToLLVMPass::runOnOperation()
             StoreVariadicPackOpLowering
     >(&getContext());
 
+    target.addIllegalOp<daphne::CallKernelOp>();
+
+    // FIXME: for some weird reason some `daphne.call_kernel` operations created/moved into a new function for
+    //  vectorized computations escape lowering, therefore we first do a partial conversion and then a new conversion
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+        signalPassFailure();
+
+    OwningRewritePatternList patternsNew(&getContext());
+    // populate dialect conversions
+    populateStdToLLVMConversionPatterns(typeConverter, patternsNew);
+    patternsNew.insert<CallKernelOpLowering>(typeConverter, &getContext());
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
-    if (failed(applyFullConversion(module, target, std::move(patterns))))
+    if (failed(applyFullConversion(module, target, std::move(patternsNew))))
         signalPassFailure();
 }
 

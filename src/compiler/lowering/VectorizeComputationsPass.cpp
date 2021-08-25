@@ -24,46 +24,45 @@
 
 #include <memory>
 #include <utility>
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 using namespace mlir;
 
 namespace
 {
-struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
+struct Vectorize : public OpInterfaceConversionPattern<daphne::Vectorizable>
 {
     using OpInterfaceConversionPattern::OpInterfaceConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::Distributable op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::Vectorizable op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
-        std::vector<Value> distributedInputs;
-        for (auto operand : operands) {
-            if (operand.getType().isa<daphne::HandleType>()) {
-                distributedInputs.push_back(operand);
-            }
-            else {
-                // TODO: if DistributedCollectOp, just use handle input of it
-                distributedInputs.push_back(rewriter.create<daphne::DistributeOp>(op->getLoc(),
-                    daphne::HandleType::get(getContext(), operand.getType()),
-                    operand));
-            }
-        }
-        auto results = op.createEquivalentDistributedDAG(rewriter, distributedInputs);
+        auto pipeline = rewriter.create<daphne::VectorizedPipelineOp>(op->getLoc(), op->getResultTypes(), operands);
+        Block *bodyBlock = rewriter.createBlock(&pipeline.body());
 
-        rewriter.replaceOp(op, results);
+        for(auto argTy : ValueRange(operands).getTypes()) {
+            bodyBlock->addArgument(argTy);
+        }
+        auto *cloned = op->clone();
+        cloned->setOperands(bodyBlock->getArguments());
+        rewriter.setInsertionPointToStart(bodyBlock);
+        rewriter.insert(cloned);
+        auto retOp = rewriter.create<daphne::ReturnOp>(cloned->getLoc(), cloned->getResults());
+
+        rewriter.replaceOp(op, pipeline->getResults());
         return success();
     }
 };
 
-struct DistributeComputationsPass
-    : public PassWrapper<DistributeComputationsPass, OperationPass<ModuleOp>>
+struct VectorizeComputationsPass
+    : public PassWrapper<VectorizeComputationsPass, OperationPass<ModuleOp>>
 {
     void runOnOperation() final;
 };
 }
 
-void DistributeComputationsPass::runOnOperation()
+void VectorizeComputationsPass::runOnOperation()
 {
     auto module = getOperation();
 
@@ -75,16 +74,20 @@ void DistributeComputationsPass::runOnOperation()
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
-      return !llvm::isa<daphne::Distributable>(op) || op->getParentOfType<daphne::DistributedComputeOp>();
+      // TODO: support scalars
+      return !llvm::isa<daphne::Vectorizable>(op) || op->getParentOfType<daphne::VectorizedPipelineOp>()
+          || llvm::any_of(op->getOperandTypes(), [&](Type ty)
+          { return !ty.isa<daphne::MatrixType>(); });
     });
 
-    patterns.insert<Distribute>(&getContext());
+    patterns.insert<Vectorize>(&getContext());
 
-    if (failed(applyFullConversion(module, target, std::move(patterns))))
+    if(failed(applyFullConversion(module, target, std::move(patterns))))
         signalPassFailure();
+    //module.dump();
 }
 
-std::unique_ptr<Pass> daphne::createDistributeComputationsPass()
+std::unique_ptr<Pass> daphne::createVectorizeComputationsPass()
 {
-    return std::make_unique<DistributeComputationsPass>();
+    return std::make_unique<VectorizeComputationsPass>();
 }
