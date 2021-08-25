@@ -112,15 +112,10 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             if funcName == "_PoolForward":
                 funcName = "_" + opCode.lower() + funcName[1:]
             else:
-                print("funcName: " + funcName)
-                print("opCodeType: " + opCodeType)
-                print("opCode: " + opCode)
                 opCodeWord = opCodeType[:-len("OpCode")]
                 funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
-                print(funcName)
                 funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
-                print(funcName)
-        
+
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}{}({}) {{\n".format(
                 funcName,

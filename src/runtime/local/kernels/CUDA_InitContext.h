@@ -29,7 +29,9 @@
 // ****************************************************************************
 
 static void initCUDAContext(DCTX(ctx)) {
+#ifdef NDEBUG
 	std::cerr << "ToDo: provide user config to initCUDAContext" << std::endl;
+#endif
 	ctx->cuda_contexts.push_back(CUDAContext::create(0));
 }
 

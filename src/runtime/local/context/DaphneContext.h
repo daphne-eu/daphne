@@ -63,8 +63,9 @@ struct DaphneContext {
     
     ~DaphneContext() {
 #ifdef USE_CUDA
+#ifdef NDEBUG
 		std::cout << "desctructing DaphneContext" << std::endl;
-
+#endif
 //    		for (auto& ctx : cuda_contexts)
 //    			ctx->destroy();
 //ToDo: use interface for create/destroy

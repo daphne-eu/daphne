@@ -17,13 +17,15 @@
 #include "runtime/local/context/CUDAContext.h"
 
 CUDAContext::~CUDAContext() {
+#ifdef NDEBUG
 	std::cout << "destructing CUDAContext" << std::endl;
+#endif
 	if(cublas_handle) destroy();
 }
 
 //std::unique_ptr<CUDAContext> CUDAContext::create(int device_id) {
 CUDAContext* CUDAContext::create(int device_id) {
-#ifndef NDEBUG
+#ifdef NDEBUG
 	std::cout << "creating CUDA context..." << std::endl;
 #endif
 //	std::unique_ptr<CUDAContext> context = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
@@ -46,7 +48,7 @@ CUDAContext* CUDAContext::create(int device_id) {
 }
 
 void CUDAContext::destroy() {
-#ifndef NDEBUG
+#ifdef NDEBUG
 	std::cout << "Destroying CUDA context..." << std::endl;
 #endif
 	CHECK_CUBLAS(cublasDestroy(cublas_handle));
@@ -84,9 +86,6 @@ void CUDAContext::init() {
 //	CHECK_CUBLAS(cublasLtCreate(&cublaslt_Handle));
 //	CHECK_CUDART(cudaMalloc(&cublas_workspace, cublas_workspace_size));
 }
-
-template<class T>
-cudnnDataType_t CUDAContext::getCUDNNDataType() const {}
 
 template<>
 cudnnDataType_t CUDAContext::getCUDNNDataType<float>() const {

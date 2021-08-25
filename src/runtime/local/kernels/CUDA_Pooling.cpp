@@ -40,7 +40,7 @@ namespace Pooling {
 				CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING, CUDNN_PROPAGATE_NAN, pool_h, pool_w, pad_h, pad_w, stride_h,
 				stride_w));
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->data_type, batch_size,
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), batch_size,
 				num_channels, img_h, img_w));
 
 		const int tensorDims = 4;
@@ -50,7 +50,7 @@ namespace Pooling {
 
 		int n = tensorOuputDimA[0]; int c = tensorOuputDimA[1];
 		int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->data_type, n, c, h, w));
+		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, c, h, w));
 
 		if (res == nullptr) {
 			res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false);
