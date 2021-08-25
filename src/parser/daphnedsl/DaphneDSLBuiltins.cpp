@@ -223,22 +223,23 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
 // Other utilities
 // ****************************************************************************
 
+// TODO Copied here from FrameLabelInference, have it just once.
+std::string getConstantString2(mlir::Value v) {
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>())
+            return strAttr.getValue().str();
+    throw std::runtime_error(
+            "the given value must be a constant of string type"
+    );
+}
+
 FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
     std::string filenameStr;
-    bool found = false;
-
-    // TODO Make getConstantString() from DaphneInferFrameLabelsOpInterface
-    // a central utility and use it here.
-    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(filename.getDefiningOp()))
-        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
-            filenameStr = strAttr.getValue().str();
-            found = true;
-        }
-    if(!found)
-        throw std::runtime_error(
-                "built-in function " + func + " requires the filename to be a "
-                "string constant"
-        );
+    
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
+        filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
+    else
+        filenameStr = getConstantString2(filename);
 
     return FileMetaData::ofFile(filenameStr);
 }
