@@ -20,13 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Handle.h>
 #include <runtime/local/vectorized/MTWrapper.h>
-
-#include <runtime/distributed/proto/worker.pb.h>
-#include <runtime/distributed/proto/worker.grpc.pb.h>
-
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 
 #include <cassert>
 #include <cstddef>

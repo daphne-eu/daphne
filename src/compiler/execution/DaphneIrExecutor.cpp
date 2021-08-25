@@ -35,7 +35,8 @@
 #include <exception>
 #include <memory>
 
-DaphneIrExecutor::DaphneIrExecutor(bool distributed) : distributed_(distributed)
+DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized)
+: distributed_(distributed), vectorized_(vectorized)
 {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
@@ -62,8 +63,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
-        // TODO: add cli argument for activation/deactivation
-        pm.addPass(mlir::daphne::createVectorizeComputationsPass());
+        if(vectorized_)
+            pm.addPass(mlir::daphne::createVectorizeComputationsPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 

@@ -23,7 +23,7 @@
 class DaphneIrExecutor
 {
 public:
-    DaphneIrExecutor(bool distributed);
+    DaphneIrExecutor(bool distributed, bool vectorized);
 
     bool runPasses(mlir::ModuleOp module);
     std::unique_ptr<mlir::ExecutionEngine> createExecutionEngine(mlir::ModuleOp module);
@@ -33,6 +33,7 @@ public:
 private:
     mlir::MLIRContext context_;
     bool distributed_;
+    bool vectorized_;
 };
 
 #endif //SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H
