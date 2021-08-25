@@ -16,11 +16,10 @@
 
 #include <ir/daphneir/Daphne.h>
 
-#include <string>
 #include <vector>
-#include <stdexcept>
 
-namespace mlir::daphne {
+namespace mlir::daphne
+{
 #include <ir/daphneir/DaphneVectorizableOpInterface.cpp.inc>
 }
 
@@ -32,18 +31,33 @@ using namespace mlir;
 // For families of operations.
 
 template<class EwBinaryOp>
-std::vector<daphne::VectorSplit> getVectorSplits_EwBinaryOp(EwBinaryOp * op) {
+std::vector<daphne::VectorSplit> getVectorSplits_EwBinaryOp(EwBinaryOp *op)
+{
     return {daphne::VectorSplit::ROWS, daphne::VectorSplit::ROWS};
 }
 template<class EwBinaryOp>
-std::vector<daphne::VectorCombine> getVectorCombines_EwBinaryOp(EwBinaryOp * op) {
+std::vector<daphne::VectorCombine> getVectorCombines_EwBinaryOp(EwBinaryOp *op)
+{
     return {daphne::VectorCombine::ROWS};
 }
+template<class EwUnaryOp>
+std::vector<daphne::VectorSplit> getVectorSplits_EwUnaryOp(EwUnaryOp *op)
+{
+    return {daphne::VectorSplit::ROWS};
+}
+template<class EwUnaryOp>
+std::vector<daphne::VectorCombine> getVectorCombines_EwUnaryOp(EwUnaryOp *op)
+{
+    return {daphne::VectorCombine::ROWS};
+}
+
 
 // ****************************************************************************
 // Vector split and combine implementations
 // ****************************************************************************
 
+// ****************************************************************************
+// Binary
 #define IMPL_SPLIT_COMBINE_EWBINARYOP(OP) \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { \
         return getVectorSplits_EwBinaryOp(this); \
@@ -80,3 +94,33 @@ IMPL_SPLIT_COMBINE_EWBINARYOP(EwLtOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwLeOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwGtOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwGeOp)
+#undef IMPL_SPLIT_COMBINE_EWBINARYOP
+// ****************************************************************************
+
+// ****************************************************************************
+// Unary
+#define IMPL_SPLIT_COMBINE_EWUNARYOP(OP) \
+    std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { \
+        return getVectorSplits_EwUnaryOp(this); \
+    } \
+    std::vector<daphne::VectorCombine> daphne::OP::getVectorCombines() { \
+        return getVectorCombines_EwUnaryOp(this); \
+    }
+
+IMPL_SPLIT_COMBINE_EWUNARYOP(EwSqrtOp)
+
+#undef IMPL_SPLIT_COMBINE_EWUNARYOP
+// ****************************************************************************
+
+// ****************************************************************************
+// Aggregations
+// TODO: splitting and combining by column probably makes more sense
+std::vector<daphne::VectorSplit> daphne::ColAggSumOp::getVectorSplits()
+{
+    return {daphne::VectorSplit::ROWS};
+}
+std::vector<daphne::VectorCombine> daphne::ColAggSumOp::getVectorCombines()
+{
+    return {daphne::VectorCombine::ADD};
+}
+// ****************************************************************************

@@ -35,5 +35,6 @@ const std::string dirPath = "test/api/cli/vectorized/";
     }
 
 // MAKE_TEST_CASE("runMatMult") TODO matmult
-// MAKE_TEST_CASE("runEwUnary") FIXME coredump unary-ops symbol not found
+MAKE_TEST_CASE("runEwUnary")
 MAKE_TEST_CASE("runEwBinary")
+MAKE_TEST_CASE("runColAgg")

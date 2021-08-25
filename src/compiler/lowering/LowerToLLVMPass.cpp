@@ -481,24 +481,47 @@ public:
         std::stringstream callee;
         callee << '_' << op->getName().stripDialect().str();
 
+        // TODO: multi-return, pass returns as operand instead
         // Append names of result types to the kernel name.
         Operation::result_type_range resultTypes = op->getResultTypes();
         for(size_t i = 0; i < resultTypes.size(); i++)
             callee << "__" << mlirTypeToCppTypeName(resultTypes[i], false);
 
-        // Append names of operand types to the kernel name. Variadic
-        // operands, which can have an arbitrary number of occurrences, are
-        // treated specially.
-        Operation::operand_type_range operandTypes = op->getOperandTypes();
-        // The operands of the CallKernelOp may differ from the operands
-        // of the given operation, if it has a variadic operand.
         std::vector<Value> newOperands;
-        // TODO: variadic
-        for(size_t i = 0; i < operandTypes.size(); i++) {
-            callee << "__" << mlirTypeToCppTypeName(operandTypes[i], false);
-            newOperands.push_back(op->getOperand(i));
+        // TODO: support different operand types
+        auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF64Type());
+        auto numOperands = operands.size();
+        callee << "__" << mlirTypeToCppTypeName(operandType, false);
+
+        // Variadic operand.
+        callee << "_variadic__size_t";
+        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(loc,
+            daphne::VariadicPackType::get(rewriter.getContext(), operandType),
+            rewriter.getIndexAttr(numOperands));
+        for(size_t k = 0; k < numOperands; k++) {
+            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOp, operands[k], rewriter.getIndexAttr(k));
         }
-        // TODO: pass function pointer with special placeholder
+        newOperands.push_back(cvpOp);
+        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numOperands)));
+
+        auto i64PtrTy = LLVM::LLVMPointerType::get(rewriter.getI64Type());
+        // Add array of split enums
+        callee << "__int64_t";
+        std::vector<Value> splitConsts;
+        for(auto split : op.splits()) {
+            splitConsts.push_back(rewriter.create<ConstantOp>(loc, split));
+        }
+        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), splitConsts));
+
+        // Add array of combine enums
+        callee << "__int64_t";
+        std::vector<Value> combineConsts;
+        for(auto combine : op.combines()) {
+            combineConsts.push_back(rewriter.create<ConstantOp>(loc, combine));
+        }
+        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), combineConsts));
+
+        // TODO: pass function pointer with special placeholder instead of `void`
         callee << "__void";
         newOperands.push_back(fnPtr);
 
@@ -512,6 +535,20 @@ public:
         );
         rewriter.replaceOp(op, kernel.getResults());
         return success();
+    }
+private:
+    static Value convertToArray(Location loc, ConversionPatternRewriter &rewriter, Type valueTy, ValueRange values)
+    {
+        auto valuePtrTy = LLVM::LLVMPointerType::get(valueTy);
+        auto array = rewriter.create<LLVM::AllocaOp>(loc,
+            valuePtrTy,
+            Value(rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(values.size()))));
+        for(auto i = 0u; i < values.size(); ++i) {
+            Value cstI = rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i));
+            auto addr = rewriter.create<LLVM::GEPOp>(loc, valuePtrTy, array, ArrayRef<Value>({cstI}));
+            rewriter.create<LLVM::StoreOp>(loc, values[i], addr);
+        }
+        return array;
     }
 };
 

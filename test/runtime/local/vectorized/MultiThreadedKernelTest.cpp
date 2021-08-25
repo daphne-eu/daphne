@@ -15,7 +15,6 @@
  */
 
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/EwBinaryMat.h>
 #include <runtime/local/kernels/RandMatrix.h>
 #include <runtime/local/vectorized/MTWrapper.h>

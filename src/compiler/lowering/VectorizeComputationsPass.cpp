@@ -38,7 +38,25 @@ struct Vectorize : public OpInterfaceConversionPattern<daphne::Vectorizable>
     matchAndRewrite(daphne::Vectorizable op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
-        auto pipeline = rewriter.create<daphne::VectorizedPipelineOp>(op->getLoc(), op->getResultTypes(), operands);
+        auto vSplits = op.getVectorSplits();
+        auto vCombines = op.getVectorCombines();
+        // TODO: although we do create enum attributes, it might make sense/make it easier to
+        //  just directly use an I64ArrayAttribute
+        std::vector<Attribute> vSplitAttrs;
+        vSplitAttrs.reserve(vSplits.size());
+        for (auto vSplit : vSplits) {
+            vSplitAttrs.push_back(daphne::VectorSplitAttr::get(getContext(), vSplit));
+        }
+        std::vector<Attribute> vCombineAttrs;
+        vCombineAttrs.reserve(vCombines.size());
+        for (auto vCombine : vCombines) {
+            vCombineAttrs.push_back(daphne::VectorCombineAttr::get(getContext(), vCombine));
+        }
+        auto pipeline = rewriter.create<daphne::VectorizedPipelineOp>(op->getLoc(),
+            op->getResultTypes(),
+            operands,
+            rewriter.getArrayAttr(vSplitAttrs),
+            rewriter.getArrayAttr(vCombineAttrs));
         Block *bodyBlock = rewriter.createBlock(&pipeline.body());
 
         for(auto argTy : ValueRange(operands).getTypes()) {
