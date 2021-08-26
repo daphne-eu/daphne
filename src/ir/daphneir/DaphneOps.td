@@ -936,13 +936,13 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 // Vectorized operations
 // ****************************************************************************
 
-def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline"> {
+def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 
-    // TODO: will probably take `DaphneContext` as input for the number of threads etc.
     let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>,
             TypedArrayAttrBase<VectorSplitAttr, "Vector-Splits">:$splits,
-            TypedArrayAttrBase<VectorCombineAttr, "Vector-Combines">:$combines);
+            TypedArrayAttrBase<VectorCombineAttr, "Vector-Combines">:$combines,
+            Optional<DaphneContext>:$ctx);
     let results = (outs Variadic<MatrixOrFrame>);
     let regions = (region SizedRegion<1>:$body);
 }

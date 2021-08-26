@@ -395,7 +395,12 @@ public:
     matchAndRewrite(daphne::VectorizedPipelineOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
+        if (op.ctx() == nullptr) {
+            op->emitOpError() << "`DaphneContext` not known";
+            return failure();
+        }
         auto loc = op->getLoc();
+        auto numDataOperands = operands.size() - 1;// pass daphneContext separately
         LLVM::LLVMFuncOp fOp;
         {
             OpBuilder::InsertionGuard ig(rewriter);
@@ -415,7 +420,7 @@ public:
             auto pppI1Ty = LLVM::LLVMPointerType::get(ptrPtrI1Ty);
             // TODO: pass daphne context to function
             auto funcType = LLVM::LLVMFunctionType::get(LLVM::LLVMVoidType::get(rewriter.getContext()),
-                {/*outputs...*/pppI1Ty, /*inputs...*/ptrPtrI1Ty});
+                {/*outputs...*/pppI1Ty, /*inputs...*/ptrPtrI1Ty, /*daphneContext...*/ptrI1Ty});
 
             fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
 
@@ -424,25 +429,32 @@ public:
 
             auto &funcBlock = fOp.body().front();
 
-            rewriter.setInsertionPointToStart(&funcBlock);
+            auto returnRef = funcBlock.addArgument(pppI1Ty);
+            auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty);
+            auto daphneContext = funcBlock.addArgument(ptrI1Ty);
             // TODO: we should not create a new daphneContext, instead pass the one created in the main function
-            auto createDaphneFnName = "_createDaphneContext__DaphneContext";
-            Value daphneContext = rewriter
-                .create<daphne::CallKernelOp>(loc,
-                    createDaphneFnName, ValueRange({}), TypeRange({ptrI1Ty}))
-                .getResult(0);
             for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
-                if (callKernelOp.callee() != createDaphneFnName) {
-                    callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
-                }
+                callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
             }
 
-            auto ip = rewriter.saveInsertionPoint();
+            // Extract inputs from array containing them and remove the block arguments matching the old inputs of the
+            // `VectorizedPipelineOp`
+            rewriter.setInsertionPointToStart(&funcBlock);
+
+            for(auto i = 0u; i < numDataOperands; ++i) {
+                auto addr = rewriter.create<LLVM::GEPOp>(loc,
+                    ptrPtrI1Ty,
+                    inputsArg,
+                    ArrayRef<Value>({
+                        rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                // TODO: cast for scalars etc.
+                funcBlock.getArgument(0).replaceAllUsesWith(rewriter.create<LLVM::LoadOp>(loc, addr));
+                funcBlock.eraseArgument(0);
+            }
+
             // Update function block to write return value by reference instead
-            auto returnRef = funcBlock.addArgument(pppI1Ty);
             auto oldReturn = funcBlock.getTerminator();
             rewriter.setInsertionPoint(oldReturn);
-
             for (auto i = 0u; i < oldReturn->getNumOperands(); ++i) {
                 auto retVal = oldReturn->getOperand(i);
                 // TODO: check how the GEPOp works exactly, and if this can be written better
@@ -454,26 +466,8 @@ public:
                 auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
                 rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
             }
-            rewriter.create<daphne::CallKernelOp>(loc,
-                "_destroyDaphneContext",
-                ArrayRef<Value>({daphneContext}));
             rewriter.create<ReturnOp>(loc);
             oldReturn->erase();
-
-            // Extract inputs from array containing them and remove the block arguments matching the old inputs of the
-            // `VectorizedPipelineOp`
-            rewriter.restoreInsertionPoint(ip);
-            auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty);
-            for(auto i = 0u; i < operands.size(); ++i) {
-                auto addr = rewriter.create<LLVM::GEPOp>(loc,
-                    ptrPtrI1Ty,
-                    inputsArg,
-                    ArrayRef<Value>({
-                        rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
-                // TODO: cast for scalars etc.
-                funcBlock.getArgument(0).replaceAllUsesWith(rewriter.create<LLVM::LoadOp>(loc, addr));
-                funcBlock.eraseArgument(0);
-            }
         }
 
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
@@ -490,21 +484,19 @@ public:
         std::vector<Value> newOperands;
         // TODO: support different operand types
         auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF64Type());
-        auto numOperands = operands.size();
         callee << "__" << mlirTypeToCppTypeName(operandType, false);
 
         // Variadic operand.
         callee << "_variadic__size_t";
         auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(loc,
             daphne::VariadicPackType::get(rewriter.getContext(), operandType),
-            rewriter.getIndexAttr(numOperands));
-        for(size_t k = 0; k < numOperands; k++) {
+            rewriter.getIndexAttr(numDataOperands));
+        for(size_t k = 0; k < numDataOperands; k++) {
             rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOp, operands[k], rewriter.getIndexAttr(k));
         }
         newOperands.push_back(cvpOp);
-        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numOperands)));
+        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numDataOperands)));
 
-        auto i64PtrTy = LLVM::LLVMPointerType::get(rewriter.getI64Type());
         // Add array of split enums
         callee << "__int64_t";
         std::vector<Value> splitConsts;
@@ -524,6 +516,8 @@ public:
         // TODO: pass function pointer with special placeholder instead of `void`
         callee << "__void";
         newOperands.push_back(fnPtr);
+        // Add ctx
+        newOperands.push_back(operands.back());
 
         // Create a CallKernelOp for the kernel function to call and return
         // success().

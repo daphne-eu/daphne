@@ -56,7 +56,8 @@ struct Vectorize : public OpInterfaceConversionPattern<daphne::Vectorizable>
             op->getResultTypes(),
             operands,
             rewriter.getArrayAttr(vSplitAttrs),
-            rewriter.getArrayAttr(vCombineAttrs));
+            rewriter.getArrayAttr(vCombineAttrs),
+            nullptr);
         Block *bodyBlock = rewriter.createBlock(&pipeline.body());
 
         for(auto argTy : ValueRange(operands).getTypes()) {
