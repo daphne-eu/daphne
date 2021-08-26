@@ -1,10 +1,10 @@
 
 
 C=10;
-batch_size=as.ui32(128);
+batch_size=as.ui32(4096);
 Hin = 32;
 Win = 32;
-verbose = false;
+verbose = true;
 t_start_iter = 0;
 t_end_fwd = 0;
 // sec_factor = as.f32(10^(-9));
@@ -187,8 +187,7 @@ t_start_predict = now();
 probs = fill(0, N, num_classes);
 iters = as.ui32(ceil(as.f32(N) / as.f32(batch_size)));
 print("iterations=",0); print(iters);
-//iter_end = iters - as.ui32(1);
-iter_end = 0;
+iter_end = iters - as.ui32(1);
 
 for(i in 0:iter_end) {
 // 		if (verbose) { t_start_iter = now(); }
@@ -207,7 +206,7 @@ for(i in 0:iter_end) {
 	# pre resblock: conv, bn, relu
 //print("W_cv1 dims: ",0); print(nrow(W_cv1),0);print("x",0);print(ncol(W_cv1));
 //print("b_cv1 dims: ",0); print(nrow(b_cv1),0);print("x",0);print(ncol(b_cv1));
-	out_cv1, h32, w32= conv2d(X_batch, W_cv1, nrow(X_batch), C, Hin, Hin, 3, 3, 1, 1, 1, 1, b_cv1);
+	out_cv1, h32, w32 = conv2d(X_batch, W_cv1, nrow(X_batch), C, Hin, Hin, 3, 3, 1, 1, 1, 1, b_cv1);
 
 //	print(out_cv1[fill(1,1,1),]);
 //	print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
@@ -330,6 +329,8 @@ for(i in 0:iter_end) {
 
 	iter_probs = softmax(out_af);
 
+	free(X_batch);
+	free(out_cv1); free(out_bn1); free(out_r1);
 	free(out_cv1_S1B1); free(out_cv2_S1B1); free(out_cv3_S1B1); free(out_cv4_S1B1);
 	free(out_cv1_S1B2); free(out_cv2_S1B2); free(out_cv3_S1B2);
 	free(out_cv1_S2B1); free(out_cv2_S2B1); free(out_cv3_S2B1); free(out_cv4_S2B1);
@@ -352,6 +353,7 @@ for(i in 0:iter_end) {
 	free(out_r1_S3B2); free(out_r2_S3B2); free(out_r3_S3B2);
 
 	free(out_resblk1); free(out_resblk2); free(out_resblk3); free(out_resblk4); free(out_resblk5); free(out_resblk6);
+	free(out_bn2); free(out_r2); free(out_avg); free(out_af); free(iter_probs);
 
 //	print("iter_probs dims: ",0); print(nrow(iter_probs),0);print("x",0);print(ncol(iter_probs));
 //	print(iter_probs[fill(1,1,1),]);
