@@ -617,6 +617,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, lhs.getType(), lhs, rhs, weights, outHeight, outWidth
         ));
     }
+    if(func == "syrk") {
+        return createSameTypeUnaryOp<SyrkOp>(loc, func, args);
+    }
 
     // ********************************************************************
     // Extended relational algebra

@@ -615,6 +615,13 @@ def Daphne_CTableOp : Daphne_Op<"ctable"> {
     let results = (outs Matrix:$res);
 }
 
+def Daphne_SyrkOp : Daphne_Op<"syrk"> {
+    // TODO: support `A @ t(A)` operation
+    let summary = [{Performs the operation `t(A) @ A`}];
+    let arguments = (ins Matrix:$arg);
+    let results = (outs Matrix:$res);
+}
+
 // ****************************************************************************
 // Extended relational algebra
 // ****************************************************************************

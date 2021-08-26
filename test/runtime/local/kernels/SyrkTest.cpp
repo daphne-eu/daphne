@@ -18,6 +18,9 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/MatMul.h>
+#include <runtime/local/kernels/Transpose.h>
+#include <runtime/local/kernels/Syrk.h>
+#include <runtime/local/kernels/PrintObj.h>
 
 #include <tags.h>
 
@@ -26,14 +29,20 @@
 #include <vector>
 
 template<class DT>
-void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp) {
-    DT * res = nullptr;
-    matMul<DT, DT, DT>(res, lhs, rhs, nullptr);
-    CHECK(*res == *exp);
-    DataObjectFactory::destroy(res);
+void checkSyrk(const DT * arg) {
+    DT * resExp = nullptr;
+    DT * argT = nullptr;
+    transpose(argT, arg, nullptr);
+    matMul(resExp, argT, arg, nullptr);
+
+    DT * resAct = nullptr;
+    syrk(resAct, arg, nullptr);
+    CHECK(*resAct == *resExp);
+    DataObjectFactory::destroy(resAct);
+    DataObjectFactory::destroy(resExp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("Syrk", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
     
     auto m0 = genGivenVals<DT>(3, {
@@ -80,33 +89,16 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
         2,
         3
     });
-    auto v3 = genGivenVals<DT>(3, {
-        6,
-        6,
-        6
-    });
-    auto v4 = genGivenVals<DT>(3, {
-        14,
-        11,
-        11
-    });
-    auto v5 = genGivenVals<DT>(1, {
-        1,
-        2,
-        3
-    });
-    auto v6 = genGivenVals<DT>(1, {14});
 
-    checkMatMul(m0, m0, m0);
-    checkMatMul(m1, m1, m2);
-    checkMatMul(m3, m4, m5);
-    checkMatMul(m0, v0, v0);
-    checkMatMul(m1, v0, v0);
-    checkMatMul(m2, v0, v0);
-    checkMatMul(m0, v1, v0);
-    checkMatMul(m1, v1, v3);
-    checkMatMul(m1, v2, v4);
-    checkMatMul(v5, v2, v6);
+    checkSyrk(m0);
+    checkSyrk(m1);
+    checkSyrk(m2);
+    checkSyrk(m3);
+    checkSyrk(m4);
+    checkSyrk(m5);
+    checkSyrk(v0);
+    checkSyrk(v1);
+    checkSyrk(v2);
 
-    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
+    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2);
 }
