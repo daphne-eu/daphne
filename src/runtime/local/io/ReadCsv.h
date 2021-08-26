@@ -80,37 +80,34 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
       res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
     }
 
-    // TODO Improve the performance in the same way as we did it for reading
-    // frames.
-    
     char *line;
-    std::stringstream lineStream;
-    std::string cell;
+    size_t cell = 0;
+    VT * valuesRes = res->getValues();
 
-    size_t row = 0, col = 0;
-
-    while (1) {
+    for(size_t r = 0; r < numRows; r++) {
       line = getLine(file);
+      // TODO Assuming that the given numRows is available, this should never
+      // happen.
+//      if (line == NULL)
+//        break;
 
-      if (line == NULL)
-        break;
-
-      lineStream.str(std::string(line));
-
-      while (std::getline(lineStream, cell, delim)) {
+      size_t pos = 0;
+      for(size_t c = 0; c < numCols; c++) {
         VT val;
-        convertStr(cell, &val);
-        res->set(row, col, val);
-        if (++col >= numCols) {
-          break;
+        convertCstr(line + pos, &val);
+        
+        // TODO This assumes that rowSkip == numCols.
+        valuesRes[cell++] = val;
+        
+        // TODO We could even exploit the fact that the strtoX functions can
+        // return a pointer to the first character after the parsed input, then
+        // we wouldn't have to search for that ourselves, just would need to
+        // check if it is really the delimiter.
+        if(c < numCols - 1) {
+            while(line[pos] != delim) pos++;
+            pos++; // skip delimiter
         }
       }
-
-      lineStream.clear();
-      if (++row >= numRows) {
-        break;
-      }
-      col = 0;
     }
   }
 };
