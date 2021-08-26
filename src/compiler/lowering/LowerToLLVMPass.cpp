@@ -176,10 +176,23 @@ public:
             );
 #endif
         }
-        else
+        else {
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
+
+            // NOTE: this fixes printing due to an error in the LLVMDialect, but is the wrong behaviour.
+            //  Use this for debugging only
+            /*if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
+                auto ty = IntegerType::get(getContext(), iTy.getWidth());
+                rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(),
+                    ty,
+                    IntegerAttr::get(ty, op.value().cast<IntegerAttr>().getValue()));
+            }
+            else {
+                rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+            }*/
             rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+        }
 
         return success();
     }
@@ -423,10 +436,7 @@ public:
                 {/*outputs...*/pppI1Ty, /*inputs...*/ptrPtrI1Ty, /*daphneContext...*/ptrI1Ty});
 
             fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
-
-            BlockAndValueMapping mapper;
-            op.body().cloneInto(&fOp.body(), mapper);
-
+            fOp.body().takeBody(op.body());
             auto &funcBlock = fOp.body().front();
 
             auto returnRef = funcBlock.addArgument(pppI1Ty);
@@ -634,20 +644,9 @@ void DaphneLowerToLLVMPass::runOnOperation()
             StoreVariadicPackOpLowering
     >(&getContext());
 
-    target.addIllegalOp<daphne::CallKernelOp>();
-
-    // FIXME: for some weird reason some `daphne.call_kernel` operations created/moved into a new function for
-    //  vectorized computations escape lowering, therefore we first do a partial conversion and then a new conversion
-    if (failed(applyPartialConversion(module, target, std::move(patterns))))
-        signalPassFailure();
-
-    OwningRewritePatternList patternsNew(&getContext());
-    // populate dialect conversions
-    populateStdToLLVMConversionPatterns(typeConverter, patternsNew);
-    patternsNew.insert<CallKernelOpLowering>(typeConverter, &getContext());
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
-    if (failed(applyFullConversion(module, target, std::move(patternsNew))))
+    if (failed(applyFullConversion(module, target, std::move(patterns))))
         signalPassFailure();
 }
 
