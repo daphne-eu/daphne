@@ -92,12 +92,17 @@ main(int argc, char** argv)
     }
 
     DaphneUserConfig user_config;
-//    user_config.build_output_dir = "build/lib/Debug";
+    auto it = scriptArgs.find("libdir");
+    if(it != scriptArgs.end()) {
+    	user_config.libdir = it->second;
+    	user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+    }
+
 #ifdef USE_CUDA
-	auto it = scriptArgs.find("cuda");
+	it = scriptArgs.find("cuda");
 	if(it != scriptArgs.end()) {
 		if(it->second == "1") {
-			std::cout << "-cuda flag provided" << std::endl;
+//			std::cout << "-cuda flag provided" << std::endl;
 			int device_count;
   			CHECK_CUDART(cudaGetDeviceCount(&device_count));
   			if(device_count < 1)
@@ -107,6 +112,11 @@ main(int argc, char** argv)
 				user_config.use_cuda = true;
 			}
 		}
+	}
+
+	it = scriptArgs.find("libdir");
+	if(it != scriptArgs.end()) {
+		user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 	}
 #endif
 
