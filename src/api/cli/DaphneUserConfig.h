@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <vector>
 
 /*
  * Container to pass around user configuration
@@ -39,6 +40,7 @@ struct DaphneUserConfig {
 	// ToDo: This is an arbitrary default taken from sample code
 //	int cublas_workspace_size = 1024 * 1024 * 4;
 #endif
-	std::string build_output_dir;
+	std::string libdir;
+	std::vector<std::string> library_paths;
 };
 #endif //DAPHNE_PROTOTYPE_DAPHNEUSERCONFIG_H
