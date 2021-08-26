@@ -667,7 +667,15 @@ def Daphne_InnerJoinOp : Daphne_JoinOp<"innerJoin">;
 def Daphne_FullOuterJoinOp : Daphne_JoinOp<"fullOuterJoin">;
 def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
-def Daphne_SemiJoinOp : Daphne_JoinOp<"semiJoin">;
+
+// TODO Reconcile this with the other join ops, but we need it to work quickly now.
+def Daphne_SemiJoinOp : Daphne_Op<"semiJoin", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let results = (outs Frame:$res, MatrixOf<[Size]>:$lhsTids);
+}
 
 def Daphne_GroupJoinOp : Daphne_Op<"groupJoin", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,

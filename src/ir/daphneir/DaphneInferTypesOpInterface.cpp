@@ -179,3 +179,13 @@ void daphne::GroupJoinOp::inferTypes() {
     getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType, rhsAggType}));
     getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
 }
+
+void daphne::SemiJoinOp::inferTypes() {
+    daphne::FrameType lhsFt = lhs().getType().dyn_cast<daphne::FrameType>();
+    Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
+    
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType}));
+    getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
+}

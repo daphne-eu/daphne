@@ -681,8 +681,25 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createJoinOp<LeftOuterJoinOp>(loc, func, args);
     if(func == "antiJoin")
         return createJoinOp<AntiJoinOp>(loc, func, args);
-    if(func == "semiJoin")
-        return createJoinOp<SemiJoinOp>(loc, func, args);
+    if(func == "semiJoin") {
+        // TODO Reconcile this with the other join ops, but we need it to work
+        // quickly now.
+        // return createJoinOp<SemiJoinOp>(loc, func, args);
+        checkNumArgsExact(func, numArgs, 4);
+        mlir::Value lhs = args[0];
+        mlir::Value rhs = args[1];
+        mlir::Value lhsOn = args[2];
+        mlir::Value rhsOn = args[3];
+        return builder.create<SemiJoinOp>(
+                loc,
+                FrameType::get(
+                        builder.getContext(),
+                        {utils.unknownType}
+                ),
+                utils.matrixOfSizeType,
+                lhs, rhs, lhsOn, rhsOn
+        ).getResults();
+    }
     if(func == "groupJoin") {
         checkNumArgsExact(func, numArgs, 5);
         mlir::Value lhs = args[0];
