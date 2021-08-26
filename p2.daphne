@@ -4,24 +4,30 @@ C=10;
 batch_size=as.ui32(128);
 Hin = 32;
 Win = 32;
-verbose = true;
+verbose = false;
 t_start_iter = 0;
 t_end_fwd = 0;
 // sec_factor = as.f32(10^(-9));
 sec_factor = as.f32(0.000000001);
 eps = as.f32(0.9);
-
+t_start_img = now();
 img = readMatrix($images);
 X = img;
 N = as.ui32(nrow(X));
+t_end_img = now();
 
+t_start_labels = now();
 // labels = readMatrix(concat($prefix,"training-labels1k.csv"));
 labels = readMatrix($labels);
+t_end_labels = now();
 print("img dims: ",0);print(nrow(img),0);print("x",0);print(ncol(img));
+print("Loaded images in ",0);print(as.f32((t_end_img - t_start_img)) * sec_factor,0);print(" s");
 print("label dims: ",0);print(nrow(labels),0);print("x",0);print(ncol(labels));
+print("Loaded labels in ",0);print(as.f32((t_end_labels - t_start_labels)) * sec_factor,0);print(" s");
 Y = labels;
 num_classes = as.ui32(ncol(labels));
 
+t_start_model = now();
 # loading model
 # pre resblock: conv1, bn1 relu ----------------------------------------------------------------------------------------
 W_cv1 = readMatrix(concat($model,"conv2d_kernel.csv"));
@@ -174,13 +180,15 @@ ev_bn2 = readMatrix(concat($model,"batch_normalization_18_moving_variance.csv"))
 
 W_af = readMatrix(concat($model,"dense_kernel.csv"));
 b_af = readMatrix(concat($model,"dense_bias.csv"));
+t_end_model = now();
+print("Loaded model matrices in ",0); print(as.f32((t_end_model - t_start_model)) * sec_factor,0); print(" s");
 
 t_start_predict = now();
 probs = fill(0, N, num_classes);
 iters = as.ui32(ceil(as.f32(N) / as.f32(batch_size)));
 print("iterations=",0); print(iters);
-iter_end = iters - as.ui32(1);
-//iter_end = 0;
+//iter_end = iters - as.ui32(1);
+iter_end = 0;
 
 for(i in 0:iter_end) {
 // 		if (verbose) { t_start_iter = now(); }
@@ -200,13 +208,23 @@ for(i in 0:iter_end) {
 //print("W_cv1 dims: ",0); print(nrow(W_cv1),0);print("x",0);print(ncol(W_cv1));
 //print("b_cv1 dims: ",0); print(nrow(b_cv1),0);print("x",0);print(ncol(b_cv1));
 	out_cv1, h32, w32= conv2d(X_batch, W_cv1, nrow(X_batch), C, Hin, Hin, 3, 3, 1, 1, 1, 1, b_cv1);
+
+	print(out_cv1[fill(1,1,1),]);
+	print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
+
+	//	print(out_cv1);
+
 	// out_cv1 = biasAdd(out_cv1, b_cv1);
 	out_bn1 = batch_norm2d(out_cv1, g_bn1, b_bn1, em_bn1, ev_bn1, eps);
 	out_r1 = relu(out_bn1);
+//	print(out_r1[fill(1,1,1),]);
+
 //print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
 //print("h32=",0); print(h32);
 # resblock stage 1, block 1: conv + 3 x bn+relu+conv + conv  -----------------------------------------------------------
-	out_cv1_S1B1, h32, w32 = conv2d(out_r1, W_cv1_S1B1, nrow(out_r1), nrow(W_cv1), h32, h32, 1, 1, 1, 1, 0, 0, b_cv1_S1B1);
+	out_cv1_S1B1, h32, w32 = conv2d(out_r1, W_cv1_S1B1, nrow(out_r1), nrow(W_cv1), h32, h32, 1, 1, 1, 1, 0, 0);//, b_cv1_S1B1);
+//	print(W_cv1_S1B1);
+//print(W_cv1_S1B1[fill(1,1,1),]);
 
 	out_bn1_S1B1 = batch_norm2d(out_cv1_S1B1, g_bn1_S1B1, b_bn1_S1B1, em_bn1_S1B1, ev_bn1_S1B1, eps);
 	out_r1_S1B1 = relu(out_bn1_S1B1);
@@ -308,9 +326,11 @@ for(i in 0:iter_end) {
 	out_r2  = relu(out_bn2);
 	out_avg, h1, w1 = avg_pool2d(out_r2, nrow(out_r2), nrow(W_cv3_S3B2), h8, h8, 8, 8, 1, 1, 0, 0);
 	out_af = affine(out_avg, W_af, b_af);
-	iter_probs = softmax(out_af);
-	print("iter_probs dims: ",0); print(nrow(iter_probs),0);print("x",0);print(ncol(iter_probs));
+//	print(out_af[fill(1,1,1),]);
 
+	iter_probs = softmax(out_af);
+//	print("iter_probs dims: ",0); print(nrow(iter_probs),0);print("x",0);print(ncol(iter_probs));
+//	print(iter_probs[fill(1,1,1),]);
 #END forward pass ------------------------------------------------------------------------------------------------------
 	t_end_fwd = now();
 	if(verbose) {
