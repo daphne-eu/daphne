@@ -15,6 +15,7 @@
  */
 
 #include <ir/daphneir/Daphne.h>
+#include <ir/daphneir/DaphneOpsEnums.cpp.inc>
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES

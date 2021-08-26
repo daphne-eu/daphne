@@ -56,6 +56,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
     if (module) {
         mlir::PassManager pm(&context_);
 
+        // This flag is really useful to figure out why the lowering failed
         //llvm::DebugFlag = true;
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         if (distributed_) {

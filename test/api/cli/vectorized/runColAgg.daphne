@@ -1,5 +1,5 @@
 X = rand(10000, 1000, 0.0, 1.0, 1.0, 7);
 
-q = sqrt(X);
+q = sum(X, 1);
 
 print(sum(q));

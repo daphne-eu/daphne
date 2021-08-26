@@ -21,29 +21,44 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/vectorized/MTWrapper.h>
+#include <ir/daphneir/Daphne.h>
 
 #include <cassert>
 #include <cstddef>
+
+using mlir::daphne::VectorSplit;
+using mlir::daphne::VectorCombine;
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTLhs, class DTRhs>
+template<class DTRes, class DTIn>
 struct VectorizedPipeline
 {
-    static void
-    apply(DTRes *&res, DTLhs *lhs, DTRhs *rhs, void *fun, DCTX(ctx)) = delete;
+    static void apply(DTRes *&res,
+                      DTIn **inputs,
+                      size_t numInputs,
+                      int64_t *splits,
+                      int64_t *combines,
+                      void *fun,
+                      DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTLhs, class DTRhs>
-void vectorizedPipeline(DTRes *&res, DTLhs *lhs, DTRhs *rhs, void *fun, DCTX(ctx))
+template<class DTRes, class DTIn>
+void vectorizedPipeline(DTRes *&res,
+                        DTIn **inputs,
+                        size_t numInputs,
+                        int64_t *splits,
+                        int64_t *combines,
+                        void *fun,
+                        DCTX(ctx))
 {
-    VectorizedPipeline<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, fun, ctx);
+    VectorizedPipeline<DTRes, DTIn>::apply(res, inputs, numInputs, splits, combines, fun, ctx);
 }
 
 // ****************************************************************************
@@ -51,18 +66,27 @@ void vectorizedPipeline(DTRes *&res, DTLhs *lhs, DTRhs *rhs, void *fun, DCTX(ctx
 // ****************************************************************************
 
 template<>
-struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>
+struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>>
 {
     static void apply(DenseMatrix<double> *&res,
-                      DenseMatrix<double> *lhs,
-                      DenseMatrix<double> *rhs,
-                      void *fun, DCTX(ctx))
+                      DenseMatrix<double> **inputs,
+                      size_t numInputs,
+                      int64_t *splits,
+                      int64_t *combines,
+                      void *fun,
+                      DCTX(ctx))
     {
         MTWrapper<double> *wrapper = new MTWrapper<double>();
         auto function =
             std::function<void(DenseMatrix<double> ***, DenseMatrix<double> **)>(
                 reinterpret_cast<void (*)(DenseMatrix<double> ***, DenseMatrix<double> **)>(fun));
-        wrapper->execute(function, res, lhs, rhs, false);
+        wrapper->execute(function,
+            res,
+            inputs,
+            numInputs,
+            reinterpret_cast<VectorSplit *>(splits),
+            reinterpret_cast<VectorCombine *>(combines),
+            false);
     }
 };
 

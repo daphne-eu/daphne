@@ -135,7 +135,7 @@ def Daphne_EwAbsOp : Daphne_EwUnaryOp<"ewAbs", NumScalar>;
 def Daphne_EwSignOp : Daphne_EwUnaryOp<"ewSign", NumScalar>;
 def Daphne_EwExpOp : Daphne_EwUnaryOp<"ewExp", FloatScalar>;
 def Daphne_EwLnOp : Daphne_EwUnaryOp<"ewLn", FloatScalar>;
-def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", FloatScalar>;
+def Daphne_EwSqrtOp : Daphne_EwUnaryOp<"ewSqrt", FloatScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 
 // ----------------------------------------------------------------------------
 // Logical
@@ -301,7 +301,7 @@ def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
 def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , FloatScalar>;
 def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", FloatScalar>;
 
-def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar>;
+def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar, NumScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 def Daphne_ColAggMinOp    : Daphne_ColAggOp<"minCol"   , AnyScalar>;
 def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"maxCol"   , AnyScalar>;
 def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"idxminCol", NumScalar, Size>;
@@ -615,7 +615,7 @@ def Daphne_CTableOp : Daphne_Op<"ctable"> {
     let results = (outs Matrix:$res);
 }
 
-def Daphne_SyrkOp : Daphne_Op<"syrk"> {
+def Daphne_SyrkOp : Daphne_Op<"syrk", [DeclareOpInterfaceMethods<VectorizableOpInterface>]> {
     // TODO: support `A @ t(A)` operation
     let summary = [{Performs the operation `t(A) @ A`}];
     let arguments = (ins Matrix:$arg);
@@ -936,11 +936,13 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 // Vectorized operations
 // ****************************************************************************
 
-def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline"> {
+def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 
-    // TODO: will probably take `DaphneContext` as input for the number of threads etc.
-    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>);
+    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>,
+            TypedArrayAttrBase<VectorSplitAttr, "Vector-Splits">:$splits,
+            TypedArrayAttrBase<VectorCombineAttr, "Vector-Combines">:$combines,
+            Optional<DaphneContext>:$ctx);
     let results = (outs Variadic<MatrixOrFrame>);
     let regions = (region SizedRegion<1>:$body);
 }
