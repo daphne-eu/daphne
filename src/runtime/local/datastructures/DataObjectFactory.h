@@ -47,6 +47,8 @@ struct DataObjectFactory {
         delete obj;
     }
 
+    // TODO Simplify many places in the code (especially test cases) by using
+    // the new feature of destroying multiple data objects by one call.
     template<typename DataType, typename... Rest>
     static void destroy(const DataType *obj, const Rest *...rest)
     {
