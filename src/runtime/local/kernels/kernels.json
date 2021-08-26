@@ -1468,5 +1468,45 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "FreeObj.h",
+            "opName": "freeObj",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "size_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int8_t"]],
+            [["CSRMatrix", "int32_t"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "uint8_t"]],
+            [["CSRMatrix", "uint32_t"]],
+            [["CSRMatrix", "uint64_t"]],
+            [["CSRMatrix", "size_t"]],
+            ["Frame"]
+        ]
     }
 ]

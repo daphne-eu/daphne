@@ -969,6 +969,11 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
     let results = (outs); // no results
 }
 
+def Daphne_FreeOp : Daphne_Op<"free"> {
+    let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
 // ****************************************************************************
 // Old operations
 // ****************************************************************************

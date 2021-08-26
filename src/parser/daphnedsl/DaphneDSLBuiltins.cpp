@@ -873,6 +873,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, builder.getIntegerType(64, true)
         ));
     }
+    
+    // ********************************************************************
+    // Low-level auxiliary operations
+    // ********************************************************************
+    
+    if(func == "free") {
+        checkNumArgsExact(func, numArgs, 1);
+        return builder.create<FreeOp>(
+                loc, args[0]
+        );
+    }
 
     // ********************************************************************
 
