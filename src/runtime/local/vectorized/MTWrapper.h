@@ -17,14 +17,19 @@
 #ifndef SRC_RUNTIME_LOCAL_VECTORIZED_MTWRAPPER_H
 #define SRC_RUNTIME_LOCAL_VECTORIZED_MTWRAPPER_H
 
-#include <thread>
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/Workers.h>
+#include <ir/daphneir/Daphne.h>
+
+#include <thread>
 #include <functional>
 
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
+
+using mlir::daphne::VectorSplit;
+using mlir::daphne::VectorCombine;
 
 template <class VT>
 class MTWrapper {
@@ -84,16 +89,22 @@ public:
     }
 
     void execute(std::function<void(DenseMatrix<VT>***, DenseMatrix<VT>**)> func,
-                 DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2)
+                 DenseMatrix<VT> *&res, DenseMatrix<VT> **inputs, size_t numInputs)
     {
-        execute(func, res, input1, input2, false);
+        execute(func, res, inputs, numInputs, false);
     }
 
-    void execute(std::function<void(DenseMatrix<VT>***, DenseMatrix<VT>**)> func,
-                 DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
+    void execute(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> func,
+                 DenseMatrix<VT> *&res,
+                 DenseMatrix<VT> **inputs,
+                 size_t numInputs,
+                 VectorSplit *splits,
+                 VectorCombine *combines,
+                 bool verbose)
     {
+        auto numTasks = _numThreads * 4;
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows());
+        TaskQueue* q = new BlockingTaskQueue(numTasks);
 
         // create workers threads
         WorkerCPU* workers[_numThreads];
@@ -103,19 +114,29 @@ public:
             workerThreads[i] = std::thread(runWorker, workers[i]);
         }
 
-        // output allocation (currently only according to input shape only)
-        if( res == nullptr )
-            res = DataObjectFactory::create<DenseMatrix<VT>>(input1->getNumRows(), input1->getNumCols(), false);
+        // output allocation for row-wise combine
+        if(res == nullptr && combines[0] == VectorCombine::ROWS)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(inputs[0]->getNumRows(), inputs[0]->getNumCols(), false);
+        // lock for aggregation combine
+        std::mutex resLock;
 
         // create tasks and close input
         // TODO UNIBAS - integration hook scheduling
-        uint64_t rlen = input1->getNumRows();
-        // every thread gets 4 tasks (computation is rounded up)
-        uint64_t blksize = (((rlen - 1) / _numThreads + 1) - 1) / 4 + 1;
-        uint64_t batchsize = 1; // row-at-a-time
+        uint64_t rlen = inputs[0]->getNumRows();
+        uint64_t blksize = (rlen - 1) / numTasks + 1; // integer ceil
+        uint64_t batchsize = 100; // 100-rows-at-a-time
         for(uint32_t k = 0; k * blksize < rlen; k++) {
             q->enqueueTask(new CompiledPipelineTask<VT>(
-                func, res, input1, input2, k * blksize, std::min((k + 1) * blksize, rlen), batchsize));
+                func,
+                resLock,
+                res,
+                inputs,
+                numInputs,
+                splits,
+                combines,
+                k * blksize,
+                std::min((k + 1) * blksize, rlen),
+                batchsize));
         }
         q->closeInput();
 

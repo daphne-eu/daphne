@@ -1063,7 +1063,7 @@
             [["DenseMatrix", "double"],["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]]
         ],
-        "opCodes": ["SIGN", "FLOOR"]
+        "opCodes": ["SIGN", "SQRT", "FLOOR"]
     },
     {
         "kernelTemplate": {
@@ -1095,7 +1095,7 @@
             ["double", "double"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN", "FLOOR"]
+        "opCodes": ["SIGN", "SQRT", "FLOOR"]
     },
     {
         "kernelTemplate": {
@@ -1391,11 +1391,7 @@
                     "isDataType": true
                 },
                 {
-                    "name": "DTLhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTRhs",
+                    "name": "DTIn",
                     "isDataType": true
                 }
             ],
@@ -1405,12 +1401,20 @@
                     "name": "res"
                 },
                 {
-                    "type": "DTLhs *",
-                    "name": "lhs"
+                    "type": "DTIn **",
+                    "name": "inputs"
                 },
                 {
-                    "type": "DTRhs *",
-                    "name": "rhs"
+                    "type": "size_t",
+                    "name": "numInputs"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "splits"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "combines"
                 },
                 {
                     "type": "void *",
@@ -1419,7 +1423,7 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
         ]
     }
 ]
