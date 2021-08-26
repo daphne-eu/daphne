@@ -70,18 +70,11 @@ struct Syrk<DenseMatrix<double>, DenseMatrix<double>> {
             0.0,
             res->getValues(),
             res->getRowSkip());
-        // TODO: add and use a symmetric matrix object?
-        cblas_dsyrk(CblasRowMajor,
-            CblasLower,
-            CblasTrans,
-            numCols,
-            numRows,
-            1.0,
-            arg->getValues(),
-            arg->getRowSkip(),
-            0.0,
-            res->getValues(),
-            res->getRowSkip());
+        for (auto r = 0u; r < numCols; ++r) {
+            for (auto c = r + 1; c < numCols; ++c) {
+                res->set(c, r, res->get(r, c));
+            }
+        }
     }
 };
 
@@ -105,18 +98,11 @@ struct Syrk<DenseMatrix<float>, DenseMatrix<float>> {
             0.0,
             res->getValues(),
             res->getRowSkip());
-        // TODO: add and use a symmetric matrix object?
-        cblas_ssyrk(CblasRowMajor,
-            CblasLower,
-            CblasTrans,
-            numCols,
-            numRows,
-            1.0,
-            arg->getValues(),
-            arg->getRowSkip(),
-            0.0,
-            res->getValues(),
-            res->getRowSkip());
+        for (auto r = 0u; r < numCols; ++r) {
+            for (auto c = r + 1; c < numCols; ++c) {
+                res->set(c, r, res->get(r, c));
+            }
+        }
     }
 };
 

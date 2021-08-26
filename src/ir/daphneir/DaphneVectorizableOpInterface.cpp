@@ -56,7 +56,7 @@ std::vector<daphne::VectorCombine> getVectorCombines_EwUnaryOp(EwUnaryOp *op)
 // Vector split and combine implementations
 // ****************************************************************************
 
-// ****************************************************************************
+// ----------------------------------------------------------------------------
 // Binary
 #define IMPL_SPLIT_COMBINE_EWBINARYOP(OP) \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { \
@@ -95,9 +95,9 @@ IMPL_SPLIT_COMBINE_EWBINARYOP(EwLeOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwGtOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwGeOp)
 #undef IMPL_SPLIT_COMBINE_EWBINARYOP
-// ****************************************************************************
+// ----------------------------------------------------------------------------
 
-// ****************************************************************************
+// ----------------------------------------------------------------------------
 // Unary
 #define IMPL_SPLIT_COMBINE_EWUNARYOP(OP) \
     std::vector<daphne::VectorSplit> daphne::OP::getVectorSplits() { \
@@ -110,9 +110,9 @@ IMPL_SPLIT_COMBINE_EWBINARYOP(EwGeOp)
 IMPL_SPLIT_COMBINE_EWUNARYOP(EwSqrtOp)
 
 #undef IMPL_SPLIT_COMBINE_EWUNARYOP
-// ****************************************************************************
+// ----------------------------------------------------------------------------
 
-// ****************************************************************************
+// ----------------------------------------------------------------------------
 // Aggregations
 // TODO: splitting and combining by column probably makes more sense
 std::vector<daphne::VectorSplit> daphne::ColAggSumOp::getVectorSplits()
@@ -123,4 +123,16 @@ std::vector<daphne::VectorCombine> daphne::ColAggSumOp::getVectorCombines()
 {
     return {daphne::VectorCombine::ADD};
 }
-// ****************************************************************************
+// ----------------------------------------------------------------------------
+
+// ----------------------------------------------------------------------------
+// Other
+std::vector<daphne::VectorSplit> daphne::SyrkOp::getVectorSplits()
+{
+    return {daphne::VectorSplit::ROWS};
+}
+std::vector<daphne::VectorCombine> daphne::SyrkOp::getVectorCombines()
+{
+    return {daphne::VectorCombine::ADD};
+}
+// ----------------------------------------------------------------------------

@@ -124,7 +124,7 @@ public:
         // TODO UNIBAS - integration hook scheduling
         uint64_t rlen = inputs[0]->getNumRows();
         uint64_t blksize = (rlen - 1) / numTasks + 1; // integer ceil
-        uint64_t batchsize = 1; // row-at-a-time
+        uint64_t batchsize = 100; // 100-rows-at-a-time
         for(uint32_t k = 0; k * blksize < rlen; k++) {
             q->enqueueTask(new CompiledPipelineTask<VT>(
                 func,
