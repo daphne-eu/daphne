@@ -1224,6 +1224,37 @@
     },
     {
         "kernelTemplate": {
+            "header": "Syrk.h",
+            "opName": "syrk",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Tri.h",
             "opName": "tri",
             "returnType": "void",
