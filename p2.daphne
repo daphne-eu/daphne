@@ -209,8 +209,8 @@ for(i in 0:iter_end) {
 //print("b_cv1 dims: ",0); print(nrow(b_cv1),0);print("x",0);print(ncol(b_cv1));
 	out_cv1, h32, w32= conv2d(X_batch, W_cv1, nrow(X_batch), C, Hin, Hin, 3, 3, 1, 1, 1, 1, b_cv1);
 
-	print(out_cv1[fill(1,1,1),]);
-	print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
+//	print(out_cv1[fill(1,1,1),]);
+//	print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
 
 	//	print(out_cv1);
 
@@ -329,6 +329,30 @@ for(i in 0:iter_end) {
 //	print(out_af[fill(1,1,1),]);
 
 	iter_probs = softmax(out_af);
+
+	free(out_cv1_S1B1); free(out_cv2_S1B1); free(out_cv3_S1B1); free(out_cv4_S1B1);
+	free(out_cv1_S1B2); free(out_cv2_S1B2); free(out_cv3_S1B2);
+	free(out_cv1_S2B1); free(out_cv2_S2B1); free(out_cv3_S2B1); free(out_cv4_S2B1);
+	free(out_cv1_S2B2); free(out_cv2_S2B2); free(out_cv3_S2B2);
+	free(out_cv1_S3B1); free(out_cv2_S3B1); free(out_cv3_S3B1); free(out_cv4_S3B1);
+	free(out_cv1_S3B2); free(out_cv2_S3B2); free(out_cv3_S3B2);
+
+	free(out_bn1_S1B1); free(out_bn2_S1B1);
+	free(out_bn1_S1B2); free(out_bn2_S1B2); free(out_bn3_S1B2);
+	free(out_bn1_S2B1); free(out_bn2_S2B1); free(out_bn3_S2B1);
+	free(out_bn1_S2B2); free(out_bn2_S2B2); free(out_bn3_S2B2);
+	free(out_bn1_S3B1); free(out_bn2_S3B1); free(out_bn3_S3B1);
+	free(out_bn1_S3B2); free(out_bn2_S3B2); free(out_bn3_S3B2);
+
+	free(out_r1_S1B1); free(out_r2_S1B1);
+	free(out_r1_S1B2); free(out_r2_S1B2); free(out_r3_S1B2);
+	free(out_r1_S2B1); free(out_r2_S2B1); free(out_r3_S2B1);
+	free(out_r1_S2B2); free(out_r2_S2B2); free(out_r3_S2B2);
+	free(out_r1_S3B1); free(out_r2_S3B1); free(out_r3_S3B1);
+	free(out_r1_S3B2); free(out_r2_S3B2); free(out_r3_S3B2);
+
+	free(out_resblk1); free(out_resblk2); free(out_resblk3); free(out_resblk4); free(out_resblk5); free(out_resblk6);
+
 //	print("iter_probs dims: ",0); print(nrow(iter_probs),0);print("x",0);print(ncol(iter_probs));
 //	print(iter_probs[fill(1,1,1),]);
 #END forward pass ------------------------------------------------------------------------------------------------------
