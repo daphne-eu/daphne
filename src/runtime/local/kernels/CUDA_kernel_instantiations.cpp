@@ -104,7 +104,8 @@ extern "C" {
 				filter_data, bias, batch_size, num_channels, img_h, img_w, filter_h, filter_w, stride_h, stride_w, pad_h,
 				pad_w, ctx);
 	}
-	void _conv2DForward_CUDA__DenseMatrix_double__size_t__size_t__DenseMatrix_double__DenseMatrix_double__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
+
+	void _conv2DForward_CUDA__DenseMatrix_double__size_t__size_t__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t
 			(DenseMatrix<double>** res, size_t* res_h, size_t* res_w, const DenseMatrix<double>* input_data,
 			const DenseMatrix<double>* filter_data, const DenseMatrix<double>* bias, const size_t batch_size,
 			const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
