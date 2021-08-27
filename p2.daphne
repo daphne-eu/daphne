@@ -8,7 +8,9 @@ verbose = true;
 t_start_iter = 0;
 t_end_fwd = 0;
 // sec_factor = as.f32(10^(-9));
-sec_factor = as.f32(0.000000001);
+sec_factor  = as.f32(0.000000001);
+msec_factor = as.f32(0.000001);
+
 eps = as.f32(0.9);
 t_start_img = now();
 img = readMatrix($images);
@@ -198,10 +200,11 @@ for(i in 0:iter_end) {
   end = min(N, beg + batch_size) - as.ui32(1);
 //	print("N: ", 0);print(N,0);print(", beg: ",0);print(beg,0);print(", end: ",0);print(end);
 t_start_slice = now();
-	X_batch = X[seq(as.si64(beg),as.si64(end),as.si64(1)),];
+//	X_batch = X[seq(as.si64(beg),as.si64(end),as.si64(1)),];
+X_batch = sliceRow(X, beg, end);
 t_end_slice = now();
 if(verbose) {
-	print("===> Slicing time: ",0);print(as.f32((t_end_slice - t_start_slice)) * sec_factor,0);print(" s");
+	print("===> Slicing time: ",0);print(as.f32((t_end_slice - t_start_slice)) * msec_factor,0);print(" ms");
 }
 
 //	print("batch[",0); print(i,0); print("] dims:",0); print(nrow(X_batch),0); print("x",0); print(ncol(X_batch),0);
