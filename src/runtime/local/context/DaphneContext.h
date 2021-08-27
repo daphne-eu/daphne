@@ -78,7 +78,7 @@ for (auto ctx : cuda_contexts) {
 
 #ifdef USE_CUDA
 	// ToDo: in a multi device setting this should use a find call instead of a direct [] access
-	[[nodiscard]] const CUDAContext* getCUDAContext(int dev_id) const { return cuda_contexts[dev_id]; }
+	[[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const { return cuda_contexts[dev_id]; }
 
 #endif
 };

@@ -19,72 +19,56 @@
 
 template<typename T>
 void launch_cublas_gemm(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2, const T* alpha, const T* beta,
-		T* d_lhs, T* d_rhs, T* d_res);
+		const T* d_lhs, const T* d_rhs, T* d_res);
 
 template<>
 [[maybe_unused]] void launch_cublas_gemm<float>(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2,
-		const float* alpha,	const float* beta, float* d_lhs, float* d_rhs, float* d_res) {
+		const float* alpha,	const float* beta, const float* d_lhs, const float* d_rhs, float* d_res) {
 	CHECK_CUBLAS(cublasSgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
 			nc1, beta, d_res, nc2));
 }
 
 template<>
 [[maybe_unused]] void launch_cublas_gemm<double>(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2,
-		const double* alpha, const double* beta, double* d_lhs, double* d_rhs, double* d_res) {
+		const double* alpha, const double* beta, const double* d_lhs, const double* d_rhs, double* d_res) {
 	CHECK_CUBLAS(cublasDgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
 			nc1, beta, d_res, nc2));
 }
 
 template<typename T>
 void MatMul_CUDA<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>>::apply(DenseMatrix<T>*& res, const DenseMatrix<T>* lhs,
-																		const DenseMatrix<T>* rhs, DCTX(ctx)) {
+																		const DenseMatrix<T>* rhs, DCTX(dctx)) {
+	std::cerr << " ----------  mult ----------- " << std::endl;
 	using VT = typename DenseMatrix<T>::VT;
+	const auto ctx = dctx->getCUDAContext(0);
 
 	const size_t nr1 = lhs->getNumRows();
 	const size_t nc1 = lhs->getNumCols();
 	const size_t nr2 = rhs->getNumRows();
 	const size_t nc2 = rhs->getNumCols();
 	assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+	const VT blend_alpha = 1.0f;
+	const VT blend_beta = 0.0f;
+	const VT* d_lhs = lhs->getValuesCUDA();
+	const VT* d_rhs = rhs->getValuesCUDA();
 
 	if(res == nullptr)
-		res = DataObjectFactory::create<DenseMatrix<T>>(nr1, nc2, false);
-
-
-	const VT alpha = 1.0f;
-	const VT beta = 0.0f;
-
-	// device pointers
-	VT* d_lhs;
-	VT* d_rhs;
-	VT* d_res;
-
-	size_t sizeOfDataType = sizeof(VT);
-
-	CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_lhs), nr1 * nc1 * sizeOfDataType));
-	CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_rhs), nr2 * nc2 * sizeOfDataType));
-	CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_res), nr1 * nc2 * sizeOfDataType));
-
-	CHECK_CUDART(cudaMemcpy(d_lhs, lhs->getValues(), nr1*nc1*sizeOfDataType, cudaMemcpyHostToDevice));
-	CHECK_CUDART(cudaMemcpy(d_rhs, rhs->getValues(), nr2*nc2*sizeOfDataType, cudaMemcpyHostToDevice));
+		res = DataObjectFactory::create<DenseMatrix<T>>(nr1, nc2, false, ALLOCATION_TYPE::CUDA_ALLOC);
+	VT* d_res = res->getValuesCUDA();
 
 	// reverse order to accommodate cublas' col major format (-> res = rhs * lhs)
-	launch_cublas_gemm<VT>(*ctx->getCUDAContext(0), nr1, nc1, nc2, &alpha, &beta, d_lhs, d_rhs, d_res);
-
-	CHECK_CUDART(cudaMemcpy(res->getValues(), d_res, nr1 * nc2 * sizeOfDataType, cudaMemcpyDeviceToHost));
-
-	CHECK_CUDART(cudaFree(d_lhs));
-	CHECK_CUDART(cudaFree(d_rhs));
-	CHECK_CUDART(cudaFree(d_res));
+	launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_lhs, d_rhs, d_res);
 }
 
 // from cusparse sample code:
 // https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spgemm/spgemm_example.c
 template<typename T>
 void MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T>*& res, const CSRMatrix<T>* lhs,
-		const CSRMatrix<T>* rhs, DCTX(ctx)) {
+		const CSRMatrix<T>* rhs, DCTX(dctx)) {
 
 	using VT = typename DenseMatrix<T>::VT;
-	cusparseHandle_t handle = ctx->getCUDAContext(0)->getCusparseHandle();
+	auto ctx = dctx->getCUDAContext(0);
+	cusparseHandle_t handle = ctx->getCusparseHandle();
 
 	const size_t nr1 = lhs->getNumRows();
 	const size_t nc1 = lhs->getNumCols();
@@ -93,12 +77,11 @@ void MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T>*&
 	const size_t A_nnz = lhs->getNumNonZeros();
 	const size_t B_nnz = rhs->getNumNonZeros();
 	assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
-
-	VT alpha = 1.0f;
-	VT beta = 0.0f;
+	const VT blend_alpha = 1.0f;
+	const VT blend_beta = 0.0f;
 	cusparseOperation_t opA = CUSPARSE_OPERATION_NON_TRANSPOSE;
 	cusparseOperation_t opB = CUSPARSE_OPERATION_NON_TRANSPOSE;
-	cudaDataType computeType = CUDA_R_32F; // ToDo
+	cudaDataType computeType = ctx->template getCUSparseDataType<VT>();
 
 	//--------------------------------------------------------------------------
 	// Device memory management: Allocate and copy A, B
@@ -147,7 +130,7 @@ void MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T>*&
 	CHECK_CUSPARSE(cusparseSpGEMM_createDescr(&spgemmDesc));
 
 	// ask bufferSize1 bytes for external memory
-	CHECK_CUSPARSE(cusparseSpGEMM_workEstimation(handle, opA, opB, &alpha, matA, matB, &beta, matC, computeType,
+	CHECK_CUSPARSE(cusparseSpGEMM_workEstimation(handle, opA, opB, &blend_alpha, matA, matB, &blend_beta, matC, computeType,
 			CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &bufferSize1, nullptr));
 
 	CHECK_CUDART( cudaMalloc((void**) &dBuffer1, bufferSize1));
@@ -155,17 +138,17 @@ void MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T>*&
 	// inspect the matrices A and B to understand the memory requirement for
 	// the next step
 
-	CHECK_CUSPARSE(cusparseSpGEMM_workEstimation(handle, opA, opB, &alpha, matA, matB, &beta, matC, computeType,
+	CHECK_CUSPARSE(cusparseSpGEMM_workEstimation(handle, opA, opB, &blend_alpha, matA, matB, &blend_beta, matC, computeType,
 			CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &bufferSize1, dBuffer1));
 
 	// ask bufferSize2 bytes for external memory
-	CHECK_CUSPARSE(cusparseSpGEMM_compute(handle, opA, opB, &alpha, matA, matB, &beta, matC, computeType,
+	CHECK_CUSPARSE(cusparseSpGEMM_compute(handle, opA, opB, &blend_alpha, matA, matB, &blend_beta, matC, computeType,
 			CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &bufferSize2, nullptr));
 
 	CHECK_CUDART(cudaMalloc((void**) &dBuffer2, bufferSize2));
 
 	// compute the intermediate product of A * B
-	CHECK_CUSPARSE(cusparseSpGEMM_compute(handle, opA, opB, &alpha, matA, matB, &beta, matC, computeType,
+	CHECK_CUSPARSE(cusparseSpGEMM_compute(handle, opA, opB, &blend_alpha, matA, matB, &blend_beta, matC, computeType,
 			CUSPARSE_SPGEMM_DEFAULT, spgemmDesc, &bufferSize2, dBuffer2));
 
 	// get matrix C non-zero entries C_nnz1
@@ -182,7 +165,7 @@ void MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T>*&
 	// if beta != 0, cusparseSpGEMM_copy reuses/updates the values of dC_values
 
 	// copy the final products to the matrix C
-	CHECK_CUSPARSE(cusparseSpGEMM_copy(handle, opA, opB, &alpha, matA, matB, &beta, matC, computeType,
+	CHECK_CUSPARSE(cusparseSpGEMM_copy(handle, opA, opB, &blend_alpha, matA, matB, &blend_beta, matC, computeType,
 			CUSPARSE_SPGEMM_DEFAULT, spgemmDesc));
 
 	// destroy matrix/vector descriptors

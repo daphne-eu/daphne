@@ -39,6 +39,10 @@ class CUDAContext {
 	// cuDNN API
 	cudnnHandle_t cudnn_handle{};
 
+	// preallocate 64MB
+	size_t cudnn_workspace_size{};
+	void* cudnn_workspace{};
+
 	// cublasLt API
 //	cublasLtHandle_t cublaslt_Handle = nullptr;
 //	void* cublas_workspace{};
@@ -68,7 +72,12 @@ public:
 	template<class T>
 	[[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
 
-	int convAlgorithm = -1;
+	template<class T>
+	[[nodiscard]] cudaDataType getCUSparseDataType() const;
+
+	void* getCUDNNWorkspace(size_t size);
+
+	int conv_algorithm = -1;
 	cudnnPoolingDescriptor_t pooling_desc{};
 	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
 	cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;

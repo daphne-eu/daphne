@@ -33,19 +33,19 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct MatMul_CUDA {
-	static void apply(DTRes*& res, const DTLhs* lhs, const DTRhs* rhs, DCTX(ctx)) =delete;
+	static void apply(DTRes*& res, const DTLhs* lhs, const DTRhs* rhs, DCTX(dctx)) =delete;
 
 //	[[maybe_unused]] static void applyLT(DTRes<T> *& res, const DTLhs<T> * lhs, const DTRhs<T> * rhs, const CUDAContext& ctx) = delete;
 };
 
 template<typename T>
 struct MatMul_CUDA<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>> {
-	static void apply(DenseMatrix<T>*& res, const DenseMatrix<T>* lhs, const DenseMatrix<T>* rhs, DCTX(ctx));
+	static void apply(DenseMatrix<T>*& res, const DenseMatrix<T>* lhs, const DenseMatrix<T>* rhs, DCTX(dctx));
 };
 
 template<typename T>
 struct MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>> {
-	static void apply(CSRMatrix<T>*& res, const CSRMatrix<T>* lhs, const CSRMatrix<T>* rhs, DCTX(ctx));
+	static void apply(CSRMatrix<T>*& res, const CSRMatrix<T>* lhs, const CSRMatrix<T>* rhs, DCTX(dctx));
 };
 
 // ****************************************************************************

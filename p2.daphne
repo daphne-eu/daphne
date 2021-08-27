@@ -1,7 +1,7 @@
 
 
 C=10;
-batch_size=as.ui32(4096);
+batch_size=as.ui32(256);
 Hin = 32;
 Win = 32;
 verbose = true;
@@ -188,6 +188,7 @@ print("Loaded model matrices in ",0); print(as.f32((t_end_model - t_start_model)
 t_start_predict = now();
 probs = fill(0, N, num_classes);
 iters = as.ui32(ceil(as.f32(N) / as.f32(batch_size)));
+//iters = as.ui32(1);
 print("iterations=",0); print(iters);
 iter_end = iters - as.ui32(1);
 
@@ -197,7 +198,11 @@ for(i in 0:iter_end) {
 
   # Get next batch
   beg = as.ui32(i) * batch_size % N;
-  end = min(N, beg + batch_size) - as.ui32(1);
+
+#this end is used with copy-slicing
+//  end = min(N, beg + batch_size) - as.ui32(1);
+#exclusive ends for "in-place-slicing":
+end = min(N, beg + batch_size);
 //	print("N: ", 0);print(N,0);print(", beg: ",0);print(beg,0);print(", end: ",0);print(end);
 t_start_slice = now();
 //	X_batch = X[seq(as.si64(beg),as.si64(end),as.si64(1)),];
@@ -206,7 +211,7 @@ t_end_slice = now();
 if(verbose) {
 	print("===> Slicing time: ",0);print(as.f32((t_end_slice - t_start_slice)) * msec_factor,0);print(" ms");
 }
-
+print("X_batch dims: ",0); print(nrow(X_batch),0);print("x",0);print(ncol(X_batch));
 //	print("batch[",0); print(i,0); print("] dims:",0); print(nrow(X_batch),0); print("x",0); print(ncol(X_batch),0);
 //	print(" from ",0); print(beg,0); print(" to ",0); print(end);
 
@@ -328,16 +333,18 @@ if(verbose) {
 
 	# abusing biasAdd for gpu add operation for now
 	out_resblk6 = biasAdd(out_cv3_S3B2, out_resblk5);
-
+print("done with res blocks");
 # post resblock: bn,relu,avg_pool,affine,softmax -----------------------------------------------------------------------
 	out_bn2 = batch_norm2d(out_resblk6, g_bn2, b_bn2, em_bn2, ev_bn2, eps);
+	print("done with bn2");
 	out_r2  = relu(out_bn2);
+	print("done with relu2");
 	out_avg, h1, w1 = avg_pool2d(out_r2, nrow(out_r2), nrow(W_cv3_S3B2), h8, h8, 8, 8, 1, 1, 0, 0);
 	out_af = affine(out_avg, W_af, b_af);
 //	print(out_af[fill(1,1,1),]);
 
 	iter_probs = softmax(out_af);
-
+	print(iter_probs[fill(1,1,1),]);
 	free(X_batch);
 	free(out_cv1); free(out_bn1); free(out_r1);
 	free(out_cv1_S1B1); free(out_cv2_S1B1); free(out_cv3_S1B1); free(out_cv4_S1B1);
@@ -361,11 +368,11 @@ if(verbose) {
 	free(out_r1_S3B1); free(out_r2_S3B1); free(out_r3_S3B1);
 	free(out_r1_S3B2); free(out_r2_S3B2); free(out_r3_S3B2);
 
-	free(out_resblk1); free(out_resblk2); free(out_resblk3); free(out_resblk4); free(out_resblk5); free(out_resblk6);
+//	free(out_resblk1); free(out_resblk2); free(out_resblk3); free(out_resblk4); free(out_resblk5); free(out_resblk6);
 	free(out_bn2); free(out_r2); free(out_avg); free(out_af); free(iter_probs);
 
 //	print("iter_probs dims: ",0); print(nrow(iter_probs),0);print("x",0);print(ncol(iter_probs));
-//	print(iter_probs[fill(1,1,1),]);
+print("done with freeing stuff");
 #END forward pass ------------------------------------------------------------------------------------------------------
 	t_end_fwd = now();
 	if(verbose) {
