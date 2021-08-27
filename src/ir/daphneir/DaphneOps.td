@@ -402,6 +402,13 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
     let results = (outs MatrixOrFrame:$res);
 }
 
+// TODO This was added rather quickly, we should think about it and perhaps do
+// it in a more principled way.
+def Daphne_SliceRowOp : Daphne_Op<"sliceRow"> {
+    let arguments = (ins MatrixOrFrame:$source, Size:$rowLowerIncl, Size:$rowUpperExcl);
+    let results = (outs MatrixOrFrame:$res);
+}
+
 def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>

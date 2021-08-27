@@ -1508,5 +1508,45 @@
             [["CSRMatrix", "size_t"]],
             ["Frame"]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SliceRow.h",
+            "opName": "sliceRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "rowLowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "rowUpperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
     }
 ]
