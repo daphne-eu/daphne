@@ -36,6 +36,6 @@ const std::string dirPath = "test/api/cli/vectorized/";
 
 // MAKE_TEST_CASE("runMatMult") TODO matmult
 MAKE_TEST_CASE("runEwUnary")
-MAKE_TEST_CASE("runEwBinary")
+MAKE_TEST_CASE("runEwBinary") // FIXME: fails for some reason
 MAKE_TEST_CASE("runColAgg")
 MAKE_TEST_CASE("runOther")

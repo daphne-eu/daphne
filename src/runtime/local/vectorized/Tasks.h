@@ -128,10 +128,10 @@ public:
     {
         // local add aggregation to minimize locking
         DenseMatrix<VT> *localAddRes = nullptr;
+        DenseMatrix<VT> *lres = nullptr;
         for(uint64_t r = _rl; r < _ru; r += _bsize) {
             //create zero-copy views of inputs/outputs
             uint64_t r2 = std::min(r + _bsize, _ru);
-            DenseMatrix<VT> *lres = nullptr;
             std::vector<DenseMatrix<VT> *> linputs;
             for(auto i = 0u; i < _numInputs; i++) {
                 // broadcasting
@@ -151,17 +151,16 @@ public:
                         slice->set(i, j, lres->get(i, j));
                     }
                 }
-                //cleanup
-                DataObjectFactory::destroy(lres);
                 break;
             }
             case VectorCombine::ADD: {
-                if (localAddRes == nullptr)
+                if (localAddRes == nullptr) {
+                    // take lres and reset it to nullptr
                     localAddRes = lres;
+                    lres = nullptr;
+                }
                 else {
                     ewBinaryMat(BinaryOpCode::ADD, localAddRes, localAddRes, lres, nullptr);
-                    //cleanup
-                    DataObjectFactory::destroy(lres);
                 }
                 break;
             }
@@ -185,6 +184,7 @@ public:
                 DataObjectFactory::destroy(localAddRes);
             }
         }
+        DataObjectFactory::destroy(lres);
     }
 };
 

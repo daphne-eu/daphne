@@ -29,6 +29,8 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
@@ -41,6 +43,7 @@ DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized)
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
+    context_.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -64,8 +67,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
-        if(vectorized_)
-            pm.addPass(mlir::daphne::createVectorizeComputationsPass());
+        if(vectorized_) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
+            // TODO: this can be moved outside without problem, should we?
+            pm.addPass(mlir::createCanonicalizerPass());
+        }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 

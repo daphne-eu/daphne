@@ -22,6 +22,7 @@
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
@@ -194,4 +195,38 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
     }
     else
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
+                                                                     mlir::PatternRewriter &rewriter)
+{
+    std::vector<Value> resultsToReplace;
+    std::vector<Attribute> vCombineAttrs;
+    for(auto result : op.getResults()) {
+        if(result.use_empty()) {
+            // remove
+            op.body().front().getTerminator()->eraseOperand(result.getResultNumber());
+        }
+        else {
+            resultsToReplace.push_back(result);
+            vCombineAttrs.push_back(op.combines()[result.getResultNumber()]);
+        }
+    }
+    if (resultsToReplace.size() == op->getNumResults()) {
+        return failure();
+    }
+    auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
+        ValueRange(resultsToReplace).getTypes(),
+        op.getOperands(),
+        op.splits(),
+        rewriter.getArrayAttr(vCombineAttrs),
+        op.ctx());
+    pipelineOp.body().takeBody(op.body());
+    for (auto e : llvm::enumerate(resultsToReplace)) {
+        auto resultToReplace = e.value();
+        auto i = e.index();
+        resultToReplace.replaceAllUsesWith(pipelineOp.getResult(i));
+    }
+    op.erase();
+    return success();
 }

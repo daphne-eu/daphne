@@ -965,6 +965,8 @@ def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOper
             Optional<DaphneContext>:$ctx);
     let results = (outs Variadic<MatrixOrFrame>);
     let regions = (region SizedRegion<1>:$body);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************
