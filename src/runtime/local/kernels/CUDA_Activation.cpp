@@ -27,7 +27,7 @@ namespace Activation {
 		const VT blend_beta = 0;
 		const VT* d_input = data->getValuesCUDA();
 
-		std::cerr << " ----------  relu ----------- " << std::endl;
+//		std::cerr << " ----------  relu ----------- " << std::endl;
 		if (res == nullptr) {
 			res = DataObjectFactory::create<DTRes>(nr1, nc1, false, ALLOCATION_TYPE::CUDA_ALLOC);
 		}

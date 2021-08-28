@@ -22,7 +22,7 @@ namespace BatchNorm {
 			const DTArg *ema_mean, const DTArg *ema_var, const typename DTArg::VT eps, DCTX(dctx))
 	{
 
-		std::cerr << " ----------  bn ----------- " << std::endl;
+//		std::cerr << " ----------  bn ----------- " << std::endl;
 
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;

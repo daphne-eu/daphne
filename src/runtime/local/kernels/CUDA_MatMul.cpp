@@ -38,7 +38,7 @@ template<>
 template<typename T>
 void MatMul_CUDA<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>>::apply(DenseMatrix<T>*& res, const DenseMatrix<T>* lhs,
 																		const DenseMatrix<T>* rhs, DCTX(dctx)) {
-	std::cerr << " ----------  mult ----------- " << std::endl;
+//	std::cerr << " ----------  mult ----------- " << std::endl;
 	using VT = typename DenseMatrix<T>::VT;
 	const auto ctx = dctx->getCUDAContext(0);
 

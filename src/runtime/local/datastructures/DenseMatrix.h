@@ -80,10 +80,10 @@ class DenseMatrix : public Matrix<ValueType>
             lastAppendedRowIdx(0),
             lastAppendedColIdx(0)
     {
-#ifndef NDEBUG
-    	std::cerr << "creating dense matrix of allocation type " << static_cast<int>(type) <<
-    	" and dims: " << numRows << "x" << numCols << std::endl;
-#endif
+//#ifndef NDEBUG
+//    	std::cerr << "creating dense matrix of allocation type " << static_cast<int>(type) <<
+//    	" and dims: " << numRows << "x" << numCols << std::endl;
+//#endif
     	if (type == ALLOCATION_TYPE::HOST_ALLOC) {
 //    		values = std::make_shared<ValueType>(maxNumRows*numCols);
 //            values(new ValueType[maxNumRows * numCols]);
@@ -211,9 +211,9 @@ public:
     }
 
     ValueType* getValuesCUDA() {
-#ifndef NDEBUG
-    	std::cerr << "getValuesCUDA " << cuda_ptr << " cuda_dirty=" << cuda_dirty << " host_dirty=" << host_dirty << std::endl;
-#endif
+//#ifndef NDEBUG
+//    	std::cerr << "getValuesCUDA " << cuda_ptr << " cuda_dirty=" << cuda_dirty << " host_dirty=" << host_dirty << std::endl;
+//#endif
     	if(host_dirty) {
     		host2cuda();
     	}

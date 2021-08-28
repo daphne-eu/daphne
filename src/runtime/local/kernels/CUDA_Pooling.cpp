@@ -24,7 +24,7 @@ namespace Pooling {
 			const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
 			const size_t pad_w, DCTX(dctx))
 	{
-		std::cerr << " ----------  pool ----------- " << std::endl;
+//		std::cerr << " ----------  pool ----------- " << std::endl;
 		using VT = typename DTRes::VT;
 		auto ctx = dctx->getCUDAContext(0);
 		const VT blend_alpha = 1;
@@ -47,7 +47,7 @@ namespace Pooling {
 		int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, c, h, w));
 
-		std::cout << " creating res matrix for pooling: " << batch_size << " " << c << " " << h << " " << w << std::endl;
+//		std::cout << " creating res matrix for pooling: " << batch_size << " " << c << " " << h << " " << w << std::endl;
 		if (res == nullptr) {
 			res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false, ALLOCATION_TYPE::CUDA_ALLOC);
 		}

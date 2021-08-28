@@ -27,7 +27,7 @@ DenseMatrix<ValueType>::~DenseMatrix()
 #ifdef USE_CUDA
 	if(cuda_ptr) {
 //#ifndef NDEBUG
-		std::cerr << "calling cudaFree " << cuda_ptr << std::endl;
+//		std::cerr << "calling cudaFree " << cuda_ptr << std::endl;
 //#endif
 		CHECK_CUDART(cudaFree(cuda_ptr));
 		cuda_ptr = nullptr;
@@ -44,18 +44,17 @@ void DenseMatrix<ValueType>::cudaAlloc() {
 	cudaMemGetInfo(&available, &total);
 	auto end = std::chrono::high_resolution_clock::now();
 	if(requested > available) {
-		std::cout << "ERROR - no mem" << std::endl;
 		throw std::runtime_error("Insufficient GPU memory! Requested=" + std::to_string(requested) + " Available="
 				+ std::to_string(available));
 	}
-#ifndef NDEBUG
-	std::cerr << "cudaMalloc " << requested << " bytes" << " of " << available << "(query time=" <<
-	std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
-#endif
+//#ifndef NDEBUG
+//	std::cerr << "cudaMalloc " << requested << " bytes" << " of " << available << "(query time=" <<
+//	std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
+//#endif
 	CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&cuda_ptr), numRows*numCols*sizeof(ValueType)));
-#ifndef NDEBUG
-	std::cerr << " address=" << cuda_ptr << std::endl;
-#endif
+//#ifndef NDEBUG
+//	std::cerr << " address=" << cuda_ptr << std::endl;
+//#endif
 }
 
 template <typename ValueType>
@@ -71,16 +70,16 @@ void DenseMatrix<ValueType>::cuda2host() {
 
 template <typename ValueType>
 void DenseMatrix<ValueType>::host2cuda() {
-#ifndef NDEBUG
-	std::cerr << "host2dev" << std::endl;
-#endif
+//#ifndef NDEBUG
+//	std::cerr << "host2dev" << std::endl;
+//#endif
 	if (!cuda_ptr) {
 		cudaAlloc();
 	}
-	if(values.get() == nullptr) {
-		std::cout <<" values is null!" << std::endl;
-		return;
-	}
+//	if(values.get() == nullptr) {
+//		std::cout <<" values is null!" << std::endl;
+//		return;
+//	}
 //	if(!cuda_ptr) {
 //		std::cout << " device ptr is still null!" << std::endl;
 //		host_dirty = false;

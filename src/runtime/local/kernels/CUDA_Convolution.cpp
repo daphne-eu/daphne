@@ -25,7 +25,7 @@ namespace Convolution {
 //		assert(data->getNumRows() == batch_size && "Convolution: input rows must match batch_size");
 //		assert(data->getNumCols() == (num_channels * img_h * img_w) && "Convolution: input cols must match C*H*W");
 
-std::cerr << " ----------  conv ----------- " << std::endl;
+//std::cerr << " ----------  conv ----------- " << std::endl;
 
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
@@ -80,19 +80,19 @@ std::cerr << " ----------  conv ----------- " << std::endl;
 			cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT];
 
 			// Setup for findFastest call
-#ifndef NDEBUG
-			std::cout << "Testing cudnnFindConvolutionForwardAlgorithm ...\n";
-#endif
+//#ifndef NDEBUG
+//			std::cout << "Testing cudnnFindConvolutionForwardAlgorithm ...\n";
+//#endif
 			CHECK_CUDNN(cudnnFindConvolutionForwardAlgorithm(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
 															 ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
-#ifndef NDEBUG
-			for(int algoIndex = 0; algoIndex < returnedAlgoCount; ++algoIndex) {
-				std::cout << "^^^^ " << cudnnGetErrorString(results[algoIndex].status) << " for Algo: "
-						<<  results[algoIndex].algo << ": " << results[algoIndex].time << " time requiring "
-						<< results[algoIndex].memory << " memory\n" << std::endl;
-
-			}
-#endif
+//#ifndef NDEBUG
+//			for(int algoIndex = 0; algoIndex < returnedAlgoCount; ++algoIndex) {
+//				std::cout << "^^^^ " << cudnnGetErrorString(results[algoIndex].status) << " for Algo: "
+//						<<  results[algoIndex].algo << ": " << results[algoIndex].time << " time requiring "
+//						<< results[algoIndex].memory << " memory\n" << std::endl;
+//
+//			}
+//#endif
 			algo = results[0].algo;
 			ctx->conv_algorithm = algo;
 		}

@@ -20,7 +20,7 @@ namespace Softmax {
 
 	template<typename DTRes, typename DTArg>
 	void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-		std::cerr << " ----------  softmax ----------- " << std::endl;
+//		std::cerr << " ----------  softmax ----------- " << std::endl;
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		int n = data->getNumRows();

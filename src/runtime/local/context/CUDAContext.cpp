@@ -121,9 +121,9 @@ void* CUDAContext::getCUDNNWorkspace(size_t size) {
 		cudnn_workspace_size = size;
 	}
 	//#ifdef NDEBUG
-	else {
-		std::cerr << "Not allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
-	}
+//	else {
+//		std::cerr << "Not allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
+//	}
 	//#endif
 	return cudnn_workspace;
 }

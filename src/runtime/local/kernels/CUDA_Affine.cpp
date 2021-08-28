@@ -37,7 +37,7 @@ template<>
 namespace Affine {
 	template<typename DTRes, typename DTArg>
 	void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx)) {
-		std::cerr << " ----------  affine ----------- " << std::endl;
+//		std::cerr << " ----------  affine ----------- " << std::endl;
 		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		const size_t nr1 = data->getNumRows();
@@ -59,18 +59,17 @@ namespace Affine {
 		launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_weights, d_input, d_res);
 
 		if(bias) {
-			std::cout << " bias vector: " << *bias << std::endl;
-			std::cout << "bias dims: " << bias->getNumRows() << "x" << bias->getNumCols() << std::endl;
-			std::cout << "data dims: " << data->getNumRows() << "x" << data->getNumCols() << std::endl;
-			std::cout << "res dims: " << res->getNumRows() << "x" << res->getNumCols() << std::endl;
-//return;
+//			std::cout << " bias vector: " << *bias << std::endl;
+//			std::cout << "bias dims: " << bias->getNumRows() << "x" << bias->getNumCols() << std::endl;
+//			std::cout << "data dims: " << data->getNumRows() << "x" << data->getNumCols() << std::endl;
+//			std::cout << "res dims: " << res->getNumRows() << "x" << res->getNumCols() << std::endl;
+
 			const VT* d_bias = bias->getValuesCUDA();
 			CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
 			        1, bias->getNumCols(), 1, 1));
 			CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->template getCUDNNDataType<VT>(),
 					nr1, nc2, 1, 1));
 			blend_beta = 1;
-//			return;
 			CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
 					ctx->dst_tensor_desc, d_res));
 		}
