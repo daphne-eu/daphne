@@ -66,17 +66,47 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         const VT * valuesArg = arg->getValues();
         VT * valuesRes = res->getValues();
         
-        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        if(opCode == AggOpCode::IDXMIN) {
+            for(size_t r = 0; r < numRows; r++) {
+                VT minVal = valuesArg[0];
+                size_t minValIdx = 0;
+                for(size_t c = 1; c < numCols; c++)
+                    if(valuesArg[c] < minVal) {
+                        minVal = valuesArg[c];
+                        minValIdx = c;
+                    }
+                *valuesRes = static_cast<VT>(minValIdx);
+                valuesArg += arg->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else if(opCode == AggOpCode::IDXMAX) {
+            for(size_t r = 0; r < numRows; r++) {
+                VT maxVal = valuesArg[0];
+                size_t maxValIdx = 0;
+                for(size_t c = 1; c < numCols; c++)
+                    if(valuesArg[c] > maxVal) {
+                        maxVal = valuesArg[c];
+                        maxValIdx = c;
+                    }
+                *valuesRes = static_cast<VT>(maxValIdx);
+                valuesArg += arg->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else {
+            assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
 
-        for(size_t r = 0; r < numRows; r++) {
-            VT agg = *valuesArg;
-            for(size_t c = 1; c < numCols; c++)
-                agg = func(agg, valuesArg[c], ctx);
-            *valuesRes = agg;
-            valuesArg += arg->getRowSkip();
-            valuesRes += res->getRowSkip();
+            EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+
+            for(size_t r = 0; r < numRows; r++) {
+                VT agg = *valuesArg;
+                for(size_t c = 1; c < numCols; c++)
+                    agg = func(agg, valuesArg[c], ctx);
+                *valuesRes = agg;
+                valuesArg += arg->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
         }
     }
 };

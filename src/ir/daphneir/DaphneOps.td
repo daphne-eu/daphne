@@ -295,8 +295,8 @@ class Daphne_ColAggOp<string name, Type inScalarType, Type outScalarType = inSca
 def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar>;
 def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar>;
 def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar>;
-def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar, Size>;
-def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar, Size>;
+def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar>;
+def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar>;
 def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
 def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , FloatScalar>;
 def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", FloatScalar>;
