@@ -56,12 +56,13 @@ namespace Affine {
 		VT* d_res = res->getValuesCUDA();
 
 		// reverse order to accommodate cublas' col major format (-> res = rhs * lhs)
-		launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_weights, d_input, d_res);
+		launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_input, d_weights, d_res);
 
 		if(bias) {
 //			std::cout << " bias vector: " << *bias << std::endl;
-//			std::cout << "bias dims: " << bias->getNumRows() << "x" << bias->getNumCols() << std::endl;
 //			std::cout << "data dims: " << data->getNumRows() << "x" << data->getNumCols() << std::endl;
+//			std::cout << "weights dims: " << weights->getNumRows() << "x" << weights->getNumCols() << std::endl;
+//			std::cout << "bias dims: " << bias->getNumRows() << "x" << bias->getNumCols() << std::endl;
 //			std::cout << "res dims: " << res->getNumRows() << "x" << res->getNumCols() << std::endl;
 			assert((bias->getNumRows() == 1) && "bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
 			const VT* d_bias = bias->getValuesCUDA();
