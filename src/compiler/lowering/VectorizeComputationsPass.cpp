@@ -50,7 +50,12 @@ void VectorizeComputationsPass::runOnOperation()
     };
 
     // Find vectorizable operations and their inputs of vectorizable operations
-    auto vectOps = llvm::make_filter_range(func.getOps<daphne::Vectorizable>(), isMatrixComputation);
+    std::vector<daphne::Vectorizable> vectOps;
+    func->walk([&](daphne::Vectorizable op)
+    {
+      if(isMatrixComputation(op))
+          vectOps.emplace_back(op);
+    });
     std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
     std::multimap<daphne::Vectorizable, daphne::Vectorizable> possibleMerges;
     for(auto v : vectorizables) {
