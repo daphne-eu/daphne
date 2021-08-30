@@ -63,7 +63,7 @@ namespace Affine {
 //			std::cout << "bias dims: " << bias->getNumRows() << "x" << bias->getNumCols() << std::endl;
 //			std::cout << "data dims: " << data->getNumRows() << "x" << data->getNumCols() << std::endl;
 //			std::cout << "res dims: " << res->getNumRows() << "x" << res->getNumCols() << std::endl;
-
+			assert((bias->getNumRows() == 1) && "bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
 			const VT* d_bias = bias->getValuesCUDA();
 			CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
 			        1, bias->getNumCols(), 1, 1));
