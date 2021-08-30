@@ -1548,5 +1548,45 @@
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "InsertRow.h",
+            "opName": "insertRow",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTDst",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTSrc",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTDst *",
+                    "name": "dst"
+                },
+                {
+                    "type": "const DTSrc *",
+                    "name": "src"
+                },
+                {
+                    "type": "size_t",
+                    "name": "rowLowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "rowUpperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
     }
 ]

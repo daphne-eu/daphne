@@ -520,6 +520,16 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg.getType(), arg, rowLowerIncl, rowUpperExcl
         ));
     }
+    if(func == "insertRow") {
+        checkNumArgsExact(func, numArgs, 4);
+        mlir::Value dst = args[0];
+        mlir::Value src = args[1];
+        mlir::Value rowLowerIncl = utils.castSizeIf(args[2]);
+        mlir::Value rowUpperExcl = utils.castSizeIf(args[3]);
+        return builder.create<InsertRowOp>(
+                loc, dst, src, rowLowerIncl, rowUpperExcl
+        );
+    }
     
     // ********************************************************************
     // Reorganization

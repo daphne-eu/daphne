@@ -439,6 +439,11 @@ def Daphne_InsertOp : Daphne_Op<"insert"> {
     let results = (outs); // no results
 }
 
+def Daphne_InsertRowOp : Daphne_Op<"insertRow"> {
+    let arguments = (ins Matrix:$target, Matrix:$source, Size:$rowLowerIncl, Size:$rowUpperExcl);
+    let results = (outs); // no results
+}
+
 // ****************************************************************************
 // Reorganization
 // ****************************************************************************
