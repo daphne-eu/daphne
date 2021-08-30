@@ -1,7 +1,7 @@
 
 
 C=10;
-batch_size=as.ui32(256);
+batch_size=as.ui32(3);
 Hin = 32;
 Win = 32;
 verbose = true;
@@ -188,7 +188,7 @@ t_end_model = now();
 t_start_predict = now();
 probs = fill(0, N, num_classes);
 iters = as.ui32(ceil(as.f32(N) / as.f32(batch_size)));
-//iters = as.ui32(1);
+iters = as.ui32(1);
 print("iterations=",0); print(iters);
 iter_end = iters - as.ui32(1);
 
