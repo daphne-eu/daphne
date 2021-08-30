@@ -204,13 +204,13 @@ for(i in 0:iter_end) {
 #exclusive ends for "in-place-slicing":
 end = min(N, beg + batch_size);
 //	print("N: ", 0);print(N,0);print(", beg: ",0);print(beg,0);print(", end: ",0);print(end);
-t_start_slice = now();
+// t_start_slice = now();
 //	X_batch = X[seq(as.si64(beg),as.si64(end),as.si64(1)),];
 X_batch = sliceRow(X, beg, end);
-t_end_slice = now();
-if(verbose) {
-	print("===> Slicing time: ",0);print(as.f32((t_end_slice - t_start_slice)) * msec_factor,0);print(" ms");
-}
+// t_end_slice = now();
+// if(verbose) {
+// 	print("===> Slicing time: ",0);print(as.f32((t_end_slice - t_start_slice)) * msec_factor,0);print(" ms");
+// }
 //print("X_batch dims: ",0); print(nrow(X_batch),0);print("x",0);print(ncol(X_batch));
 //	print("batch[",0); print(i,0); print("] dims:",0); print(nrow(X_batch),0); print("x",0); print(ncol(X_batch),0);
 //	print(" from ",0); print(beg,0); print(" to ",0); print(end);
@@ -225,8 +225,9 @@ if(verbose) {
 //	print(out_cv1[fill(1,1,1),]);
 //	print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
 
-	//	print(out_cv1);
-
+	print(X_batch[,seq(0,10,1)]);
+    print(out_cv1[,seq(0,10,1)]);
+    
 	// out_cv1 = biasAdd(out_cv1, b_cv1);
 	out_bn1 = batch_norm2d(out_cv1, g_bn1, b_bn1, em_bn1, ev_bn1, eps);
 	out_r1 = relu(out_bn1);
@@ -235,7 +236,7 @@ if(verbose) {
 //print("out_cv1 dims: ",0); print(nrow(out_cv1),0);print("x",0);print(ncol(out_cv1));
 //print("h32=",0); print(h32);
 # resblock stage 1, block 1: conv + 3 x bn+relu+conv + conv  -----------------------------------------------------------
-	out_cv1_S1B1, h32, w32 = conv2d(out_r1, W_cv1_S1B1, nrow(out_r1), nrow(W_cv1), h32, h32, 1, 1, 1, 1, 0, 0);//, b_cv1_S1B1);
+	out_cv1_S1B1, h32, w32 = conv2d(out_r1, W_cv1_S1B1, nrow(out_r1), nrow(W_cv1), h32, h32, 1, 1, 1, 1, 0, 0, b_cv1_S1B1);
 //	print(W_cv1_S1B1);
 //print(W_cv1_S1B1[fill(1,1,1),]);
 
@@ -345,6 +346,11 @@ if(verbose) {
 
 	iter_probs = softmax(out_af);
 //	print(iter_probs[fill(1,1,1),]);
+
+//     probs_batch = sliceRow(probs, beg, end);
+//     probs_batch = iter_probs;
+
+//     print(iter_probs[,seq(1,10,1)]);
 	free(X_batch);
 	free(out_cv1); free(out_bn1); free(out_r1);
 	free(out_cv1_S1B1); free(out_cv2_S1B1); free(out_cv3_S1B1); free(out_cv4_S1B1);
@@ -387,8 +393,9 @@ t_end_predict = now();
 if(verbose) {
 	print("===> Completed inference in ",0);print(as.f32((t_end_predict - t_start_predict)) * sec_factor,0);print(" s");
 }
-// rindexmax= rowIndexMax(probs)
-// rindexmax_labels=rowIndexMax(labels)
-// correct_pred = rindexmax == rindexmax_labels
-// accuracy = mean(correct_pred)
-// print("Accuracy: " + toString(accuracy))
+// rindexmax= idxMax(probs,0);
+// print(rindexmax);
+// rindexmax_labels=idxMax(labels,0);
+// correct_pred = rindexmax == rindexmax_labels;
+// accuracy = mean(correct_pred);
+// print("Accuracy: ",0);print(accuracy);
