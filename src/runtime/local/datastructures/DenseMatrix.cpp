@@ -59,9 +59,9 @@ void DenseMatrix<ValueType>::cudaAlloc() {
 
 template <typename ValueType>
 void DenseMatrix<ValueType>::cuda2host() {
-#ifdef NDEBUG
-	std::cerr << "dev2host" << std::endl;
-#endif
+//#ifndef NDEBUG
+//	std::cerr << "dev2host" << std::endl;
+//#endif
 	if(!values)
 		values = std::make_shared<ValueType>(numRows*numCols);
 	CHECK_CUDART(cudaMemcpy(values.get(), cuda_ptr, numRows*numCols*sizeof(ValueType), cudaMemcpyDeviceToHost));

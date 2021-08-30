@@ -146,7 +146,9 @@ class DenseMatrix : public Matrix<ValueType>
         
         rowSkip = src->rowSkip;
         values = std::shared_ptr<ValueType>(src->values, src->values.get() + rowLowerIncl * src->rowSkip + colLowerIncl);
-        host_dirty = true;
+        host_dirty = src->host_dirty;
+        cuda_dirty = src->cuda_dirty;
+        cuda_ptr = src->cuda_ptr;
     }
     
     virtual ~DenseMatrix();
@@ -258,13 +260,17 @@ public:
         if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
             append(numRows - 1, numCols - 1, ValueType(0));
     }
-    
+
     void print(std::ostream & os) const override {
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
         size_t i = 0;
         if ((cuda_ptr && cuda_dirty) || !values) {
-			  cuda2host();
+//#ifndef NDEBUG
+//        	std::cerr << "cuda_ptr=" << cuda_ptr<<std::endl;
+//        	std::cerr << "cuda_dirty=" << cuda_dirty << std::endl;
+//#endif
+		  	cuda2host();
         }
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
