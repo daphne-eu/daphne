@@ -54,22 +54,22 @@ void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTR
 // DenseMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct EwBinaryMat<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
+template<typename VTres, typename VTlhs, typename VTrhs>
+struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *& res, const DenseMatrix<VTlhs> * lhs, const DenseMatrix<VTrhs> * rhs, DCTX(ctx)) {
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
         
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsLhs, numColsLhs, false);
+            res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
         
-        const VT * valuesLhs = lhs->getValues();
-        const VT * valuesRhs = rhs->getValues();
-        VT * valuesRes = res->getValues();
+        const VTlhs * valuesLhs = lhs->getValues();
+        const VTrhs * valuesRhs = rhs->getValues();
+        VTres * valuesRes = res->getValues();
         
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+        EwBinaryScaFuncPtr<VTres, VTlhs, VTrhs> func = getEwBinaryScaFuncPtr<VTres, VTlhs, VTrhs>(opCode);
         
         if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
             // matrix op matrix (same size)
