@@ -171,6 +171,7 @@ public:
         }
     }
 
+private:
     void accumulateOutputs(DenseMatrix<VT> *&lres, DenseMatrix<VT> *&localAddRes, uint64_t rowStart, uint64_t rowEnd)
     {
         //TODO: in-place computation via better compiled pipelines

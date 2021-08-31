@@ -3,6 +3,7 @@ Y = rand(10000, 1000, 0.0, 1.0, 1.0, 3);
 
 // Arithmetic
 print(sum(X + Y));
+print(sum(X + 1.1));
 print(sum(X - Y));
 print(sum(X * Y));
 print(sum(X / Y));
