@@ -99,7 +99,7 @@ def Daphne_SeqOp : Daphne_Op<"seq"> {
 // Matrix/frame dimensions
 // ****************************************************************************
 
-class Daphne_NumOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
+class Daphne_NumOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, !listconcat(traits, [NoSideEffect])> {
     let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs Size:$res);
 }
@@ -112,7 +112,7 @@ def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 // Matrix multiplication
 // ****************************************************************************
 
-def Daphne_MatMulOp : Daphne_Op<"matMul"> {
+def Daphne_MatMulOp : Daphne_Op<"matMul", [DeclareOpInterfaceMethods<VectorizableOpInterface>]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs);
     let results = (outs MatrixOf<[NumScalar]>:$res);
 }
@@ -292,8 +292,8 @@ class Daphne_DimAggOp<string name, Type inScalarType, Type outScalarType = inSca
 class Daphne_RowAggOp<string name, Type inScalarType, Type outScalarType = inScalarType, list<OpTrait> traits = []> : Daphne_DimAggOp<name, inScalarType, outScalarType, traits>;
 class Daphne_ColAggOp<string name, Type inScalarType, Type outScalarType = inScalarType, list<OpTrait> traits = []> : Daphne_DimAggOp<name, inScalarType, outScalarType, traits>;
 
-def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar>;
-def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar>;
+def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar, NumScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
+def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar, AnyScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar>;
 def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar>;
 def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar>;
@@ -411,7 +411,8 @@ def Daphne_SliceRowOp : Daphne_Op<"sliceRow"> {
 
 def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    DeclareOpInterfaceMethods<InferTypesOpInterface>
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<VectorizableOpInterface>
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -453,7 +454,7 @@ def Daphne_ReshapeOp : Daphne_Op<"reshape"> {
     let results = (outs Matrix:$res);
 }
 
-def Daphne_TransposeOp : Daphne_Op<"transpose"> {
+def Daphne_TransposeOp : Daphne_Op<"transpose", [DeclareOpInterfaceMethods<VectorizableOpInterface>]> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
 
@@ -472,7 +473,8 @@ class Daphne_BindOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, tr
 
 def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-    DeclareOpInterfaceMethods<InferTypesOpInterface>
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<VectorizableOpInterface>
 ]>;
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind">;
 
@@ -956,15 +958,21 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 // Vectorized operations
 // ****************************************************************************
 
+// TODO: should be recursive side effects
 def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 
-    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>,
+    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>:$inputs,
+            // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
+            Variadic<AnyTypeOf<[SIntScalar, Size]>>:$out_rows,
+            Variadic<AnyTypeOf<[SIntScalar, Size]>>:$out_cols,
             TypedArrayAttrBase<VectorSplitAttr, "Vector-Splits">:$splits,
             TypedArrayAttrBase<VectorCombineAttr, "Vector-Combines">:$combines,
             Optional<DaphneContext>:$ctx);
-    let results = (outs Variadic<MatrixOrFrame>);
+    let results = (outs Variadic<MatrixOrFrame>:$outputs);
     let regions = (region SizedRegion<1>:$body);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************

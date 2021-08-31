@@ -98,6 +98,9 @@ public:
                  DenseMatrix<VT> *&res,
                  DenseMatrix<VT> **inputs,
                  size_t numInputs,
+                 size_t numOutputs,
+                 int64_t *outRows,
+                 int64_t *outCols,
                  VectorSplit *splits,
                  VectorCombine *combines,
                  bool verbose)
@@ -114,28 +117,39 @@ public:
             workerThreads[i] = std::thread(runWorker, workers[i]);
         }
 
+        assert(numOutputs == 1 && "TODO");
         // output allocation for row-wise combine
-        if(res == nullptr && combines[0] == VectorCombine::ROWS)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(inputs[0]->getNumRows(), inputs[0]->getNumCols(), false);
+        if(res == nullptr && outRows[0] != -1 && outCols[0] != -1) {
+            auto zeroOut = combines[0] == mlir::daphne::VectorCombine::ADD;
+            res = DataObjectFactory::create<DenseMatrix<VT>>(outRows[0], outCols[0], zeroOut);
+        }
         // lock for aggregation combine
         std::mutex resLock;
 
         // create tasks and close input
         // TODO UNIBAS - integration hook scheduling
-        uint64_t rlen = inputs[0]->getNumRows();
-        uint64_t blksize = (rlen - 1) / numTasks + 1; // integer ceil
+        uint64_t len = 0;
+        // due to possible broadcasting we have to check all inputs
+        for (auto i = 0u; i < numInputs; ++i) {
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+                len = std::max(len, inputs[i]->getNumRows());
+        }
+        uint64_t blksize = (len - 1) / numTasks + 1; // integer ceil
         uint64_t batchsize = 100; // 100-rows-at-a-time
-        for(uint32_t k = 0; k * blksize < rlen; k++) {
+        for(uint32_t k = 0; k * blksize < len; k++) {
             q->enqueueTask(new CompiledPipelineTask<VT>(
                 func,
                 resLock,
                 res,
                 inputs,
                 numInputs,
+                numOutputs,
+                outRows,
+                outCols,
                 splits,
                 combines,
                 k * blksize,
-                std::min((k + 1) * blksize, rlen),
+                std::min((k + 1) * blksize, len),
                 batchsize));
         }
         q->closeInput();

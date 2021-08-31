@@ -332,9 +332,10 @@ void RewriteToCallKernelOpPass::runOnFunction()
         throw std::runtime_error(
                 "function body block contains no CreateDaphneContextOp"
         );
-    for (auto vpo : func.body().front().getOps<daphne::VectorizedPipelineOp>()) {
-        vpo.ctxMutable().assign(dctx);
-    }
+    func->walk([&](daphne::VectorizedPipelineOp vpo)
+    {
+      vpo.ctxMutable().assign(dctx);
+    });
 
     // Apply conversion to CallKernelOps.
     patterns.insert<KernelReplacement>(&getContext(), dctx);

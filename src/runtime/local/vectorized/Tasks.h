@@ -101,6 +101,9 @@ private:
     DenseMatrix<VT> *&_res;
     DenseMatrix<VT> **_inputs;
     size_t _numInputs;
+    size_t _numOutputs;
+    int64_t *_outRows;
+    int64_t *_outCols;
     VectorSplit *_splits;
     VectorCombine *_combines;
     uint64_t _rl;    // row lower index
@@ -113,13 +116,16 @@ public:
                          DenseMatrix<VT> *&res,
                          DenseMatrix<VT> **inputs,
                          size_t numInputs,
+                         size_t numOutputs,
+                         int64_t *outRows,
+                         int64_t *outCols,
                          VectorSplit *splits,
                          VectorCombine *combines,
                          uint64_t rl,
                          uint64_t ru,
                          uint64_t bsize)
-        : _func(func), _resLock(resLock), _res(res), _inputs(inputs), _numInputs(numInputs), _splits(splits),
-          _combines(combines), _rl(rl), _ru(ru), _bsize(bsize)
+        : _func(func), _resLock(resLock), _res(res), _inputs(inputs), _numInputs(numInputs), _numOutputs(numOutputs),
+          _outRows(outRows), _outCols(outCols), _splits(splits), _combines(combines), _rl(rl), _ru(ru), _bsize(bsize)
     {}
 
     ~CompiledPipelineTask() override = default;
@@ -128,47 +134,25 @@ public:
     {
         // local add aggregation to minimize locking
         DenseMatrix<VT> *localAddRes = nullptr;
+        DenseMatrix<VT> *lres = nullptr;
         for(uint64_t r = _rl; r < _ru; r += _bsize) {
             //create zero-copy views of inputs/outputs
             uint64_t r2 = std::min(r + _bsize, _ru);
-            DenseMatrix<VT> *lres = nullptr;
-            std::vector<DenseMatrix<VT> *> linputs;
-            for(auto i = 0u; i < _numInputs; i++) {
-                // broadcasting
-                linputs.push_back((_inputs[i]->getNumRows() == 1) ? _inputs[i] : _inputs[i]->slice(r, r2));
-            }
 
+            auto linputs = createFuncInputs(r, r2);
             DenseMatrix<VT> **outputs[] = {&lres};
             //execute function on given data binding (batch size)
             _func(outputs, linputs.data());
-            //TODO: in-place computation via better compiled pipelines
-            //TODO: multi-return
-            switch (_combines[0]) {
-            case VectorCombine::ROWS: {
-                auto slice = _res->slice(r, r2);
-                for(auto i = 0u; i < slice->getNumRows(); ++i) {
-                    for(auto j = 0u; j < slice->getNumCols(); ++j) {
-                        slice->set(i, j, lres->get(i, j));
-                    }
+            accumulateOutputs(lres, localAddRes, r, r2);
+
+            // cleanup
+            DataObjectFactory::destroy(lres);
+            lres = nullptr;
+            for(auto i = 0u; i < _numInputs; i++) {
+                if (_splits[i] == VectorSplit::ROWS && _inputs[i]->getNumRows() != 1) {
+                    // slice copy was created
+                    DataObjectFactory::destroy(linputs[i]);
                 }
-                //cleanup
-                DataObjectFactory::destroy(lres);
-                break;
-            }
-            case VectorCombine::ADD: {
-                if (localAddRes == nullptr)
-                    localAddRes = lres;
-                else {
-                    ewBinaryMat(BinaryOpCode::ADD, localAddRes, localAddRes, lres, nullptr);
-                    //cleanup
-                    DataObjectFactory::destroy(lres);
-                }
-                break;
-            }
-            default: {
-                throw std::runtime_error(("VectorCombine case `" + std::to_string(static_cast<int64_t>(_combines[0]))
-                    + "` not supported"));
-            }
             }
         }
 
@@ -185,6 +169,66 @@ public:
                 DataObjectFactory::destroy(localAddRes);
             }
         }
+    }
+
+    void accumulateOutputs(DenseMatrix<VT> *&lres, DenseMatrix<VT> *&localAddRes, uint64_t rowStart, uint64_t rowEnd)
+    {
+        //TODO: in-place computation via better compiled pipelines
+        //TODO: multi-return
+        for(auto o = 0u; o < 1; ++o) {
+            switch (_combines[o]) {
+            case VectorCombine::ROWS: {
+                auto slice = _res->slice(rowStart, rowEnd);
+                for(auto i = 0u; i < slice->getNumRows(); ++i) {
+                    for(auto j = 0u; j < slice->getNumCols(); ++j) {
+                        slice->set(i, j, lres->get(i, j));
+                    }
+                }
+                DataObjectFactory::destroy(slice);
+                break;
+            }
+            case VectorCombine::COLS: {
+                auto slice = _res->slice(0, _outRows[o], rowStart, rowEnd);
+                for(auto i = 0u; i < slice->getNumRows(); ++i) {
+                    for(auto j = 0u; j < slice->getNumCols(); ++j) {
+                        slice->set(i, j, lres->get(i, j));
+                    }
+                }
+                DataObjectFactory::destroy(slice);
+                break;
+            }
+            case VectorCombine::ADD: {
+                if (localAddRes == nullptr) {
+                    // take lres and reset it to nullptr
+                    localAddRes = lres;
+                    lres = nullptr;
+                }
+                else {
+                    ewBinaryMat(BinaryOpCode::ADD, localAddRes, localAddRes, lres, nullptr);
+                }
+                break;
+            }
+            default: {
+                throw std::runtime_error(("VectorCombine case `"
+                    + std::to_string(static_cast<int64_t>(_combines[o])) + "` not supported"));
+            }
+            }
+        }
+    }
+
+    std::vector<DenseMatrix<VT> *> createFuncInputs(uint64_t rowStart, uint64_t rowEnd)
+    {
+        std::vector<DenseMatrix<VT> *> linputs;
+        for(auto i = 0u; i < _numInputs; i++) {
+            if (_splits[i] == VectorSplit::ROWS) {
+                // broadcasting
+                linputs.push_back((_inputs[i]->getNumRows() == 1) ? _inputs[i] : _inputs[i]->slice(rowStart, rowEnd));
+            }
+            else {
+                linputs.push_back(_inputs[i]);
+            }
+        }
+        return linputs;
     }
 };
 

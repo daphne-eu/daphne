@@ -1452,6 +1452,18 @@
                     "name": "numInputs"
                 },
                 {
+                    "type": "size_t",
+                    "name": "numOutputs"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "outRows"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "outCols"
+                },
+                {
                     "type": "int64_t *",
                     "name": "splits"
                 },
