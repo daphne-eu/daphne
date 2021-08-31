@@ -41,7 +41,7 @@ void VectorizeComputationsPass::runOnOperation()
 
     auto isMatrixComputation = [](Operation *v)
     {
-      return llvm::all_of(v->getOperandTypes(), [&](Type ty)
+      return llvm::any_of(v->getOperandTypes(), [&](Type ty)
       {
         return ty.isa<daphne::MatrixType>();
       });

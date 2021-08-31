@@ -386,12 +386,22 @@ public:
         mlir::Location loc = op->getLoc();
         mlir::Value pack = operands[0];
         mlir::Value item = operands[1];
+        auto elementType = pack.getType().cast<LLVM::LLVMPointerType>().getElementType();
         std::vector<Value> indices = {
             rewriter.create<ConstantOp>(loc, op.posAttr())
         };
         auto addr = rewriter.create<LLVM::GEPOp>(
                 loc, pack.getType(), pack, indices
         );
+        if (item.getType() != elementType) {
+            if (elementType.isa<LLVM::LLVMPointerType>()) {
+                item = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getI64Type(), item);
+                item = rewriter.create<LLVM::IntToPtrOp>(loc, elementType, item);
+            }
+            else {
+                item = rewriter.create<LLVM::BitcastOp>(loc, elementType, item);
+            }
+        }
         rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
                 op.getOperation(), item, addr
         );
@@ -457,8 +467,15 @@ public:
                     inputsArg,
                     ArrayRef<Value>({
                         rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
-                // TODO: cast for scalars etc.
-                funcBlock.getArgument(0).replaceAllUsesWith(rewriter.create<LLVM::LoadOp>(loc, addr));
+                Value val = rewriter.create<LLVM::LoadOp>(loc, addr);
+                auto expTy = typeConverter->convertType(op.inputs().getType()[i]);
+                if (expTy != val.getType()) {
+                    // casting for scalars
+                    auto ptrTy = val.getType().cast<LLVM::LLVMPointerType>();
+                    val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
+                    val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
+                }
+                funcBlock.getArgument(0).replaceAllUsesWith(val);
                 funcBlock.eraseArgument(0);
             }
 
@@ -563,7 +580,11 @@ private:
         for(auto i = 0u; i < values.size(); ++i) {
             Value cstI = rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i));
             auto addr = rewriter.create<LLVM::GEPOp>(loc, valuePtrTy, array, ArrayRef<Value>({cstI}));
-            rewriter.create<LLVM::StoreOp>(loc, values[i], addr);
+            auto val = values[i];
+            if (val.getType() != valueTy) {
+                val = rewriter.create<LLVM::BitcastOp>(loc, valueTy, val);
+            }
+            rewriter.create<LLVM::StoreOp>(loc, val, addr);
         }
         return array;
     }
