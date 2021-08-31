@@ -413,7 +413,7 @@ public:
             return failure();
         }
         auto loc = op->getLoc();
-        auto numDataOperands = operands.size() - 1;// pass daphneContext separately
+        auto numDataOperands = op.inputs().size();
         LLVM::LLVMFuncOp fOp;
         {
             OpBuilder::InsertionGuard ig(rewriter);
@@ -477,7 +477,8 @@ public:
                 rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
             }
             rewriter.create<ReturnOp>(loc);
-            oldReturn->erase();
+            // erase leads to problems, while remove doesn't. Inspect this.
+            oldReturn->remove();
         }
 
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
@@ -506,6 +507,18 @@ public:
         }
         newOperands.push_back(cvpOp);
         newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numDataOperands)));
+
+        auto numOutputs = op.getNumResults();
+        callee << "__size_t";
+        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numOutputs)));
+        // Variadic num rows operands.
+        callee << "__" << mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
+        auto rowsOperands = operands.drop_front(numDataOperands);
+        newOperands
+            .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs)));
+        callee << "__" << mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
+        auto colsOperands = rowsOperands.drop_front(numOutputs);
+        newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), colsOperands.take_front(numOutputs)));
 
         // Add array of split enums
         callee << "__int64_t";

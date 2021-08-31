@@ -22,6 +22,7 @@
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
@@ -38,6 +39,8 @@
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Interfaces/VectorInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
+
+#include <llvm/ADT/BitVector.h>
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -194,4 +197,49 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
     }
     else
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
+}
+
+mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
+                                                                     mlir::PatternRewriter &rewriter)
+{
+    std::vector<Value> resultsToReplace;
+    std::vector<Value> outRows;
+    std::vector<Value> outCols;
+    std::vector<Attribute> vCombineAttrs;
+
+    llvm::BitVector eraseIxs;
+    eraseIxs.resize(op.getNumResults());
+    for(auto result : op.getResults()) {
+        auto resultIx = result.getResultNumber();
+        if(result.use_empty()) {
+            // remove
+            eraseIxs.set(resultIx);
+        }
+        else {
+            resultsToReplace.push_back(result);
+            outRows.push_back(op.out_rows()[resultIx]);
+            outCols.push_back(op.out_cols()[resultIx]);
+            vCombineAttrs.push_back(op.combines()[resultIx]);
+        }
+    }
+    op.body().front().getTerminator()->eraseOperands(eraseIxs);
+    if(resultsToReplace.size() == op->getNumResults()) {
+        return failure();
+    }
+    auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
+        ValueRange(resultsToReplace).getTypes(),
+        op.inputs(),
+        outRows,
+        outCols,
+        op.splits(),
+        rewriter.getArrayAttr(vCombineAttrs),
+        op.ctx());
+    pipelineOp.body().takeBody(op.body());
+    for (auto e : llvm::enumerate(resultsToReplace)) {
+        auto resultToReplace = e.value();
+        auto i = e.index();
+        resultToReplace.replaceAllUsesWith(pipelineOp.getResult(i));
+    }
+    op.erase();
+    return success();
 }

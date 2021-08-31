@@ -19,16 +19,18 @@
 
 include "mlir/IR/OpBase.td"
 
+def VECTOR_SPLIT_NONE : I64EnumAttrCase<"NONE", 0>;
 def VECTOR_SPLIT_ROWS : I64EnumAttrCase<"ROWS", 1>;
 
-def VectorSplitAttr : I64EnumAttr<"VectorSplit", "", [VECTOR_SPLIT_ROWS]> {
+def VectorSplitAttr : I64EnumAttr<"VectorSplit", "", [VECTOR_SPLIT_NONE, VECTOR_SPLIT_ROWS]> {
     let cppNamespace = "::mlir::daphne";
 }
 
 def VECTOR_COMBINE_ROWS : I64EnumAttrCase<"ROWS", 1>;
-def VECTOR_COMBINE_ADD : I64EnumAttrCase<"ADD", 2>;
+def VECTOR_COMBINE_COLS : I64EnumAttrCase<"COLS", 2>;
+def VECTOR_COMBINE_ADD : I64EnumAttrCase<"ADD", 3>;
 
-def VectorCombineAttr : I64EnumAttr<"VectorCombine", "", [VECTOR_COMBINE_ROWS, VECTOR_COMBINE_ADD]> {
+def VectorCombineAttr : I64EnumAttr<"VectorCombine", "", [VECTOR_COMBINE_ROWS, VECTOR_COMBINE_COLS, VECTOR_COMBINE_ADD]> {
     let cppNamespace = "::mlir::daphne";
 }
 
@@ -42,6 +44,8 @@ def VectorizableOpInterface : OpInterface<"Vectorizable"> {
                         "std::vector<daphne::VectorSplit>", "getVectorSplits", (ins)>,
         InterfaceMethod<"Get the vector combine kind for each output.",
                         "std::vector<daphne::VectorCombine>", "getVectorCombines", (ins)>,
+        InterfaceMethod<"Create values for #rows and #cols of each output. -1 for dynamic/unknown.",
+                        "std::vector<std::pair<Value, Value>>", "createOpsOutputSizes", (ins "mlir::OpBuilder&":$builder)>,
         // TODO: for complex operations (non element-wise) where the computation per vector is not equal to the operation
         //  itself on the whole input, we will require a new method generating the operations in the pipeline. This is
         //  the same behaviour as with `Distributable` Ops, and therefore combining them might make sense.

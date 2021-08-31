@@ -32,6 +32,7 @@
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/TypeID.h"
 
 #include <ir/daphneir/DaphneOpsEnums.h.inc>
