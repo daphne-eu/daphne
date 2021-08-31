@@ -42,6 +42,8 @@ def VectorizableOpInterface : OpInterface<"Vectorizable"> {
                         "std::vector<daphne::VectorSplit>", "getVectorSplits", (ins)>,
         InterfaceMethod<"Get the vector combine kind for each output.",
                         "std::vector<daphne::VectorCombine>", "getVectorCombines", (ins)>,
+        InterfaceMethod<"Create values for #rows and #cols of each output. -1 for dynamic/unknown.",
+                        "std::vector<std::pair<Value, Value>>", "createOpsOutputSizes", (ins "mlir::OpBuilder&":$builder)>,
         // TODO: for complex operations (non element-wise) where the computation per vector is not equal to the operation
         //  itself on the whole input, we will require a new method generating the operations in the pipeline. This is
         //  the same behaviour as with `Distributable` Ops, and therefore combining them might make sense.

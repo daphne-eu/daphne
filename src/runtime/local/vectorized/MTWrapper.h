@@ -98,6 +98,9 @@ public:
                  DenseMatrix<VT> *&res,
                  DenseMatrix<VT> **inputs,
                  size_t numInputs,
+                 size_t numOutputs,
+                 int64_t *outRows,
+                 int64_t *outCols,
                  VectorSplit *splits,
                  VectorCombine *combines,
                  bool verbose)
@@ -114,9 +117,12 @@ public:
             workerThreads[i] = std::thread(runWorker, workers[i]);
         }
 
+        assert(numOutputs == 1 && "TODO");
         // output allocation for row-wise combine
-        if(res == nullptr && combines[0] == VectorCombine::ROWS)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(inputs[0]->getNumRows(), inputs[0]->getNumCols(), false);
+        if(res == nullptr && outRows[0] != -1 && outCols[0] != -1) {
+            auto zeroOut = combines[0] == mlir::daphne::VectorCombine::ADD;
+            res = DataObjectFactory::create<DenseMatrix<VT>>(outRows[0], outCols[0], zeroOut);
+        }
         // lock for aggregation combine
         std::mutex resLock;
 
@@ -132,6 +138,9 @@ public:
                 res,
                 inputs,
                 numInputs,
+                numOutputs,
+                outRows,
+                outCols,
                 splits,
                 combines,
                 k * blksize,

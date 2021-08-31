@@ -101,6 +101,9 @@ private:
     DenseMatrix<VT> *&_res;
     DenseMatrix<VT> **_inputs;
     size_t _numInputs;
+    size_t _numOutputs;
+    int64_t *_outRows;
+    int64_t *_outCols;
     VectorSplit *_splits;
     VectorCombine *_combines;
     uint64_t _rl;    // row lower index
@@ -113,13 +116,16 @@ public:
                          DenseMatrix<VT> *&res,
                          DenseMatrix<VT> **inputs,
                          size_t numInputs,
+                         size_t numOutputs,
+                         int64_t *outRows,
+                         int64_t *outCols,
                          VectorSplit *splits,
                          VectorCombine *combines,
                          uint64_t rl,
                          uint64_t ru,
                          uint64_t bsize)
-        : _func(func), _resLock(resLock), _res(res), _inputs(inputs), _numInputs(numInputs), _splits(splits),
-          _combines(combines), _rl(rl), _ru(ru), _bsize(bsize)
+        : _func(func), _resLock(resLock), _res(res), _inputs(inputs), _numInputs(numInputs), _numOutputs(numOutputs),
+          _outRows(outRows), _outCols(outCols), _splits(splits), _combines(combines), _rl(rl), _ru(ru), _bsize(bsize)
     {}
 
     ~CompiledPipelineTask() override = default;
@@ -151,6 +157,7 @@ public:
                         slice->set(i, j, lres->get(i, j));
                     }
                 }
+                DataObjectFactory::destroy(slice);
                 break;
             }
             case VectorCombine::ADD: {
@@ -169,6 +176,15 @@ public:
                     + "` not supported"));
             }
             }
+            // cleanup
+            DataObjectFactory::destroy(lres);
+            lres = nullptr;
+            for(auto i = 0u; i < _numInputs; i++) {
+                if (_inputs[i]->getNumRows() != 1) {
+                    // slice copy was created
+                    DataObjectFactory::destroy(linputs[i]);
+                }
+            }
         }
 
         if (_combines[0] == VectorCombine::ADD) {
@@ -184,7 +200,6 @@ public:
                 DataObjectFactory::destroy(localAddRes);
             }
         }
-        DataObjectFactory::destroy(lres);
     }
 };
 

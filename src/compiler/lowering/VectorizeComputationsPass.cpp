@@ -19,9 +19,7 @@
 
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Transforms/DialectConversion.h"
-#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 
 #include <memory>
 #include <set>
@@ -121,7 +119,12 @@ void VectorizeComputationsPass::runOnOperation()
         std::vector<Location> locations;
         std::vector<Value> results;
         std::vector<Value> operands;
+        std::vector<Value> outRows;
+        std::vector<Value> outCols;
 
+        // first op in pipeline is last in DAG
+        // TODO: more complex behaviour will be necessary here once `hasOneUse` check above gets more complex
+        builder.setInsertionPoint(pipeline.front());
         for(auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
             auto v = *vIt;
             auto vSplits = v.getVectorSplits();
@@ -142,14 +145,17 @@ void VectorizeComputationsPass::runOnOperation()
             for(auto result : v->getResults()) {
                 results.push_back(result);
             }
+            for (auto outSize : v.createOpsOutputSizes(builder)) {
+                outRows.push_back(outSize.first);
+                outCols.push_back(outSize.second);
+            }
         }
-        // first op in pipeline is last in DAG
-        // TODO: more complex behaviour will be necessary here once `hasOneUse` check above gets more complex
-        builder.setInsertionPoint(pipeline.front());
         auto loc = pipeline.front().getLoc();
         auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(loc,
             ValueRange(results).getTypes(),
             operands,
+            outRows,
+            outCols,
             builder.getArrayAttr(vSplitAttrs),
             builder.getArrayAttr(vCombineAttrs),
             nullptr);

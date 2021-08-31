@@ -40,6 +40,8 @@
 #include "mlir/Interfaces/VectorInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
 
+#include <llvm/ADT/BitVector.h>
+
 void mlir::daphne::DaphneDialect::initialize()
 {
     addOperations<
@@ -201,23 +203,34 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
                                                                      mlir::PatternRewriter &rewriter)
 {
     std::vector<Value> resultsToReplace;
+    std::vector<Value> outRows;
+    std::vector<Value> outCols;
     std::vector<Attribute> vCombineAttrs;
+
+    llvm::BitVector eraseIxs;
+    eraseIxs.resize(op.getNumResults());
     for(auto result : op.getResults()) {
+        auto resultIx = result.getResultNumber();
         if(result.use_empty()) {
             // remove
-            op.body().front().getTerminator()->eraseOperand(result.getResultNumber());
+            eraseIxs.set(resultIx);
         }
         else {
             resultsToReplace.push_back(result);
-            vCombineAttrs.push_back(op.combines()[result.getResultNumber()]);
+            outRows.push_back(op.out_rows()[resultIx]);
+            outCols.push_back(op.out_cols()[resultIx]);
+            vCombineAttrs.push_back(op.combines()[resultIx]);
         }
     }
-    if (resultsToReplace.size() == op->getNumResults()) {
+    op.body().front().getTerminator()->eraseOperands(eraseIxs);
+    if(resultsToReplace.size() == op->getNumResults()) {
         return failure();
     }
     auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
         ValueRange(resultsToReplace).getTypes(),
-        op.getOperands(),
+        op.inputs(),
+        outRows,
+        outCols,
         op.splits(),
         rewriter.getArrayAttr(vCombineAttrs),
         op.ctx());

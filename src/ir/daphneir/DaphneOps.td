@@ -956,14 +956,18 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 // Vectorized operations
 // ****************************************************************************
 
+// TODO: should be recursive side effects
 def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 
-    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>,
+    let arguments = (ins Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>:$inputs,
+            // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
+            Variadic<AnyTypeOf<[SIntScalar, Size]>>:$out_rows,
+            Variadic<AnyTypeOf<[SIntScalar, Size]>>:$out_cols,
             TypedArrayAttrBase<VectorSplitAttr, "Vector-Splits">:$splits,
             TypedArrayAttrBase<VectorCombineAttr, "Vector-Combines">:$combines,
             Optional<DaphneContext>:$ctx);
-    let results = (outs Variadic<MatrixOrFrame>);
+    let results = (outs Variadic<MatrixOrFrame>:$outputs);
     let regions = (region SizedRegion<1>:$body);
 
     let hasCanonicalizeMethod = 1;
