@@ -128,10 +128,15 @@ public:
 
         // create tasks and close input
         // TODO UNIBAS - integration hook scheduling
-        uint64_t rlen = inputs[0]->getNumRows();
-        uint64_t blksize = (rlen - 1) / numTasks + 1; // integer ceil
+        uint64_t len = 0;
+        // due to possible broadcasting we have to check all inputs
+        for (auto i = 0u; i < numInputs; ++i) {
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+                len = std::max(len, inputs[i]->getNumRows());
+        }
+        uint64_t blksize = (len - 1) / numTasks + 1; // integer ceil
         uint64_t batchsize = 100; // 100-rows-at-a-time
-        for(uint32_t k = 0; k * blksize < rlen; k++) {
+        for(uint32_t k = 0; k * blksize < len; k++) {
             q->enqueueTask(new CompiledPipelineTask<VT>(
                 func,
                 resLock,
@@ -144,7 +149,7 @@ public:
                 splits,
                 combines,
                 k * blksize,
-                std::min((k + 1) * blksize, rlen),
+                std::min((k + 1) * blksize, len),
                 batchsize));
         }
         q->closeInput();

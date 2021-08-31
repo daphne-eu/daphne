@@ -1,0 +1,4 @@
+X = rand(10000, 1000, 0.0, 1.0, 1.0, 7);
+
+print(sum(sum(X, 0)));
+print(sum(aggMin(X, 0)));

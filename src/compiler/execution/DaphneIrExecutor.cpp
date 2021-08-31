@@ -72,6 +72,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // TODO: this can be moved outside without problem, should we?
             pm.addPass(mlir::createCanonicalizerPass());
         }
+        pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 

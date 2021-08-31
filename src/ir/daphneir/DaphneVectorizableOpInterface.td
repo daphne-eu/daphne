@@ -19,16 +19,18 @@
 
 include "mlir/IR/OpBase.td"
 
+def VECTOR_SPLIT_NONE : I64EnumAttrCase<"NONE", 0>;
 def VECTOR_SPLIT_ROWS : I64EnumAttrCase<"ROWS", 1>;
 
-def VectorSplitAttr : I64EnumAttr<"VectorSplit", "", [VECTOR_SPLIT_ROWS]> {
+def VectorSplitAttr : I64EnumAttr<"VectorSplit", "", [VECTOR_SPLIT_NONE, VECTOR_SPLIT_ROWS]> {
     let cppNamespace = "::mlir::daphne";
 }
 
 def VECTOR_COMBINE_ROWS : I64EnumAttrCase<"ROWS", 1>;
-def VECTOR_COMBINE_ADD : I64EnumAttrCase<"ADD", 2>;
+def VECTOR_COMBINE_COLS : I64EnumAttrCase<"COLS", 2>;
+def VECTOR_COMBINE_ADD : I64EnumAttrCase<"ADD", 3>;
 
-def VectorCombineAttr : I64EnumAttr<"VectorCombine", "", [VECTOR_COMBINE_ROWS, VECTOR_COMBINE_ADD]> {
+def VectorCombineAttr : I64EnumAttr<"VectorCombine", "", [VECTOR_COMBINE_ROWS, VECTOR_COMBINE_COLS, VECTOR_COMBINE_ADD]> {
     let cppNamespace = "::mlir::daphne";
 }
 

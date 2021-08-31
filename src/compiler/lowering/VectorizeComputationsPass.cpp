@@ -70,6 +70,9 @@ void VectorizeComputationsPass::runOnOperation()
                     if(combine == daphne::VectorCombine::ROWS)
                         possibleMerges.insert({v, defOp});
                 }
+                else if (split == daphne::VectorSplit::NONE) {
+                    // can't be merged
+                }
                 else {
                     throw std::runtime_error("VectorSplit case `" + stringifyEnum(split).str() + "` not handled");
                 }
@@ -174,7 +177,7 @@ void VectorizeComputationsPass::runOnOperation()
 
             v->moveBefore(bodyBlock, bodyBlock->end());
 
-            for(auto i = 0; i < numOperands; ++i) {
+            for(auto i = 0u; i < numOperands; ++i) {
                 if(!valueIsPartOfPipeline(v->getOperand(i))) {
                     v->setOperand(i, bodyBlock->getArgument(argsIx++));
                 }
@@ -185,6 +188,21 @@ void VectorizeComputationsPass::runOnOperation()
             for(auto z : llvm::zip(v->getResults(), pipelineReplaceResults)) {
                 auto old = std::get<0>(z);
                 auto replacement = std::get<1>(z);
+
+                // TODO: switch to type based size inference instead
+                // FIXME: if output is dynamic sized, we can't do this
+                // replace `NumRowOp` and `NumColOp`s for output size inference
+                for (auto &use : old.getUses()) {
+                    auto *op = use.getOwner();
+                    if (auto nrowOp = llvm::dyn_cast<daphne::NumRowsOp>(op)) {
+                        nrowOp.replaceAllUsesWith(pipelineOp.out_rows()[replacement.getResultNumber()]);
+                        nrowOp.erase();
+                    }
+                    if (auto ncolOp = llvm::dyn_cast<daphne::NumColsOp>(op)) {
+                        ncolOp.replaceAllUsesWith(pipelineOp.out_cols()[replacement.getResultNumber()]);
+                        ncolOp.erase();
+                    }
+                }
                 // Replace only if not used by pipeline op
                 old.replaceUsesWithIf(replacement, [&](OpOperand &opOperand)
                 {
