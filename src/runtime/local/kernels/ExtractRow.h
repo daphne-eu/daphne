@@ -28,6 +28,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <cmath>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -84,9 +85,9 @@ struct ExtractRow<Frame, Frame, VTSel> {
         
 #if EXTRACTROW_FRAME_MODE == 0
         // Some information on each column.
-        size_t * const elementSizes = new size_t[numCols];
-        const uint8_t ** argCols = new const uint8_t *[numCols];
-        uint8_t ** resCols = new uint8_t *[numCols];
+		const auto elementSizes = std::make_unique<size_t[]>(numCols);
+		const auto argCols = std::make_unique<const uint8_t*[]>(numCols);
+		auto resCols = std::make_unique<uint8_t*[]>(numCols);
         // Initialize information on each column.
         for(size_t c = 0; c < numCols; c++) {
             elementSizes[c] = ValueTypeUtils::sizeOf(schema[c]);
@@ -112,10 +113,7 @@ struct ExtractRow<Frame, Frame, VTSel> {
             }
         }
         res->shrinkNumRows(numRowsSel);
-        // Free information on each column.
-        delete[] elementSizes;
-        delete[] argCols;
-        delete[] resCols;
+
 #elif EXTRACTROW_FRAME_MODE == 1
         // TODO Implement a columnar approach.
 #endif
@@ -159,7 +157,7 @@ struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
             const VTSel valSelectedRow = rowsInSel[r];  // only one column
             // TODO For performance reasons, we might skip such checks or make
             // them optional somehow, but it is okay for now.
-            if(valSelectedRow!=valSelectedRow || valSelectedRow < 0 || valSelectedRow > numInputRows-1){
+            if(std::isnan(valSelectedRow) || valSelectedRow < 0 || static_cast<size_t>(valSelectedRow) > numInputRows-1){
                 throw std::runtime_error("sel cannot have NaN nor negative nor value that is greater than numRows in arg");
             }  
             else
