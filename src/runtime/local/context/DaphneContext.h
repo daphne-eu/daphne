@@ -18,13 +18,10 @@
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
 #pragma once
-
-#ifdef USE_CUDA
-//	#include <runtime/local/context/CUDAContext.h>
+#include "IContext.h"
 #include <vector>
 #include <iostream>
-class CUDAContext;
-#endif
+#include <memory>
 
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
@@ -47,38 +44,25 @@ struct DaphneContext {
     // of that type here, in order to separate concerns and allow a  high-level
     // overview of the context information.
 #ifdef USE_CUDA
-//    std::vector<std::unique_ptr<CUDAContext>> cuda_contexts;
-    std::vector<CUDAContext*> cuda_contexts;
+    std::vector<std::unique_ptr<IContext>> cuda_contexts;
 #endif
-    // So far, there is no context information.
-    
-//    explicit DaphneContext(const DaphneUserConfig& config) {
-	DaphneContext() {
-#ifdef USE_CUDA
-//		if(config.use_cuda)
-//			for (const auto& dev : config.cuda_devices)
-//				cuda_contexts.push_back(CUDAContext::create(dev));
-#endif
-    }
+	DaphneContext() = default;
     
     ~DaphneContext() {
 #ifdef USE_CUDA
 #ifdef NDEBUG
 		std::cout << "desctructing DaphneContext" << std::endl;
 #endif
-//    		for (auto& ctx : cuda_contexts)
-//    			ctx->destroy();
-//ToDo: use interface for create/destroy
-for (auto ctx : cuda_contexts) {
-	delete ctx;
-}
-    		cuda_contexts.clear();
+	for (auto& ctx : cuda_contexts) {
+		ctx->destroy();
+	}
+    cuda_contexts.clear();
 #endif
     }
 
 #ifdef USE_CUDA
 	// ToDo: in a multi device setting this should use a find call instead of a direct [] access
-	[[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const { return cuda_contexts[dev_id]; }
+	[[nodiscard]] IContext* getCUDAContext(int dev_id) const { return cuda_contexts[dev_id].get(); }
 
 #endif
 };

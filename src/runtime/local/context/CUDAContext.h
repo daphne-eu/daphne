@@ -19,7 +19,8 @@
 
 #pragma once
 
-#include <api/cli/DaphneUserConfig.h>
+//#include <api/cli/DaphneUserConfig.h>
+#include "IContext.h"
 #include <runtime/local/kernels/CUDA_HostUtils.h>
 //#include <cublasLt.h>
 
@@ -27,7 +28,7 @@
 #include <iostream>
 #include <memory>
 
-class CUDAContext {
+class CUDAContext : public IContext {
 	int device_id = -1;
 
 	cudaDeviceProp device_properties{};
@@ -50,15 +51,13 @@ class CUDAContext {
 
 	explicit CUDAContext(int id) : device_id(id) { }
 public:
-	CUDAContext() =delete;
-	CUDAContext(const CUDAContext&) =delete;
-	CUDAContext& operator=(const CUDAContext&) =delete;
-	~CUDAContext();
+	CUDAContext() = delete;
+	CUDAContext(const CUDAContext&) = delete;
+	CUDAContext& operator=(const CUDAContext&) = delete;
+	~CUDAContext() = default;
 
-//	static std::unique_ptr<CUDAContext> create(int device_id);
-	static CUDAContext* create(int device_id);
-
-	void destroy();
+	void destroy() override;
+	static std::unique_ptr<IContext> createCudaContext(int id);
 
 	[[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
 	[[nodiscard]] cusparseHandle_t getCusparseHandle() const { return cusparse_handle; }

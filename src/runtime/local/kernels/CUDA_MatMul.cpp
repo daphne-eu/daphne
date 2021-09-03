@@ -40,7 +40,7 @@ void MatMul_CUDA<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>>::apply(DenseMat
 																		const DenseMatrix<T>* rhs, DCTX(dctx)) {
 //	std::cerr << " ----------  mult ----------- " << std::endl;
 	using VT = typename DenseMatrix<T>::VT;
-	const auto ctx = dctx->getCUDAContext(0);
+	auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
 
 	const size_t nr1 = lhs->getNumRows();
 	const size_t nc1 = lhs->getNumCols();
@@ -67,7 +67,7 @@ void MatMul_CUDA<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T>*&
 		const CSRMatrix<T>* rhs, DCTX(dctx)) {
 
 	using VT = typename DenseMatrix<T>::VT;
-	auto ctx = dctx->getCUDAContext(0);
+	auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
 	cusparseHandle_t handle = ctx->getCusparseHandle();
 
 	const size_t nr1 = lhs->getNumRows();

@@ -19,7 +19,7 @@
 namespace Activation {
 	template<typename OP, typename DTRes, typename DTArg>
 	void Forward_CUDA<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-		auto ctx = dctx->getCUDAContext(0);
+		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
 		using VT = typename DTRes::VT;
 		const size_t nr1 = data->getNumRows();
 		const size_t nc1 = data->getNumCols();

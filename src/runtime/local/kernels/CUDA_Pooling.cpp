@@ -26,7 +26,7 @@ namespace Pooling {
 	{
 //		std::cerr << " ----------  pool ----------- " << std::endl;
 		using VT = typename DTRes::VT;
-		auto ctx = dctx->getCUDAContext(0);
+		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
 		const VT blend_alpha = 1;
 		const VT blend_beta = 0;
 		const VT* d_input = data->getValuesCUDA();

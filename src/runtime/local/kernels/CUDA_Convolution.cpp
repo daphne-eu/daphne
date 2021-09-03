@@ -27,7 +27,7 @@ namespace Convolution {
 
 //std::cerr << " ----------  conv ----------- " << std::endl;
 
-		auto ctx = dctx->getCUDAContext(0);
+		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
 		using VT = typename DTRes::VT;
 		auto F = filter->getNumRows(); // num filters
 		const VT blend_alpha = 1;

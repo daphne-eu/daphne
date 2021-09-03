@@ -38,7 +38,7 @@ namespace Affine {
 	template<typename DTRes, typename DTArg>
 	void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx)) {
 		std::cerr << " ----------  affine ----------- " << std::endl;
-		auto ctx = dctx->getCUDAContext(0);
+		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
 		using VT = typename DTRes::VT;
 		const size_t nr1 = data->getNumRows();
 		const size_t nc1 = data->getNumCols();

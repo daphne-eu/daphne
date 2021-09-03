@@ -16,37 +16,6 @@
 
 #include "runtime/local/context/CUDAContext.h"
 
-CUDAContext::~CUDAContext() {
-#ifdef NDEBUG
-	std::cout << "destructing CUDAContext" << std::endl;
-#endif
-	if(cublas_handle) destroy();
-}
-
-//std::unique_ptr<CUDAContext> CUDAContext::create(int device_id) {
-CUDAContext* CUDAContext::create(int device_id) {
-//#ifndef NDEBUG
-//	std::cout << "creating CUDA context..." << std::endl;
-//#endif
-//	std::unique_ptr<CUDAContext> context = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
-	int device_count = -1;
-	CHECK_CUDART(cudaGetDeviceCount(&device_count));
-
-	if(device_count < 1) {
-		std::cerr << "Not creating requested CUDA context. No cuda devices available." << std::endl;
-		return nullptr;
-	}
-
-	if(device_id >= device_count) {
-		std::cerr << "Requested device ID " << device_id << " >= device count " << device_count << std::endl;
-		return nullptr;
-	}
-
-	auto* context = new CUDAContext(device_id);
-	context->init();
-	return context;
-}
-
 void CUDAContext::destroy() {
 #ifdef NDEBUG
 	std::cout << "Destroying CUDA context..." << std::endl;
@@ -68,7 +37,6 @@ void CUDAContext::destroy() {
 }
 
 void CUDAContext::init() {
-
 	CHECK_CUDART(cudaSetDevice(device_id));
 	CHECK_CUDART(cudaGetDeviceProperties(&device_properties, device_id));
 	std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
@@ -127,3 +95,26 @@ void* CUDAContext::getCUDNNWorkspace(size_t size) {
 	//#endif
 	return cudnn_workspace;
 }
+
+std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
+	//#ifndef NDEBUG
+//	std::cout << "creating CUDA context..." << std::endl;
+//#endif
+	int device_count = -1;
+	CHECK_CUDART(cudaGetDeviceCount(&device_count));
+
+	if(device_count < 1) {
+		std::cerr << "Not creating requested CUDA context. No cuda devices available." << std::endl;
+		return nullptr;
+	}
+
+	if(device_id >= device_count) {
+		std::cerr << "Requested device ID " << device_id << " >= device count " << device_count << std::endl;
+		return nullptr;
+	}
+
+	auto ctx = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
+	ctx->init();
+	return ctx;
+}
+
