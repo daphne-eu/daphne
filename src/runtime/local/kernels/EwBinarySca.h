@@ -62,7 +62,9 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::SUB)
-        MAKE_CASE(BinaryOpCode::MUL)
+		// This triggers an instantiation that causes a warning.
+		// For MUL, the direct call to EwBinarySca::apply() is used
+        //MAKE_CASE(BinaryOpCode::MUL)
         MAKE_CASE(BinaryOpCode::DIV)
         MAKE_CASE(BinaryOpCode::POW)
         MAKE_CASE(BinaryOpCode::MOD)
