@@ -40,9 +40,9 @@ template <typename ValueType>
 void DenseMatrix<ValueType>::cudaAlloc() {
 	size_t requested = numRows*numCols*sizeof(ValueType);
 	size_t available; size_t total;
-	auto start = std::chrono::high_resolution_clock::now();
+//	auto start = std::chrono::high_resolution_clock::now();
 	cudaMemGetInfo(&available, &total);
-	auto end = std::chrono::high_resolution_clock::now();
+//	auto end = std::chrono::high_resolution_clock::now();
 	if(requested > available) {
 		throw std::runtime_error("Insufficient GPU memory! Requested=" + std::to_string(requested) + " Available="
 				+ std::to_string(available));
