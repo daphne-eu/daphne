@@ -19,16 +19,7 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
-if(CONFIG:Release OR CMAKE_BUILD_TYPE STREQUAL "Release")
-    message(STATUS "Release build type is set")
-    add_compile_options(-O3) # use high optimization level for all targets
-    add_definitions(-DNDEBUG)
-endif()
-
-if(CONFIG:Debug OR CMAKE_BUILD_TYPE STREQUAL "Debug")
-    message(STATUS Debug build type is set)
-    set(CMAKE_CXX_FLAGS "-O0")
-endif()
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 # *****************************************************************************
 # Related to MLIR/LLVM
