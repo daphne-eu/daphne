@@ -20,7 +20,7 @@ namespace DNN::CUDA {
 	template<typename DTRes, typename DTArg>
 	void BiasAddForward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
 //		std::cerr << " ----------  biasadd ----------- " << std::endl;
-		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
+		auto ctx = dctx->getCUDAContext(0);
 
 		using VT = typename DTRes::VT;
 		const size_t nr1 = data->getNumRows();

@@ -27,7 +27,7 @@ namespace Convolution {
 
 //std::cerr << " ----------  conv ----------- " << std::endl;
 
-		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
+		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		auto F = filter->getNumRows(); // num filters
 		const VT blend_alpha = 1;
@@ -113,16 +113,20 @@ namespace Convolution {
 				ctx->filter_desc, d_filter, ctx->conv_desc, algo, work_space, workspace_sizeInBytes, &blend_beta,
 				ctx->dst_tensor_desc, d_res));
 
-		if(bias != filter) {
-			const VT* d_bias = bias->getValuesCUDA();
+		if(bias) {
+			if (bias != filter) {
+				const VT *d_bias = bias->getValuesCUDA();
 //			CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_bias), bias->getNumCols() * sizeOfDataType));
 //			CHECK_CUDART(cudaMemcpy(d_bias, bias->getValues(), bias->getNumCols() * sizeOfDataType, cudaMemcpyHostToDevice));
 
-			CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1,
-												   c, 1, 1));
-			blend_beta = 1;
-			CHECK_CUDNN(cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
+				CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format,
+													   ctx->getCUDNNDataType<VT>(), 1,
+													   c, 1, 1));
+				blend_beta = 1;
+				CHECK_CUDNN(
+						cudnnAddTensor(ctx->getCUDNNHandle(), &blend_alpha, ctx->src_tensor_desc, d_bias, &blend_beta,
 									   ctx->dst_tensor_desc, d_res));
+			}
 		}
 	}
 

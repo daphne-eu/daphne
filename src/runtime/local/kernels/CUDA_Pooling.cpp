@@ -26,7 +26,7 @@ namespace Pooling {
 	{
 //		std::cerr << " ----------  pool ----------- " << std::endl;
 		using VT = typename DTRes::VT;
-		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
+		auto ctx = dctx->getCUDAContext(0);
 		const VT blend_alpha = 1;
 		const VT blend_beta = 0;
 		const VT* d_input = data->getValuesCUDA();
@@ -45,6 +45,8 @@ namespace Pooling {
 
 		int n = tensorOuputDimA[0]; int c = tensorOuputDimA[1];
 		int h = tensorOuputDimA[2]; int w = tensorOuputDimA[3];
+		res_h = h;
+		res_w = w;
 		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, c, h, w));
 
 //		std::cout << " creating res matrix for pooling: " << batch_size << " " << c << " " << h << " " << w << std::endl;

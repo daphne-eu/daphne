@@ -18,11 +18,12 @@
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
 #pragma once
-#include "IContext.h"
 #include <vector>
 #include <iostream>
 #include <memory>
-
+#ifdef USE_CUDA
+	#include "CUDAContext.h"
+#endif
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
@@ -62,8 +63,9 @@ struct DaphneContext {
 
 #ifdef USE_CUDA
 	// ToDo: in a multi device setting this should use a find call instead of a direct [] access
-	[[nodiscard]] IContext* getCUDAContext(int dev_id) const { return cuda_contexts[dev_id].get(); }
-
+	[[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const {
+		return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
+	}
 #endif
 };
 

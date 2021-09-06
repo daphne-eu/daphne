@@ -24,7 +24,7 @@ namespace BatchNorm {
 
 //		std::cerr << " ----------  bn ----------- " << std::endl;
 
-		auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
+		auto ctx = dctx->getCUDAContext(0);
 		using VT = typename DTRes::VT;
 		const size_t nr1 = data->getNumRows();
 		const size_t nc1 = data->getNumCols();

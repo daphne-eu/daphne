@@ -39,10 +39,13 @@ void CUDAContext::destroy() {
 void CUDAContext::init() {
 	CHECK_CUDART(cudaSetDevice(device_id));
 	CHECK_CUDART(cudaGetDeviceProperties(&device_properties, device_id));
-	std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
+
 	size_t available; size_t total;
 	cudaMemGetInfo(&available, &total);
+#ifndef NDBEBUG
+	std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
 	std::cout << "available mem: " << available << " total mem: " << total << std::endl;
+#endif
 	CHECK_CUBLAS(cublasCreate(&cublas_handle));
 	CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
 	CHECK_CUDNN(cudnnCreate(&cudnn_handle));
@@ -83,7 +86,7 @@ cudaDataType CUDAContext::getCUSparseDataType<double>() const {
 void* CUDAContext::getCUDNNWorkspace(size_t size) {
 	if (size > cudnn_workspace_size) {
 		//#ifdef NDEBUG
-		std::cerr << "Allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
+//		std::cerr << "Allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
 		//#endif
 		CHECK_CUDART(cudaMalloc(&cudnn_workspace, size));
 		cudnn_workspace_size = size;
