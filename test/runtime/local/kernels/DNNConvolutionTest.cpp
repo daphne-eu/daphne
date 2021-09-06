@@ -38,14 +38,13 @@ void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
     size_t out_h;
     size_t out_w;
 #ifdef USE_CUDA
-    Convolution::Forward_CUDA<DT, DT>::apply(res, out_h, out_w, in, filter, in->getNumRows(), 1, 3, 3, 2, 2, 1, 1, 0, 0,
-			dctx);
+    Convolution::Forward_CUDA<DT, DT>::apply(res, out_h, out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
+			1, 1, 0, 0, dctx);
 #else
     //"ToDo: cpu version
     return;
     Convolution::Forward<OP, DT, DT>::apply(res, in, filter, in->getNumRows(), 1, 3, 3);
 #endif
-#pragma unroll
     CHECK(*res == *exp);
 }
 

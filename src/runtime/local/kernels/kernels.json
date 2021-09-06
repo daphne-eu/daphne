@@ -1728,20 +1728,22 @@
                     "type": "DTRes *&",
                     "name": "res"
                 },
+                { "type": "size_t& ", "name": "res_h" },
+                { "type": "size_t& ", "name": "res_w" },
                 {
                     "type": "const DTArg *",
                     "name": "data"
                 },
-                { "type": "uint64_t", "name": "batch_size" },
-                { "type": "uint32_t", "name": "num_channls"},
-                { "type": "uint32_t", "name": "img_h"},
-                { "type": "uint32_t", "name": "img_w"},
-                { "type": "uint32_t", "name": "pool_h"},
-                { "type": "uint32_t", "name": "pool_w"},
-                { "type": "uint32_t", "name": "stride_h"},
-                { "type": "uint32_t", "name": "stride_w"},
-                { "type": "uint32_t", "name": "pad_h"},
-                { "type": "uint32_t", "name": "pad_w"}
+                { "type": "size_t", "name": "batch_size" },
+                { "type": "size_t", "name": "num_channls"},
+                { "type": "size_t", "name": "img_h"},
+                { "type": "size_t", "name": "img_w"},
+                { "type": "size_t", "name": "pool_h"},
+                { "type": "size_t", "name": "pool_w"},
+                { "type": "size_t", "name": "stride_h"},
+                { "type": "size_t", "name": "stride_w"},
+                { "type": "size_t", "name": "pad_h"},
+                { "type": "size_t", "name": "pad_w"}
             ]
         },
         "instantiations": [

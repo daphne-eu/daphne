@@ -17,7 +17,7 @@ project(daphne-prototype LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
-set(CMAKE_CXX_STANDARD 14 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 
 if(CONFIG:Release OR CMAKE_BUILD_TYPE STREQUAL "Release")
     message(STATUS "Release build type is set")
@@ -25,17 +25,6 @@ if(CONFIG:Release OR CMAKE_BUILD_TYPE STREQUAL "Release")
     add_definitions(-DNDEBUG)
 endif()
 
-if(CONFIG:Release)
-message(STATUS "W0-0t")
-endif()
-if(CONFIG:Debug)
-    message(STATUS "This is debug madness")
-endif()
-if(CONFIG:Default)
-    message(STATUS "defaulty message")
-endif()
-
-#message(STATUS ${CMAKE_BUILD_TYPE})
 if(CONFIG:Debug OR CMAKE_BUILD_TYPE STREQUAL "Debug")
     message(STATUS Debug build type is set)
     set(CMAKE_CXX_FLAGS "-O0")

@@ -46,12 +46,9 @@ set(TEST_SOURCES
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
-        runtime/local/kernels/DNNActivationTest.cpp
-        runtime/local/kernels/DNNAffineTest.cpp
-        runtime/local/kernels/DNNBatchNormTest.cpp
-        runtime/local/kernels/DNNConvolutionTest.cpp
+
         runtime/local/kernels/DNNPoolingTest.cpp
-        runtime/local/kernels/DNNSoftmaxTest.cpp
+
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
@@ -81,7 +78,14 @@ set(TEST_SOURCES
 
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    list(APPEND TEST_SOURCES runtime/local/kernels/CUDA_MatMulTest.cpp runtime/local/kernels/CUDA_ContextTest.cpp)
+    list(APPEND TEST_SOURCES
+            runtime/local/kernels/CUDA_MatMulTest.cpp
+            runtime/local/kernels/CUDA_ContextTest.cpp
+            runtime/local/kernels/DNNActivationTest.cpp
+            runtime/local/kernels/DNNAffineTest.cpp
+            runtime/local/kernels/DNNBatchNormTest.cpp
+            runtime/local/kernels/DNNConvolutionTest.cpp
+            runtime/local/kernels/DNNSoftmaxTest.cpp)
 endif()
 
 add_executable(run_tests

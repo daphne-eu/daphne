@@ -40,21 +40,21 @@ template <typename ValueType>
 void DenseMatrix<ValueType>::cudaAlloc() {
 	size_t requested = numRows*numCols*sizeof(ValueType);
 	size_t available; size_t total;
-//	auto start = std::chrono::high_resolution_clock::now();
+	auto start = std::chrono::high_resolution_clock::now();
 	cudaMemGetInfo(&available, &total);
-//	auto end = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
 	if(requested > available) {
 		throw std::runtime_error("Insufficient GPU memory! Requested=" + std::to_string(requested) + " Available="
 				+ std::to_string(available));
 	}
-//#ifndef NDEBUG
-//	std::cerr << "cudaMalloc " << requested << " bytes" << " of " << available << "(query time=" <<
-//	std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
-//#endif
+#ifndef NDEBUG
+	std::cerr << "cudaMalloc " << requested << " bytes" << " of " << available << "(query time=" <<
+	std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
+#endif
 	CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&cuda_ptr), numRows*numCols*sizeof(ValueType)));
-//#ifndef NDEBUG
-//	std::cerr << " address=" << cuda_ptr << std::endl;
-//#endif
+#ifndef NDEBUG
+	std::cerr << " address=" << cuda_ptr << std::endl;
+#endif
 }
 
 template <typename ValueType>
@@ -89,6 +89,8 @@ void DenseMatrix<ValueType>::host2cuda() {
 	host_dirty = false;
 }
 
+#endif // USE_CUDA
+
 // explicitly instantiate to satisfy linker
 template class DenseMatrix<double>;
 template class DenseMatrix<float>;
@@ -98,5 +100,3 @@ template class DenseMatrix<signed char>;
 template class DenseMatrix<unsigned char>;
 template class DenseMatrix<unsigned int>;
 template class DenseMatrix<unsigned long>;
-
-#endif // USE_CUDA

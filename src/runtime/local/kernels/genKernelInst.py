@@ -90,6 +90,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         .replace("const ", "")
         .replace(" **", "" if rp["isOutput"] else "_variadic")
         .replace(" *", "")
+        .replace("& ", "")
         .replace("<", "_").replace(">", "")
         for rp in extendedRuntimeParams
     ])
@@ -160,8 +161,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
                 # Template parameters:
                 ", ".join(["Pooling::"+opCode]+[toCppType(tv) for tv in templateValues]),
                 # Run-time parameters:
-                ", ".join(([] if isCreateDaphneContext else ["ctx"] ) + callParams[1:]),
-
+                # ", ".join(([] if isCreateDaphneContext else ["ctx"] ) + callParams[1:]),
+                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"] )),
             ))
         else:
             outFile.write("{}{}({});\n".format(

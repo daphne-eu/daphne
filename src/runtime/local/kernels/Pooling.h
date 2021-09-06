@@ -65,9 +65,10 @@ namespace Pooling {
 
 	template<template<typename> class OP, typename DTRes, typename DTArg>
 	struct Forward {
-		static void apply(DCTX(dctx), DTRes *&res, const DTArg *data, uint64_t batch_size, uint8_t num_channels, uint32_t img_h,
-				uint32_t img_w, uint32_t pool_h = 2, uint32_t pool_w = 2, uint32_t stride_h = 1, uint32_t stride_w = 1,
-				uint32_t pad_h = 0, uint32_t pad_w = 0);
+		static void apply(DTRes *&res, size_t& res_h, size_t& res_w,
+						  const DTArg *data, const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
+						  const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
+						  const size_t pad_w, DCTX(dctx));
 	};
 }
 

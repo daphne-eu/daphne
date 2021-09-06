@@ -1,6 +1,3 @@
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunknown-pragmas"
-#pragma ide diagnostic ignored "cert-err58-cpp"
 /*
  * Copyright 2021 The DAPHNE Consortium
  *
@@ -56,9 +53,8 @@ void check(const DT* in, const DT* exp, DaphneContext* dctx) {
 #ifdef USE_CUDA
     Pooling::Forward_CUDA<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #else
-    Pooling::Forward<OP, DT, DT>::apply(res, in, in->getNumRows(), 3, 5, 5);
+	Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #endif
-#pragma unroll
     CHECK(*res == *exp);
 }
 
@@ -66,7 +62,6 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
     using DT = TestType;
 
     auto dctx = new DaphneContext();
-    std::cout << "created ctx" << std::endl;
 #ifdef USE_CUDA
     initCUDAContext(dctx);
 #endif
@@ -118,4 +113,3 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, doubl
 
 	delete dctx;
 }
-#pragma clang diagnostic pop

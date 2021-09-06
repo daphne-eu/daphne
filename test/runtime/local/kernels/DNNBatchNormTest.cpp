@@ -25,8 +25,8 @@
 	#include <runtime/local/kernels/CUDA_BatchNorm.h>
 	#include <runtime/local/kernels/CUDA_InitContext.h>
 #else
-// ToDo: cpu version
-//	#include <runtime/local/kernels/BatchNorm.h>
+ ToDo: cpu version
+	#include <runtime/local/kernels/BatchNorm.h>
 #endif
 
 #include <tags.h>

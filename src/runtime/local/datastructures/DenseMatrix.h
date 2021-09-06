@@ -193,18 +193,18 @@ public:
 
     const ValueType * getValues() const
     {
-#ifdef USE_CUDA
-    	if (cuda_dirty) {
-    		cuda2host();
-    	}
-    	host_dirty = true;
-#endif
-    	return values.get();
+		return const_cast<DenseMatrix*>(this)->getValues();
     }
 
     ValueType * getValues()
     {
-		return const_cast<ValueType*>(values.get());
+#ifdef USE_CUDA
+		if (cuda_dirty) {
+			cuda2host();
+		}
+		host_dirty = true;
+#endif
+		return values.get();
     }
 
 #ifdef USE_CUDA
@@ -265,6 +265,7 @@ public:
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
         size_t i = 0;
+#ifdef USE_CUDA
         if ((cuda_ptr && cuda_dirty) || !values) {
 //#ifndef NDEBUG
 //        	std::cerr << "cuda_ptr=" << cuda_ptr<<std::endl;
@@ -272,6 +273,7 @@ public:
 //#endif
 		  	cuda2host();
         }
+#endif
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
                 os << values.get()[i + c];
