@@ -57,31 +57,29 @@ using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
-    switch(opCode) {
-        #define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
-        // Arithmetic.
-        MAKE_CASE(BinaryOpCode::ADD)
-        MAKE_CASE(BinaryOpCode::SUB)
-		// This triggers an instantiation that causes a warning.
-		// For MUL, the direct call to EwBinarySca::apply() is used
-        //MAKE_CASE(BinaryOpCode::MUL)
-        MAKE_CASE(BinaryOpCode::DIV)
-        MAKE_CASE(BinaryOpCode::POW)
-        MAKE_CASE(BinaryOpCode::MOD)
-        // Comparisons.
-        MAKE_CASE(BinaryOpCode::EQ)
-        MAKE_CASE(BinaryOpCode::NEQ)
-        MAKE_CASE(BinaryOpCode::LT)
-        MAKE_CASE(BinaryOpCode::LE)
-        MAKE_CASE(BinaryOpCode::GT)
-        MAKE_CASE(BinaryOpCode::GE)
-        // Min/max.
-        MAKE_CASE(BinaryOpCode::MIN)
-        MAKE_CASE(BinaryOpCode::MAX)
-        #undef MAKE_CASE
-        default:
-            throw std::runtime_error("unknown BinaryOpCode");
-    }
+	switch (opCode) {
+#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
+		// Arithmetic.
+		MAKE_CASE(BinaryOpCode::ADD)
+		MAKE_CASE(BinaryOpCode::SUB)
+		MAKE_CASE(BinaryOpCode::MUL)
+		MAKE_CASE(BinaryOpCode::DIV)
+		MAKE_CASE(BinaryOpCode::POW)
+		MAKE_CASE(BinaryOpCode::MOD)
+		// Comparisons.
+		MAKE_CASE(BinaryOpCode::EQ)
+		MAKE_CASE(BinaryOpCode::NEQ)
+		MAKE_CASE(BinaryOpCode::LT)
+		MAKE_CASE(BinaryOpCode::LE)
+		MAKE_CASE(BinaryOpCode::GT)
+		MAKE_CASE(BinaryOpCode::GE)
+		// Min/max.
+		MAKE_CASE(BinaryOpCode::MIN)
+		MAKE_CASE(BinaryOpCode::MAX)
+#undef MAKE_CASE
+		default:
+			throw std::runtime_error("unknown BinaryOpCode");
+	}
 }
 
 // ****************************************************************************
@@ -104,6 +102,15 @@ TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs, DCTX(ctx)) {
 // ****************************************************************************
 // (Partial) template specializations for different op codes
 // ****************************************************************************
+
+// Handle multiply extra
+template<typename TLhs, typename TRhs>
+struct EwBinarySca<BinaryOpCode::MUL, bool, TLhs, TRhs> {
+    inline static bool apply(TLhs lhs, TRhs rhs, DCTX(ctx)) {
+		uint32_t result = lhs * rhs;
+    	return static_cast<bool>(result);
+	}
+};
 
 #define MAKE_EW_BINARY_SCA(opCode, expr) \
     template<typename TRes, typename TLhs, typename TRhs> \

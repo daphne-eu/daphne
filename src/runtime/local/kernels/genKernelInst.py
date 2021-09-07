@@ -145,17 +145,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
 
-        # to avoid compilation warnings
-        if opName == "ewBinarySca" and opCode == "MUL":
-            # handle bool return value with a cast and a uin32_t template parameter
-            outFile.write(("{}<{}>::apply({});\n" if templateValues[0] != "bool" else "static_cast<bool>({}<{}>::apply({}));\n").format(
-                "EwBinarySca",
-                # Template parameters:
-                ", ".join(["BinaryOpCode::MUL"] + ([toCppType(tv) for tv in templateValues] if templateValues[0] != "bool" else (["uint32_t"] + [toCppType(tv) for tv in templateValues[1:]]))),
-                # Run-time parameters:
-                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"] )),
-            ))
-        elif opName == "PoolForward":
+        if opName == "PoolForward":
             outFile.write("{}<{}>::apply({});\n".format(
                 "Pooling::Forward",
                 # Template parameters:
