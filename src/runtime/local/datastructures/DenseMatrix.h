@@ -233,7 +233,8 @@ public:
     }
     
     ValueType get(size_t rowIdx, size_t colIdx) const override {
-        return values.get()[pos(rowIdx, colIdx)];
+//        return values.get()[pos(rowIdx, colIdx)];
+		return getValues()[pos(rowIdx, colIdx)];
     }
     
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
