@@ -57,6 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(r1);
     DataObjectFactory::destroy(r2);
+
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) {
@@ -70,6 +71,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, nullptr); //single-threaded
     MTWrapper<VT>* wrapper = new MTWrapper<VT>(4);
+    
     wrapper->execute(&funMul, r2, m1, m2, false); //multi-threaded
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
