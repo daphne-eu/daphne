@@ -51,7 +51,7 @@ public:
     }
 
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
+        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose, auto mode)
     {
         if(const char* env_m = std::getenv("DAPHNE_THREADS")){
             _numThreads= std::stoi(env_m);
@@ -80,7 +80,7 @@ public:
         uint64_t batchsize = 1; // row-at-a-time
         uint64_t chunkParam=1;
         //std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
-        LoadPartitioning lp(GSS, rlen, chunkParam,_numThreads, false); 
+        LoadPartitioning lp(STATIC, rlen, chunkParam,_numThreads, false); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
@@ -153,7 +153,7 @@ public:
         uint64_t batchsize = 100; // 100-rows-at-a-time
         uint64_t chunkParam = 1;
         //std::cout<<"worker "<<_numThreads<<std::endl;
-        LoadPartitioning lp(GSS, len, chunkParam,_numThreads,false); 
+        LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
