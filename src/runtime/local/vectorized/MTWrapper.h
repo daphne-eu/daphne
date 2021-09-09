@@ -93,7 +93,7 @@ public:
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
-
+ 
         // cleanups
         for(uint32_t i=0; i<_numThreads; i++)
             delete workers[i];
