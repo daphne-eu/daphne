@@ -125,15 +125,18 @@ public:
                 break;
 
             case "SCH_FAC":
-                double sigma = means_sigmas.at(loc->psource).at(2*(current_index.at(loc->psource)/(int)nproc)+1);  //this sigma is based on profiling
-                T mu = means_sigmas.at(loc->psource).at(2*(current_index.at(loc->psource)/(int)nproc));
-                current_index.at(loc->psource)++;
+                //double sigma = means_sigmas.at(loc->psource).at(2*(current_index.at(loc->psource)/(int)nproc)+1);  //this sigma is based on profiling
+                //T mu = means_sigmas.at(loc->psource).at(2*(current_index.at(loc->psource)/(int)nproc));
+                //current_index.at(loc->psource)++;
 
-                dbl_parm1 = ((double)P * sigma) / (2.0 * mu);
-                double b_0 = dbl_parm1 * 1 / sqrt(N); // initial b
-                double x_0 = 1 + pow(b_0, 2.0) + b_0 * sqrt(pow(b_0, 2.0) + 2);
-                parm1 = ceil(N / (x_0 * P));
+                //dbl_parm1 = ((double)P * sigma) / (2.0 * mu);
+                //double b_0 = dbl_parm1 * 1 / sqrt(N); // initial b
+                //double x_0 = 1 + pow(b_0, 2.0) + b_0 * sqrt(pow(b_0, 2.0) + 2);
+                //parm1 = ceil(N / (x_0 * P));
+
+                
                 break;
+        
         }
 
 
