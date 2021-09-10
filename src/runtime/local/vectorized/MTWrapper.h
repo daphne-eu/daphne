@@ -51,7 +51,7 @@ public:
     }
 
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose, auto mode)
+        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
     {
         if(const char* env_m = std::getenv("DAPHNE_THREADS")){
             _numThreads= std::stoi(env_m);
