@@ -49,18 +49,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     MTWrapper<VT>* wrapper = new MTWrapper<VT>(4);
 
     
-    wrapper->execute(&funAdd, r2, m1, m2, false, "SCH_STATIC"); //multi-threaded
+    wrapper->execute(&funAdd, r2, m1, m2, false); //multi-threaded
     //FIXME missing util function for templated approx checks
     CHECK(Approx(*(r1->getValues())).epsilon(1e-6) == *(r2->getValues()));
-
-    wrapper->execute(&funAdd, r2, m1, m2, false, "SCH_GSS"); //multi-threaded
-    //FIXME missing util function for templated approx checks
-    CHECK(Approx(*(r1->getValues())).epsilon(1e-6) == *(r2->getValues()));
-
-    wrapper->execute(&funAdd, r2, m1, m2, false, "SCH_TFSS"); //multi-threaded
-    //FIXME missing util function for templated approx checks
-    CHECK(Approx(*(r1->getValues())).epsilon(1e-6) == *(r2->getValues()));
-
 
     delete wrapper;
     DataObjectFactory::destroy(m1);
