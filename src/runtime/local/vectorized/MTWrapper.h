@@ -20,7 +20,11 @@
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/Workers.h>
+<<<<<<< HEAD
 #include <runtime/local/vectorized/LoadPartitioning.h>
+=======
+#include <runtime/local/vectorized/Scheduler.h>
+>>>>>>> update
 #include <ir/daphneir/Daphne.h>
 
 #include <thread>
