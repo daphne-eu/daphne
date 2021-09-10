@@ -20,6 +20,7 @@
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/Workers.h>
+#include <runtime/local/vectorized/Scheduler.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <thread>
@@ -71,9 +72,9 @@ public:
         // TODO UNIBAS - integration hook scheduling
         
         uint64_t rlen = input1->getNumRows();
-        
-        Scheduler s = new Scheduler(rlen, _numThreads, input1, input2, mode);
-        s.run();
+        auto mode = "SCH_STATIC";
+        Scheduler<VT> s(rlen, _numThreads, res, input1, input2, mode);
+        s.run(func);
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
