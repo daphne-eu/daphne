@@ -51,7 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     wrapper->execute(&funAdd, r2, m1, m2, false); //multi-threaded
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
-
+    
     delete wrapper;
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);

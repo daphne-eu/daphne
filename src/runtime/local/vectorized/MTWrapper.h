@@ -50,7 +50,7 @@ public:
     }
 
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose, auto mode)
+        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
     {
         // create task queue (w/o size-based blocking)
         TaskQueue* q = new BlockingTaskQueue(input1->getNumRows());
@@ -71,75 +71,9 @@ public:
         // TODO UNIBAS - integration hook scheduling
         
         uint64_t rlen = input1->getNumRows();
-        switch(mode){
-            case "SCH_STATIC":
-                //STATIC
-                uint64_t blksize = (uint64_t)ceil((double)rlen/_numThreads/4);
-                uint64_t batchsize = 1; // row-at-a-time
-                for(uint32_t k=0; (k<_numThreads*4) & (k*blksize<rlen); k++) {
-                    q->enqueueTask(new SingleOpTask<VT>(
-                        func, res, input1, input2, k*blksize, std::min((k+1)*blksize,rlen), batchsize));
-                }
-                q->closeInput();
-                break;
-            case "SCH_GSS":
-                //GSS
-                uint64_t n_proc = 4;
-                uint64_t remaining = rlen - (uint64_t)ceil((double)rlen/n_proc);
-                uint64_t chunkSize = 0;
-                while (remaining >= n_proc){
-                    //std::cout <<  chunkSize << " " <<remaining <<"\n";
-                    chunkSize = (uint64_t)ceil((double)remaining/n_proc);
-                    rlen = remaining;
-                    remaining = rlen - (uint64_t)ceil((double)rlen/n_proc);
-                    q->enqueueTask(new SingleOpTask<VT>(
-                        func, res, input1, input2, k*chunkSize, std::min
-                    ));
-
-                    q->closeInput();
-                    
-                }
-                break;
-
-            case "SCH_TFSS":
-                        //TFSS
-                uint64_t n_proc = 4;
-                uint64_t remaining = rlen - (uint64_t)ceil((double)rlen/n_proc);
-                uint64_t chunkSize = (uint64_t)ceil((double)rlen/n_proc);
-
-                uint64_t rlen = 100;
-                uint64_t chunkSize = 0;
-                double steps  = ceil(2.0*rlen/(chunkSize+1)); //n=2N/f+l
-                double tss_delta = (double) (chunkSize - 1)/(double) (steps-1);
-            
-                while(remaining >= num_proc){
-                    //std::cout <<  chunkSize << " " <<remaining <<"\n";
-                    chunkSize = ceil((double) rlen / ((double) 2*n_proc)); 
-                    rlen = remaining;
-                    remaining = rlen - tss_delta;
-                    q->enqueueTask(new SingleOpTask<VT>(new SingleOpTask<VT>(
-                        func, res, input1, input2, k*chunkSize, std::min));
-                    
-                    q->closeInput();
-                }
-                break;
-
-            case "SCH_FAC":
-                //double sigma = means_sigmas.at(loc->psource).at(2*(current_index.at(loc->psource)/(int)nproc)+1);  //this sigma is based on profiling
-                //T mu = means_sigmas.at(loc->psource).at(2*(current_index.at(loc->psource)/(int)nproc));
-                //current_index.at(loc->psource)++;
-
-                //dbl_parm1 = ((double)P * sigma) / (2.0 * mu);
-                //double b_0 = dbl_parm1 * 1 / sqrt(N); // initial b
-                //double x_0 = 1 + pow(b_0, 2.0) + b_0 * sqrt(pow(b_0, 2.0) + 2);
-                //parm1 = ceil(N / (x_0 * P));
-
-                
-                break;
         
-        }
-
-
+        Scheduler s = new Scheduler(rlen, _numThreads, input1, input2, mode);
+        s.run();
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
