@@ -72,9 +72,20 @@ public:
         // TODO UNIBAS - integration hook scheduling
         
         uint64_t rlen = input1->getNumRows();
-        auto mode = "SCH_STATIC";
-        Scheduler<VT> s(rlen, _numThreads, res, input1, input2, mode);
-        s.run(func);
+        uint64_t startChunk=0;
+        uint64_t endChunk=0;
+        uint64_t batchsize = 1; // row-at-a-time
+        std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
+        Scheduler selfScheduler(4, rlen, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
+        while(selfScheduler.hasNextChunk()){
+            endChunk += selfScheduler.getNextChunk();
+            q->enqueueTask(new SingleOpTask<VT>(
+                func, res, input1, input2, startChunk, endChunk, batchsize));
+            std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
+            startChunk= endChunk;
+        }
+        q->closeInput();
+        
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
