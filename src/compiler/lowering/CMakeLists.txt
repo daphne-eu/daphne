@@ -26,3 +26,4 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LINK_COMPONENTS
     Core
 )
+target_link_libraries(MLIRDaphneTransforms PUBLIC MLIRStandardToLLVM)
