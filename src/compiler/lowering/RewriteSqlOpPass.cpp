@@ -94,7 +94,7 @@ namespace
 
 void RewriteSqlOpPass::runOnOperation()
 {
-    std::cout << "Start RewriteSqlOpPass" << std::endl;
+//    std::cout << "Start RewriteSqlOpPass" << std::endl;
     auto module = getOperation();
 
     OwningRewritePatternList patterns(&getContext());
@@ -107,7 +107,7 @@ void RewriteSqlOpPass::runOnOperation()
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
-    std::cout << "End RewriteSqlOpPass" << std::endl;
+//    std::cout << "End RewriteSqlOpPass" << std::endl;
 
 }
 

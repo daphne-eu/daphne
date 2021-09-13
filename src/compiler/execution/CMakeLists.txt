@@ -26,7 +26,6 @@ set(LIBS
         MLIRDaphneInference
         MLIRDaphneTransforms
         MLIRExecutionEngine
-        DaphneSQLParser
         )
 
 add_llvm_library(DaphneIrExecutor ${SOURCES}

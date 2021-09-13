@@ -19,7 +19,6 @@ set(LIBS
         ${conversion_libs}
         MLIRDaphne
         DaphneDSLParser
-        DaphneSQLParser
         DaphneIrExecutor
 )
 
