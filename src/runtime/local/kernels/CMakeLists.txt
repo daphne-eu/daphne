@@ -27,10 +27,11 @@ add_custom_command(
 add_library(AllKernels SHARED
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
 )
-target_link_libraries(AllKernels PRIVATE
+target_link_libraries(AllKernels PUBLIC
         DataStructures
         IO
         Proto
         ProtoDataConverter
+        LLVMSupport
         ${OPENBLAS_LIBRARIES}
 )

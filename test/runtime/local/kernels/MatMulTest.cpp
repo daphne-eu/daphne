@@ -30,6 +30,7 @@ void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp) {
     DT * res = nullptr;
     matMul<DT, DT, DT>(res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
@@ -89,6 +90,12 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
         11,
         11
     });
+    auto v5 = genGivenVals<DT>(1, {
+        1,
+        2,
+        3
+    });
+    auto v6 = genGivenVals<DT>(1, {14});
 
     checkMatMul(m0, m0, m0);
     checkMatMul(m1, m1, m2);
@@ -99,16 +106,7 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
     checkMatMul(m0, v1, v0);
     checkMatMul(m1, v1, v3);
     checkMatMul(m1, v2, v4);
+    checkMatMul(v5, v2, v6);
 
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m3);
-    DataObjectFactory::destroy(m4);
-    DataObjectFactory::destroy(m5);
-    DataObjectFactory::destroy(v0);
-    DataObjectFactory::destroy(v1);
-    DataObjectFactory::destroy(v2);
-    DataObjectFactory::destroy(v3);
-    DataObjectFactory::destroy(v4);
+    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
 }

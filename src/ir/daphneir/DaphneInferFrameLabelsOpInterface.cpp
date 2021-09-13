@@ -153,3 +153,13 @@ void daphne::GroupJoinOp::inferFrameLabels() {
             getContext(), ft.getColumnTypes(), newLabels
     ));
 }
+
+void daphne::SemiJoinOp::inferFrameLabels() {
+    Value res = getResult(0);
+    auto ft = res.getType().dyn_cast<daphne::FrameType>();
+    auto newLabels = new std::vector<std::string>();
+    newLabels->push_back(getConstantString(lhsOn()));
+    res.setType(daphne::FrameType::get(
+            getContext(), ft.getColumnTypes(), newLabels
+    ));
+}

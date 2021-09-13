@@ -22,8 +22,22 @@
 #include <mlir/IR/Builders.h>
 
 #include <istream>
+#include <string>
+#include <unordered_map>
 
-struct DaphneDSLParser : public Parser {
+class DaphneDSLParser : public Parser {
+    
+    std::unordered_map<std::string, std::string> args;
+    
+public:
+    
+    DaphneDSLParser(std::unordered_map<std::string, std::string> args) : args(args) {
+        //
+    }
+    
+    DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>()) {
+        //
+    }
     
     void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
     

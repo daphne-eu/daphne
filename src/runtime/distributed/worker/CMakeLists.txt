@@ -46,8 +46,7 @@ set(LIBS
         Proto
         )
 
-# TODO: check why SHARED is required
-add_library(WorkerImpl SHARED ${SOURCES})
+add_library(WorkerImpl ${SOURCES})
 #llvm_update_compile_flags(WorkerImpl)
 target_link_libraries(WorkerImpl PRIVATE ${LIBS})
 #mlir_check_all_link_libraries(WorkerImpl)

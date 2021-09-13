@@ -81,33 +81,33 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
     }
 
     char *line;
-    std::stringstream lineStream;
-    std::string cell;
+    size_t cell = 0;
+    VT * valuesRes = res->getValues();
 
-    size_t row = 0, col = 0;
-
-    while (1) {
+    for(size_t r = 0; r < numRows; r++) {
       line = getLine(file);
+      // TODO Assuming that the given numRows is available, this should never
+      // happen.
+//      if (line == NULL)
+//        break;
 
-      if (line == NULL)
-        break;
-
-      lineStream.str(std::string(line));
-
-      while (std::getline(lineStream, cell, delim)) {
+      size_t pos = 0;
+      for(size_t c = 0; c < numCols; c++) {
         VT val;
-        convert(cell, &val);
-        res->set(row, col, val);
-        if (++col >= numCols) {
-          break;
+        convertCstr(line + pos, &val);
+        
+        // TODO This assumes that rowSkip == numCols.
+        valuesRes[cell++] = val;
+        
+        // TODO We could even exploit the fact that the strtoX functions can
+        // return a pointer to the first character after the parsed input, then
+        // we wouldn't have to search for that ourselves, just would need to
+        // check if it is really the delimiter.
+        if(c < numCols - 1) {
+            while(line[pos] != delim) pos++;
+            pos++; // skip delimiter
         }
       }
-
-      lineStream.clear();
-      if (++row >= numRows) {
-        break;
-      }
-      col = 0;
     }
   }
 };
@@ -127,71 +127,85 @@ template <> struct ReadCsv<Frame> {
     }
 
     char *line;
-    std::stringstream lineStream;
-    std::string cell;
     size_t row = 0, col = 0;
+
+    uint8_t ** rawCols = new uint8_t * [numCols];
+    ValueTypeCode * colTypes = new ValueTypeCode[numCols];
+    for(size_t i = 0; i < numCols; i++) {
+        rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
+        colTypes[i] = res->getColumnType(i);
+    }
 
     while (1) {
       line = getLine(file);
       if (line == NULL)
         break;
-      lineStream.str(std::string(line));
 
-      while (std::getline(lineStream, cell, delim)) {
-        switch (res->getColumnType(col)) {
+      size_t pos = 0;
+      while (1) {
+        switch (colTypes[col]) {
         case ValueTypeCode::SI8:
           int8_t val_si8;
-          convert(cell, &val_si8);
-          res->getColumn<int8_t>(col)->set(row, 0, val_si8);
+          convertCstr(line + pos, &val_si8);
+          reinterpret_cast<int8_t *>(rawCols[col])[row] = val_si8;
           break;
         case ValueTypeCode::SI32:
           int32_t val_si32;
-          convert(cell, &val_si32);
-          res->getColumn<int32_t>(col)->set(row, 0, val_si32);
+          convertCstr(line + pos, &val_si32);
+          reinterpret_cast<int32_t *>(rawCols[col])[row] = val_si32;
           break;
         case ValueTypeCode::SI64:
           int64_t val_si64;
-          convert(cell, &val_si64);
-          res->getColumn<int64_t>(col)->set(row, 0, val_si64);
+          convertCstr(line + pos, &val_si64);
+          reinterpret_cast<int64_t *>(rawCols[col])[row] = val_si64;
           break;
         case ValueTypeCode::UI8:
           uint8_t val_ui8;
-          convert(cell, &val_ui8);
-          res->getColumn<uint8_t>(col)->set(row, 0, val_ui8);
+          convertCstr(line + pos, &val_ui8);
+          reinterpret_cast<uint8_t *>(rawCols[col])[row] = val_ui8;
           break;
         case ValueTypeCode::UI32:
           uint32_t val_ui32;
-          convert(cell, &val_ui32);
-          res->getColumn<uint32_t>(col)->set(row, 0, val_ui32);
+          convertCstr(line + pos, &val_ui32);
+          reinterpret_cast<uint32_t *>(rawCols[col])[row] = val_ui32;
           break;
         case ValueTypeCode::UI64:
           uint64_t val_ui64;
-          convert(cell, &val_ui64);
-          res->getColumn<uint64_t>(col)->set(row, 0, val_ui64);
+          convertCstr(line + pos, &val_ui64);
+          reinterpret_cast<uint64_t *>(rawCols[col])[row] = val_ui64;
           break;
         case ValueTypeCode::F32:
           float val_f32;
-          convert(cell, &val_f32);
-          res->getColumn<float>(col)->set(row, 0, val_f32);
+          convertCstr(line + pos, &val_f32);
+          reinterpret_cast<float *>(rawCols[col])[row] = val_f32;
           break;
         case ValueTypeCode::F64:
           double val_f64;
-          convert(cell, &val_f64);
-          res->getColumn<double>(col)->set(row, 0, val_f64);
+          convertCstr(line + pos, &val_f64);
+          reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
           break;
         }
 
         if (++col >= numCols) {
           break;
         }
+        
+        // TODO We could even exploit the fact that the strtoX functions can
+        // return a pointer to the first character after the parsed input, then
+        // we wouldn't have to search for that ourselves, just would need to
+        // check if it is really the delimiter.
+        while(line[pos] != delim) pos++;
+        pos++; // skip delimiter
       }
 
-      lineStream.clear();
       if (++row >= numRows) {
         break;
       }
       col = 0;
     }
+    
+    delete[] rawCols;
+    delete[] colTypes;
   }
 };
 

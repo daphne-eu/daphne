@@ -1,1 +1,2 @@
-
+// positive infinity
+print(inf);

@@ -19,12 +19,15 @@
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
+#include "DaphneDSLGrammarLexer.h"
 #include "DaphneDSLGrammarParser.h"
 
 #include <mlir/Dialect/SCF/SCF.h>
 
+#include <limits>
 #include <regex>
 #include <set>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -414,6 +417,30 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::Literal
     return visitChildren(ctx);
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprContext * ctx) {
+    // Retrieve the name of the referenced CLI argument.
+    std::string arg = ctx->arg->getText();
+    
+    // Find out if this argument was specified on the comman line.
+    auto it = args.find(arg);
+    if(it == args.end())
+        throw std::runtime_error(
+                "argument " + arg + " referenced, but not provided as a "
+                "command line argument"
+        );
+
+    // Parse the string that was passed as the value for this argument on the
+    // command line as a DaphneDSL literal.
+    std::istringstream stream(it->second);
+    antlr4::ANTLRInputStream input(stream);
+    input.name = "argument"; // TODO Does this make sense?
+    DaphneDSLGrammarLexer lexer(&input);
+    antlr4::CommonTokenStream tokens(&lexer);
+    DaphneDSLGrammarParser parser(&tokens);
+    DaphneDSLGrammarParser::LiteralContext * literalCtx = parser.literal();
+    return visitLiteral(literalCtx);
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
     std::string var = ctx->var->getText();
     try {
@@ -621,6 +648,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) {
+    // TODO The creation of the ConstantOps could be simplified: We don't need
+    // to create attributes here, since there are custom builder methods for
+    // primitive C++ data types.
     mlir::Location loc = builder.getUnknownLoc();
     if(auto lit = ctx->INT_LITERAL()) {
         int64_t val = atol(lit->getText().c_str());
@@ -632,7 +662,16 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         );
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
-        double val = atof(lit->getText().c_str());
+        const std::string litStr = lit->getText();
+        double val;
+        if(litStr == "nan")
+            val = std::numeric_limits<double>::quiet_NaN();
+        else if(litStr == "inf")
+            val = std::numeric_limits<double>::infinity();
+        else if(litStr == "-inf")
+            val = -std::numeric_limits<double>::infinity();
+        else
+            val = atof(litStr.c_str());
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(
                         loc,

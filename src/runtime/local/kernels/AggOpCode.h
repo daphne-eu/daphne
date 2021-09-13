@@ -28,6 +28,8 @@ enum class AggOpCode {
     SUM,
     MIN,
     MAX,
+    IDXMIN,
+    IDXMAX,
     MEAN,
     STDDEV,
 };

@@ -32,11 +32,14 @@
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Types.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/TypeID.h"
 
-#include "ir/daphneir/DaphneDistributableOpInterface.h"
+#include <ir/daphneir/DaphneOpsEnums.h.inc>
+#include <ir/daphneir/DaphneDistributableOpInterface.h>
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
 #include <ir/daphneir/DaphneInferTypesOpInterface.h>
+#include <ir/daphneir/DaphneVectorizableOpInterface.h>
 
 #include <string>
 #include <utility>

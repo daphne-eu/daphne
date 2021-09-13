@@ -1,0 +1,29 @@
+X = rand(10000, 1000, 0.0, 1.0, 1.0, 7);
+Y = rand(10000, 1000, 0.0, 1.0, 1.0, 3);
+
+// Arithmetic
+print(sum(X + Y));
+print(sum(X + 1.1));
+print(sum(X - Y));
+print(sum(X * Y));
+print(sum(X / Y));
+print(sum(X ^ Y));
+// TODO: log & mod
+
+// Min/max
+print(sum(min(X, Y)));
+print(sum(max(X, Y)));
+
+// Logical
+// TODO: and, or, xor
+
+// TODO: string ops (concat)
+
+// Comparisons
+Z = X + rand(1, 1000, -1.0, 1.0, 0.5, 11);
+print(sum(X == Z));
+print(sum(X != Z));
+print(sum(X < Z));
+print(sum(X <= Z));
+print(sum(X > Z));
+print(sum(X >= Z));

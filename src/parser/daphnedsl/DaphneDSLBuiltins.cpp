@@ -219,6 +219,31 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
+// ****************************************************************************
+// Other utilities
+// ****************************************************************************
+
+// TODO Copied here from FrameLabelInference, have it just once.
+std::string getConstantString2(mlir::Value v) {
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>())
+            return strAttr.getValue().str();
+    throw std::runtime_error(
+            "the given value must be a constant of string type"
+    );
+}
+
+FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
+    std::string filenameStr;
+    
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
+        filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
+    else
+        filenameStr = getConstantString2(filename);
+
+    return FileMetaData::ofFile(filenameStr);
+}
+
 antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     using namespace mlir::daphne;
 
@@ -423,6 +448,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "max")
         return createEwBinaryOp<EwMaxOp>(loc, func, args);
 
+    // --------------------------------------------------------------------
+    // Strings
+    // --------------------------------------------------------------------
+    
+    if(func == "concat") {
+        checkNumArgsExact(func, numArgs, 2);
+        return static_cast<mlir::Value>(builder.create<ConcatOp>(
+                loc, StringType::get(builder.getContext()), args[0], args[1]
+        ));
+    }
+
     // ********************************************************************
     // Aggregation and statistical
     // ********************************************************************
@@ -470,7 +506,31 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     // TODO Add built-in functions for those.
+    
+    // ********************************************************************
+    // Left and right indexing
+    // ********************************************************************
 
+    if(func == "sliceRow") {
+        checkNumArgsExact(func, numArgs, 3);
+        mlir::Value arg = args[0];
+        mlir::Value rowLowerIncl = utils.castSizeIf(args[1]);
+        mlir::Value rowUpperExcl = utils.castSizeIf(args[2]);
+        return static_cast<mlir::Value>(builder.create<SliceRowOp>(
+                loc, arg.getType(), arg, rowLowerIncl, rowUpperExcl
+        ));
+    }
+    if(func == "insertRow") {
+        checkNumArgsExact(func, numArgs, 4);
+        mlir::Value dst = args[0];
+        mlir::Value src = args[1];
+        mlir::Value rowLowerIncl = utils.castSizeIf(args[2]);
+        mlir::Value rowUpperExcl = utils.castSizeIf(args[3]);
+        return builder.create<InsertRowOp>(
+                loc, dst, src, rowLowerIncl, rowUpperExcl
+        );
+    }
+    
     // ********************************************************************
     // Reorganization
     // ********************************************************************
@@ -581,6 +641,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, lhs.getType(), lhs, rhs, weights, outHeight, outWidth
         ));
     }
+    if(func == "syrk") {
+        return createSameTypeUnaryOp<SyrkOp>(loc, func, args);
+    }
 
     // ********************************************************************
     // Extended relational algebra
@@ -661,8 +724,25 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createJoinOp<LeftOuterJoinOp>(loc, func, args);
     if(func == "antiJoin")
         return createJoinOp<AntiJoinOp>(loc, func, args);
-    if(func == "semiJoin")
-        return createJoinOp<SemiJoinOp>(loc, func, args);
+    if(func == "semiJoin") {
+        // TODO Reconcile this with the other join ops, but we need it to work
+        // quickly now.
+        // return createJoinOp<SemiJoinOp>(loc, func, args);
+        checkNumArgsExact(func, numArgs, 4);
+        mlir::Value lhs = args[0];
+        mlir::Value rhs = args[1];
+        mlir::Value lhsOn = args[2];
+        mlir::Value rhsOn = args[3];
+        return builder.create<SemiJoinOp>(
+                loc,
+                FrameType::get(
+                        builder.getContext(),
+                        {utils.unknownType}
+                ),
+                utils.matrixOfSizeType,
+                lhs, rhs, lhsOn, rhsOn
+        ).getResults();
+    }
     if(func == "groupJoin") {
         checkNumArgsExact(func, numArgs, 5);
         mlir::Value lhs = args[0];
@@ -708,46 +788,111 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Input/output
     // ********************************************************************
 
+    // --------------------------------------------------------------------
+    // High-level
+    // --------------------------------------------------------------------
+
     if(func == "print") {
-        checkNumArgsExact(func, numArgs, 1);
+        checkNumArgsBetween(func, numArgs, 1, 3);
+        mlir::Value arg = args[0];
+        mlir::Value newline = (numArgs < 2)
+                ? builder.create<ConstantOp>(loc, builder.getBoolAttr(true))
+                : utils.castBoolIf(args[1]);
+        mlir::Value err = (numArgs < 3)
+                ? builder.create<ConstantOp>(loc, builder.getBoolAttr(false))
+                : utils.castBoolIf(args[2]);
         return builder.create<PrintOp>(
-                loc, args[0]
+                loc, arg, newline, err
         );
     }
-    if(func == "read") {
+    if(func == "readFrame" || func == "readMatrix") {
         checkNumArgsExact(func, numArgs, 1);
 
         mlir::Value filename = args[0];
-        std::string filenameStr;
-        bool found = false;
+        FileMetaData fmd = getFileMetaData(func, filename);
+        
+        mlir::Type resType;
+        
+        if(func == "readFrame") {
+            std::vector<mlir::Type> cts;
+            if(fmd.isSingleValueType)
+                for(size_t i = 0; i < fmd.numCols; i++)
+                    cts.push_back(utils.mlirTypeForCode(fmd.schema[0]));
+            else
+                for(ValueTypeCode vtc : fmd.schema)
+                    cts.push_back(utils.mlirTypeForCode(vtc));
 
-        // TODO Make getConstantString() from DaphneInferFrameLabelsOpInterface
-        // a central utility and use it here.
-        if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(filename.getDefiningOp()))
-            if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
-                filenameStr = strAttr.getValue().str();
-                found = true;
-            }
-        if(!found)
-            throw std::runtime_error(
-                    "built-in function read requires the filename to be a "
-                    "string constant"
+            std::vector<std::string> * labels;
+            if(fmd.labels.empty())
+                labels = nullptr;
+            else
+                labels = new std::vector<std::string>(fmd.labels);
+
+            resType = mlir::daphne::FrameType::get(
+                    builder.getContext(), cts, labels
             );
-
-        FileMetaData fmd = FileMetaData::ofFile(filenameStr);
-        std::vector<mlir::Type> cts;
-        for(ValueTypeCode vtc : fmd.schema)
-            cts.push_back(utils.mlirTypeForCode(vtc));
-        auto labels = new std::vector<std::string>(fmd.labels);
-
+        }
+        else // func == "read.matrix"
+            // If an individual value type was specified per column
+            // (fmd.isSingleValueType == false), then this silently uses the
+            // type of the first column.
+            resType = utils.matrixOf(utils.mlirTypeForCode(fmd.schema[0]));
+            
         return static_cast<mlir::Value>(builder.create<ReadOp>(
-                loc,
-                mlir::daphne::FrameType::get(builder.getContext(), cts, labels),
-                filename
+                loc, resType, filename
         ));
     }
     // TODO write
 
+    // --------------------------------------------------------------------
+    // Low-level
+    // --------------------------------------------------------------------
+    
+    if(func == "openFile") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value filename = args[0];
+        return static_cast<mlir::Value>(builder.create<OpenFileOp>(
+                loc, FileType::get(builder.getContext()), filename
+        ));
+    }
+    if(func == "openDevice") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value device = args[0];
+        return static_cast<mlir::Value>(builder.create<OpenDeviceOp>(
+                loc, TargetType::get(builder.getContext()), device
+        ));
+    }
+    if(func == "openFileOnTarget") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value target = args[0];
+        mlir::Value filename = args[1];
+        return static_cast<mlir::Value>(builder.create<OpenFileOnTargetOp>(
+                loc, DescriptorType::get(builder.getContext()), target, filename
+        ));
+    }
+    if(func == "close") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value fileOrTarget = args[0];
+        return builder.create<CloseOp>(
+                loc, fileOrTarget
+        );
+    }
+    if(func == "readCsv") {
+        checkNumArgsExact(func, numArgs, 4);
+        mlir::Value fileOrDescriptor = args[0];
+        mlir::Value numRows = utils.castSizeIf(args[1]);
+        mlir::Value numCols = utils.castSizeIf(args[2]);
+        mlir::Value delim = args[3];
+        
+        // TODO Currently, this always assumes double as the value type. We
+        // need to connect this to our FileMetaData mechanism, but for that, we
+        // require the file name, which is not known here in the current design.
+        return static_cast<mlir::Value>(builder.create<ReadCsvOp>(
+                loc, utils.matrixOf(builder.getF64Type()),
+                fileOrDescriptor, numRows, numCols, delim
+        ));
+    }
+    
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************
@@ -759,6 +904,28 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return static_cast<mlir::Value>(builder.create<OneHotOp>(
                 loc, arg.getType(), arg, info
         ));
+    }
+    
+    // ********************************************************************
+    // Measurements
+    // ********************************************************************
+    
+    if(func == "now") {
+        checkNumArgsExact(func, numArgs, 0);
+        return static_cast<mlir::Value>(builder.create<NowOp>(
+                loc, builder.getIntegerType(64, true)
+        ));
+    }
+    
+    // ********************************************************************
+    // Low-level auxiliary operations
+    // ********************************************************************
+    
+    if(func == "free") {
+        checkNumArgsExact(func, numArgs, 1);
+        return builder.create<FreeOp>(
+                loc, args[0]
+        );
     }
 
     // ********************************************************************

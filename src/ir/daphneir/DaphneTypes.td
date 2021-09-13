@@ -112,6 +112,22 @@ def BoolScalar : TypeAlias<I1, "boolean">;
 def AnyScalar : AnyTypeOf<[NumScalar, BoolScalar, StrScalar, Index]>;
 
 // ****************************************************************************
+// IO types
+// ****************************************************************************
+
+def File : Daphne_Type<"File"> {
+    let summary = "An open file.";
+}
+
+def Descriptor : Daphne_Type<"Descriptor"> {
+    let summary = "An open file on a device.";
+}
+
+def Target : Daphne_Type<"Target"> {
+    let summary = "An open device.";
+}
+
+// ****************************************************************************
 // Auxiliary types
 // ****************************************************************************
 

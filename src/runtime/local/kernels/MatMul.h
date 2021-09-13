@@ -65,7 +65,7 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
             res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
 
         if(nr1 == 1 && nc2 == 1) // Vector-Vector
-            cblas_sdot(nc1, lhs->getValues(), rhs->getRowSkip(), rhs->getValues(), 1);
+            res->set(0, 0, cblas_sdot(nc1, lhs->getValues(), 1, rhs->getValues(), rhs->getRowSkip()));
         else if(nc2 == 1)        // Matrix-Vector
             cblas_sgemv(CblasRowMajor, CblasNoTrans, nr1, nc1, 1, lhs->getValues(),
                 lhs->getRowSkip(), rhs->getValues(), rhs->getRowSkip(), 0,
@@ -90,7 +90,7 @@ struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
             res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, false);
 
         if(nr1 == 1 && nc2 == 1) // Vector-Vector
-            cblas_ddot(nc1, lhs->getValues(), rhs->getRowSkip(), rhs->getValues(), 1);
+            res->set(0, 0, cblas_ddot(nc1, lhs->getValues(), 1, rhs->getValues(), rhs->getRowSkip()));
         else if(nc2 == 1)        // Matrix-Vector
             cblas_dgemv(CblasRowMajor, CblasNoTrans, nr1, nc1, 1, lhs->getValues(),
                 lhs->getRowSkip(), rhs->getValues(), rhs->getRowSkip(), 0,

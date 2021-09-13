@@ -31,6 +31,8 @@
 #define TAG_OPERATIONS "[operations]"
 #define TAG_PARSER "[parser]"
 #define TAG_SCOPING "[scoping]"
+#define TAG_SCRIPTARGS "[scriptargs]"
+#define TAG_VECTORIZED "[vectorized]"
 
 #endif //TEST_TAGS_H
 

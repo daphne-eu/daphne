@@ -30,17 +30,21 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Transforms/Passes.h"
+#include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
 #include <exception>
 #include <memory>
 
-DaphneIrExecutor::DaphneIrExecutor(bool distributed) : distributed_(distributed)
+DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized)
+: distributed_(distributed), vectorized_(vectorized)
 {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
+    context_.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -56,18 +60,28 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
     if (module) {
         mlir::PassManager pm(&context_);
 
+        // This flag is really useful to figure out why the lowering failed
+        //llvm::DebugFlag = true;
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass());   //calls SQL Parser
         pm.addPass(mlir::daphne::createLowerRelationalAlgebraToDaphneOpPass());
-
-//        pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
+        if(vectorized_) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
+            // TODO: this can be moved outside without problem, should we?
+            pm.addPass(mlir::createCanonicalizerPass());
+        }
+        pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
+
         pm.addPass(mlir::createLowerToCFGPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
 
         if (failed(pm.run(module))) {
             module->dump();

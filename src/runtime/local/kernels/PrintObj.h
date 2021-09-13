@@ -34,13 +34,16 @@
  * @param arg The data object to print.
  */
 template<class DT>
-void printObj(const DT * arg, DCTX(ctx)) {
-    arg->print(std::cout);
+void printObj(const DT * arg, bool newline, bool err, DCTX(ctx)) {
+    arg->print(err ? std::cerr : std::cout);
 }
 
 template<>
-void printObj(const char * arg, DCTX(ctx)) {
-    std::cout << arg << std::endl;
+void printObj(const char * arg, bool newline, bool err, DCTX(ctx)) {
+    std::ostream & os = err ? std::cerr : std::cout;
+    os << arg;
+    if(newline)
+        os << std::endl;
 }
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H

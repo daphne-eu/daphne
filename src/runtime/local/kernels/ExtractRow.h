@@ -124,4 +124,53 @@ struct ExtractRow<Frame, Frame, VTSel> {
 
 #undef EXTRACTROW_FRAME_MODE
 
+// ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT, typename VTSel>
+struct ExtractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+        // input validation
+        if(arg==nullptr){
+            throw std::runtime_error("arg cannot be null");
+        }
+        if(sel== nullptr){
+            throw std::runtime_error("sel cannot be null");
+        }
+        if(sel->getNumCols() != 1){
+            throw std::runtime_error("sel must be a single-column matrix");
+        }
+        const size_t numRowsInSel = sel->getNumRows();
+        const size_t numInputRows = arg->getNumRows();
+        const size_t numInputCols = arg->getNumCols();   
+        if(res ==nullptr){
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsInSel, numInputCols, false);
+        }
+        else if(res->getNumRows() != numRowsInSel || res->getNumCols() != numInputCols){
+            // TODO what is the best strategy: throw a warning or just re-allocate?
+            throw std::runtime_error("res is not null, but it has wrong numCols and numRows");
+        }
+        
+        //Main Logic
+        VT * allUpdatedValues = res->getValues();
+        const VTSel * rowsInSel = sel->getValues();
+        for(size_t r = 0; r < numRowsInSel; r++){
+            const VTSel valSelectedRow = rowsInSel[r];  // only one column
+            // TODO For performance reasons, we might skip such checks or make
+            // them optional somehow, but it is okay for now.
+            if(valSelectedRow!=valSelectedRow || valSelectedRow < 0 || valSelectedRow > numInputRows-1){
+                throw std::runtime_error("sel cannot have NaN nor negative nor value that is greater than numRows in arg");
+            }  
+            else
+            {
+                const VT * allValues = arg->getValues()+valSelectedRow*arg->getRowSkip();
+                for(size_t c = 0; c < numInputCols; c++){
+                    allUpdatedValues[c]=allValues[c];   
+                }   
+                allUpdatedValues += res->getRowSkip();                     
+            }
+        }
+    }        
+};
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EXTRACTROW_H

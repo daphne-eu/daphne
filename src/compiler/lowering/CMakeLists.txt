@@ -19,6 +19,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     InsertDaphneContextPass.cpp
     LowerToLLVMPass.cpp
     RewriteToCallKernelOpPass.cpp
+    VectorizeComputationsPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
@@ -27,3 +28,4 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LINK_COMPONENTS
     Core
 )
+target_link_libraries(MLIRDaphneTransforms PUBLIC MLIRStandardToLLVM)

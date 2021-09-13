@@ -226,6 +226,13 @@ public:
         }
     }
 
+    DenseMatrix<ValueType>* slice(size_t rl, size_t ru) {
+        return slice(rl, ru, 0, numCols);
+    }
+
+    DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) {
+        return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
+    }
 };
 
 template <typename ValueType>

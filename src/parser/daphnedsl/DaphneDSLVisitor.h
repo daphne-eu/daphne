@@ -28,6 +28,9 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
 
+#include <string>
+#include <unordered_map>
+
 class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     // By inheriting from DaphneDSLGrammarVisitor (as opposed to
     // DaphneDSLGrammarBaseVisitor), we ensure that any newly added visitor
@@ -55,9 +58,14 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * functions.
      */
     DaphneDSLBuiltins builtins;
-
+    
+    std::unordered_map<std::string, std::string> args;
+    
 public:
-    DaphneDSLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder), builtins(builder) {
+    DaphneDSLVisitor(
+            mlir::OpBuilder & builder,
+            std::unordered_map<std::string, std::string> args
+    ) : builder(builder), utils(builder), builtins(builder), args(args) {
         //
     };
 
@@ -78,6 +86,8 @@ public:
     antlrcpp::Any visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) override;
 
     antlrcpp::Any visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitArgExpr(DaphneDSLGrammarParser::ArgExprContext * ctx) override;
 
     antlrcpp::Any visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) override;
 

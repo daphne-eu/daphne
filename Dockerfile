@@ -23,4 +23,6 @@ RUN mkdir sources && cd sources && wget https://github.com/Kitware/CMake/release
 RUN cd /sources/ && gunzip cmake-3.20.2.tar.gz && tar -xvf cmake-3.20.2.tar &&  cd cmake-3.20.2
 RUN cd /sources/cmake-3.20.2/ && ./bootstrap && make && make install
 RUN apt-get install -y unzip
+RUN apt-get -y update
+RUN apt-get install -y  gfortran
 CMD echo "Done"

@@ -15,12 +15,14 @@
  */
 
 #include <ir/daphneir/Daphne.h>
+#include <ir/daphneir/DaphneOpsEnums.cpp.inc>
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 
 #include "mlir/IR/Builders.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
@@ -37,6 +39,8 @@
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Interfaces/VectorInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
+
+#include <llvm/ADT/BitVector.h>
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -144,6 +148,12 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "VariadicPack<" << t.getContainedType() << '>';
     else if (type.isa<mlir::daphne::DaphneContextType>())
         os << "DaphneContext";
+    else if (type.isa<mlir::daphne::FileType>())
+        os << "File";
+    else if (type.isa<mlir::daphne::DescriptorType>())
+        os << "Descriptor";
+    else if (type.isa<mlir::daphne::TargetType>())
+        os << "Target";
     else if (type.isa<mlir::daphne::UnknownType>())
         os << "Unknown";
 };
@@ -189,24 +199,47 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
         return emitError() << "only matrix type is supported for handle atm, got: " << dataType;
 }
 
-std::vector<mlir::Value> mlir::daphne::EwAddOp::createEquivalentDistributedDAG(mlir::OpBuilder &builder,
-                                                                               mlir::ValueRange distributedInputs)
+mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
+                                                                     mlir::PatternRewriter &rewriter)
 {
-    auto compute = builder.create<daphne::DistributedComputeOp>(getLoc(),
-        ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
-        distributedInputs);
-    auto &block = compute.body().emplaceBlock();
-    auto argLhs = block.addArgument(distributedInputs[0].getType().cast<HandleType>().getDataType());
-    auto argRhs = block.addArgument(distributedInputs[1].getType().cast<HandleType>().getDataType());
+    std::vector<Value> resultsToReplace;
+    std::vector<Value> outRows;
+    std::vector<Value> outCols;
+    std::vector<Attribute> vCombineAttrs;
 
-    {
-        mlir::OpBuilder::InsertionGuard guard(builder);
-        builder.setInsertionPoint(&block, block.begin());
-
-        auto addOp = builder.create<EwAddOp>(getLoc(), argLhs, argRhs);
-        builder.create<ReturnOp>(getLoc(), ArrayRef<Value>{addOp});
+    llvm::BitVector eraseIxs;
+    eraseIxs.resize(op.getNumResults());
+    for(auto result : op.getResults()) {
+        auto resultIx = result.getResultNumber();
+        if(result.use_empty()) {
+            // remove
+            eraseIxs.set(resultIx);
+        }
+        else {
+            resultsToReplace.push_back(result);
+            outRows.push_back(op.out_rows()[resultIx]);
+            outCols.push_back(op.out_cols()[resultIx]);
+            vCombineAttrs.push_back(op.combines()[resultIx]);
+        }
     }
-
-    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(getLoc(), compute.getResult(0))});
-    return ret;
+    op.body().front().getTerminator()->eraseOperands(eraseIxs);
+    if(resultsToReplace.size() == op->getNumResults()) {
+        return failure();
+    }
+    auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
+        ValueRange(resultsToReplace).getTypes(),
+        op.inputs(),
+        outRows,
+        outCols,
+        op.splits(),
+        rewriter.getArrayAttr(vCombineAttrs),
+        op.ctx());
+    pipelineOp.body().takeBody(op.body());
+    for (auto e : llvm::enumerate(resultsToReplace)) {
+        auto resultToReplace = e.value();
+        auto i = e.index();
+        resultToReplace.replaceAllUsesWith(pipelineOp.getResult(i));
+    }
+    op.erase();
+    return success();
 }

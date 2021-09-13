@@ -43,6 +43,10 @@ def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
     let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
 }
 
+def VectorizeComputations : FunctionPass<"vectorize-computations"> {
+    let constructor = "mlir::daphne::createVectorizeComputationsPass()";
+}
+
 def RewriteSqlOpPass : FunctionPass<"rewrite-to-sqlop"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }

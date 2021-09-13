@@ -29,8 +29,7 @@ set(LIBS
         DaphneSQLParser
         )
 
-# TODO: check why SHARED is required
-add_llvm_library(DaphneIrExecutor SHARED ${SOURCES}
+add_llvm_library(DaphneIrExecutor ${SOURCES}
         DEPENDS
         MLIRDaphneOpsIncGen
         # The kernels are linked at runtime.

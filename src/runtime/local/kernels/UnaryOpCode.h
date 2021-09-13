@@ -20,6 +20,7 @@
 enum class UnaryOpCode {
     // Arithmetic/general math.
     SIGN, // signum (-1, 0, +1)
+    SQRT,
     // Rounding.
     FLOOR,
 };

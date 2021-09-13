@@ -31,6 +31,7 @@ namespace mlir
         std::unique_ptr<Pass> createLowerToLLVMPass();
         std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
         std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
+        std::unique_ptr<Pass> createVectorizeComputationsPass();
         std::unique_ptr<Pass> createRewriteSqlOpPass();
         std::unique_ptr<Pass> createLowerRelationalAlgebraToDaphneOpPass();
 

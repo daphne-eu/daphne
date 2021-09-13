@@ -14,8 +14,11 @@
  * limitations under the License.
  */
 
+#include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
+#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/Read.h>
 
 #include <tags.h>
@@ -23,6 +26,22 @@
 #include <catch.hpp>
 
 #include <cstdint>
+
+TEMPLATE_PRODUCT_TEST_CASE("Read", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    DT * m = nullptr;
+    read(m, "./test/runtime/local/io/ReadCsv4.csv", nullptr);
+    
+    CHECK(m->getNumRows() == 2);
+    CHECK(m->getNumCols() == 2);
+    auto exp = genGivenVals<DT>(2, {VT(1), VT(0.5), VT(2), VT(1.0)});
+    CHECK(*m == *exp);
+    
+    DataObjectFactory::destroy(m);
+    DataObjectFactory::destroy(exp);
+}
 
 TEST_CASE("Read - Frame", TAG_KERNELS) {
     Frame * f = nullptr;

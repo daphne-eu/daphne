@@ -1,2 +1,2 @@
-// max positive double
-print()
+// NaN
+print(nan);

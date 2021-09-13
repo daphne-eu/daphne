@@ -44,7 +44,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         antlr4::CommonTokenStream tokens(&lexer);
         DaphneDSLGrammarParser parser(&tokens);
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
-        DaphneDSLVisitor visitor(builder);
+        DaphneDSLVisitor visitor(builder, args);
         visitor.visitScript(ctx);
 
         builder.create<mlir::daphne::ReturnOp>(loc);

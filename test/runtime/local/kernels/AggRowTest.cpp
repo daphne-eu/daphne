@@ -133,3 +133,63 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m2exp);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    });
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
+        4, 6, 3, 9,
+        2, 5, 0, 1,
+        7, 4, 5, 4,
+    });
+    auto m1exp = genGivenVals<DTRes>(3, {2, 2, 1});
+    auto m2 = genGivenVals<DTArg>(3, {
+        4, 0, 0, 9,
+        0, 2, 0, 0,
+        0, 0, 5, 0,
+    });
+    auto m2exp = genGivenVals<DTRes>(3, {1, 0, 0});
+    
+    checkAggRow(AggOpCode::IDXMIN, m0, m0exp);
+    checkAggRow(AggOpCode::IDXMIN, m1, m1exp);
+    checkAggRow(AggOpCode::IDXMIN, m2, m2exp);
+    
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    });
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
+        4, 6, 3, 9,
+        2, 5, 0, 1,
+        7, 4, 5, 4,
+    });
+    auto m1exp = genGivenVals<DTRes>(3, {3, 1, 0});
+    auto m2 = genGivenVals<DTArg>(3, {
+        4, 0, 0, 9,
+        0, 2, 0, 0,
+        0, 0, 5, 0,
+    });
+    auto m2exp = genGivenVals<DTRes>(3, {3, 1, 2});
+    
+    checkAggRow(AggOpCode::IDXMAX, m0, m0exp);
+    checkAggRow(AggOpCode::IDXMAX, m1, m1exp);
+    checkAggRow(AggOpCode::IDXMAX, m2, m2exp);
+    
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
+}
