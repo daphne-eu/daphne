@@ -15,6 +15,7 @@
  */
 
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/EwBinaryMat.h>
 #include <runtime/local/kernels/RandMatrix.h>
 #include <runtime/local/vectorized/MTWrapper.h>
@@ -49,8 +50,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     MTWrapper<VT>* wrapper = new MTWrapper<VT>(4);
     wrapper->execute(&funAdd, r2, m1, m2, false); //multi-threaded
 
-    //FIXME missing util function for templated approx checks
-    CHECK(Approx(*(r1->getValues())).epsilon(1e-6) == *(r2->getValues()));
+    CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
     delete wrapper;
     DataObjectFactory::destroy(m1);
@@ -72,8 +72,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     MTWrapper<VT>* wrapper = new MTWrapper<VT>(4);
     wrapper->execute(&funMul, r2, m1, m2, false); //multi-threaded
 
-    //FIXME missing util function for templated approx checks
-    CHECK(Approx(*(r1->getValues())).epsilon(1e-6) == *(r2->getValues()));
+    CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
     delete wrapper;
     DataObjectFactory::destroy(m1);
