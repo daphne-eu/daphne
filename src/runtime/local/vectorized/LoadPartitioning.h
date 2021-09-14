@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_SCHEDULER_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_SCHEDULER_H
+#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
+#define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
 
-class Scheduler {
+class LoadPartitioning {
 
 private:
     int schedulingMethod;
@@ -30,7 +30,7 @@ private:
     uint64_t tssChunk; 
     uint64_t tssDelta;
 public:
-    Scheduler(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
+    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
         schedulingMethod = method;
         totalTasks = tasks;
         chunkParam = chunk;
@@ -85,4 +85,4 @@ public:
 
 };
 
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_SCHEDULER_H
+#endif //SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
