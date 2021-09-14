@@ -20,7 +20,7 @@
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/Workers.h>
-#include <runtime/local/vectorized/Scheduler.h>
+#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <thread>
@@ -76,9 +76,9 @@ public:
         uint64_t endChunk=0;
         uint64_t batchsize = 1; // row-at-a-time
         std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
-        Scheduler selfScheduler(4, rlen, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
-        while(selfScheduler.hasNextChunk()){
-            endChunk += selfScheduler.getNextChunk();
+        LoadPartitioning selfChunker(4, rlen, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
+        while(selfChunker.hasNextChunk()){
+            endChunk += selfChunker.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
                 func, res, input1, input2, startChunk, endChunk, batchsize));
             std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
