@@ -21,10 +21,14 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-
 #include <cstddef>
 #include <cstring>
 #include <iostream>
+
+// TODO This kernel should handle integral value types gracefully, e.g. by
+// forwarding to the non-approximate checkEq-kernel. This would allow us to
+// easily use the checkEqApprox-kernel in test cases without differentiating
+// integral and floating-point value types.
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -32,7 +36,7 @@
 
 template<class DT>
 struct CheckEqApprox{
-    static bool apply(const DT * lhs, const DT * rhs, double esp, DCTX(ctx)) = delete;
+    static bool apply(const DT * lhs, const DT * rhs, double eps, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -40,19 +44,20 @@ struct CheckEqApprox{
 // ****************************************************************************
 
 /**
- * @brief Checks if the two given matrices are Approximately equal.
+ * @brief Checks if the two given matrices are approximately equal.
  * 
  * More precisely, this requires that they have the same dimensions and are approximately
- * elementwise equal, i.e., if the difference between two elements is less than the threshold EPS,
+ * elementwise equal, i.e., if the difference between two elements is not greater than the threshold `eps`,
  * they are considered as equal. 
  *
  * @param lhs The first matrix.
  * @param rhs The second matrix.
+ * @param eps The similarity threshold.
  * @return `true` if they are equal, `false` otherwise.
  */
 template<class DT>
-bool checkEqApprox(const DT * lhs, const DT * rhs, double esp, DCTX(ctx)) {
-    return CheckEqApprox<DT>::apply(lhs, rhs, esp, ctx);
+bool checkEqApprox(const DT * lhs, const DT * rhs, double eps, DCTX(ctx)) {
+    return CheckEqApprox<DT>::apply(lhs, rhs, eps, ctx);
 };
 
 /*
@@ -82,7 +87,7 @@ bool operator==(const DT & lhs, const DT & rhs) {
 
 template<typename VT>
 struct CheckEqApprox<DenseMatrix<VT>> {
-    static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, double esp, DCTX(ctx)) {
+    static bool apply(const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, double eps, DCTX(ctx)) {
         if(lhs == rhs)
             return true;
         
@@ -107,14 +112,14 @@ struct CheckEqApprox<DenseMatrix<VT>> {
                 if (diff==0)
                     continue;
                 diff = diff>0? diff : -diff;
-                if (diff> esp)
+                if (diff> eps)
                     return false;
             }   
             valuesLhs += lhs->getRowSkip();
             valuesRhs += rhs->getRowSkip();
         }        
          
-       return true;
+        return true;
     }
 };
 
@@ -124,7 +129,7 @@ struct CheckEqApprox<DenseMatrix<VT>> {
 
 template<typename VT>
 struct CheckEqApprox<CSRMatrix<VT>> {
-    static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, double esp, DCTX(ctx)) {
+    static bool apply(const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, double eps, DCTX(ctx)) {
         if(lhs == rhs)
             return true;
         
@@ -146,7 +151,7 @@ struct CheckEqApprox<CSRMatrix<VT>> {
                 if (diff==0)
                      continue;
                 diff = diff>0? diff : -diff;
-                if (diff> esp) 
+                if (diff> eps)
                     return false;
             }   
         }

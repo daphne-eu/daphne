@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 
 #include <tags.h>
 
@@ -26,9 +27,11 @@
 #include <vector>
 
 #include <cstdint>
-#include <runtime/local/kernels/CheckEqApprox.h>
 
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double)) {
+// TODO Extend tests to integral value types, they should be handled
+// gracefully, too.
+
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (DenseMatrix, CSRMatrix), (float, double)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -45,33 +48,38 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, original matrices", TAG_KERNELS, (Den
     };
     auto m1 = genGivenVals<DT>(4, vals);
     SECTION("same inst") {
-        CHECK(checkEqApprox(m1, m1,0.00001, nullptr)); 
+        CHECK(checkEqApprox(m1, m1, 0.00001, nullptr));
     }
     SECTION("diff inst, same size, same cont") {
         auto m2 = genGivenVals<DT>(4, vals);
-        CHECK(checkEqApprox(m1, m2,0.00001, nullptr));
+        CHECK(checkEqApprox(m1, m2, 0.00001, nullptr));
+        DataObjectFactory::destroy(m2);
     }
     SECTION("diff inst, diff size, same cont") {
         auto m2 = genGivenVals<DT>(6, vals);
-        CHECK_FALSE(checkEqApprox(m1, m2,0.00001, nullptr));
+        CHECK_FALSE(checkEqApprox(m1, m2, 0.00001, nullptr));
+        DataObjectFactory::destroy(m2);
     }
-    SECTION("diff inst, same size, accepted difference default ESP") {
+    SECTION("diff inst, same size, accepted difference default EPS") {
         auto m2 = genGivenVals<DT>(4, vals2);
-        CHECK(checkEqApprox(m1, m2,0.00001, nullptr));
+        CHECK(checkEqApprox(m1, m2, 0.00001, nullptr));
+        DataObjectFactory::destroy(m2);
     }
-    SECTION("diff inst, same size, accepted difference defined ESP") {
+    SECTION("diff inst, same size, accepted difference defined EPS") {
         auto m2 = genGivenVals<DT>(4, vals2);
-        CHECK(checkEqApprox<DT>(m1, m2,0.01, nullptr));
+        CHECK(checkEqApprox<DT>(m1, m2, 0.01, nullptr));
+        DataObjectFactory::destroy(m2);
     }
-    SECTION("diff inst, same size, unaccepted difference defined ESP"){
+    SECTION("diff inst, same size, unaccepted difference defined EPS"){
         auto m2 = genGivenVals<DT>(4, vals2);
-        CHECK_FALSE(checkEqApprox<DT>(m1, m2,0.0000000000001, nullptr)); 
+        CHECK_FALSE(checkEqApprox<DT>(m1, m2, 0.0000000000001, nullptr));
+        DataObjectFactory::destroy(m2);
     }
+    
+    DataObjectFactory::destroy(m1);
 }
-   
 
-
-TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -96,12 +104,16 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (Den
     
     SECTION("same inst") {
         auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
-        CHECK(checkEqApprox(view1, view1,0.00001, nullptr));
+        CHECK(checkEqApprox(view1, view1, 0.00001, nullptr));
+        DataObjectFactory::destroy(view1);
     }
     SECTION("same view on different equal matrices") {
         auto view1 = DataObjectFactory::create<DT>(orig1, 0, 2, 0, 2);
         auto view2 = DataObjectFactory::create<DT>(orig2, 0, 2, 0, 2);
-        CHECK(checkEqApprox(view1, view2,0.01, nullptr));
-        CHECK_FALSE(checkEqApprox(view1, view2,0.000000001, nullptr));
+        CHECK(checkEqApprox(view1, view2, 0.01, nullptr));
+        CHECK_FALSE(checkEqApprox(view1, view2, 0.000000001, nullptr));
+        DataObjectFactory::destroy(view1, view2);
     }
+    
+    DataObjectFactory::destroy(orig1, orig2);
 }
