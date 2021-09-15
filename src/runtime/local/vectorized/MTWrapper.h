@@ -20,15 +20,7 @@
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/Workers.h>
-<<<<<<< HEAD
-<<<<<<< HEAD
 #include <runtime/local/vectorized/LoadPartitioning.h>
-=======
-#include <runtime/local/vectorized/Scheduler.h>
->>>>>>> update
-=======
-#include <runtime/local/vectorized/LoadPartitioning.h>
->>>>>>> renamed scheduler class to load partitioning
 #include <ir/daphneir/Daphne.h>
 
 #include <thread>
