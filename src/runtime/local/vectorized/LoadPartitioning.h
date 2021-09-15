@@ -49,27 +49,30 @@ public:
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
             case 0:{//STATIC
-                    chunkSize = (uint64_t)ceil(totalTasks/totalWorkers);
-                    break;
+                chunkSize = (uint64_t)ceil(totalTasks/totalWorkers);
+                break;
             }
             case 1:{// SS
-                    chunkSize = 1;
-                    break;
+                chunkSize = 1;
+                break;
             }
             case 2:{//GSS
-                    chunkSize = (uint64_t)ceil((double)remainingTasks/totalTasks);
-                    break;
+                chunkSize = (uint64_t)ceil((double)remainingTasks/totalTasks);
+                break;
             }
             case 3:{//TSS
-                    chunkSize = tssChunk - tssDelta * schedulingStep;
-                    break;
+                chunkSize = tssChunk - tssDelta * schedulingStep;
+                break;
             }
             case 4:{//FAC2
-                    uint64_t actualStep = schedulingStep/totalWorkers; // has to be an integer division 
-                    chunkSize = (uint64_t) ceil(pow(0.5,actualStep+1)*(totalTasks/totalWorkers));
-                    break;
+                uint64_t actualStep = schedulingStep/totalWorkers; // has to be an integer division 
+                chunkSize = (uint64_t) ceil(pow(0.5,actualStep+1)*(totalTasks/totalWorkers));
+                break;
             }
-
+            case 5:{//TFSS
+                chunkSize = ceil((double) remainingTasks/ ((double) 2*totalWorkers));
+                break;
+            }
             default:{
                     chunkSize = (uint64_t)ceil(totalTasks/totalWorkers/4.0);
                     break;
