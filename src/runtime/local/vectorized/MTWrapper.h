@@ -81,7 +81,7 @@ public:
             endChunk += selfChunker.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
                 func, res, input1, input2, startChunk, endChunk, batchsize));
-            std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
+            //std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
             startChunk= endChunk;
         }
         q->closeInput();
