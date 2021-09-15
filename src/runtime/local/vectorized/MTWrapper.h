@@ -76,7 +76,7 @@ public:
         uint64_t endChunk=0;
         uint64_t batchsize = 1; // row-at-a-time
         std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
-        LoadPartitioning selfChunker(4, rlen, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
+        LoadPartitioning selfChunker(5, rlen, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
         while(selfChunker.hasNextChunk()){
             endChunk += selfChunker.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
