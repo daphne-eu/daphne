@@ -54,7 +54,7 @@ public:
         DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
     {
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows());
+        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows()); // this the maximum possible number of tasks should we start with something smaller and it grows as ended?!
 
         // create workers threads
         WorkerCPU* workers[_numThreads];
@@ -113,9 +113,15 @@ public:
                  VectorCombine *combines,
                  bool verbose)
     {
-        auto numTasks = _numThreads * 4;
+        //auto numTasks = _numThreads * 4;
+        uint64_t len = 0;
+        // due to possible broadcasting we have to check all inputs
+        for (auto i = 0u; i < numInputs; ++i) {
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+                len = std::max(len, inputs[i]->getNumRows());
+        } 
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(numTasks);
+        TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
 
         // create workers threads
         WorkerCPU* workers[_numThreads];
@@ -136,15 +142,12 @@ public:
 
         // create tasks and close input
         // TODO UNIBAS - integration hook scheduling
-        uint64_t len = 0;
-        // due to possible broadcasting we have to check all inputs
-        for (auto i = 0u; i < numInputs; ++i) {
-            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
-                len = std::max(len, inputs[i]->getNumRows());
-        }
-        uint64_t blksize = (len - 1) / numTasks + 1; // integer ceil
+        uint64_t startChunk = 0;
+        uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
-        for(uint32_t k = 0; k * blksize < len; k++) {
+        LoadPartitioning selfChunker(4, len, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
+        while(selfChunker.hasNextChunk()){
+            endChunk += selfChunker.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
                 func,
                 resLock,
@@ -156,10 +159,12 @@ public:
                 outCols,
                 splits,
                 combines,
-                k * blksize,
-                std::min((k + 1) * blksize, len),
+                startChunk,
+                endChunk,
                 batchsize));
-        }
+           // std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
+            startChunk= endChunk;
+        } 
         q->closeInput();
 
         // barrier (wait for completed computation)
