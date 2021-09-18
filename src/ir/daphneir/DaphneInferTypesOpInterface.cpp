@@ -70,10 +70,10 @@ void inferTypes_EwCmpOp(EwCmpOp * op) {
     Type lhsType = op->lhs().getType();
     Type rhsType = op->rhs().getType();
     Type t;
-    if(lhsType.isa<daphne::MatrixType>())
-        t = lhsType;
-    else if(rhsType.isa<daphne::MatrixType>())
-        t = rhsType;
+    if(auto mt = lhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
     else {
         Builder builder(op->getContext());
         t = builder.getI1Type();
@@ -161,11 +161,23 @@ void daphne::EwGeOp::inferTypes() {
 }
 
 void daphne::ExtractRowOp::inferTypes() {
-    getResult().setType(source().getType());
+    Type srcType = source().getType();
+    Type t;
+    if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
+        t = ft.withSameColumnTypes();
+    getResult().setType(t);
 }
 
 void daphne::FilterRowOp::inferTypes() {
-    getResult().setType(source().getType());
+    Type srcType = source().getType();
+    Type t;
+    if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
+        t = ft.withSameColumnTypes();
+    getResult().setType(t);
 }
 
 void daphne::GroupJoinOp::inferTypes() {
