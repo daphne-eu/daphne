@@ -136,7 +136,7 @@ TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double, int64
             sel, numRows, 1, VTSel(1), VTSel(1), selectivity, -1, nullptr
     );
     // TODO If randMatrix generated the exact sparsity, we could omit this
-    // aggregation.
+    // aggregation (see #123).
     size_t numRowsExp = aggAll<DTSel>(AggOpCode::SUM, sel, nullptr);
     
     Frame * res = nullptr;
