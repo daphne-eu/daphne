@@ -42,11 +42,11 @@ public:
             //TODO this negative or zero value we can use to indicate automatic chunk parameter
         }
         if(workers<=0){
-            throw std::runtime_error("workers must be greater than zero")   
+            throw std::runtime_error("workers must be greater than zero");   
         }
         totalWorkers = workers;
         if(tasks<0){
-            throw std::runtime_error("number of tasks must be greater than or equal zero")
+            throw std::runtime_error("number of tasks must be greater than or equal zero");
         }
         remainingTasks = tasks;
         schedulingStep = 0;
