@@ -70,7 +70,7 @@ public:
                 break;
             }
             case GSS:{//GSS
-                chunkSize = (uint64_t)ceil((double)remainingTasks/totalTasks);
+                chunkSize = (uint64_t)ceil((double)remainingTasks/totalWorkers);
                 break;
             }
             case TSS:{//TSS
