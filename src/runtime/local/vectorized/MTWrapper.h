@@ -152,7 +152,6 @@ public:
         uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
         uint64_t chunkParam = 1;
-        //std::cout<<"worker "<<_numThreads<<std::endl;
         LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
