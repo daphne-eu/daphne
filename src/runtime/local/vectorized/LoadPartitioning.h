@@ -34,8 +34,20 @@ public:
     LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
         schedulingMethod = method;
         totalTasks = tasks;
-        chunkParam = chunk;
+        if(chunk>0){    
+            chunkParam = chunk;
+        }
+        else{
+            chunkParam = 1;
+            //TODO this negative or zero value we can use to indicate automatic chunk parameter
+        }
+        if(workers<=0){
+            throw std::runtime_error("workers must be greater than zero")   
+        }
         totalWorkers = workers;
+        if(tasks<0){
+            throw std::runtime_error("number of tasks must be greater than or equal zero")
+        }
         remainingTasks = tasks;
         schedulingStep = 0;
         scheduledTasks = 0;
@@ -75,19 +87,23 @@ public:
                 break;
             }
             case FISS:{//FISS
-                
+                //TODO
                 break;
             }
             case VISS:{//VISS
+                //TODO
                 break;
             }
             case PLS:{//PLS
+                //TODO
                 break;
             }
             case PSS:{//PSS
+                //TODO
                 break;
             }
             case MFSC:{//mfsc
+                //TODO
                 break;
             }
             default:{
