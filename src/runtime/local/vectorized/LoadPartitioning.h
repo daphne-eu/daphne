@@ -16,7 +16,8 @@
 
 #ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
 #define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
-
+enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
+                            PLS, MSTATIC, MFSC, PSS};
 class LoadPartitioning {
 
 private:
@@ -48,34 +49,50 @@ public:
     uint64_t getNextChunk(){
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
-            case 0:{//STATIC
+            case STATIC:{//STATIC
                 chunkSize = (uint64_t)ceil(totalTasks/totalWorkers);
                 break;
             }
-            case 1:{// SS
+            case SS:{// SS
                 chunkSize = 1;
                 break;
             }
-            case 2:{//GSS
+            case GSS:{//GSS
                 chunkSize = (uint64_t)ceil((double)remainingTasks/totalTasks);
                 break;
             }
-            case 3:{//TSS
+            case TSS:{//TSS
                 chunkSize = tssChunk - tssDelta * schedulingStep;
                 break;
             }
-            case 4:{//FAC2
+            case FAC2:{//FAC2
                 uint64_t actualStep = schedulingStep/totalWorkers; // has to be an integer division 
                 chunkSize = (uint64_t) ceil(pow(0.5,actualStep+1)*(totalTasks/totalWorkers));
                 break;
             }
-            case 5:{//TFSS
+            case TFSS:{//TFSS
                 chunkSize = ceil((double) remainingTasks/ ((double) 2*totalWorkers));
                 break;
             }
+            case FISS:{//FISS
+                
+                break;
+            }
+            case VISS:{//VISS
+                break;
+            }
+            case PLS:{//PLS
+                break;
+            }
+            case PSS:{//PSS
+                break;
+            }
+            case MFSC:{//mfsc
+                break;
+            }
             default:{
-                    chunkSize = (uint64_t)ceil(totalTasks/totalWorkers/4.0);
-                    break;
+                chunkSize = (uint64_t)ceil(totalTasks/totalWorkers/4.0);
+                break;
             }
     }
     chunkSize = std::max(chunkSize,chunkParam);
