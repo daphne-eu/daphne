@@ -30,10 +30,13 @@ private:
     uint64_t schedulingStep;
     uint64_t tssChunk; 
     uint64_t tssDelta;
+    uint64_t mfscChunk;
 public:
     LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
         schedulingMethod = method;
         totalTasks = tasks;
+        uint64_t tSize = (totalTasks+workers-1)/totalTasks;
+        mfscChunk = (0.55+tSize*log(2.0)/log((1.0*tSize)));
         if(chunk>0){    
             chunkParam = chunk;
         }
@@ -103,7 +106,7 @@ public:
                 break;
             }
             case MFSC:{//mfsc
-                //TODO
+                chunkSize=mfscChunk;
                 break;
             }
             default:{
