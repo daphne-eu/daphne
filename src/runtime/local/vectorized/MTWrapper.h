@@ -75,10 +75,11 @@ public:
         uint64_t startChunk=0;
         uint64_t endChunk=0;
         uint64_t batchsize = 1; // row-at-a-time
-        std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
-        LoadPartitioning selfChunker(5, rlen, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
-        while(selfChunker.hasNextChunk()){
-            endChunk += selfChunker.getNextChunk();
+        uint64_t chunkParam=1;
+        //std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
+        LoadPartitioning lp(GSS, rlen, chunkParam,_numThreads); 
+        while(lp.hasNextChunk()){
+            endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
                 func, res, input1, input2, startChunk, endChunk, batchsize));
             //std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
@@ -145,9 +146,10 @@ public:
         uint64_t startChunk = 0;
         uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
-        LoadPartitioning selfChunker(4, len, 1,_numThreads); // method[static:0, ss:1, gss:2, tss:3, fac2:4, ..] chunkParam[1]  
-        while(selfChunker.hasNextChunk()){
-            endChunk += selfChunker.getNextChunk();
+        uint64_t chunkParam = 1;
+        LoadPartitioning lp(GSS, len, chunkParam,_numThreads); 
+        while(lp.hasNextChunk()){
+            endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
                 func,
                 resLock,
