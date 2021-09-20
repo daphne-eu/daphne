@@ -340,13 +340,15 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
     if(func == "sample") {
         checkNumArgsExact(func, numArgs, 4);
-        mlir::Value range = utils.castSizeIf(args[0]);
+        mlir::Value range = args[0];
         mlir::Value size = utils.castSizeIf(args[1]);
         mlir::Value withReplacement = utils.castBoolIf(args[2]);
         mlir::Value seed = utils.castSeedIf(args[3]);
         return static_cast<mlir::Value>(
                 builder.create<SampleOp>(
-                        loc, utils.matrixOfSizeType, range, size, withReplacement, seed
+                        loc,
+                        MatrixType::get(builder.getContext(), range.getType()),
+                        range, size, withReplacement, seed
                 )
         );
     }

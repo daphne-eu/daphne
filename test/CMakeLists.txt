@@ -62,6 +62,7 @@ add_executable(run_tests
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
+        runtime/local/kernels/SampleTest.cpp
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp
         runtime/local/kernels/SetColLabelsPrefixTest.cpp
