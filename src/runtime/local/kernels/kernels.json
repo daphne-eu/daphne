@@ -880,6 +880,49 @@
     },
     {
         "kernelTemplate": {
+            "header": "SampleOp.h",
+            "opName": "sampleOp",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "VTArg",
+                    "name": "range"
+                },
+                {
+                    "type": "size_t",
+                    "name": "size"
+                },
+                {
+                    "type": "bool",
+                    "name": "withReplacement"
+                },                
+                {
+                    "type": "int64_t",
+                    "name": "seed"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Read.h",
             "opName": "read",
             "returnType": "void",

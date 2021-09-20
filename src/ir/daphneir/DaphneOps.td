@@ -85,8 +85,8 @@ def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [TypesMatchWith<"min and max a
     let results = (outs Matrix:$res);
 }
 
-def Daphne_SampleOp : Daphne_Op<"sample"> {
-    let arguments = (ins Size:$range, Size:$size, BoolScalar:$withReplacement, Seed:$seed);
+def Daphne_SampleOp : Daphne_Op<"sampleOp"> {
+    let arguments = (ins AnyScalar:$range, Size:$size, BoolScalar:$withReplacement, IntScalar:$seed);
     let results = (outs Matrix:$res);
 }
 
