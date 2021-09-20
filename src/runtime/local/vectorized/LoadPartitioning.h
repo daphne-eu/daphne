@@ -35,13 +35,13 @@ public:
     LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
         schedulingMethod = method;
         totalTasks = tasks;
-        uint64_t tSize = (totalTasks+workers-1)/totalTasks;
-        mfscChunk = (0.55+tSize*log(2.0)/log((1.0*tSize)));
+        double tSize = (totalTasks+workers-1.0)/totalTasks;
+        mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
         if(chunk>0){    
             chunkParam = chunk;
         }
         else{
-            chunkParam = 1;
+            chunkParam = mfscChunk;
             //TODO this negative or zero value we can use to indicate automatic chunk parameter
         }
         if(workers<=0){
@@ -68,44 +68,44 @@ public:
                 chunkSize = (uint64_t)ceil(totalTasks/totalWorkers);
                 break;
             }
-            case SS:{// SS
+            case SS:{// self-scheduling (SS)
                 chunkSize = 1;
                 break;
             }
-            case GSS:{//GSS
+            case GSS:{//guided self-scheduling (GSS)
                 chunkSize = (uint64_t)ceil((double)remainingTasks/totalWorkers);
                 break;
             }
-            case TSS:{//TSS
+            case TSS:{//trapezoid self-scheduling (TSS)
                 chunkSize = tssChunk - tssDelta * schedulingStep;
                 break;
             }
-            case FAC2:{//FAC2
+            case FAC2:{//factoring (FAC2)
                 uint64_t actualStep = schedulingStep/totalWorkers; // has to be an integer division 
                 chunkSize = (uint64_t) ceil(pow(0.5,actualStep+1)*(totalTasks/totalWorkers));
                 break;
             }
-            case TFSS:{//TFSS
+            case TFSS:{//trapezoid factoring self-schedduling (TFSS)
                 chunkSize = ceil((double) remainingTasks/ ((double) 2*totalWorkers));
                 break;
             }
-            case FISS:{//FISS
+            case FISS:{//fixed increase self-scheduling (FISS)
                 //TODO
                 break;
             }
-            case VISS:{//VISS
+            case VISS:{//variable increase self-scheduling (VISS)
                 //TODO
                 break;
             }
-            case PLS:{//PLS
+            case PLS:{//performance-based loop self-scheduling (PLS)
                 //TODO
                 break;
             }
-            case PSS:{//PSS
+            case PSS:{//probabilistic self-scheduling (PSS)
                 //TODO
                 break;
             }
-            case MFSC:{//mfsc
+            case MFSC:{//modifed fixed self-scheduling (MFSC)
                 chunkSize=mfscChunk;
                 break;
             }
