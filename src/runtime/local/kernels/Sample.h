@@ -38,7 +38,7 @@
 // ****************************************************************************
 
 template<class DTRes, typename VTArg>
-struct SampleOp {
+struct Sample {
     static void apply(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) = delete;
 };
 
@@ -47,8 +47,8 @@ struct SampleOp {
 // ****************************************************************************
 
 template<class DTRes, typename VTArg>
-void sampleOp(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
-    SampleOp<DTRes, VTArg>::apply(res, range, size, withReplacement, seed, ctx);
+void sample(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
+    Sample<DTRes, VTArg>::apply(res, range, size, withReplacement, seed, ctx);
 }
 
 // ****************************************************************************
@@ -60,13 +60,13 @@ void sampleOp(DTRes *& res, VTArg range, size_t size, bool withReplacement, int6
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct SampleOp<DenseMatrix<VT>, VT> {
+struct Sample<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, VT range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
         assert(size > 0 && "size (rows) must be > 0");
         assert(range > 0 && "range must be > 0");        
         if ( ! withReplacement ){
             if (!std::is_floating_point<VT>::value){
-                assert(range >= size && "if no duplicates are allowed, then must be range >=size");
+                assert(range >= size && "if no duplicates are allowed, then must be range >= size");
             }
         }
 
@@ -84,11 +84,15 @@ struct SampleOp<DenseMatrix<VT>, VT> {
         static_assert(
         std::is_floating_point<VT>::value || std::is_integral<VT>::value,
                 "the value type must be either floating point or integral"
-        );        
+        );
+        // TODO For std::uniform_real_distribution, the upper bound is not
+        // included in the interval of possible values, so when VT is a
+        // floating-point type, std::nextafter() is not required. However, we
+        // don't lose much by that, so it is fine for now.
         typename std::conditional<
                     std::is_floating_point<VT>::value,
                     std::uniform_real_distribution<VT>,
-                    std::uniform_int_distribution<VT>>::type distrVal(0, std::nextafter(range,0));
+                    std::uniform_int_distribution<VT>>::type distrVal(0, std::nextafter(range, 0));
         if (withReplacement) {            
 
             VT *valuesRes = res->getValues();

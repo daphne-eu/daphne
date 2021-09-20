@@ -880,8 +880,8 @@
     },
     {
         "kernelTemplate": {
-            "header": "SampleOp.h",
-            "opName": "sampleOp",
+            "header": "Sample.h",
+            "opName": "sample",
             "returnType": "void",
             "templateParams": [
                 {

@@ -16,18 +16,13 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/SampleOp.h>
+#include <runtime/local/kernels/Sample.h>
 
 #include <tags.h>
 
 #include <catch.hpp>
 
-// #include <vector>
-
-// #include <cmath>
-// #include <cstdint>
-
-TEMPLATE_PRODUCT_TEST_CASE("SampleOp", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("Sample", TAG_KERNELS, (DenseMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
 
@@ -36,24 +31,25 @@ TEMPLATE_PRODUCT_TEST_CASE("SampleOp", TAG_KERNELS, (DenseMatrix), (double, uint
     const VT range = 10000;
     bool withReplacement;    
     
-    SECTION("with Replacement"){
+    SECTION("with replacement"){
         withReplacement = true;
     
-        sampleOp<DT, VT>(m, range, size, withReplacement, -1, nullptr);
+        sample<DT, VT>(m, range, size, withReplacement, -1, nullptr);
 
         REQUIRE(m->getNumRows() == size);
         REQUIRE(m->getNumCols() == 1);
 
         VT *values = m->getValues();        
         for (size_t i=0; i<size; i++){                
+            CHECK(values[i] >= 0);            
             CHECK(values[i] < range);            
         }
     }
         
-    SECTION("with no Replacement"){
+    SECTION("without replacement"){
         withReplacement = false;
     
-        sampleOp<DT, VT>(m, range, size, withReplacement, -1, nullptr);
+        sample<DT, VT>(m, range, size, withReplacement, -1, nullptr);
         
         REQUIRE(m->getNumRows() == size);
         REQUIRE(m->getNumCols() == 1);
@@ -61,10 +57,12 @@ TEMPLATE_PRODUCT_TEST_CASE("SampleOp", TAG_KERNELS, (DenseMatrix), (double, uint
         VT *values = m->getValues();        
         
         std::sort(values, values + size);   
+        CHECK(values[0] >= 0);                   
         CHECK(values[size-1] < range);                   
         for (size_t i=1; i<size; i++){                
             CHECK(values[i-1] != values[i]);            
         }
-    }    
+    }
+
     DataObjectFactory::destroy(m);
 }
