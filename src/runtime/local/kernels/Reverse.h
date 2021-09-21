@@ -73,11 +73,11 @@ struct Reverse<DenseMatrix<VT>, DenseMatrix<VT>> {
             const VT *valuesArgLastRow = valuesArg + ((numRows - 1) * arg->getRowSkip());            
             VT *valuesResLastRow = valuesRes + ((numRows - 1) * res->getRowSkip());
             for (size_t r = 0; r < numRows; r++) {                                
-                memcpy(valuesRes,        valuesArgLastRow, numCols * sizeof(VT));
-                memcpy(valuesResLastRow, valuesArg, numCols * sizeof(VT));
+                memcpy(valuesRes,        valuesArgLastRow,  numCols * sizeof(VT));
+                memcpy(valuesResLastRow, valuesArg,         numCols * sizeof(VT));
                 valuesArg += arg->getRowSkip();
-                valuesArgLastRow -= arg->getRowSkip();
                 valuesRes += res->getRowSkip();
+                valuesArgLastRow -= arg->getRowSkip();
                 valuesResLastRow -= res->getRowSkip();
             }
         }
