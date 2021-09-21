@@ -1,14 +1,16 @@
-x = 1;
-y = 2;
-print(x + y);
+//x = 1;
+//y = 2;
+//print(x + y);
 
-m = rand(2, 3, 100.0, 200.0, 1.0, -1);
+m1 = rand(10, 1, 100.0, 200.0, 1.0, -1);
+m2 = rand(10, 1, 100.0, 200.0, 1.0, -1);
+f = frame(m1, m2, "a", "b");
 
-registerView("x", m);
-registerView("y", m);
+print(f);
+registerView("x", f);
+registerView("y", f);
 k = sql("SELECT x.a, k.a FroM x, y as k;");
 print(k);
 
-print(m);
-print(m + m);
-print(t(m));
+//print(m + m);
+//print(t(m));

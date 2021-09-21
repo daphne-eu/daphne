@@ -68,19 +68,19 @@ namespace
                 mlir::daphne::SqlOp sqlop = static_cast<mlir::daphne::SqlOp>(op);
                 std::cout << sqlop.sql().str() << std::endl;
 
-                auto moduleOp = ModuleOp::create(rewriter.getUnknownLoc());
-                auto *body = moduleOp.getBody();
-                rewriter.setInsertionPoint(body, body->begin());
+                // auto moduleOp = ModuleOp::create(rewriter.getUnknownLoc());
+                // auto *body = moduleOp.getBody();
+                // rewriter.setInsertionPoint(body, body->begin());
 
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
 
                 DaphneSQLParser parser;
                 parser.setView(tables);
-                parser.parseStream(rewriter, sql_query);
-                moduleOp->dump();
+                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query);
+                // moduleOp->dump();
 
-                rewriter.eraseOp(op);
+                rewriter.replaceOp(op, result_op);
                 std::cout << "Rewriten Op" << std::endl;
                 return success();
             }

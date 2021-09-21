@@ -17,6 +17,7 @@
 #ifndef SRC_PARSER_DAPHNESQL_DAPHNESQLVISITOR_H
 #define SRC_PARSER_DAPHNESQL_DAPHNESQLVISITOR_H
 
+#include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
@@ -34,6 +35,7 @@ class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
     // DaphneSQLGrammarBaseVisitor), we ensure that any newly added visitor
     // function (e.g. after a change to the grammar file) needs to be
     // considered here. This is to force us not to forget anything.
+    ParserUtils utils;
 
     /**
      * The OpBuilder used to generate DaphneIR operations.
@@ -59,14 +61,14 @@ class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
     ScopedSymbolTable symbolTable;
 
 public:
-    DaphneSQLVisitor(mlir::OpBuilder & builder) : builder(builder) {
+    DaphneSQLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
         // std::cout << "SQL Visitor without View setting\n\n";
     };
 
     DaphneSQLVisitor(
         mlir::OpBuilder & builder,
         std::unordered_map <std::string, mlir::Value> view_arg
-    ) : builder(builder) {
+    ) : builder(builder), utils(builder) {
         view = view_arg;
         // std::cout << "SQL Visitor with View setting\n\n";
     };

@@ -36,7 +36,7 @@ void DaphneSQLParser::setView(std::unordered_map <std::string, mlir::Value> arg)
     view = arg;
 }
 
-void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){
+mlir::Value DaphneSQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream){
     //}, std::unordered_map<std::string, mlir::Value>& tables) {
     mlir::Location loc = builder.getUnknownLoc();
     // Create a single "main"-function and insert DaphneIR operations into it.
@@ -53,8 +53,13 @@ void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         DaphneSQLGrammarParser parser(&tokens);
         DaphneSQLGrammarParser::SqlContext * ctx = parser.sql();
         DaphneSQLVisitor visitor(builder, view);
-        visitor.visitSql(ctx);
-
+        antlrcpp::Any a = visitor.visitSql(ctx);
+        std::cout << "all good up until now\n";
+        if(a.is<mlir::Value>()){
+          std::cout << "IT IS AN MLIR VALUE!\n";
+          return a.as<mlir::Value>();
+        }
+        throw std::runtime_error("expected a mlir::Value");
     }
     // auto * terminator = funcBlock->getTerminator();
     // auto funcType = mlir::FunctionType::get(
@@ -64,4 +69,8 @@ void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
     // );
     // auto func = builder.create<mlir::FuncOp>(loc, "sql", funcType);
     // func.push_back(funcBlock);
+}
+
+void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){
+    parseStreamFrame(builder, stream);
 }

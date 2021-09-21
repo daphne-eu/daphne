@@ -108,16 +108,22 @@ bool DaphneSQLVisitor::hasMLIR(std::string name){
 // ****************************************************************************
 
 antlrcpp::Any DaphneSQLVisitor::visitScript(DaphneSQLGrammarParser::ScriptContext * ctx) {
-    return visitChildren(ctx);
+    mlir::Value res = valueOrError(visitChildren(ctx));
+    std::cout << "all good up until now <SCRIPT>\n";
+    return res;
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitSql(DaphneSQLGrammarParser::SqlContext * ctx) {
-
-    return visitChildren(ctx);
+//    mlir::Value res = valueOrError(visitChildren(ctx));
+    mlir::Value res = valueOrError(visit(ctx->query()));
+    std::cout << "all good up until now <SQL>\n";
+    return res;
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) {
-    return visitChildren(ctx);
+    mlir::Value res = valueOrError(visit(ctx->select()));
+    std::cout << "all good up until now <QUERY>\n";
+    return res;
 }
 
 //this needs to return a frame so that subquery is a frame.
@@ -156,17 +162,22 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
             add = valueOrError(visit(ctx->selectExpr(i)));
         }catch(std::runtime_error &e){
             std::stringstream err_msg;
-            err_msg << "Something vent wrong in SelectExpr.\n\t\t" << e.what();
+            err_msg << "Something went wrong in SelectExpr.\n\t\t" << e.what();
             throw std::runtime_error(err_msg.str());
         }
         try{
+            mlir::Type resType = mlir::daphne::FrameType::get(
+                    builder.getContext(), {utils.unknownType}
+            );
+
+            mlir::Value nr_col = static_cast<mlir::Value> (builder.create<mlir::daphne::NumColsOp>(loc, utils.sizeType , add));
             res = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::InsertColumnOp>(
                     loc,
-                    res.getType(),
+                    resType,
                     res,
-                    res,
-                    add
+                    add,
+                    nr_col
                 )
             );
         }catch(std::runtime_error & e){
@@ -176,6 +187,7 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
         }
     }
     // symbolTable.put(symbolTable.popScope());
+    std::cout << "all good up until now <SELECT>\n";
     return res;
     // return nullptr;
 }
@@ -374,11 +386,15 @@ antlrcpp::Any DaphneSQLVisitor::visitStringIdent(DaphneSQLGrammarParser::StringI
             builder.create<mlir::daphne::ConstantOp>(loc, getSTR)
     );
 
+    mlir::Type resType = mlir::daphne::FrameType::get(
+            builder.getContext(), {utils.unknownType}
+    );
+
     try{
         return static_cast<mlir::Value>(
             builder.create<mlir::daphne::ExtractColOp>(
                 loc,
-                frameSSA.getType(),
+                resType,
                 frameSSA,
                 getSSA    //Probs doesn't work
             )
