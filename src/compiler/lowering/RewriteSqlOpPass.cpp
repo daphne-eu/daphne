@@ -62,7 +62,7 @@ namespace
 
                 tables[view_stream.str()] = arg;
                 rewriter.eraseOp(op);
-                std::cout << "Rewriten Op" << std::endl;
+                std::cout << "Erased Op" << std::endl;
                 return success();
             }else if(callee.str() == "sql"){
                 mlir::daphne::SqlOp sqlop = static_cast<mlir::daphne::SqlOp>(op);

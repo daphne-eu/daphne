@@ -67,31 +67,25 @@ mlir::Value fetch(std::unordered_map <std::string, mlir::Value> x, std::string n
 }
 
 mlir::Value DaphneSQLVisitor::fetchAlias(std::string name){
-    std::cout << "Fetch <" << name << "> from alias\n";
-
     mlir::Value res = fetch(alias, name);
     if(res != NULL){
         return res;
     }
-
     std::stringstream x;
-    x << "Error: " << name << " was not registered with the Function registerView\n";
+    x << "Error: " << name << " does not name an Alias\n";
     throw std::runtime_error(x.str());
 }
 
 mlir::Value DaphneSQLVisitor::fetchMLIR(std::string name){
-    std::cout << "FetchMLIR ";
-    mlir::Value res = fetch(alias, name);
+    mlir::Value res;
+    res = fetch(alias, name);
     if(res != NULL){
-        // std::cout << "<" << name << "> from alias\n";
         return res;
     }
     res = fetch(view, name);
     if(res != NULL){
-        // std::cout << "<" << name << "> from view\n";
         return res;
     }
-    std::cout << std::endl;
     std::stringstream x;
     x << "Error: " << name << " was not registered with the Function \"registerView\" or were given an alias\n";
     throw std::runtime_error(x.str());
@@ -109,20 +103,17 @@ bool DaphneSQLVisitor::hasMLIR(std::string name){
 
 antlrcpp::Any DaphneSQLVisitor::visitScript(DaphneSQLGrammarParser::ScriptContext * ctx) {
     mlir::Value res = valueOrError(visitChildren(ctx));
-    std::cout << "all good up until now <SCRIPT>\n";
     return res;
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitSql(DaphneSQLGrammarParser::SqlContext * ctx) {
 //    mlir::Value res = valueOrError(visitChildren(ctx));
     mlir::Value res = valueOrError(visit(ctx->query()));
-    std::cout << "all good up until now <SQL>\n";
     return res;
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) {
     mlir::Value res = valueOrError(visit(ctx->select()));
-    std::cout << "all good up until now <QUERY>\n";
     return res;
 }
 
@@ -137,7 +128,6 @@ antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext 
 
 //TODO:
 //  1: Implement where
-//  2: Relational Alg
 //  3: Rest
 antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContext * ctx){
 
@@ -166,11 +156,16 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
             throw std::runtime_error(err_msg.str());
         }
         try{
-            mlir::Type resType = mlir::daphne::FrameType::get(
-                    builder.getContext(), {utils.unknownType}
-            );
+
+            std::vector<mlir::Type> colTypes;
+            for(mlir::Type t : res.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+                colTypes.push_back(t);
+            for(mlir::Type t : add.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+                colTypes.push_back(t);
+            mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
 
             mlir::Value nr_col = static_cast<mlir::Value> (builder.create<mlir::daphne::NumColsOp>(loc, utils.sizeType , add));
+
             res = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::InsertColumnOp>(
                     loc,
@@ -186,10 +181,7 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
             throw std::runtime_error(err_msg.str());
         }
     }
-    // symbolTable.put(symbolTable.popScope());
-    std::cout << "all good up until now <SELECT>\n";
     return res;
-    // return nullptr;
 }
 
 antlrcpp::Any DaphneSQLVisitor::visitSubquery(DaphneSQLGrammarParser::SubqueryContext * ctx) {
@@ -235,13 +227,18 @@ antlrcpp::Any DaphneSQLVisitor::visitCartesianExpr(DaphneSQLGrammarParser::Carte
         // antlrcpp::Any rhs = valueOrError(symbolTable.get(rhs_name.at(0)));
         mlir::Value rhs = valueOrError(visit(ctx->rhs));
         // fj_order.push_back(rhs_name);
-
+        std::vector<mlir::Type> colTypes;
+        for(mlir::Type t : lhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            colTypes.push_back(t);
+        for(mlir::Type t : rhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            colTypes.push_back(t);
+        mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
         //creating join code
         mlir::Location loc = builder.getUnknownLoc();
         mlir::Value cOp = static_cast<mlir::Value>(
             builder.create<mlir::daphne::CartesianOp>(
                 loc,
-                lhs.getType(),
+                t,
                 lhs,
                 rhs)
             );
@@ -311,11 +308,8 @@ antlrcpp::Any DaphneSQLVisitor::visitTableReference(DaphneSQLGrammarParser::Tabl
     try {
         mlir::Value res = fetchMLIR(var);
         registerAlias(res, var);
-        // symbolTable.put(var, ScopedSymbolTable::SymbolInfo(res, true));
         if(ctx->aka){
             registerAlias(res, ctx->aka->getText());
-            // symbolTable.put(ctx->aka->getText(), ScopedSymbolTable::SymbolInfo(res, true));
-            // names.push_back(ctx->aka->getText());
         }
         return res;
     }
@@ -386,8 +380,11 @@ antlrcpp::Any DaphneSQLVisitor::visitStringIdent(DaphneSQLGrammarParser::StringI
             builder.create<mlir::daphne::ConstantOp>(loc, getSTR)
     );
 
+
+
+
     mlir::Type resType = mlir::daphne::FrameType::get(
-            builder.getContext(), {utils.unknownType}
+            builder.getContext(), {utils.getValueTypeByName("f64")}
     );
 
     try{
