@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
+#include <cmath>
 #ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
 #define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
@@ -31,12 +31,14 @@ private:
     uint64_t tssChunk; 
     uint64_t tssDelta;
     uint64_t mfscChunk;
+    uint32_t fissStages;
 public:
     LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
         schedulingMethod = method;
         totalTasks = tasks;
         double tSize = (totalTasks+workers-1.0)/totalTasks;
         mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
+        fissStages = ceil(0.25*2);
         if(chunk>0){    
             chunkParam = chunk;
         }
@@ -65,7 +67,7 @@ public:
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
             case STATIC:{//STATIC
-                chunkSize = (uint64_t)ceil(totalTasks/totalWorkers);
+                chunkSize = (uint64_t) ceil(totalTasks/totalWorkers);
                 break;
             }
             case SS:{// self-scheduling (SS)
@@ -73,7 +75,7 @@ public:
                 break;
             }
             case GSS:{//guided self-scheduling (GSS)
-                chunkSize = (uint64_t)ceil((double)remainingTasks/totalWorkers);
+                chunkSize = (uint64_t) ceil((double)remainingTasks/totalWorkers);
                 break;
             }
             case TSS:{//trapezoid self-scheduling (TSS)
@@ -86,22 +88,37 @@ public:
                 break;
             }
             case TFSS:{//trapezoid factoring self-schedduling (TFSS)
-                chunkSize = ceil((double) remainingTasks/ ((double) 2*totalWorkers));
+                chunkSize = (uint64_t) ceil((double) remainingTasks/ ((double) 2*totalWorkers));
                 break;
             }
             case FISS:{//fixed increase self-scheduling (FISS)
                 //TODO
+                uint64_t X = fissStages + 2;
+                uint64_t initChunk = (uint64_t) ceil(totalTasks/((2+fissStages)*totalWorkers));
+                chunkSize = initChunk + schedulingStep * (uint64_t) ceil((2*totalTasks*(1-(fissStages/X)))/(totalWorkers*fissStages*(fissStages-1))); //chunksize with increment after init 
                 break;
             }
             case VISS:{//variable increase self-scheduling (VISS)
                 //TODO
+                uint64_t schedulingStepnew =  schedulingStep % totalWorkers;
+                uint64_t initChunk = (uint64_t) ceil(totalTasks/((2+fissStages)*totalWorkers));
+                chunkSize =  initChunk * (uint64_t) ceil((double)(1-pow(0.5,schedulingStepnew))/0.5);
                 break;
             }
             case PLS:{//performance-based loop self-scheduling (PLS)
                 //TODO
+                double SWR = 0.5; //static workload ratio
+                if(remainingTasks > totalTasks - (totalTasks*SWR)){
+                    chunkSize = (uint64_t) ceil((double)totalTasks*SWR/totalWorkers);
+                }else{
+                    chunkSize = (uint64_t) ceil((double)remainingTasks/totalWorkers);
+                }
                 break;
             }
             case PSS:{//probabilistic self-scheduling (PSS)
+                //E[P] is the average number of idle processor, for now we use still totalWorkers
+                double averageIdleProc = (double)totalWorkers;
+                chunkSize = (uint64_t) ceil((double)remainingTasks/(1.5*averageIdleProc));
                 //TODO
                 break;
             }
