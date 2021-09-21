@@ -66,7 +66,7 @@ struct Reverse<DenseMatrix<VT>, DenseMatrix<VT>> {
         
         // This operation will often be applied to column (n x 1) matrices,
         // so this case could optionally be treated more efficiently.
-        if (numCols == 1){
+        if (arg->getRowSkip() == 1){ // We need to check RowSkip in case of sub Matrix (see DenseMatrix.h)
             std::reverse_copy(valuesArg, valuesArg + numRows, valuesRes);
         }
         else {
