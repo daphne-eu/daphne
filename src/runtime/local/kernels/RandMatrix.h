@@ -78,7 +78,7 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         }
 
         std::mt19937 genVal(seed);
-        std::mt19937 genSparse(seed * 3);
+        std::mt19937 genIndex(seed * 3);
         
         static_assert(
                 std::is_floating_point<VT>::value || std::is_integral<VT>::value,
@@ -89,17 +89,34 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
                 std::uniform_real_distribution<VT>,
                 std::uniform_int_distribution<VT>
         >::type distrVal(min, max);
-        std::uniform_real_distribution<double> distrSparse(0.0, 1.0);
+        std::uniform_int_distribution<int> distrIndex(0, numCols * numRows - 1);
 
         VT * valuesRes = res->getValues();
+
+        size_t zeroValues = size_t(round((1 - sparsity) * numCols * numRows));        
+        
+        // Fill Matrix with non Zero values;
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++) {
-                if (distrSparse(genSparse) > sparsity)
-                    valuesRes[c] = VT(0);
-                else
+                valuesRes[c] = distrVal(genVal);
+                while (valuesRes[c] == 0)
                     valuesRes[c] = distrVal(genVal);
             }
             valuesRes += res->getRowSkip();
+        }
+        // Use Knuth's algorithm to calculate unique random indexes equal to zeroValues, to be set to 0
+        valuesRes = res->getValues();
+        size_t iRange, iSize;
+        iSize = 0;
+        for (iRange = 0; iRange < (numCols *  numRows) && iSize < zeroValues; iRange++) {            
+            size_t rRange = (numCols *  numRows) - iRange;
+            size_t rSize = zeroValues - iSize;
+            if (fmod(distrIndex(genIndex), rRange) < rSize) {
+                size_t row = iRange / numCols;
+                size_t col = iRange % numCols; 
+                valuesRes[row * res->getRowSkip() + col] = VT(0);
+                iSize++;
+            }
         }
     }
 };
