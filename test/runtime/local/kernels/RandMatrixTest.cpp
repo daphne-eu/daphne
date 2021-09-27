@@ -57,7 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), 
                 }
 
             const double sparsityFound = static_cast<double>(numNonZeros) / (numRows * numCols);
-            CHECK(abs(sparsityFound - sparsity) < 0.001);
+            CHECK(sparsityFound == sparsity);
 
             DataObjectFactory::destroy(m);
         }
