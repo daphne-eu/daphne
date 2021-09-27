@@ -43,7 +43,9 @@ function printHelp {
 
 function cleanBuildDirs {
     echo "-- Cleanup of build directories pwd=$(pwd) ..."
-    dirs=("build" \
+
+    # Delete entire directories.
+    local dirs=("build" \
         "thirdparty/llvm-project/build" \
         "thirdparty/antlr")
     for ((i=0; i<${#dirs[@]}; i++))
@@ -56,7 +58,24 @@ function cleanBuildDirs {
             echo "---- cleanup ${dirs[$i]} - non-existing"
         fi
     done
+
+    # Delete individual files.
+    if [ -f $llvmCommitFilePath ]
+    then
+        echo "---- cleanup $llvmCommitFilePath"
+        rm -f $llvmCommitFilePath
+    else
+        echo "---- cleanup $llvmCommitFilePath - non-existing"
+    fi
 }
+
+#******************************************************************************
+# Set some paths
+#******************************************************************************
+
+initPwd=$(pwd)
+thirdpartyPath=$initPwd/thirdparty
+llvmCommitFilePath=$thirdpartyPath/llvm-last-built-commit.txt
 
 #******************************************************************************
 # Parse arguments
@@ -99,8 +118,6 @@ git submodule update --init --recursive
 # Handle third-party material
 #******************************************************************************
 
-thirdpartyPath=thirdparty
-oldPwd=$(pwd)
 cd $thirdpartyPath
 
 #------------------------------------------------------------------------------
@@ -215,28 +232,40 @@ fi
 #------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
-# TODO Do this only when it is necessary, since cmake takes some time even if
-# there is nothing to do.
+# We rarely need to build MLIR/LLVM, only during the first build of the
+# prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
+# builds (which take several seconds even if there is nothing to do), we store
+# the LLVM commit hash we built into a file, and only rebuild MLIR/LLVM if this
+# file does not exist (first build of the prototype) or does not contain the
+# expected hash (upgrade of the LLVM sub-module).
 
 llvmName=llvm-project
 cd $llvmName
-mkdir --parents build
-cd build
-cmake -G Ninja ../llvm \
-   -DLLVM_ENABLE_PROJECTS=mlir \
-   -DLLVM_BUILD_EXAMPLES=OFF \
-   -DLLVM_TARGETS_TO_BUILD="X86" \
-   -DCMAKE_BUILD_TYPE=Release \
-   -DLLVM_ENABLE_ASSERTIONS=ON \
-   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
-   -DLLVM_ENABLE_RTTI=ON
-cmake --build . --target check-mlir
+llvmCommit=$(git log -1 --format=%H)
+if [ ! -f $llvmCommitFilePath ] || [ $(cat $llvmCommitFilePath) != $llvmCommit ]
+then
+    echo "Need to build MLIR/LLVM."
+    mkdir --parents build
+    cd build
+    cmake -G Ninja ../llvm \
+       -DLLVM_ENABLE_PROJECTS=mlir \
+       -DLLVM_BUILD_EXAMPLES=OFF \
+       -DLLVM_TARGETS_TO_BUILD="X86" \
+       -DCMAKE_BUILD_TYPE=Release \
+       -DLLVM_ENABLE_ASSERTIONS=ON \
+       -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
+       -DLLVM_ENABLE_RTTI=ON
+    cmake --build . --target check-mlir
+    echo $llvmCommit > $llvmCommitFilePath
+else
+    echo "No need to build MLIR/LLVM again."
+fi
 
 #------------------------------------------------------------------------------
 # Go back
 #------------------------------------------------------------------------------
 
-cd $oldPwd
+cd $initPwd
 
 
 # *****************************************************************************
@@ -248,9 +277,9 @@ cd build
 cmake -G Ninja .. \
     -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
     -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
-    -DANTLR4_RUNTIME_DIR=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
-    -DANTLR4_JAR_LOCATION=$(pwd)/../$thirdpartyPath/$antlrDirName/$antlrJarName \
-    -DOPENBLAS_INST_DIR=$(pwd)/../$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
+    -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
+    -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName \
+    -DOPENBLAS_INST_DIR=$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
     -DCMAKE_PREFIX_PATH="$grpcInstDir"
 cmake --build . --target $target
 
