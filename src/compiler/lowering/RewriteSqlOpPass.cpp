@@ -39,7 +39,6 @@ namespace
     struct SqlReplacement : public RewritePattern{
 
         SqlReplacement(MLIRContext * context, PatternBenefit benefit = 1)
-        // : RewritePattern(daphne::SqlOp::getOperationName(), benefit, context)
         : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
         {}
 
@@ -51,8 +50,6 @@ namespace
             std::stringstream callee;
             callee << op->getName().stripDialect().str();
 
-            std::cout << "RewriteSqlOpPass matched:\t" << callee.str() << std::endl;
-
             if(callee.str() == "register"){
                 mlir::daphne::RegisterOp rOp = static_cast<mlir::daphne::RegisterOp>(op);
 
@@ -62,15 +59,10 @@ namespace
 
                 tables[view_stream.str()] = arg;
                 rewriter.eraseOp(op);
-                std::cout << "Erased Op" << std::endl;
                 return success();
             }else if(callee.str() == "sql"){
                 mlir::daphne::SqlOp sqlop = static_cast<mlir::daphne::SqlOp>(op);
                 std::cout << sqlop.sql().str() << std::endl;
-
-                // auto moduleOp = ModuleOp::create(rewriter.getUnknownLoc());
-                // auto *body = moduleOp.getBody();
-                // rewriter.setInsertionPoint(body, body->begin());
 
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
@@ -78,10 +70,8 @@ namespace
                 DaphneSQLParser parser;
                 parser.setView(tables);
                 mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query);
-                // moduleOp->dump();
 
                 rewriter.replaceOp(op, result_op);
-                std::cout << "Rewriten Op" << std::endl;
                 return success();
             }
             return failure();
@@ -97,7 +87,6 @@ namespace
 
 void RewriteSqlOpPass::runOnOperation()
 {
-//    std::cout << "Start RewriteSqlOpPass" << std::endl;
     auto module = getOperation();
 
     OwningRewritePatternList patterns(&getContext());
@@ -110,8 +99,6 @@ void RewriteSqlOpPass::runOnOperation()
 
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
-//    std::cout << "End RewriteSqlOpPass" << std::endl;
-
 }
 
 std::unique_ptr<Pass> daphne::createRewriteSqlOpPass()

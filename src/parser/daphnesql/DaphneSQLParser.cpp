@@ -19,8 +19,6 @@
 #include <parser/daphnesql/DaphneSQLVisitor.h>
 
 #include "antlr4-runtime.h"
-// #include "build/antlr4_generated_src/DaphneSQLGrammar/DaphneSQLGrammarLexer.h"
-// #include "build/antlr4_generated_src/DaphneSQLGrammar/DaphneSQLGrammarParser.h"
 #include "DaphneSQLGrammarLexer.h"
 #include "DaphneSQLGrammarParser.h"
 
@@ -30,22 +28,13 @@
 
 #include <istream>
 
-
-
 void DaphneSQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
     view = arg;
 }
 
 mlir::Value DaphneSQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream){
-    //}, std::unordered_map<std::string, mlir::Value>& tables) {
     mlir::Location loc = builder.getUnknownLoc();
-    // Create a single "main"-function and insert DaphneIR operations into it.
-    // auto * funcBlock = new mlir::Block();
     {
-        // mlir::OpBuilder::InsertionGuard guard(builder);
-        // builder.setInsertionPoint(funcBlock, funcBlock->begin());
-
-        // Run ANTLR-based DaphneSQL parser.
         antlr4::ANTLRInputStream input(stream);
         input.name = "whateverFile"; // TODO
         DaphneSQLGrammarLexer lexer(&input);
@@ -54,21 +43,11 @@ mlir::Value DaphneSQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::is
         DaphneSQLGrammarParser::SqlContext * ctx = parser.sql();
         DaphneSQLVisitor visitor(builder, view);
         antlrcpp::Any a = visitor.visitSql(ctx);
-        std::cout << "all good up until now\n";
         if(a.is<mlir::Value>()){
-          std::cout << "IT IS AN MLIR VALUE!\n";
           return a.as<mlir::Value>();
         }
         throw std::runtime_error("expected a mlir::Value");
     }
-    // auto * terminator = funcBlock->getTerminator();
-    // auto funcType = mlir::FunctionType::get(
-    //         builder.getContext(),
-    //         funcBlock->getArgumentTypes(),
-    //         terminator->getOperandTypes()
-    // );
-    // auto func = builder.create<mlir::FuncOp>(loc, "sql", funcType);
-    // func.push_back(funcBlock);
 }
 
 void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){

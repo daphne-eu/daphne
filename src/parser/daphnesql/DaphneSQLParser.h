@@ -30,15 +30,9 @@
 
 struct DaphneSQLParser : public Parser {
 
-    // DaphneSQLParser () : Parser(){};
-
     std::unordered_map <std::string, mlir::Value> view;
     void setView(std::unordered_map <std::string, mlir::Value> view);
-    //
-    // DaphneSQLParser(std::unordered_map <std::string, mlir:Value> tables):Parser(){
-    //
-    // }
-    // void parseStream(mlir::OpBuilder & builder, std::istream & stream, std::unordered_map<std::string, mlir::Value> &tables) override;
+
     void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
 
     mlir::Value parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream);

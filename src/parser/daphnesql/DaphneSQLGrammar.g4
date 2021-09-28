@@ -30,13 +30,11 @@ sql:
     query  EOF;
 
 query:
-    //subquery?
     select ';';
 
 select:
     SQL_SELECT selectExpr (',' selectExpr)*
     SQL_FROM fromExpr
-//    whereClause?
     ;
 
 subquery:
@@ -44,64 +42,26 @@ subquery:
 
 subqueryExpr:
     var=IDENTIFIER SQL_AS '(' select ')';
-/*
-joinCondition:
-    SQL_ON cond=expr
-    | SQL_USING '(' ident ')'
-    ;
 
-whereClause:
-    SQL_WHERE cond=expr;
-
-expr:
-    literal # literalExpr
-    | var=ident # identifierExpr
-    | '(' expr ')' # paranthesesExpr
-    | lhs=expr op=('*'|'/') rhs=expr # mulExpr
-    | lhs=expr op=('+'|'-') rhs=expr # addExpr
-    | lhs=expr op=('='|'=='|'!='|'<>'|'<='|'>='|'<'|'>') rhs=expr # cmpExpr
-    | lhs=expr op=('&&'|'||') rhs=expr # logicalExpr
-    ;
-
-/*
-*   Needs to be extended. For instance selecting everything from a table
-*   Function calls like AVG()..
-*/
 selectExpr:
-    var=selectIdent// (SQL_AS rename=IDENTIFIER)?
-    ;
+    var=selectIdent;
 
-//rename
 fromExpr:
     var=tableReference #tableIdentifierExpr
     | lhs=fromExpr ',' rhs=tableReference #cartesianExpr
-//addressig cartesian variadic operation    | fromExpr (',' fromExpr) #cartesianExpr
-//    | lhs=fromExpr SQL_INNER? SQL_JOIN rhs=tableReference cond=joinCondition #innerJoin
-//    | lhs=fromExpr SQL_CROSS rhs=tableReference #crossjoin
-//doesn't work jet because no nameing of columns
-//    | lhs=fromExpr SQL_NATURAL SQL_INNER? SQL_JOIN rhs=tableReference #naturalJoin
-//    | lhs=fromExpr SQL_FULL SQL_OUTER? SQL_JOIN rhs=tableReference cond=joinCondition #fullJoin
-//    | lhs=fromExpr SQL_LEFT SQL_OUTER? SQL_JOIN rhs=tableReference cond=joinCondition #leftJoin
-//    | lhs=fromExpr SQL_RIGHT SQL_OUTER? SQL_JOIN rhs=tableReference cond=joinCondition #rightJoin
     ;
-
 
 tableReference:
     var=IDENTIFIER (SQL_AS? aka=IDENTIFIER)?;
 
-//add string identifier as soon as
 selectIdent:
-    //*
      (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
-    //|  //*/
-    //frame=IDENTIFIER ('[' colnumber=INT_POSITIVE_LITERAL ']'|DOT colnumber=INT_POSITIVE_LITERAL) #intIdent
     ;
 
 literal:
     INT_LITERAL
     | FLOAT_LITERAL
     ;
-
 
 // ****************************************************************************
 // Lexer rules
@@ -167,7 +127,7 @@ fragment LETTER: [a-zA-Z];
 fragment DIGIT: [0-9];
 fragment NON_ZERO_DIGIT: [1-9];
 
-DOT : '.'; // generated as a part of Number rule
+DOT : '.';
 COLON : ':' ;
 COMMA : ',' ;
 SEMICOLON : ';' ;
