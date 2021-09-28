@@ -235,7 +235,7 @@ std::string getConstantString2(mlir::Value v) {
 
 FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
     std::string filenameStr;
-    
+
     if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
         filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
     else
@@ -451,7 +451,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
     // Strings
     // --------------------------------------------------------------------
-    
+
     if(func == "concat") {
         checkNumArgsExact(func, numArgs, 2);
         return static_cast<mlir::Value>(builder.create<ConcatOp>(
@@ -506,7 +506,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     // TODO Add built-in functions for those.
-    
+
     // ********************************************************************
     // Left and right indexing
     // ********************************************************************
@@ -530,7 +530,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, dst, src, rowLowerIncl, rowUpperExcl
         );
     }
-    
+
     // ********************************************************************
     // Reorganization
     // ********************************************************************
@@ -707,13 +707,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     if(func == "cartesian") {
-        checkNumArgsMin(func, numArgs, 2);
+        checkNumArgsExact(func, numArgs, 2);
         std::vector<mlir::Type> colTypes;
         for(auto arg : args)
             for(mlir::Type t : arg.getType().dyn_cast<FrameType>().getColumnTypes())
                 colTypes.push_back(t);
         return static_cast<mlir::Value>(builder.create<CartesianOp>(
-                loc, FrameType::get(builder.getContext(), colTypes), args
+                loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]
         ));
     }
     if(func == "innerJoin")
@@ -810,9 +810,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
         mlir::Value filename = args[0];
         FileMetaData fmd = getFileMetaData(func, filename);
-        
+
         mlir::Type resType;
-        
+
         if(func == "readFrame") {
             std::vector<mlir::Type> cts;
             if(fmd.isSingleValueType)
@@ -837,7 +837,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             // (fmd.isSingleValueType == false), then this silently uses the
             // type of the first column.
             resType = utils.matrixOf(utils.mlirTypeForCode(fmd.schema[0]));
-            
+
         return static_cast<mlir::Value>(builder.create<ReadOp>(
                 loc, resType, filename
         ));
@@ -847,7 +847,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------
-    
+
     if(func == "openFile") {
         checkNumArgsExact(func, numArgs, 1);
         mlir::Value filename = args[0];
@@ -883,7 +883,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value numRows = utils.castSizeIf(args[1]);
         mlir::Value numCols = utils.castSizeIf(args[2]);
         mlir::Value delim = args[3];
-        
+
         // TODO Currently, this always assumes double as the value type. We
         // need to connect this to our FileMetaData mechanism, but for that, we
         // require the file name, which is not known here in the current design.
@@ -892,7 +892,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 fileOrDescriptor, numRows, numCols, delim
         ));
     }
-    
+
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************
@@ -905,22 +905,22 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg.getType(), arg, info
         ));
     }
-    
+
     // ********************************************************************
     // Measurements
     // ********************************************************************
-    
+
     if(func == "now") {
         checkNumArgsExact(func, numArgs, 0);
         return static_cast<mlir::Value>(builder.create<NowOp>(
                 loc, builder.getIntegerType(64, true)
         ));
     }
-    
+
     // ********************************************************************
     // Low-level auxiliary operations
     // ********************************************************************
-    
+
     if(func == "free") {
         checkNumArgsExact(func, numArgs, 1);
         return builder.create<FreeOp>(
