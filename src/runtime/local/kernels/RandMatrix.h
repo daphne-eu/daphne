@@ -93,28 +93,46 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
 
         VT * valuesRes = res->getValues();
 
-        size_t zeroValues = size_t(round((1 - sparsity) * numCols * numRows));        
+        // If sparsity >= 0.5, we initiliaze with random values and insert zeros,
+        // else if sparsity < 0.5, it is more efficient to initialize with zero values and insert random.
+        size_t insertedValuesLimit;
+        if (sparsity >= 0.5) {
+            insertedValuesLimit = size_t(round((1 - sparsity) * numCols * numRows));                    
+        } else {
+            insertedValuesLimit = size_t(round(sparsity * numCols * numRows));
+        }
         
-        // Fill Matrix with non Zero values;
+        // Fill Matrix with non-zero/random values
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++) {
-                valuesRes[c] = distrVal(genVal);
-                while (valuesRes[c] == 0)
+                if (sparsity >= 0.5) {
                     valuesRes[c] = distrVal(genVal);
+                    while (valuesRes[c] == 0)
+                        valuesRes[c] = distrVal(genVal);
+                } else {
+                    valuesRes[c] = VT(0);
+                }
             }
             valuesRes += res->getRowSkip();
         }
-        // Use Knuth's algorithm to calculate unique random indexes equal to zeroValues, to be set to 0
+
+        // Use Knuth's algorithm to calculate unique random indexes equal to insertedValuesLimit, to be set to zero/random value.
         valuesRes = res->getValues();
         size_t iRange, iSize;
         iSize = 0;
-        for (iRange = 0; iRange < (numCols *  numRows) && iSize < zeroValues; iRange++) {            
+        for (iRange = 0; iRange < (numCols *  numRows) && iSize < insertedValuesLimit; iRange++) {            
             size_t rRange = (numCols *  numRows) - iRange;
-            size_t rSize = zeroValues - iSize;
+            size_t rSize = insertedValuesLimit - iSize;
             if (fmod(distrIndex(genIndex), rRange) < rSize) {
                 size_t row = iRange / numCols;
                 size_t col = iRange % numCols; 
-                valuesRes[row * res->getRowSkip() + col] = VT(0);
+                if (sparsity >= 0.5) {
+                    valuesRes[row * res->getRowSkip() + col] = VT(0);
+                } else {
+                    valuesRes[row * res->getRowSkip() + col] = distrVal(genVal);
+                    while (valuesRes[row * res->getRowSkip() + col] == 0)
+                        valuesRes[row * res->getRowSkip() + col] = distrVal(genVal);
+                }
                 iSize++;
             }
         }

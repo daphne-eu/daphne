@@ -55,9 +55,9 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), 
                         numNonZeros++;
                     }
                 }
-                
-            const double sparsityFound = static_cast<double>(numNonZeros) / (numRows * numCols);
-            CHECK(sparsityFound == sparsity);
+
+            const size_t numNonZerosExpected = size_t(round(sparsity * numRows * numCols));
+            CHECK(numNonZerosExpected == numNonZeros);
 
             DataObjectFactory::destroy(m);
         }
