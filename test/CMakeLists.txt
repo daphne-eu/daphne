@@ -25,6 +25,7 @@ add_executable(run_tests
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
+        api/cli/sql/SQLTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
 
@@ -35,10 +36,10 @@ add_executable(run_tests
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
-        
+
         runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
-        
+
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
@@ -69,7 +70,7 @@ add_executable(run_tests
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
-        
+
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
 )
 add_dependencies(run_tests daphnec)
