@@ -93,20 +93,20 @@ public:
                 break;
             }
             case TFSS:{//trapezoid factoring self-schedduling (TFSS)
-                chunkSize = (uint64_t) ceil((double) remainingTasks/ ((double) 2*totalWorkers));
+                chunkSize = (uint64_t) ceil((double) remainingTasks/ ((double) 2.0*totalWorkers));
                 break;
             }
             case FISS:{//fixed increase self-scheduling (FISS)
                 //TODO
                 uint64_t X = fissStages + 2;
-                uint64_t initChunk = (uint64_t) ceil(totalTasks/((2+fissStages)*totalWorkers));
-                chunkSize = initChunk + schedulingStep * (uint64_t) ceil((2*totalTasks*(1-(fissStages/X)))/(totalWorkers*fissStages*(fissStages-1))); //chunksize with increment after init 
+                uint64_t initChunk = (uint64_t) ceil(totalTasks/((2.0+fissStages)*totalWorkers));
+                chunkSize = initChunk + schedulingStep * (uint64_t) ceil((2.0*totalTasks*(1.0-(fissStages/X)))/(totalWorkers*fissStages*(fissStages-1))); //chunksize with increment after init 
                 break;
             }
             case VISS:{//variable increase self-scheduling (VISS)
                 //TODO
                 uint64_t schedulingStepnew =  schedulingStep % totalWorkers;
-                uint64_t initChunk = (uint64_t) ceil(totalTasks/((2+fissStages)*totalWorkers));
+                uint64_t initChunk = (uint64_t) ceil(totalTasks/((2.0+fissStages)*totalWorkers));
                 chunkSize =  initChunk * (uint64_t) ceil((double)(1-pow(0.5,schedulingStepnew))/0.5);
                 break;
             }
