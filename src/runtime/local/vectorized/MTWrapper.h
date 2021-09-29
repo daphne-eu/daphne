@@ -77,7 +77,7 @@ public:
         uint64_t batchsize = 1; // row-at-a-time
         uint64_t chunkParam=1;
         //std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
-        LoadPartitioning lp(GSS, rlen, chunkParam,_numThreads); 
+        LoadPartitioning lp(GSS, rlen, chunkParam,_numThreads, true); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
@@ -147,7 +147,8 @@ public:
         uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
         uint64_t chunkParam = 1;
-        LoadPartitioning lp(GSS, len, chunkParam,_numThreads); 
+        //std::cout<<"worker "<<_numThreads<<std::endl;
+        LoadPartitioning lp(GSS, len, chunkParam,_numThreads,true); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
