@@ -28,7 +28,7 @@
 // #include "mlir/IR/Value.h"
 
 
-struct DaphneSQLParser : public Parser {
+struct SQLParser : public Parser {
 
     std::unordered_map <std::string, mlir::Value> view;
     void setView(std::unordered_map <std::string, mlir::Value> view);

@@ -21,8 +21,8 @@
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
-#include "DaphneSQLGrammarParser.h"
-#include "DaphneSQLGrammarVisitor.h"
+#include "SQLGrammarParser.h"
+#include "SQLGrammarVisitor.h"
 
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
@@ -30,7 +30,7 @@
 #include <string>
 #include <unordered_map>
 
-class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
+class SQLVisitor : public SQLGrammarVisitor {
 
     ParserUtils utils;
 
@@ -51,39 +51,39 @@ class DaphneSQLVisitor : public DaphneSQLGrammarVisitor {
     ScopedSymbolTable symbolTable;
 
 public:
-    DaphneSQLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
+    SQLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
     };
 
-    DaphneSQLVisitor(
+    SQLVisitor(
         mlir::OpBuilder & builder,
         std::unordered_map <std::string, mlir::Value> view_arg
     ) : builder(builder), utils(builder) {
         view = view_arg;
     };
 
-    antlrcpp::Any visitScript(DaphneSQLGrammarParser::ScriptContext * ctx) override;
+    antlrcpp::Any visitScript(SQLGrammarParser::ScriptContext * ctx) override;
 
-    antlrcpp::Any visitSql(DaphneSQLGrammarParser::SqlContext * ctx) override;
+    antlrcpp::Any visitSql(SQLGrammarParser::SqlContext * ctx) override;
 
-    antlrcpp::Any visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) override;
+    antlrcpp::Any visitQuery(SQLGrammarParser::QueryContext * ctx) override;
 
-    antlrcpp::Any visitSelect(DaphneSQLGrammarParser::SelectContext * ctx) override;
+    antlrcpp::Any visitSelect(SQLGrammarParser::SelectContext * ctx) override;
 
-    antlrcpp::Any visitSubquery(DaphneSQLGrammarParser::SubqueryContext * ctx) override;
+    antlrcpp::Any visitSubquery(SQLGrammarParser::SubqueryContext * ctx) override;
 
-    antlrcpp::Any visitSubqueryExpr(DaphneSQLGrammarParser::SubqueryExprContext * ctx) override;
+    antlrcpp::Any visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) override;
 
-    antlrcpp::Any visitTableIdentifierExpr(DaphneSQLGrammarParser::TableIdentifierExprContext *ctx) override;
+    antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
 
-    antlrcpp::Any visitCartesianExpr(DaphneSQLGrammarParser::CartesianExprContext * ctx) override;
+    antlrcpp::Any visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx) override;
 
-    antlrcpp::Any visitSelectExpr(DaphneSQLGrammarParser::SelectExprContext * ctx) override;
+    antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) override;
 
-    antlrcpp::Any visitTableReference(DaphneSQLGrammarParser::TableReferenceContext * ctx) override;
+    antlrcpp::Any visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) override;
 
-    antlrcpp::Any visitStringIdent(DaphneSQLGrammarParser::StringIdentContext * ctx) override;
+    antlrcpp::Any visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) override;
 
-    antlrcpp::Any visitLiteral(DaphneSQLGrammarParser::LiteralContext * ctx) override;
+    antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };
 
 #endif //SRC_PARSER_DAPHNESQL_DAPHNESQLVISITOR_H

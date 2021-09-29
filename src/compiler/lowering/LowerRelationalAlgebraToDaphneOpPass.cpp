@@ -1,4 +1,4 @@
-#include <parser/daphnesql/DaphneSQLParser.h>
+#include <parser/sql/SQLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -47,22 +47,6 @@ namespace
 
 void LowerRelationalAlgebraToDaphneOpPass::runOnOperation()
 {
-    // std::cout << "Start RewriteSqlOpPass" << std::endl;
-    // auto module = getOperation();
-    //
-    // OwningRewritePatternList patterns(&getContext());
-    // //
-    // // // convert other operations
-    // ConversionTarget target(getContext());
-    // target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
-    // target.addLegalOp<ModuleOp, FuncOp>();
-    // target.addIllegalOp<mlir::daphne::SqlOp, mlir::daphne::RegisterOp>();
-    // //
-    // patterns.insert<AlgebraReplacement>(&getContext());
-    // //
-    // if (failed(applyPartialConversion(module, target, std::move(patterns))))
-    //     signalPassFailure();
-    // std::cout << "End RewriteSqlOpPass" << std::endl;
 
 }
 

@@ -15,12 +15,12 @@
  */
 
 #include <ir/daphneir/Daphne.h>
-#include <parser/daphnesql/DaphneSQLParser.h>
-#include <parser/daphnesql/DaphneSQLVisitor.h>
+#include <parser/sql/SQLParser.h>
+#include <parser/sql/SQLVisitor.h>
 
 #include "antlr4-runtime.h"
-#include "DaphneSQLGrammarLexer.h"
-#include "DaphneSQLGrammarParser.h"
+#include "SQLGrammarLexer.h"
+#include "SQLGrammarParser.h"
 
 #include <mlir/IR/Block.h>
 #include <mlir/IR/Builders.h>
@@ -28,20 +28,20 @@
 
 #include <istream>
 
-void DaphneSQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
+void SQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
     view = arg;
 }
 
-mlir::Value DaphneSQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream){
+mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream){
     mlir::Location loc = builder.getUnknownLoc();
     {
         antlr4::ANTLRInputStream input(stream);
         input.name = "whateverFile"; // TODO
-        DaphneSQLGrammarLexer lexer(&input);
+        SQLGrammarLexer lexer(&input);
         antlr4::CommonTokenStream tokens(&lexer);
-        DaphneSQLGrammarParser parser(&tokens);
-        DaphneSQLGrammarParser::SqlContext * ctx = parser.sql();
-        DaphneSQLVisitor visitor(builder, view);
+        SQLGrammarParser parser(&tokens);
+        SQLGrammarParser::SqlContext * ctx = parser.sql();
+        SQLVisitor visitor(builder, view);
         antlrcpp::Any a = visitor.visitSql(ctx);
         if(a.is<mlir::Value>()){
           return a.as<mlir::Value>();
@@ -50,6 +50,6 @@ mlir::Value DaphneSQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::is
     }
 }
 
-void DaphneSQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){
+void SQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){
     parseStreamFrame(builder, stream);
 }

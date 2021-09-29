@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <parser/daphnesql/DaphneSQLParser.h>
+#include <parser/sql/SQLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -67,7 +67,7 @@ namespace
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
 
-                DaphneSQLParser parser;
+                SQLParser parser;
                 parser.setView(tables);
                 mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query);
 

@@ -30,5 +30,5 @@ add_mlir_dialect_library(MLIRDaphneTransforms
 )
 target_link_libraries(MLIRDaphneTransforms PUBLIC
     MLIRStandardToLLVM
-    DaphneSQLParser
+    SQLParser
 )

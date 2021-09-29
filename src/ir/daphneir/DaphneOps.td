@@ -678,7 +678,7 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // ----------------------------------------------------------------------------
 
 def Daphne_CartesianOp : Daphne_Op<"cartesian"> {
-    let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args); // since i don't know how to use variadic it got replaced..
+    let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args);
     let results = (outs Frame:$res);
 }
 

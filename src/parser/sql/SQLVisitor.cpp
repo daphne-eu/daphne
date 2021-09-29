@@ -26,7 +26,7 @@
 
 
 #include <ir/daphneir/Daphne.h>
-#include <parser/daphnesql/DaphneSQLVisitor.h>
+#include <parser/sql/SQLVisitor.h>
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
@@ -54,7 +54,7 @@ mlir::Value valueOrError(antlrcpp::Any a) {
     throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
 }
 
-void DaphneSQLVisitor::registerAlias(mlir::Value arg, std::string name){
+void SQLVisitor::registerAlias(mlir::Value arg, std::string name){
     alias[name] = arg;
 }
 
@@ -66,7 +66,7 @@ mlir::Value fetch(std::unordered_map <std::string, mlir::Value> x, std::string n
     return NULL;
 }
 
-mlir::Value DaphneSQLVisitor::fetchAlias(std::string name){
+mlir::Value SQLVisitor::fetchAlias(std::string name){
     mlir::Value res = fetch(alias, name);
     if(res != NULL){
         return res;
@@ -76,7 +76,7 @@ mlir::Value DaphneSQLVisitor::fetchAlias(std::string name){
     throw std::runtime_error(x.str());
 }
 
-mlir::Value DaphneSQLVisitor::fetchMLIR(std::string name){
+mlir::Value SQLVisitor::fetchMLIR(std::string name){
     mlir::Value res;
     res = fetch(alias, name);
     if(res != NULL){
@@ -91,7 +91,7 @@ mlir::Value DaphneSQLVisitor::fetchMLIR(std::string name){
     throw std::runtime_error(x.str());
 }
 
-bool DaphneSQLVisitor::hasMLIR(std::string name){
+bool SQLVisitor::hasMLIR(std::string name){
     auto searchview = view.find(name);
     auto searchalias = alias.find(name);
     return (searchview != view.end() || searchalias != alias.end());
@@ -101,22 +101,22 @@ bool DaphneSQLVisitor::hasMLIR(std::string name){
 // Visitor functions
 // ****************************************************************************
 
-antlrcpp::Any DaphneSQLVisitor::visitScript(DaphneSQLGrammarParser::ScriptContext * ctx) {
+antlrcpp::Any SQLVisitor::visitScript(SQLGrammarParser::ScriptContext * ctx) {
     mlir::Value res = valueOrError(visitChildren(ctx));
     return res;
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitSql(DaphneSQLGrammarParser::SqlContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSql(SQLGrammarParser::SqlContext * ctx) {
     mlir::Value res = valueOrError(visit(ctx->query()));
     return res;
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitQuery(DaphneSQLGrammarParser::QueryContext * ctx) {
+antlrcpp::Any SQLVisitor::visitQuery(SQLGrammarParser::QueryContext * ctx) {
     mlir::Value res = valueOrError(visit(ctx->select()));
     return res;
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContext * ctx){
+antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value res;
 
@@ -169,16 +169,16 @@ antlrcpp::Any DaphneSQLVisitor::visitSelect(DaphneSQLGrammarParser::SelectContex
     return res;
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitSubquery(DaphneSQLGrammarParser::SubqueryContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSubquery(SQLGrammarParser::SubqueryContext * ctx) {
     return visitChildren(ctx);
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitSubqueryExpr(DaphneSQLGrammarParser::SubqueryExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) {
     symbolTable.put(ctx->var->getText(), valueOrError(visit(ctx->select())));
     return nullptr;
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitTableIdentifierExpr(DaphneSQLGrammarParser::TableIdentifierExprContext *ctx){
+antlrcpp::Any SQLVisitor::visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx){
     try{
         mlir::Value var = valueOrError(visit(ctx->var));
         return var;
@@ -189,7 +189,7 @@ antlrcpp::Any DaphneSQLVisitor::visitTableIdentifierExpr(DaphneSQLGrammarParser:
     }
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitCartesianExpr(DaphneSQLGrammarParser::CartesianExprContext * ctx)
+antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx)
 {
     try{
         mlir::Location loc = builder.getUnknownLoc();
@@ -224,7 +224,7 @@ antlrcpp::Any DaphneSQLVisitor::visitCartesianExpr(DaphneSQLGrammarParser::Carte
 //* needs to check if var name already in use in this scope
 //* needs to correctly implement SetColLabelsPrefixOp and how to access these labels
 //*******
-antlrcpp::Any DaphneSQLVisitor::visitTableReference(DaphneSQLGrammarParser::TableReferenceContext * ctx) {
+antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) {
 
     mlir::Location loc = builder.getUnknownLoc();
     std::string var = ctx->var->getText();
@@ -249,7 +249,7 @@ antlrcpp::Any DaphneSQLVisitor::visitTableReference(DaphneSQLGrammarParser::Tabl
 //* Callee: visitSelect
 //* TODO: Return Rename Operation SSA based on this Operation
 //****/
-antlrcpp::Any DaphneSQLVisitor::visitSelectExpr(DaphneSQLGrammarParser::SelectExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) {
     return visitChildren(ctx);
 }
 
@@ -258,7 +258,7 @@ antlrcpp::Any DaphneSQLVisitor::visitSelectExpr(DaphneSQLGrammarParser::SelectEx
 //*     A SSA to ExtractColumn Operation.
 //* Callee: visitSelectExpr
 //****
-antlrcpp::Any DaphneSQLVisitor::visitStringIdent(DaphneSQLGrammarParser::StringIdentContext * ctx) {
+antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 
     std::string getSTR;
@@ -307,7 +307,7 @@ antlrcpp::Any DaphneSQLVisitor::visitStringIdent(DaphneSQLGrammarParser::StringI
     }
 }
 
-antlrcpp::Any DaphneSQLVisitor::visitLiteral(DaphneSQLGrammarParser::LiteralContext * ctx) {
+antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
     if(auto lit = ctx->INT_LITERAL()) {
         int64_t val = atol(lit->getText().c_str());

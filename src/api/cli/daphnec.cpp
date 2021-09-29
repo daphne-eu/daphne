@@ -15,7 +15,7 @@
  */
 
 #include <api/cli/StatusCode.h>
-#include <parser/daphnesql/DaphneSQLParser.h>
+#include <parser/sql/SQLParser.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 
@@ -107,7 +107,7 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
+
     // Further process the module, including optimization and lowering passes.
     if (!executor.runPasses(moduleOp)) {
         return StatusCode::PASS_ERROR;

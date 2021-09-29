@@ -13,22 +13,22 @@
 # limitations under the License.
 
 antlr4_generate(
-        DaphneSQLGrammar
-        ${CMAKE_CURRENT_SOURCE_DIR}/DaphneSQLGrammar.g4
+        SQLGrammar
+        ${CMAKE_CURRENT_SOURCE_DIR}/SQLGrammar.g4
         BOTH  # the specified g4 file contains both lexer and parser rules
         FALSE # don't generate listener interfaces
         TRUE  # generate visitor interfaces
 )
 
-include_directories(${ANTLR4_INCLUDE_DIR_DaphneSQLGrammar})
-message(STATUS "ANTLR4_SQL_DIR is ${ANTLR4_INCLUDE_DIR_DaphneSQLGrammar}")
+include_directories(${ANTLR4_INCLUDE_DIR_SQLGrammar})
+message(STATUS "ANTLR4_SQL_DIR is ${ANTLR4_INCLUDE_DIR_SQLGrammar}")
 
-add_library(DaphneSQLParser STATIC
-        DaphneSQLParser.cpp
-        DaphneSQLVisitor.cpp
-        ${ANTLR4_SRC_FILES_DaphneSQLGrammar}
+add_library(SQLParser STATIC
+        SQLParser.cpp
+        SQLVisitor.cpp
+        ${ANTLR4_SRC_FILES_SQLGrammar}
 )
 
-target_link_libraries(DaphneSQLParser PRIVATE
+target_link_libraries(SQLParser PRIVATE
         antlr4_static
 )

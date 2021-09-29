@@ -15,7 +15,7 @@
  */
 
 #include <parser/daphnedsl/DaphneDSLParser.h>
-#include <parser/daphnesql/DaphneSQLParser.h>
+#include <parser/sql/SQLParser.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include "DaphneIrExecutor.h"
