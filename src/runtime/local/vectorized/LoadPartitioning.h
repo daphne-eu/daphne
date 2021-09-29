@@ -16,6 +16,10 @@
 #include <cmath>
 #ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
 #define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
+#include <cstdlib>
+#include <string>
+#include <iostream>
+
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
                             PLS, MSTATIC, MFSC, PSS};
 class LoadPartitioning {
@@ -32,33 +36,34 @@ private:
     uint64_t tssDelta;
     uint64_t mfscChunk;
     uint32_t fissStages;
+    int getMethod (const char * method){
+        return std::stoi(method);
+    }
 public:
-    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers){ 
+    LoadPartitioning(int method, uint64_t tasks, int64_t chunk, uint32_t workers, bool autochunk){
+        
+        if(const char* env_m = std::getenv("DAPHNE_TASK_PARTITION")){
+            method= getMethod(env_m);
+        } 
         schedulingMethod = method;
+        //std::cout<<"Method "<<schedulingMethod<<std::endl;
         totalTasks = tasks;
         double tSize = (totalTasks+workers-1.0)/totalTasks;
         mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
         fissStages = ceil(0.25*2);
-        if(chunk>0){    
+        if(!autochunk){    
             chunkParam = chunk;
         }
         else{
-            chunkParam = mfscChunk;
-            //TODO this negative or zero value we can use to indicate automatic chunk parameter
-        }
-        if(workers<=0){
-            throw std::runtime_error("workers must be greater than zero");   
+            chunkParam = mfscChunk; //indicate automatic chunk parameter
         }
         totalWorkers = workers;
-        if(tasks<0){
-            throw std::runtime_error("number of tasks must be greater than or equal zero");
-        }
         remainingTasks = tasks;
         schedulingStep = 0;
         scheduledTasks = 0;
-        tssChunk = (uint64_t) ceil((double) totalTasks / ((double) 2*totalWorkers));
-        uint64_t nTemp = (uint64_t) ceil(2*totalTasks/(tssChunk+1));
-        tssDelta  = (uint64_t) (tssChunk - 1)/(double)(nTemp-1);
+        tssChunk = (uint64_t) ceil((double) totalTasks / ((double) 2.0*totalWorkers));
+        uint64_t nTemp = (uint64_t) ceil(2.0*totalTasks/(tssChunk+1.0));
+        tssDelta  = (uint64_t) (tssChunk - 1.0)/(double)(nTemp-1.0);
     }
     bool hasNextChunk(){
         return scheduledTasks < totalTasks; 
