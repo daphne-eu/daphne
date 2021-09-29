@@ -153,6 +153,7 @@ public:
         uint64_t batchsize = 100; // 100-rows-at-a-time
         uint64_t chunkParam = 1;
         LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false); 
+        //std::cout<<"worker "<<_numThreads<<std::endl;
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
