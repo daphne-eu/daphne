@@ -146,8 +146,8 @@ namespace
         Value dctx;
 
         /**
-		 * @brief User configuration influencing the rewrite pass
-		 */
+         * @brief User configuration influencing the rewrite pass
+         */
         const DaphneUserConfig& cfg;
     public:
         /**
@@ -158,7 +158,7 @@ namespace
          * @param benefit
          */
         KernelReplacement(MLIRContext * mctx, Value dctx, const DaphneUserConfig& cfg,
-				PatternBenefit benefit = 1)
+                PatternBenefit benefit = 1)
         : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, mctx), dctx(dctx), cfg(cfg)
         {
         }
@@ -175,20 +175,20 @@ namespace
             std::stringstream callee;
             std::string_view op_name{op->getName().stripDialect().data()};
 #ifdef USE_CUDA
-			//ToDo: this will go away with a gpu ops rewrite pass
-			std::array<std::string_view, 9> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
-					"biasAddForward", "conv2DForward", "matMul", "maxPoolForward", "reluForward", "softmaxForward"});
-//			std::cout << op_name << std::endl;
-			if(cfg.use_cuda) {
-				if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
-					callee << '_' << op_name << "_CUDA";
-				}
-				else
-					callee << '_' << op_name;
-			}
-			else
+            //ToDo: this will go away with a gpu ops rewrite pass
+            std::array<std::string_view, 9> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
+                    "biasAddForward", "conv2DForward", "matMul", "maxPoolForward", "reluForward", "softmaxForward"});
+//            std::cout << op_name << std::endl;
+            if(cfg.use_cuda) {
+                if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
+                    callee << '_' << op_name << "_CUDA";
+                }
+                else
+                    callee << '_' << op_name;
+            }
+            else
 #endif
-            	callee << '_' << op_name;
+                callee << '_' << op_name;
 //            std::cout << "callee: " << callee.str() << std::endl;
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
@@ -313,8 +313,8 @@ namespace
     struct RewriteToCallKernelOpPass
     : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
     {
-    	const DaphneUserConfig& cfg;
-    	explicit RewriteToCallKernelOpPass(const DaphneUserConfig& cfg) : cfg(cfg) { }
+        const DaphneUserConfig& cfg;
+        explicit RewriteToCallKernelOpPass(const DaphneUserConfig& cfg) : cfg(cfg) { }
         void runOnFunction() final;
     };
 }

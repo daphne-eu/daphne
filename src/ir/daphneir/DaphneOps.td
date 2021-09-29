@@ -526,9 +526,9 @@ def Daphne_SvdOp : Daphne_Op<"svd"> {
 
 class Daphne_ActivationForwardOp<string name, list<OpTrait> traits = []> :
         Daphne_Op<name, traits> {
-	let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
 
-	let results = (outs MatrixOf<[FloatScalar]>:$data);
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
 def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"reluForward">;
@@ -538,10 +538,10 @@ def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"reluForward">;
 // ----------------------------------------------------------------------------
 
 def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
-	let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
-			MatrixOf<[FloatScalar]>:$bias);
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
+            MatrixOf<[FloatScalar]>:$bias);
 
-	let results = (outs MatrixOf<[FloatScalar]>:$data);
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
 // ----------------------------------------------------------------------------
@@ -549,10 +549,10 @@ def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
 // ----------------------------------------------------------------------------
 
 def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
-	let arguments = (ins
-			MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
-			MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
-	let results = (outs MatrixOf<[FloatScalar]>:$output);
+    let arguments = (ins
+            MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
+            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
+    let results = (outs MatrixOf<[FloatScalar]>:$output);
 }
 
 // ----------------------------------------------------------------------------
@@ -560,9 +560,9 @@ def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
 // ----------------------------------------------------------------------------
 
 def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward"> {
-	let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$bias);
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$bias);
 
-	let results = (outs MatrixOf<[FloatScalar]>:$data);
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
 // ----------------------------------------------------------------------------
@@ -571,7 +571,7 @@ def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward"> {
 
 def Daphne_Conv2DForwardOp : Daphne_Op<"conv2DForward"> {
     let arguments = (ins
-		MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
+        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
         // input shape
         Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
         // filter shape (num filters & channels is encoded in dimensions of filter matrix (-> [F,C*H*W]))
@@ -614,9 +614,9 @@ class Daphne_PoolForwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<n
         Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
         // pool shape (ToDo: optional, default filter size 2x2)
         Size:$poolHeight, Size:$poolWidth,
-		// filter application properties (ToDo: optional, default stride=1x1, padding=0x0)
-		Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth
-	);
+        // filter application properties (ToDo: optional, default stride=1x1, padding=0x0)
+        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth
+    );
 
     let results = (outs MatrixOf<[FloatScalar]>:$data, Size:$outHeight, Size:$outWidth);
 }
@@ -628,9 +628,9 @@ def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward">;
 // Softmax
 // ----------------------------------------------------------------------------
 def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward"> {
-	let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
 
-	let results = (outs MatrixOf<[FloatScalar]>:$data);
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
 // ****************************************************************************
@@ -997,8 +997,8 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 
 
 def Daphne_InitCUDAContextOp : Daphne_Op<"initCUDAContext"> {
-	let arguments = (ins);
-	let results = (outs);
+    let arguments = (ins);
+    let results = (outs);
 }
 
 // ****************************************************************************

@@ -21,12 +21,12 @@
 #include <cassert>
 
 #ifdef USE_CUDA
-	#include <api/cli/DaphneUserConfig.h>
-	#include <runtime/local/kernels/CUDA_Convolution.h>
-	#include <runtime/local/kernels/CUDA_InitContext.h>
+    #include <api/cli/DaphneUserConfig.h>
+    #include <runtime/local/kernels/CUDA_Convolution.h>
+    #include <runtime/local/kernels/CUDA_InitContext.h>
 #else
 // ToDo: cpu version
-//	#include <runtime/local/kernels/Convolution.h>
+//    #include <runtime/local/kernels/Convolution.h>
 #endif
 
 #include <tags.h>
@@ -39,7 +39,7 @@ void check(const DT* in, const DT* filter, const DT* exp, DaphneContext* dctx) {
     size_t out_w;
 #ifdef USE_CUDA
     Convolution::Forward_CUDA<DT, DT>::apply(res, out_h, out_w, in, filter, nullptr, in->getNumRows(), 1, 3, 3, 2, 2,
-			1, 1, 0, 0, dctx);
+            1, 1, 0, 0, dctx);
 #else
     //"ToDo: cpu version
     return;

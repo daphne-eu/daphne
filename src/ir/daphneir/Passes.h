@@ -26,14 +26,14 @@
 #include <string>
 
 namespace mlir::daphne {
-	std::unique_ptr<Pass> createCUDAOpsPass();
-	std::unique_ptr<Pass> createDistributeComputationsPass();
-	std::unique_ptr<Pass> createInferencePass();
-	std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
-	std::unique_ptr<Pass> createLowerToLLVMPass();
-	std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
-	std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
-	std::unique_ptr<Pass> createVectorizeComputationsPass();
+    std::unique_ptr<Pass> createCUDAOpsPass();
+    std::unique_ptr<Pass> createDistributeComputationsPass();
+    std::unique_ptr<Pass> createInferencePass();
+    std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createLowerToLLVMPass();
+    std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
+    std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createVectorizeComputationsPass();
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"

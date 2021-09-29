@@ -37,25 +37,25 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/)
     set(CUDAKernels_SRC
-			${PREFIX}/context/CUDAContext.cpp
-			${PREFIX}/kernels/CUDA_Activation.cpp
-			${PREFIX}/kernels/CUDA_Affine.cpp
-			${PREFIX}/kernels/CUDA_BatchNorm.cpp
-			${PREFIX}/kernels/CUDA_BiasAdd.cpp
-			${PREFIX}/kernels/CUDA_Convolution.cpp
-			${PREFIX}/kernels/CUDA_kernel_instantiations.cpp
-			${PREFIX}/kernels/CUDA_MatMul.cpp
-			${PREFIX}/kernels/CUDA_Pooling.cpp
-			${PREFIX}/kernels/CUDA_Softmax.cpp)
+            ${PREFIX}/context/CUDAContext.cpp
+            ${PREFIX}/kernels/CUDA_Activation.cpp
+            ${PREFIX}/kernels/CUDA_Affine.cpp
+            ${PREFIX}/kernels/CUDA_BatchNorm.cpp
+            ${PREFIX}/kernels/CUDA_BiasAdd.cpp
+            ${PREFIX}/kernels/CUDA_Convolution.cpp
+            ${PREFIX}/kernels/CUDA_kernel_instantiations.cpp
+            ${PREFIX}/kernels/CUDA_MatMul.cpp
+            ${PREFIX}/kernels/CUDA_Pooling.cpp
+            ${PREFIX}/kernels/CUDA_Softmax.cpp)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
-	# search "custom" cudnn lib in CUDA SDK dir
+    # search "custom" cudnn lib in CUDA SDK dir
     set(lib_name cudnn)
     find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
-			PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
+            PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
     target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse
-			${CUDA_cudnn_LIBRARY})
-	#    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+            ${CUDA_cudnn_LIBRARY})
+    #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()

@@ -34,8 +34,8 @@ using namespace mlir;
 // - passing the context as an argument to a function
 struct InsertDaphneContextPass : public PassWrapper<InsertDaphneContextPass, FunctionPass>
 {
-	const DaphneUserConfig& user_config;
-	explicit InsertDaphneContextPass(const DaphneUserConfig& cfg) : user_config(cfg) {}
+    const DaphneUserConfig& user_config;
+    explicit InsertDaphneContextPass(const DaphneUserConfig& cfg) : user_config(cfg) {}
     void runOnFunction() final;
 };
 
@@ -54,8 +54,8 @@ void InsertDaphneContextPass::runOnFunction()
     );
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
-    	auto initCUDAOp = builder.create<daphne::InitCUDAContextOp>(loc);
-    	initCUDAOp->moveAfter(dctxCreateOp);
+        auto initCUDAOp = builder.create<daphne::InitCUDAContextOp>(loc);
+        initCUDAOp->moveAfter(dctxCreateOp);
     }
 #endif
 
@@ -67,5 +67,5 @@ void InsertDaphneContextPass::runOnFunction()
 
 std::unique_ptr<Pass> daphne::createInsertDaphneContextPass(const DaphneUserConfig& cfg)
 {
-	return std::make_unique<InsertDaphneContextPass>(cfg);
+    return std::make_unique<InsertDaphneContextPass>(cfg);
 }

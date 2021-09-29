@@ -18,30 +18,30 @@
 
 namespace Softmax {
 
-	template<typename DTRes, typename DTArg>
-	void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-//		std::cerr << " ----------  softmax ----------- " << std::endl;
-		auto ctx = dctx->getCUDAContext(0);
-		using VT = typename DTRes::VT;
-		int n = data->getNumRows();
-		int d = data->getNumCols();
-		const VT blend_alpha = 1;
-		const VT blend_beta = 0;
-		const VT* d_input = data->getValuesCUDA();
+    template<typename DTRes, typename DTArg>
+    void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
+//        std::cerr << " ----------  softmax ----------- " << std::endl;
+        auto ctx = dctx->getCUDAContext(0);
+        using VT = typename DTRes::VT;
+        int n = data->getNumRows();
+        int d = data->getNumCols();
+        const VT blend_alpha = 1;
+        const VT blend_beta = 0;
+        const VT* d_input = data->getValuesCUDA();
 
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
-		CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
+        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
+        CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, d, 1, 1));
 
-		if (res == nullptr) {
-			res = DataObjectFactory::create<DTRes>(n,d, false, ALLOCATION_TYPE::CUDA_ALLOC);
-		}
-		VT* d_res = res->getValuesCUDA();
+        if (res == nullptr) {
+            res = DataObjectFactory::create<DTRes>(n,d, false, ALLOCATION_TYPE::CUDA_ALLOC);
+        }
+        VT* d_res = res->getValuesCUDA();
 
-		CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCUDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-				&blend_alpha, ctx->src_tensor_desc, d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
-	}
+        CHECK_CUDNN(cudnnSoftmaxForward(ctx->getCUDNNHandle(), CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+                &blend_alpha, ctx->src_tensor_desc, d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
+    }
 
-	template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;
-	template struct Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>;
 }
 

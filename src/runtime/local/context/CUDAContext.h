@@ -29,66 +29,66 @@
 #include <memory>
 
 class CUDAContext : public IContext {
-	int device_id = -1;
+    int device_id = -1;
 
-	cudaDeviceProp device_properties{};
+    cudaDeviceProp device_properties{};
 
-	cublasHandle_t cublas_handle = nullptr;
+    cublasHandle_t cublas_handle = nullptr;
 
-	cusparseHandle_t cusparse_handle = nullptr;
+    cusparseHandle_t cusparse_handle = nullptr;
 
-	// cuDNN API
-	cudnnHandle_t cudnn_handle{};
+    // cuDNN API
+    cudnnHandle_t cudnn_handle{};
 
-	// preallocate 64MB
-	size_t cudnn_workspace_size{};
-	void* cudnn_workspace{};
+    // preallocate 64MB
+    size_t cudnn_workspace_size{};
+    void* cudnn_workspace{};
 
-	// cublasLt API
-//	cublasLtHandle_t cublaslt_Handle = nullptr;
-//	void* cublas_workspace{};
-//	size_t cublas_workspace_size{};
+    // cublasLt API
+//    cublasLtHandle_t cublaslt_Handle = nullptr;
+//    void* cublas_workspace{};
+//    size_t cublas_workspace_size{};
 
-	explicit CUDAContext(int id) : device_id(id) { }
+    explicit CUDAContext(int id) : device_id(id) { }
 public:
-	CUDAContext() = delete;
-	CUDAContext(const CUDAContext&) = delete;
-	CUDAContext& operator=(const CUDAContext&) = delete;
-	~CUDAContext() = default;
+    CUDAContext() = delete;
+    CUDAContext(const CUDAContext&) = delete;
+    CUDAContext& operator=(const CUDAContext&) = delete;
+    ~CUDAContext() = default;
 
-	void destroy() override;
-	static std::unique_ptr<IContext> createCudaContext(int id);
+    void destroy() override;
+    static std::unique_ptr<IContext> createCudaContext(int id);
 
-	[[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
-	[[nodiscard]] cusparseHandle_t getCusparseHandle() const { return cusparse_handle; }
+    [[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
+    [[nodiscard]] cusparseHandle_t getCusparseHandle() const { return cusparse_handle; }
 
-//	[[nodiscard]] cublasLtHandle_t getCublasLtHandle() const { return cublaslt_Handle; }
-//	[[nodiscard]] void* getCublasWorkspacePtr() const { return cublas_workspace; }
-//	[[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
-	[[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
-	[[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
+//    [[nodiscard]] cublasLtHandle_t getCublasLtHandle() const { return cublaslt_Handle; }
+//    [[nodiscard]] void* getCublasWorkspacePtr() const { return cublas_workspace; }
+//    [[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
+    [[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
+    [[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
 
-	template<class T>
-	[[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
+    template<class T>
+    [[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
 
-	template<class T>
-	[[nodiscard]] cudaDataType getCUSparseDataType() const;
+    template<class T>
+    [[nodiscard]] cudaDataType getCUSparseDataType() const;
 
-	void* getCUDNNWorkspace(size_t size);
+    void* getCUDNNWorkspace(size_t size);
 
-	int conv_algorithm = -1;
-	cudnnPoolingDescriptor_t pooling_desc{};
-	cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
-	cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
-	cudnnFilterDescriptor_t filter_desc{};
-	cudnnActivationDescriptor_t  activation_desc{};
-	cudnnConvolutionDescriptor_t conv_desc{};
-	cudnnFilterDescriptor_t filterDesc{};
-	cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
+    int conv_algorithm = -1;
+    cudnnPoolingDescriptor_t pooling_desc{};
+    cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
+    cudnnTensorFormat_t tensor_format = CUDNN_TENSOR_NCHW;
+    cudnnFilterDescriptor_t filter_desc{};
+    cudnnActivationDescriptor_t  activation_desc{};
+    cudnnConvolutionDescriptor_t conv_desc{};
+    cudnnFilterDescriptor_t filterDesc{};
+    cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
 
 private:
-	void init();
+    void init();
 };
 
 #endif //DAPHNE_PROTOTYPE_CUDACONTEXT_H

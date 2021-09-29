@@ -5,7 +5,7 @@
 
 class IContext {
 public:
-	virtual void destroy() = 0;
+    virtual void destroy() = 0;
 };
 
 #endif //DAPHNE_PROTOTYPE_ICONTEXT_H

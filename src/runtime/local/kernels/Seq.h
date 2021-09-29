@@ -56,11 +56,11 @@ struct Seq<DenseMatrix<VT>> {
             assert(start == start && "start cannot be NaN");
             assert(end == end && "end cannot be NaN");
             assert(inc != 0 && "inc should not be zero"); // setp 0 can not make any progress to any given boundary
-	    if( (start<end && inc<0) || (start>end && inc>0)){// error
-		   throw std::runtime_error("The inc cannot lead to the boundary of the sequence"); 
-	    }
+        if( (start<end && inc<0) || (start>end && inc>0)){// error
+           throw std::runtime_error("The inc cannot lead to the boundary of the sequence"); 
+        }
             
-	    VT initialDistanceToEnd= abs(end-start);
+        VT initialDistanceToEnd= abs(end-start);
             const size_t expectedNumRows= ceil((initialDistanceToEnd/abs(inc)))+1; // number of steps = expectedNumRows and numRows might = expectedNumRows -1 ot expectedNumRows
             const size_t numCols=1;
             // should the kernel do such a check or reallocate res matrix directly?

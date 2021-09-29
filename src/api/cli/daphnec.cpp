@@ -25,7 +25,7 @@
 #include "mlir/Pass/PassManager.h"
 
 #ifdef USE_CUDA
-	#include "runtime/local/kernels/CUDA_HostUtils.h"
+    #include "runtime/local/kernels/CUDA_HostUtils.h"
 #endif
 
 #include <exception>
@@ -93,30 +93,30 @@ main(int argc, char** argv)
     DaphneUserConfig user_config;
     auto it = scriptArgs.find("libdir");
     if(it != scriptArgs.end()) {
-    	user_config.libdir = it->second;
-    	user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+        user_config.libdir = it->second;
+        user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     }
 
 #ifdef USE_CUDA
-	it = scriptArgs.find("cuda");
-	if(it != scriptArgs.end()) {
-		if(it->second == "1") {
-//			std::cout << "-cuda flag provided" << std::endl;
-			int device_count;
-  			CHECK_CUDART(cudaGetDeviceCount(&device_count));
-  			if(device_count < 1)
-  				std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
-			else { // NOLINT(readability-misleading-indentation)
-				std::cout << "Available CUDA devices: " << device_count << std::endl;
-				user_config.use_cuda = true;
-			}
-		}
-	}
+    it = scriptArgs.find("cuda");
+    if(it != scriptArgs.end()) {
+        if(it->second == "1") {
+//            std::cout << "-cuda flag provided" << std::endl;
+            int device_count;
+              CHECK_CUDART(cudaGetDeviceCount(&device_count));
+              if(device_count < 1)
+                  std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+            else { // NOLINT(readability-misleading-indentation)
+                std::cout << "Available CUDA devices: " << device_count << std::endl;
+                user_config.use_cuda = true;
+            }
+        }
+    }
 
-	it = scriptArgs.find("libdir");
-	if(it != scriptArgs.end()) {
-		user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
-	}
+    it = scriptArgs.find("libdir");
+    if(it != scriptArgs.end()) {
+        user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
+    }
 #endif
 
     // Creates an MLIR context and loads the required MLIR dialects.

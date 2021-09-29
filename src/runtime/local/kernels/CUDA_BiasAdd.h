@@ -26,10 +26,10 @@
 #include <runtime/local/kernels/CUDA_HostUtils.h>
 
 namespace DNN::CUDA {
-	template<typename DTRes, typename DTArg>
-	struct BiasAddForward {
-		static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx));
-	};
+    template<typename DTRes, typename DTArg>
+    struct BiasAddForward {
+        static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx));
+    };
 }
 
 #endif // DAPHNE_PROTOTYPE_CUDA_BIASADD_H

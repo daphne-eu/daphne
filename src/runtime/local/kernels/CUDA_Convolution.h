@@ -35,13 +35,13 @@
 
 namespace Convolution {
 
-	template<typename DTRes, typename DTArg>
-	struct Forward_CUDA {
-		static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data, const DTArg *filter, const DTArg *bias,
-						  const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
-						  const size_t filter_h, const size_t filter_w, const size_t stride_h, const size_t stride_w,
-						  const size_t pad_h, const size_t pad_w, DCTX(dctx));
-	};
+    template<typename DTRes, typename DTArg>
+    struct Forward_CUDA {
+        static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data, const DTArg *filter, const DTArg *bias,
+                          const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
+                          const size_t filter_h, const size_t filter_w, const size_t stride_h, const size_t stride_w,
+                          const size_t pad_h, const size_t pad_w, DCTX(dctx));
+    };
 }
 
 #endif //DAPHNE_PROTOTYPE_CUDA_CONVOLUTION_H

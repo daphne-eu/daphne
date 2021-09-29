@@ -34,42 +34,42 @@
 
 namespace Pooling {
 
-	template<typename VT>
-	struct AVG {
-		static inline VT run(VT initial_value, const VT *in, uint32_t start, uint32_t length, VT plen) {
-			VT ret = 0;
-			auto end = start + length;
-			for (auto i = start; i < end; ++i)
-				ret += in[i];
-			return ret * plen + initial_value;
-		}
+    template<typename VT>
+    struct AVG {
+        static inline VT run(VT initial_value, const VT *in, uint32_t start, uint32_t length, VT plen) {
+            VT ret = 0;
+            auto end = start + length;
+            for (auto i = start; i < end; ++i)
+                ret += in[i];
+            return ret * plen + initial_value;
+        }
 
-		static inline VT getNeutralElement() { return 0; }
-		static inline bool isMAX() { return false; }
-	};
+        static inline VT getNeutralElement() { return 0; }
+        static inline bool isMAX() { return false; }
+    };
 
-	template<typename VT>
-	struct MAX {
-		static inline VT
-		run(VT initial_value, const VT *in, uint32_t start, uint32_t length, __attribute__((unused)) VT plen) {
-			VT ret = initial_value;
-			auto end = start + length;
-			for (auto i = start; i < end; ++i)
-				ret = std::max(ret, in[i]);
-			return ret;
-		}
+    template<typename VT>
+    struct MAX {
+        static inline VT
+        run(VT initial_value, const VT *in, uint32_t start, uint32_t length, __attribute__((unused)) VT plen) {
+            VT ret = initial_value;
+            auto end = start + length;
+            for (auto i = start; i < end; ++i)
+                ret = std::max(ret, in[i]);
+            return ret;
+        }
 
-		static inline VT getNeutralElement() { return std::numeric_limits<VT>::max(); }
-		static inline bool isMAX() { return true; }
-	};
+        static inline VT getNeutralElement() { return std::numeric_limits<VT>::max(); }
+        static inline bool isMAX() { return true; }
+    };
 
-	template<template<typename> class OP, typename DTRes, typename DTArg>
-	struct Forward {
-		static void apply(DTRes *&res, size_t& res_h, size_t& res_w,
-						  const DTArg *data, const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
-						  const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
-						  const size_t pad_w, DCTX(dctx));
-	};
+    template<template<typename> class OP, typename DTRes, typename DTArg>
+    struct Forward {
+        static void apply(DTRes *&res, size_t& res_h, size_t& res_w,
+                          const DTArg *data, const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
+                          const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
+                          const size_t pad_w, DCTX(dctx));
+    };
 }
 
 #endif //DAPHNE_PROTOTYPE_POOLING_H

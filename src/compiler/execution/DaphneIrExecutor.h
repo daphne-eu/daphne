@@ -26,7 +26,7 @@
 class DaphneIrExecutor
 {
 public:
-	DaphneIrExecutor(bool distributed, bool vectorized, DaphneUserConfig cfg);
+    DaphneIrExecutor(bool distributed, bool vectorized, DaphneUserConfig cfg);
 
     bool runPasses(mlir::ModuleOp module);
     std::unique_ptr<mlir::ExecutionEngine> createExecutionEngine(mlir::ModuleOp module);

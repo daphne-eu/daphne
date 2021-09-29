@@ -26,10 +26,10 @@
 #include <runtime/local/kernels/CUDA_HostUtils.h>
 
 namespace Affine {
-	template<typename DTRes, typename DTArg>
-	struct Forward_CUDA {
-		static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
-	};
+    template<typename DTRes, typename DTArg>
+    struct Forward_CUDA {
+        static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
+    };
 }
 
 #endif // DAPHNE_PROTOTYPE_CUDA_AFFINE_H

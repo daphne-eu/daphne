@@ -21,12 +21,12 @@
 #include <cassert>
 
 #ifdef USE_CUDA
-	#include <api/cli/DaphneUserConfig.h>
-	#include <runtime/local/kernels/CUDA_Softmax.h>
-	#include <runtime/local/kernels/CUDA_InitContext.h>
+    #include <api/cli/DaphneUserConfig.h>
+    #include <runtime/local/kernels/CUDA_Softmax.h>
+    #include <runtime/local/kernels/CUDA_InitContext.h>
 #else
 // ToDo: cpu version
-//	#include <runtime/local/kernels/Softmax.h>
+//    #include <runtime/local/kernels/Softmax.h>
 #endif
 
 #include <tags.h>
@@ -57,7 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("softmax_fwd", TAG_DNN, (DenseMatrix), (float, double
 
     // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
     auto result = genGivenVals<DT>(1, { 0.000212079, 0.00057649, 0.00156706, 0.00425972, 0.0115791, 0.0314753, 0.0855588,
-			0.232573, 0.632199});
+            0.232573, 0.632199});
 
     check(input, result, dctx);
 

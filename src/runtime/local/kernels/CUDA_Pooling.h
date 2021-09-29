@@ -28,13 +28,13 @@
 
 namespace Pooling {
 
-	template<template<typename> class OP, typename DTRes, typename DTArg>
-	struct Forward_CUDA {
-		static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data,
-				const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
-				const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w,
-				const size_t pad_h, const size_t pad_w, DCTX(dctx));
-	};
+    template<template<typename> class OP, typename DTRes, typename DTArg>
+    struct Forward_CUDA {
+        static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data,
+                const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
+                const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w,
+                const size_t pad_h, const size_t pad_w, DCTX(dctx));
+    };
 }
 
 #endif //DAPHNE_PROTOTYPE_CUDA_POOLING_H

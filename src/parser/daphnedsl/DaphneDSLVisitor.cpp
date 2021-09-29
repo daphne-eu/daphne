@@ -598,15 +598,15 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprContext * ctx) {
-	std::string op = ctx->op->getText();
-	mlir::Location loc = builder.getUnknownLoc();
-	mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-	mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    std::string op = ctx->op->getText();
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
-	if(op == "%")
-		return static_cast<mlir::Value>(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
+    if(op == "%")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
 
-	throw std::runtime_error("unexpected op symbol");
+    throw std::runtime_error("unexpected op symbol");
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) {

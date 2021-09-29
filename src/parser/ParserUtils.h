@@ -136,19 +136,19 @@ public:
         return castIf(seedType, v);
     }
 
-	mlir::Value castUI8If(mlir::Value v) {
-		return castIf(builder.getIntegerType(8, false), v);
-	}
+    mlir::Value castUI8If(mlir::Value v) {
+        return castIf(builder.getIntegerType(8, false), v);
+    }
 
-	mlir::Value castUI32If(mlir::Value v) {
-		return castIf(builder.getIntegerType(32, false), v);
-	}
+    mlir::Value castUI32If(mlir::Value v) {
+        return castIf(builder.getIntegerType(32, false), v);
+    }
 
-	mlir::Value castUI64If(mlir::Value v) {
-		return castIf(builder.getIntegerType(64, false), v);
-	}
+    mlir::Value castUI64If(mlir::Value v) {
+        return castIf(builder.getIntegerType(64, false), v);
+    }
 
-	// ************************************************************************
+    // ************************************************************************
     // Type parsing
     // ************************************************************************
 

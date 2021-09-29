@@ -22,7 +22,7 @@
 #include <iostream>
 #include <memory>
 #ifdef USE_CUDA
-	#include "CUDAContext.h"
+    #include "CUDAContext.h"
 #endif
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
@@ -47,25 +47,25 @@ struct DaphneContext {
 #ifdef USE_CUDA
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
 #endif
-	DaphneContext() = default;
+    DaphneContext() = default;
     
     ~DaphneContext() {
 #ifdef USE_CUDA
 #ifdef NDEBUG
-		std::cout << "desctructing DaphneContext" << std::endl;
+        std::cout << "desctructing DaphneContext" << std::endl;
 #endif
-	for (auto& ctx : cuda_contexts) {
-		ctx->destroy();
-	}
+    for (auto& ctx : cuda_contexts) {
+        ctx->destroy();
+    }
     cuda_contexts.clear();
 #endif
     }
 
 #ifdef USE_CUDA
-	// ToDo: in a multi device setting this should use a find call instead of a direct [] access
-	[[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const {
-		return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
-	}
+    // ToDo: in a multi device setting this should use a find call instead of a direct [] access
+    [[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const {
+        return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
+    }
 #endif
 };
 

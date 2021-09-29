@@ -30,9 +30,9 @@
 
 static void initCUDAContext(DCTX(ctx)) {
 #ifdef NDEBUG
-	std::cerr << "ToDo: provide user config to initCUDAContext" << std::endl;
+    std::cerr << "ToDo: provide user config to initCUDAContext" << std::endl;
 #endif
-	ctx->cuda_contexts.emplace_back(CUDAContext::createCudaContext(0));
+    ctx->cuda_contexts.emplace_back(CUDAContext::createCudaContext(0));
 }
 
 #endif //DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H

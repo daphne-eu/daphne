@@ -41,10 +41,10 @@ inline void convertStr(std::string const &x, float *v) {
     *v = std::numeric_limits<float>::quiet_NaN();
   }
   catch (const std::out_of_range& e) {
-  	// handling subnormal values (too small)
-  	*v = std::numeric_limits<float>::min();
+      // handling subnormal values (too small)
+      *v = std::numeric_limits<float>::min();
 #ifdef NDEBUG
-  	std::cerr << "Warning: setting subnormal float value " << x << " to std::numeric_limits<float>::min() -> " << std::numeric_limits<float>::min() << std::endl;
+      std::cerr << "Warning: setting subnormal float value " << x << " to std::numeric_limits<float>::min() -> " << std::numeric_limits<float>::min() << std::endl;
 #endif
   }
 }

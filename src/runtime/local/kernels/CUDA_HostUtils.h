@@ -25,7 +25,7 @@
 #include <cusparse_v2.h>
 #include <cudnn.h>
 
-#define CHECK_CUDART(call) 												  \
+#define CHECK_CUDART(call)                                                   \
   do {                                                                    \
     cudaError_t status = call;                                            \
     if (status != cudaSuccess) {                                          \
@@ -35,27 +35,27 @@
     }                                                                     \
   } while (0)
 
-#define CHECK_CUBLAS(call) 											      \
+#define CHECK_CUBLAS(call)                                                   \
   do {                                                                    \
     cublasStatus_t status = call;                                         \
     if (status != CUBLAS_STATUS_SUCCESS) {                                \
-      std::cout << "(CUBLAS) returned " << status;						  \
+      std::cout << "(CUBLAS) returned " << status;                          \
       std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
                 << "())" << std::endl;                                    \
     }                                                                     \
   } while (0)
 
 #define CHECK_CUSPARSE(call)                                                 \
-	do {                                                                      \
-		cusparseStatus_t status = call;                                        \
-		if (status != CUSPARSE_STATUS_SUCCESS) {                                \
-			std::cout << "(CUSPARSE) returned " << status;                       \
-			std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__   \
-			<< "())" << std::endl;                                                 \
-		}                                                                           \
-	} while (0)
+    do {                                                                      \
+        cusparseStatus_t status = call;                                        \
+        if (status != CUSPARSE_STATUS_SUCCESS) {                                \
+            std::cout << "(CUSPARSE) returned " << status;                       \
+            std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__   \
+            << "())" << std::endl;                                                 \
+        }                                                                           \
+    } while (0)
 
-#define CHECK_CUDNN(call)												  \
+#define CHECK_CUDNN(call)                                                  \
   do {                                                                    \
     cudnnStatus_t status = call;                                          \
     if (status != CUDNN_STATUS_SUCCESS) {                                 \
@@ -69,23 +69,23 @@
 
 template <typename T>
 static constexpr auto type_name() noexcept {
-	std::string_view name, prefix, suffix;
+    std::string_view name, prefix, suffix;
 #ifdef __clang__
-	name = __PRETTY_FUNCTION__;
+    name = __PRETTY_FUNCTION__;
   prefix = "auto type_name() [T = ";
   suffix = "]";
 #elif defined(__GNUC__)
-	name = __PRETTY_FUNCTION__;
-	prefix = "constexpr auto type_name() [with T = ";
-	suffix = "]";
+    name = __PRETTY_FUNCTION__;
+    prefix = "constexpr auto type_name() [with T = ";
+    suffix = "]";
 #elif defined(_MSC_VER)
-	name = __FUNCSIG__;
+    name = __FUNCSIG__;
   prefix = "auto __cdecl type_name<";
   suffix = ">(void) noexcept";
 #endif
-	name.remove_prefix(prefix.size());
-	name.remove_suffix(suffix.size());
-	return name;
+    name.remove_prefix(prefix.size());
+    name.remove_suffix(suffix.size());
+    return name;
 }
 
 #endif //DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H

@@ -34,10 +34,10 @@
 #include <cstdint>
 
 namespace Softmax {
-	template<typename DTRes, typename DTArg>
-	struct Forward_CUDA {
-		static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
-	};
+    template<typename DTRes, typename DTArg>
+    struct Forward_CUDA {
+        static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
+    };
 }
 
 #endif //DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H

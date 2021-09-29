@@ -30,17 +30,17 @@
  */
 struct DaphneUserConfig {
 
-	bool use_cuda = false;
+    bool use_cuda = false;
 #ifdef USE_CUDA
-	// User config holds once context atm for convenience until we have proper system infrastructure
+    // User config holds once context atm for convenience until we have proper system infrastructure
 
-	// CUDA device IDs (future work, as we create only one context atm)
-	std::vector<int> cuda_devices;
+    // CUDA device IDs (future work, as we create only one context atm)
+    std::vector<int> cuda_devices;
 
-	// ToDo: This is an arbitrary default taken from sample code
-//	int cublas_workspace_size = 1024 * 1024 * 4;
+    // ToDo: This is an arbitrary default taken from sample code
+//    int cublas_workspace_size = 1024 * 1024 * 4;
 #endif
-	std::string libdir;
-	std::vector<std::string> library_paths;
+    std::string libdir;
+    std::vector<std::string> library_paths;
 };
 #endif //DAPHNE_PROTOTYPE_DAPHNEUSERCONFIG_H

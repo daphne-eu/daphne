@@ -22,9 +22,9 @@
 #include <catch.hpp>
 
 TEST_CASE("initCUDAContext", TAG_KERNELS) {
-	auto dctx = new DaphneContext();
-	initCUDAContext(dctx);
-	auto p = dctx->getCUDAContext(0)->getDeviceProperties();
-	CHECK(p);
-	delete dctx;
+    auto dctx = new DaphneContext();
+    initCUDAContext(dctx);
+    auto p = dctx->getCUDAContext(0)->getDeviceProperties();
+    CHECK(p);
+    delete dctx;
 }

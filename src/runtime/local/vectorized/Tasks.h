@@ -46,7 +46,7 @@ public:
 template <class VT>
 class SingleOpTask : public Task {
 private:
-	void (*_func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*);
+    void (*_func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*);
     DenseMatrix<VT>* _res;
     DenseMatrix<VT>* _input1;
     DenseMatrix<VT>* _input2;

@@ -85,9 +85,9 @@ struct ExtractRow<Frame, Frame, VTSel> {
         
 #if EXTRACTROW_FRAME_MODE == 0
         // Some information on each column.
-		const auto elementSizes = std::make_unique<size_t[]>(numCols);
-		const auto argCols = std::make_unique<const uint8_t*[]>(numCols);
-		auto resCols = std::make_unique<uint8_t*[]>(numCols);
+        const auto elementSizes = std::make_unique<size_t[]>(numCols);
+        const auto argCols = std::make_unique<const uint8_t*[]>(numCols);
+        auto resCols = std::make_unique<uint8_t*[]>(numCols);
         // Initialize information on each column.
         for(size_t c = 0; c < numCols; c++) {
             elementSizes[c] = ValueTypeUtils::sizeOf(schema[c]);

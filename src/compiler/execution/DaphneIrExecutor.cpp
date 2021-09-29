@@ -101,17 +101,17 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         llvm::SmallVector<llvm::StringRef, 1> sharedLibRefs;
         // TODO Find these at run-time.
         if(user_config_.libdir.empty()) {
-        	sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
+            sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
         }
         else {
-        	sharedLibRefs.insert(sharedLibRefs.end(), user_config_.library_paths.begin(), user_config_.library_paths.end());
+            sharedLibRefs.insert(sharedLibRefs.end(), user_config_.library_paths.begin(), user_config_.library_paths.end());
         }
 
 #ifdef USE_CUDA
         if(user_config_.use_cuda) {
-        	if(user_config_.libdir.empty()) {
-        		sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
-        	}
+            if(user_config_.libdir.empty()) {
+                sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
+            }
         }
 #endif
         registerLLVMDialectTranslation(context_);

@@ -21,12 +21,12 @@
 #include <cassert>
 
 #ifdef USE_CUDA
-	#include <api/cli/DaphneUserConfig.h>
-	#include <runtime/local/kernels/CUDA_Activation.h>
-	#include <runtime/local/kernels/CUDA_InitContext.h>
+    #include <api/cli/DaphneUserConfig.h>
+    #include <runtime/local/kernels/CUDA_Activation.h>
+    #include <runtime/local/kernels/CUDA_InitContext.h>
 #else
 // ToDo: cpu version
-//	#include <runtime/local/kernels/Activation.h>
+//    #include <runtime/local/kernels/Activation.h>
 #endif
 
 #include <tags.h>
