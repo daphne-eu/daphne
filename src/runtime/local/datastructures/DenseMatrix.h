@@ -28,6 +28,8 @@
 #include <cstddef>
 #include <cstring>
 
+// TODO DenseMatrix should not be concerned about CUDA.
+
 /**
  * @brief A dense matrix implementation.
  * 

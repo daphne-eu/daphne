@@ -186,7 +186,7 @@
             ["bool", "double"],
             ["bool", "int64_t"],
             ["bool", "size_t"],
-            ["uint32_t", "char"],
+            ["uint32_t", "uint8_t"],
             ["uint32_t", "int64_t"],
             ["uint64_t", "int64_t"],
             ["uint32_t", "size_t"],

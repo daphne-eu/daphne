@@ -90,6 +90,11 @@ main(int argc, char** argv)
         }
     }
 
+    // TODO "libdir" and "cuda" should not be script arguments. Script
+    // arguments are those that can be used from within the DaphneDSL script.
+    // However, these two arguments are only required during compilation and
+    // runtime, users do not need to access them in a script.
+    
     DaphneUserConfig user_config;
     auto it = scriptArgs.find("libdir");
     if(it != scriptArgs.end()) {

@@ -45,7 +45,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     returnType = kernelTemplateInfo["returnType"]
     templateParams = kernelTemplateInfo["templateParams"]
     runtimeParams = kernelTemplateInfo["runtimeParams"]
-    if opCodes is not None:# and opName != "PoolForward":
+    if opCodes is not None:
         # We assume that the op-code is the first run-time parameter.
         opCodeType = runtimeParams[0]["type"]
         runtimeParams = runtimeParams[1:]
@@ -110,6 +110,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             funcName = funcName[:-3]
         if opCode is not None:
             # We assume that the name of the op-code type ends with "OpCode".
+            # TODO Make the special treatment of PoolForward obsolete, it
+            # should go through the same route as all other ops.
             if funcName == "_PoolForward":
                 funcName = "_" + opCode.lower() + funcName[1:]
             else:
@@ -126,6 +128,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         ))
         
         # List of parameters for the call.
+        # TODO Make the special treatment of PoolForward obsolete, it should go
+        # through the same route as all other ops.
         if opCode is None:# and funcName != "PoolForward":
             callParams = []
         else:
@@ -145,6 +149,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
 
+        # TODO Make the special treatment of PoolForward obsolete, it should go
+        # through the same route as all other ops.
         if opName == "PoolForward":
             outFile.write("{}<{}>::apply({});\n".format(
                 "Pooling::Forward",

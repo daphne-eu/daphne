@@ -43,10 +43,6 @@ def PrintIR : FunctionPass<"print-ir"> {
 //    let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
 //}
 
-def InsertCUDAOps : FunctionPass<"insert-CUDA-ops"> {
-    let constructor = "mlir::daphne::createCUDAOpsPass()";
-}
-
 def VectorizeComputations : FunctionPass<"vectorize-computations"> {
     let constructor = "mlir::daphne::createVectorizeComputationsPass()";
 }

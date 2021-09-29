@@ -48,14 +48,13 @@ void InsertDaphneContextPass::runOnFunction()
     Location loc = builder.getUnknownLoc();
 
     // Insert a CreateDaphneContextOp as the first operation in the block.
-    auto dctxCreateOp = builder.create<daphne::CreateDaphneContextOp>(
+    builder.create<daphne::CreateDaphneContextOp>(
             loc,
             daphne::DaphneContextType::get(&getContext())
     );
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
-        auto initCUDAOp = builder.create<daphne::InitCUDAContextOp>(loc);
-        initCUDAOp->moveAfter(dctxCreateOp);
+        builder.create<daphne::InitCUDAContextOp>(loc);
     }
 #endif
 

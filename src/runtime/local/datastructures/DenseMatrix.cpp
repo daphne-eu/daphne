@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+// TODO DenseMatrix should not be concerned about CUDA.
+
 #include "DenseMatrix.h"
 #include <chrono>
 

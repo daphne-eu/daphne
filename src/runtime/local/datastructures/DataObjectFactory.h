@@ -45,7 +45,6 @@ struct DataObjectFactory {
     static void destroy(const DataType *obj)
     {
         delete obj;
-        obj = nullptr;
     }
 
     // TODO Simplify many places in the code (especially test cases) by using

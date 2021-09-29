@@ -26,7 +26,6 @@
 #include <string>
 
 namespace mlir::daphne {
-    std::unique_ptr<Pass> createCUDAOpsPass();
     std::unique_ptr<Pass> createDistributeComputationsPass();
     std::unique_ptr<Pass> createInferencePass();
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);

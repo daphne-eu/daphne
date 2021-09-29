@@ -18,7 +18,9 @@ project(daphne-prototype LANGUAGES CXX C)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+add_compile_options(-O3) # use high optimization level for all targets
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
 
 # *****************************************************************************
@@ -60,9 +62,6 @@ find_package(Threads REQUIRED)
 
 include_directories(${OPENBLAS_INST_DIR}/include)
 SET(OPENBLAS_LIBRARIES ${OPENBLAS_INST_DIR}/lib/libopenblas.a ${CMAKE_THREAD_LIBS_INIT})
-
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # check <package>_ROOT env var
 cmake_policy(SET CMP0074 NEW)
