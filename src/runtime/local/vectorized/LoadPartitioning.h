@@ -80,7 +80,7 @@ public:
     bool hasNextChunk(){
         return scheduledTasks < totalTasks; 
     }  
-    uint64_t getNextChunk(){
+ uint64_t getNextChunk(){
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
             case STATIC:{//STATIC
@@ -109,19 +109,21 @@ public:
                 break;
             }
             case FISS:{//fixed increase self-scheduling (FISS)
+                //TODO
                 uint64_t X = fissStages + 2;
                 uint64_t initChunk = (uint64_t) ceil(totalTasks/((2.0+fissStages)*totalWorkers));
-                chunkSize = initChunk + schedulingStep * (uint64_t) ceil((2.0*totalTasks*(1.0-(fissStages/X)))/(totalWorkers*fissStages*(fissStages-1.0))); //chunksize with increment after init 
+                chunkSize = initChunk + schedulingStep * (uint64_t) ceil((2.0*totalTasks*(1.0-(fissStages/X)))/(totalWorkers*fissStages*(fissStages-1))); //chunksize with increment after init 
                 break;
             }
             case VISS:{//variable increase self-scheduling (VISS)
-                uint64_t schedulingStepnew =  schedulingStep / totalWorkers;
+                //TODO
+                uint64_t schedulingStepnew =  schedulingStep/totalWorkers;
                 uint64_t initChunk = (uint64_t) ceil(totalTasks/((2.0+fissStages)*totalWorkers));
                 chunkSize =  initChunk * (uint64_t) ceil((double)(1-pow(0.5,schedulingStepnew))/0.5);
                 break;
             }
             case PLS:{//performance-based loop self-scheduling (PLS)
-                //TODO tale SWR from user
+                //TODO
                 double SWR = 0.5; //static workload ratio
                 if(remainingTasks > totalTasks - (totalTasks*SWR)){
                     chunkSize = (uint64_t) ceil((double)totalTasks*SWR/totalWorkers);
@@ -131,7 +133,6 @@ public:
                 break;
             }
             case PSS:{//probabilistic self-scheduling (PSS)
-                //TODO take E[P] from user
                 //E[P] is the average number of idle processor, for now we use still totalWorkers
                 double averageIdleProc = (double)totalWorkers;
                 chunkSize = (uint64_t) ceil((double)remainingTasks/(1.5*averageIdleProc));
@@ -152,8 +153,9 @@ public:
     schedulingStep++;
     scheduledTasks+=chunkSize;
     remainingTasks-=chunkSize;
+    //std::cout<<"chunk"<<schedulingStep<< "is "<< chunkSize<<std::endl;
     return chunkSize;
-    }  
+    } 
 
 };
 
