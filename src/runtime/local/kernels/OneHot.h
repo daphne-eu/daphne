@@ -91,7 +91,7 @@ struct OneHot<DenseMatrix<VT>, DenseMatrix<VT>> {
                     valuesRes[cRes++] = valuesArg[cArg];
                 else {
                     // one-hot encode value from argument matrix
-                    for(size_t d = 0; d < numDistinct; d++)
+                    for(int64_t d = 0; d < numDistinct; d++)
                         valuesRes[cRes + d] = 0;
                     valuesRes[cRes + static_cast<size_t>(valuesArg[cArg])] = 1;
                     cRes += numDistinct;

@@ -15,7 +15,7 @@
 include_directories(${PROJECT_SOURCE_DIR}/test)
 include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 
-add_executable(run_tests
+set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/controlflow/ControlFlowTest.cpp
@@ -27,18 +27,16 @@ add_executable(run_tests
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
-
         runtime/distributed/worker/WorkerTest.cpp
-
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
-        
+
         runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
-        
+
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
@@ -48,6 +46,9 @@ add_executable(run_tests
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
+
+        runtime/local/kernels/DNNPoolingTest.cpp
+
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryMatScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
@@ -71,21 +72,39 @@ add_executable(run_tests
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
-                
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+)
+
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    list(APPEND TEST_SOURCES
+            runtime/local/kernels/CUDA_MatMulTest.cpp
+            runtime/local/kernels/CUDA_ContextTest.cpp
+            runtime/local/kernels/DNNActivationTest.cpp
+            runtime/local/kernels/DNNAffineTest.cpp
+            runtime/local/kernels/DNNBatchNormTest.cpp
+            runtime/local/kernels/DNNConvolutionTest.cpp
+            runtime/local/kernels/DNNSoftmaxTest.cpp)
+endif()
+
+add_executable(run_tests
+    ${TEST_SOURCES}
 )
 add_dependencies(run_tests daphnec)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-target_link_libraries(run_tests PRIVATE
-    ${dialect_libs}
-    DataStructures
-    DaphneDSLParser
-    IO
-    MLIRDaphne
-    WorkerImpl
-    Proto
-    Util
-    ${OPENBLAS_LIBRARIES}
-)
+set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    target_include_directories(run_tests PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+
+    # search "custom" cudnn lib in CUDA SDK dir
+    set(lib_name cudnn)
+    find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
+            PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
+
+    list(APPEND LIBS CUDAKernels CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse ${CUDA_cudnn_LIBRARY})
+endif()
+
+target_link_libraries(run_tests PRIVATE ${LIBS})

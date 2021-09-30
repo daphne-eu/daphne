@@ -22,6 +22,7 @@
             ]
         },
         "instantiations": [
+            [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["CSRMatrix", "double"]],
@@ -98,8 +99,11 @@
             ]
         },
         "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]],
+
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
         ],
@@ -163,17 +167,31 @@
             ["double", "int64_t"],
             ["double", "size_t"],
             ["double", "bool"],
+            ["float", "float"],
+            ["float", "double"],
+            ["float", "size_t"],
+            ["float", "uint32_t"],
+            ["float", "int64_t"],
             ["int64_t", "double"],
+            ["int64_t", "float"],
             ["int64_t", "int64_t"],
             ["int64_t", "size_t"],
+            ["int64_t", "uint32_t"],
             ["int64_t", "bool"],
             ["size_t", "double"],
             ["size_t", "int64_t"],
+            ["size_t", "uint32_t"],
             ["size_t", "size_t"],
             ["size_t", "bool"],
             ["bool", "double"],
             ["bool", "int64_t"],
             ["bool", "size_t"],
+            ["uint32_t", "uint8_t"],
+            ["uint32_t", "int64_t"],
+            ["uint64_t", "int64_t"],
+            ["uint32_t", "size_t"],
+            ["uint32_t", "float"],
+            ["uint8_t", "int64_t"],
             ["bool", "bool"]
         ]
     },
@@ -374,6 +392,7 @@
             ]
         },
         "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ],
@@ -459,11 +478,13 @@
         },
         "instantiations": [
             ["double", "double", "double"],
+            ["float", "float", "float"],
             ["int64_t", "int64_t", "int64_t"],
+            ["uint32_t", "uint32_t", "uint32_t"],
             ["bool", "double", "double"],
             ["bool", "int64_t", "int64_t"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -500,6 +521,7 @@
             ]
         },
         "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
             ["Frame", "Frame", "char"]
@@ -540,6 +562,7 @@
             ]
         },
         "instantiations": [
+            [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"]
         ]
@@ -789,7 +812,9 @@
         },
         "instantiations": [
             ["double"],
+            ["float"],
             ["int64_t"],
+            ["uint32_t"],
             ["bool"],
             ["size_t"]
         ]
@@ -822,6 +847,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]],
             ["Frame"],
             ["char"]
@@ -978,6 +1004,7 @@
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"]],
             ["Frame"]
         ]
     },
@@ -1141,6 +1168,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
             [["CSRMatrix", "double"], ["CSRMatrix", "double"]],
             [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
@@ -1210,9 +1238,10 @@
         },
         "instantiations": [
             ["double", "double"],
+            ["float", "float"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN", "SQRT", "FLOOR"]
+        "opCodes": ["SIGN", "SQRT", "FLOOR", "CEIL"]
     },
     {
         "kernelTemplate": {
@@ -1674,5 +1703,54 @@
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Pooling.h",
+            "opName": "PoolForward",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "PoolOpCode",
+                    "name": "opcode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                { "type": "size_t& ", "name": "res_h" },
+                { "type": "size_t& ", "name": "res_w" },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                { "type": "size_t", "name": "batch_size" },
+                { "type": "size_t", "name": "num_channls"},
+                { "type": "size_t", "name": "img_h"},
+                { "type": "size_t", "name": "img_w"},
+                { "type": "size_t", "name": "pool_h"},
+                { "type": "size_t", "name": "pool_w"},
+                { "type": "size_t", "name": "stride_h"},
+                { "type": "size_t", "name": "stride_w"},
+                { "type": "size_t", "name": "pad_h"},
+                { "type": "size_t", "name": "pad_w"}
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ],
+        "opCodes": ["AVG", "MAX"]
     }
 ]
+

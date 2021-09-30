@@ -219,6 +219,89 @@ mlir::Value DaphneDSLBuiltins::createJoinOp(mlir::Location loc, const std::strin
     ));
 }
 
+mlir::Value DaphneDSLBuiltins::createAffineFwdOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>& args) {
+    const size_t numArgs = args.size();
+    checkNumArgsExact(func, numArgs, 3);
+
+    mlir::Value input_data = args[0];
+    mlir::Value weights_data = args[1];
+    mlir::Value bias_data = args[2];
+
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::AffineForwardOp>(loc, input_data.getType(), input_data,
+        weights_data, bias_data));
+}
+
+mlir::Value DaphneDSLBuiltins::createBatchNorm2dTestFwdOp(mlir::Location loc, const std::string &func,
+        const std::vector<mlir::Value> &args) {
+    const size_t numArgs = args.size();
+    checkNumArgsExact(func, numArgs, 6);
+
+    mlir::Value input_data = args[0];
+    mlir::Value gamma = args[1];
+    mlir::Value beta = args[2];
+
+    mlir::Value ema_mean = args[3];
+    mlir::Value ema_var = args[4];
+    mlir::Value eps = args[5];
+
+    return  static_cast<mlir::Value>(builder.create<mlir::daphne::BatchNorm2DTestForwardOp>(loc, input_data.getType(),
+            input_data, gamma, beta, ema_mean, ema_var, eps));
+}
+
+mlir::ResultRange DaphneDSLBuiltins::createConv2dFwdOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value>&
+        args) {
+    const size_t numArgs = args.size();
+    checkNumArgsBetween(func, numArgs, 12, 13);
+
+    mlir::Value input_data = args[0];
+    mlir::Value filter_data = args[1];
+    mlir::Value num_images = utils.castSizeIf(args[2]);
+    mlir::Value num_channels = utils.castSizeIf(args[3]);
+    mlir::Value img_height = utils.castSizeIf(args[4]);
+    mlir::Value img_width = utils.castSizeIf(args[5]);
+
+    mlir::Value filter_h = utils.castSizeIf(args[6]);
+    mlir::Value filter_w = utils.castSizeIf(args[7]);
+    mlir::Value stride_h = utils.castSizeIf(args[8]);
+    mlir::Value stride_w = utils.castSizeIf(args[9]);
+    mlir::Value padding_h = utils.castSizeIf(args[10]);
+    mlir::Value padding_w = utils.castSizeIf(args[11]);
+    if (numArgs == 12) {
+        return builder.create<mlir::daphne::Conv2DForwardOp>(loc, input_data.getType(), utils.sizeType, utils.sizeType,
+                input_data, filter_data, filter_data, num_images, num_channels, img_height, img_width, filter_h, filter_w, stride_h,
+                stride_w, padding_h, padding_w).getResults();
+    }
+    else {
+        mlir::Value bias = args[12];
+        return builder.create<mlir::daphne::Conv2DForwardOp>(loc, input_data.getType(), utils.sizeType, utils.sizeType,
+                input_data, filter_data, bias, num_images, num_channels, img_height, img_width, filter_h, filter_w, stride_h,
+                stride_w, padding_h, padding_w).getResults();
+    }
+}
+
+template<class PoolOp>
+mlir::ResultRange DaphneDSLBuiltins::createPoolFwdOp(mlir::Location loc, const std::string& func,
+        const std::vector<mlir::Value>&    args) {
+    const size_t numArgs = args.size();
+    checkNumArgsExact(func, numArgs, 11);
+
+    mlir::Value input_data = args[0];
+    mlir::Value num_images = utils.castSizeIf(args[1]);
+    mlir::Value num_channels = utils.castSizeIf(args[2]);
+    mlir::Value img_height = utils.castSizeIf(args[3]);
+    mlir::Value img_width = utils.castSizeIf(args[4]);
+    mlir::Value pool_h = utils.castSizeIf(args[5]);
+    mlir::Value pool_w = utils.castSizeIf(args[6]);
+    mlir::Value stride_h = utils.castSizeIf(args[7]);
+    mlir::Value stride_w = utils.castSizeIf(args[8]);
+    mlir::Value padding_h = utils.castSizeIf(args[9]);
+    mlir::Value padding_w = utils.castSizeIf(args[10]);
+
+    return builder.create<PoolOp>(loc, input_data.getType(), utils.sizeType, utils.sizeType,
+            input_data, num_images, num_channels, img_height, img_width, pool_h, pool_w, stride_h, stride_w, padding_h,
+            padding_w).getResults();
+}
+
 // ****************************************************************************
 // Other utilities
 // ****************************************************************************
@@ -391,6 +474,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createEwUnaryOp<EwExpOp>(loc, func, args);
     if(func == "ln")
         return createEwUnaryOp<EwLnOp>(loc, func, args);
+    if(func == "mod")
+        return createEwBinaryOp<EwModOp>(loc, func, args);
     if(func == "sqrt")
         return createEwUnaryOp<EwSqrtOp>(loc, func, args);
 
@@ -603,7 +688,45 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Deep neural network
     // ********************************************************************
 
-    // TODO Add built-in functions for those.
+    if (func == "affine") {
+        return createAffineFwdOp(loc, func, args);
+    }
+
+    if(func == "avg_pool2d") {
+        return createPoolFwdOp<AvgPoolForwardOp>(loc, func, args);
+    }
+
+    if(func == "batch_norm2d") {
+        return createBatchNorm2dTestFwdOp(loc, func, args);
+    }
+
+    if (func == "biasAdd") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value input_data = args[0];
+        mlir::Value bias = args[1];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::BiasAddForwardOp>(loc, input_data.getType(),
+                input_data, bias));
+    }
+
+    if(func == "conv2d") {
+        return createConv2dFwdOp(loc, func, args);
+    }
+
+    if(func == "max_pool2d") {
+        return createPoolFwdOp<MaxPoolForwardOp>(loc, func, args);
+    }
+
+    if (func == "relu") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value input_data = args[0];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::ReluForwardOp>(loc, input_data.getType(), input_data));
+    }
+
+    if (func == "softmax") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value input_data = args[0];
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::SoftmaxForwardOp>(loc, input_data.getType(), input_data));
+    }
 
     // ********************************************************************
     // Other matrix operations
@@ -830,7 +953,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------
-    
+
     if(func == "openFile") {
         checkNumArgsExact(func, numArgs, 1);
         mlir::Value filename = args[0];
@@ -866,7 +989,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value numRows = utils.castSizeIf(args[1]);
         mlir::Value numCols = utils.castSizeIf(args[2]);
         mlir::Value delim = args[3];
-        
+
         // TODO Currently, this always assumes double as the value type. We
         // need to connect this to our FileMetaData mechanism, but for that, we
         // require the file name, which is not known here in the current design.
@@ -875,7 +998,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 fileOrDescriptor, numRows, numCols, delim
         ));
     }
-    
+
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************
@@ -888,11 +1011,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg.getType(), arg, info
         ));
     }
-    
+
     // ********************************************************************
     // Measurements
     // ********************************************************************
-    
+
     if(func == "now") {
         checkNumArgsExact(func, numArgs, 0);
         return static_cast<mlir::Value>(builder.create<NowOp>(

@@ -31,7 +31,7 @@
 TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
+    const double eps = 0.02;
     const size_t numRows = 100;
     const size_t numCols = 50;
     const VT min = 100;
@@ -55,9 +55,9 @@ TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), 
                         numNonZeros++;
                     }
                 }
+            const double sparsityFound = static_cast<double>(numNonZeros) / static_cast<double>(numRows * numCols);
 
-            const double sparsityFound = static_cast<double>(numNonZeros) / (numRows * numCols);
-            CHECK(abs(sparsityFound - sparsity) < 0.001);
+            CHECK(std::abs(sparsityFound - sparsity) < eps);
 
             DataObjectFactory::destroy(m);
         }

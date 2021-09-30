@@ -57,14 +57,15 @@ using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
-    switch(opCode) {
-        #define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
+    switch (opCode) {
+#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::SUB)
         MAKE_CASE(BinaryOpCode::MUL)
         MAKE_CASE(BinaryOpCode::DIV)
         MAKE_CASE(BinaryOpCode::POW)
+        MAKE_CASE(BinaryOpCode::MOD)
         // Comparisons.
         MAKE_CASE(BinaryOpCode::EQ)
         MAKE_CASE(BinaryOpCode::NEQ)
@@ -75,7 +76,7 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Min/max.
         MAKE_CASE(BinaryOpCode::MIN)
         MAKE_CASE(BinaryOpCode::MAX)
-        #undef MAKE_CASE
+#undef MAKE_CASE
         default:
             throw std::runtime_error("unknown BinaryOpCode");
     }
@@ -102,6 +103,15 @@ TRes ewBinarySca(BinaryOpCode opCode, TLhs lhs, TRhs rhs, DCTX(ctx)) {
 // (Partial) template specializations for different op codes
 // ****************************************************************************
 
+// Handle multiply extra
+template<typename TLhs, typename TRhs>
+struct EwBinarySca<BinaryOpCode::MUL, bool, TLhs, TRhs> {
+    inline static bool apply(TLhs lhs, TRhs rhs, DCTX(ctx)) {
+        uint32_t result = lhs * rhs;
+        return static_cast<bool>(result);
+    }
+};
+
 #define MAKE_EW_BINARY_SCA(opCode, expr) \
     template<typename TRes, typename TLhs, typename TRhs> \
     struct EwBinarySca<opCode, TRes, TLhs, TRhs> { \
@@ -117,6 +127,7 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::SUB, lhs - rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::MUL, lhs * rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::DIV, lhs / rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::POW, pow(lhs, rhs))
+MAKE_EW_BINARY_SCA(BinaryOpCode::MOD, std::fmod(lhs, rhs))
 // Comparisons.
 MAKE_EW_BINARY_SCA(BinaryOpCode::EQ , lhs == rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::NEQ, lhs != rhs)

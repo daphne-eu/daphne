@@ -17,6 +17,13 @@
 #ifndef SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
+#pragma once
+#include <vector>
+#include <iostream>
+#include <memory>
+#ifdef USE_CUDA
+    #include "CUDAContext.h"
+#endif
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
@@ -35,18 +42,31 @@ struct DaphneContext {
     // does not require.
     // If you need to add a bunch of related information items, please consider
     // creating an individual struct/class for them and adding a single member
-    // of that type here, in order no to separate concern and allow a
-    // high-level overview of the context information.
-    
-    // So far, there is no context information.
-    
-    DaphneContext() {
-        //
-    }
+    // of that type here, in order to separate concerns and allow a  high-level
+    // overview of the context information.
+#ifdef USE_CUDA
+    std::vector<std::unique_ptr<IContext>> cuda_contexts;
+#endif
+    DaphneContext() = default;
     
     ~DaphneContext() {
-        //
+#ifdef USE_CUDA
+#ifndef NDEBUG
+        std::cout << "destructing DaphneContext" << std::endl;
+#endif
+    for (auto& ctx : cuda_contexts) {
+        ctx->destroy();
     }
+    cuda_contexts.clear();
+#endif
+    }
+
+#ifdef USE_CUDA
+    // ToDo: in a multi device setting this should use a find call instead of a direct [] access
+    [[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const {
+        return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
+    }
+#endif
 };
 
 #endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

@@ -68,6 +68,7 @@ expr:
     | obj=expr '[' (rows=expr)? ',' (cols=expr)? ']' # rightIdxExtractExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
+    | lhs=expr op='%' rhs=expr # modExpr
     | lhs=expr op=('*'|'/') rhs=expr # mulExpr
     | lhs=expr op=('+'|'-') rhs=expr # addExpr
     | lhs=expr op=('=='|'!='|'<'|'<='|'>'|'>=') rhs=expr # cmpExpr

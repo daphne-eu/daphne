@@ -35,10 +35,12 @@
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
 #include <exception>
+#include <iostream>
 #include <memory>
+#include <utility>
 
-DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized)
-: distributed_(distributed), vectorized_(vectorized)
+DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUserConfig  cfg)
+: distributed_(distributed), vectorized_(vectorized), user_config_(std::move(cfg))
 {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
@@ -66,14 +68,14 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
             // TODO: this can be moved outside without problem, should we?
             pm.addPass(mlir::createCanonicalizerPass());
         }
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
         pm.addPass(mlir::createLowerToCFGPass());
@@ -98,7 +100,20 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
 
         llvm::SmallVector<llvm::StringRef, 1> sharedLibRefs;
         // TODO Find these at run-time.
-        sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
+        if(user_config_.libdir.empty()) {
+            sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
+        }
+        else {
+            sharedLibRefs.insert(sharedLibRefs.end(), user_config_.library_paths.begin(), user_config_.library_paths.end());
+        }
+
+#ifdef USE_CUDA
+        if(user_config_.use_cuda) {
+            if(user_config_.libdir.empty()) {
+                sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
+            }
+        }
+#endif
         registerLLVMDialectTranslation(context_);
         // module.dump();
         auto maybeEngine = mlir::ExecutionEngine::create(

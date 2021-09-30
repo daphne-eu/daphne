@@ -17,6 +17,7 @@
 #ifndef SRC_RUNTIME_LOCAL_IO_UTILS_H
 #define SRC_RUNTIME_LOCAL_IO_UTILS_H
 
+#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
@@ -35,8 +36,16 @@ inline void convertStr(std::string const &x, double *v) {
 inline void convertStr(std::string const &x, float *v) {
   try {
     *v = stof(x);
-  } catch (const std::invalid_argument &) {
+  }
+  catch (const std::invalid_argument &) {
     *v = std::numeric_limits<float>::quiet_NaN();
+  }
+  catch (const std::out_of_range& e) {
+      // handling subnormal values (too small)
+      *v = std::numeric_limits<float>::min();
+#ifndef NDEBUG
+      std::cerr << "Warning: setting subnormal float value " << x << " to std::numeric_limits<float>::min() -> " << std::numeric_limits<float>::min() << std::endl;
+#endif
   }
 }
 inline void convertStr(std::string const &x, int8_t *v) { *v = stoi(x); }

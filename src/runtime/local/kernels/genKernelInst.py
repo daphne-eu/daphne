@@ -81,15 +81,16 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             rp["isOutput"] = True
         elif "isOutput" not in rp:
             rp["isOutput"] = False
-            
+
     isCreateDaphneContext = opName == "createDaphneContext"
-    
+
     #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
         rp["type"]
         .replace("const ", "")
         .replace(" **", "" if rp["isOutput"] else "_variadic")
         .replace(" *", "")
+        .replace("& ", "")
         .replace("<", "_").replace(">", "")
         for rp in extendedRuntimeParams
     ])
@@ -109,10 +110,15 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             funcName = funcName[:-3]
         if opCode is not None:
             # We assume that the name of the op-code type ends with "OpCode".
-            opCodeWord = opCodeType[:-len("OpCode")]
-            funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
-            funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
-        
+            # TODO Make the special treatment of PoolForward obsolete, it
+            # should go through the same route as all other ops.
+            if funcName == "_PoolForward":
+                funcName = "_" + opCode.lower() + funcName[1:]
+            else:
+                opCodeWord = opCodeType[:-len("OpCode")]
+                funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
+                funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}{}({}) {{\n".format(
                 funcName,
@@ -122,7 +128,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         ))
         
         # List of parameters for the call.
-        if opCode is None:
+        # TODO Make the special treatment of PoolForward obsolete, it should go
+        # through the same route as all other ops.
+        if opCode is None:# and funcName != "PoolForward":
             callParams = []
         else:
             callParams = ["{}::{}".format(opCodeType, opCode)]
@@ -140,13 +148,26 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         outFile.write(2 * INDENT)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
-        outFile.write("{}{}({});\n".format(
-                opName,
-                # Template parameters, if the kernel is a template:
-                "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
-                # Run-time parameters, possibly including DaphneContext:
-                ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"] )),
-        ))
+
+        # TODO Make the special treatment of PoolForward obsolete, it should go
+        # through the same route as all other ops.
+        if opName == "PoolForward":
+            outFile.write("{}<{}>::apply({});\n".format(
+                "Pooling::Forward",
+                # Template parameters:
+                ", ".join(["Pooling::"+opCode]+[toCppType(tv) for tv in templateValues]),
+                # Run-time parameters:
+                # ", ".join(([] if isCreateDaphneContext else ["ctx"] ) + callParams[1:]),
+                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"] )),
+            ))
+        else:
+            outFile.write("{}{}({});\n".format(
+                    opName,
+                    # Template parameters, if the kernel is a template:
+                    "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
+                    # Run-time parameters, possibly including DaphneContext:
+                    ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"] )),
+            ))
         outFile.write(INDENT + "}\n")
     
     # Generate the function(s).

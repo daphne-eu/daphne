@@ -73,8 +73,8 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         else
             for(size_t r = 0; r < numRows; r++) {
                 memcpy(valuesDst, valuesSrc, numCols * sizeof(VT));
-                valuesDst + rowSkipDst;
-                valuesSrc + rowSkipSrc;
+                valuesDst += rowSkipDst;
+                valuesSrc += rowSkipSrc;
             }
     }
 };

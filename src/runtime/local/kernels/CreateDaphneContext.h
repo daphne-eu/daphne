@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
 
+#pragma once
+
 #include <runtime/local/context/DaphneContext.h>
 
 // ****************************************************************************
