@@ -43,7 +43,7 @@ inline void convertStr(std::string const &x, float *v) {
   catch (const std::out_of_range& e) {
       // handling subnormal values (too small)
       *v = std::numeric_limits<float>::min();
-#ifdef NDEBUG
+#ifndef NDEBUG
       std::cerr << "Warning: setting subnormal float value " << x << " to std::numeric_limits<float>::min() -> " << std::numeric_limits<float>::min() << std::endl;
 #endif
   }

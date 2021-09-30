@@ -13,6 +13,11 @@
 # limitations under the License.
 
 cmake_minimum_required(VERSION 3.17)
+
+# Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
+# This needs to be set *before* the project() command
+set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
+
 project(daphne-prototype LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
@@ -20,8 +25,8 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_compile_options(-O3) # use high optimization level for all targets
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0")
+# silence a warning about DEPFILE path transformations (used in LLVM)
+cmake_policy(SET CMP0116 OLD)
 
 # *****************************************************************************
 # Related to MLIR/LLVM
@@ -41,6 +46,12 @@ list(APPEND CMAKE_MODULE_PATH "${LLVM_CMAKE_DIR}")
 include(TableGen)
 include(AddLLVM)
 include(AddMLIR)
+
+# the next command needs to be guarded because it messes with compiler flags
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(LLVM_ENABLE_ASSERTIONS OFF)
+endif()
+
 include(HandleLLVMOptions)
 
 include_directories(${LLVM_INCLUDE_DIRS})

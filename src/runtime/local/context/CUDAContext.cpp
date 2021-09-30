@@ -17,7 +17,7 @@
 #include "runtime/local/context/CUDAContext.h"
 
 void CUDAContext::destroy() {
-#ifdef NDEBUG
+#ifndef NDEBUG
     std::cout << "Destroying CUDA context..." << std::endl;
 #endif
     CHECK_CUBLAS(cublasDestroy(cublas_handle));
@@ -85,13 +85,13 @@ cudaDataType CUDAContext::getCUSparseDataType<double>() const {
 
 void* CUDAContext::getCUDNNWorkspace(size_t size) {
     if (size > cudnn_workspace_size) {
-        //#ifdef NDEBUG
+        //#ifndef NDEBUG
 //        std::cerr << "Allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
         //#endif
         CHECK_CUDART(cudaMalloc(&cudnn_workspace, size));
         cudnn_workspace_size = size;
     }
-    //#ifdef NDEBUG
+    //#ifndef NDEBUG
 //    else {
 //        std::cerr << "Not allocating cudnn conv workspace of size " << size << " bytes" << std::endl;
 //    }
