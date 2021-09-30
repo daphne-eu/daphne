@@ -62,8 +62,7 @@ namespace
                 return success();
             }else if(callee.str() == "sql"){
                 mlir::daphne::SqlOp sqlop = static_cast<mlir::daphne::SqlOp>(op);
-                std::cout << sqlop.sql().str() << std::endl;
-
+                
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
 
