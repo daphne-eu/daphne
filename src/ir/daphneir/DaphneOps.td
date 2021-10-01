@@ -819,14 +819,20 @@ def Daphne_GroupOp : Daphne_Op<"group"> {
 // Frame label manipulation
 // ****************************************************************************
 
-def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels"> {
+def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let arguments = (ins Frame:$arg, Variadic<StrScalar>:$labels);
-    let results = (outs); // no results
+    let results = (outs Frame:$res);
 }
 
-def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix"> {
+def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let arguments = (ins Frame:$arg, StrScalar:$prefix);
-    let results = (outs); // no results
+    let results = (outs Frame:$res);
 }
 
 // ****************************************************************************

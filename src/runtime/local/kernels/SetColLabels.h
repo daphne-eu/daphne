@@ -30,7 +30,7 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabels(Frame * arg, const char ** labels, size_t numLabels, DCTX(ctx)) {
+void setColLabels(Frame *& res, const Frame * arg, const char ** labels, size_t numLabels, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     if(numLabels != numCols)
         throw std::runtime_error(
@@ -40,7 +40,14 @@ void setColLabels(Frame * arg, const char ** labels, size_t numLabels, DCTX(ctx)
     for(size_t c = 0; c < numCols; c++)
         labelsStr[c] = labels[c];
     
-    arg->setLabels(labelsStr);
+    // Create a view on the input frame (zero-copy) and modify the column
+    // labels of the view.
+    auto colIdxs = new size_t[numCols];
+    for(size_t c = 0; c < numCols; c++)
+        colIdxs[c] = c;
+    res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols, colIdxs);
+    delete[] colIdxs;
+    res->setLabels(labelsStr);
     
     delete[] labelsStr;
 }

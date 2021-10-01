@@ -1102,7 +1102,11 @@
             "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "Frame *",
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Frame *",
                     "name": "arg"
                 },
                 {
@@ -1127,7 +1131,11 @@
             "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "Frame *",
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Frame *",
                     "name": "arg"
                 },
                 {

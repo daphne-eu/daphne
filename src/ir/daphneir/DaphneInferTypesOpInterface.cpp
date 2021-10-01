@@ -201,3 +201,15 @@ void daphne::SemiJoinOp::inferTypes() {
     getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType}));
     getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
 }
+
+void daphne::SetColLabelsOp::inferTypes() {
+    getResult().setType(
+            arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()
+    );
+}
+
+void daphne::SetColLabelsPrefixOp::inferTypes() {
+    getResult().setType(
+            arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()
+    );
+}

@@ -32,26 +32,29 @@ TEST_CASE("SetColLabelsPrefix", TAG_KERNELS) {
     const size_t numCols = 3;
     
     ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32, ValueTypeCode::UI8};
-    const std::string labelsIn[numCols] = {"a", "b", "c"};
-    auto f = DataObjectFactory::create<Frame>(4, numCols, schema, labelsIn, false);
     
-    const std::string * labelsOut;
+    const std::string labelsArg[numCols] = {"a", "b", "c"};
+    auto arg = DataObjectFactory::create<Frame>(4, numCols, schema, labelsArg, false);
+    
+    const std::string * labelsRes;
     
     // Introduces a prefix.
-    setColLabelsPrefix(f, "R", nullptr);
+    Frame * res1 = nullptr;
+    setColLabelsPrefix(res1, arg, "R", nullptr);
     
-    labelsOut = f->getLabels();
-    CHECK(labelsOut[0] == "R.a");
-    CHECK(labelsOut[1] == "R.b");
-    CHECK(labelsOut[2] == "R.c");
+    labelsRes = res1->getLabels();
+    CHECK(labelsRes[0] == "R.a");
+    CHECK(labelsRes[1] == "R.b");
+    CHECK(labelsRes[2] == "R.c");
     
     // Changes an existing prefix.
-    setColLabelsPrefix(f, "S", nullptr);
+    Frame * res2 = nullptr;
+    setColLabelsPrefix(res2, arg, "S", nullptr);
     
-    labelsOut = f->getLabels();
-    CHECK(labelsOut[0] == "S.a");
-    CHECK(labelsOut[1] == "S.b");
-    CHECK(labelsOut[2] == "S.c");
+    labelsRes = res2->getLabels();
+    CHECK(labelsRes[0] == "S.a");
+    CHECK(labelsRes[1] == "S.b");
+    CHECK(labelsRes[2] == "S.c");
     
-    DataObjectFactory::destroy(f);
+    DataObjectFactory::destroy(arg, res1, res2);
 }

@@ -15,6 +15,7 @@
  */
 
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/datastructures/LabelUtils.h>
 
 #include <mlir/IR/Value.h>
 
@@ -131,4 +132,37 @@ void daphne::SemiJoinOp::inferFrameLabels() {
     newLabels->push_back(getConstantString(lhsOn()));
     Value res = getResult(0);
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::SetColLabelsOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    for(Value label : labels()) {
+        try {
+            newLabels->push_back(getConstantString(label));
+        }
+        catch(std::runtime_error&) {
+            // TODO This could be improved by supporting knowledge on only some
+            // of the labels.
+            // If we do not know the values of all label operands at
+            // compile-time, then we do not infer any of them.
+            delete newLabels;
+            newLabels = nullptr;
+        }
+    }
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::SetColLabelsPrefixOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    std::string prefixStr = getConstantString(prefix());
+    auto ft = arg().getType().dyn_cast<daphne::FrameType>();
+    std::vector<std::string> * labelsStr = ft.getLabels();
+    if(labelsStr)
+        for(auto labelStr : *labelsStr)
+            newLabels->push_back(LabelUtils::setPrefix(prefixStr, labelStr));
+    else {
+        delete[] newLabels;
+        newLabels = nullptr;
+    }
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }

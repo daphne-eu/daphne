@@ -876,11 +876,21 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         std::vector<mlir::Value> labels;
         for(size_t i = 1; i < numArgs; i++)
             labels.push_back(args[i]);
-        return builder.create<SetColLabelsOp>(loc, args[0], labels);
+        return static_cast<mlir::Value>(builder.create<SetColLabelsOp>(
+                loc,
+                args[0].getType().dyn_cast<FrameType>().withSameColumnTypes(),
+                args[0],
+                labels
+        ));
     }
     if(func == "setColLabelsPrefix") {
         checkNumArgsExact(func, numArgs, 2);
-        return builder.create<SetColLabelsPrefixOp>(loc, args[0], args[1]);
+        return static_cast<mlir::Value>(builder.create<SetColLabelsPrefixOp>(
+                loc,
+                args[0].getType().dyn_cast<FrameType>().withSameColumnTypes(),
+                args[0],
+                args[1]
+        ));
     }
 
     // ********************************************************************

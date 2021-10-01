@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/LabelUtils.h>
 
 #include <string>
 
@@ -29,21 +30,22 @@
 // Convenience function
 // ****************************************************************************
 
-void setColLabelsPrefix(Frame * arg, const char * prefix, DCTX(ctx)) {
+void setColLabelsPrefix(Frame *& res, const Frame * arg, const char * prefix, DCTX(ctx)) {
     const size_t numCols = arg->getNumCols();
     const std::string * oldLabels = arg->getLabels();
     std::string * newLabels = new std::string[numCols];
     
-    for(size_t i = 0; i < numCols; i++) {
-        const std::string oldLabel = oldLabels[i];
-        const size_t pos = oldLabel.find('.');
-        if(pos == std::string::npos)
-            newLabels[i] = std::string(prefix) + "." + oldLabel;
-        else
-            newLabels[i] = prefix + oldLabel.substr(pos);
-    }
+    for(size_t i = 0; i < numCols; i++)
+        newLabels[i] = LabelUtils::setPrefix(prefix, oldLabels[i]);
     
-    arg->setLabels(newLabels);
+    // Create a view on the input frame (zero-copy) and modify the column
+    // labels of the view.
+    auto colIdxs = new size_t[numCols];
+    for(size_t c = 0; c < numCols; c++)
+        colIdxs[c] = c;
+    res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), numCols, colIdxs);
+    delete[] colIdxs;
+    res->setLabels(newLabels);
     
     delete[] newLabels;
 }

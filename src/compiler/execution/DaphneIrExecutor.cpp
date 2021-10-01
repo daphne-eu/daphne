@@ -68,6 +68,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
