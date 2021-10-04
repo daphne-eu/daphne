@@ -25,34 +25,10 @@
 
 const std::string dirPath = "test/api/cli/sql/";
 
-#define MAKE_PARSER_FAILURE_TEST_CASE(name, count) \
-    TEST_CASE(name ", failure", TAG_SQL) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_parser_failure_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name, i); \
-            } \
-        } \
+TEST_CASE("basic, success", TAG_SQL) {
+    for(unsigned i = 1; i <= 2; i++) {
+        DYNAMIC_SECTION("basicsql_success_" << i << ".daphne") {
+            checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, "basicsql_success", i);
+        }
     }
-//
-//
-#define MAKE_EXECUTION_ERROR_TEST_CASE(name, count) \
-    TEST_CASE(name ", execution_failure", TAG_SQL) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_execution_failure_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::EXECUTION_ERROR, dirPath, name, i); \
-            } \
-        } \
-    }
-
-#define MAKE_SUCCESS_TEST_CASE(name, count) \
-    TEST_CASE(name ", success", TAG_SQL) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_success_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, name, i); \
-            } \
-        } \
-    }
-
-MAKE_PARSER_FAILURE_TEST_CASE("basicsql", 2)
-MAKE_EXECUTION_ERROR_TEST_CASE("basicsql", 2)
-MAKE_SUCCESS_TEST_CASE("basicsql", 2)
+}

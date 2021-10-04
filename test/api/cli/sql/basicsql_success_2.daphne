@@ -10,4 +10,4 @@ registerView("y", f2);
 
 s = sql("SELECT a, c FROM x, y;");
 
-//print(s);
+print(s);
