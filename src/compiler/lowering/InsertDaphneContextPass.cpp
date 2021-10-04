@@ -21,6 +21,8 @@
 
 using namespace mlir;
 
+#include <iostream>
+
 /**
  * @brief Inserts a DaphneIR `CreateDaphneContextOp` and a
  * `DestroyDaphneContextOp` as the first and last (before the terminator)
@@ -32,6 +34,8 @@ using namespace mlir;
 // - passing the context as an argument to a function
 struct InsertDaphneContextPass : public PassWrapper<InsertDaphneContextPass, FunctionPass>
 {
+    const DaphneUserConfig& user_config;
+    explicit InsertDaphneContextPass(const DaphneUserConfig& cfg) : user_config(cfg) {}
     void runOnFunction() final;
 };
 
@@ -42,19 +46,25 @@ void InsertDaphneContextPass::runOnFunction()
     
     OpBuilder builder(&b, b.begin());
     Location loc = builder.getUnknownLoc();
-    
+
     // Insert a CreateDaphneContextOp as the first operation in the block.
     builder.create<daphne::CreateDaphneContextOp>(
             loc,
             daphne::DaphneContextType::get(&getContext())
     );
+#ifdef USE_CUDA
+    if(user_config.use_cuda) {
+        builder.create<daphne::InitCUDAContextOp>(loc);
+    }
+#endif
+
     // Insert a DestroyDaphneContextOp as the last operation in the block, but
     // before the block's terminator.
     builder.setInsertionPoint(b.getTerminator());
     builder.create<daphne::DestroyDaphneContextOp>(loc);
 }
 
-std::unique_ptr<Pass> daphne::createInsertDaphneContextPass()
+std::unique_ptr<Pass> daphne::createInsertDaphneContextPass(const DaphneUserConfig& cfg)
 {
-    return std::make_unique<InsertDaphneContextPass>();
+    return std::make_unique<InsertDaphneContextPass>(cfg);
 }

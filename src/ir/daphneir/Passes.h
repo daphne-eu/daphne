@@ -17,27 +17,27 @@
 #ifndef SRC_IR_DAPHNEIR_PASSES_H
 #define SRC_IR_DAPHNEIR_PASSES_H
 
+#pragma once
+
+#include <api/cli/DaphneUserConfig.h>
+
 #include "mlir/Pass/Pass.h"
 
 #include <string>
 
-namespace mlir
-{
-    namespace daphne
-    {
-        std::unique_ptr<Pass> createDistributeComputationsPass();
-        std::unique_ptr<Pass> createInferencePass();
-        std::unique_ptr<Pass> createInsertDaphneContextPass();
-        std::unique_ptr<Pass> createLowerToLLVMPass();
-        std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
-        std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
-        std::unique_ptr<Pass> createVectorizeComputationsPass();
-        std::unique_ptr<Pass> createRewriteSqlOpPass();
-        std::unique_ptr<Pass> createLowerRelationalAlgebraToDaphneOpPass();
+namespace mlir::daphne {
+    std::unique_ptr<Pass> createDistributeComputationsPass();
+    std::unique_ptr<Pass> createInferencePass();
+    std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createLowerToLLVMPass();
+    std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
+    std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createVectorizeComputationsPass();
+    std::unique_ptr<Pass> createRewriteSqlOpPass();
+    std::unique_ptr<Pass> createLowerRelationalAlgebraToDaphneOpPass();
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"
-    } // namespace daphne
-} // namespace mlir
+} // namespace mlir::daphne
 
 #endif //SRC_IR_DAPHNEIR_PASSES_H

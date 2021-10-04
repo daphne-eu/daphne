@@ -37,7 +37,7 @@ TEST_CASE("block, success", TAG_SCOPING) {
     TEST_CASE(name ", failure", TAG_SCOPING) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name, i); \
+                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name "_failure", i); \
             } \
         } \
     }

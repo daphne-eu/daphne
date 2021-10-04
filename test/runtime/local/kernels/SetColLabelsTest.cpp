@@ -32,14 +32,16 @@ TEST_CASE("SetColLabels", TAG_KERNELS) {
     const size_t numCols = 3;
     
     ValueTypeCode schema[] = {ValueTypeCode::F64, ValueTypeCode::SI32, ValueTypeCode::UI8};
-    auto f = DataObjectFactory::create<Frame>(4, numCols, schema, nullptr, false);
     
-    const char * labelsIn[numCols] = {"ab", "cde", "fghi"};
-    setColLabels(f, labelsIn, numCols, nullptr);
+    auto arg = DataObjectFactory::create<Frame>(4, numCols, schema, nullptr, false);
+    const char * labelsArg[numCols] = {"ab", "cde", "fghi"};
     
-    const std::string * labelsOut = f->getLabels();
+    Frame * res = nullptr;
+    setColLabels(res, arg, labelsArg, numCols, nullptr);
+    
+    const std::string * labelsRes = res->getLabels();
     for(size_t i = 0; i < numCols; i++)
-        CHECK(labelsOut[i] == labelsIn[i]);
+        CHECK(labelsRes[i] == labelsArg[i]);
     
-    DataObjectFactory::destroy(f);
+    DataObjectFactory::destroy(arg, res);
 }

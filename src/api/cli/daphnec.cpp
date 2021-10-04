@@ -15,8 +15,9 @@
  */
 
 #include <api/cli/StatusCode.h>
-#include <parser/sql/SQLParser.h>
+#include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
+#include <parser/sql/SQLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -24,8 +25,12 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 
+#ifdef USE_CUDA
+    #include "runtime/local/kernels/CUDA_HostUtils.h"
+#endif
+
+#include <exception>
 #include <iostream>
-#include <memory>
 #include <string>
 #include <unordered_map>
 
@@ -65,8 +70,8 @@ main(int argc, char** argv)
                     int i;
                     for(i = argPos + 1; i < argc; i++) {
                         const std::string pair = args[i];
-                        size_t pos = pair.find("=");
-                        if(pos == pair.npos)
+                        size_t pos = pair.find('=');
+                        if(pos == std::string::npos)
                             break;
                         scriptArgs.emplace(
                             pair.substr(0, pos), // arg name
@@ -86,8 +91,42 @@ main(int argc, char** argv)
         }
     }
 
+    // TODO "libdir" and "cuda" should not be script arguments. Script
+    // arguments are those that can be used from within the DaphneDSL script.
+    // However, these two arguments are only required during compilation and
+    // runtime, users do not need to access them in a script.
+
+    DaphneUserConfig user_config;
+    auto it = scriptArgs.find("libdir");
+    if(it != scriptArgs.end()) {
+        user_config.libdir = it->second;
+        user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+    }
+
+#ifdef USE_CUDA
+    it = scriptArgs.find("cuda");
+    if(it != scriptArgs.end()) {
+        if(it->second == "1") {
+//            std::cout << "-cuda flag provided" << std::endl;
+            int device_count;
+              CHECK_CUDART(cudaGetDeviceCount(&device_count));
+              if(device_count < 1)
+                  std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+            else { // NOLINT(readability-misleading-indentation)
+                std::cout << "Available CUDA devices: " << device_count << std::endl;
+                user_config.use_cuda = true;
+            }
+        }
+    }
+
+    it = scriptArgs.find("libdir");
+    if(it != scriptArgs.end()) {
+        user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
+    }
+#endif
+
     // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines);
+    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

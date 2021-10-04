@@ -32,3 +32,7 @@ target_link_libraries(MLIRDaphneTransforms PUBLIC
     MLIRStandardToLLVM
     SQLParser
 )
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    include_directories(${CUDAToolkit_INCLUDE_DIRS})
+endif()

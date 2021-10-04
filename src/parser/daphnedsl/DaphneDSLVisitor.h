@@ -58,9 +58,9 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * functions.
      */
     DaphneDSLBuiltins builtins;
-    
+
     std::unordered_map<std::string, std::string> args;
-    
+
 public:
     DaphneDSLVisitor(
             mlir::OpBuilder & builder,
@@ -105,6 +105,8 @@ public:
 
     antlrcpp::Any visitPowExpr(DaphneDSLGrammarParser::PowExprContext * ctx) override;
 
+    antlrcpp::Any visitModExpr(DaphneDSLGrammarParser::ModExprContext * ctx) override;
+    
     antlrcpp::Any visitMulExpr(DaphneDSLGrammarParser::MulExprContext * ctx) override;
 
     antlrcpp::Any visitAddExpr(DaphneDSLGrammarParser::AddExprContext * ctx) override;

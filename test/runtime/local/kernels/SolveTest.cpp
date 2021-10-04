@@ -16,7 +16,7 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/CheckEqApprox.h>
 #include <runtime/local/kernels/MatMul.h>
 #include <runtime/local/kernels/Transpose.h>
 #include <runtime/local/kernels/Solve.h>
@@ -35,8 +35,7 @@ void checkSolve(const DT* lhs, const DT* rhs, const DT * exp) {
     // because otherwise the float results do not exactly match, while double does
     CHECK(res->getNumRows() == exp->getNumRows());
     CHECK(res->getNumCols() == exp->getNumCols());
-    // TODO Bug: this compares only the first pair of values.
-    CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(exp->getValues()));
+    CHECK(checkEqApprox(res, exp, 1e-6, nullptr));
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double)) {

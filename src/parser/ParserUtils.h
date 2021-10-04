@@ -135,11 +135,23 @@ public:
     mlir::Value castSeedIf(mlir::Value v) {
         return castIf(seedType, v);
     }
-    
+
+    mlir::Value castUI8If(mlir::Value v) {
+        return castIf(builder.getIntegerType(8, false), v);
+    }
+
+    mlir::Value castUI32If(mlir::Value v) {
+        return castIf(builder.getIntegerType(32, false), v);
+    }
+
+    mlir::Value castUI64If(mlir::Value v) {
+        return castIf(builder.getIntegerType(64, false), v);
+    }
+
     // ************************************************************************
     // Type parsing
     // ************************************************************************
-    
+
     mlir::Type getValueTypeByName(const std::string & name) {
         if(name == "f64") return builder.getF64Type();
         if(name == "f32") return builder.getF32Type();
@@ -151,7 +163,7 @@ public:
         if(name == "ui8") return builder.getIntegerType(8, false);
         throw std::runtime_error("unsupported value type: " + name);
     }
-    
+
     mlir::Type mlirTypeForCode(ValueTypeCode type) {
         switch(type) {
             case ValueTypeCode::SI8:  return builder.getIntegerType(8, true);
@@ -165,7 +177,7 @@ public:
             default: throw std::runtime_error("unknown value type code");
         }
     }
-    
+
     // ************************************************************************
     // Misc
     // ************************************************************************
@@ -175,7 +187,6 @@ public:
             return a.as<mlir::Value>();
         throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
     }
-    
 };
 
 #endif //SRC_PARSER_PARSERUTILS_H

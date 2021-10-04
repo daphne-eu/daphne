@@ -46,8 +46,26 @@ def Unknown : Daphne_Type<"Unknown"> {
 def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";
 
+    // TODO Maybe we should rename "element type" to "value type" everywhere.
     let parameters = (ins "::mlir::Type":$elementType);
     let genVerifyDecl = 1;
+
+    let extraClassDeclaration = [{
+        // The following methods return a MatrixType with the same parameters
+        // as this MatrixType, except for one parameter, which is replaced by a
+        // new value.
+
+        ::mlir::daphne::MatrixType withElementType(::mlir::Type elementType) {
+            return get(getContext(), elementType);
+        }
+
+        // The following method returns a MatrixType with the same element type
+        // as this MatrixType, but all other parameters reset.
+
+        ::mlir::daphne::MatrixType withSameElementType() {
+            return get(getContext(), getElementType());
+        }
+    }];
 }
 
 // TODO We could omit the "Of" and have it default to ScalarType.
@@ -77,6 +95,27 @@ def Frame : Daphne_Type<"Frame"> {
             return Base::get($_ctxt, columnTypes, nullptr);
         }]>,
     ];
+
+    let extraClassDeclaration =  [{
+        // The following methods return a FrameType with the same parameters
+        // as this FrameType, except for one parameter, which is replaced by a
+        // new value.
+
+        ::mlir::daphne::FrameType withColumnTypes(std::vector<::mlir::Type> columnTypes) {
+            return get(getContext(), columnTypes, getLabels());
+        }
+
+        ::mlir::daphne::FrameType withLabels(std::vector<std::string> * labels) {
+            return get(getContext(), getColumnTypes(), labels);
+        }
+
+        // The following method returns a FrameType with the same column types
+        // as this FrameType, but all other parameters reset.
+
+        ::mlir::daphne::FrameType withSameColumnTypes() {
+            return get(getContext(), getColumnTypes());
+        }
+    }];
 }
 
 def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;

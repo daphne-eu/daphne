@@ -420,7 +420,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::Literal
 antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprContext * ctx) {
     // Retrieve the name of the referenced CLI argument.
     std::string arg = ctx->arg->getText();
-    
+
     // Find out if this argument was specified on the comman line.
     auto it = args.find(arg);
     if(it == args.end())
@@ -470,7 +470,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 
 antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {
     mlir::Type resType;
-    
+
     if(ctx->DATA_TYPE()) {
         std::string dtStr = ctx->DATA_TYPE()->getText();
         if(dtStr == "matrix") {
@@ -495,7 +495,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 "casting requires the specification of the target data and/or "
                 "value type"
         );
-    
+
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
             builder.getUnknownLoc(),
             resType,
@@ -593,6 +593,18 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
 
     if(op == "^")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+
+    throw std::runtime_error("unexpected op symbol");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprContext * ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+
+    if(op == "%")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }

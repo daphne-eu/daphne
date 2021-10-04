@@ -15,5 +15,9 @@
 add_library(DataStructures
         Frame.cpp
         ValueTypeUtils.cpp
-)
-target_link_libraries(DataStructures)
+        DenseMatrix.cpp)
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    target_include_directories(DataStructures PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    target_link_libraries(DataStructures PUBLIC CUDA::cudart)
+endif()

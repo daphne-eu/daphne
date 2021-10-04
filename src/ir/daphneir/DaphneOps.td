@@ -87,7 +87,7 @@ def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [TypesMatchWith<"min and max a
 }
 
 def Daphne_SampleOp : Daphne_Op<"sample"> {
-    let arguments = (ins Size:$range, Size:$size, BoolScalar:$withReplacement, Seed:$seed);
+    let arguments = (ins AnyScalar:$range, Size:$size, BoolScalar:$withReplacement, Seed:$seed);
     let results = (outs Matrix:$res);
 }
 
@@ -527,19 +527,63 @@ def Daphne_SvdOp : Daphne_Op<"svd"> {
 // way to specify the *common* arguments just once?
 
 // ----------------------------------------------------------------------------
+// Activation
+// ----------------------------------------------------------------------------
+
+class Daphne_ActivationForwardOp<string name, list<OpTrait> traits = []> :
+        Daphne_Op<name, traits> {
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
+
+def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"reluForward">;
+
+// ----------------------------------------------------------------------------
+// Affine
+// ----------------------------------------------------------------------------
+
+def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
+            MatrixOf<[FloatScalar]>:$bias);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
+
+// ----------------------------------------------------------------------------
+// Batch Normalization
+// ----------------------------------------------------------------------------
+
+def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
+    let arguments = (ins
+            MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
+            MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
+    let results = (outs MatrixOf<[FloatScalar]>:$output);
+}
+
+// ----------------------------------------------------------------------------
+// Bias Addition
+// ----------------------------------------------------------------------------
+
+def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward"> {
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$bias);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
+
+// ----------------------------------------------------------------------------
 // Convolution
 // ----------------------------------------------------------------------------
 
 def Daphne_Conv2DForwardOp : Daphne_Op<"conv2DForward"> {
     let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
+        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
         // input shape
         Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // filter shape
-        Size:$filterNumFilters, Size:$filterNumChannels, Size:$filterHeight, Size:$filterWidth
-    );
-    let results = (outs MatrixOf<[FloatScalar]>:$output);
+        // filter shape (num filters & channels is encoded in dimensions of filter matrix (-> [F,C*H*W]))
+        Size:$filterHeight, Size:$filterWidth, Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$output, Size:$outHeight, Size:$outWidth);
 }
 
 def Daphne_Conv2DBackwardFilterOp : Daphne_Op<"conv2DBackwardFilter"> {
@@ -571,32 +615,29 @@ def Daphne_Conv2DBackwardDataOp : Daphne_Op<"conv2DBackwardData"> {
 // ----------------------------------------------------------------------------
 
 class Daphne_PoolForwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-    let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
-        // input shape
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input,
+        // input shape (NCHW)
         Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // pool shape
-        Size:$poolHeight, Size:$poolWidth
+        // pool shape (ToDo: optional, default filter size 2x2)
+        Size:$poolHeight, Size:$poolWidth,
+        // filter application properties (ToDo: optional, default stride=1x1, padding=0x0)
+        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth
     );
-}
 
-class Daphne_PoolBackwardOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, traits> {
-    let arguments = (ins
-        MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$output,
-        Size:$strideHeight, Size:$strideWidth, Size:$padHeight, Size:$padWidth,
-        // input shape
-        Size:$inputBatchSize, Size:$inputNumChannels, Size:$inputHeight, Size:$inputWidth,
-        // pool shape
-        Size:$poolHeight, Size:$poolWidth
-    );
+    let results = (outs MatrixOf<[FloatScalar]>:$data, Size:$outHeight, Size:$outWidth);
 }
 
 def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward">;
 def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward">;
 
-def Daphne_MaxPoolBackwardOp : Daphne_PoolBackwardOp<"maxPoolBackward">;
-def Daphne_AvgPoolBackwardOp : Daphne_PoolBackwardOp<"avgPoolBackward">;
+// ----------------------------------------------------------------------------
+// Softmax
+// ----------------------------------------------------------------------------
+def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward"> {
+    let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
+
+    let results = (outs MatrixOf<[FloatScalar]>:$data);
+}
 
 // ****************************************************************************
 // Other matrix operations
@@ -789,14 +830,20 @@ def Daphne_GroupOp : Daphne_Op<"group"> {
 // Frame label manipulation
 // ****************************************************************************
 
-def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels"> {
+def Daphne_SetColLabelsOp : Daphne_Op<"setColLabels", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let arguments = (ins Frame:$arg, Variadic<StrScalar>:$labels);
-    let results = (outs); // no results
+    let results = (outs Frame:$res);
 }
 
-def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix"> {
+def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
     let arguments = (ins Frame:$arg, StrScalar:$prefix);
-    let results = (outs); // no results
+    let results = (outs Frame:$res);
 }
 
 // ****************************************************************************
@@ -963,6 +1010,12 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
     // lowering to kernel calls.
     let arguments = (ins); // no arguments
     let results = (outs); // no results
+}
+
+
+def Daphne_InitCUDAContextOp : Daphne_Op<"initCUDAContext"> {
+    let arguments = (ins);
+    let results = (outs);
 }
 
 // ****************************************************************************

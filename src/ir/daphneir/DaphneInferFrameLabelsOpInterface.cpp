@@ -15,6 +15,7 @@
  */
 
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/datastructures/LabelUtils.h>
 
 #include <mlir/IR/Value.h>
 
@@ -53,13 +54,7 @@ void inferFrameLabels_ExtractOrFilterRowOp(ExtractOrFilterRowOp * op) {
     Type t = op->source().getType();
     if(auto ft = t.dyn_cast<daphne::FrameType>()) {
         Value res = op->getResult();
-        auto oldResType = res.getType().dyn_cast<daphne::FrameType>();
-        auto newResType = daphne::FrameType::get(
-                op->getContext(),
-                oldResType.getColumnTypes(),
-                ft.getLabels()
-        );
-        res.setType(newResType);
+        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(ft.getLabels()));
     }
 }
 
@@ -89,13 +84,7 @@ void daphne::ColBindOp::inferFrameLabels() {
         labelsRes->push_back(l);
     
     Value res = getResult();
-    auto oldResType = res.getType().dyn_cast<daphne::FrameType>();
-    auto newResType = daphne::FrameType::get(
-            getContext(),
-            oldResType.getColumnTypes(),
-            labelsRes
-    );
-    res.setType(newResType);
+    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(labelsRes));
 }
 
 void daphne::CreateFrameOp::inferFrameLabels() {
@@ -103,13 +92,7 @@ void daphne::CreateFrameOp::inferFrameLabels() {
     for(Value label : labels())
         resLabels->push_back(getConstantString(label));
     Value res = getResult();
-    auto oldResType = res.getType().dyn_cast<daphne::FrameType>();
-    auto newResType = daphne::FrameType::get(
-            getContext(),
-            oldResType.getColumnTypes(),
-            resLabels
-    );
-    res.setType(newResType);
+    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
 }
 
 void daphne::ExtractColOp::inferFrameLabels() {
@@ -118,15 +101,8 @@ void daphne::ExtractColOp::inferFrameLabels() {
     if(ft && st) {
         auto resLabels = new std::vector<std::string>();
         resLabels->push_back(getConstantString(selectedCols()));
-        
         Value res = getResult();
-        auto oldResType = res.getType().dyn_cast<daphne::FrameType>();
-        auto newResType = daphne::FrameType::get(
-                getContext(),
-                oldResType.getColumnTypes(),
-                resLabels
-        );
-        res.setType(newResType);
+        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
     }
     else
         throw std::runtime_error(
@@ -144,22 +120,49 @@ void daphne::FilterRowOp::inferFrameLabels() {
 }
 
 void daphne::GroupJoinOp::inferFrameLabels() {
-    Value res = getResult(0);
-    auto ft = res.getType().dyn_cast<daphne::FrameType>();
     auto newLabels = new std::vector<std::string>();
     newLabels->push_back(getConstantString(lhsOn()));
     newLabels->push_back(getConstantString(rhsAgg()));
-    res.setType(daphne::FrameType::get(
-            getContext(), ft.getColumnTypes(), newLabels
-    ));
+    Value res = getResult(0);
+    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::SemiJoinOp::inferFrameLabels() {
-    Value res = getResult(0);
-    auto ft = res.getType().dyn_cast<daphne::FrameType>();
     auto newLabels = new std::vector<std::string>();
     newLabels->push_back(getConstantString(lhsOn()));
-    res.setType(daphne::FrameType::get(
-            getContext(), ft.getColumnTypes(), newLabels
-    ));
+    Value res = getResult(0);
+    res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::SetColLabelsOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    for(Value label : labels()) {
+        try {
+            newLabels->push_back(getConstantString(label));
+        }
+        catch(std::runtime_error&) {
+            // TODO This could be improved by supporting knowledge on only some
+            // of the labels.
+            // If we do not know the values of all label operands at
+            // compile-time, then we do not infer any of them.
+            delete newLabels;
+            newLabels = nullptr;
+        }
+    }
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::SetColLabelsPrefixOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    std::string prefixStr = getConstantString(prefix());
+    auto ft = arg().getType().dyn_cast<daphne::FrameType>();
+    std::vector<std::string> * labelsStr = ft.getLabels();
+    if(labelsStr)
+        for(auto labelStr : *labelsStr)
+            newLabels->push_back(LabelUtils::setPrefix(prefixStr, labelStr));
+    else {
+        delete[] newLabels;
+        newLabels = nullptr;
+    }
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
