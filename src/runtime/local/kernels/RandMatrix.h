@@ -65,6 +65,8 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         assert(numRows > 0 && "numRows must be > 0");
         assert(numCols > 0 && "numCols must be > 0");
         assert(min <= max && "min must be <= max");
+        assert((min != 0 || max != 0) &&
+               "min and max must not both be zero, consider setting sparsity to zero instead");
         assert(sparsity >= 0.0 && sparsity <= 1.0 &&
                "sparsity has to be in the interval [0.0, 1.0]");
 
@@ -78,7 +80,7 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         }
 
         std::mt19937 genVal(seed);
-        std::mt19937 genSparse(seed * 3);
+        std::mt19937 genIndex(seed * 3);
         
         static_assert(
                 std::is_floating_point<VT>::value || std::is_integral<VT>::value,
@@ -89,17 +91,59 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
                 std::uniform_real_distribution<VT>,
                 std::uniform_int_distribution<VT>
         >::type distrVal(min, max);
-        std::uniform_real_distribution<double> distrSparse(0.0, 1.0);
+        std::uniform_int_distribution<int> distrIndex(0, numCols * numRows - 1);
 
         VT * valuesRes = res->getValues();
+
+        // If sparsity >= 0.5, we initialize with random values and insert zeros,
+        // else if sparsity < 0.5, it is more efficient to initialize with zero values and insert random.
+        size_t insertedValuesLimit;
+        if (sparsity >= 0.5) {
+            insertedValuesLimit = size_t(round((1 - sparsity) * numCols * numRows));                    
+        } else {
+            insertedValuesLimit = size_t(round(sparsity * numCols * numRows));
+        }
+        
+        // Fill Matrix with non-zero/random values
+        // TODO It might be faster to pull the check on sparsity out of the
+        // loop, including a duplication of the loop.
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++) {
-                if (distrSparse(genSparse) > sparsity)
-                    valuesRes[c] = VT(0);
-                else
+                if (sparsity >= 0.5) {
                     valuesRes[c] = distrVal(genVal);
+                    while (valuesRes[c] == 0)
+                        valuesRes[c] = distrVal(genVal);
+                } else {
+                    valuesRes[c] = VT(0);
+                }
             }
             valuesRes += res->getRowSkip();
+        }
+
+        // Use Knuth's algorithm to calculate unique random indexes equal to insertedValuesLimit, to be set to zero/random value.
+        valuesRes = res->getValues();
+        size_t iRange, iSize;
+        iSize = 0;
+        // TODO It might be faster to pull the check on sparsity out of the
+        // loop, including a duplication of the loop.
+        // TODO If res->getRowSkip() == res->getNumCols(), it might be faster
+        // not to calculate row and col by / and %, but to directly use the
+        // generated index.
+        for (iRange = 0; iRange < (numCols * numRows) && iSize < insertedValuesLimit; iRange++) {            
+            size_t rRange = (numCols * numRows) - iRange;
+            size_t rSize = insertedValuesLimit - iSize;
+            if (fmod(distrIndex(genIndex), rRange) < rSize) {
+                size_t row = iRange / numCols;
+                size_t col = iRange % numCols; 
+                if (sparsity >= 0.5) {
+                    valuesRes[row * res->getRowSkip() + col] = VT(0);
+                } else {
+                    valuesRes[row * res->getRowSkip() + col] = distrVal(genVal);
+                    while (valuesRes[row * res->getRowSkip() + col] == 0)
+                        valuesRes[row * res->getRowSkip() + col] = distrVal(genVal);
+                }
+                iSize++;
+            }
         }
     }
 };
