@@ -65,6 +65,8 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         assert(numRows > 0 && "numRows must be > 0");
         assert(numCols > 0 && "numCols must be > 0");
         assert(min <= max && "min must be <= max");
+        assert((min != 0 || max != 0) &&
+               "min and max must not both be zero, consider setting sparsity to zero instead");
         assert(sparsity >= 0.0 && sparsity <= 1.0 &&
                "sparsity has to be in the interval [0.0, 1.0]");
 
@@ -93,7 +95,7 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
 
         VT * valuesRes = res->getValues();
 
-        // If sparsity >= 0.5, we initiliaze with random values and insert zeros,
+        // If sparsity >= 0.5, we initialize with random values and insert zeros,
         // else if sparsity < 0.5, it is more efficient to initialize with zero values and insert random.
         size_t insertedValuesLimit;
         if (sparsity >= 0.5) {
@@ -103,6 +105,8 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         }
         
         // Fill Matrix with non-zero/random values
+        // TODO It might be faster to pull the check on sparsity out of the
+        // loop, including a duplication of the loop.
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++) {
                 if (sparsity >= 0.5) {
@@ -120,8 +124,13 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         valuesRes = res->getValues();
         size_t iRange, iSize;
         iSize = 0;
-        for (iRange = 0; iRange < (numCols *  numRows) && iSize < insertedValuesLimit; iRange++) {            
-            size_t rRange = (numCols *  numRows) - iRange;
+        // TODO It might be faster to pull the check on sparsity out of the
+        // loop, including a duplication of the loop.
+        // TODO If res->getRowSkip() == res->getNumCols(), it might be faster
+        // not to calculate row and col by / and %, but to directly use the
+        // generated index.
+        for (iRange = 0; iRange < (numCols * numRows) && iSize < insertedValuesLimit; iRange++) {            
+            size_t rRange = (numCols * numRows) - iRange;
             size_t rSize = insertedValuesLimit - iSize;
             if (fmod(distrIndex(genIndex), rRange) < rSize) {
                 size_t row = iRange / numCols;

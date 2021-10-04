@@ -31,7 +31,6 @@
 TEMPLATE_PRODUCT_TEST_CASE("RandMatrix", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    const double eps = 0.02;
     const size_t numRows = 100;
     const size_t numCols = 50;
     const VT min = 100;
