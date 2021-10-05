@@ -37,15 +37,22 @@ class SQLVisitor : public SQLGrammarVisitor {
     mlir::OpBuilder builder;
     mlir::Value currentFrame;
     int i_se = 0;
-    std::vector<std::vector<std::string>> fj_order;
+
+//  PREFIX SHOULD NOT CONTAIN THE DOT.
+    //framename, prefix
+    std::unordered_map <std::string, std::string> framePrefix;
+    //prefix, framename
+    std::unordered_map<std::string, std::string> reverseFramePrefix;
 
     std::unordered_map <std::string, mlir::Value> view;
     std::unordered_map <std::string, mlir::Value> alias;
 
-    void registerAlias(mlir::Value arg, std::string name);
+    void registerAlias(std::string framename, mlir::Value arg);
+    std::string setFramePrefix(std::string framename, std::string prefix, bool necessary, bool ignore);
 
-    mlir::Value fetchMLIR(std::string name);    //looks name up in alias and view
-    mlir::Value fetchAlias(std::string name);   //looks name up only in alias
+    mlir::Value fetchMLIR(std::string framename);    //looks name up in alias and view
+    mlir::Value fetchAlias(std::string framename);   //looks name up only in alias
+    std::string fetchPrefix(std::string framename);
     bool hasMLIR(std::string name);
 
     ScopedSymbolTable symbolTable;

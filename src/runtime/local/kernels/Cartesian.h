@@ -70,8 +70,8 @@ void cartesian(
     const size_t numRowRhs = rhs->getNumRows();
     const size_t numRowLhs = lhs->getNumRows();
     const size_t totalRows = numRowRhs * numRowLhs;
-    const size_t numColRhs = lhs->getNumCols();
-    const size_t numColLhs = rhs->getNumCols();
+    const size_t numColRhs = rhs->getNumCols();
+    const size_t numColLhs = lhs->getNumCols();
     const size_t totalCols = numColRhs + numColLhs;
     const std::string * oldlabels_l = lhs->getLabels();
     const std::string * oldlabels_r = rhs->getLabels();
@@ -87,7 +87,7 @@ void cartesian(
         newlabels[col_idx_res] = oldlabels_l[col_idx_l];
         col_idx_res++;
     }
-    for(int64_t col_idx_r = 0; col_idx_r < numColLhs; col_idx_r++){
+    for(int64_t col_idx_r = 0; col_idx_r < numColRhs; col_idx_r++){
         schema[col_idx_res] = rhs->getColumnType(col_idx_r);
         newlabels[col_idx_res] = oldlabels_r[col_idx_r];
         col_idx_res++;

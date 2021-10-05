@@ -14,23 +14,12 @@
  * limitations under the License.
  */
 
-/*
- *  TODO:
- *      1: Relational Algebra
- *          This will make it possible for annother pass for reordering
- *          Operations and lowering them to Daphne, so that other languages
- *          Can use it.
- *      2: Named Columns
- *          Renameing column operations, such that a projection works
- */
-
 
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include <parser/ScopedSymbolTable.h>
 
 #include "antlr4-runtime.h"
-//#include "DaphneDSLGrammarParser.h"
 
 #include <mlir/Dialect/SCF/SCF.h>
 
@@ -39,6 +28,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 
 #include <cstdint>
 #include <cstdlib>
@@ -54,11 +44,8 @@ mlir::Value valueOrError(antlrcpp::Any a) {
     throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
 }
 
-void SQLVisitor::registerAlias(mlir::Value arg, std::string name){
-    alias[name] = arg;
-}
-
-mlir::Value fetch(std::unordered_map <std::string, mlir::Value> x, std::string name){
+template<typename T>
+T fetch(std::unordered_map <std::string, T> x, std::string name){
     auto search = x.find(name);
     if(search != x.end()){
         return search->second;
@@ -66,8 +53,51 @@ mlir::Value fetch(std::unordered_map <std::string, mlir::Value> x, std::string n
     return NULL;
 }
 
+template<>
+std::string fetch<std::string>(std::unordered_map <std::string, std::string> x, std::string name){
+    auto search = x.find(name);
+    if(search != x.end()){
+        return search->second;
+    }
+    return "";
+}
+
+void SQLVisitor::registerAlias(std::string name, mlir::Value arg){
+    alias[name] = arg;
+}
+
+std::string SQLVisitor::setFramePrefix(std::string framename, std::string prefix, bool necessary = true, bool ignore = false){
+    bool frameHasPrefix = !fetch<std::string>(framePrefix, framename).empty();
+    if(frameHasPrefix){
+        if(necessary){
+            std::stringstream x;
+            x << "Error: " << framename << " is marked as necessary for Prefix generation, but already got a Prefix. Please consider an Alias\n";
+            throw std::runtime_error(x.str());
+        }else{
+            return "";
+        }
+    }
+
+    bool inuse = !fetch<std::string>(reverseFramePrefix, prefix).empty() && !ignore;
+    std::string newPrefix = prefix;
+    int i = 1;
+    while(inuse){
+        std::stringstream x;
+        x << prefix << i;
+        newPrefix = x.str();
+        inuse = !fetch<std::string>(reverseFramePrefix, newPrefix).empty();
+    }
+
+    if(!ignore){
+        reverseFramePrefix[newPrefix] = framename;
+    }
+    framePrefix[framename] = newPrefix;
+
+    return newPrefix;
+}
+
 mlir::Value SQLVisitor::fetchAlias(std::string name){
-    mlir::Value res = fetch(alias, name);
+    mlir::Value res = fetch<mlir::Value>(alias, name);
     if(res != NULL){
         return res;
     }
@@ -78,11 +108,11 @@ mlir::Value SQLVisitor::fetchAlias(std::string name){
 
 mlir::Value SQLVisitor::fetchMLIR(std::string name){
     mlir::Value res;
-    res = fetch(alias, name);
+    res = fetch<mlir::Value>(alias, name);
     if(res != NULL){
         return res;
     }
-    res = fetch(view, name);
+    res = fetch<mlir::Value>(view, name);
     if(res != NULL){
         return res;
     }
@@ -91,11 +121,21 @@ mlir::Value SQLVisitor::fetchMLIR(std::string name){
     throw std::runtime_error(x.str());
 }
 
+std::string SQLVisitor::fetchPrefix(std::string name){
+    std::string prefix = fetch<std::string>(framePrefix, name);
+    if(!prefix.empty()){
+        return prefix;
+    }
+    return "";
+}
+
 bool SQLVisitor::hasMLIR(std::string name){
     auto searchview = view.find(name);
     auto searchalias = alias.find(name);
     return (searchview != view.end() || searchalias != alias.end());
 }
+
+
 
 // ****************************************************************************
 // Visitor functions
@@ -212,7 +252,6 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
                 rhs
             )
         );
-
         return res;
     }catch(std::runtime_error &){
         throw std::runtime_error("Unexpected Error during cartesian operation");
@@ -225,17 +264,33 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
 //* needs to correctly implement SetColLabelsPrefixOp and how to access these labels
 //*******
 antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) {
-
     mlir::Location loc = builder.getUnknownLoc();
+
     std::string var = ctx->var->getText();
+    std::string prefix = ctx->var->getText();
     try {
         mlir::Value res = fetchMLIR(var);
-        registerAlias(res, var);
+        registerAlias(var, res);
         if(ctx->aka){
-            var = ctx->aka->getText();
-            registerAlias(res, var);
+            std::string aka = ctx->aka->getText();
+            registerAlias(aka, res);
+            prefix = setFramePrefix(aka, aka);
         }
-        // builder.create<mlir::daphne::SetColLabelsPrefixOp>(loc, res, var);
+
+        setFramePrefix(var, prefix, !ctx->aka, ctx->aka);
+
+        mlir::Value prefixSSA = static_cast<mlir::Value>(
+                builder.create<mlir::daphne::ConstantOp>(loc, prefix)
+        );
+
+        res = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::SetColLabelsPrefixOp>(
+                loc,
+                res.getType().dyn_cast<mlir::daphne::FrameType>().withSameColumnTypes(),
+                res,
+                prefixSSA
+            )
+        );
         return res;
     }
     catch(std::runtime_error &) {
@@ -272,7 +327,12 @@ antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext 
         if(!hasMLIR(ctx->frame->getText())){ //we can do this, because the frame we reference musst be known.
             throw std::runtime_error("Unknown Frame: " + ctx->frame->getText() + " use before declaration during selection");
         }
-        frameSTR = ctx->frame->getText() + ".";
+        std::string framePrefix = fetchPrefix(ctx->frame->getText());
+        if(!framePrefix.empty()){
+            frameSTR = framePrefix + ".";
+        }else{
+            frameSTR = "";
+        }
     }
 
     getSTR = frameSTR+columnSTR;

@@ -46,7 +46,7 @@ DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUser
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
-    context_.getOrLoadsDialect<mlir::LLVM::LLVMDialect>();
+    context_.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();

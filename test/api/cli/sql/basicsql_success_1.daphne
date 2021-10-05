@@ -4,7 +4,8 @@ c3 = seq(-4, 4, 2);
 
 f = frame(c1, c2, c3, "a", "b", "c");
 
-//registerView("x", f);
-s = sql("SELECT a, c FROM x;");
+registerView("x", f);
+
+s = sql("SELECT x.a, x.c FROM x;");
 
 print(s);
