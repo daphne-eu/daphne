@@ -690,6 +690,11 @@ def Daphne_SqlOp : Daphne_Op<"sql"> {
     let results = (outs Frame:$res);
 }
 
+def Daphne_RegisterViewOp : Daphne_Op<"registerView"> {
+    let arguments = (ins StrAttr:$view, MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
 // ----------------------------------------------------------------------------
 // Set operations
 // ----------------------------------------------------------------------------
@@ -708,7 +713,7 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // ----------------------------------------------------------------------------
 
 def Daphne_CartesianOp : Daphne_Op<"cartesian"> {
-    let arguments = (ins Variadic<Frame>:$args);
+    let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args);
     let results = (outs Frame:$res);
 }
 

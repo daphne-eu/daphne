@@ -47,4 +47,8 @@ def VectorizeComputations : FunctionPass<"vectorize-computations"> {
     let constructor = "mlir::daphne::createVectorizeComputationsPass()";
 }
 
+def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {
+    let constructor = "mlir::daphne::createRewriteSqlOpPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

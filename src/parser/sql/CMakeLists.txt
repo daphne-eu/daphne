@@ -12,26 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-add_mlir_dialect_library(MLIRDaphneTransforms
-    RewriteSqlOpPass.cpp
-    DistributeComputationsPass.cpp
-    InsertDaphneContextPass.cpp
-    LowerToLLVMPass.cpp
-    RewriteToCallKernelOpPass.cpp
-    VectorizeComputationsPass.cpp
-
-    DEPENDS
-    MLIRDaphneOpsIncGen
-    MLIRDaphneTransformsIncGen
-
-    LINK_COMPONENTS
-    Core
-)
-target_link_libraries(MLIRDaphneTransforms PUBLIC
-    MLIRStandardToLLVM
-    SQLParser
+antlr4_generate(
+        SQLGrammar
+        ${CMAKE_CURRENT_SOURCE_DIR}/SQLGrammar.g4
+        BOTH  # the specified g4 file contains both lexer and parser rules
+        FALSE # don't generate listener interfaces
+        TRUE  # generate visitor interfaces
 )
 
-if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    include_directories(${CUDAToolkit_INCLUDE_DIRS})
-endif()
+include_directories(${ANTLR4_INCLUDE_DIR_SQLGrammar})
+message(STATUS "ANTLR4_SQL_DIR is ${ANTLR4_INCLUDE_DIR_SQLGrammar}")
+
+add_library(SQLParser STATIC
+        SQLParser.cpp
+        SQLVisitor.cpp
+        ${ANTLR4_SRC_FILES_SQLGrammar}
+)
+
+target_link_libraries(SQLParser PRIVATE
+        antlr4_static
+)

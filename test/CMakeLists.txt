@@ -25,6 +25,7 @@ set(TEST_SOURCES
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
+        api/cli/sql/SQLTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
         runtime/distributed/worker/WorkerTest.cpp
@@ -40,6 +41,7 @@ set(TEST_SOURCES
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
+        runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CheckEqTest.cpp

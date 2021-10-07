@@ -111,6 +111,31 @@
     },
     {
         "kernelTemplate": {
+            "header": "Cartesian.h",
+            "opName": "cartesian",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Frame *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const Frame *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CastObj.h",
             "opName": "castObj",
             "returnType": "void",
