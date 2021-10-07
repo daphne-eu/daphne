@@ -82,12 +82,12 @@ void cartesian(
     std::string newlabels[totalCols];
 
     // Setting Schema and Labels
-    for(int64_t col_idx_l = 0; col_idx_l < numColLhs; col_idx_l++){
+    for(size_t col_idx_l = 0; col_idx_l < numColLhs; col_idx_l++){
         schema[col_idx_res] = lhs->getColumnType(col_idx_l);
         newlabels[col_idx_res] = oldlabels_l[col_idx_l];
         col_idx_res++;
     }
-    for(int64_t col_idx_r = 0; col_idx_r < numColRhs; col_idx_r++){
+    for(size_t col_idx_r = 0; col_idx_r < numColRhs; col_idx_r++){
         schema[col_idx_res] = rhs->getColumnType(col_idx_r);
         newlabels[col_idx_res] = oldlabels_r[col_idx_r];
         col_idx_res++;
@@ -96,11 +96,11 @@ void cartesian(
     // Creating Result Frame
     res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
 
-    for(int64_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
-        for(int64_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
+    for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
+        for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
             col_idx_res = 0;
 
-            for(int64_t idx_c = 0; idx_c < numColLhs; idx_c++){
+            for(size_t idx_c = 0; idx_c < numColLhs; idx_c++){
                 cartesianSet<int64_t>(
                     schema[col_idx_res],
                     res,
@@ -124,7 +124,7 @@ void cartesian(
                 col_idx_res++;
             }
 
-            for(int64_t idx_c = 0; idx_c < numColLhs; idx_c++){
+            for(size_t idx_c = 0; idx_c < numColRhs; idx_c++){
                 cartesianSet<int64_t>(
                     schema[col_idx_res],
                     res,

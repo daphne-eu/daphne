@@ -21,8 +21,6 @@
 
 #include "antlr4-runtime.h"
 
-#include <mlir/Dialect/SCF/SCF.h>
-
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -37,12 +35,6 @@
 // ****************************************************************************
 // Helper functions
 // ****************************************************************************
-
-mlir::Value valueOrError(antlrcpp::Any a) {
-    if(a.is<mlir::Value>())
-        return a.as<mlir::Value>();
-    throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
-}
 
 template<typename T>
 T fetch(std::unordered_map <std::string, T> x, std::string name){
@@ -142,17 +134,17 @@ bool SQLVisitor::hasMLIR(std::string name){
 // ****************************************************************************
 
 antlrcpp::Any SQLVisitor::visitScript(SQLGrammarParser::ScriptContext * ctx) {
-    mlir::Value res = valueOrError(visitChildren(ctx));
+    mlir::Value res = utils.valueOrError(visitChildren(ctx));
     return res;
 }
 
 antlrcpp::Any SQLVisitor::visitSql(SQLGrammarParser::SqlContext * ctx) {
-    mlir::Value res = valueOrError(visit(ctx->query()));
+    mlir::Value res = utils.valueOrError(visit(ctx->query()));
     return res;
 }
 
 antlrcpp::Any SQLVisitor::visitQuery(SQLGrammarParser::QueryContext * ctx) {
-    mlir::Value res = valueOrError(visit(ctx->select()));
+    mlir::Value res = utils.valueOrError(visit(ctx->select()));
     return res;
 }
 
@@ -161,7 +153,7 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
     mlir::Value res;
 
     try{
-        currentFrame = valueOrError(visit(ctx->fromExpr()));
+        currentFrame = utils.valueOrError(visit(ctx->fromExpr()));
     }catch(std::runtime_error & e){
         std::stringstream err_msg;
         err_msg << "Error during From statement. Couldn't create Frame.\n\t\t" << e.what();
@@ -171,11 +163,11 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
 
     //TODO: WHERE Statement. This would be a good place for it.
 
-    res = valueOrError(visit(ctx->selectExpr(0)));
+    res = utils.valueOrError(visit(ctx->selectExpr(0)));
     for(auto i = 1; i < ctx->selectExpr().size(); i++){
         mlir::Value add;
         try{
-            add = valueOrError(visit(ctx->selectExpr(i)));
+            add = utils.valueOrError(visit(ctx->selectExpr(i)));
         }catch(std::runtime_error &e){
             std::stringstream err_msg;
             err_msg << "Something went wrong in SelectExpr.\n\t\t" << e.what();
@@ -189,8 +181,6 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
             for(mlir::Type t : add.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
                 colTypes.push_back(t);
             mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
-
-            mlir::Value nr_col = static_cast<mlir::Value> (builder.create<mlir::daphne::NumColsOp>(loc, utils.sizeType , add));
 
             res = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ColBindOp>(
@@ -214,13 +204,13 @@ antlrcpp::Any SQLVisitor::visitSubquery(SQLGrammarParser::SubqueryContext * ctx)
 }
 
 antlrcpp::Any SQLVisitor::visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) {
-    symbolTable.put(ctx->var->getText(), valueOrError(visit(ctx->select())));
+    symbolTable.put(ctx->var->getText(), utils.valueOrError(visit(ctx->select())));
     return nullptr;
 }
 
 antlrcpp::Any SQLVisitor::visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx){
     try{
-        mlir::Value var = valueOrError(visit(ctx->var));
+        mlir::Value var = utils.valueOrError(visit(ctx->var));
         return var;
     }catch(std::runtime_error &){
         std::stringstream err_msg;
@@ -234,8 +224,8 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
     try{
         mlir::Location loc = builder.getUnknownLoc();
         mlir::Value res;
-        mlir::Value lhs = valueOrError(visit(ctx->lhs));
-        mlir::Value rhs = valueOrError(visit(ctx->rhs));
+        mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+        mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
         std::vector<mlir::Type> colTypes;
         for(mlir::Type t : lhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())

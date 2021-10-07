@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
+#include <runtime/local/kernels/Cartesian.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/GroupJoin.h>
 #include <runtime/local/kernels/Seq.h>
@@ -31,19 +32,13 @@
 
 #include <cstdint>
 
-/**
- * @brief Runs the groupJoin-kernel with small input data and performs various
- * checks.
- */
 TEST_CASE("Cartesian", TAG_KERNELS) {
-    // lhs is a kind of dimension table.
     auto lhsC0 = genGivenVals<DenseMatrix<int64_t>>(3, { 1,  2,  3});
     auto lhsC1 = genGivenVals<DenseMatrix<double>>(3, {11.0, 22.0, 33.0});
     std::vector<Structure *> lhsCols = {lhsC0, lhsC1};
     std::string lhsLabels[] = {"a", "b"};
     auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
 
-    // rhs is a kind of fact table.
     auto rhsC0 = genGivenVals<DenseMatrix<int64_t>>(2, { 100, 101});
     auto rhsC1 = genGivenVals<DenseMatrix<int64_t>>(2, { -10, -15});
     auto rhsC2 = genGivenVals<DenseMatrix<double >>(2, {0.1, 0.2});
@@ -66,9 +61,9 @@ TEST_CASE("Cartesian", TAG_KERNELS) {
 
     CHECK(res->getLabels()[0] == "a");
     CHECK(res->getLabels()[1] == "b");
-    CHECK(res->getLabels()[0] == "c");
-    CHECK(res->getLabels()[1] == "d");
-    CHECK(res->getLabels()[0] == "e");
+    CHECK(res->getLabels()[2] == "c");
+    CHECK(res->getLabels()[3] == "d");
+    CHECK(res->getLabels()[4] == "e");
 
     auto resC0Exp = genGivenVals<DenseMatrix<int64_t>>(6, {1, 1, 2, 2, 3, 3});
     auto resC1Exp = genGivenVals<DenseMatrix<double >>(6, {11.0, 11.0, 22.0, 22.0, 33.0, 33.0});
@@ -78,7 +73,7 @@ TEST_CASE("Cartesian", TAG_KERNELS) {
 
     CHECK(*(res->getColumn<int64_t>(0)) == *resC0Exp);
     CHECK(*(res->getColumn<double >(1)) == *resC1Exp);
-    CHECK(*(res->getColumn<int64_t>(2)) == *resC1Exp);
-    CHECK(*(res->getColumn<int64_t>(3)) == *resC1Exp);
-    CHECK(*(res->getColumn<double >(4)) == *resC1Exp);
+    CHECK(*(res->getColumn<int64_t>(2)) == *resC2Exp);
+    CHECK(*(res->getColumn<int64_t>(3)) == *resC3Exp);
+    CHECK(*(res->getColumn<double >(4)) == *resC4Exp);
 }

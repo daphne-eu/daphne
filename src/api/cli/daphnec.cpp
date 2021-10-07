@@ -17,7 +17,6 @@
 #include <api/cli/StatusCode.h>
 #include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
-#include <parser/sql/SQLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -95,7 +94,7 @@ main(int argc, char** argv)
     // arguments are those that can be used from within the DaphneDSL script.
     // However, these two arguments are only required during compilation and
     // runtime, users do not need to access them in a script.
-
+    
     DaphneUserConfig user_config;
     auto it = scriptArgs.find("libdir");
     if(it != scriptArgs.end()) {
@@ -146,7 +145,7 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-
+    
     // Further process the module, including optimization and lowering passes.
     if (!executor.runPasses(moduleOp)) {
         return StatusCode::PASS_ERROR;
@@ -161,5 +160,5 @@ main(int argc, char** argv)
         return StatusCode::EXECUTION_ERROR;
     }
 
-    return 0;
+    return StatusCode::SUCCESS;
 }

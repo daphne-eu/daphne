@@ -34,7 +34,6 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createRewriteSqlOpPass();
-    std::unique_ptr<Pass> createLowerRelationalAlgebraToDaphneOpPass();
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"

@@ -15,7 +15,6 @@
  */
 
 #include <parser/daphnedsl/DaphneDSLParser.h>
-#include <parser/sql/SQLParser.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include "DaphneIrExecutor.h"
@@ -64,11 +63,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 
         // This flag is really useful to figure out why the lowering failed
         //llvm::DebugFlag = true;
-        // pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
-        pm.addPass(mlir::daphne::createRewriteSqlOpPass());   //calls SQL Parser
-        // pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-
-        pm.addPass(mlir::daphne::createLowerRelationalAlgebraToDaphneOpPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+        pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
@@ -86,7 +83,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 
         pm.addPass(mlir::createLowerToCFGPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass());
-        // pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
 
         if (failed(pm.run(module))) {
             module->dump();

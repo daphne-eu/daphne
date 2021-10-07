@@ -56,7 +56,6 @@ class TypesMatchOrOneIsMatrixOfOther<string a, string b> : PredOpTrait<
 class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
-
 // ****************************************************************************
 // Data generation
 // ****************************************************************************
@@ -441,18 +440,13 @@ def Daphne_InsertOp : Daphne_Op<"insert"> {
     let results = (outs); // no results
 }
 
-def Daphne_InsertColumnOp : Daphne_Op<"insert_Column"> {
-    let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedCols);
-    let results = (outs MatrixOrFrame:$res); // no results
-}
-
 def Daphne_InsertRowOp : Daphne_Op<"insertRow"> {
     let arguments = (ins Matrix:$target, Matrix:$source, Size:$rowLowerIncl, Size:$rowUpperExcl);
     let results = (outs); // no results
 }
 
 // ****************************************************************************
-// Reorganizationmlir::daphne::
+// Reorganization
 // ****************************************************************************
 
 def Daphne_ReshapeOp : Daphne_Op<"reshape"> {
@@ -696,7 +690,7 @@ def Daphne_SqlOp : Daphne_Op<"sql"> {
     let results = (outs Frame:$res);
 }
 
-def Daphne_RegisterOp : Daphne_Op<"register"> {
+def Daphne_RegisterViewOp : Daphne_Op<"registerView"> {
     let arguments = (ins StrAttr:$view, MatrixOrFrame:$arg);
     let results = (outs); // no results
 }

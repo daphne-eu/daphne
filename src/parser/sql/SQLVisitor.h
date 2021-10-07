@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_DAPHNESQL_DAPHNESQLVISITOR_H
-#define SRC_PARSER_DAPHNESQL_DAPHNESQLVISITOR_H
+#ifndef SRC_PARSER_SQL_SQLVISITOR_H
+#define SRC_PARSER_SQL_SQLVISITOR_H
 
 #include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
@@ -93,4 +93,4 @@ public:
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };
 
-#endif //SRC_PARSER_DAPHNESQL_DAPHNESQLVISITOR_H
+#endif //SRC_PARSER_SQL_SQLVISITOR_H

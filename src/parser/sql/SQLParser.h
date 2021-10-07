@@ -14,19 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_DAPHNESQL_DAPHNESQLPARSER_H
-#define SRC_PARSER_DAPHNESQL_DAPHNESQLPARSER_H
+#ifndef SRC_PARSER_SQL_SQLPARSER_H
+#define SRC_PARSER_SQL_SQLPARSER_H
 
 #include <parser/Parser.h>
 
 #include <mlir/IR/Builders.h>
 
 #include <istream>
-
 #include <string>
 #include <unordered_map>
-// #include "mlir/IR/Value.h"
-
 
 struct SQLParser : public Parser {
 
@@ -40,4 +37,4 @@ struct SQLParser : public Parser {
 
 };
 
-#endif /* SRC_PARSER_DAPHNESQL_DAPHNESQLPARSER_H */
+#endif /* SRC_PARSER_SQL_SQLPARSER_H */

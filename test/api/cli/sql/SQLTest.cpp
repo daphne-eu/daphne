@@ -32,3 +32,5 @@ TEST_CASE("basic, success", TAG_SQL) {
         }
     }
 }
+
+// TODO Use the scripts testing failure cases.

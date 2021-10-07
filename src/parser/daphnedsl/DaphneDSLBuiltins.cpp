@@ -786,7 +786,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 // TODO How to know the column types, or how to not need to
                 // know them here? For now, we just leave them blank here.
                 std::vector<mlir::Type> colTypes;
-                colTypes.push_back(builder.getF64Type()); // Hardcoded because otherwise no idea how it works
+                // TODO Don't hardcode the column types. Since we cannot know
+                // them at this point, we should enable some way to leave them
+                // unknown.
+                colTypes.push_back(builder.getF64Type());
                 co.erase();
                 return static_cast<mlir::Value>(builder.create<SqlOp>(
                         loc,
@@ -797,7 +800,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         }
         throw std::runtime_error("SqlOp requires a SQL query as a constant string");
     }
-
     if(func == "registerView") {
         checkNumArgsExact(func, numArgs, 2);
         auto co = args[0].getDefiningOp<mlir::daphne::ConstantOp>();
@@ -805,14 +807,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value view = args[1];
         if(attr.isa<mlir::StringAttr>()) {
             co.erase();
-            return builder.create<RegisterOp>(
+            return builder.create<RegisterViewOp>(
                     loc,
                     attr.dyn_cast<mlir::StringAttr>(),
                     view
             );
         }
 
-        throw std::runtime_error("registerView requires a Viewname as a constant string, and a something that get's assigned to that name.");
+        throw std::runtime_error(
+                "registerView requires a view name as a constant string, and "
+                "a frame that gets assigned to that name"
+        );
 
     }
 

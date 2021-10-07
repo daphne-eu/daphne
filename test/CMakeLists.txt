@@ -41,6 +41,7 @@ set(TEST_SOURCES
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
+        runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
         runtime/local/kernels/CastScaTest.cpp
         runtime/local/kernels/CheckEqTest.cpp

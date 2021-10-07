@@ -116,19 +116,19 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
     mlir::Value cond = utils.valueOrError(visit(ctx->cond));
-
+    
     mlir::Location loc = builder.getUnknownLoc();
 
     // Save the current state of the builder.
     mlir::OpBuilder oldBuilder = builder;
-
+    
     // Generate the operations for the then-block.
     mlir::Block thenBlock;
     builder.setInsertionPointToEnd(&thenBlock);
     symbolTable.pushScope();
     visit(ctx->thenStmt);
     ScopedSymbolTable::SymbolTable owThen = symbolTable.popScope();
-
+    
     // Generate the operations for the else-block, if it is present. Otherwise
     // leave it empty; we might need to insert a yield-operation.
     mlir::Block elseBlock;
@@ -139,7 +139,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         visit(ctx->elseStmt);
         owElse = symbolTable.popScope();
     }
-
+    
     // Determine the result type(s) of the if-operation as well as the operands
     // to the yield-operation of both branches.
     std::set<std::string> owUnion = ScopedSymbolTable::mergeSymbols(owThen, owElse);
@@ -162,10 +162,10 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     builder.create<mlir::scf::YieldOp>(loc, resultsThen);
     builder.setInsertionPointToEnd(&elseBlock);
     builder.create<mlir::scf::YieldOp>(loc, resultsElse);
-
+    
     // Restore the old state of the builder.
     builder = oldBuilder;
-
+    
     // Helper functions to move the operations in the two blocks created above
     // into the actual branches of the if-operation.
     auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
@@ -175,7 +175,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
     };
     llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)> insertElseBlockNo = nullptr;
-
+    
     // Create the actual if-operation. Generate the else-block only if it was
     // explicitly given in the DSL script, or when it is needed to yield values.
     auto ifOp = builder.create<mlir::scf::IfOp>(
@@ -185,35 +185,35 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
             insertThenBlockDo,
             (ctx->elseStmt || !owUnion.empty()) ? insertElseBlockDo : insertElseBlockNo
     );
-
+    
     // Rewire the results of the if-operation to their variable names.
     size_t i = 0;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++)
         symbolTable.put(*it, ifOp.results()[i++]);
-
+    
     return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-
+    
     auto ip = builder.saveInsertionPoint();
-
+    
     // The two blocks for the SCF WhileOp.
     auto beforeBlock = new mlir::Block;
     auto afterBlock = new mlir::Block;
-
+    
     const bool isDoWhile = ctx->KW_DO();
-
+    
     mlir::Value cond;
     ScopedSymbolTable::SymbolTable ow;
     if(isDoWhile) { // It's a do-while loop.
         builder.setInsertionPointToEnd(beforeBlock);
-
+        
         // Scope for body and condition, such that condition can see the body's
         // updates to variables existing before the loop.
         symbolTable.pushScope();
-
+        
         // The body gets its own scope to not expose variables created inside
         // the body to the condition. While this is unnecessary if the body is
         // a block statement, there are nasty cases if no block statement is
@@ -221,12 +221,12 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         symbolTable.pushScope();
         visit(ctx->bodyStmt);
         ow = symbolTable.popScope();
-
+        
         // Make the body's updates visible to the condition.
         symbolTable.put(ow);
-
+        
         cond = utils.valueOrError(visit(ctx->cond));
-
+        
         symbolTable.popScope();
     }
     else { // It's a while loop.
@@ -238,7 +238,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         visit(ctx->bodyStmt);
         ow = symbolTable.popScope();
     }
-
+    
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the WhileOp and
     // its "before" and "after" region.
@@ -248,38 +248,38 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
     for(auto it = ow.begin(); it != ow.end(); it++) {
         mlir::Value owVal = it->second.value;
         mlir::Type type = owVal.getType();
-
+        
         owVals.push_back(owVal);
         resultTypes.push_back(type);
-
+        
         mlir::Value oldVal = symbolTable.get(it->first).value;
         whileOperands.push_back(oldVal);
-
+        
         beforeBlock->addArgument(type);
         afterBlock->addArgument(type);
     }
-
+    
     // Create the ConditionOp of the "before" block.
     builder.setInsertionPointToEnd(beforeBlock);
     if(isDoWhile)
         builder.create<mlir::scf::ConditionOp>(loc, cond, owVals);
     else
         builder.create<mlir::scf::ConditionOp>(loc, cond, beforeBlock->getArguments());
-
+    
     // Create the YieldOp of the "after" block.
     builder.setInsertionPointToEnd(afterBlock);
     if(isDoWhile)
         builder.create<mlir::scf::YieldOp>(loc, afterBlock->getArguments());
     else
         builder.create<mlir::scf::YieldOp>(loc, owVals);
-
+    
     builder.restoreInsertionPoint(ip);
-
+    
     // Create the SCF WhileOp and insert the "before" and "after" blocks.
     auto whileOp = builder.create<mlir::scf::WhileOp>(loc, resultTypes, whileOperands);
     whileOp.before().push_back(beforeBlock);
     whileOp.after().push_back(afterBlock);
-
+    
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
@@ -292,20 +292,20 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && whileOp.after().isAncestor(parentRegion);
         });
-
+        
         // Rewire the results of the WhileOp to their variable names.
         symbolTable.put(it->first, whileOp.results()[i++]);
     }
-
+    
     return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-
+    
     // The type we assume for from, to, and step.
     mlir::Type t = builder.getIntegerType(64, true);
-
+    
     // Parse from, to, and step.
     mlir::Value from = utils.castIf(t, utils.valueOrError(visit(ctx->from)));
     mlir::Value to = utils.castIf(t, utils.valueOrError(visit(ctx->to)));
@@ -343,14 +343,14 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     from = utils.castIf(idxType, from);
     to   = utils.castIf(idxType, to);
     step = utils.castIf(idxType, step);
-
+    
     auto ip = builder.saveInsertionPoint();
 
     // A block for the body of the for-loop.
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
-
+    
     // A placeholder for the loop's induction variable, since we do not know it
     // yet; will be replaced later.
     mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexAttr(123));
@@ -368,7 +368,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
 
     // Parse the loop's body.
     visit(ctx->bodyStmt);
-
+    
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
@@ -378,23 +378,23 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
     }
-
+    
     builder.create<mlir::scf::YieldOp>(loc, resVals);
-
+    
     builder.restoreInsertionPoint(ip);
-
+    
     // Helper function for moving the operations in the block created above
     // into the actual body of the ForOp.
     auto insertBodyBlock = [&](mlir::OpBuilder & nested, mlir::Location loc, mlir::Value iv, mlir::ValueRange lcv) {
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), bodyBlock.getOperations());
     };
-
+    
     // Create the actual ForOp.
     auto forOp = builder.create<mlir::scf::ForOp>(loc, from, to, step, forOperands, insertBodyBlock);
 
     // Substitute the induction variable, now that we know it.
     ph.replaceAllUsesWith(forOp.getInductionVar());
-
+    
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
@@ -403,13 +403,13 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && forOp.getLoopBody().isAncestor(parentRegion);
         });
-
+        
         // Rewire the results of the ForOp to their variable names.
         symbolTable.put(it->first, forOp.results()[i]);
-
+        
         i++;
     }
-
+    
     return nullptr;
 }
 
@@ -420,7 +420,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::Literal
 antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprContext * ctx) {
     // Retrieve the name of the referenced CLI argument.
     std::string arg = ctx->arg->getText();
-
+    
     // Find out if this argument was specified on the comman line.
     auto it = args.find(arg);
     if(it == args.end())
@@ -458,19 +458,19 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
     std::string func = ctx->func->getText();
     mlir::Location loc = builder.getUnknownLoc();
-
+ 
     // Parse arguments.
     std::vector<mlir::Value> args;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
         args.push_back(utils.valueOrError(visit(ctx->expr(i))));
-
+    
     // Create DaphneIR operation for the built-in function.
     return builtins.build(loc, func, args);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {
     mlir::Type resType;
-
+    
     if(ctx->DATA_TYPE()) {
         std::string dtStr = ctx->DATA_TYPE()->getText();
         if(dtStr == "matrix") {
@@ -495,7 +495,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
                 "casting requires the specification of the target data and/or "
                 "value type"
         );
-
+    
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
             builder.getUnknownLoc(),
             resType,
@@ -578,10 +578,10 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-
+    
     if(op == "@")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -590,10 +590,10 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-
+    
     if(op == "^")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -614,12 +614,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-
+    
     if(op == "*")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
     if(op == "/")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -628,12 +628,12 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-
+    
     if(op == "+")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -642,7 +642,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-
+    
     if(op == "==")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if(op == "!=")
@@ -655,7 +655,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if(op == ">=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
-
+    
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -695,10 +695,10 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         return visit(ctx->bl);
     if(auto lit = ctx->STRING_LITERAL()) {
         std::string val = lit->getText();
-
+        
         // Remove quotation marks.
         val = val.substr(1, val.size() - 2);
-
+        
         // Replace escape sequences.
         val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
         val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
@@ -707,7 +707,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
         val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
         val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
-
+        
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(loc, val)
         );

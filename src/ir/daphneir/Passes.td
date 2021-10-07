@@ -47,12 +47,8 @@ def VectorizeComputations : FunctionPass<"vectorize-computations"> {
     let constructor = "mlir::daphne::createVectorizeComputationsPass()";
 }
 
-def RewriteSqlOpPass : FunctionPass<"rewrite-to-sqlop"> {
+def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
-}
-
-def LowerRelationalAlgebraToDaphneOpPass : FunctionPass<"lower-rel_alg-to-daphne"> {
-    let constructor = "mlir::daphne::createLowerRelationalAlgebraToDaphneOpPass()";
 }
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

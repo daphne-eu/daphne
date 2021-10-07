@@ -47,12 +47,7 @@ namespace
             PatternRewriter &rewriter
         ) const override
         {
-            std::stringstream callee;
-            callee << op->getName().stripDialect().str();
-
-            if(callee.str() == "register"){
-                mlir::daphne::RegisterOp rOp = static_cast<mlir::daphne::RegisterOp>(op);
-
+            if(auto rOp = llvm::dyn_cast<mlir::daphne::RegisterViewOp>(op)){
                 std::stringstream view_stream;
                 view_stream << rOp.view().str();
                 mlir::Value arg = rOp.arg();
@@ -60,9 +55,7 @@ namespace
                 tables[view_stream.str()] = arg;
                 rewriter.eraseOp(op);
                 return success();
-            }else if(callee.str() == "sql"){
-                mlir::daphne::SqlOp sqlop = static_cast<mlir::daphne::SqlOp>(op);
-                
+            }else if(auto sqlop = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
 
@@ -92,7 +85,7 @@ void RewriteSqlOpPass::runOnOperation()
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
-    target.addIllegalOp<mlir::daphne::SqlOp, mlir::daphne::RegisterOp>();
+    target.addIllegalOp<mlir::daphne::SqlOp, mlir::daphne::RegisterViewOp>();
 
     patterns.insert<SqlReplacement>(&getContext());
 

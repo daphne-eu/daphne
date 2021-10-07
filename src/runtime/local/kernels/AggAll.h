@@ -57,11 +57,11 @@ struct AggAll<DenseMatrix<VT>> {
     static VT apply(AggOpCode opCode, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-
+        
         const VT * valuesArg = arg->getValues();
-
+        
         assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
-
+        
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
         VT agg = AggOpCodeUtils::template getNeutral<VT>(opCode);
@@ -95,12 +95,12 @@ struct AggAll<CSRMatrix<VT>> {
         else
             return func(neutral, 0, ctx);
     }
-
+    
     static VT apply(AggOpCode opCode, const CSRMatrix<VT> * arg, DCTX(ctx)) {
         assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
 
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
-
+        
         return aggArray(
                 arg->getValues(0),
                 arg->getNumNonZeros(),
