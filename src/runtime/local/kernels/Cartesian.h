@@ -1,16 +1,3 @@
-// def Daphne_CartesianOp : Daphne_Op<"cartesian"> {
-//     let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args); // since i don't know how to use variadic it got replaced..
-//     let results = (outs Frame:$res);
-// }
-
-// def Daphne_SemiJoinOp : Daphne_Op<"semiJoin", [
-//     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
-//     DeclareOpInterfaceMethods<InferTypesOpInterface>
-// ]> {
-//     let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
-//     let results = (outs Frame:$res, MatrixOf<[Size]>:$lhsTids);
-// }
-
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_CARTESIAN_H
 #define SRC_RUNTIME_LOCAL_KERNELS_CARTESIAN_H
 
