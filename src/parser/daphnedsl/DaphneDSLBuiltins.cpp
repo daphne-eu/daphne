@@ -61,8 +61,8 @@ void DaphneDSLBuiltins::checkNumArgsMin(const std::string & func, size_t numArgs
 void DaphneDSLBuiltins::checkNumArgsEven(const std::string & func, size_t numArgs) {
     if(numArgs % 2)
         throw std::runtime_error(
-                "built-in function '" + func + 
-                "' expects an even number of arguments, but got " + 
+                "built-in function '" + func +
+                "' expects an even number of arguments, but got " +
                 std::to_string(numArgs)
         );
 }
@@ -100,7 +100,7 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
     checkNumArgsExact(func, args.size(), 2);
     if(auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>()) {
         llvm::APInt axis = co.value().dyn_cast<mlir::IntegerAttr>().getValue();
-        if(axis == 0) 
+        if(axis == 0)
             return static_cast<mlir::Value>(
                     builder.create<RowAggOp>(
                             loc, args[0].getType(), args[0]
@@ -318,7 +318,7 @@ std::string getConstantString2(mlir::Value v) {
 
 FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
     std::string filenameStr;
-    
+
     if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
         filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
     else
@@ -331,7 +331,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     using namespace mlir::daphne;
 
     const size_t numArgs = args.size();
-    
+
     // Basically, for each DaphneDSL built-in function we need to:
     // - check if the number of provided arguments is valid
     // - if required by the DaphneIR operation to be created: ensure that the
@@ -339,9 +339,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // - create and return the DaphneIR operation represented by the DaphneDSL
     //   built-in function (including the inference of the result type)
     // TODO Outsource the result type inference (issue #44) in an MLIR way.
-    
+
     // Note that some built-in functions require some more advanced steps.
-    
+
     // There are several groups of DaphneIR operations that are very similar
     // w.r.t. their arguments and results; so there are specific template
     // functions for creating them.
@@ -538,7 +538,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
     // Strings
     // --------------------------------------------------------------------
-    
+
     if(func == "concat") {
         checkNumArgsExact(func, numArgs, 2);
         return static_cast<mlir::Value>(builder.create<ConcatOp>(
@@ -593,7 +593,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     // TODO Add built-in functions for those.
-    
+
     // ********************************************************************
     // Left and right indexing
     // ********************************************************************
@@ -617,7 +617,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, dst, src, rowLowerIncl, rowUpperExcl
         );
     }
-    
+
     // ********************************************************************
     // Reorganization
     // ********************************************************************
@@ -773,7 +773,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Extended relational algebra
     // ********************************************************************
-    
+
     // ----------------------------------------------------------------------------
     // Entire SQL query
     // ----------------------------------------------------------------------------
@@ -786,6 +786,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 // TODO How to know the column types, or how to not need to
                 // know them here? For now, we just leave them blank here.
                 std::vector<mlir::Type> colTypes;
+                // TODO Don't hardcode the column types. Since we cannot know
+                // them at this point, we should enable some way to leave them
+                // unknown.
+                colTypes.push_back(builder.getF64Type());
                 co.erase();
                 return static_cast<mlir::Value>(builder.create<SqlOp>(
                         loc,
@@ -795,6 +799,26 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             }
         }
         throw std::runtime_error("SqlOp requires a SQL query as a constant string");
+    }
+    if(func == "registerView") {
+        checkNumArgsExact(func, numArgs, 2);
+        auto co = args[0].getDefiningOp<mlir::daphne::ConstantOp>();
+        mlir::Attribute attr = co.value();
+        mlir::Value view = args[1];
+        if(attr.isa<mlir::StringAttr>()) {
+            co.erase();
+            return builder.create<RegisterViewOp>(
+                    loc,
+                    attr.dyn_cast<mlir::StringAttr>(),
+                    view
+            );
+        }
+
+        throw std::runtime_error(
+                "registerView requires a view name as a constant string, and "
+                "a frame that gets assigned to that name"
+        );
+
     }
 
     // --------------------------------------------------------------------
@@ -813,13 +837,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     if(func == "cartesian") {
-        checkNumArgsMin(func, numArgs, 2);
+        checkNumArgsExact(func, numArgs, 2);
         std::vector<mlir::Type> colTypes;
         for(auto arg : args)
             for(mlir::Type t : arg.getType().dyn_cast<FrameType>().getColumnTypes())
                 colTypes.push_back(t);
         return static_cast<mlir::Value>(builder.create<CartesianOp>(
-                loc, FrameType::get(builder.getContext(), colTypes), args
+                loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]
         ));
     }
     if(func == "innerJoin")
@@ -866,11 +890,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 lhs, rhs, lhsOn, rhsOn, rhsAgg
         ).getResults();
     }
-    
+
     // ********************************************************************
     // Frame label manipulation
     // ********************************************************************
-    
+
     if(func == "setColLabels") {
         checkNumArgsMin(func, numArgs, 2);
         std::vector<mlir::Value> labels;
@@ -923,12 +947,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
     if(func == "readFrame" || func == "readMatrix") {
         checkNumArgsExact(func, numArgs, 1);
-        
+
         mlir::Value filename = args[0];
         FileMetaData fmd = getFileMetaData(func, filename);
-        
+
         mlir::Type resType;
-        
+
         if(func == "readFrame") {
             std::vector<mlir::Type> cts;
             if(fmd.isSingleValueType)
@@ -953,7 +977,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             // (fmd.isSingleValueType == false), then this silently uses the
             // type of the first column.
             resType = utils.matrixOf(utils.mlirTypeForCode(fmd.schema[0]));
-            
+
         return static_cast<mlir::Value>(builder.create<ReadOp>(
                 loc, resType, filename
         ));
@@ -1012,7 +1036,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************
-    
+
     if(func == "oneHot") {
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value arg = args[0];
@@ -1032,11 +1056,11 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, builder.getIntegerType(64, true)
         ));
     }
-    
+
     // ********************************************************************
     // Low-level auxiliary operations
     // ********************************************************************
-    
+
     if(func == "free") {
         checkNumArgsExact(func, numArgs, 1);
         return builder.create<FreeOp>(

@@ -64,6 +64,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         // This flag is really useful to figure out why the lowering failed
         //llvm::DebugFlag = true;
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+        pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
@@ -130,4 +132,3 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
     }
     return nullptr;
 }
-
