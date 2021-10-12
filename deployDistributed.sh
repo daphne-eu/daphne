@@ -26,7 +26,7 @@ PEERS=localhost:50051,localhost:50052
 
 PORT=50000
 
-PATH_TO_DEPLOY=~/DaphneDistributedWorker
+PATH_TO_BUILD=~/DaphneDistributedWorker
 
 #******************************************************************************
 # SSH Configurations
@@ -54,7 +54,7 @@ set -e
 #******************************************************************************
 
 function deploy () {
-    PATH_TO_DEPLOY=$1
+    PATH_TO_BUILD=$1
     ./build.sh --target DistributedWorker
     echo "Compressing Build folder"
     tar -czf DaphneWorker.tar.gz ./build
@@ -88,9 +88,9 @@ function deploy () {
         if [[ $HOSTNAME != $LAST_MACHINE ]]; then
             echo "Uncompressing daphne to worker " $HOSTNAME
             ($SSH_COMMAND $USERNAME@$HOSTNAME " tar -xzf DaphneWorker.tar.gz; \
-                                                mkdir -p $PATH_TO_DEPLOY; \
-                                                mv build $PATH_TO_DEPLOY; \
-                                                mkdir -p $PATH_TO_DEPLOY/logs; \
+                                                mkdir -p $PATH_TO_BUILD; \
+                                                mv build $PATH_TO_BUILD; \
+                                                mkdir -p $PATH_TO_BUILD/logs; \
                                                 rm DaphneWorker.tar.gz; \
                                                 " ) &
             LAST_MACHINE=$HOSTNAME
@@ -112,7 +112,7 @@ function StartWorkers {
         PORT=${HOSTNAME_PORT[1]}
         echo "Starting remote workers at " $HOSTNAME:$PORT
         $SSH_COMMAND $USERNAME@$HOSTNAME "\
-            cd $PATH_TO_DEPLOY; \
+            cd $PATH_TO_BUILD; \
             mkdir -p logs;              \
             ./build/src/runtime/distributed/worker/DistributedWorker $HOSTNAME:$PORT > logs/$HOSTNAME.$PORT.out & echo \$! > logs/$HOSTNAME.$PORT.PID" &
     done;
@@ -129,8 +129,8 @@ function WorkerStatus {
         PORT=${HOSTNAME_PORT[1]}
         echo "Checking remote worker $HOSTNAME:$PORT"
         ($SSH_COMMAND $USERNAME@$HOSTNAME "\
-            cd $PATH_TO_DEPLOY; \
-            ps -f \$(cat $PATH_TO_DEPLOY/logs/$HOSTNAME.$PORT.PID)")
+            cd $PATH_TO_BUILD; \
+            ps -f \$(cat $PATH_TO_BUILD/logs/$HOSTNAME.$PORT.PID)")
     done;
 }
 
@@ -145,7 +145,7 @@ function KillWorkers {
         PORT=${HOSTNAME_PORT[1]}
         # Killing distributed workers using saved PID
         echo "Killing remote workers at " $HOSTNAME
-        ($SSH_COMMAND $USERNAME@$HOSTNAME "kill \$(cat $PATH_TO_DEPLOY/logs/$HOSTNAME.$PORT.PID)") &
+        ($SSH_COMMAND $USERNAME@$HOSTNAME "kill \$(cat $PATH_TO_BUILD/logs/$HOSTNAME.$PORT.PID)") &
     done;
 }
 #******************************************************************************
@@ -173,7 +173,7 @@ function printHelp {
     echo "  -p, --port              Specify port number (default 50000)."
     echo "  -i identity_file        Specify identity file (default: default ssh private key)."
     echo "  --deploy                Compress and deploy build folder to remote machines."
-    echo "  --pathToBuild           A path to deploy or where the build already is deployed (default ~/DaphneDistributedWorker can be specified in the script)."
+    echo "  --pathToBuild           A path to deploy or where the build is already deployed (default ~/DaphneDistributedWorker can be specified in the script)."
     echo "  --peers [IP[:PORT],...] Specify (comma delimited) IP:PORT workers (default localhost:50051,localhost:50052)" 
     echo "  -r, --run               Run workers on remote machines."
     echo "  -s, --status            Get distributed workers' status."
@@ -212,7 +212,7 @@ PARAMS=""
 while (( "$#" )); do
   case "$1" in
     --peers)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then                                 
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
             PEERS=$2
             parsePeers                        
             shift 2
@@ -228,17 +228,17 @@ while (( "$#" )); do
         exit 0
         ;;
     -p|--port)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then                                 
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
             PORT=$2
             shift 2
         else
             echo "Error: Argument for $1 is missing" >&2
             printHelp
             exit 1
-        fi                
+        fi
         ;;
     -i)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then                                 
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
             identity_file=$2
             shift 2
         else
@@ -256,8 +256,14 @@ while (( "$#" )); do
         shift 1
         ;;
     --pathToBuild)
-        PATH_TO_DEPLOY=$2
-        shift 2
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            PATH_TO_BUILD=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi
         ;;
     -s| --status)
         WORKERS_STATUS_FLAG=TRUE
@@ -281,7 +287,7 @@ done
 # set positional arguments in their proper place
 eval set -- "$PARAMS"
 
-if [[ ! -n $PATH_TO_DEPLOY ]]; then
+if [[ ! -n $PATH_TO_BUILD ]]; then
     echo "You must specifcy where the build is located."
     exit 1
 fi
@@ -297,7 +303,7 @@ if [[ ! -n $USERNAME ]]; then
 fi
 
 if [[ -n $DEPLOY_FLAG ]]; then   
-    deploy $PATH_TO_DEPLOY
+    deploy $PATH_TO_BUILD
     exit 0
 fi
 
