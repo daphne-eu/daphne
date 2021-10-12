@@ -114,29 +114,24 @@ function StartWorkers {
         $SSH_COMMAND $USERNAME@$HOSTNAME "\
             cd $PATH_TO_DEPLOY; \
             mkdir -p logs;              \
-            (./build/src/runtime/distributed/worker/DistributedWorker $HOSTNAME:$PORT) &" &
-    done;    
+            ./build/src/runtime/distributed/worker/DistributedWorker $HOSTNAME:$PORT > logs/$HOSTNAME.$PORT.out & echo \$! > logs/$HOSTNAME.$PORT.PID" &
+    done;
 }
 
 #******************************************************************************
 # Get worker's status
 #******************************************************************************
 
-function WorkerStatus {
-    LAST_MACHINE=""
+function WorkerStatus {    
     for i in "${PEERS[@]}"; do
         IFS=':' read -ra HOSTNAME_PORT <<< "$i"
         HOSTNAME=${HOSTNAME_PORT[0]}
         PORT=${HOSTNAME_PORT[1]}
-        # Checking all DistributedWorkers under specified machine
-        if [[ $HOSTNAME != $LAST_MACHINE ]]; then
-            echo "Checking remote workers at " $HOSTNAME
-            ($SSH_COMMAND $USERNAME@$HOSTNAME "\
-                cd $PATH_TO_DEPLOY; \
-                ps -f | grep '/build/src/runtime/distributed/worker/DistributedWorker' | grep -v grep;")
-            LAST_MACHINE=$HOSTNAME
-        fi
-    done;    
+        echo "Checking remote worker $HOSTNAME:$PORT"
+        ($SSH_COMMAND $USERNAME@$HOSTNAME "\
+            cd $PATH_TO_DEPLOY; \
+            ps -f \$(cat $PATH_TO_DEPLOY/logs/$HOSTNAME.$PORT.PID)")
+    done;
 }
 
 #******************************************************************************
@@ -144,19 +139,14 @@ function WorkerStatus {
 #******************************************************************************
 
 function KillWorkers {
-    LAST_MACHINE=""
     for i in "${PEERS[@]}"; do
         IFS=':' read -ra HOSTNAME_PORT <<< "$i"
         HOSTNAME=${HOSTNAME_PORT[0]}
         PORT=${HOSTNAME_PORT[1]}
-        # Killing all DistributedWorkers under specified machine
-        if [[ $HOSTNAME != $LAST_MACHINE ]]; then
-            echo "Killing remote workers at " $HOSTNAME
-            ($SSH_COMMAND $USERNAME@$HOSTNAME "killall DistributedWorker") &
-            LAST_MACHINE=$HOSTNAME
-        fi
-    done; 
-    wait   
+        # Killing distributed workers using saved PID
+        echo "Killing remote workers at " $HOSTNAME
+        ($SSH_COMMAND $USERNAME@$HOSTNAME "kill \$(cat $PATH_TO_DEPLOY/logs/$HOSTNAME.$PORT.PID)") &
+    done;
 }
 #******************************************************************************
 # Help message
@@ -164,9 +154,10 @@ function KillWorkers {
 
 function printHelp {
     echo "Start the DAPHNE distributed worker on remote machines."    
-    echo "Usage: $0 [-h|--help] [--deploy] [--pathToDeploy] [-r| --run] [-s| --statuts] [--kill] [-peers IP[:PORT], ...]"
+    echo "Usage: $0 [-h|--help] [--deploy] [--pathToBuild] [-r| --run] [-s| --statuts] [--kill] [-peers IP[:PORT], ...]"
     echo ""    
     echo "Please remember to set DISTRIBUTED_WORKERS=IP:PORT,IP:PORT,... before running a DAPHNE script."
+    echo "Logs can be found at [pathToBuild]/logs"
     echo ""
     echo "You can specify [ip:port, ...] list inside the script or pass it as argument."
     echo "Default port is 50000 but if you are running in local"
@@ -264,7 +255,7 @@ while (( "$#" )); do
         DEPLOY_FLAG=TRUE
         shift 1
         ;;
-    --pathToDeploy)
+    --pathToBuild)
         PATH_TO_DEPLOY=$2
         shift 2
         ;;
