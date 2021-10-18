@@ -180,7 +180,9 @@ class DenseMatrix : public Matrix<ValueType>
                 memset(v, 0, (colIdx - 1) * sizeof(ValueType));
         }
     }
-    
+
+    void print_value(std::ostream & os, ValueType val) const;
+
 public:
     
     void shrinkNumRows(size_t numRows) {
@@ -267,7 +269,6 @@ public:
     void print(std::ostream & os) const override {
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
-        size_t i = 0;
 #ifdef USE_CUDA
         if ((cuda_ptr && cuda_dirty) || !values) {
 //#ifndef NDEBUG
@@ -279,12 +280,11 @@ public:
 #endif
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
-                os << values.get()[i + c];
+                print_value(os, get(r, c));
                 if (c < numCols - 1)
                     os << ' ';
             }
             os << std::endl;
-            i += rowSkip;
         }
     }
 
