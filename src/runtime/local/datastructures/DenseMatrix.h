@@ -181,7 +181,7 @@ class DenseMatrix : public Matrix<ValueType>
         }
     }
 
-    void print_value(std::ostream & os, ValueType val) const;
+    void printValue(std::ostream & os, ValueType val) const;
 
 public:
     
@@ -280,7 +280,7 @@ public:
 #endif
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
-                print_value(os, get(r, c));
+                printValue(os, get(r, c));
                 if (c < numCols - 1)
                     os << ' ';
             }
