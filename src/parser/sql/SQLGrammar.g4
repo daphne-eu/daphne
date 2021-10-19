@@ -35,6 +35,7 @@ query:
 select:
     SQL_SELECT selectExpr (',' selectExpr)*
     SQL_FROM fromExpr
+    whereClause?
     ;
 
 subquery:
@@ -44,11 +45,25 @@ subqueryExpr:
     var=IDENTIFIER SQL_AS '(' select ')';
 
 selectExpr:
-    var=selectIdent;
+    var=generalExpr (SQL_AS aka=IDENTIFIER)?;
 
 fromExpr:
     var=tableReference #tableIdentifierExpr
     | lhs=fromExpr ',' rhs=tableReference #cartesianExpr
+    ;
+
+whereClause:
+    SQL_WHERE cond=generalExpr;
+
+generalExpr:
+    literal # literalExpr
+    | selectIdent # identifierExpr
+    | '(' generalExpr ')' # paranthesesExpr
+    | lhs=generalExpr op=('*'|'/') rhs=generalExpr # mulExpr
+    | lhs=generalExpr op=('+'|'-') rhs=generalExpr # addExpr
+    | lhs=generalExpr op=('='|'<>'|'<='|'>='|'<'|'>') rhs=generalExpr # cmpExpr
+    | lhs=generalExpr SQL_AND rhs=generalExpr # andExpr
+    | lhs=generalExpr SQL_OR rhs=generalExpr # orExpr
     ;
 
 tableReference:
@@ -95,6 +110,8 @@ SQL_BY: B Y;
 SQL_ORDER: O R D E R;
 SQL_ASC: A S C;
 SQL_DESC: D E S C;
+SQL_AND: A N D;
+SQL_OR: O R;
 
 fragment A: [aA];
 fragment B: [bB];
@@ -127,7 +144,6 @@ fragment LETTER: [a-zA-Z];
 fragment DIGIT: [0-9];
 fragment NON_ZERO_DIGIT: [1-9];
 
-DOT : '.';
 COLON : ':' ;
 COMMA : ',' ;
 SEMICOLON : ';' ;
@@ -142,13 +158,10 @@ RCURLY : '}';
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
-INT_POSITIVE_LITERAL:
-    DIGIT+ ;
-
 INT_LITERAL:
-    '-'? INT_POSITIVE_LITERAL;
+    '-'? DIGIT+;
 
 FLOAT_LITERAL:
-    '-'? ( DIGIT+ DOT DIGIT+);
+    '-'? ( DIGIT+ '.' DIGIT+);
 
 WS: [ \t\r\n]+ -> skip;

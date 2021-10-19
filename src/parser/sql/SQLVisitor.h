@@ -86,6 +86,24 @@ public:
 
     antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) override;
 
+    antlrcpp::Any visitWhereClause(SQLGrammarParser::WhereClauseContext * ctx) override;
+
+    antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) override;
+
+    antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext * ctx) override;
+
+    antlrcpp::Any visitMulExpr(SQLGrammarParser::MulExprContext * ctx) override;
+
+    antlrcpp::Any visitAddExpr(SQLGrammarParser::AddExprContext * ctx) override;
+
+    antlrcpp::Any visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) override;
+
+    antlrcpp::Any visitAndExpr(SQLGrammarParser::AndExprContext * ctx) override;
+
+    antlrcpp::Any visitOrExpr(SQLGrammarParser::OrExprContext * ctx) override;
+
     antlrcpp::Any visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) override;
 
     antlrcpp::Any visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) override;
