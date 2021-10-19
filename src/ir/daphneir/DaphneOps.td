@@ -712,7 +712,9 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // Cartesian product and joins
 // ----------------------------------------------------------------------------
 
-def Daphne_CartesianOp : Daphne_Op<"cartesian"> {
+def Daphne_CartesianOp : Daphne_Op<"cartesian", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+]> {
     let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args);
     let results = (outs Frame:$res);
 }

@@ -185,7 +185,7 @@ void daphne::GroupJoinOp::inferTypes() {
     daphne::FrameType rhsFt = rhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
     Type rhsAggType = getFrameColumnTypeByLabel(rhsFt, rhsAgg());
-    
+
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
     getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType, rhsAggType}));
@@ -195,7 +195,7 @@ void daphne::GroupJoinOp::inferTypes() {
 void daphne::SemiJoinOp::inferTypes() {
     daphne::FrameType lhsFt = lhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
-    
+
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
     getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType}));
