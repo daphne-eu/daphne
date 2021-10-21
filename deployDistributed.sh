@@ -128,9 +128,15 @@ function WorkerStatus {
         HOSTNAME=${HOSTNAME_PORT[0]}
         PORT=${HOSTNAME_PORT[1]}
         echo "Checking remote worker $HOSTNAME:$PORT"
-        ($SSH_COMMAND $USERNAME@$HOSTNAME "\
+        $SSH_COMMAND $USERNAME@$HOSTNAME "\
+            if [ -f $PATH_TO_BUILD/logs/$HOSTNAME.$PORT.PID ];\
+            then \
             cd $PATH_TO_BUILD; \
-            ps -f \$(cat $PATH_TO_BUILD/logs/$HOSTNAME.$PORT.PID)")
+                ps -f \$(cat $PATH_TO_BUILD/logs/$HOSTNAME.$PORT.PID) && echo 'Worker is UP' || echo 'Worker is DOWN';\
+                :;\
+            else \
+                echo 'logs directory does not exist (maybe running script for the first time?).'; \
+            fi" 
     done;
 }
 
