@@ -154,7 +154,7 @@ function KillWorkers {
 
 function printHelp {
     echo "Start the DAPHNE distributed worker on remote machines."    
-    echo "Usage: $0 [-h|--help] [--deploy] [--pathToBuild] [-r| --run] [-s| --statuts] [--kill] [-peers IP[:PORT], ...]"
+    echo "Usage: $0 [-h|--help] [--deploy] [--pathToBuild] [-r| --run] [-s| --status] [--kill] [-peers IP[:PORT], ...]"
     echo ""    
     echo "Please remember to set DISTRIBUTED_WORKERS=IP:PORT,IP:PORT,... before running a DAPHNE script."
     echo "Logs can be found at [pathToBuild]/logs"
@@ -246,7 +246,7 @@ while (( "$#" )); do
             printHelp
             exit 1
         fi        
-    ;;
+        ;;
     -r| --run)
         START_WORKERS_FLAG=TRUE
         shift 1
