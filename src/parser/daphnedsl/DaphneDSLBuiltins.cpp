@@ -921,8 +921,20 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Conversions, casts, and copying
     // ********************************************************************
 
-    if(func == "copy")
+    if(func == "copy") {
         return createSameTypeUnaryOp<CopyOp>(loc, func, args);
+    }
+    if(func == "quantize") {
+        checkNumArgsExact(func, args.size(), 3);
+        mlir::Value arg = args[0];
+        mlir::Value min = args[1];
+        mlir::Value max = args[2];
+        return static_cast<mlir::Value>(builder.create<QuantizeOp>(
+                loc,
+                utils.matrixOf(builder.getIntegerType(8, false)),
+                arg, min, max
+        ));
+    }
 
     // ********************************************************************
     // Input/output

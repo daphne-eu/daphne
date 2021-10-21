@@ -84,6 +84,8 @@ class DaphneDSLBuiltins {
     template<class CumAggOp>
     mlir::Value createCumAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
     
+    mlir::Value createQuantizeOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
+
     template<class BindOp>
     mlir::Value createBindOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
     
