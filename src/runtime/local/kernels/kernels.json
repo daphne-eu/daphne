@@ -1789,6 +1789,38 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
         ],
         "opCodes": ["AVG", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Quantization.h",
+            "opName": "quantize",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                { "type": "float", "name": "min" },
+                { "type": "float", "name": "max"}
+            ]
+	},
+        "instantiations": [
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "float"]]
+	]
     }
 ]
 
