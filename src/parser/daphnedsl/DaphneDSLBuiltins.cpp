@@ -155,16 +155,6 @@ mlir::Value DaphneDSLBuiltins::createCumAggOp(mlir::Location loc, const std::str
     ));
 }
 
-mlir::Value DaphneDSLBuiltins::createQuantizeOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
-    checkNumArgsExact(func, args.size(), 3);
-    mlir::Value arg = args[0];
-    mlir::Value min = args[1];
-    mlir::Value max = args[2];
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::QuantizeOp>(
-            loc, utils.matrixOf(utils.getValueTypeByName("ui8")), arg, min, max
-    ));
-}
-
 #if 0
 template<class BindOp>
 mlir::Value DaphneDSLBuiltins::createBindOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
@@ -935,7 +925,15 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return createSameTypeUnaryOp<CopyOp>(loc, func, args);
     }
     if(func == "quantize") {
-        return createQuantizeOp(loc, func, args);
+        checkNumArgsExact(func, args.size(), 3);
+        mlir::Value arg = args[0];
+        mlir::Value min = args[1];
+        mlir::Value max = args[2];
+        return static_cast<mlir::Value>(builder.create<QuantizeOp>(
+                loc,
+                utils.matrixOf(builder.getIntegerType(8, false)),
+                arg, min, max
+        ));
     }
 
     // ********************************************************************

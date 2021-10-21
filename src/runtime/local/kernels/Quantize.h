@@ -104,7 +104,6 @@ struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
         float scale = 0;
         uint8_t q_zero = 0;
         calc_quantization_params(min, max, scale, q_zero);
-        std::cout << "min: " << min << " max: " << max << " scale: " << scale << " q_zero: " << (int)q_zero << std::endl;
         for (int i = 0; i < (int)nr1; i++) {
             for (int j = 0; j < (int)nc1; j++) {
                 res->set(i,j, quantize_value(arg->get(i,j), scale, q_zero));

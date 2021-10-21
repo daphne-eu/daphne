@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <runtime/local/kernels/Quantization.h>
+#include <runtime/local/kernels/Quantize.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 
 #include <tags.h>

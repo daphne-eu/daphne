@@ -1792,7 +1792,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "Quantization.h",
+            "header": "Quantize.h",
             "opName": "quantize",
             "returnType": "void",
             "templateParams": [
