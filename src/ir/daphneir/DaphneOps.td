@@ -865,6 +865,11 @@ def Daphne_CopyOp : Daphne_Op<"copy"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
+def Daphne_QuantizeOp : Daphne_Op<"quantize"> {
+    let arguments = (ins Matrix:$arg, NumScalar:$min, NumScalar:$max);
+    let results = (outs Matrix:$res);
+}
+
 // ****************************************************************************
 // Distributed Operations
 // ****************************************************************************
