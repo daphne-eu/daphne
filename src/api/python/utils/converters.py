@@ -3,19 +3,18 @@ import numpy as np
 from api.python.operator.nodes.matrix import Matrix
 from typing import Sequence, Dict, Union
 
-
+#TODO: load data from numpy array
 def from_numpy(mat: np.array,
                    *args: Sequence[VALID_INPUT_TYPES],
                    **kwargs: Dict[str, VALID_INPUT_TYPES]) -> Matrix:
-        """Generate DAGNode representing matrix with data given by a numpy array, which will be sent to SystemDS
-        on need.
+        """Generate DAGNode representing matrix with data given by a numpy array.
         :param mat: the numpy array
         :param args: unnamed parameters
         :param kwargs: named parameters
         :return: A Matrix
         """
 
-        unnamed_params = ['\'./tmp/{file_name}\'']
+        unnamed_params = []
 
         if len(mat.shape) == 2:
             named_params = {'rows': mat.shape[0], 'cols': mat.shape[1]}
@@ -37,10 +36,8 @@ def rand( rows: int, cols: int,
         :param cols: number of cols
         :param min: min value for cells
         :param max: max value for cells
-        :param pdf: "uniform"/"normal"/"poison" distribution
         :param sparsity: fraction of non-zero cells
         :param seed: random seed
-        :param lambd: lamda value for "poison" distribution
         :return:
         """
         if rows < 0:
