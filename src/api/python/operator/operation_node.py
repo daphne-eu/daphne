@@ -1,0 +1,54 @@
+from typing import Dict, Iterable, Optional, Sequence, Union
+from api.python.script_building.dag import DAGNode, OutputType
+from api.python.script_building.script import DSLScript
+from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
+from api.python.utils.helpers import create_params_string
+import numpy as np
+class OperationNode(DAGNode):  
+    _result_var:Optional[Union[float,np.array]]
+    _script:Optional[DSLScript]
+    _output_types: Optional[Iterable[VALID_INPUT_TYPES]]
+    _source_node: Optional["DAGNode"]
+    _brackets: bool
+
+    def __init__(self, operation:str, 
+                unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
+                named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None, 
+                output_type:OutputType = OutputType.MATRIX, is_python_local_data: bool = False,
+                brackets: bool = False):
+                if unnamed_input_nodes is None:
+                    unnamed_input_nodes = []
+                if named_input_nodes is None:
+                    named_input_nodes = []
+                self.operation = operation
+                self._unnamed_input_nodes = unnamed_input_nodes
+                self._named_input_nodes = named_input_nodes
+                self._result_var = None
+                self._script = None
+                self._source_node = None
+                self._already_added = False
+                self.dsl_name = ""
+                self._is_python_local_data = is_python_local_data
+                self._brackets = brackets
+                self._output_type = output_type
+    def compute(self):
+        if self._result_var is None:
+            self._script = DSLScript()
+            self._script.build_code(self)
+            self._script.execute()
+            self._script.clear(self)
+            
+    
+    def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
+        if self._brackets:
+            return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}]'
+        if self.operation in BINARY_OPERATIONS:
+            assert len(
+                named_input_vars) == 0, 'named parameters can not be used with binary operations'
+            assert len(unnamed_input_vars)==2, 'Binary operations need exactly two input variables'
+            return f'{var_name}={unnamed_input_vars[0]}{self.operation}{unnamed_input_vars[1]};'
+        inputs_comma_sep = create_params_string(unnamed_input_vars, named_input_vars)
+        if self.output_type == OutputType.NONE:
+            return f'{self.operation}({inputs_comma_sep});'
+        else:
+            return f'{var_name}={self.operation}({inputs_comma_sep});'

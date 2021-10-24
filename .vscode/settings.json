@@ -1,0 +1,9 @@
+{
+    "python.analysis.extraPaths": [
+        "./src",
+        "./src",
+        "./src",
+        "./src",
+        "./src/api/python/utils"
+    ]
+}

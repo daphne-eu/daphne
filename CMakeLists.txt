@@ -34,7 +34,7 @@ set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
 # silence a warning about DEPFILE path transformations (used in LLVM)
-cmake_policy(SET CMP0116 OLD)
+#cmake_policy(SET CMP0116 OLD)
 
 # *****************************************************************************
 # Related to MLIR/LLVM
