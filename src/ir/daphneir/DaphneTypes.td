@@ -47,8 +47,19 @@ def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";
 
     // TODO Maybe we should rename "element type" to "value type" everywhere.
-    let parameters = (ins "::mlir::Type":$elementType);
+    let parameters = (ins
+        "::mlir::Type":$elementType,
+        "ssize_t":$numRows, "ssize_t":$numCols
+    );
     let genVerifyDecl = 1;
+
+    let builders = [
+        // Creates a MatrixType from mere element type information, with all
+        // other parameters reset.
+        TypeBuilder<(ins "::mlir::Type":$elementType), [{
+            return Base::get($_ctxt, elementType, -1, -1);
+        }]>,
+    ];
 
     let extraClassDeclaration = [{
         // The following methods return a MatrixType with the same parameters
@@ -56,7 +67,11 @@ def Matrix : Daphne_Type<"Matrix"> {
         // new value.
 
         ::mlir::daphne::MatrixType withElementType(::mlir::Type elementType) {
-            return get(getContext(), elementType);
+            return get(getContext(), elementType, getNumRows(), getNumCols());
+        }
+
+        ::mlir::daphne::MatrixType withShape(ssize_t numRows, ssize_t numCols) {
+            return get(getContext(), getElementType(), numRows, numCols);
         }
 
         // The following method returns a MatrixType with the same element type
@@ -84,15 +99,17 @@ def Frame : Daphne_Type<"Frame"> {
 
     let parameters = (ins
         "std::vector<::mlir::Type>":$columnTypes,
+        "ssize_t":$numRows, "ssize_t":$numCols,
         "std::vector<std::string> *":$labels
     );
 
     let genVerifyDecl = 1;
 
     let builders = [
+        // Creates a FrameType from mere column type information, with all
+        // other parameters reset.
         TypeBuilder<(ins "std::vector<::mlir::Type>":$columnTypes), [{
-            // By default, the label information is unknown (nullptr).
-            return Base::get($_ctxt, columnTypes, nullptr);
+            return Base::get($_ctxt, columnTypes, -1, -1, nullptr);
         }]>,
     ];
 
@@ -102,11 +119,15 @@ def Frame : Daphne_Type<"Frame"> {
         // new value.
 
         ::mlir::daphne::FrameType withColumnTypes(std::vector<::mlir::Type> columnTypes) {
-            return get(getContext(), columnTypes, getLabels());
+            return get(getContext(), columnTypes, getNumRows(), getNumCols(), getLabels());
+        }
+
+        ::mlir::daphne::FrameType withShape(ssize_t numRows, ssize_t numCols) {
+            return get(getContext(), getColumnTypes(), numRows, numCols, getLabels());
         }
 
         ::mlir::daphne::FrameType withLabels(std::vector<std::string> * labels) {
-            return get(getContext(), getColumnTypes(), labels);
+            return get(getContext(), getColumnTypes(), getNumRows(), getNumCols(), labels);
         }
 
         // The following method returns a FrameType with the same column types

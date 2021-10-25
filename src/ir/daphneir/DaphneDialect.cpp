@@ -45,13 +45,13 @@
 void mlir::daphne::DaphneDialect::initialize()
 {
     addOperations<
-#define GET_OP_LIST
-#include <ir/daphneir/DaphneOps.cpp.inc>
-            >();
+        #define GET_OP_LIST
+        #include <ir/daphneir/DaphneOps.cpp.inc>
+    >();
     addTypes<
-#define GET_TYPEDEF_LIST
-#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
-            >();
+        #define GET_TYPEDEF_LIST
+        #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
+    >();
 }
 
 mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(OpBuilder &builder,
@@ -66,18 +66,44 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
     llvm::StringRef keyword;
     parser.parseKeyword(&keyword);
     if (keyword == "Matrix") {
+        ssize_t numRows = -1;
+        ssize_t numCols = -1;
         mlir::Type elementType;
-        llvm::SMLoc locElementType;
-        if (parser.parseLess() || parser.getCurrentLocation(&locElementType)
-            || parser.parseType(elementType) || parser.parseGreater()) {
+        if (
+            parser.parseLess() ||
+            parser.parseOptionalQuestion() ||
+            // TODO Parse #rows if there was no '?'.
+            //parser.parseInteger<ssize_t>(numRows) ||
+            parser.parseXInDimensionList() ||
+            parser.parseOptionalQuestion() ||
+            // TODO Parse #cols if there was no '?'.
+            //parser.parseInteger<ssize_t>(numCols) ||
+            parser.parseXInDimensionList() ||
+            parser.parseType(elementType) ||
+            parser.parseGreater()
+        ) {
             return nullptr;
         }
 
-        // TODO: check valid element types
-        return MatrixType::get(parser.getBuilder().getContext(), elementType);
+        return MatrixType::get(
+                parser.getBuilder().getContext(), elementType, numRows, numCols
+        );
     }
     else if (keyword == "Frame") {
-        if (parser.parseLess() || parser.parseLSquare()) {
+        ssize_t numRows = -1;
+        ssize_t numCols = -1;
+        if (
+            parser.parseLess() ||
+            parser.parseOptionalQuestion() ||
+            // TODO Parse #rows if there was no '?'.
+            //parser.parseInteger<ssize_t>(numRows) ||
+            parser.parseKeyword("x") ||
+            parser.parseLSquare() ||
+            parser.parseOptionalQuestion() ||
+            // TODO Parse #cols if there was no '?'.
+            //parser.parseInteger<ssize_t>(numCols) ||
+            parser.parseColon()
+        ) {
             return nullptr;
         }
         std::vector<mlir::Type> cts;
@@ -91,7 +117,9 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         if (parser.parseRSquare() || parser.parseGreater()) {
             return nullptr;
         }
-        return FrameType::get(parser.getBuilder().getContext(), cts);
+        return FrameType::get(
+                parser.getBuilder().getContext(), cts, numRows, numCols, nullptr
+        );
     }
     else if (keyword == "Handle") {
         mlir::Type dataType;
@@ -109,13 +137,23 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
     }
 }
 
+std::string unknownStrIf(ssize_t val) {
+    return (val == -1) ? "?" : std::to_string(val);
+}
+
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
-    if (auto t = type.dyn_cast<mlir::daphne::MatrixType>())
-        os << "Matrix<" << t.getElementType() << '>';
+    if (auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
+        os << "Matrix<"
+                << unknownStrIf(t.getNumRows()) << 'x'
+                << unknownStrIf(t.getNumCols()) << 'x'
+                << t.getElementType() << '>';
+    }
     else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
-        os << "Frame<[";
+        os << "Frame<"
+                << unknownStrIf(t.getNumRows()) << "x["
+                << unknownStrIf(t.getNumCols()) << ": ";
         // Column types.
         std::vector<mlir::Type> cts = t.getColumnTypes();
         for (size_t i = 0; i < cts.size(); i++) {
@@ -164,17 +202,26 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
     return value();
 }
 
-::mlir::LogicalResult mlir::daphne::MatrixType::verify(::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError, Type elementType)
+::mlir::LogicalResult mlir::daphne::MatrixType::verify(
+        ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
+        Type elementType,
+        ssize_t numRows, ssize_t numCols
+)
 {
     if (
-        // Value type is unknown.
-        elementType.isa<mlir::daphne::UnknownType>()
-        // Value type is known.
-        || elementType.isSignedInteger(64)
-        || elementType.isUnsignedInteger(8)
-        || elementType.isF32()
-        || elementType.isF64()
-        || elementType.isIndex()
+        (
+            // Value type is unknown.
+            elementType.isa<mlir::daphne::UnknownType>()
+            // Value type is known.
+            || elementType.isSignedInteger(64)
+            || elementType.isUnsignedInteger(8)
+            || elementType.isF32()
+            || elementType.isF64()
+            || elementType.isIndex()
+        ) && (
+            // Number of rows and columns are valid (-1 for unknown).
+            numRows >= -1 && numCols >= -1
+        )
     )
         return mlir::success();
     else
@@ -184,10 +231,21 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 ::mlir::LogicalResult mlir::daphne::FrameType::verify(
         ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
         std::vector<Type> columnTypes,
+        ssize_t numRows, ssize_t numCols,
         std::vector<std::string> * labels
 )
 {
     // TODO Verify the individual column types.
+    if(numRows < -1 || numCols < -1)
+        return mlir::failure();
+    if(numCols != -1) {
+        if(static_cast<ssize_t>(columnTypes.size()) != numCols)
+            return mlir::failure();
+        if(labels && static_cast<ssize_t>(labels->size()) != numCols)
+            return mlir::failure();
+    }
+    if(labels && labels->size() != columnTypes.size())
+        return mlir::failure();
     return mlir::success();
 }
 

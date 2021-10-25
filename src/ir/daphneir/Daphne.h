@@ -38,6 +38,7 @@
 #include <ir/daphneir/DaphneOpsEnums.h.inc>
 #include <ir/daphneir/DaphneDistributableOpInterface.h>
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
+#include <ir/daphneir/DaphneInferShapeOpInterface.h>
 #include <ir/daphneir/DaphneInferTypesOpInterface.h>
 #include <ir/daphneir/DaphneVectorizableOpInterface.h>
 

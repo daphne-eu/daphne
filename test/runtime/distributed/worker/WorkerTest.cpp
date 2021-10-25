@@ -64,7 +64,7 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
         grpc::ClientContext context;
         distributed::Task task;
         task.set_mlir_code("func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
-            "() -> !daphne.Matrix<f64> {\n"
+            "() -> !daphne.Matrix<?x?xf64> {\n"
             "    %3 = \"daphne.constant\"() {value = 2 : si64} : () -> si64\n"
             "    %4 = \"daphne.cast\"(%3) : (si64) -> index\n"
             "    %5 = \"daphne.constant\"() {value = 3 : si64} : () -> si64\n"
@@ -73,8 +73,8 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
             "    %8 = \"daphne.constant\"() {value = 2.000000e+02 : f64} : () -> f64\n"
             "    %9 = \"daphne.constant\"() {value = 1.000000e+00 : f64} : () -> f64\n"
             "    %10 = \"daphne.constant\"() {value = -1 : si64} : () -> si64\n"
-            "    %11 = \"daphne.randMatrix\"(%4, %6, %7, %8, %9, %10) : (index, index, f64, f64, f64, si64) -> !daphne.Matrix<f64>"
-            "    \"daphne.return\"(%11) : (!daphne.Matrix<f64>) -> ()\n"
+            "    %11 = \"daphne.randMatrix\"(%4, %6, %7, %8, %9, %10) : (index, index, f64, f64, f64, si64) -> !daphne.Matrix<?x?xf64>"
+            "    \"daphne.return\"(%11) : (!daphne.Matrix<?x?xf64>) -> ()\n"
             "  }");
         distributed::ComputeResult result;
         auto status = stub->Compute(&context, task, &result);
@@ -97,9 +97,9 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
         *task.add_inputs() = workerInput;
         task.set_mlir_code(
             "func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
-                "(%mat: !daphne.Matrix<f64>) -> !daphne.Matrix<f64> {\n"
-                "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<f64>, !daphne.Matrix<f64>) -> !daphne.Matrix<f64>\n"
-                "  \"daphne.return\"(%r) : (!daphne.Matrix<f64>) -> ()\n"
+                "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
+                "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+                "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
                 "}");
         distributed::ComputeResult result;
         auto status = stub->Compute(&context, task, &result);
@@ -126,9 +126,9 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
         *task.add_inputs() = workerInput;
         task.set_mlir_code(
             "func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
-                "(%mat: !daphne.Matrix<f64>) -> !daphne.Matrix<f64> {\n"
-                "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<f64>, !daphne.Matrix<f64>) -> !daphne.Matrix<f64>\n"
-                "  \"daphne.return\"(%r) : (!daphne.Matrix<f64>) -> ()\n"
+                "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
+                "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+                "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
                 "}");
         distributed::ComputeResult result;
 

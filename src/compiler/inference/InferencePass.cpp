@@ -22,8 +22,8 @@
 
 #include <stdexcept>
 #include <memory>
-
-#include <iostream>
+#include <vector>
+#include <utility>
 
 using namespace mlir;
 
@@ -68,6 +68,38 @@ public:
                 // only to aid type inference, and for this purpose, we don't
                 // need the labels in all cases.
             }
+            
+            // Shape inference.
+            if(returnsUnknownShape(op)) {
+                // Try to infer the shapes of all results of this operation.
+                std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
+                const size_t numRes = op->getNumResults();
+                if(shapes.size() != numRes)
+                    throw std::runtime_error(
+                            "shape inference for op " +
+                            op->getName().getStringRef().str() + " returned " +
+                            std::to_string(shapes.size()) + " shapes, but the "
+                            "op has " + std::to_string(numRes) + " results"
+                    );
+                // Set the infered shapes on all results of this operation.
+                for(size_t i = 0; i < numRes; i++) {
+                    const ssize_t numRows = shapes[i].first;
+                    const ssize_t numCols = shapes[i].second;
+                    Value rv = op->getResult(i);
+                    const Type rt = rv.getType();
+                    if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+                        rv.setType(mt.withShape(numRows, numCols));
+                    else if(auto ft = rt.dyn_cast<daphne::FrameType>())
+                        rv.setType(ft.withShape(numRows, numCols));
+                    else
+                        throw std::runtime_error(
+                                "shape inference cannot set the shape of op " +
+                                op->getName().getStringRef().str() +
+                                " operand " + std::to_string(i) + ", since it "
+                                "is neither a matrix nor a frame"
+                        );
+                }
+            }
         });
     }
 
@@ -89,6 +121,16 @@ public:
         return llvm::any_of(op->getResultTypes(), [](Type resultType) {
             auto ft = resultType.dyn_cast<daphne::FrameType>();
             return ft && !ft.getLabels();
+        });
+    }
+
+    static bool returnsUnknownShape(Operation * op) {
+        return llvm::any_of(op->getResultTypes(), [](Type rt) {
+            if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+                return mt.getNumRows() == -1 || mt.getNumCols() == -1;
+            if(auto ft = rt.dyn_cast<daphne::FrameType>())
+                return ft.getNumRows() == -1 || ft.getNumCols() == -1;
+            return false;
         });
     }
 };

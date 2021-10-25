@@ -981,7 +981,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 labels = new std::vector<std::string>(fmd.labels);
 
             resType = mlir::daphne::FrameType::get(
-                    builder.getContext(), cts, labels
+                    builder.getContext(), cts, fmd.numRows, fmd.numCols, labels
             );
         }
         else // func == "read.matrix"
