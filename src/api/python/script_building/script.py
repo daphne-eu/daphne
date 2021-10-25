@@ -36,10 +36,15 @@ class DSLScript:
     def execute(self):
         #if not os.path.exists("../../../src/api/python/tmp/"):
          # os.mkdir("../../../src/api/python/tmp/")
-        temp_out_file = open("../../../tmpdaphne.daphne", "w")
-        temp_out_file.writelines(self.dsl_script)
-        temp_out_file.close()
-        os.chdir("/home/dzc/prototype")
+        if(os.getcwd() != "/home/dzc/prototype"):
+            temp_out_file = open("../../../tmpdaphne.daphne", "w")
+            temp_out_file.writelines(self.dsl_script)
+            temp_out_file.close()
+            os.chdir("/home/dzc/prototype")
+        else:
+            temp_out_file = open("tmpdaphne.daphne", "w")
+            temp_out_file.writelines(self.dsl_script)
+            temp_out_file.close()
         os.system("build/bin/daphnec tmpdaphne.daphne")
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:

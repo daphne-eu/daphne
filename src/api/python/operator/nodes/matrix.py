@@ -39,7 +39,17 @@ class Matrix(OperationNode):
 
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix('+', [self, other])
-        
+
+    def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
+        return Matrix('-', [self, other])
+
+
+    def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
+        return Matrix( '*', [self, other])
+
+    def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
+        return Matrix( '/', [self, other])
+
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
         :param axis: can be 0 or 1 to do either row or column sums
@@ -53,3 +63,6 @@ class Matrix(OperationNode):
             return Scalar('sum', [self])
         raise ValueError(
             f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+    
+    def print(self):
+        return OperationNode('print',[self], output_type=OutputType.NONE)

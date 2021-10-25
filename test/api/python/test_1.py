@@ -1,5 +1,7 @@
+import os
 import unittest
 import numpy as np
+from api.python.operator.nodes.matrix import Matrix
 from api.python.utils.converters import rand
 import random
 
@@ -20,14 +22,22 @@ m1 = rand(rows=shape[0], cols=shape[1],
                           min=min_max[0], max=min_max[1], seed=seed, sparsity=sparsity)
 
 m2 = rand(rows=shape[0], cols=shape[1],
-                          min=min_max[0], max=min_max[1])
+                          min=min_max[0], max=min_max[1], seed=seed, sparsity=sparsity)
 
 class TestBinaryOp(unittest.TestCase):
-    def test_plus(self):
-        m = (m1+m2).compute()
+    def test_binary_op(self):
+        print("Mat1:    ")
+        m1.print().compute()
+        print("Mat2:    ")
+        m2.print().compute()
+        print("M1 + M2:")
+        (m1+m2).compute()
+        print("M1 - M2:")
+        (m1-m2).compute()
 
-   # def test_sum1(self):
-    #    m1.sum().compute()
-     #   print(m1)
+    def test_sum1(self):
+        print("Sum of M1:")
+        m1.sum().compute()
+
 if __name__ == "__main__":
     unittest.main(exit=False)
