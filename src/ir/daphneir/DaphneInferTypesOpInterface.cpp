@@ -81,6 +81,22 @@ void inferTypes_EwCmpOp(EwCmpOp * op) {
     op->getResult().setType(t);
 }
 
+template<class EwBinaryOp>
+void inferTypes_EwBinaryOp(EwBinaryOp * op) {
+    Type lhsType = op->lhs().getType();
+    Type rhsType = op->rhs().getType();
+    Type t;
+    if(auto mt = lhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else {
+        Builder builder(op->getContext());
+        t = builder.getI1Type();
+    }
+    op->getResult().setType(t);
+}
+
 // ****************************************************************************
 // Type inference implementations
 // ****************************************************************************
@@ -158,6 +174,30 @@ void daphne::EwGtOp::inferTypes() {
 
 void daphne::EwGeOp::inferTypes() {
     return inferTypes_EwCmpOp(this);
+}
+
+void daphne::EwAddOp::inferTypes(){
+    return inferTypes_EwBinaryOp(this);
+}
+
+void daphne::EwSubOp::inferTypes(){
+    return inferTypes_EwBinaryOp(this);
+}
+
+void daphne::EwMulOp::inferTypes(){
+    return inferTypes_EwBinaryOp(this);
+}
+
+void daphne::EwDivOp::inferTypes(){
+    return inferTypes_EwBinaryOp(this);
+}
+
+void daphne::EwAndOp::inferTypes(){
+    return inferTypes_EwBinaryOp(this);
+}
+
+void daphne::EwOrOp::inferTypes(){
+    return inferTypes_EwBinaryOp(this);
 }
 
 void daphne::ExtractRowOp::inferTypes() {

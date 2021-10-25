@@ -420,55 +420,43 @@ antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceCo
 antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 
+    mlir::Value matrix;
     mlir::Value expr = utils.valueOrError(visit(ctx->var));
 
-    // if(expr.getType() != mlir::daphne::MatrixType()){
-    //     std::cout << "HEY LISTEN!!!!!! LOOOK AT MEEEE!\n";
-    // }
-    mlir::Value numRow = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::NumRowsOp>(
-            loc,
-            utils.sizeType,
-            currentFrame
-        ));
+    if(expr.getType().isa<mlir::daphne::MatrixType>()){
+        matrix = expr;
+    }else{
+        //Create a Matrix out of the Expr
+        mlir::Value numRow = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::NumRowsOp>(
+                loc,
+                utils.sizeType,
+                currentFrame
+            ));
 
-    mlir::Value zero = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::ConstantOp>(
-            loc,
-            builder.getIntegerAttr(builder.getIntegerType(64, true), 0)
-        ));
-    mlir::Value one = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::ConstantOp>(
-            loc,
-            builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-        ));
-    mlir::Value one_cast = static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
-            builder.getUnknownLoc(),
-            utils.sizeType,
-            one
-        ));
-    mlir::Value matrix = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::FillOp>(
-            loc,
-            utils.matrixOf(zero),
-            zero,
-            numRow,
-            one_cast
-        ));
+        mlir::Value one = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
+            ));
 
-    mlir::Value resVal = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::EwAddOp>(
-            loc,
-            matrix,
-            expr
-        ));
+        matrix = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::FillOp>(
+                loc,
+                utils.matrixOf(expr),
+                expr,
+                numRow,
+                utils.castSizeIf(one)
+            ));
+    }
 
+    //make a Frame from the Matrix.
     std::vector<mlir::Type> colTypes;
     std::vector<mlir::Value> cols;
     std::vector<mlir::Value> labels;
 
     colTypes.push_back(matrix.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
-    cols.push_back(resVal);
+    cols.push_back(matrix);
 
     std::string label;
     if(ctx->aka){

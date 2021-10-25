@@ -26,7 +26,7 @@
 const std::string dirPath = "test/api/cli/sql/";
 
 TEST_CASE("basic, success", TAG_SQL) {
-    for(unsigned i = 1; i <= 2; i++) {
+    for(unsigned i = 1; i <= 4; i++) {
         DYNAMIC_SECTION("basicsql_success_" << i << ".daphne") {
             checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, "basicsql_success", i);
         }

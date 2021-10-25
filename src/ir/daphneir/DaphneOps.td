@@ -190,10 +190,10 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar>;
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar>;
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [DeclareOpInterfaceMethods<InferTypesOpInterface>]>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [DeclareOpInterfaceMethods<InferTypesOpInterface>]>;
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [DeclareOpInterfaceMethods<InferTypesOpInterface>]>;
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [DeclareOpInterfaceMethods<InferTypesOpInterface>]>;
 def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar>;
 def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", FloatScalar>;
@@ -209,8 +209,8 @@ def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar>;
 // Logical
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>>;
-def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>>;
+def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>, [DeclareOpInterfaceMethods<InferTypesOpInterface>]>;
+def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>, [DeclareOpInterfaceMethods<InferTypesOpInterface>]>;
 def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntScalar]>>;
 
 // ----------------------------------------------------------------------------
