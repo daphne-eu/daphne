@@ -591,6 +591,20 @@ private:
     }
 };
 
+class GenericCallOpLowering : public OpConversionPattern<daphne::GenericCallOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::GenericCallOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        rewriter.replaceOpWithNewOp<CallOp>(op, op.callee(), op->getResultTypes(), operands);
+        return success();
+    }
+};
+
 namespace
 {
     struct DaphneLowerToLLVMPass
@@ -676,7 +690,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
     patterns.insert<
             ConstantOpLowering,
             ReturnOpLowering,
-            StoreVariadicPackOpLowering
+            StoreVariadicPackOpLowering,
+            GenericCallOpLowering
     >(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This

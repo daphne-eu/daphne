@@ -463,7 +463,39 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     std::vector<mlir::Value> args;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
         args.push_back(utils.valueOrError(visit(ctx->expr(i))));
-    
+
+    // search user defined functions
+    auto range = functionsSymbolMap.equal_range(func);
+    for (auto it = range.first; it != range.second; ++it) {
+        auto userDefinedFunc = it->second;
+        auto funcTy = userDefinedFunc.getType();
+        auto compatible = true;
+        std::vector<mlir::Type> specializedInputs;
+
+        for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
+            auto funcInTy = std::get<0>(compIt);
+            auto argVal = std::get<1>(compIt);
+            if (funcInTy != argVal.getType()) {
+                // TODO: specialize if possible
+                // targets don't match
+                compatible = false;
+            }
+        }
+        if (compatible) {
+            // TODO: variable results
+            return builder
+                .create<mlir::daphne::GenericCallOp>(loc,
+                    userDefinedFunc.sym_name(),
+                    args,
+                    userDefinedFunc.getType().getResults())
+                .getResult(0);
+        }
+    }
+    if (range.second != range.first) {
+        // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
+        throw std::runtime_error("No function definition of `" + func + "` found with matching types");
+    }
+
     // Create DaphneIR operation for the built-in function.
     return builtins.build(loc, func, args);
 }
@@ -755,4 +787,119 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
                 builder.getBoolAttr(val)
         )
     );
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) {
+    // TODO: check that the function does not shadow a builtin
+    auto functionName = ctx->name->getText();
+    static unsigned functionUniqueId = 0;
+    auto functionSymbolName = functionName + "__" + std::to_string(++functionUniqueId);
+    // TODO: global variables support in functions
+    auto globalSymbolTable = symbolTable;
+    symbolTable = ScopedSymbolTable();
+
+    std::vector<std::string> funcArgNames;
+    std::vector<mlir::Type> funcArgTypes;
+    if(ctx->args) {
+        auto functionArguments = static_cast<std::vector<std::pair<std::string, mlir::Type>>>(visit(ctx->args));
+        for(const auto &pair: functionArguments) {
+            funcArgNames.push_back(pair.first);
+            funcArgTypes.push_back(pair.second);
+        }
+    }
+
+    auto funcBlock = new mlir::Block();
+    for(auto it: llvm::zip(funcArgNames, funcArgTypes)) {
+        auto blockArg = funcBlock->addArgument(std::get<1>(it));
+        handleAssignmentPart(std::get<0>(it), symbolTable, blockArg);
+    }
+
+    mlir::OpBuilder::InsertionGuard guard(builder);
+    auto *moduleBody = module.getBody();
+
+    auto loc = utils.getLoc(ctx->start);
+    mlir::Type returnType;
+    mlir::FuncOp functionOperation;
+    if(ctx->retTy) {
+        // early creation of FuncOp for recursion
+        returnType = visit(ctx->retTy);
+        builder.setInsertionPoint(moduleBody, moduleBody->begin());
+        auto funcType = builder.getFunctionType(funcArgTypes, {returnType});
+        functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
+        functionsSymbolMap.insert({functionName, functionOperation});
+    }
+
+    builder.setInsertionPointToStart(funcBlock);
+    visitBlockStatement(ctx->bodyStmt);
+    if(funcBlock->getOperations().empty()
+        || !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
+        builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
+    }
+
+    auto returnOpTypes = funcBlock->getTerminator()->getOperandTypes();
+    if(!functionOperation) {
+        // late creation if no return types defined
+        builder.setInsertionPoint(moduleBody, moduleBody->begin());
+        auto funcType = builder.getFunctionType(funcArgTypes, returnOpTypes);
+        functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
+        functionsSymbolMap.insert({functionName, functionOperation});
+    }
+    else if(returnOpTypes != mlir::TypeRange({returnType})) {
+        throw std::runtime_error(
+            "Function `" + functionName + "` returns different type than specified in the definition");
+    }
+    functionOperation.body().push_front(funcBlock);
+
+    symbolTable = globalSymbolTable;
+    return functionOperation;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionArgs(DaphneDSLGrammarParser::FunctionArgsContext *ctx) {
+    std::vector<std::pair<std::string, mlir::Type>> functionArguments;
+    for(auto funcArgCtx: ctx->functionArg()) {
+        functionArguments.push_back(visitFunctionArg(funcArgCtx));
+    }
+    return functionArguments;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) {
+    auto ty = utils.unknownType;
+    if(ctx->ty) {
+        ty = visitFuncTypeDef(ctx->ty);
+    }
+    return std::make_pair(ctx->var->getText(), ty);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) {
+    auto type = utils.unknownType;
+    if(ctx->dataTy) {
+        std::string dtStr = ctx->dataTy->getText();
+        if(dtStr == "matrix") {
+            mlir::Type vt;
+            if(ctx->elTy)
+                vt = utils.getValueTypeByName(ctx->elTy->getText());
+            else
+                vt = utils.unknownType;
+            type = utils.matrixOf(vt);
+        }
+        else {
+            // TODO: should we do this?
+            // auto loc = utils.getLoc(ctx->start);
+            // emitError(loc) << "unsupported data type for function argument: " + dtStr;
+            throw std::runtime_error(
+                "unsupported data type for function argument: " + dtStr
+            );
+        }
+    }
+    else if(ctx->scalarTy)
+        type = utils.getValueTypeByName(ctx->scalarTy->getText());
+    return type;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::ReturnStatementContext *ctx) {
+    std::vector<mlir::Value> returns;
+    for(auto expr: ctx->expr()) {
+        returns.push_back(utils.valueOrError(visit(expr)));
+    }
+    return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
 }

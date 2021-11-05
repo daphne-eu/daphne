@@ -37,6 +37,8 @@ statement:
     | ifStatement
     | whileStatement
     | forStatement
+    | functionStatement
+    | returnStatement
     ;
 
 blockStatement:
@@ -56,6 +58,19 @@ whileStatement:
 
 forStatement:
     KW_FOR '(' var=IDENTIFIER KW_IN from=expr ':' to=expr (':' step=expr)? ')' bodyStmt=statement ;
+
+// TODO: variable tuple returns
+functionStatement:
+	KW_FUN name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTy=funcTypeDef)? bodyStmt=blockStatement;
+
+returnStatement:
+    KW_RETURN ( expr ( ',' expr )* )? ';';
+
+functionArgs: functionArg (',' functionArg)* ','?;
+
+functionArg: var=IDENTIFIER (':' ty=funcTypeDef)?;
+
+funcTypeDef: (dataTy=DATA_TYPE ('<' elTy=VALUE_TYPE '>')? | scalarTy=VALUE_TYPE);
 
 expr:
     literal # literalExpr
@@ -99,6 +114,8 @@ KW_IN: 'in';
 KW_TRUE: 'true';
 KW_FALSE: 'false';
 KW_AS: 'as';
+KW_FUN: 'fun';
+KW_RETURN: 'return';
 
 fragment DIGIT:
     [0-9] ;

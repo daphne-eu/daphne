@@ -205,6 +205,40 @@ void compareDaphneToRefSimple(const std::string & dirPath, const std::string & n
 }
 
 /**
+ * @brief Compares the standard output of executing a given DaphneDSL script
+ * with the command line interface of the DAPHNE Prototype, to a (simpler) DaphneDSL
+ * script defining the expected behaviour.
+ *
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ *
+ * @param expScriptFilePath The path to the DaphneDSL script with expected behaviour.
+ * @param actScriptFilePath The path to the DaphneDSL script to check with actual behaviour.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::string &actScriptFilePath, Args ... args) {
+    std::stringstream expOut;
+    std::stringstream expErr;
+    int expStatus = runDaphne(expOut, expErr, expScriptFilePath.c_str(), args...);
+    std::stringstream actOut;
+    std::stringstream actErr;
+    int actStatus = runDaphne(actOut, actErr, actScriptFilePath.c_str(), args...);
+
+    REQUIRE(expStatus == actStatus);
+    CHECK(expOut.str() == actOut.str());
+    CHECK(expErr.str() == actErr.str());
+}
+
+template<typename... Args>
+void compareDaphneToSelfRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    const std::string filePath = dirPath + name + '_' + std::to_string(idx);
+    compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
+}
+
+/**
  * @brief Starts a distributed worker locally.
  *
  * @param addr The address (usually `0.0.0.0:<port>`) the worker should run on

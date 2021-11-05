@@ -1212,6 +1212,24 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
     }];
 }
 
+def Daphne_GenericCallOp : Daphne_Op<"generic_call"> {
+    let summary = "User defined function call";
+
+    let arguments = (ins StrAttr:$callee, Variadic<AnyType>:$inputs);
+    let results = (outs Variadic<AnyType>);
+
+    let builders = [
+        OpBuilder<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+            $_state.addOperands(operands);
+            $_state.addAttribute("callee", callee);
+            $_state.addTypes(results);
+        }]>,
+        OpBuilder<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+            build($_builder, $_state, $_builder.getStringAttr(callee), operands, results);
+        }]>,
+    ];
+}
+
 class Daphne_ElementwiseBinaryOp<string mnemonic, list<OpTrait> traits = []> :
         Daphne_Op<mnemonic, !listconcat(traits, [NoSideEffect, TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">])> {
     let arguments = (ins AnyTypeOf<[AnyScalar, Matrix]>:$lhs, AnyTypeOf<[AnyScalar, Matrix]>:$rhs);

@@ -30,13 +30,19 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     // By inheriting from DaphneDSLGrammarVisitor (as opposed to
     // DaphneDSLGrammarBaseVisitor), we ensure that any newly added visitor
     // function (e.g. after a change to the grammar file) needs to be
     // considered here. This is to force us not to forget anything.
-    
+
+    /**
+     * The module.
+     */
+    mlir::ModuleOp & module;
+
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
@@ -58,14 +64,20 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * functions.
      */
     DaphneDSLBuiltins builtins;
-    
+
+    /**
+     * @brief Maps function names to MLIR symbols of functions defined in the IR.
+     */
+    std::multimap<std::string, mlir::FuncOp> functionsSymbolMap;
+
     std::unordered_map<std::string, std::string> args;
     
 public:
     DaphneDSLVisitor(
+            mlir::ModuleOp & module,
             mlir::OpBuilder & builder,
             std::unordered_map<std::string, std::string> args
-    ) : builder(builder), utils(builder), builtins(builder), args(args) {
+    ) : module(module), builder(builder), utils(builder), builtins(builder), args(std::move(args)) {
         //
     };
     
@@ -84,6 +96,16 @@ public:
     antlrcpp::Any visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) override;
 
     antlrcpp::Any visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) override;
+
+    antlrcpp::Any visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) override;
+
+    antlrcpp::Any visitReturnStatement(DaphneDSLGrammarParser::ReturnStatementContext *ctx) override;
+
+    antlrcpp::Any visitFunctionArgs(DaphneDSLGrammarParser::FunctionArgsContext *ctx) override;
+
+    antlrcpp::Any visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) override;
+
+    antlrcpp::Any visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) override;
 
     antlrcpp::Any visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) override;
 

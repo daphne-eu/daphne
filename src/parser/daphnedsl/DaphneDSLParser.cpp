@@ -51,16 +51,15 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         // TODO: evaluate if overloading error handler makes sense
         parser.setErrorHandler(errorStrategy);
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
-        DaphneDSLVisitor visitor(builder, args);
+        DaphneDSLVisitor visitor(module, builder, args);
         visitor.visitScript(ctx);
         
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto * terminator = funcBlock->getTerminator();
-    auto funcType = mlir::FunctionType::get(
-            builder.getContext(),
-            funcBlock->getArgumentTypes(),
-            terminator->getOperandTypes()
+    auto funcType = builder.getFunctionType(
+        funcBlock->getArgumentTypes(),
+        terminator->getOperandTypes()
     );
     auto func = builder.create<mlir::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);
