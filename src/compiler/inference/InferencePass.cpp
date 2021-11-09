@@ -44,14 +44,14 @@ using namespace mlir;
 // make them configurable, whereby different instances of this pass should be
 // able to infer different sets of properties.
 class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
-    bool isPartialInferenceAllowed;
+    daphne::InferenceConfig cfg;
 
     static WalkResult walkOp(Operation * op) {
         // Type inference.
         if(returnsUnknownType(op)) {
             if (auto inferTypesOp = llvm::dyn_cast<daphne::InferTypes>(op))
                 inferTypesOp.inferTypes();
-            else if (!isPartialInferenceAllowed)
+            else if (!cfg.isPartialInferenceAllowed)
                 // TODO As soon as the run-time can handle unknown
                 // data/value types, we do not need to throw here anymore.
                 throw std::runtime_error(
@@ -60,6 +60,8 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                         + op->getName().getStringRef().str()
                 );
         }
+        if (cfg.onlyTypes)
+            return;
 
         // Frame label inference.
         if (returnsFrameWithUnknownLabels(op)) {
@@ -210,7 +212,8 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
     }
 
 public:
-    InferencePass(bool isPartialInferenceAllowed) : isPartialInferenceAllowed(isPartialInferenceAllowed) {}
+    InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {}
+
     void runOnFunction() override {
         getFunction().walk<WalkOrder::PreOrder>(walkOp);
         // infer function return types
@@ -251,6 +254,6 @@ public:
     }
 };
 
-std::unique_ptr<Pass> daphne::createInferencePass(bool isPartialInferenceAllowed) {
-    return std::make_unique<InferencePass>(isPartialInferenceAllowed);
+std::unique_ptr<Pass> daphne::createInferencePass(daphne::InferenceConfig cfg) {
+    return std::make_unique<InferencePass>(cfg);
 }

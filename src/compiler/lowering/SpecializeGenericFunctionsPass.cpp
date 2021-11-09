@@ -107,7 +107,7 @@ namespace {
         // Run inference
         mlir::PassManager pm(function->getContext(), "func");
         pm.enableVerifier(false);
-        pm.addPass(daphne::createInferencePass(true));
+        pm.addPass(daphne::createInferencePass({true, true}));
         if(failed(pm.run(function))) {
             function.emitError() << "could not infer types for a call of function template";
             return nullptr;
@@ -200,7 +200,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
         if(isFunctionTemplate(function) || visited.count(function))
             continue;
         OpPassManager dynamicPM("func");
-        dynamicPM.addPass(daphne::createInferencePass(true));
+        dynamicPM.addPass(daphne::createInferencePass({true, true}));
         if(failed(runPipeline(dynamicPM, function))) {
             module.emitError() << "Could not infer types for main function";
             return signalPassFailure();
