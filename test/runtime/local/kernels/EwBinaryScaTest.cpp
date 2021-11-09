@@ -120,6 +120,38 @@ TEMPLATE_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, VALUE_TYPES) {
 }
 
 // ****************************************************************************
+// Logical
+// ****************************************************************************
+
+TEMPLATE_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 0,  0, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 0,  1, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 1,  0, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 1,  1, 1);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 0,  2, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 2,  0, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 2,  2, 1);
+    checkEwBinarySca<BinaryOpCode::AND, VT>( 0, -2, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>(-2,  0, 0);
+    checkEwBinarySca<BinaryOpCode::AND, VT>(-2, -2, 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 0,  0, 0);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 0,  1, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 1,  0, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 1,  1, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 0,  2, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 2,  0, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 2,  2, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>( 0, -2, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>(-2,  0, 1);
+    checkEwBinarySca<BinaryOpCode::OR, VT>(-2, -2, 1);
+}
+
+// ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 

@@ -234,6 +234,64 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 }
 
 // ****************************************************************************
+// Logical
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(2, {0, 1, 2, VT(-2)});
+    
+    DT * mExp = nullptr;
+    SECTION("scalar=0") {
+        mExp = genGivenVals<DT>(2, {0, 0, 0, 0});
+        checkEwBinaryMatSca(BinaryOpCode::AND, m1, 0, mExp);
+    }
+    SECTION("scalar=1") {
+        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::AND, m1, 1, mExp);
+    }
+    SECTION("scalar=2") {
+        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::AND, m1, 2, mExp);
+    }
+    SECTION("scalar=-2") {
+        mExp = genGivenVals<DT>(2, {0, 1, 1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::AND, m1, VT(-2), mExp);
+    }
+    
+    DataObjectFactory::destroy(m1, mExp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(2, {0, 1,  2, VT(-2)});
+    
+    DT * mExp = nullptr;
+    SECTION("scalar=0") {
+        mExp = genGivenVals<DT>(2, {0, 1,  1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::OR, m1, 0, mExp);
+    }
+    SECTION("scalar=1") {
+        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::OR, m1, 1, mExp);
+    }
+    SECTION("scalar=2") {
+        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::OR, m1, 2, mExp);
+    }
+    SECTION("scalar=-2") {
+        mExp = genGivenVals<DT>(2, {1, 1,  1, 1});
+        checkEwBinaryMatSca(BinaryOpCode::OR, m1, VT(-2), mExp);
+    }
+    
+    DataObjectFactory::destroy(m1, mExp);
+}
+
+// ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 

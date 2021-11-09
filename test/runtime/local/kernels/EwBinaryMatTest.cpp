@@ -269,6 +269,36 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DenseMatrix), (VALUE_
 }
 
 // ****************************************************************************
+// Logical
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(1, {0, 0, 1, 1, 0, 2, 2,     0, VT(-2), VT(-2)});
+    auto m2 = genGivenVals<DT>(1, {0, 1, 0, 1, 2, 0, 2, VT(-2),    0 , VT(-2)});
+    auto m3 = genGivenVals<DT>(1, {0, 0, 0, 1, 0, 0, 1,     0 ,    0 ,     1 });
+    
+    checkEwBinaryMat(BinaryOpCode::AND, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1, m2, m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(1, {0, 0, 1, 1, 0, 2, 2,     0 , VT(-2), VT(-2)});
+    auto m2 = genGivenVals<DT>(1, {0, 1, 0, 1, 2, 0, 2, VT(-2),     0 , VT(-2)});
+    auto m3 = genGivenVals<DT>(1, {0, 1, 1, 1, 1, 1, 1,     1,      1 ,     1 });
+    
+    checkEwBinaryMat(BinaryOpCode::OR, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1, m2, m3);
+}
+
+// ****************************************************************************
 // Invalid op-code
 // ****************************************************************************
 

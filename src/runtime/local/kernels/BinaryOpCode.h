@@ -36,6 +36,10 @@ enum class BinaryOpCode {
     // Min/max.
     MIN,
     MAX,
+    
+    // Logical.
+    AND,
+    OR,
 
     ISSYM,
 };

@@ -659,6 +659,30 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     throw std::runtime_error("unexpected op symbol");
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprContext * ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    
+    if(op == "&&")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+    
+    throw std::runtime_error("unexpected op symbol");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprContext * ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    
+    if(op == "||")
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+    
+    throw std::runtime_error("unexpected op symbol");
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) {
     // TODO The creation of the ConstantOps could be simplified: We don't need
     // to create attributes here, since there are custom builder methods for

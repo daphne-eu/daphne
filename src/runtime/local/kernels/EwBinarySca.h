@@ -76,6 +76,9 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         // Min/max.
         MAKE_CASE(BinaryOpCode::MIN)
         MAKE_CASE(BinaryOpCode::MAX)
+        // Logical.
+        MAKE_CASE(BinaryOpCode::AND)
+        MAKE_CASE(BinaryOpCode::OR)
 #undef MAKE_CASE
         default:
             throw std::runtime_error("unknown BinaryOpCode");
@@ -138,6 +141,9 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
 // Min/max.
 MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs))
 MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs))
+// Logical.
+MAKE_EW_BINARY_SCA(BinaryOpCode::AND, lhs && rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::OR , lhs || rhs)
 
 #undef MAKE_EW_BINARY_SCA
 

@@ -112,6 +112,10 @@ public:
     antlrcpp::Any visitAddExpr(DaphneDSLGrammarParser::AddExprContext * ctx) override;
     
     antlrcpp::Any visitCmpExpr(DaphneDSLGrammarParser::CmpExprContext * ctx) override;
+    
+    antlrcpp::Any visitConjExpr(DaphneDSLGrammarParser::ConjExprContext * ctx) override;
+    
+    antlrcpp::Any visitDisjExpr(DaphneDSLGrammarParser::DisjExprContext * ctx) override;
 
     antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) override;
 
