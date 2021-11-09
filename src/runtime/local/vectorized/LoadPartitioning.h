@@ -60,7 +60,7 @@ public:
         schedulingMethod = method;
         //std::cout<<"Method "<<schedulingMethod<<std::endl;
         totalTasks = tasks;
-        double tSize = (totalTasks+workers-1.0)/totalTasks;
+        double tSize = (totalTasks+workers-1.0)/workers;
         mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
         fissStages = getStages(totalTasks, workers);
         if(!autochunk){    

@@ -53,6 +53,9 @@ public:
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
         DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
     {
+        if(const char* env_m = std::getenv("DAPHNE_THREADS")){
+            _numThreads= std::stoi(env_m);
+        }
         // create task queue (w/o size-based blocking)
         TaskQueue* q = new BlockingTaskQueue(input1->getNumRows()); // this the maximum possible number of tasks should we start with something smaller and it grows as ended?!
 
@@ -77,7 +80,7 @@ public:
         uint64_t batchsize = 1; // row-at-a-time
         uint64_t chunkParam=1;
         //std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
-        LoadPartitioning lp(GSS, rlen, chunkParam,_numThreads, true); 
+        LoadPartitioning lp(GSS, rlen, chunkParam,_numThreads, false); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
@@ -123,7 +126,9 @@ public:
         } 
         // create task queue (w/o size-based blocking)
         TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
-
+         if(const char* env_m = std::getenv("DAPHNE_THREADS")){
+            _numThreads= std::stoi(env_m);
+        }
         // create workers threads
         WorkerCPU* workers[_numThreads];
         std::thread workerThreads[_numThreads];
@@ -148,7 +153,7 @@ public:
         uint64_t batchsize = 100; // 100-rows-at-a-time
         uint64_t chunkParam = 1;
         //std::cout<<"worker "<<_numThreads<<std::endl;
-        LoadPartitioning lp(GSS, len, chunkParam,_numThreads,true); 
+        LoadPartitioning lp(GSS, len, chunkParam,_numThreads,false); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
