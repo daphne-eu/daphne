@@ -470,15 +470,13 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
         auto userDefinedFunc = it->second;
         auto funcTy = userDefinedFunc.getType();
         auto compatible = true;
-        std::vector<mlir::Type> specializedInputs;
 
         for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
-            auto funcInTy = std::get<0>(compIt);
+            auto funcInputType = std::get<0>(compIt);
             auto argVal = std::get<1>(compIt);
-            if (funcInTy != argVal.getType()) {
-                // TODO: specialize if possible
-                // targets don't match
+            if (funcInputType != argVal.getType() && funcInputType != utils.unknownType) {
                 compatible = false;
+                break;
             }
         }
         if (compatible) {
@@ -792,8 +790,7 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
 antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) {
     // TODO: check that the function does not shadow a builtin
     auto functionName = ctx->name->getText();
-    static unsigned functionUniqueId = 0;
-    auto functionSymbolName = functionName + "__" + std::to_string(++functionUniqueId);
+    auto functionSymbolName = utils.getUniqueFunctionSymbol(functionName);
     // TODO: global variables support in functions
     auto globalSymbolTable = symbolTable;
     symbolTable = ScopedSymbolTable();

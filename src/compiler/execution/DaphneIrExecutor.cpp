@@ -53,12 +53,25 @@ DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUser
 
 bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 {
-    if (failed(mlir::verify(module))) {
-        module->emitError("failed to verify the module right after parsing");
-        return false;
-    }
+    // FIXME: operations in `template` functions (functions with unknown inputs) can't be verified
+    //  as their type constraints are not met.
+    //if (failed(mlir::verify(module))) {
+        //module->emitError("failed to verify the module right after parsing");
+        //return false;
+    //}
 
     if (module) {
+        {
+            mlir::PassManager pm(&context_);
+            pm.enableVerifier(false);
+            pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass());
+            if(failed(pm.run(module))) {
+                module->dump();
+                module->emitError("pass error for generic functions");
+                return false;
+            }
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
+        }
         mlir::PassManager pm(&context_);
 
         // This flag is really useful to figure out why the lowering failed

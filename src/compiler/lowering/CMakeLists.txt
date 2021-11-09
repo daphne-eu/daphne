@@ -18,6 +18,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     InsertDaphneContextPass.cpp
     LowerToLLVMPass.cpp
     RewriteToCallKernelOpPass.cpp
+    SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
 
     DEPENDS

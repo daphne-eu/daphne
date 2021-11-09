@@ -51,4 +51,8 @@ def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }
 
+def SpecializeGenericFunctionsPass : FunctionPass<"specialize-generic-funcs"> {
+    let constructor = "mlir::daphne::createSpecializeGenericFunctionsPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

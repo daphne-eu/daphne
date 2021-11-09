@@ -1,0 +1,8 @@
+fun my_print(obj) {
+    print(obj);
+}
+fun function(mat) {
+    return sum(mat);
+}
+
+my_print(function(rand(100, 10, 0.0, 1.0, 1.0, 7)));

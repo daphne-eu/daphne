@@ -35,3 +35,4 @@ const std::string dirPath = "test/api/cli/functions/";
 
 MAKE_TEST_CASE("basic", 3)
 MAKE_TEST_CASE("typed", 2)
+MAKE_TEST_CASE("untyped", 3)

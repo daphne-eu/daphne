@@ -1,0 +1,7 @@
+fun function(mat) {
+    print(sum(mat));
+}
+
+X = rand(100, 10, 0.0, 1.0, 1.0, 7);
+function(X);
+function(rand(100, 10, 0, 10, 1.0, 11));

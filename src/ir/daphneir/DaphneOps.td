@@ -88,7 +88,7 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
 
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">,
-    NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>
+    NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
@@ -280,7 +280,8 @@ class Daphne_AggOp<string name, Type inScalarType, list<OpTrait> traits = []> : 
 // Full aggregation
 // ----------------------------------------------------------------------------
 
-class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []> : Daphne_AggOp<name, scalarType, traits> {
+class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []>
+: Daphne_AggOp<name, scalarType, !listconcat(traits, [DeclareOpInterfaceMethods<InferTypesOpInterface>])> {
     let results = (outs scalarType:$res);
 }
 
@@ -1215,7 +1216,7 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
 def Daphne_GenericCallOp : Daphne_Op<"generic_call"> {
     let summary = "User defined function call";
 
-    let arguments = (ins StrAttr:$callee, Variadic<AnyType>:$inputs);
+    let arguments = (ins SymbolNameAttr:$callee, Variadic<AnyType>:$inputs);
     let results = (outs Variadic<AnyType>);
 
     let builders = [
