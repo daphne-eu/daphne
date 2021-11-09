@@ -138,6 +138,23 @@ ssize_t daphne::CartesianOp::inferNumRows() {
     return ftLhs.getNumRows() * ftRhs.getNumRows();
 }
 
+ssize_t daphne::SeqOp::inferNumRows() {
+    // TODO We can known the exact number of rows at compile-time, but due to
+    // possible floating-point rounding problems, it is a little bit involved
+    // (see the seq-kernel). Thus, we do not support floating-point arguments
+    // at the moment.
+    if(from().getType().isF32() || from().getType().isF64())
+        return -1;
+
+    // In the following, we assume integers.
+    const ssize_t vFrom = getSizeOrUnknown(from());
+    const ssize_t vTo = getSizeOrUnknown(to());
+    const ssize_t vInc = getSizeOrUnknown(inc());
+    // Taken from the seq-kernel and adapted.
+    const ssize_t expectedNumRows = ceil((abs(static_cast<double>(vTo - vFrom)) / abs(vInc))) + 1;
+    return expectedNumRows;
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CreateFrameOp::inferShape() {
     return {{inferNumRowsFromArgs(cols()), inferNumColsFromSumOfArgs(cols())}};
 }

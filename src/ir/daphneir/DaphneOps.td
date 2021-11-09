@@ -103,10 +103,7 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 }
 
 def Daphne_SeqOp : Daphne_Op<"seq", [
-    // TODO We can known the exact number of rows at compile-time, but due to
-    // possible floating point rounding problems, it is a little bit involved
-    // (see the seq-kernel). We will add it later.
-    OneCol, //DeclareOpInterfaceMethods<InferNumRowsOpInterface>
+    OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>
 ]> {
     let arguments = (ins NumScalar:$from, NumScalar:$to, NumScalar:$inc);
     let results = (outs MatrixOf<[NumScalar]>);
