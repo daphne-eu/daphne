@@ -1040,6 +1040,20 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 fileOrDescriptor, numRows, numCols, delim
         ));
     }
+     if(func == "writeCsv") {
+        checkNumArgsExact(func, numArgs, 3);
+        mlir::Value fileOrDescriptor = args[0];
+        mlir::Value numRows = utils.castSizeIf(args[1]);
+        mlir::Value numCols = utils.castSizeIf(args[2]);
+
+        // TODO Currently, this always assumes double as the value type. We
+        // need to connect this to our FileMetaData mechanism, but for that, we
+        // require the file name, which is not known here in the current design.
+        return static_cast<mlir::Value>(builder.create<WriteCsvOp>(
+                loc, utils.matrixOf(builder.getF64Type()),
+                fileOrDescriptor, numRows, numCols
+        ));
+    }
 
     // ********************************************************************
     // Data preprocessing
