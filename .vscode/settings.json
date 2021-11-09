@@ -5,5 +5,8 @@
         "./src",
         "./src",
         "./src/api/python/utils"
-    ]
+    ],
+    "files.associations": {
+        "*.inc": "cpp"
+    }
 }
