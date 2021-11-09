@@ -1,0 +1,94 @@
+/*
+ *  Copyright 2021 The DAPHNE Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+#include "CallData.h"
+
+void StoreCallData::Proceed() {
+    if (status_ == CREATE)
+    {
+        // Make this instance progress to the PROCESS state.
+        status_ = PROCESS;
+
+        service_->RequestStore(&ctx_, &matrix, &responder_, cq_, cq_,
+                                this);
+    }
+    else if (status_ == PROCESS)
+    {
+        status_ = FINISH;
+
+        new StoreCallData(service_, cq_);
+        grpc::Status status = service_->Store(&ctx_, &matrix, &storedData);
+
+        responder_.Finish(storedData, grpc::Status::OK, this);
+    }
+    else
+    {
+        GPR_ASSERT(status_ == FINISH);
+        delete this;
+    }
+}
+
+void ComputeCallData::Proceed() {
+    if (status_ == CREATE)
+    {
+        // Make this instance progress to the PROCESS state.
+        status_ = PROCESS;
+
+        service_->RequestCompute(&ctx_, &task, &responder_, cq_, cq_,
+                                    this);
+    }
+    else if (status_ == PROCESS)
+    {
+        status_ = FINISH;
+
+        new ComputeCallData(service_, cq_);
+
+        grpc::Status status = service_->Compute(&ctx_, &task, &result);
+
+        responder_.Finish(result, status, this);
+    }
+    else
+    {
+        GPR_ASSERT(status_ == FINISH);
+        delete this;
+    }
+}
+
+void TransferCallData::Proceed() {
+    if (status_ == CREATE)
+    {
+        // Make this instance progress to the PROCESS state.
+        status_ = PROCESS;
+
+        service_->RequestTransfer(&ctx_, &storedData, &responder_, cq_, cq_,
+                                    this);
+    }
+    else if (status_ == PROCESS)
+    {
+        status_ = FINISH;
+
+        new TransferCallData(service_, cq_);
+
+        grpc::Status status = service_->Transfer(&ctx_, &storedData, &matrix);
+
+        responder_.Finish(matrix, status, this);
+    }
+    else
+    {
+        GPR_ASSERT(status_ == FINISH);
+        delete this;
+    }
+}

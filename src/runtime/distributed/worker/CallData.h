@@ -1,0 +1,129 @@
+
+/*
+ *  Copyright 2021 The DAPHNE Consortium
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+#ifndef SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H
+#define SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H
+
+#include <runtime/distributed/worker/WorkerImpl.h>
+#include <runtime/distributed/proto/worker.pb.h>
+#include <runtime/distributed/proto/worker.grpc.pb.h>
+
+class CallData
+{
+public:
+    virtual void Proceed() = 0;
+};
+class StoreCallData final : public CallData
+{
+public:
+    StoreCallData(distributed::Worker::AsyncService *service, grpc::ServerCompletionQueue *cq)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE)
+    {
+        // Invoke the serving logic right away.
+        Proceed();
+    }
+
+    void Proceed();
+
+private:
+    distributed::Worker::AsyncService *service_;
+    // The producer-consumer queue where for asynchronous server notifications.
+    grpc::ServerCompletionQueue *cq_;
+    grpc::ServerContext ctx_;
+    // What we get from the client.
+    distributed::Matrix matrix;
+    // What we send back to the client.
+    distributed::StoredData storedData;
+    // The means to get back to the client.
+    grpc::ServerAsyncResponseWriter<distributed::StoredData> responder_;
+
+    // Let's implement a tiny state machine with the following states.
+    enum CallStatus
+    {
+        CREATE,
+        PROCESS,
+        FINISH
+    };
+    CallStatus status_; // The current serving state.
+};
+class ComputeCallData final : public CallData
+{
+public:
+    ComputeCallData(distributed::Worker::AsyncService *service, grpc::ServerCompletionQueue *cq)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE)
+    {
+        // Invoke the serving logic right away.
+        Proceed();
+    }
+
+    void Proceed();
+
+private:
+    distributed::Worker::AsyncService *service_;
+    // The producer-consumer queue where for asynchronous server notifications.
+    grpc::ServerCompletionQueue *cq_;
+    grpc::ServerContext ctx_;
+    // What we get from the client.
+    distributed::Task task;
+    // What we send back to the client.
+    distributed::ComputeResult result;
+    // The means to get back to the client.
+    grpc::ServerAsyncResponseWriter<distributed::ComputeResult> responder_;
+
+    // Let's implement a tiny state machine with the following states.
+    enum CallStatus
+    {
+        CREATE,
+        PROCESS,
+        FINISH
+    };
+    CallStatus status_; // The current serving state.
+};
+
+class TransferCallData final : public CallData
+{
+public:
+    TransferCallData(distributed::Worker::AsyncService *service, grpc::ServerCompletionQueue *cq)
+        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE)
+    {
+        // Invoke the serving logic right away.
+        Proceed();
+    }
+    void Proceed();
+private:
+    distributed::Worker::AsyncService *service_;
+    // The producer-consumer queue where for asynchronous server notifications.
+    grpc::ServerCompletionQueue *cq_;
+    grpc::ServerContext ctx_;
+    // What we get from the client.
+    distributed::StoredData storedData;
+    // What we send back to the client.
+    distributed::Matrix matrix;
+    // The means to get back to the client.
+    grpc::ServerAsyncResponseWriter<distributed::Matrix> responder_;
+
+    // Let's implement a tiny state machine with the following states.
+    enum CallStatus
+    {
+        CREATE,
+        PROCESS,
+        FINISH
+    };
+    CallStatus status_; // The current serving state.
+};
+
+#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H
