@@ -115,7 +115,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
-    mlir::Value cond = utils.valueOrError(visit(ctx->cond));
+    mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
     
     mlir::Location loc = builder.getUnknownLoc();
 
@@ -225,13 +225,13 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         // Make the body's updates visible to the condition.
         symbolTable.put(ow);
         
-        cond = utils.valueOrError(visit(ctx->cond));
+        cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
         
         symbolTable.popScope();
     }
     else { // It's a while loop.
         builder.setInsertionPointToEnd(beforeBlock);
-        cond = utils.valueOrError(visit(ctx->cond));
+        cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
 
         builder.setInsertionPointToEnd(afterBlock);
         symbolTable.pushScope();
