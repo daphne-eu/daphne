@@ -59,6 +59,22 @@ struct DistributedCollect<DenseMatrix<double>>
 {
     static void apply(DenseMatrix<double> *&res, const Handle<DenseMatrix<double>> *handle, DCTX(ctx))
     {
+        // ****************************************************************************
+        // Struct for async calls
+        // ****************************************************************************
+
+        struct AsyncClientCall {         
+            const DistributedIndex *ix;  
+            distributed::Matrix matProto;
+
+            grpc::ClientContext context;
+
+            grpc::Status status;
+
+            std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::Matrix>> response_reader;
+        };
+        grpc::CompletionQueue cq;
+        auto callCounter = 0;
         auto blockSize = DistributedData::BLOCK_SIZE;
         res = DataObjectFactory::create<DenseMatrix<double>>(handle->getRows(), handle->getCols(), false);
         for (auto &pair : handle->getMap()) {
@@ -69,19 +85,34 @@ struct DistributedCollect<DenseMatrix<double>>
             grpc::ClientContext context;
 
             distributed::Matrix matProto;
-            auto status = stub->Transfer(&context, data.getData(), &matProto);
-            if (!status.ok()) {
+            
+            
+            struct AsyncClientCall *call = new AsyncClientCall;
+            call->ix = new DistributedIndex(ix);
+            call->response_reader = stub->AsyncTransfer(&call->context, data.getData(), &cq);
+            call->response_reader->Finish(&call->matProto, &call->status, (void*)call);
+            callCounter++;
+        }
+        void *got_tag;
+        bool ok = false;
+        distributed::ComputeResult result;
+        while(cq.Next(&got_tag, &ok)){
+            callCounter--;
+            AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);
+            if (!ok) {
                 throw std::runtime_error(
-                    status.error_message()
+                    call->status.error_message()
                 );
             }
-
-            ProtoDataConverter::convertFromProto(matProto,
+            ProtoDataConverter::convertFromProto(call->matProto,
                 res,
-                ix.getRow() * blockSize,
-                std::min((ix.getRow() + 1) * blockSize, res->getNumRows()),
-                ix.getCol() * blockSize,
-                std::min((ix.getCol() + 1) * blockSize, res->getNumCols()));
+                call->ix->getRow() * blockSize,
+                std::min((call->ix->getRow() + 1) * blockSize, res->getNumRows()),
+                call->ix->getCol() * blockSize,
+                std::min((call->ix->getCol() + 1) * blockSize, res->getNumCols()));
+            // This is needed. Cq.Next() never returns if there are no elements to read from completition queue cq.
+            if (callCounter == 0)
+                break;
         }
     }
 };

@@ -43,6 +43,34 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 
 WorkerImpl::~WorkerImpl() = default;
 
+// void WorkerImpl::StartHandleThread() {
+//     HandleRpcsThread = std::thread(&WorkerImpl::HandleRpcs, this);
+// }
+// void WorkerImpl::TerminateHandleThread() {
+//     cq_->Shutdown();
+//     HandleRpcsThread.join();
+// }
+void WorkerImpl::HandleRpcs() {
+    // Spawn a new CallData instance to serve new clients.
+    new StoreCallData(this, cq_.get());
+    new ComputeCallData(this, cq_.get());
+    new TransferCallData(this, cq_.get());
+    void* tag;  // uniquely identifies a request.
+    bool ok;
+    // Block waiting to read the next event from the completion queue. The
+    // event is uniquely identified by its tag, which in this case is the
+    // memory address of a CallData instance.
+    // The return value of Next should always be checked. This return value
+    // tells us whether there is any kind of event or cq_ is shutting down.
+    while (cq_->Next(&tag, &ok)) {        
+        if(ok){         
+            static_cast<CallData*>(tag)->Proceed();
+        } else {
+            delete tag;
+        }
+    }
+  }
+
 grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
                                const ::distributed::Matrix *request,
                                ::distributed::StoredData *response)

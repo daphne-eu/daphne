@@ -28,16 +28,22 @@ int main(int argc, char *argv[])
         exit(1);
     }
     auto addr = argv[1];
+    
     grpc::ServerBuilder builder;
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
-
+    
     WorkerImpl my_service;
+
+    my_service.cq_ = builder.AddCompletionQueue();
     builder.RegisterService(&my_service);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
     std::cout << "Started Distributed Worker on `" << addr << "`\n";
-    server->Wait();
+    my_service.HandleRpcs();
+    // TODO shutdown handling
+    // server->Shutdown();
+    // my_service.cq_->Shutdown();
 
     return 0;
 }
