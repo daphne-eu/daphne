@@ -39,6 +39,18 @@ private:
     int getMethod (const char * method){
         return std::stoi(method);
     }
+    int getStages(int tasks, int workers){
+        int actual_step=0;
+        int scheduled=0;
+        int step=0;
+        while (scheduled < tasks){
+            int actual_step=step/workers;
+            double chunk = pow(0.5,actual_step+1)*tasks/float(workers);
+            scheduled+=ceil(chunk);
+            step+=1;
+        }
+    return actual_step+1;
+    }
 public:
     LoadPartitioning(int method, uint64_t tasks, int64_t chunk, uint32_t workers, bool autochunk){
         
@@ -48,9 +60,9 @@ public:
         schedulingMethod = method;
         //std::cout<<"Method "<<schedulingMethod<<std::endl;
         totalTasks = tasks;
-        double tSize = (totalTasks+workers-1.0)/totalTasks;
+        double tSize = (totalTasks+workers-1.0)/workers;
         mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
-        fissStages = ceil(0.25*2);
+        fissStages = getStages(totalTasks, workers);
         if(!autochunk){    
             chunkParam = chunk;
         }
@@ -105,7 +117,7 @@ public:
             }
             case VISS:{//variable increase self-scheduling (VISS)
                 //TODO
-                uint64_t schedulingStepnew =  schedulingStep % totalWorkers;
+                uint64_t schedulingStepnew =  schedulingStep/totalWorkers;
                 uint64_t initChunk = (uint64_t) ceil(totalTasks/((2.0+fissStages)*totalWorkers));
                 chunkSize =  initChunk * (uint64_t) ceil((double)(1-pow(0.5,schedulingStepnew))/0.5);
                 break;
@@ -141,6 +153,7 @@ public:
     schedulingStep++;
     scheduledTasks+=chunkSize;
     remainingTasks-=chunkSize;
+    //std::cout<<"chunk"<<schedulingStep<< "is "<< chunkSize<<std::endl;
     return chunkSize;
     }  
 
