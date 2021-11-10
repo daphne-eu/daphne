@@ -65,6 +65,8 @@ void WorkerImpl::HandleRpcs() {
     // tells us whether there is any kind of event or cq_ is shutting down.
     while (cq_->Next(&tag, &ok)) {        
         if(ok){         
+            // Thread pool ? with caution. For now on each worker only one thread operates (sefe IO).
+            // We might need to add locks inside Store/Compute/Transfer methods if we deploy threads
             static_cast<CallData*>(tag)->Proceed();
         } else {
             delete tag;

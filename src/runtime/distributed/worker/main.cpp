@@ -35,7 +35,7 @@ int main(int argc, char *argv[])
     WorkerImpl my_service;
 
     my_service.cq_ = builder.AddCompletionQueue();
-    builder.RegisterService(&my_service);
+    builder.RegisterService(&my_service.service_);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 

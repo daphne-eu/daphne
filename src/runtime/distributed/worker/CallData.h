@@ -30,8 +30,8 @@ public:
 class StoreCallData final : public CallData
 {
 public:
-    StoreCallData(distributed::Worker::AsyncService *service, grpc::ServerCompletionQueue *cq)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE)
+    StoreCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
         Proceed();
@@ -40,6 +40,7 @@ public:
     void Proceed();
 
 private:
+    WorkerImpl *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -63,8 +64,8 @@ private:
 class ComputeCallData final : public CallData
 {
 public:
-    ComputeCallData(distributed::Worker::AsyncService *service, grpc::ServerCompletionQueue *cq)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE)
+    ComputeCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
         Proceed();
@@ -73,6 +74,7 @@ public:
     void Proceed();
 
 private:
+    WorkerImpl *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -97,14 +99,15 @@ private:
 class TransferCallData final : public CallData
 {
 public:
-    TransferCallData(distributed::Worker::AsyncService *service, grpc::ServerCompletionQueue *cq)
-        : service_(service), cq_(cq), responder_(&ctx_), status_(CREATE)
+    TransferCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+        : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
         Proceed();
     }
     void Proceed();
 private:
+    WorkerImpl *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;

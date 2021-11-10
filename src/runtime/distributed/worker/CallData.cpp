@@ -29,8 +29,8 @@ void StoreCallData::Proceed() {
     {
         status_ = FINISH;
 
-        new StoreCallData(service_, cq_);
-        grpc::Status status = service_->Store(&ctx_, &matrix, &storedData);
+        new StoreCallData(worker, cq_);
+        grpc::Status status = worker->Store(&ctx_, &matrix, &storedData);
 
         responder_.Finish(storedData, grpc::Status::OK, this);
     }
@@ -54,9 +54,9 @@ void ComputeCallData::Proceed() {
     {
         status_ = FINISH;
 
-        new ComputeCallData(service_, cq_);
+        new ComputeCallData(worker, cq_);
 
-        grpc::Status status = service_->Compute(&ctx_, &task, &result);
+        grpc::Status status = worker->Compute(&ctx_, &task, &result);
 
         responder_.Finish(result, status, this);
     }
@@ -80,9 +80,9 @@ void TransferCallData::Proceed() {
     {
         status_ = FINISH;
 
-        new TransferCallData(service_, cq_);
+        new TransferCallData(worker, cq_);
 
-        grpc::Status status = service_->Transfer(&ctx_, &storedData, &matrix);
+        grpc::Status status = worker->Transfer(&ctx_, &storedData, &matrix);
 
         responder_.Finish(matrix, status, this);
     }
