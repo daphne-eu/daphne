@@ -69,6 +69,7 @@ void WorkerImpl::HandleRpcs() {
             // We might need to add locks inside Store/Compute/Transfer methods if we deploy threads
             static_cast<CallData*>(tag)->Proceed();
         } else {
+            // TODO maybe handle this internally ?
             delete tag;
         }
     }

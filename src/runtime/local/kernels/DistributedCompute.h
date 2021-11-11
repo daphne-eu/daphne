@@ -63,29 +63,15 @@ struct DistributedCompute<DenseMatrix<double>>
                       const char *mlirCode,
                       DCTX(ctx))
     {
-
-        // ****************************************************************************
-        // Struct for async calls
-        // ****************************************************************************
-
-        struct AsyncClientCall {
-            const DistributedIndex *ix;
-            DistributedData *data;
-
-            distributed::ComputeResult result;
-
-            grpc::ClientContext context;
-
-            grpc::Status status;
-
-            std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::ComputeResult>> response_reader;
-        };
-        grpc::CompletionQueue cq;
-        auto callCounter = 0;
         assert(num_args == 2 && "Only binary supported for now");
         auto lhs = args[0];
         auto rhs = args[1];
 
+        struct StoredInfo {
+            DistributedIndex *ix;
+            DistributedData *data;
+        };
+        DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         Handle<DenseMatrix<double>>::HandleMap resMap;
         for (auto &pair : lhs->getMap()) {
             auto ix = pair.first;
@@ -96,21 +82,14 @@ struct DistributedCompute<DenseMatrix<double>>
                 // data is on same worker -> direct execution possible
                 auto stub = distributed::Worker::NewStub(lhsData.getChannel());
 
-                grpc::ClientContext context;
-
                 distributed::Task task;
                 *task.add_inputs()->mutable_stored() = lhsData.getData();
                 *task.add_inputs()->mutable_stored() = rhsData.getData();
                 task.set_mlir_code(mlirCode);
                 
-                struct AsyncClientCall *call = new AsyncClientCall;
-                call->data = new DistributedData(lhsData);
-                call->ix = new DistributedIndex(ix);
+                StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                call->response_reader = stub->AsyncCompute(&call->context, task, &cq);
-                call->response_reader->Finish(&call->result, &call->status, (void*)call);
-
-                callCounter++;
+                caller.addAsyncCall(&distributed::Worker::Stub::AsyncCompute, *stub, storedInfo, task);
             }
             else {
                 // TODO: send data between workers
@@ -119,22 +98,16 @@ struct DistributedCompute<DenseMatrix<double>>
                 );
             }
         }
-        void *got_tag;
-        bool ok = false;
-        while(cq.Next(&got_tag, &ok)){    
-            callCounter--;
-            AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);
-            if (!ok) {
-                throw std::runtime_error(
-                    call->status.error_message()
-                );
-            }
-            DistributedData data(call->result.outputs(0).stored(), call->data->getAddress(), call->data->getChannel());        
-            resMap.insert({*call->ix, data});
-            // This is needed. Cq.Next() never returns if there are no elements to read from completition queue cq.
-            if (callCounter == 0)
-                break;
-        }        
+        // Get Results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto ix = response.storedInfo.ix;
+            auto lhsdata = response.storedInfo.data;
+            
+            auto computeResult = response.result;
+            DistributedData data(computeResult.outputs(0).stored(), lhsdata->getAddress(), lhsdata->getChannel());
+            resMap.insert({*ix, data});
+        }
         res = new Handle<DenseMatrix<double>>(resMap, lhs->getRows(), lhs->getCols());
     }
 };

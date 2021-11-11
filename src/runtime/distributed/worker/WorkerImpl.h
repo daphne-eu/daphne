@@ -65,8 +65,7 @@ private:
 
     DenseMatrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
-    static distributed::WorkData::DataCase dataCaseForType(mlir::Type type) ;    
-
+    static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H

@@ -25,6 +25,7 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 #include <runtime/distributed/worker/ProtoDataConverter.h>
+#include <runtime/local/kernels/DistributedCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -58,24 +59,6 @@ struct Distribute<DenseMatrix<double>>
 {
     static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
-
-        // ****************************************************************************
-        // Struct for async calls
-        // ****************************************************************************
-
-        struct AsyncClientCall {
-            const DistributedIndex *ix;            
-
-            distributed::StoredData storedData;
-            std::string workerAddr;
-            std::shared_ptr<grpc::Channel> channel = nullptr;
-
-            grpc::ClientContext context;
-
-            grpc::Status status;
-
-            std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::StoredData>> response_reader;
-        };        
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
         std::string workersStr(envVar);
@@ -92,17 +75,21 @@ struct Distribute<DenseMatrix<double>>
         auto workerIx = 0ul;
         auto blockSize = DistributedData::BLOCK_SIZE;
 
-        grpc::CompletionQueue cq;
-        auto callCounter = 0;
+        struct StoredInfo {
+            DistributedIndex *ix ;
+            std::string workerAddr;
+            std::shared_ptr<grpc::Channel> channel;
+        };        
+        DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
+
         Handle<DenseMatrix<double>>::HandleMap map;
         for (auto r = 0ul; r < (mat->getNumRows() - 1) / blockSize + 1; ++r) {
             for (auto c = 0ul; c < (mat->getNumCols() - 1) / blockSize + 1; ++c) {
                 auto workerAddr = workers.at(workerIx);
 
-                AsyncClientCall *call = new AsyncClientCall;                
-                if (call->channel == nullptr)
-                    call->channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
-                auto stub = distributed::Worker::NewStub(call->channel);
+                // TODO: reuse channels for workers
+                auto channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
+                auto stub = distributed::Worker::NewStub(channel);
 
                 distributed::Matrix protoMat;
                 ProtoDataConverter::convertToProto(mat,
@@ -112,35 +99,24 @@ struct Distribute<DenseMatrix<double>>
                     c * blockSize,
                     std::min((c + 1) * blockSize, mat->getNumCols()));
 
-                call->ix = new DistributedIndex(r, c);
-                call->workerAddr = workerAddr;
-                
-                call->response_reader = stub->AsyncStore(&call->context, protoMat, &cq);
-                call->response_reader->Finish(&call->storedData, &call->status, (void*)call);
-                
-                callCounter++;                
+                StoredInfo storedInfo ({new DistributedIndex(r, c), workerAddr, channel});
+                caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
 
                 if (++workerIx == workers.size())
                     workerIx = 0;
             }
         }
-        // Wait for results
-        void *got_tag;
-        bool ok = false;
-        distributed::StoredData storedData;        
-        while(cq.Next(&got_tag, &ok)){
-            callCounter--;
-            AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);
-            if (!ok) {
-                throw std::runtime_error(
-                    call->status.error_message()
-                );
-            }
-            DistributedData data(call->storedData, call->workerAddr, call->channel);
-            map.insert({*call->ix, data});
-            // This is needed. Cq.Next() never returns if there are no elements to read from completition queue cq.
-            if (callCounter == 0)
-                break;
+        // get results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto ix = response.storedInfo.ix;
+            auto workerAddr = response.storedInfo.workerAddr;
+            auto channel = response.storedInfo.channel;
+
+            auto storedData = response.result;
+
+            DistributedData data(storedData, workerAddr, channel);
+            map.insert({*ix, data});
         }
         res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
     }

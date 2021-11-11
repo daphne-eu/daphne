@@ -28,12 +28,10 @@ int main(int argc, char *argv[])
         exit(1);
     }
     auto addr = argv[1];
-    
     grpc::ServerBuilder builder;
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
-    
-    WorkerImpl my_service;
 
+    WorkerImpl my_service;
     my_service.cq_ = builder.AddCompletionQueue();
     builder.RegisterService(&my_service.service_);
 
