@@ -61,7 +61,7 @@ forStatement:
 
 // TODO: variable tuple returns
 functionStatement:
-	KW_FUN name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTy=funcTypeDef)? bodyStmt=blockStatement;
+	KW_DEF name=IDENTIFIER '(' args=functionArgs? ')' ('->' retTy=funcTypeDef)? bodyStmt=blockStatement;
 
 returnStatement:
     KW_RETURN ( expr ( ',' expr )* )? ';';
@@ -114,7 +114,7 @@ KW_IN: 'in';
 KW_TRUE: 'true';
 KW_FALSE: 'false';
 KW_AS: 'as';
-KW_FUN: 'fun';
+KW_DEF: 'def';
 KW_RETURN: 'return';
 
 fragment DIGIT:

@@ -1,7 +1,7 @@
-fun my_print(obj) {
+def my_print(obj) {
     print(obj);
 }
-fun function(mat) {
+def function(mat) {
     return sum(mat);
 }
 

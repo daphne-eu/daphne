@@ -1,7 +1,7 @@
-fun function(mat : matrix<f64>) {
+def function(mat : matrix<f64>) {
     print(sum(mat));
 }
-fun function(mat : matrix<si64>) {
+def function(mat : matrix<si64>) {
     print(sum(mat));
 }
 

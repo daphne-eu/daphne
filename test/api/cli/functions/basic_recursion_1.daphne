@@ -1,4 +1,4 @@
-fun fib(n : si64) -> si64 {
+def fib(n : si64) -> si64 {
     res = 1;
     // TODO: return in if clause (when compiler supports it)
     if (n <= 0)

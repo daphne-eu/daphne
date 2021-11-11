@@ -1,4 +1,4 @@
-fun function(mat) {
+def function(mat) {
     print(sum(mat));
 }
 

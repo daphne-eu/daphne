@@ -1,8 +1,8 @@
-fun my_rand(r, c, s, e) {
+def my_rand(r, c, s, e) {
     return rand(r, c, s, e, 1.0, 42);
 }
 
-fun my_print(obj) {
+def my_print(obj) {
     print(obj);
 }
 
