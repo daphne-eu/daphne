@@ -30,6 +30,7 @@
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <api/cli/Utils.h>
+#include <thread>
 
 const std::string dirPath = "test/runtime/distributed/worker/";
 
@@ -38,30 +39,53 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
     auto addr = "0.0.0.0:50051";
     WorkerImpl workerImpl;
     auto server = startDistributedWorker(addr, &workerImpl);
-
+    std::thread thread1 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl);
+    
     auto channel = grpc::CreateChannel(addr, grpc::InsecureChannelCredentials());
     auto stub = distributed::Worker::NewStub(channel);
-
-    WHEN ("Sending a task where no outputs are expected")
+    
+    // WHEN ("Sending a task where no outputs are expected")
     {
-        grpc::ClientContext context;
+        struct AsyncCallClient
+        {
+            grpc::ClientContext context;
+            distributed::ComputeResult result;
+            grpc::Status status;            
+        };
+        grpc::CompletionQueue cq;
+
         distributed::Task task;
         task.set_mlir_code("func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
             "() -> () {\n"
             "  \"daphne.return\"() : () -> ()\n"
             "}\n");
-        distributed::ComputeResult result;
-        auto status = stub->Compute(&context, task, &result);
+        AsyncCallClient *call = new AsyncCallClient;
+        auto response_reader = stub->AsyncCompute(&call->context, task, &cq);
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+
+        void *got_tag;
+        bool ok ;
+
+        cq.Next(&got_tag, &ok);
+
+        AsyncCallClient *resultCall = static_cast<AsyncCallClient *>(got_tag);
+
         THEN ("No filenames are returned")
         {
-            REQUIRE(status.ok());
-            REQUIRE(result.outputs_size() == 0);
+            REQUIRE(resultCall->status.ok());
+            REQUIRE(resultCall->result.outputs_size() == 0);
         }
     }
 
-    WHEN ("Sending simple random generation task")
+    // WHEN ("Sending simple random generation task")
     {
-        grpc::ClientContext context;
+        struct AsyncCallClient
+        {
+            grpc::ClientContext context;
+            distributed::ComputeResult result;
+            grpc::Status status;            
+        };
+        grpc::CompletionQueue cq;
         distributed::Task task;
         task.set_mlir_code("func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
             "() -> !daphne.Matrix<?x?xf64> {\n"
@@ -76,17 +100,33 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
             "    %11 = \"daphne.randMatrix\"(%4, %6, %7, %8, %9, %10) : (index, index, f64, f64, f64, si64) -> !daphne.Matrix<?x?xf64>"
             "    \"daphne.return\"(%11) : (!daphne.Matrix<?x?xf64>) -> ()\n"
             "  }");
-        distributed::ComputeResult result;
-        auto status = stub->Compute(&context, task, &result);
+        AsyncCallClient *call = new AsyncCallClient;
+        auto response_reader = stub->AsyncCompute(&call->context, task, &cq);
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+
+        void *got_tag;
+        bool ok ;
+        cq.Next(&got_tag, &ok);
+
+        AsyncCallClient *resultCall = static_cast<AsyncCallClient *>(got_tag);
+
         THEN ("The filename of the matrix is returned")
         {
-            REQUIRE(status.ok());
-            REQUIRE(result.outputs_size() == 1);
+            REQUIRE(resultCall->status.ok());
+            REQUIRE(resultCall->result.outputs_size() == 1);
         }
     }
 
-    WHEN ("Sending a task with a read on the worker") {
-        grpc::ClientContext context;
+    // WHEN ("Sending a task with a read on the worker") 
+    {
+        struct AsyncCallClient
+        {
+            grpc::ClientContext context;
+            distributed::ComputeResult result;
+            grpc::Status status;            
+        };
+        grpc::CompletionQueue cq;
+        
         distributed::Task task;
         distributed::WorkData workerInput;
         distributed::StoredData data;
@@ -101,16 +141,31 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
                 "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
                 "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
                 "}");
-        distributed::ComputeResult result;
-        auto status = stub->Compute(&context, task, &result);
+        AsyncCallClient *call = new AsyncCallClient;
+        auto response_reader = stub->AsyncCompute(&call->context, task, &cq);
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        
+        void *got_tag;
+        bool ok ;
+        cq.Next(&got_tag, &ok);        
+        AsyncCallClient *resultCall = static_cast<AsyncCallClient *>(got_tag);
+
         THEN ("A Matrix is returned") {
-            REQUIRE(status.ok());
-            REQUIRE(result.outputs_size() == 1);
+            REQUIRE(resultCall->status.ok());
+            REQUIRE(resultCall->result.outputs_size() == 1);
         }
     }
 
-    WHEN ("Sending a task with a read on the worker") {
-        grpc::ClientContext context;
+    // WHEN ("Sending a task with a read on the worker")
+    {
+        struct AsyncCallClient
+        {
+            grpc::ClientContext context;
+            distributed::ComputeResult result;
+            grpc::Status status;            
+        };
+        grpc::CompletionQueue cq;
+
         distributed::Task task;
         distributed::WorkData workerInput;
         distributed::StoredData data;
@@ -130,27 +185,45 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
                 "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
                 "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
                 "}");
-        distributed::ComputeResult result;
 
-        auto status = stub->Compute(&context, task, &result);
+        AsyncCallClient *call = new AsyncCallClient;
+        auto response_reader = stub->AsyncCompute(&call->context, task, &cq);
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        
+        void *got_tag;
+        bool ok ;
+        cq.Next(&got_tag, &ok);
+        AsyncCallClient *resultCall = static_cast<AsyncCallClient *>(got_tag);
+
         THEN ("A Matrix is returned with all elements doubled") {
-            REQUIRE(status.ok());
-            REQUIRE(result.outputs_size() == 1);
+            REQUIRE(resultCall->status.ok());
+            REQUIRE(resultCall->result.outputs_size() == 1);
+            struct AsyncTransferCallClient
+                    {
+                        grpc::ClientContext transferContext;
+                        distributed::Matrix mat;
+                        grpc::Status status;            
+                    };
+            REQUIRE(resultCall->result.outputs(0).data_case() == distributed::WorkData::kStored);
 
-            grpc::ClientContext transferContext;
-            distributed::Matrix mat;
-            REQUIRE(result.outputs(0).data_case() == distributed::WorkData::kStored);
-            status = stub->Transfer(&transferContext, result.outputs(0).stored(), &mat);
+            AsyncTransferCallClient *transferCall = new AsyncTransferCallClient;
+            auto response_transfer_reader = stub->AsyncTransfer(&transferCall->transferContext, resultCall->result.outputs(0).stored(), &cq);
+            response_transfer_reader->Finish(&transferCall->mat, &transferCall->status, (void*)transferCall);
 
-            REQUIRE(status.ok());
+            void *got_tag;
+            bool ok ;
+            cq.Next(&got_tag, &ok);
+            AsyncTransferCallClient *resultTransferCall = static_cast<AsyncTransferCallClient *>(got_tag);
+            
+            REQUIRE(resultTransferCall->status.ok());
 
             DenseMatrix<double> *matOrig = nullptr;
             struct File *file = openFile(filename.c_str());
             char delim = ',';
             readCsv(matOrig, file, rows, cols, delim);
 
-            auto *received = DataObjectFactory::create<DenseMatrix<double>>(mat.num_rows(), mat.num_cols(), false);
-            ProtoDataConverter::convertFromProto(mat, received);
+            auto *received = DataObjectFactory::create<DenseMatrix<double>>(resultTransferCall->mat.num_rows(), resultTransferCall->mat.num_cols(), false);
+            ProtoDataConverter::convertFromProto(resultTransferCall->mat, received);
 
             DenseMatrix<double> *matOrigTimes2 = nullptr;
             EwBinaryMat<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>::apply(BinaryOpCode::ADD,
@@ -163,4 +236,7 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
             REQUIRE(*received == *matOrigTimes2);
         }
     }
+    server->Shutdown();
+    workerImpl.cq_->Shutdown();
+    thread1.join();
 }
