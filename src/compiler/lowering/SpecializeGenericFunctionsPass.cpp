@@ -68,9 +68,11 @@ namespace {
             auto funcInTy = std::get<0>(it.value());
             auto specializedTy = std::get<1>(it.value());
             if(funcInTy != specializedTy) {
+                // TODO funcInTy could be matrix<unknown>.
                 if(funcInTy != unknownTy) {
                     std::stringstream ss;
-                    ss << "Call to function template with mismatching types for Argument " << index
+                    // TODO Print the type names (potentially with Type::dump())
+                    ss << "Call to function template with mismatching types for argument " << index
                        << ": Expected type `" << "`, got `" << "`";
                     throw std::runtime_error(ss.str());
                 }
@@ -103,6 +105,7 @@ namespace {
         return madeChanges;
     }
 
+    // TODO A similar thing exists in runOnOperation. Can we unify them?
     FuncOp inferTypesInFunction(FuncOp function) {
         // Run inference
         mlir::PassManager pm(function->getContext(), "func");
@@ -202,6 +205,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
         OpPassManager dynamicPM("func");
         dynamicPM.addPass(daphne::createInferencePass({true, true}));
         if(failed(runPipeline(dynamicPM, function))) {
+            // TODO I think it could also be another function than main.
             module.emitError() << "Could not infer types for main function";
             return signalPassFailure();
         }
