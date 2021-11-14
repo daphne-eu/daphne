@@ -466,15 +466,24 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
 
     // search user defined functions
     auto range = functionsSymbolMap.equal_range(func);
+    // TODO: find not only a matching version, but the `most` specialized
     for (auto it = range.first; it != range.second; ++it) {
         auto userDefinedFunc = it->second;
         auto funcTy = userDefinedFunc.getType();
         auto compatible = true;
 
+        if (funcTy.getInputs().size() != args.size()) {
+            continue;
+        }
         for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
             auto funcInputType = std::get<0>(compIt);
             auto argVal = std::get<1>(compIt);
-            if (funcInputType != argVal.getType() && funcInputType != utils.unknownType) {
+
+            auto funcMatTy = funcInputType.dyn_cast<mlir::daphne::MatrixType>();
+            auto specializedMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
+            bool isMatchingUnknownMatrix =
+                funcMatTy && specializedMatTy && funcMatTy.getElementType() == utils.unknownType;
+            if(funcInputType != argVal.getType() && !isMatchingUnknownMatrix && funcInputType != utils.unknownType) {
                 compatible = false;
                 break;
             }
@@ -787,7 +796,36 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
     );
 }
 
+//void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
+//
+//}
+//
+//void rectifyEarlyReturns(mlir::FuncOp function) {
+//    if (function.getBlocks().size() > 1)
+//        throw std::runtime_error("Functions should only have a single block on AST level");
+//    auto &block = function.getBlocks().front();
+//    auto finalReturnOp = block.getTerminator();
+//
+//    std::vector<mlir::daphne::ReturnOp> earlyReturns;
+//    block.walk([&](mlir::daphne::ReturnOp returnOp) {
+//        if (returnOp != finalReturnOp)
+//            earlyReturns.push_back(returnOp);
+//    });
+//
+//    for (auto earlyReturn : earlyReturns) {
+//        auto parentOp = earlyReturn->getParentOp();
+//        if (auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
+//            rectifyEarlyReturn(ifOp);
+//        }
+//        else {
+//            throw std::runtime_error(
+//                "Early return in `" + parentOp->getName().getStringRef().str() + "` is not supported.");
+//        }
+//    }
+//}
+
 antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) {
+    auto loc = utils.getLoc(ctx->start);
     // TODO: check that the function does not shadow a builtin
     auto functionName = ctx->name->getText();
     auto functionSymbolName = utils.getUniqueFunctionSymbol(functionName);
@@ -795,18 +833,29 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     auto globalSymbolTable = symbolTable;
     symbolTable = ScopedSymbolTable();
 
+    // TODO: better check?
+    if (globalSymbolTable.getNumScopes() > 1) {
+        std::string s;
+        llvm::raw_string_ostream stream(s);
+        loc.print(stream);
+        throw std::runtime_error(s + ": Functions can only be defined at top-level");
+    }
+
     std::vector<std::string> funcArgNames;
     std::vector<mlir::Type> funcArgTypes;
     if(ctx->args) {
         auto functionArguments = static_cast<std::vector<std::pair<std::string, mlir::Type>>>(visit(ctx->args));
         for(const auto &pair: functionArguments) {
+            if (std::find(funcArgNames.begin(), funcArgNames.end(), pair.first) != funcArgNames.end()) {
+                throw std::runtime_error("Function argument name `" + pair.first + "` is used twice.");
+            }
             funcArgNames.push_back(pair.first);
             funcArgTypes.push_back(pair.second);
         }
     }
 
     auto funcBlock = new mlir::Block();
-    for(auto it: llvm::zip(funcArgNames, funcArgTypes)) {
+    for(auto it : llvm::zip(funcArgNames, funcArgTypes)) {
         auto blockArg = funcBlock->addArgument(std::get<1>(it));
         handleAssignmentPart(std::get<0>(it), symbolTable, blockArg);
     }
@@ -814,7 +863,6 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     mlir::OpBuilder::InsertionGuard guard(builder);
     auto *moduleBody = module.getBody();
 
-    auto loc = utils.getLoc(ctx->start);
     mlir::Type returnType;
     mlir::FuncOp functionOperation;
     if(ctx->retTy) {
@@ -833,6 +881,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
     }
 
+    // TODO: rectify returns here
     auto returnOpTypes = funcBlock->getTerminator()->getOperandTypes();
     if(!functionOperation) {
         // late creation if no return types defined
@@ -846,6 +895,8 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
             "Function `" + functionName + "` returns different type than specified in the definition");
     }
     functionOperation.body().push_front(funcBlock);
+
+    // rectifyEarlyReturns(functionOperation);
 
     symbolTable = globalSymbolTable;
     return functionOperation;

@@ -33,6 +33,21 @@ const std::string dirPath = "test/api/cli/functions/";
         } \
     }
 
+#define MAKE_INVALID_TEST_CASE(name, count, error_status) \
+    TEST_CASE(name, TAG_FUNCTIONS) { \
+        for(unsigned i = 1; i <= (count); i++) { \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
+                std::stringstream out; \
+                std::stringstream err; \
+                std::string filePath = dirPath + (name) + "_" + std::to_string(i) + ".daphne"; \
+                int status = runDaphne(out, err, filePath.c_str()); \
+                REQUIRE(status == (error_status)); \
+            } \
+        } \
+    }
+
 MAKE_TEST_CASE("basic", 3)
-MAKE_TEST_CASE("typed", 2)
-MAKE_TEST_CASE("untyped", 3)
+MAKE_TEST_CASE("typed", 3)
+MAKE_TEST_CASE("untyped", 4)
+MAKE_TEST_CASE("mixtyped", 2)
+MAKE_INVALID_TEST_CASE("invalid_parser", 7, StatusCode::PARSER_ERROR)

@@ -1,0 +1,7 @@
+i = 0;
+while i < 2 {
+    def function(mat : matrix<f64>) {
+        print(sum(mat));
+    }
+    i = i + 1;
+}

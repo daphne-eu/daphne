@@ -34,8 +34,12 @@ using namespace mlir;
 
 namespace {
     bool isFunctionTemplate(FuncOp op) {
+        auto unknownTy = daphne::UnknownType::get(op.getContext());
         return llvm::any_of(op.getType().getInputs(),
-            [](Type ty) { return ty == daphne::UnknownType::get(ty.getContext()); });
+            [&unknownTy](Type ty) {
+              auto matTy = ty.dyn_cast<daphne::MatrixType>();
+              return ty == unknownTy || (matTy && matTy.getElementType() == unknownTy);
+            });
     }
 
     std::string uniqueSpecializedFuncName(const std::string &functionName) {
@@ -68,17 +72,20 @@ namespace {
             auto funcInTy = std::get<0>(it.value());
             auto specializedTy = std::get<1>(it.value());
             if(funcInTy != specializedTy) {
-                // TODO funcInTy could be matrix<unknown>.
-                if(funcInTy != unknownTy) {
-                    std::stringstream ss;
-                    // TODO Print the type names (potentially with Type::dump())
-                    ss << "Call to function template with mismatching types for argument " << index
-                       << ": Expected type `" << "`, got `" << "`";
-                    throw std::runtime_error(ss.str());
+                auto funcMatTy = funcInTy.dyn_cast<daphne::MatrixType>();
+                auto specializedMatTy = specializedTy.dyn_cast<daphne::MatrixType>();
+                bool isMatchingUnknownMatrix =
+                    funcMatTy && specializedMatTy && funcMatTy.getElementType() == unknownTy;
+                if(!isMatchingUnknownMatrix && funcInTy != unknownTy) {
+                    std::string s;
+                    llvm::raw_string_ostream stream(s);
+                    stream << "Call to function template with mismatching types for argument " << index
+                           << ": Expected type `" << funcInTy << "`, got `" << specializedTy << "`";
+                    throw std::runtime_error(stream.str());
                 }
-                if(auto matTy = specializedTy.dyn_cast<daphne::MatrixType>()) {
+                if(specializedMatTy) {
                     // remove size information
-                    specializedTy = matTy.withSameElementType();
+                    specializedTy = specializedMatTy.withSameElementType();
                 }
             }
             specializedTypes.push_back(specializedTy);
@@ -105,14 +112,13 @@ namespace {
         return madeChanges;
     }
 
-    // TODO A similar thing exists in runOnOperation. Can we unify them?
     FuncOp inferTypesInFunction(FuncOp function) {
         // Run inference
         mlir::PassManager pm(function->getContext(), "func");
         pm.enableVerifier(false);
-        pm.addPass(daphne::createInferencePass({true, true}));
+        pm.addPass(daphne::createInferencePass({true, true, false, true}));
         if(failed(pm.run(function))) {
-            function.emitError() << "could not infer types for a call of function template";
+            function.emitError() << "could not infer types for a call of function template: " << function.getName();
             return nullptr;
         }
         return function;
@@ -202,11 +208,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
     for(const auto &function : initialFunctions) {
         if(isFunctionTemplate(function) || visited.count(function))
             continue;
-        OpPassManager dynamicPM("func");
-        dynamicPM.addPass(daphne::createInferencePass({true, true}));
-        if(failed(runPipeline(dynamicPM, function))) {
-            // TODO I think it could also be another function than main.
-            module.emitError() << "Could not infer types for main function";
+        if(!inferTypesInFunction(function)) {
             return signalPassFailure();
         }
         specializeCallsInFunction(function);

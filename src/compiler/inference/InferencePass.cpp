@@ -28,6 +28,13 @@
 
 using namespace mlir;
 
+daphne::InferenceConfig::InferenceConfig(bool PartialInferenceAllowed,
+                                         bool TypeInference,
+                                         bool ShapeInference,
+                                         bool FrameLabelInference)
+    : partialInferenceAllowed(PartialInferenceAllowed), typeInference(TypeInference), shapeInference(ShapeInference),
+      frameLabelInference(FrameLabelInference) {}
+
 /**
  * @brief A compiler pass infering various properties of the data objects.
  * 
@@ -45,6 +52,7 @@ using namespace mlir;
 // able to infer different sets of properties.
 class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
     daphne::InferenceConfig cfg;
+public:
 
     static WalkResult walkOp(Operation * op) {
         // Type inference.
@@ -60,12 +68,10 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                         + op->getName().getStringRef().str()
                 );
         }
-        if (cfg.onlyTypes)
-            return;
 
         // Frame label inference.
-        if (returnsFrameWithUnknownLabels(op)) {
-            if (auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
+        if(cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {
+            if(auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
                 inferFrameLabelsOp.inferFrameLabels();
             // Else: Not a problem, since currently we use the frame labels
             // only to aid type inference, and for this purpose, we don't
@@ -73,7 +79,7 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
         }
 
         // Shape inference.
-        if(returnsUnknownShape(op)) {
+        if(cfg.shapeInference && returnsUnknownShape(op)) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
             // Handle all non-SCF operations

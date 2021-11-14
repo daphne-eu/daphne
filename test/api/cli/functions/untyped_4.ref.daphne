@@ -1,0 +1,6 @@
+A = rand(10, 10, 0.0, 1.0, 1.0, 42);
+B = rand(10, 10, 0, 10, 1.0, 42);
+print("matrix:");
+print(A);
+print("matrix:");
+print(B);

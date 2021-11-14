@@ -1,0 +1,4 @@
+def f(a : si64, a : si64) {
+    print(a);
+}
+f(1, 2);

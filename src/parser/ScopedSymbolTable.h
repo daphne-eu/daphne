@@ -186,7 +186,16 @@ public:
     void pushScope() {
         scopes.push_back(SymbolTable());
     }
-    
+
+    /**
+     * @brief Get the number of nested scopes.
+     *
+     * @return Number of nested scopes
+     */
+    size_t getNumScopes() {
+        return scopes.size();
+    }
+
     /**
      * @brief Removes the current scope from the hierarchy of nested scopes.
      * 

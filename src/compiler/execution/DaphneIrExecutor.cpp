@@ -82,13 +82,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
             // TODO: this can be moved outside without problem, should we?
             pm.addPass(mlir::createCanonicalizerPass());
         }
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));

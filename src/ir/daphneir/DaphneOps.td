@@ -194,6 +194,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 : Daphne_Op<name, !listconcat(traits, [
     DeclareOpInterfaceMethods<DistributableOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     ShapeEwBinary
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
@@ -253,9 +254,7 @@ def Daphne_ConcatOp : Daphne_Op<"concat"> {
 // ----------------------------------------------------------------------------
 
 class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []>
-: Daphne_EwBinaryOp<name, inputScalarType, !listconcat([
-    DeclareOpInterfaceMethods<InferTypesOpInterface>
-], traits)> {
+: Daphne_EwBinaryOp<name, inputScalarType, traits> {
     // TODO: We do not enforce (matrix of) boolean output any more, but should
     // think about that again.
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);

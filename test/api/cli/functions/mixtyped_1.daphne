@@ -1,0 +1,11 @@
+def function(mat : matrix, a, b) {
+    print(sum(mat));
+    print(a + b);
+}
+
+X = rand(100, 10, 0.0, 1.0, 1.0, 7);
+Y = rand(100, 10, 0, 10, 1.0, 11);
+function(X, 1, 3);
+function(X, 1.0, 3.4);
+function(Y, 1, 3);
+function(Y, 42.0, 3000.0);
