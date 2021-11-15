@@ -1,11 +1,9 @@
 def fib(n : si64) -> si64 {
-    res = 1;
-    // TODO: return in if clause (when compiler supports it)
     if (n <= 0)
-        res = 0;
-    if (n > 2)
-        res = fib(n - 1) + fib(n - 2);
-    return res;
+        return 0;
+    if (n <= 2)
+        return 1;
+    return fib(n - 1) + fib(n - 2);
 }
 
 for(i in 0:7)
