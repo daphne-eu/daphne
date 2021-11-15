@@ -71,7 +71,18 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     std::multimap<std::string, mlir::FuncOp> functionsSymbolMap;
 
     std::unordered_map<std::string, std::string> args;
-    
+
+    /**
+     * @brief Creates a `FuncOp` for a UDF.
+     * @param loc The source code location
+     * @param funcType The type of the function
+     * @param functionName The name used in source code to refer to this function
+     * @return The `FuncOp`
+     */
+    mlir::FuncOp createUserDefinedFuncOp(const mlir::Location &loc,
+                                         const mlir::FunctionType &funcType,
+                                         const std::string &functionName);
+
 public:
     DaphneDSLVisitor(
             mlir::ModuleOp & module,

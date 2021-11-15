@@ -796,57 +796,29 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
     );
 }
 
-//void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
-//
-//}
-//
-//void rectifyEarlyReturns(mlir::FuncOp function) {
-//    if (function.getBlocks().size() > 1)
-//        throw std::runtime_error("Functions should only have a single block on AST level");
-//    auto &block = function.getBlocks().front();
-//    auto finalReturnOp = block.getTerminator();
-//
-//    std::vector<mlir::daphne::ReturnOp> earlyReturns;
-//    block.walk([&](mlir::daphne::ReturnOp returnOp) {
-//        if (returnOp != finalReturnOp)
-//            earlyReturns.push_back(returnOp);
-//    });
-//
-//    for (auto earlyReturn : earlyReturns) {
-//        auto parentOp = earlyReturn->getParentOp();
-//        if (auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
-//            rectifyEarlyReturn(ifOp);
-//        }
-//        else {
-//            throw std::runtime_error(
-//                "Early return in `" + parentOp->getName().getStringRef().str() + "` is not supported.");
-//        }
-//    }
-//}
-
 antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) {
     auto loc = utils.getLoc(ctx->start);
     // TODO: check that the function does not shadow a builtin
     auto functionName = ctx->name->getText();
-    auto functionSymbolName = utils.getUniqueFunctionSymbol(functionName);
     // TODO: global variables support in functions
     auto globalSymbolTable = symbolTable;
     symbolTable = ScopedSymbolTable();
 
     // TODO: better check?
-    if (globalSymbolTable.getNumScopes() > 1) {
+    if(globalSymbolTable.getNumScopes() > 1) {
+        // TODO: create a function/class for throwing errors
         std::string s;
         llvm::raw_string_ostream stream(s);
-        loc.print(stream);
-        throw std::runtime_error(s + ": Functions can only be defined at top-level");
+        stream << loc << ": Functions can only be defined at top-level";
+        throw std::runtime_error(s);
     }
 
     std::vector<std::string> funcArgNames;
     std::vector<mlir::Type> funcArgTypes;
     if(ctx->args) {
         auto functionArguments = static_cast<std::vector<std::pair<std::string, mlir::Type>>>(visit(ctx->args));
-        for(const auto &pair: functionArguments) {
-            if (std::find(funcArgNames.begin(), funcArgNames.end(), pair.first) != funcArgNames.end()) {
+        for(const auto &pair : functionArguments) {
+            if(std::find(funcArgNames.begin(), funcArgNames.end(), pair.first) != funcArgNames.end()) {
                 throw std::runtime_error("Function argument name `" + pair.first + "` is used twice.");
             }
             funcArgNames.push_back(pair.first);
@@ -860,20 +832,17 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         handleAssignmentPart(std::get<0>(it), symbolTable, blockArg);
     }
 
-    mlir::OpBuilder::InsertionGuard guard(builder);
-    auto *moduleBody = module.getBody();
-
     mlir::Type returnType;
     mlir::FuncOp functionOperation;
     if(ctx->retTy) {
         // early creation of FuncOp for recursion
         returnType = visit(ctx->retTy);
-        builder.setInsertionPoint(moduleBody, moduleBody->begin());
-        auto funcType = builder.getFunctionType(funcArgTypes, {returnType});
-        functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
-        functionsSymbolMap.insert({functionName, functionOperation});
+        functionOperation = createUserDefinedFuncOp(loc,
+            builder.getFunctionType(funcArgTypes, {returnType}),
+            functionName);
     }
 
+    mlir::OpBuilder::InsertionGuard guard(builder);
     builder.setInsertionPointToStart(funcBlock);
     visitBlockStatement(ctx->bodyStmt);
     if(funcBlock->getOperations().empty()
@@ -881,14 +850,12 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
     }
 
-    // TODO: rectify returns here
     auto returnOpTypes = funcBlock->getTerminator()->getOperandTypes();
     if(!functionOperation) {
         // late creation if no return types defined
-        builder.setInsertionPoint(moduleBody, moduleBody->begin());
-        auto funcType = builder.getFunctionType(funcArgTypes, returnOpTypes);
-        functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
-        functionsSymbolMap.insert({functionName, functionOperation});
+        functionOperation = createUserDefinedFuncOp(loc,
+            builder.getFunctionType(funcArgTypes, returnOpTypes),
+            functionName);
     }
     else if(returnOpTypes != mlir::TypeRange({returnType})) {
         throw std::runtime_error(
@@ -896,9 +863,20 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     }
     functionOperation.body().push_front(funcBlock);
 
-    // rectifyEarlyReturns(functionOperation);
-
     symbolTable = globalSymbolTable;
+    return functionOperation;
+}
+
+mlir::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Location &loc,
+                                                       const mlir::FunctionType &funcType,
+                                                       const std::string &functionName) {
+    mlir::OpBuilder::InsertionGuard guard(builder);
+    auto *moduleBody = module.getBody();
+    auto functionSymbolName = utils.getUniqueFunctionSymbol(functionName);
+
+    builder.setInsertionPoint(moduleBody, moduleBody->begin());
+    auto functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
+    functionsSymbolMap.insert({functionName, functionOperation});
     return functionOperation;
 }
 

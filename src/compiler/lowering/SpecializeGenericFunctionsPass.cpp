@@ -24,7 +24,6 @@
 #include "mlir/Pass/PassManager.h"
 
 #include <memory>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <set>
@@ -33,6 +32,11 @@
 using namespace mlir;
 
 namespace {
+    /**
+     * @brief Checks if the function is a template, by checking the types of input arguments.
+     * @param op The `FuncOp` to check
+     * @return true if `FuncOp` is a template, false otherwise
+     */
     bool isFunctionTemplate(FuncOp op) {
         auto unknownTy = daphne::UnknownType::get(op.getContext());
         return llvm::any_of(op.getType().getInputs(),
@@ -47,12 +51,19 @@ namespace {
         return functionName + "-" + std::to_string(++functionUniqueId);
     }
 
+    /**
+     * @brief Check if a function with the given input/output types can be called with the input types given.
+     * @param functionType The type of the function
+     * @param callTypes The types used in the call
+     * @return true if the types match for a call, false otherwise
+     */
     bool callTypesMatchFunctionTypes(FunctionType functionType, TypeRange callTypes) {
         for(auto zipIt : llvm::zip(functionType.getInputs(), callTypes)) {
             auto funcTy = std::get<0>(zipIt);
             auto callTy = std::get<1>(zipIt);
             if(auto funcMatTy = funcTy.dyn_cast<daphne::MatrixType>()) {
                 auto callMatTy = callTy.dyn_cast<daphne::MatrixType>();
+                // Check without shape information
                 if(!callMatTy || funcMatTy.withSameElementType() != callMatTy.withSameElementType()) {
                     return false;
                 }
@@ -64,6 +75,12 @@ namespace {
         return true;
     }
 
+    /**
+     * @brief Get argument types for the specialized version of a template function.
+     * @param functionType The types of the template function.
+     * @param callTypes The types used in the call to the specialized version.
+     * @return The argument types to use for the specialized version
+     */
     std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType, TypeRange callTypes) {
         auto unknownTy = daphne::UnknownType::get(functionType.getContext());
         std::vector<mlir::Type> specializedTypes;
@@ -112,6 +129,11 @@ namespace {
         return madeChanges;
     }
 
+    /**
+     * @brief Run partial type and label inference on the given `FuncOp`.
+     * @param function The `FuncOp`
+     * @return The inferred `FuncOp` (same as input), or `nullptr` if an error happened
+     */
     FuncOp inferTypesInFunction(FuncOp function) {
         // Run inference
         mlir::PassManager pm(function->getContext(), "func");
@@ -130,6 +152,12 @@ namespace {
         std::multimap<std::string, FuncOp> specializedVersions;
         std::set<FuncOp> visited;
 
+        /**
+         * @brief Create a specialized version of the template function.
+         * @param templateFunction The template function.
+         * @param specializedTypes The specialized function arguments
+         * @return The specialized function
+         */
         FuncOp createSpecializedFunction(FuncOp templateFunction, TypeRange specializedTypes) {
             OpBuilder builder(templateFunction);
             auto specializedFunc = templateFunction.clone();
@@ -149,6 +177,25 @@ namespace {
             return inferTypesInFunction(specializedFunc);
         }
 
+        /**
+         * @brief Try to reuse an existing specialization for the given template function
+         * @param callOp The call operation
+         * @param templateFunction The template function called by the `callOp`
+         * @return either an existing and matching `FuncOp`, `nullptr` otherwise
+         */
+        FuncOp tryReuseExistingSpecialization(daphne::GenericCallOp callOp, FuncOp templateFunction) {
+            auto eqIt = specializedVersions.equal_range(templateFunction.sym_name().str());
+            for(auto it = eqIt.first ; it != eqIt.second ; ++it) {
+                auto specializedFunc = it->second;
+
+                if(callTypesMatchFunctionTypes(specializedFunc.getType(), callOp->getOperandTypes())) {
+                    // reuse existing specialized function
+                    return specializedFunc;
+                }
+            }
+            return nullptr;
+        }
+
         void specializeCallsInFunction(FuncOp function) {
             if(visited.count(function)) {
                 return;
@@ -158,24 +205,13 @@ namespace {
               auto calledFunction = functions[callOp.callee().str()];
               if(isFunctionTemplate(calledFunction)) {
                   // check for existing specialization that matches
-                  auto eqIt = specializedVersions.equal_range(calledFunction.sym_name().str());
-                  for(auto it = eqIt.first ; it != eqIt.second ; ++it) {
-                      auto specializedFunc = it->second;
-
-                      if(callTypesMatchFunctionTypes(specializedFunc.getType(), callOp->getOperandTypes())) {
-                          // reuse existing specialized function
-                          callOp.calleeAttr(specializedFunc.sym_nameAttr());
-                          if(fixResultTypes(callOp->getResults(), specializedFunc.getType())) {
-                              inferTypesInFunction(function);
-                          }
-                          return;
-                      }
+                  FuncOp specializedFunc = tryReuseExistingSpecialization(callOp, calledFunction);
+                  if(!specializedFunc) {
+                      // Create specialized function
+                      auto specializedTypes =
+                          getSpecializedFuncArgTypes(calledFunction.getType(), callOp.getOperandTypes());
+                      specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
                   }
-
-                  // Create specialized function
-                  auto
-                      specializedTypes = getSpecializedFuncArgTypes(calledFunction.getType(), callOp.getOperandTypes());
-                  auto specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
 
                   callOp.calleeAttr(specializedFunc.sym_nameAttr());
                   if(fixResultTypes(callOp->getResults(), specializedFunc.getType())) {
@@ -201,6 +237,9 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
       functions.insert({funcOp.sym_name().str(), funcOp});
     });
 
+    // `initialFunctions` will hold entry functions like `main`, but also `dist` (for distributed computation)
+    // we could also directly specify the names `main`, `dist` etc. (if we add more `entry` functions), or just set
+    // an attribute flag for those functions.
     std::vector<FuncOp> initialFunctions;
     for(const auto &entry : functions) {
         initialFunctions.push_back(entry.second);
