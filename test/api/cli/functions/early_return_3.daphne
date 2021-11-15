@@ -1,0 +1,21 @@
+def f(a) {
+    if (a > 0) {
+        return 1;
+    }
+    print("fallback");
+    return 0;
+}
+def g(a) {
+    if (a > 0) {
+    }
+    else {
+        return 1;
+    }
+    print("fallback");
+    return 0;
+}
+
+print(f(10));
+print(f(-10));
+print(g(10));
+print(g(-10));

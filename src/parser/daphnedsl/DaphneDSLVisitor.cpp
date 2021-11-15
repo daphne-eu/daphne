@@ -796,6 +796,176 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
     );
 }
 
+void removeOperationsBeforeReturnOp(mlir::daphne::ReturnOp firstReturnOp, mlir::Block *block) {
+    auto op = &block->getOperations().back();
+    // erase in reverse order to ensure no uses will be left
+    while(op != firstReturnOp) {
+        auto prev = op->getPrevNode();
+        op->emitWarning() << "Operation is ignored, as the function will return at " << firstReturnOp.getLoc();
+        op->erase();
+        op = prev;
+    }
+}
+
+/**
+ * @brief Ensures that the `caseBlock` has correct behaviour by appending operations, as the other case has an early return.
+ *
+ * @param ifOpWithEarlyReturn The old `IfOp` with the early return
+ * @param caseBlock The new block for the case without a `ReturnOp`
+ */
+void rectifyIfCaseWithoutReturnOp(mlir::scf::IfOp ifOpWithEarlyReturn, mlir::Block *caseBlock) {
+    // ensure there is a `YieldOp` (for later removal of such)
+    if(caseBlock->empty() || !llvm::isa<mlir::scf::YieldOp>(caseBlock->back())) {
+        mlir::OpBuilder builder(ifOpWithEarlyReturn->getContext());
+        builder.setInsertionPoint(caseBlock, caseBlock->end());
+        builder.create<mlir::scf::YieldOp>(builder.getUnknownLoc());
+    }
+
+    // As this if-case doesn't have an early return we need to move/clone operations that should happen
+    // into this case.
+    auto opsAfterIf = ifOpWithEarlyReturn->getNextNode();
+    while(opsAfterIf) {
+        auto next = opsAfterIf->getNextNode();
+        if(auto yieldOp = llvm::dyn_cast<mlir::scf::YieldOp>(opsAfterIf)) {
+            auto parentOp = llvm::dyn_cast<mlir::scf::IfOp>(yieldOp->getParentOp());
+            if(!parentOp) {
+                throw std::runtime_error("Early return not nested in `if`s not yet supported!");
+            }
+            next = parentOp->getNextNode();
+        }
+        if(opsAfterIf->getBlock() == ifOpWithEarlyReturn->getBlock()) {
+            // can be moved inside if
+            opsAfterIf->moveBefore(caseBlock, caseBlock->end());
+        }
+        else {
+            // can't move them directly, need clone (operations will be needed later)
+            auto clonedOp = opsAfterIf->clone();
+            mlir::OpBuilder builder(clonedOp->getContext());
+            builder.setInsertionPoint(caseBlock, caseBlock->end());
+            builder.insert(clonedOp);
+        }
+        opsAfterIf = next;
+    }
+
+    // Remove `YieldOp`s and replace the result values of `IfOp`s used by operations that got moved in
+    // the previous loop with the correct values.
+    auto currIfOp = ifOpWithEarlyReturn;
+    auto currOp = &caseBlock->front();
+    while(auto nextOp = currOp->getNextNode()) {
+        if(auto yieldOp = llvm::dyn_cast<mlir::scf::YieldOp>(currOp)) {
+            // cast was checked in previous loop
+            for(auto it : llvm::zip(currIfOp.getResults(), yieldOp.getOperands())) {
+                auto ifResult = std::get<0>(it);
+                auto yieldedVal = std::get<1>(it);
+                ifResult.replaceUsesWithIf(yieldedVal, [&](mlir::OpOperand &opOperand) {
+                  return opOperand.getOwner()->getBlock() == caseBlock;
+                });
+            }
+            currIfOp = llvm::dyn_cast_or_null<mlir::scf::IfOp>(currIfOp->getParentOp());
+            yieldOp->erase();
+        }
+        currOp = nextOp;
+    }
+}
+
+mlir::scf::YieldOp replaceReturnWithYield(mlir::daphne::ReturnOp returnOp) {
+    mlir::OpBuilder builder(returnOp);
+    auto yieldOp = builder.create<mlir::scf::YieldOp>(returnOp.getLoc(), returnOp.getOperands());
+    returnOp->erase();
+    return yieldOp;
+}
+
+void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
+    // FIXME: handle case where early return is in else block
+    auto insertThenBlock = [&](mlir::OpBuilder &nested, mlir::Location loc) {
+      auto newThenBlock = nested.getBlock();
+      nested.getBlock()->getOperations().splice(nested.getBlock()->end(), ifOp.thenBlock()->getOperations());
+
+      auto returnOps = newThenBlock->getOps<mlir::daphne::ReturnOp>();
+      if(!returnOps.empty()) {
+          // NOTE: we ignore operations after return, could also throw an error
+          removeOperationsBeforeReturnOp(*returnOps.begin(), newThenBlock);
+      }
+      else {
+          rectifyIfCaseWithoutReturnOp(ifOp, newThenBlock);
+      }
+      auto returnOp = llvm::dyn_cast<mlir::daphne::ReturnOp>(newThenBlock->back());
+      if(!returnOp) {
+          // this should never happen, if it does check the `rectifyCaseByAppendingNecessaryOperations` function
+          throw std::runtime_error("Final operation in then case has to be return op");
+      }
+      replaceReturnWithYield(returnOp);
+    };
+    auto insertElseBlock = [&](mlir::OpBuilder &nested, mlir::Location loc) {
+      auto newElseBlock = nested.getBlock();
+      if(!ifOp.elseRegion().empty()) {
+          newElseBlock->getOperations().splice(newElseBlock->end(), ifOp.elseBlock()->getOperations());
+      }
+      // TODO: check if already final operation is a return
+
+      auto returnOps = newElseBlock->getOps<mlir::daphne::ReturnOp>();
+      if(!returnOps.empty()) {
+          // NOTE: we ignore operations after return, could also throw an error
+          removeOperationsBeforeReturnOp(*returnOps.begin(), newElseBlock);
+      }
+      else {
+          rectifyIfCaseWithoutReturnOp(ifOp, newElseBlock);
+      }
+      auto returnOp = llvm::dyn_cast<mlir::daphne::ReturnOp>(newElseBlock->back());
+      if(!returnOp) {
+          // this should never happen, if it does check the `rectifyCaseByAppendingNecessaryOperations` function
+          throw std::runtime_error("Final operation in else case has to be return op");
+      }
+      replaceReturnWithYield(returnOp);
+    };
+    mlir::OpBuilder builder(ifOp);
+
+    auto newIfOp = builder.create<mlir::scf::IfOp>(
+        builder.getUnknownLoc(),
+        resultTypes,
+        ifOp.condition(),
+        insertThenBlock,
+        insertElseBlock
+    );
+    builder.create<mlir::daphne::ReturnOp>(ifOp->getLoc(), newIfOp.getResults());
+    ifOp.erase();
+}
+
+void rectifyEarlyReturns(mlir::Block *funcBlock) {
+    if(funcBlock->empty())
+        return;
+    while(true) {
+        size_t levelOfMostNested = 0;
+        mlir::daphne::ReturnOp mostNestedReturn;
+        funcBlock->walk([&](mlir::daphne::ReturnOp returnOp) {
+          size_t nested = 1;
+          auto op = returnOp.getOperation();
+          while(op->getBlock() != funcBlock) {
+              ++nested;
+              op = op->getParentOp();
+          }
+
+          if(nested > mostNestedReturn) {
+              mostNestedReturn = returnOp;
+              levelOfMostNested = nested;
+          }
+        });
+        if(!mostNestedReturn || mostNestedReturn == &funcBlock->back()) {
+            // finished!
+            break;
+        }
+
+        auto parentOp = mostNestedReturn->getParentOp();
+        if(auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
+            rectifyEarlyReturn(ifOp, mostNestedReturn->getOperandTypes());
+        }
+        else {
+            throw std::runtime_error(
+                "Early return in `" + parentOp->getName().getStringRef().str() + "` is not supported.");
+        }
+    }
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) {
     auto loc = utils.getLoc(ctx->start);
     // TODO: check that the function does not shadow a builtin
@@ -845,6 +1015,8 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     mlir::OpBuilder::InsertionGuard guard(builder);
     builder.setInsertionPointToStart(funcBlock);
     visitBlockStatement(ctx->bodyStmt);
+
+    rectifyEarlyReturns(funcBlock);
     if(funcBlock->getOperations().empty()
         || !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
         builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));

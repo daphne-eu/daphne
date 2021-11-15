@@ -32,6 +32,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
 
 // TODO In all (run/check/compare)Daphne... functions, we might not need to
 // explicitly specify the scriptPath as a parameter, since it could be subsumed
@@ -236,6 +237,24 @@ template<typename... Args>
 void compareDaphneToSelfRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
+}
+
+/**
+ * @brief Compares the standard output of executing a given DaphneDSL script
+ * with a reference script or text file, based on which file is found.
+ */
+template<typename... Args>
+void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    const std::string filePath = dirPath + name + '_' + std::to_string(idx);
+    if (std::filesystem::exists(filePath + ".ref.daphne")) {
+        compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
+    }
+    else if (std::filesystem::exists(filePath + ".txt")) {
+        compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
+    }
+    else {
+        throw std::runtime_error("Could not find any ref for file `" + filePath + ".daphne`");
+    }
 }
 
 /**
