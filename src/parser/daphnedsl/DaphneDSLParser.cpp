@@ -17,6 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
+#include <parser/CancelingErrorListener.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarLexer.h"
@@ -29,6 +30,8 @@
 #include <istream>
 
 void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
+    CancelingErrorListener errorListener;
+    auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
     mlir::Location loc = builder.getUnknownLoc();
     
     // Create a single "main"-function and insert DaphneIR operations into it.
@@ -41,8 +44,12 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         antlr4::ANTLRInputStream input(stream);
         input.name = "whateverFile"; // TODO
         DaphneDSLGrammarLexer lexer(&input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(&errorListener);
         antlr4::CommonTokenStream tokens(&lexer);
         DaphneDSLGrammarParser parser(&tokens);
+        // TODO: evaluate if overloading error handler makes sense
+        parser.setErrorHandler(errorStrategy);
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
         DaphneDSLVisitor visitor(builder, args);
         visitor.visitScript(ctx);

@@ -27,19 +27,25 @@
 #include <mlir/IR/Location.h>
 
 #include <istream>
+#include <parser/CancelingErrorListener.h>
 
 void SQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
     view = arg;
 }
 
 mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream){
-    mlir::Location loc = builder.getUnknownLoc();
+    CancelingErrorListener errorListener;
+    auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
     {
         antlr4::ANTLRInputStream input(stream);
         input.name = "whateverFile"; // TODO
         SQLGrammarLexer lexer(&input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(&errorListener);
         antlr4::CommonTokenStream tokens(&lexer);
         SQLGrammarParser parser(&tokens);
+        // TODO: evaluate if overloading error handler makes sense
+        parser.setErrorHandler(errorStrategy);
         SQLGrammarParser::SqlContext * ctx = parser.sql();
         SQLVisitor visitor(builder, view);
         antlrcpp::Any a = visitor.visitSql(ctx);
