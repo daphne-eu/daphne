@@ -18,6 +18,7 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 set(TEST_SOURCES
         run_tests.cpp
 
+        api/cli/algorithms/AlgorithmsTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
         api/cli/literals/LiteralsTest.cpp
