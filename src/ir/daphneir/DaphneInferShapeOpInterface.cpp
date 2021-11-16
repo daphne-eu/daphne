@@ -54,6 +54,38 @@ ssize_t getSizeOrUnknown(Value v) {
     return -1; // the value of the scalar is unknown at the moment
 }
 
+// TODO This is just a quick and dirty workaround. Make this a central utility.
+int64_t getConstantInt(Value v) {
+    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
+            return intAttr.getValue().getLimitedValue();
+    // TODO Remove this once we support constant propagation (see #151).
+    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
+        return getConstantInt(co.arg());
+    if(auto co = llvm::dyn_cast<daphne::EwSubOp>(v.getDefiningOp()))
+        return getConstantInt(co.lhs()) - getConstantInt(co.rhs());
+    if(auto co = llvm::dyn_cast<daphne::EwDivOp>(v.getDefiningOp()))
+        return getConstantInt(co.lhs()) / getConstantInt(co.rhs());
+    if(auto co = llvm::dyn_cast<daphne::NumColsOp>(v.getDefiningOp()))
+        return getSizeOrUnknown(co.arg());
+    throw std::runtime_error("expected an integer constant");
+}
+
+// TODO This is just a quick and dirty workaround. Make this a central utility.
+double getConstantDouble(Value v) {
+    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto floatAttr = co.value().dyn_cast<FloatAttr>())
+            return floatAttr.getValue().convertToDouble();
+    // TODO Remove this once we support constant propagation (see #151).
+    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp())) {
+        if(co.arg().getType().isF64())
+            return getConstantDouble(co.arg());
+        else
+            return static_cast<double>(getConstantInt(co.arg()));
+    }
+    throw std::runtime_error("expected a floating-point constant");
+}
+
 ssize_t inferNumRowsFromArgs(ValueRange vs) {
     // If the #rows of all arguments is known and matches, then this is the
     // infered #rows. If the known #rows of any two arguments mismatch, an
@@ -139,20 +171,22 @@ ssize_t daphne::CartesianOp::inferNumRows() {
 }
 
 ssize_t daphne::SeqOp::inferNumRows() {
-    // TODO We can known the exact number of rows at compile-time, but due to
-    // possible floating-point rounding problems, it is a little bit involved
-    // (see the seq-kernel). Thus, we do not support floating-point arguments
-    // at the moment.
-    if(from().getType().isF32() || from().getType().isF64())
-        return -1;
-
-    // In the following, we assume integers.
-    const ssize_t vFrom = getSizeOrUnknown(from());
-    const ssize_t vTo = getSizeOrUnknown(to());
-    const ssize_t vInc = getSizeOrUnknown(inc());
-    // Taken from the seq-kernel and adapted.
-    const ssize_t expectedNumRows = ceil((abs(static_cast<double>(vTo - vFrom)) / abs(vInc))) + 1;
-    return expectedNumRows;
+    if(from().getType().isF64()) {
+        double vFrom = getConstantDouble(from());
+        double vTo = getConstantDouble(to());
+        double vInc = getConstantDouble(inc());
+        return floor(vTo / vInc - vFrom / vInc) + 1;
+    }
+    else if(from().getType().isSignedInteger(64)) {
+        int64_t vFrom = getConstantInt(from());
+        int64_t vTo = getConstantInt(to());
+        int64_t vInc = getConstantInt(inc());
+        return abs(vTo - vFrom) / abs(vInc) + 1;
+    }
+    throw std::runtime_error(
+            "at the moment, shape inference for SeqOp supports only F64 and "
+            "SI64 value types"
+    );
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CreateFrameOp::inferShape() {
