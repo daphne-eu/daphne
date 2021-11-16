@@ -242,6 +242,21 @@ void daphne::SemiJoinOp::inferTypes() {
     getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
 }
 
+void daphne::InnerJoinOp::inferTypes() {
+    auto ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
+    auto ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
+    if(ftLhs && ftRhs) {
+        std::vector<Type> newColumnTypes;
+        for(Type t : ftLhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        for(Type t : ftRhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        getResult().setType(
+                daphne::FrameType::get(getContext(), newColumnTypes)
+        );
+    }
+}
+
 void daphne::SetColLabelsOp::inferTypes() {
     getResult().setType(
             arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()

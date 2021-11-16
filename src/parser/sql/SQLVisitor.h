@@ -38,7 +38,6 @@ class SQLVisitor : public SQLGrammarVisitor {
     mlir::Value currentFrame;
     int i_se = 0;
 
-//  PREFIX SHOULD NOT CONTAIN THE DOT.
     //framename, prefix
     std::unordered_map <std::string, std::string> framePrefix;
     //prefix, framename
@@ -81,6 +80,10 @@ public:
     antlrcpp::Any visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) override;
 
     antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
+
+    antlrcpp::Any visitTableExpr(SQLGrammarParser::TableExprContext * ctx) override;
+
+    antlrcpp::Any visitInnerJoin(SQLGrammarParser::InnerJoinContext * ctx) override;
 
     antlrcpp::Any visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx) override;
 

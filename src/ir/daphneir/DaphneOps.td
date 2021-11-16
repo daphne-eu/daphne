@@ -725,7 +725,13 @@ class Daphne_JoinOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, !l
     let results = (outs Frame:$res);
 }
 
-def Daphne_InnerJoinOp : Daphne_JoinOp<"innerJoin">;
+def Daphne_InnerJoinOp : Daphne_Op<"innerJoin", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let results = (outs Frame:$res);
+} 
 def Daphne_FullOuterJoinOp : Daphne_JoinOp<"fullOuterJoin">;
 def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;

@@ -34,7 +34,7 @@ query:
 
 select:
     SQL_SELECT selectExpr (',' selectExpr)*
-    SQL_FROM fromExpr
+    SQL_FROM tableExpr
     whereClause?
     ;
 
@@ -47,9 +47,16 @@ subqueryExpr:
 selectExpr:
     var=generalExpr (SQL_AS aka=IDENTIFIER)?;
 
+tableExpr:
+    fromExpr joinExpr*;
+
 fromExpr:
     var=tableReference #tableIdentifierExpr
-    | lhs=fromExpr ',' rhs=tableReference #cartesianExpr
+    | lhs=tableReference ',' rhs=fromExpr #cartesianExpr
+    ;
+
+joinExpr:
+    SQL_INNER? SQL_JOIN var=tableReference SQL_ON rhs=selectIdent '=' lhs=selectIdent #innerJoin
     ;
 
 whereClause:
