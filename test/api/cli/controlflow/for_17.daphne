@@ -1,0 +1,5 @@
+// Update variable in loop, same shape.
+X = fill(10, 2, 3);
+for(i in 1:5)
+    X = X + 1;
+print(sum(X));

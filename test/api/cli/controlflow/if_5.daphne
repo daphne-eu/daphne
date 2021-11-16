@@ -1,0 +1,5 @@
+// Assign new value in then-branch, same shape.
+X = fill(10, 2, 3);
+if(true)
+    X = X + 1;
+print(sum(X));

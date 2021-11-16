@@ -1,0 +1,14 @@
+// Updating variable in loop, same shape.
+X = fill(12, 2, 3);
+Y = fill(22, 4, 5);
+Z = fill(32, 6, 7);
+i = 0;
+while(i < 3) {
+    X = X + 1;
+    Y = Y + 1;
+    Z = Z + 1;
+    i = i + 1;
+}
+print(sum(X));
+print(sum(Y));
+print(sum(Z));
