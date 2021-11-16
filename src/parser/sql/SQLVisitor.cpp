@@ -18,6 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include <parser/ScopedSymbolTable.h>
+#include <parser/ParserUtils.h>
 
 #include "antlr4-runtime.h"
 
@@ -149,7 +150,7 @@ antlrcpp::Any SQLVisitor::visitQuery(SQLGrammarParser::QueryContext * ctx) {
 }
 
 antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     mlir::Value res;
 
     try{
@@ -222,7 +223,7 @@ antlrcpp::Any SQLVisitor::visitTableIdentifierExpr(SQLGrammarParser::TableIdenti
 antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx)
 {
     try{
-        mlir::Location loc = builder.getUnknownLoc();
+        mlir::Location loc = utils.getLoc(ctx->start);
         mlir::Value res;
         mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
         mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
@@ -254,7 +255,7 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
 //* needs to correctly implement SetColLabelsPrefixOp and how to access these labels
 //*******
 antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     std::string var = ctx->var->getText();
     std::string prefix = ctx->var->getText();
@@ -304,7 +305,7 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * 
 //* Callee: visitSelectExpr
 //****
 antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     std::string getSTR;
     std::string columnSTR = ctx->var->getText();
@@ -358,7 +359,7 @@ antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext 
 }
 
 antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext * ctx) {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     if(auto lit = ctx->INT_LITERAL()) {
         int64_t val = atol(lit->getText().c_str());
         return static_cast<mlir::Value>(

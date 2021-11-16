@@ -26,20 +26,20 @@
 #include <unordered_map>
 
 class DaphneDSLParser : public Parser {
-    
+
     std::unordered_map<std::string, std::string> args;
     
 public:
-    
+
     DaphneDSLParser(std::unordered_map<std::string, std::string> args) : args(args) {
         //
     }
-    
+
     DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>()) {
         //
     }
-    
-    void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
+
+    void parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) override;
     
 };
 

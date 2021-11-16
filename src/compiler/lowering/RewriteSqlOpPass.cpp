@@ -61,7 +61,10 @@ namespace
 
                 SQLParser parser;
                 parser.setView(tables);
-                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query);
+                std::string sourceName;
+                llvm::raw_string_ostream ss(sourceName);
+                ss << "[sql query @ " << sqlop->getLoc() << ']';
+                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
 
                 rewriter.replaceOp(op, result_op);
                 return success();
