@@ -67,6 +67,11 @@ struct DistributedCompute<DenseMatrix<double>>
         auto lhs = args[0];
         auto rhs = args[1];
 
+        struct StoredInfo {
+            DistributedIndex *ix;
+            DistributedData *data;
+        };
+        DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         Handle<DenseMatrix<double>>::HandleMap resMap;
         for (auto &pair : lhs->getMap()) {
             auto ix = pair.first;
@@ -77,25 +82,14 @@ struct DistributedCompute<DenseMatrix<double>>
                 // data is on same worker -> direct execution possible
                 auto stub = distributed::Worker::NewStub(lhsData.getChannel());
 
-                grpc::ClientContext context;
-
                 distributed::Task task;
                 *task.add_inputs()->mutable_stored() = lhsData.getData();
                 *task.add_inputs()->mutable_stored() = rhsData.getData();
                 task.set_mlir_code(mlirCode);
-                distributed::ComputeResult result;
-                auto status = stub->Compute(&context, task, &result);
+                
+                StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                if (!status.ok()) {
-                    throw std::runtime_error(
-                        status.error_message()
-                    );
-                }
-
-                assert(result.outputs_size() == 1);
-
-                DistributedData data(result.outputs(0).stored(), lhsData.getAddress(), lhsData.getChannel());
-                resMap.insert({ix, data});
+                caller.addAsyncCall(&distributed::Worker::Stub::AsyncCompute, *stub, storedInfo, task);
             }
             else {
                 // TODO: send data between workers
@@ -103,6 +97,16 @@ struct DistributedCompute<DenseMatrix<double>>
                     "Data shuffling not yet supported"
                 );
             }
+        }
+        // Get Results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto ix = response.storedInfo.ix;
+            auto lhsdata = response.storedInfo.data;
+            
+            auto computeResult = response.result;
+            DistributedData data(computeResult.outputs(0).stored(), lhsdata->getAddress(), lhsdata->getChannel());
+            resMap.insert({*ix, data});
         }
         res = new Handle<DenseMatrix<double>>(resMap, lhs->getRows(), lhs->getCols());
     }

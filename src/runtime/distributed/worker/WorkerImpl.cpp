@@ -34,6 +34,7 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
+#include "CallData.h"
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
@@ -42,6 +43,37 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 }
 
 WorkerImpl::~WorkerImpl() = default;
+
+// void WorkerImpl::StartHandleThread() {
+//     HandleRpcsThread = std::thread(&WorkerImpl::HandleRpcs, this);
+// }
+// void WorkerImpl::TerminateHandleThread() {
+//     cq_->Shutdown();
+//     HandleRpcsThread.join();
+// }
+void WorkerImpl::HandleRpcs() {
+    // Spawn a new CallData instance to serve new clients.
+    new StoreCallData(this, cq_.get());
+    new ComputeCallData(this, cq_.get());
+    new TransferCallData(this, cq_.get());
+    void* tag;  // uniquely identifies a request.
+    bool ok;
+    // Block waiting to read the next event from the completion queue. The
+    // event is uniquely identified by its tag, which in this case is the
+    // memory address of a CallData instance.
+    // The return value of Next should always be checked. This return value
+    // tells us whether there is any kind of event or cq_ is shutting down.
+    while (cq_->Next(&tag, &ok)) {        
+        if(ok){         
+            // Thread pool ? with caution. For now on each worker only one thread operates (sefe IO).
+            // We might need to add locks inside Store/Compute/Transfer methods if we deploy threads
+            static_cast<CallData*>(tag)->Proceed();
+        } else {
+            // TODO maybe handle this internally ?
+            delete tag;
+        }
+    }
+  }
 
 grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
                                const ::distributed::Matrix *request,
