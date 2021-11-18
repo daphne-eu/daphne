@@ -41,6 +41,8 @@
 #include "mlir/Interfaces/ViewLikeInterface.h"
 
 #include <llvm/ADT/BitVector.h>
+#include <llvm/ADT/APInt.h>
+#include <llvm/ADT/APSInt.h>
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -302,4 +304,371 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
     }
     op.erase();
     return success();
+}
+
+// ****************************************************************************
+// Fold utility functions/macros
+// ****************************************************************************
+// For families of operations.
+
+// Adapted from "mlir/Dialect/CommonFolders.h"
+template<class AttrElementT,
+    class ElementValueT = typename AttrElementT::ValueType,
+    class CalculationT = std::function<ElementValueT(const ElementValueT &, const ElementValueT &)>>
+mlir::Attribute constFoldBinaryOp(mlir::Type resultType, llvm::ArrayRef<mlir::Attribute> operands,
+                                  const CalculationT &calculate) {
+    assert(operands.size() == 2 && "binary op takes two operands");
+    if(!operands[0] || !operands[1])
+        return {};
+    if(operands[0].getType() != operands[1].getType())
+        return {};
+
+    if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
+        auto lhs = operands[0].cast<AttrElementT>();
+        auto rhs = operands[1].cast<AttrElementT>();
+
+        return AttrElementT::get(resultType, calculate(lhs.getValue(), rhs.getValue()));
+    }
+    return {};
+}
+template<class AttrElementT,
+    class ElementValueT = typename AttrElementT::ValueType,
+    class CalculationT = std::function<bool(const ElementValueT &, const ElementValueT &)>>
+mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
+                                     const CalculationT &calculate) {
+    assert(operands.size() == 2 && "binary op takes two operands");
+    if(!operands[0] || !operands[1])
+        return {};
+    if(operands[0].getType() != operands[1].getType())
+        return {};
+
+    if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
+        auto lhs = operands[0].cast<AttrElementT>();
+        auto rhs = operands[1].cast<AttrElementT>();
+        return mlir::BoolAttr::get(lhs.getContext(), calculate(lhs.getValue(), rhs.getValue()));
+    }
+    return {};
+}
+
+// ****************************************************************************
+// Fold implementations
+// ****************************************************************************
+
+mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
+    if(auto in = operands[0].dyn_cast_or_null<IntegerAttr>()) {
+        if(getType().isa<IntegerType>()) {
+            return IntegerAttr::get(getType(), in.getValue());
+        }
+    }
+    else if(auto in = operands[0].dyn_cast_or_null<FloatAttr>()) {
+        if(getType().isa<FloatType>()) {
+            return FloatAttr::get(getType(), in.getValue());
+        }
+    }
+    // TODO: int to float and float to int?
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwAddOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a + b; };
+    // TODO: we could check overflows
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a + b; };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwSubOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a - b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a - b; };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwMulOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a * b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a * b; };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwDivOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a / b; };
+    auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(b == 0) {
+          std::string msg = "Can't divide by 0";
+          emitError() << msg;
+          throw std::runtime_error(msg);
+      }
+      return a.sdiv(b);
+    };
+    auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(b == 0) {
+          std::string msg = "Can't divide by 0";
+          emitError() << msg;
+          throw std::runtime_error(msg);
+      }
+      return a.udiv(b);
+    };
+
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwPowOp::fold(ArrayRef<Attribute> operands) {
+    // TODO: EwPowOp constant folding
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwModOp::fold(ArrayRef<Attribute> operands) {
+    auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(b == 0) {
+          std::string msg = "Can't compute mod 0";
+          emitError() << msg;
+          throw std::runtime_error(msg);
+      }
+      return a.srem(b);
+    };
+    auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(b == 0) {
+          std::string msg = "Can't compute mod 0";
+          emitError() << msg;
+          throw std::runtime_error(msg);
+      }
+      return a.urem(b);
+    };
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwLogOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
+      // Equivalent to log_b(a)
+      return ilogb(a) / ilogb(b);
+    };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwMinOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::minimum(a, b); };
+    auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(a.slt(b))
+          return a;
+      else
+          return b;
+    };
+    auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(a.ult(b))
+          return a;
+      else
+          return b;
+    };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::maximum(a, b); };
+    auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(a.sgt(b))
+          return a;
+      else
+          return b;
+    };
+    auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
+      if(a.ugt(b))
+          return a;
+      else
+          return b;
+    };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwAndOp::fold(ArrayRef<Attribute> operands) {
+    auto boolOp = [](const bool &a, const bool &b) { return a && b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) && (b != 0); };
+    if(auto res = constFoldBinaryCmpOp<BoolAttr>(operands, boolOp))
+        return res;
+    // TODO: should output bool?
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwOrOp::fold(ArrayRef<Attribute> operands) {
+    auto boolOp = [](const bool &a, const bool &b) { return a || b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) || (b != 0); };
+    if(auto res = constFoldBinaryCmpOp<BoolAttr>(operands, boolOp))
+        return res;
+    // TODO: should output bool
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwXorOp::fold(ArrayRef<Attribute> operands) {
+    auto boolOp = [](const bool &a, const bool &b) { return a ^ b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) ^ (b != 0); };
+    if(auto res = constFoldBinaryCmpOp<BoolAttr>(operands, boolOp))
+        return res;
+    // TODO: should output bool
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) {
+    assert(operands.size() == 2 && "binary op takes two operands");
+    if(!operands[0] || !operands[1])
+        return {};
+    if(operands[0].getType() != operands[1].getType())
+        return {};
+
+    if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
+        auto lhs = operands[0].cast<StringAttr>();
+        auto rhs = operands[1].cast<StringAttr>();
+
+        auto concated = lhs.getValue().str() + rhs.getValue().str();
+        return StringAttr::get(concated, getType());
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwEqOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwLtOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a < b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwLeOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a <= b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwGtOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a > b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a >= b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
 }

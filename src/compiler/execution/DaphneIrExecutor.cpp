@@ -64,6 +64,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         // This flag is really useful to figure out why the lowering failed
         //llvm::DebugFlag = true;
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+        pm.addPass(mlir::createCanonicalizerPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
         if (distributed_) {
@@ -74,9 +76,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
-            // TODO: this can be moved outside without problem, should we?
-            pm.addPass(mlir::createCanonicalizerPass());
         }
+        pm.addPass(mlir::createCanonicalizerPass());
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
