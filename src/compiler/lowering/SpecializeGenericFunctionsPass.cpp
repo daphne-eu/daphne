@@ -41,8 +41,8 @@ namespace {
         auto unknownTy = daphne::UnknownType::get(op.getContext());
         return llvm::any_of(op.getType().getInputs(),
             [&unknownTy](Type ty) {
-              auto matTy = ty.dyn_cast<daphne::MatrixType>();
-              return ty == unknownTy || (matTy && matTy.getElementType() == unknownTy);
+                auto matTy = ty.dyn_cast<daphne::MatrixType>();
+                return ty == unknownTy || (matTy && matTy.getElementType() == unknownTy);
             });
     }
 
