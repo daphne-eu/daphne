@@ -1,3 +1,4 @@
+// invalid number of calling arguments (too many)
 def f(a, b) {
     print(a);
 }

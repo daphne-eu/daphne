@@ -1,3 +1,4 @@
+// empty function
 def function() {
 }
 function();

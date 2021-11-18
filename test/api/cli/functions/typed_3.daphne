@@ -1,3 +1,4 @@
+// multiple definitions with different number of arguments (inputs typed)
 def f(a : si64) {
     print(a);
 }

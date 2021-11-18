@@ -1,3 +1,4 @@
+// multiple definitions with different types, with typed and untyped returns (inputs typed)
 def function(mat : matrix<f64>) {
     return sum(mat);
 }

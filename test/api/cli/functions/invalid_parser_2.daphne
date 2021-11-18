@@ -1,3 +1,4 @@
+// invalid non-top-level function definition in while
 i = 0;
 while i < 2 {
     def function(mat : matrix<f64>) {

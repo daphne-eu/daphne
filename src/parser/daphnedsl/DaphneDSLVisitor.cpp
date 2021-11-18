@@ -931,6 +931,45 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
     ifOp.erase();
 }
 
+/**
+ * @brief Adapts the block such that only a single return at the end of the block is present, by moving early returns in
+ * SCF-Ops.
+ *
+ * General procedure is finding the most nested early return and then SCF-Op by SCF-Op moves the return outside,
+ * putting the case without early return into the other case. This is repeated until all SCF-Ops are valid and
+ * only a final return exists. Might duplicate operations if we have more nested if ops like this example:
+ * ```
+ * if (a > 5) {
+ *   if (a > 10) {
+ *     return SOMETHING_A;
+ *   }
+ *   print("a > 5");
+ * }
+ * else {
+ *   print("a <= 5");
+ * }
+ * print("no early return");
+ * return SOMETHING_B;
+ * ```
+ * would be converted to (MLIR pseudo code)
+ * ```
+ * return scf.if(a > 5) {
+ *   yield scf.if(a > 10) {
+ *     yield SOMETHING_A;
+ *   } else {
+ *     print("a > 5");
+ *     print("no early return"); // duplicated
+ *     yield SOMETHING_B; // duplicated
+ *   }
+ * } else {
+ *   print("a <= 5");
+ *   print("no early return");
+ *   yield SOMETHING_B;
+ * }
+ * ```
+ *
+ * @param funcBlock The block of the function with possible early returns
+ */
 void rectifyEarlyReturns(mlir::Block *funcBlock) {
     if(funcBlock->empty())
         return;

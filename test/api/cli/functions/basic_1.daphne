@@ -1,3 +1,4 @@
+// simple function call
 def function() {
     X = rand(100, 10, 0.0, 1.0, 1.0, 7);
     print(sum(X) * 3.1415);

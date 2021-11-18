@@ -1,3 +1,4 @@
+// simple untyped input
 def function(mat) {
     print(sum(mat));
 }

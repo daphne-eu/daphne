@@ -1,3 +1,4 @@
+// simple untyped input with returns
 def my_print(obj) {
     print(obj);
 }

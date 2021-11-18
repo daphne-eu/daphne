@@ -1,3 +1,4 @@
+// simple recursive function with multiple returns
 def fib(n : si64) -> si64 {
     if (n <= 0)
         return 0;

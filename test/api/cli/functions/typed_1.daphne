@@ -1,3 +1,4 @@
+// multiple definitions with different types (all typed)
 def function(mat : matrix<f64>) {
     print(sum(mat));
 }

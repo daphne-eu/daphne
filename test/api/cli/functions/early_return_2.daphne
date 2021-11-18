@@ -1,3 +1,4 @@
+// Check if returns only in if and else are enough
 def f(a) {
     print(a);
     if (a > 0) {

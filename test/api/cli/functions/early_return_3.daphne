@@ -1,3 +1,4 @@
+// Check that both early return only in if and only in else case work
 def f(a) {
     if (a > 0) {
         return 1;

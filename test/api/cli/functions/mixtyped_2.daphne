@@ -1,3 +1,4 @@
+// multiple definitions with different types (some typed, some untyped)
 def f(mat : matrix<f64>, a, b) {
     print("a");
 }

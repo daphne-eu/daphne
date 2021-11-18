@@ -202,26 +202,26 @@ namespace {
             }
             visited.insert(function);
             function.walk([&](daphne::GenericCallOp callOp) {
-              auto calledFunction = functions[callOp.callee().str()];
-              if(isFunctionTemplate(calledFunction)) {
-                  // check for existing specialization that matches
-                  FuncOp specializedFunc = tryReuseExistingSpecialization(callOp, calledFunction);
-                  if(!specializedFunc) {
-                      // Create specialized function
-                      auto specializedTypes =
-                          getSpecializedFuncArgTypes(calledFunction.getType(), callOp.getOperandTypes());
-                      specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
-                  }
+                auto calledFunction = functions[callOp.callee().str()];
+                if(isFunctionTemplate(calledFunction)) {
+                    // check for existing specialization that matches
+                    FuncOp specializedFunc = tryReuseExistingSpecialization(callOp, calledFunction);
+                    if(!specializedFunc) {
+                        // Create specialized function
+                        auto specializedTypes =
+                            getSpecializedFuncArgTypes(calledFunction.getType(), callOp.getOperandTypes());
+                        specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
+                    }
 
-                  callOp.calleeAttr(specializedFunc.sym_nameAttr());
-                  if(fixResultTypes(callOp->getResults(), specializedFunc.getType())) {
-                      inferTypesInFunction(function);
-                  }
-                  specializeCallsInFunction(specializedFunc);
-              }
-              else {
-                  specializeCallsInFunction(calledFunction);
-              }
+                    callOp.calleeAttr(specializedFunc.sym_nameAttr());
+                    if(fixResultTypes(callOp->getResults(), specializedFunc.getType())) {
+                        inferTypesInFunction(function);
+                    }
+                    specializeCallsInFunction(specializedFunc);
+                }
+                else {
+                    specializeCallsInFunction(calledFunction);
+                }
             });
         }
 
@@ -230,21 +230,35 @@ namespace {
     };
 }
 
+/**
+ * @brief Generate and call specialized functions from template definitions and remove templates.
+ *
+ * We start entry functions (like `main` or `dist`) and then proceed as follows:
+ *
+ * 1. Infer types (types up to the first `GenericCallOp` will be inferred for sure)
+ * 2. If the function called by `GenericCallOp` is untyped (input types are unknown), we clone it and set the input types
+ *      to the types used in the call. For this specialized function we then do the same steps starting at 1.
+ * 3. With the (possibly cloned) specialized function we now know the outputs. Starting here we infer up to the next
+ *      `GenericCallOp` and go back to step 2.
+ * 4. When all `GenericCallOp`s are specialized we are finished
+ *
+ * Finally we delete all the template functions such that the MLIR code can be verified for correct input and output types.
+ */
 void SpecializeGenericFunctionsPass::runOnOperation() {
     auto module = getOperation();
 
     module.walk([&](FuncOp funcOp) {
-      functions.insert({funcOp.sym_name().str(), funcOp});
+        functions.insert({funcOp.sym_name().str(), funcOp});
     });
 
-    // `initialFunctions` will hold entry functions like `main`, but also `dist` (for distributed computation)
+    // `entryFunctions` will hold entry functions like `main`, but also `dist` (for distributed computation)
     // we could also directly specify the names `main`, `dist` etc. (if we add more `entry` functions), or just set
     // an attribute flag for those functions.
-    std::vector<FuncOp> initialFunctions;
+    std::vector<FuncOp> entryFunctions;
     for(const auto &entry : functions) {
-        initialFunctions.push_back(entry.second);
+        entryFunctions.push_back(entry.second);
     }
-    for(const auto &function : initialFunctions) {
+    for(const auto &function : entryFunctions) {
         if(isFunctionTemplate(function) || visited.count(function))
             continue;
         if(!inferTypesInFunction(function)) {

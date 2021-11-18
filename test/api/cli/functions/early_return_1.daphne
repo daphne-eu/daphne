@@ -1,3 +1,4 @@
+// check a complicated early return case
 def f(a) {
     print("a =");
     print(a);

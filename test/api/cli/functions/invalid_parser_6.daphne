@@ -1,3 +1,4 @@
+// invalid type of argument
 def f(a : matrix) {
     print(a);
 }

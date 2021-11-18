@@ -1,3 +1,4 @@
+// call functions with untyped matrix and untyped rest
 def function(mat : matrix, a, b) {
     print(sum(mat));
     print(a + b);

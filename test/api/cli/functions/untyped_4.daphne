@@ -1,3 +1,4 @@
+// simple untyped input with returns with matrix type inferred from inputs (untyped matrix test)
 def my_rand(r, c, s, e) {
     return rand(r, c, s, e, 1.0, 42);
 }
