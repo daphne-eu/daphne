@@ -32,8 +32,9 @@
 void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
     auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
-    mlir::Location loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
-    
+    // TODO: we could remove `sourceName` arg and instead use location from module for filename
+    auto module = llvm::cast<mlir::ModuleOp>(builder.getBlock()->getParentOp());
+
     // Create a single "main"-function and insert DaphneIR operations into it.
     auto * funcBlock = new mlir::Block();
     {
@@ -53,7 +54,11 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
         DaphneDSLVisitor visitor(module, builder, args);
         visitor.visitScript(ctx);
-        
+
+        mlir::Location loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
+        if(!builder.getBlock()->empty()) {
+            loc = builder.getBlock()->back().getLoc();
+        }
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto * terminator = funcBlock->getTerminator();
@@ -61,6 +66,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         funcBlock->getArgumentTypes(),
         terminator->getOperandTypes()
     );
+    auto loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
     auto func = builder.create<mlir::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);
 }

@@ -52,14 +52,13 @@ daphne::InferenceConfig::InferenceConfig(bool PartialInferenceAllowed,
 // able to infer different sets of properties.
 class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
     daphne::InferenceConfig cfg;
-public:
 
-    static WalkResult walkOp(Operation * op) {
+    std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         // Type inference.
         if(returnsUnknownType(op)) {
             if (auto inferTypesOp = llvm::dyn_cast<daphne::InferTypes>(op))
                 inferTypesOp.inferTypes();
-            else if (!cfg.isPartialInferenceAllowed)
+            else if (!cfg.partialInferenceAllowed)
                 // TODO As soon as the run-time can handle unknown
                 // data/value types, we do not need to throw here anymore.
                 throw std::runtime_error(
@@ -215,7 +214,7 @@ public:
         }
         // Continue the walk normally.
         return WalkResult::advance();
-    }
+    };
 
 public:
     InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {}
