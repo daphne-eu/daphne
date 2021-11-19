@@ -61,22 +61,21 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
     //}
 
     if (module) {
+        // This flag is really useful to figure out why the lowering failed
+        //llvm::DebugFlag = true;
         {
             mlir::PassManager pm(&context_);
             pm.enableVerifier(false);
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
             pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
             if(failed(pm.run(module))) {
                 module->dump();
                 module->emitError("pass error for generic functions");
                 return false;
             }
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
         }
         mlir::PassManager pm(&context_);
-
-        // This flag is really useful to figure out why the lowering failed
-        //llvm::DebugFlag = true;
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
         if(distributed_) {

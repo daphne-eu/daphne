@@ -75,8 +75,9 @@ void inferTypes_EwCmpOp(EwCmpOp * op) {
     else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
         t = mt.withSameElementType();
     else {
-        Builder builder(op->getContext());
-        t = builder.getI1Type();
+        // TODO: check rhsType?
+        // same as input type, not bool (design decision)
+        t = lhsType;
     }
     op->getResult().setType(t);
 }
