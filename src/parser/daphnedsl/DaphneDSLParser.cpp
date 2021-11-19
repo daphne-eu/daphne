@@ -29,10 +29,10 @@
 
 #include <istream>
 
-void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
+void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
     auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
     
     // Create a single "main"-function and insert DaphneIR operations into it.
     auto * funcBlock = new mlir::Block();
@@ -42,7 +42,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         
         // Run ANTLR-based DaphneDSL parser.
         antlr4::ANTLRInputStream input(stream);
-        input.name = "whateverFile"; // TODO
+        input.name = sourceName;
         DaphneDSLGrammarLexer lexer(&input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(&errorListener);

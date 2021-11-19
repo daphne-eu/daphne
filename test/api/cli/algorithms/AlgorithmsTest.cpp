@@ -23,17 +23,28 @@
 #include <sstream>
 #include <string>
 
-const std::string dirPath = "test/api/cli/controlflow/";
+const std::string dirPath = "test/api/cli/algorithms/";
 
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_CONTROLFLOW) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRefSimple(dirPath, name, i); \
-            } \
-        } \
-    }
+// For now, we just check if the algorithms terminate successfully, but we
+// don't check the results.
 
-MAKE_TEST_CASE("if", 7)
-MAKE_TEST_CASE("for", 18)
-MAKE_TEST_CASE("while", 8)
+TEST_CASE("components", TAG_ALGORITHMS) {
+    checkDaphneStatusCode(
+            StatusCode::SUCCESS, dirPath + "components.daphne",
+            "--args", "n=100", "e=1000"
+    );
+}
+
+TEST_CASE("kmeans", TAG_ALGORITHMS) {
+    checkDaphneStatusCode(
+            StatusCode::SUCCESS, dirPath + "kmeans.daphne",
+            "--args", "r=100", "c=5", "f=20", "i=10"
+    );
+}
+
+TEST_CASE("lm", TAG_ALGORITHMS) {
+    checkDaphneStatusCode(
+            StatusCode::SUCCESS, dirPath + "lm.daphne",
+            "--args", "r=100", "c=20"
+    );
+}

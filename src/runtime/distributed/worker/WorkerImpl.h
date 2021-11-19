@@ -25,27 +25,31 @@
 #include "runtime/distributed/proto/worker.pb.h"
 #include "runtime/distributed/proto/worker.grpc.pb.h"
 
-class WorkerImpl final : public distributed::Worker::Service
+class WorkerImpl final 
 {
 public:
     const static std::string DISTRIBUTED_FUNCTION_NAME;
+    std::unique_ptr<grpc::ServerCompletionQueue> cq_;
 
     WorkerImpl();
-    ~WorkerImpl() override;
-
+    ~WorkerImpl();
+    
+    void HandleRpcs();
+    // void StartHandleThread();
+    // void TerminateHandleThread();
     grpc::Status Store(::grpc::ServerContext *context,
                          const ::distributed::Matrix *request,
-                         ::distributed::StoredData *response) override;
+                         ::distributed::StoredData *response) ;
     grpc::Status Compute(::grpc::ServerContext *context,
                          const ::distributed::Task *request,
-                         ::distributed::ComputeResult *response) override;
+                         ::distributed::ComputeResult *response) ;
     grpc::Status Transfer(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                          ::distributed::Matrix *response) override;
+                          ::distributed::Matrix *response);
+    distributed::Worker::AsyncService service_;
 private:
     uint64_t tmp_file_counter_ = 0;
     std::unordered_map<std::string, void *> localData_;
-
     /**
      * Creates a vector holding pointers to the inputs as well as the outputs. This vector can directly be passed
      * to the `ExecutionEngine::invokePacked` method.
@@ -61,7 +65,7 @@ private:
 
     DenseMatrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
-    static distributed::WorkData::DataCase dataCaseForType(mlir::Type type) ;
+    static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H

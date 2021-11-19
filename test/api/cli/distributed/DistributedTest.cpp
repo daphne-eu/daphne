@@ -25,6 +25,8 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include<thread>
+
 const std::string dirPath = "test/api/cli/distributed/";
 
 TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
@@ -35,6 +37,8 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
     WorkerImpl workerImpl2;
     auto server1 = startDistributedWorker(addr1, &workerImpl1);
     auto server2 = startDistributedWorker(addr2, &workerImpl2);
+    std::thread thread1 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl1);
+    std::thread thread2 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl2);
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
@@ -59,4 +63,10 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
 
         CHECK(outLocal.str() == outDist.str());
     }
+    server1->Shutdown();
+    workerImpl1.cq_->Shutdown();
+    thread1.join();
+    server2->Shutdown();
+    workerImpl2.cq_->Shutdown();
+    thread2.join();
 }

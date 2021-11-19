@@ -32,12 +32,16 @@ int main(int argc, char *argv[])
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
 
     WorkerImpl my_service;
-    builder.RegisterService(&my_service);
+    my_service.cq_ = builder.AddCompletionQueue();
+    builder.RegisterService(&my_service.service_);
 
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
     std::cout << "Started Distributed Worker on `" << addr << "`\n";
-    server->Wait();
+    my_service.HandleRpcs();
+    // TODO shutdown handling
+    // server->Shutdown();
+    // my_service.cq_->Shutdown();
 
     return 0;
 }

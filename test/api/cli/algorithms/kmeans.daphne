@@ -1,0 +1,24 @@
+// K-means clustering.
+
+// Arguments:
+// - r ... number of records
+// - c ... number of centroids
+// - f ... number of features
+// - i ... number of iterations
+
+// Data generation.
+X = rand($r, $f, 0.0, 1.0, 1, -1);
+C = rand($c, $f, 0.0, 1.0, 1, -1);
+
+// K-means clustering (decisive part).
+for(i in 1:$i) {
+    D = (X @ t(C)) * -2.0 + t(sum(C ^ 2.0, 0));
+    minD = aggMin(D, 0);
+    P = D <= minD;
+    P = P / sum(P, 0);
+    P_denom = sum(P, 1);
+    C = (t(P) @ X) / t(P_denom);
+}
+
+// Result output.
+print(C);

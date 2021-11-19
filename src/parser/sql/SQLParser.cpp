@@ -33,12 +33,12 @@ void SQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
     view = arg;
 }
 
-mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream){
+mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName){
     CancelingErrorListener errorListener;
     auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
     {
         antlr4::ANTLRInputStream input(stream);
-        input.name = "whateverFile"; // TODO
+        input.name = sourceName;
         SQLGrammarLexer lexer(&input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(&errorListener);
@@ -56,6 +56,6 @@ mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream 
     }
 }
 
-void SQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream){
-    parseStreamFrame(builder, stream);
+void SQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName){
+    parseStreamFrame(builder, stream, sourceName);
 }

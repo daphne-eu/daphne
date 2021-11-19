@@ -22,6 +22,7 @@
 // tag macros separated by whitespace, e.g., if TAG_A is "[a]" and TAG_B is
 // "[b]", then TAG_A TAG_B is "[a]" "[b]", which is equivalent to "[a][b]".
 
+#define TAG_ALGORITHMS "[algorithms]"
 #define TAG_CONTROLFLOW "[controlflow]"
 #define TAG_DATASTRUCTURES "[datastructures]"
 #define TAG_DISTRIBUTED "[distributed]"
