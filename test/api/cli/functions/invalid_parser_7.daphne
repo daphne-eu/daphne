@@ -1,0 +1,5 @@
+// invalid type of argument (scalar)
+def f(a : f64) {
+    print(a);
+}
+f(1);

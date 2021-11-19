@@ -1,0 +1,8 @@
+// invalid non-top-level function definition in if
+X = rand(100, 10, 0.0, 1.0, 1.0, 7);
+if (sum(X) > 1.0) {
+    def function(mat : matrix<f64>) {
+        print(sum(mat));
+    }
+    print("sum");
+}

@@ -1,0 +1,5 @@
+// invalid number of calling arguments (too few)
+def f(a, b) {
+    print(a);
+}
+f(1);

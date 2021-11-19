@@ -1,0 +1,14 @@
+// simple untyped input with returns with matrix type inferred from inputs (untyped matrix test)
+def my_rand(r, c, s, e) {
+    return rand(r, c, s, e, 1.0, 42);
+}
+
+def my_mat_print(obj : matrix) {
+    print("matrix:");
+    print(obj);
+}
+
+A = my_rand(10, 10, 0.0, 1.0);
+B = my_rand(10, 10, 0, 10);
+my_mat_print(A);
+my_mat_print(B);

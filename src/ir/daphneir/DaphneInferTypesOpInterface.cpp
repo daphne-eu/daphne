@@ -75,10 +75,34 @@ void inferTypes_EwCmpOp(EwCmpOp * op) {
     else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
         t = mt.withSameElementType();
     else {
-        Builder builder(op->getContext());
-        t = builder.getI1Type();
+        // TODO: check rhsType?
+        // same as input type, not bool (design decision)
+        t = lhsType;
     }
     op->getResult().setType(t);
+}
+
+template<class EwArithOp>
+void inferTypes_EwArithOp(EwArithOp * op) {
+    Type lhsType = op->lhs().getType();
+    Type rhsType = op->rhs().getType();
+    Type t;
+    if(auto mt = lhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else {
+        // TODO: check rhsType?
+        t = lhsType;
+    }
+    op->getResult().setType(t);
+}
+
+template<class AllAggOp>
+void inferTypes_AllAggOp(AllAggOp * op) {
+    Type argType = op->arg().getType();
+    // TODO: f64, si64 and ui64 for sum?
+    op->getResult().setType(argType.cast<daphne::MatrixType>().getElementType());
 }
 
 // ****************************************************************************
@@ -134,6 +158,18 @@ void daphne::CreateFrameOp::inferTypes() {
     for(Value col : cols())
         colTypes.push_back(col.getType().dyn_cast<daphne::MatrixType>().getElementType());
     getResult().setType(daphne::FrameType::get(getContext(), colTypes));
+}
+
+void daphne::RandMatrixOp::inferTypes() {
+    auto elTy = min().getType();
+    if(elTy == UnknownType::get(getContext())) {
+        elTy = max().getType();
+    }
+    else {
+        assert((max().getType() == UnknownType::get(getContext()) || elTy == max().getType())
+            && "Min and max need to have the same type");
+    }
+    getResult().setType(daphne::MatrixType::get(getContext(), elTy));
 }
 
 void daphne::EwEqOp::inferTypes() {
@@ -212,4 +248,80 @@ void daphne::SetColLabelsPrefixOp::inferTypes() {
     getResult().setType(
             arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()
     );
+}
+
+void daphne::AllAggMaxOp::inferTypes() {
+    return inferTypes_AllAggOp(this);
+}
+
+void daphne::AllAggMeanOp::inferTypes() {
+    return inferTypes_AllAggOp(this);
+}
+
+void daphne::AllAggMinOp::inferTypes() {
+    return inferTypes_AllAggOp(this);
+}
+
+void daphne::AllAggStddevOp::inferTypes() {
+    return inferTypes_AllAggOp(this);
+}
+
+void daphne::AllAggSumOp::inferTypes() {
+    return inferTypes_AllAggOp(this);
+}
+
+void daphne::AllAggVarOp::inferTypes() {
+    return inferTypes_AllAggOp(this);
+}
+
+void daphne::EwAddOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwAndOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwConcatOp::inferTypes() {
+    getResult().setType(StringType::get(getContext()));
+}
+
+void daphne::EwDivOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwLogOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwMaxOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwMinOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwModOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwMulOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwOrOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwPowOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwSubOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
+}
+
+void daphne::EwXorOp::inferTypes() {
+    return inferTypes_EwArithOp(this);
 }

@@ -21,6 +21,8 @@ set(TEST_SOURCES
         api/cli/algorithms/AlgorithmsTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
+        api/cli/functions/FunctionsTest.cpp
+        api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp

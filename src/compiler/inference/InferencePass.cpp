@@ -28,6 +28,13 @@
 
 using namespace mlir;
 
+daphne::InferenceConfig::InferenceConfig(bool PartialInferenceAllowed,
+                                         bool TypeInference,
+                                         bool ShapeInference,
+                                         bool FrameLabelInference)
+    : partialInferenceAllowed(PartialInferenceAllowed), typeInference(TypeInference), shapeInference(ShapeInference),
+      frameLabelInference(FrameLabelInference) {}
+
 /**
  * @brief A compiler pass infering various properties of the data objects.
  * 
@@ -44,12 +51,14 @@ using namespace mlir;
 // make them configurable, whereby different instances of this pass should be
 // able to infer different sets of properties.
 class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
-    static WalkResult walkOp(Operation * op) {
+    daphne::InferenceConfig cfg;
+
+    std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         // Type inference.
         if(returnsUnknownType(op)) {
             if (auto inferTypesOp = llvm::dyn_cast<daphne::InferTypes>(op))
                 inferTypesOp.inferTypes();
-            else
+            else if (!cfg.partialInferenceAllowed)
                 // TODO As soon as the run-time can handle unknown
                 // data/value types, we do not need to throw here anymore.
                 throw std::runtime_error(
@@ -60,8 +69,8 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
         }
 
         // Frame label inference.
-        if (returnsFrameWithUnknownLabels(op)) {
-            if (auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
+        if(cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {
+            if(auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
                 inferFrameLabelsOp.inferFrameLabels();
             // Else: Not a problem, since currently we use the frame labels
             // only to aid type inference, and for this purpose, we don't
@@ -69,7 +78,7 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
         }
 
         // Shape inference.
-        if(returnsUnknownShape(op)) {
+        if(cfg.shapeInference && returnsUnknownShape(op)) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
             // Handle all non-SCF operations
@@ -205,11 +214,17 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
         }
         // Continue the walk normally.
         return WalkResult::advance();
-    }
-    
+    };
+
 public:
+    InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {}
+
     void runOnFunction() override {
         getFunction().walk<WalkOrder::PreOrder>(walkOp);
+        // infer function return types
+        getFunction().setType(FunctionType::get(&getContext(),
+            getFunction().getType().getInputs(),
+            getFunction().body().back().getTerminator()->getOperandTypes()));
     }
 
     static bool returnsUnknownType(Operation *op) {
@@ -244,6 +259,6 @@ public:
     }
 };
 
-std::unique_ptr<Pass> daphne::createInferencePass() {
-    return std::make_unique<InferencePass>();
+std::unique_ptr<Pass> daphne::createInferencePass(daphne::InferenceConfig cfg) {
+    return std::make_unique<InferencePass>(cfg);
 }
