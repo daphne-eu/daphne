@@ -337,7 +337,8 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::CallKernelOp,
             daphne::CreateVariadicPackOp,
             daphne::StoreVariadicPackOp,
-            daphne::VectorizedPipelineOp
+            daphne::VectorizedPipelineOp,
+            daphne::GenericCallOp
     >();
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.

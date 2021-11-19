@@ -45,6 +45,8 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
 }
 
 ssize_t getSizeOrUnknown(Value v) {
+    if (!v.getDefiningOp()) // check if block argument
+        return -1;
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
             return intAttr.getValue().getLimitedValue();

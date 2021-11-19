@@ -198,6 +198,16 @@ public:
             start->getLine(),
             start->getCharPositionInLine());
     }
+
+    /**
+     * @brief Creates an unique symbol for function symbol names by appending an unique id.
+     * @param functionName the function name
+     * @return the unique function name, due to an unique id
+     */
+    std::string getUniqueFunctionSymbol(const std::string &functionName) {
+        static unsigned functionUniqueId = 0;
+        return functionName + "-" + std::to_string(++functionUniqueId);
+    }
 };
 
 #endif //SRC_PARSER_PARSERUTILS_H

@@ -463,7 +463,46 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     std::vector<mlir::Value> args;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
         args.push_back(utils.valueOrError(visit(ctx->expr(i))));
-    
+
+    // search user defined functions
+    auto range = functionsSymbolMap.equal_range(func);
+    // TODO: find not only a matching version, but the `most` specialized
+    for (auto it = range.first; it != range.second; ++it) {
+        auto userDefinedFunc = it->second;
+        auto funcTy = userDefinedFunc.getType();
+        auto compatible = true;
+
+        if (funcTy.getInputs().size() != args.size()) {
+            continue;
+        }
+        for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
+            auto funcInputType = std::get<0>(compIt);
+            auto argVal = std::get<1>(compIt);
+
+            auto funcMatTy = funcInputType.dyn_cast<mlir::daphne::MatrixType>();
+            auto specializedMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
+            bool isMatchingUnknownMatrix =
+                funcMatTy && specializedMatTy && funcMatTy.getElementType() == utils.unknownType;
+            if(funcInputType != argVal.getType() && !isMatchingUnknownMatrix && funcInputType != utils.unknownType) {
+                compatible = false;
+                break;
+            }
+        }
+        if (compatible) {
+            // TODO: variable results
+            return builder
+                .create<mlir::daphne::GenericCallOp>(loc,
+                    userDefinedFunc.sym_name(),
+                    args,
+                    userDefinedFunc.getType().getResults())
+                .getResult(0);
+        }
+    }
+    if (range.second != range.first) {
+        // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
+        throw std::runtime_error("No function definition of `" + func + "` found with matching types");
+    }
+
     // Create DaphneIR operation for the built-in function.
     return builtins.build(loc, func, args);
 }
@@ -755,4 +794,349 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
                 builder.getBoolAttr(val)
         )
     );
+}
+
+void removeOperationsBeforeReturnOp(mlir::daphne::ReturnOp firstReturnOp, mlir::Block *block) {
+    auto op = &block->getOperations().back();
+    // erase in reverse order to ensure no uses will be left
+    while(op != firstReturnOp) {
+        auto prev = op->getPrevNode();
+        op->emitWarning() << "Operation is ignored, as the function will return at " << firstReturnOp.getLoc();
+        op->erase();
+        op = prev;
+    }
+}
+
+/**
+ * @brief Ensures that the `caseBlock` has correct behaviour by appending operations, as the other case has an early return.
+ *
+ * @param ifOpWithEarlyReturn The old `IfOp` with the early return
+ * @param caseBlock The new block for the case without a `ReturnOp`
+ */
+void rectifyIfCaseWithoutReturnOp(mlir::scf::IfOp ifOpWithEarlyReturn, mlir::Block *caseBlock) {
+    // ensure there is a `YieldOp` (for later removal of such)
+    if(caseBlock->empty() || !llvm::isa<mlir::scf::YieldOp>(caseBlock->back())) {
+        mlir::OpBuilder builder(ifOpWithEarlyReturn->getContext());
+        builder.setInsertionPoint(caseBlock, caseBlock->end());
+        builder.create<mlir::scf::YieldOp>(builder.getUnknownLoc());
+    }
+
+    // As this if-case doesn't have an early return we need to move/clone operations that should happen
+    // into this case.
+    auto opsAfterIf = ifOpWithEarlyReturn->getNextNode();
+    while(opsAfterIf) {
+        auto next = opsAfterIf->getNextNode();
+        if(auto yieldOp = llvm::dyn_cast<mlir::scf::YieldOp>(opsAfterIf)) {
+            auto parentOp = llvm::dyn_cast<mlir::scf::IfOp>(yieldOp->getParentOp());
+            if(!parentOp) {
+                throw std::runtime_error("Early return not nested in `if`s not yet supported!");
+            }
+            next = parentOp->getNextNode();
+        }
+        if(opsAfterIf->getBlock() == ifOpWithEarlyReturn->getBlock()) {
+            // can be moved inside if
+            opsAfterIf->moveBefore(caseBlock, caseBlock->end());
+        }
+        else {
+            // can't move them directly, need clone (operations will be needed later)
+            auto clonedOp = opsAfterIf->clone();
+            mlir::OpBuilder builder(clonedOp->getContext());
+            builder.setInsertionPoint(caseBlock, caseBlock->end());
+            builder.insert(clonedOp);
+        }
+        opsAfterIf = next;
+    }
+
+    // Remove `YieldOp`s and replace the result values of `IfOp`s used by operations that got moved in
+    // the previous loop with the correct values.
+    auto currIfOp = ifOpWithEarlyReturn;
+    auto currOp = &caseBlock->front();
+    while(auto nextOp = currOp->getNextNode()) {
+        if(auto yieldOp = llvm::dyn_cast<mlir::scf::YieldOp>(currOp)) {
+            // cast was checked in previous loop
+            for(auto it : llvm::zip(currIfOp.getResults(), yieldOp.getOperands())) {
+                auto ifResult = std::get<0>(it);
+                auto yieldedVal = std::get<1>(it);
+                ifResult.replaceUsesWithIf(yieldedVal, [&](mlir::OpOperand &opOperand) {
+                    return opOperand.getOwner()->getBlock() == caseBlock;
+                });
+            }
+            currIfOp = llvm::dyn_cast_or_null<mlir::scf::IfOp>(currIfOp->getParentOp());
+            yieldOp->erase();
+        }
+        currOp = nextOp;
+    }
+}
+
+mlir::scf::YieldOp replaceReturnWithYield(mlir::daphne::ReturnOp returnOp) {
+    mlir::OpBuilder builder(returnOp);
+    auto yieldOp = builder.create<mlir::scf::YieldOp>(returnOp.getLoc(), returnOp.getOperands());
+    returnOp->erase();
+    return yieldOp;
+}
+
+void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
+    // FIXME: handle case where early return is in else block
+    auto insertThenBlock = [&](mlir::OpBuilder &nested, mlir::Location loc) {
+        auto newThenBlock = nested.getBlock();
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), ifOp.thenBlock()->getOperations());
+
+        auto returnOps = newThenBlock->getOps<mlir::daphne::ReturnOp>();
+        if(!returnOps.empty()) {
+            // NOTE: we ignore operations after return, could also throw an error
+            removeOperationsBeforeReturnOp(*returnOps.begin(), newThenBlock);
+        }
+        else {
+            rectifyIfCaseWithoutReturnOp(ifOp, newThenBlock);
+        }
+        auto returnOp = llvm::dyn_cast<mlir::daphne::ReturnOp>(newThenBlock->back());
+        if(!returnOp) {
+            // this should never happen, if it does check the `rectifyCaseByAppendingNecessaryOperations` function
+            throw std::runtime_error("Final operation in then case has to be return op");
+        }
+        replaceReturnWithYield(returnOp);
+    };
+    auto insertElseBlock = [&](mlir::OpBuilder &nested, mlir::Location loc) {
+        auto newElseBlock = nested.getBlock();
+        if(!ifOp.elseRegion().empty()) {
+            newElseBlock->getOperations().splice(newElseBlock->end(), ifOp.elseBlock()->getOperations());
+        }
+        // TODO: check if already final operation is a return
+
+        auto returnOps = newElseBlock->getOps<mlir::daphne::ReturnOp>();
+        if(!returnOps.empty()) {
+            // NOTE: we ignore operations after return, could also throw an error
+            removeOperationsBeforeReturnOp(*returnOps.begin(), newElseBlock);
+        }
+        else {
+            rectifyIfCaseWithoutReturnOp(ifOp, newElseBlock);
+        }
+        auto returnOp = llvm::dyn_cast<mlir::daphne::ReturnOp>(newElseBlock->back());
+        if(!returnOp) {
+            // this should never happen, if it does check the `rectifyCaseByAppendingNecessaryOperations` function
+            throw std::runtime_error("Final operation in else case has to be return op");
+        }
+        replaceReturnWithYield(returnOp);
+    };
+    mlir::OpBuilder builder(ifOp);
+
+    auto newIfOp = builder.create<mlir::scf::IfOp>(
+        builder.getUnknownLoc(),
+        resultTypes,
+        ifOp.condition(),
+        insertThenBlock,
+        insertElseBlock
+    );
+    builder.create<mlir::daphne::ReturnOp>(ifOp->getLoc(), newIfOp.getResults());
+    ifOp.erase();
+}
+
+/**
+ * @brief Adapts the block such that only a single return at the end of the block is present, by moving early returns in
+ * SCF-Ops.
+ *
+ * General procedure is finding the most nested early return and then SCF-Op by SCF-Op moves the return outside,
+ * putting the case without early return into the other case. This is repeated until all SCF-Ops are valid and
+ * only a final return exists. Might duplicate operations if we have more nested if ops like this example:
+ * ```
+ * if (a > 5) {
+ *   if (a > 10) {
+ *     return SOMETHING_A;
+ *   }
+ *   print("a > 5");
+ * }
+ * else {
+ *   print("a <= 5");
+ * }
+ * print("no early return");
+ * return SOMETHING_B;
+ * ```
+ * would be converted to (MLIR pseudo code)
+ * ```
+ * return scf.if(a > 5) {
+ *   yield scf.if(a > 10) {
+ *     yield SOMETHING_A;
+ *   } else {
+ *     print("a > 5");
+ *     print("no early return"); // duplicated
+ *     yield SOMETHING_B; // duplicated
+ *   }
+ * } else {
+ *   print("a <= 5");
+ *   print("no early return");
+ *   yield SOMETHING_B;
+ * }
+ * ```
+ *
+ * @param funcBlock The block of the function with possible early returns
+ */
+void rectifyEarlyReturns(mlir::Block *funcBlock) {
+    if(funcBlock->empty())
+        return;
+    while(true) {
+        size_t levelOfMostNested = 0;
+        mlir::daphne::ReturnOp mostNestedReturn;
+        funcBlock->walk([&](mlir::daphne::ReturnOp returnOp) {
+            size_t nested = 1;
+            auto op = returnOp.getOperation();
+            while(op->getBlock() != funcBlock) {
+                ++nested;
+                op = op->getParentOp();
+            }
+
+            if(nested > mostNestedReturn) {
+                mostNestedReturn = returnOp;
+                levelOfMostNested = nested;
+            }
+        });
+        if(!mostNestedReturn || mostNestedReturn == &funcBlock->back()) {
+            // finished!
+            break;
+        }
+
+        auto parentOp = mostNestedReturn->getParentOp();
+        if(auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
+            rectifyEarlyReturn(ifOp, mostNestedReturn->getOperandTypes());
+        }
+        else {
+            throw std::runtime_error(
+                "Early return in `" + parentOp->getName().getStringRef().str() + "` is not supported.");
+        }
+    }
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::FunctionStatementContext *ctx) {
+    auto loc = utils.getLoc(ctx->start);
+    // TODO: check that the function does not shadow a builtin
+    auto functionName = ctx->name->getText();
+    // TODO: global variables support in functions
+    auto globalSymbolTable = symbolTable;
+    symbolTable = ScopedSymbolTable();
+
+    // TODO: better check?
+    if(globalSymbolTable.getNumScopes() > 1) {
+        // TODO: create a function/class for throwing errors
+        std::string s;
+        llvm::raw_string_ostream stream(s);
+        stream << loc << ": Functions can only be defined at top-level";
+        throw std::runtime_error(s);
+    }
+
+    std::vector<std::string> funcArgNames;
+    std::vector<mlir::Type> funcArgTypes;
+    if(ctx->args) {
+        auto functionArguments = static_cast<std::vector<std::pair<std::string, mlir::Type>>>(visit(ctx->args));
+        for(const auto &pair : functionArguments) {
+            if(std::find(funcArgNames.begin(), funcArgNames.end(), pair.first) != funcArgNames.end()) {
+                throw std::runtime_error("Function argument name `" + pair.first + "` is used twice.");
+            }
+            funcArgNames.push_back(pair.first);
+            funcArgTypes.push_back(pair.second);
+        }
+    }
+
+    auto funcBlock = new mlir::Block();
+    for(auto it : llvm::zip(funcArgNames, funcArgTypes)) {
+        auto blockArg = funcBlock->addArgument(std::get<1>(it));
+        handleAssignmentPart(std::get<0>(it), symbolTable, blockArg);
+    }
+
+    mlir::Type returnType;
+    mlir::FuncOp functionOperation;
+    if(ctx->retTy) {
+        // early creation of FuncOp for recursion
+        returnType = visit(ctx->retTy);
+        functionOperation = createUserDefinedFuncOp(loc,
+            builder.getFunctionType(funcArgTypes, {returnType}),
+            functionName);
+    }
+
+    mlir::OpBuilder::InsertionGuard guard(builder);
+    builder.setInsertionPointToStart(funcBlock);
+    visitBlockStatement(ctx->bodyStmt);
+
+    rectifyEarlyReturns(funcBlock);
+    if(funcBlock->getOperations().empty()
+        || !funcBlock->getOperations().back().hasTrait<mlir::OpTrait::IsTerminator>()) {
+        builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->stop));
+    }
+
+    auto returnOpTypes = funcBlock->getTerminator()->getOperandTypes();
+    if(!functionOperation) {
+        // late creation if no return types defined
+        functionOperation = createUserDefinedFuncOp(loc,
+            builder.getFunctionType(funcArgTypes, returnOpTypes),
+            functionName);
+    }
+    else if(returnOpTypes != mlir::TypeRange({returnType})) {
+        throw std::runtime_error(
+            "Function `" + functionName + "` returns different type than specified in the definition");
+    }
+    functionOperation.body().push_front(funcBlock);
+
+    symbolTable = globalSymbolTable;
+    return functionOperation;
+}
+
+mlir::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Location &loc,
+                                                       const mlir::FunctionType &funcType,
+                                                       const std::string &functionName) {
+    mlir::OpBuilder::InsertionGuard guard(builder);
+    auto *moduleBody = module.getBody();
+    auto functionSymbolName = utils.getUniqueFunctionSymbol(functionName);
+
+    builder.setInsertionPoint(moduleBody, moduleBody->begin());
+    auto functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
+    functionsSymbolMap.insert({functionName, functionOperation});
+    return functionOperation;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionArgs(DaphneDSLGrammarParser::FunctionArgsContext *ctx) {
+    std::vector<std::pair<std::string, mlir::Type>> functionArguments;
+    for(auto funcArgCtx: ctx->functionArg()) {
+        functionArguments.push_back(visitFunctionArg(funcArgCtx));
+    }
+    return functionArguments;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) {
+    auto ty = utils.unknownType;
+    if(ctx->ty) {
+        ty = visitFuncTypeDef(ctx->ty);
+    }
+    return std::make_pair(ctx->var->getText(), ty);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) {
+    auto type = utils.unknownType;
+    if(ctx->dataTy) {
+        std::string dtStr = ctx->dataTy->getText();
+        if(dtStr == "matrix") {
+            mlir::Type vt;
+            if(ctx->elTy)
+                vt = utils.getValueTypeByName(ctx->elTy->getText());
+            else
+                vt = utils.unknownType;
+            type = utils.matrixOf(vt);
+        }
+        else {
+            // TODO: should we do this?
+            // auto loc = utils.getLoc(ctx->start);
+            // emitError(loc) << "unsupported data type for function argument: " + dtStr;
+            throw std::runtime_error(
+                "unsupported data type for function argument: " + dtStr
+            );
+        }
+    }
+    else if(ctx->scalarTy)
+        type = utils.getValueTypeByName(ctx->scalarTy->getText());
+    return type;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::ReturnStatementContext *ctx) {
+    std::vector<mlir::Value> returns;
+    for(auto expr: ctx->expr()) {
+        returns.push_back(utils.valueOrError(visit(expr)));
+    }
+    return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
 }

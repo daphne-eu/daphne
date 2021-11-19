@@ -1,0 +1,33 @@
+// check a complicated early return case
+def f(a) {
+    print("a =");
+    print(a);
+    print("");
+    r = 0;
+    if (a > 0) {
+        print("a > 0");
+        if (a == 5) {
+            print("a == 5");
+            return 5;
+        }
+        print("a > 0 && a != 5");
+        if (a > 7) {
+            print("a > 7");
+            return 7;
+        }
+        print("a > 0 && a <= 7 && a != 5");
+        r = 1;
+        return r;
+    }
+    else {
+        print("a <= 0");
+        r = 5;
+        return a;
+    }
+}
+
+print(f(1));
+print(f(0));
+print(f(5));
+print(f(6));
+print(f(8));

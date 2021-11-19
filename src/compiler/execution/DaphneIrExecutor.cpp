@@ -53,30 +53,42 @@ DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUser
 
 bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 {
-    if (failed(mlir::verify(module))) {
-        module->emitError("failed to verify the module right after parsing");
-        return false;
-    }
+    // FIXME: operations in `template` functions (functions with unknown inputs) can't be verified
+    //  as their type constraints are not met.
+    //if (failed(mlir::verify(module))) {
+        //module->emitError("failed to verify the module right after parsing");
+        //return false;
+    //}
 
     if (module) {
-        mlir::PassManager pm(&context_);
-
         // This flag is really useful to figure out why the lowering failed
         //llvm::DebugFlag = true;
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+        {
+            mlir::PassManager pm(&context_);
+            pm.enableVerifier(false);
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+            pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
+            if(failed(pm.run(module))) {
+                module->dump();
+                module->emitError("pass error for generic functions");
+                return false;
+            }
+        }
+        mlir::PassManager pm(&context_);
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-        if (distributed_) {
+        if(distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
         }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
             // TODO: this can be moved outside without problem, should we?
             pm.addPass(mlir::createCanonicalizerPass());
         }
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));

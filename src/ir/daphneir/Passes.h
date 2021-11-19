@@ -27,13 +27,24 @@
 
 namespace mlir::daphne {
     std::unique_ptr<Pass> createDistributeComputationsPass();
-    std::unique_ptr<Pass> createInferencePass();
+    struct InferenceConfig {
+        InferenceConfig(bool PartialInferenceAllowed,
+                        bool TypeInference,
+                        bool ShapeInference,
+                        bool FrameLabelInference);
+        bool partialInferenceAllowed;
+        bool typeInference;
+        bool shapeInference;
+        bool frameLabelInference;
+    };
+    std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true});
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createLowerToLLVMPass();
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createRewriteSqlOpPass();
+    std::unique_ptr<Pass> createSpecializeGenericFunctionsPass();
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"

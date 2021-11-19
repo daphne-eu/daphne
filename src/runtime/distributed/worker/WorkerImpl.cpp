@@ -102,7 +102,7 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {
-        auto message = "Failed parse source string.\n";
+        auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
         return ::grpc::Status(::grpc::StatusCode::ABORTED, message);
     }

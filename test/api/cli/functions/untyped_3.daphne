@@ -1,0 +1,13 @@
+// simple untyped input with returns with matrix type inferred from inputs
+def my_rand(r, c, s, e) {
+    return rand(r, c, s, e, 1.0, 42);
+}
+
+def my_print(obj) {
+    print(obj);
+}
+
+A = my_rand(100, 10, 0.0, 1.0);
+B = my_rand(100, 10, 0, 10);
+my_print(sum(A));
+my_print(sum(B));
