@@ -279,9 +279,19 @@ class Daphne_AggOp<string name, Type inScalarType, list<OpTrait> traits = []> : 
 // Full aggregation
 // ----------------------------------------------------------------------------
 
-class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []>
-: Daphne_AggOp<name, scalarType, !listconcat(traits, [DeclareOpInterfaceMethods<InferTypesOpInterface>])> {
-    let results = (outs scalarType:$res);
+class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []> 
+: Daphne_AggOp<name, scalarType, !listconcat(traits, [
+    DeclareOpInterfaceMethods<DistributableOpInterface>,
+])> {
+    let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$arg);
+    let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
+    let builders = [
+        OpBuilder<(ins "Value":$arg), [{
+            // TODO This is wrong if lhs is a scalar and rhs is a matrix.
+            $_state.addTypes(arg.getType());
+            $_state.addOperands({arg});
+        }]>
+    ];
 }
 
 def Daphne_AllAggSumOp    : Daphne_AllAggOp<"sumAll", NumScalar>;

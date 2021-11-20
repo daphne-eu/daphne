@@ -56,6 +56,29 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
     return ret;
 }
 
+template<class AggAllOp>
+std::vector<mlir::Value> createEquivalentDistributedDAG_AggAllOp(AggAllOp *op, mlir::OpBuilder &builder,
+                                                                   mlir::ValueRange distributedInputs)
+{
+    auto loc = op->getLoc();    
+    auto compute = builder.create<daphne::DistributedComputeOp>(loc,
+        ArrayRef<Type>{daphne::HandleType::get(op->getContext(), op->getType())},
+        distributedInputs);
+    auto &block = compute.body().emplaceBlock();
+    auto argType = block.addArgument(distributedInputs[0].getType().cast<daphne::HandleType>().getDataType());    
+
+    {
+        mlir::OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPoint(&block, block.begin());
+
+        auto addOp = builder.create<AggAllOp>(loc, argType);
+        builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{addOp});
+    }
+
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(loc, compute.getResult(0))});
+    return ret;
+}
+
 // ****************************************************************************
 // CreateEquivalentDistributedDAG implementations
 // ****************************************************************************
@@ -66,6 +89,14 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
     { \
         return createEquivalentDistributedDAG_EwBinaryOp(this, builder, distributedInputs); \
     }
+
+#define IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(OP) \
+    std::vector<mlir::Value> mlir::daphne::OP::createEquivalentDistributedDAG(mlir::OpBuilder &builder, \
+        mlir::ValueRange distributedInputs) \
+    { \
+        return createEquivalentDistributedDAG_AggAllOp(this, builder, distributedInputs); \
+    }
+
 
 // Arithmetic
 IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwAddOp)
@@ -95,3 +126,11 @@ IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwLtOp)
 IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwLeOp)
 IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwGtOp)
 IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwGeOp)
+
+IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(AllAggSumOp)
+IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(AllAggMinOp)
+IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(AllAggMaxOp)
+IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(AllAggMeanOp)
+IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(AllAggVarOp)
+IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_AGGALLOP(AllAggStddevOp)
+
