@@ -43,7 +43,7 @@ struct EwBinaryMat {
 
 template<class DTRes, class DTLhs, class DTRhs>
 void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
-    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    	EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -61,7 +61,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
         
@@ -107,6 +107,8 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                     "width/height of the other"
             );
         }
+//        auto end = std::chrono::high_resolution_clock::now();
+//        std::cout << "EwBinaryMat time=" << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
     }
 };
 

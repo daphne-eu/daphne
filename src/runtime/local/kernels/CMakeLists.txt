@@ -59,6 +59,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
+            ${PREFIX}/AggCol.cu
             ${PREFIX}/../CUDA_Activation.cpp
             ${PREFIX}/../CUDA_Affine.cpp
             ${PREFIX}/../CUDA_BatchNorm.cpp
@@ -67,7 +68,14 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/../CUDA_Pooling.cpp
             ${PREFIX}/../CUDA_Softmax.cpp
             ${PREFIX}/../CUDA_kernel_instantiations.cpp
+            ${PREFIX}/ColBind.cu
+            ${PREFIX}/EwBinaryMat.cu
+            ${PREFIX}/EwBinaryMatSca.cu
+            ${PREFIX}/ExtractCol.cu
             ${PREFIX}/MatMul.cpp
+            ${PREFIX}/Solve.cu
+            ${PREFIX}/Syrk.cu
+            ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations_generated.cpp
     )
 
@@ -79,6 +87,6 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
     target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse
-            ${CUDA_cudnn_LIBRARY})
+            ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
     #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()
