@@ -36,7 +36,7 @@
 template<class DT>
 struct DistributedBroadcast
 {
-    static void apply(Handle<DT> *&res, const DT *arg, DCTX(ctx)) = delete;
+    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,9 +44,9 @@ struct DistributedBroadcast
 // ****************************************************************************
 
 template<class DT>
-void distributedBroadcast(Handle<DT> *&res, const DT *arg, DCTX(ctx))
+void distributedBroadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
 {
-    DistributedBroadcast<DT>::apply(res, arg, ctx);
+    DistributedBroadcast<DT>::apply(res, mat, ctx);
 }
 
 // ****************************************************************************
@@ -71,30 +71,52 @@ struct DistributedBroadcast<DenseMatrix<double>>
         }
         workers.push_back(workersStr);
 
-        distributed::Matrix protoMat;
-        ProtoDataConverter::convertToProto(mat, &protoMat);
+        auto blockSize = DistributedData::BLOCK_SIZE;
+
+        struct StoredInfo {
+            DistributedIndex *ix ;
+            std::string workerAddr;
+            std::shared_ptr<grpc::Channel> channel;
+        };
+        DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
         
-        Handle<DenseMatrix<double>>::HandleMap map;
-        for (auto i = 0ul; i < workers.size(); i++) {
-        
-            auto workerAddr = workers.at(i);
-                        
-            auto channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
-            auto stub = distributed::Worker::NewStub(channel);
+        Handle<DenseMatrix<double>>::HandleMap map;        
+        for (auto r = 0ul; r < (mat->getNumRows() - 1) / blockSize + 1; ++r) {
+            for (auto c = 0ul; c < (mat->getNumCols() - 1) / blockSize + 1; ++c) {
+                // Generate tile of data
+                distributed::Matrix protoMat;
+                ProtoDataConverter::convertToProto(mat,
+                    &protoMat,
+                    r * blockSize,
+                    std::min((r + 1) * blockSize, mat->getNumRows()),
+                    c * blockSize,
+                    std::min((c + 1) * blockSize, mat->getNumCols()));
+                // Broadcast to all workers
+                for (auto i = 0ul; i < workers.size(); i++) {
+                    auto workerAddr = workers.at(i);
 
-            grpc::ClientContext context;
+                    // ToDo reuse channels
+                    auto channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
+                    auto stub = distributed::Worker::NewStub(channel);
 
-            distributed::StoredData storedData;
-            auto status = stub->Store(&context, protoMat, &storedData);
-
-            if (!status.ok()) {
-                throw std::runtime_error(
-                    status.error_message()
-                );
+                    distributed::StoredData storedData;
+                    
+                    StoredInfo storedInfo ({new DistributedIndex(r, c), workerAddr, channel});
+                    caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
+                }
             }
-            DistributedIndex ix(0, 0);
+        }
+        // get results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto ix = response.storedInfo.ix;
+            auto workerAddr = response.storedInfo.workerAddr;
+            auto channel = response.storedInfo.channel;
+
+            auto storedData = response.result;
+
             DistributedData data(storedData, workerAddr, channel);
-            map.insert({ix, data});
+            map.insert({*ix, data});
         }
         res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
     }
