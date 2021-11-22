@@ -31,6 +31,16 @@
 struct DaphneUserConfig {
 
     bool use_cuda = false;
+    bool use_vectorized_exec = false;
+
+    bool debug_llvm = false;
+    bool explain_kernels = false;
+    bool explain_llvm = false;
+    bool explain_parsing = false;
+    bool explain_property_inference = false;
+    bool explain_sql = false;
+    bool explain_vectorized = false;
+
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
 
