@@ -182,13 +182,15 @@ namespace
             std::string_view op_name{op->getName().stripDialect().data()};
 #ifdef USE_CUDA
             //ToDo: this will go away with a gpu ops rewrite pass
-            std::array<std::string_view, 9> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
-                    "biasAddForward", "conv2DForward", "matMul", "maxPoolForward", "reluForward", "softmaxForward"});
-//            std::cout << op_name << std::endl;
+            std::array<std::string_view, 8> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
+                    "biasAddForward", "conv2DForward", "maxPoolForward", "reluForward", "softmaxForward",});
+            std::cout << op_name << std::endl;
             if(cfg.use_cuda) {
                 if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
                     callee << '_' << op_name << "_CUDA";
                 }
+                else if((op_name == std::string("matMul")) || (op_name.substr(0,2) == "ew"))
+                    callee << "CUDA_" << op_name;
                 else
                     callee << '_' << op_name;
             }
