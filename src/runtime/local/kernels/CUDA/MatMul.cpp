@@ -15,47 +15,36 @@
  */
 
 #include "MatMul.h"
+#include "Gemv.h"
 #include "runtime/local/context/CUDAContext.h"
 
-template<typename T>
-void launch_cublas_gemv(const CUDAContext& ctx, size_t m, size_t n, const T* alpha, const T* beta, const T* A, const T* x, T* y);
-
-template<>
-[[maybe_unused]] void launch_cublas_gemv<double>(const CUDAContext& ctx, size_t m, size_t n, const double* alpha, const double* beta,
-                        const double* A, const double* x, double* y) {
-    // fixed for row major format
-    CHECK_CUBLAS(cublasDgemv(ctx.getCublasHandle(), CUBLAS_OP_T, n, m, alpha, A, n, x, 1, beta, y, 1));
-}
-
-template<>
-[[maybe_unused]] void launch_cublas_gemv<float>(const CUDAContext& ctx, size_t m, size_t n, const float* alpha, const float* beta,
-                                const float* A, const float* x, float* y) {
-    // fixed for row major format
-    CHECK_CUBLAS(cublasSgemv(ctx.getCublasHandle(), CUBLAS_OP_T, n, m, alpha, A, n, x, 1, beta, y, 1));
-}
-
-template<typename T>
-void launch_cublas_gemm(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2, const T* alpha, const T* beta,
-        const T* d_lhs, const T* d_rhs, T* d_res);
-
-template<>
-[[maybe_unused]] void launch_cublas_gemm<float>(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2,
-        const float* alpha,    const float* beta, const float* d_lhs, const float* d_rhs, float* d_res) {
-    CHECK_CUBLAS(cublasSgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
-            nc1, beta, d_res, nc2));
-}
-
-template<>
-[[maybe_unused]] void launch_cublas_gemm<double>(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2,
-        const double* alpha, const double* beta, const double* d_lhs, const double* d_rhs, double* d_res) {
-    CHECK_CUBLAS(cublasDgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
-            nc1, beta, d_res, nc2));
-}
-
 namespace CUDA {
+
+    template<typename T>
+    void launch_cublas_gemm(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2, const T *alpha, const T *beta,
+                            const T *d_lhs, const T *d_rhs, T *d_res);
+
+    template<>
+    [[maybe_unused]] void launch_cublas_gemm<float>(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2,
+                                                    const float *alpha, const float *beta, const float *d_lhs,
+                                                    const float *d_rhs, float *d_res) {
+        CHECK_CUBLAS(
+                cublasSgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
+                            nc1, beta, d_res, nc2));
+    }
+
+    template<>
+    [[maybe_unused]] void launch_cublas_gemm<double>(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2,
+                                                     const double *alpha, const double *beta, const double *d_lhs,
+                                                     const double *d_rhs, double *d_res) {
+        CHECK_CUBLAS(
+                cublasDgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
+                            nc1, beta, d_res, nc2));
+    }
+
     template<typename T>
     void MatMul<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>>::apply(DenseMatrix<T> *&res, const DenseMatrix<T> *lhs,
-            const DenseMatrix<T> *rhs, DCTX(dctx)) {
+                                                                       const DenseMatrix<T> *rhs, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
         auto ctx = dctx->getCUDAContext(0);
 
@@ -69,7 +58,7 @@ namespace CUDA {
         const VT *d_lhs = lhs->getValuesCUDA();
         const VT *d_rhs = rhs->getValuesCUDA();
 
-        if (res == nullptr)
+        if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<T>>(nr1, nc2, false, ALLOCATION_TYPE::CUDA_ALLOC);
         VT *d_res = res->getValuesCUDA();
 
@@ -86,7 +75,7 @@ namespace CUDA {
 // https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spgemm/spgemm_example.c
     template<typename T>
     void MatMul<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T> *&res, const CSRMatrix<T> *lhs,
-            const CSRMatrix<T> *rhs, DCTX(dctx)) {
+                                                                 const CSRMatrix<T> *rhs, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
         auto ctx = dctx->getCUDAContext(0);
         cusparseHandle_t handle = ctx->getCusparseHandle();

@@ -97,6 +97,19 @@ template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostre
     os << val;
 }
 
+template<typename ValueType>
+DenseMatrix<ValueType>* DenseMatrix<ValueType>::vectorTranspose() const {
+    assert((this->numRows == 1 || this->numCols == 1) && "no-op transpose for vectors only");
+
+    auto transposed = DataObjectFactory::create<DenseMatrix<ValueType>>(this->getNumCols(), this->getNumRows(),
+                                                                        this->getValuesSharedPtr(), this->getCUDAValuesSharedPtr());
+    transposed->cuda_dirty = this->cuda_dirty;
+    transposed->cuda_buffer_current = this->cuda_buffer_current;
+    transposed->host_dirty = this->host_dirty;
+    transposed->host_buffer_current = this->host_buffer_current;
+    return transposed;
+}
+
 // Convert to an integer to print uint8_t values as numbers
 // even if they fall into the range of special ASCII characters.
 template <> void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const

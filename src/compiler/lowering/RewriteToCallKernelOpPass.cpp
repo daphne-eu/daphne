@@ -122,13 +122,30 @@ namespace
             std::stringstream callee;
             std::string_view op_name{op->getName().stripDialect().data()};
 #ifdef USE_CUDA
-            //ToDo: this will go away with a gpu ops rewrite pass
-            std::array<std::string_view, 9> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
-                    "biasAddForward", "conv2DForward", "matMul", "maxPoolForward", "reluForward", "softmaxForward"});
-//            std::cout << op_name << std::endl;
-            if(cfg.use_cuda) {
-                if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
-                    callee << '_' << op_name << "_CUDA";
+            if(cfg.use_cuda && op->hasTrait<mlir::OpTrait::CUDASupport>() && CompilerUtils::isMatrixComputation(op)) {
+                //ToDo: this will go away with a gpu ops rewrite pass
+
+                bool ignore_duplicate_pipeline = false;
+                auto cuda_attr = op->getAttr("cuda_device");
+                if(cuda_attr)
+                    ignore_duplicate_pipeline = cuda_attr.dyn_cast<IntegerAttr>().getInt() == -2;
+
+                if((cuda_attr == nullptr || !ignore_duplicate_pipeline)) {
+                    if((op_name.substr(0, 2) == "ew") ||
+                       (op_name == std::string("matMul")) ||
+                       (op_name == std::string("colBind")) ||
+                       (op_name == std::string("transpose")) ||
+                       (op_name == std::string("solve")) ||
+                       (op_name == std::string("extractCol")) ||
+                       (op_name == std::string("syrk")) ||
+                       (op_name == std::string("sumCol")) ||
+                       (op_name == std::string("gemv")))
+                    {
+                        callee << "CUDA_" << op_name;
+                        op->setAttr("cuda_device", rewriter.getI32IntegerAttr(0));
+                    }
+                    else
+                        callee << '_' << op_name << "_CUDA";
                 }
                 else
                     callee << '_' << op_name;

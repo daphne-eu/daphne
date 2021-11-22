@@ -327,7 +327,8 @@ def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
 def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , FloatScalar>;
 def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", FloatScalar>;
 
-def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar, NumScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
+def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar, NumScalar, [CUDASupport,
+        DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 def Daphne_ColAggMinOp    : Daphne_ColAggOp<"minCol"   , AnyScalar>;
 def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"maxCol"   , AnyScalar>;
 def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"idxminCol", NumScalar, Size>;
@@ -741,7 +742,7 @@ def Daphne_SyrkOp : Daphne_Op<"syrk", [
 
 def Daphne_GemvOp : Daphne_Op<"gemv", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, OneCol
+    NumRowsFromArgNumCols, OneCol, CUDASupport,
 ]> {
     // TODO: support `A @ x` operation
     let summary = [{Performs the operation `t(A) @ x`}];
