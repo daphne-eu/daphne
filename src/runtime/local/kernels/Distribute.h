@@ -72,8 +72,7 @@ struct Distribute<DenseMatrix<double>>
         }
         workers.push_back(workersStr);
 
-        auto workerIx = 0ul;
-        auto blockSize = DistributedData::BLOCK_SIZE;
+        // auto blockSize = DistributedData::BLOCK_SIZE;
 
         struct StoredInfo {
             DistributedIndex *ix ;
@@ -83,28 +82,33 @@ struct Distribute<DenseMatrix<double>>
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
 
         Handle<DenseMatrix<double>>::HandleMap map;
-        for (auto r = 0ul; r < (mat->getNumRows() - 1) / blockSize + 1; ++r) {
-            for (auto c = 0ul; c < (mat->getNumCols() - 1) / blockSize + 1; ++c) {
-                auto workerAddr = workers.at(workerIx);
 
-                // TODO: reuse channels for workers
-                auto channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
-                auto stub = distributed::Worker::NewStub(channel);
+        auto r = 0ul;
+        for (auto workerIx = 0ul; workerIx < workers.size() && r < mat->getNumRows(); workerIx++) {            
+            auto workerAddr = workers.at(workerIx);
 
-                distributed::Matrix protoMat;
-                ProtoDataConverter::convertToProto(mat,
-                    &protoMat,
-                    r * blockSize,
-                    std::min((r + 1) * blockSize, mat->getNumRows()),
-                    c * blockSize,
-                    std::min((c + 1) * blockSize, mat->getNumCols()));
+            grpc::ChannelArguments ch_args;
+            ch_args.SetMaxSendMessageSize(-1);
+            ch_args.SetMaxReceiveMessageSize(-1);
+            auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);            
+            auto stub = distributed::Worker::NewStub(channel);
 
-                StoredInfo storedInfo ({new DistributedIndex(r, c), workerAddr, channel});
-                caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
+            distributed::Matrix protoMat;
 
-                if (++workerIx == workers.size())
-                    workerIx = 0;
-            }
+            auto k = mat->getNumRows() / workers.size();
+            auto m = mat->getNumRows() % workers.size();
+            ProtoDataConverter::convertToProto(mat,
+                &protoMat,
+                (workerIx * k) + std::min(workerIx, m),
+                (workerIx + 1) * k + std::min(workerIx + 1, m),
+                0,
+                mat->getNumCols());
+                        
+            StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr, channel});
+            caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
+            
+            // keep track of proccessed rows
+            r = (workerIx + 1) * k + std::min(workerIx + 1, m);
         }
         // get results
         while (!caller.isQueueEmpty()){

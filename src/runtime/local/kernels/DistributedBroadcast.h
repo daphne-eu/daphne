@@ -93,7 +93,7 @@ struct DistributedBroadcast<DenseMatrix<double>>
 
             distributed::StoredData storedData;
             
-            StoredInfo storedInfo ({new DistributedIndex(1, 1), workerAddr, channel});
+            StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
             caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
         
         }
