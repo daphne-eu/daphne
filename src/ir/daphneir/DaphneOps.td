@@ -955,6 +955,11 @@ def Daphne_DistributeOp : Daphne_Op<"distribute"> {
     let results = (outs Handle:$res);
 }
 
+def Daphne_BroadcastOp : Daphne_Op<"broadcast"> {
+    let arguments = (ins Matrix:$mat);
+    let results = (outs Handle:$res);
+}
+
 def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect]> {
     let arguments = (ins Variadic<Handle>:$args);
     let results = (outs Variadic<Handle>:$res);
