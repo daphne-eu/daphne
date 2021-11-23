@@ -111,7 +111,8 @@ public:
         callCounter++;
     }
     /**
-    * @brief Enqueues an asynchronous Transfer call to be executed
+    * @brief Enqueues an asynchronous call to be executed. 
+    *        Matches the appropriate function call (Store/Compute/Transfer) based on template parameters.
     * 
     * @param  workerAddr An address to make the call
     * @param  StoredInfo An StoredInfo type returned when call response is ready
