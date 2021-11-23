@@ -76,7 +76,7 @@ struct DistributedCompute<DenseMatrix<double>>
         for (auto &pair : lhs->getMap()) {
             auto ix = pair.first;
             auto lhsData = pair.second;
-            auto rhsData = rhs->getMap().at(ix);
+            auto rhsData = rhs->getMap().find(ix)->second;
 
             if (lhsData.getAddress() == rhsData.getAddress()) {
                 // data is on same worker -> direct execution possible

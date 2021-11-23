@@ -1511,6 +1511,32 @@
     },
     {
         "kernelTemplate": {
+            "header": "DistributedBroadcast.h",
+            "opName": "distributedBroadcast",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "mat"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "DistributedCollect.h",
             "opName": "distributedCollect",
             "returnType": "void",
