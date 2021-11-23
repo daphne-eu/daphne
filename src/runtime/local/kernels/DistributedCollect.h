@@ -70,11 +70,9 @@ struct DistributedCollect<DenseMatrix<double>>
             auto ix = pair.first;
             auto data = pair.second;
 
-            auto stub = distributed::Worker::NewStub(data.getChannel());            
-            
             StoredInfo storedInfo({new DistributedIndex(ix)});
 
-            caller.addAsyncCall(&distributed::Worker::Stub::AsyncTransfer, *stub, storedInfo, data.getData());            
+            caller.addAsyncCall(data.getChannel(), storedInfo, data.getData());
         }
         // Get num workers
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");

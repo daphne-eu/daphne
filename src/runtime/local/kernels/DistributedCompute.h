@@ -78,9 +78,7 @@ struct DistributedCompute<DenseMatrix<double>>
             auto lhsData = pair.second;
             auto rhsData = rhs->getMap().find(ix)->second;
 
-            if (lhsData.getAddress() == rhsData.getAddress()) {
-                // data is on same worker -> direct execution possible
-                auto stub = distributed::Worker::NewStub(lhsData.getChannel());
+            if (lhsData.getAddress() == rhsData.getAddress()) {                
 
                 distributed::Task task;
                 *task.add_inputs()->mutable_stored() = lhsData.getData();
@@ -89,7 +87,7 @@ struct DistributedCompute<DenseMatrix<double>>
                 
                 StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                caller.addAsyncCall(&distributed::Worker::Stub::AsyncCompute, *stub, storedInfo, task);
+                caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
             }
             else {
                 // TODO: send data between workers

@@ -85,13 +85,7 @@ struct Distribute<DenseMatrix<double>>
 
         auto r = 0ul;
         for (auto workerIx = 0ul; workerIx < workers.size() && r < mat->getNumRows(); workerIx++) {            
-            auto workerAddr = workers.at(workerIx);
-
-            grpc::ChannelArguments ch_args;
-            ch_args.SetMaxSendMessageSize(-1);
-            ch_args.SetMaxReceiveMessageSize(-1);
-            auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);            
-            auto stub = distributed::Worker::NewStub(channel);
+            auto workerAddr = workers.at(workerIx);          
 
             distributed::Matrix protoMat;
 
@@ -104,8 +98,9 @@ struct Distribute<DenseMatrix<double>>
                 0,
                 mat->getNumCols());
                         
+            auto channel = caller.GetOrCreateChannel(workerAddr);
             StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr, channel});
-            caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
+            caller.addAsyncCall(workerAddr, storedInfo, protoMat);
             
             // keep track of proccessed rows
             r = (workerIx + 1) * k + std::min(workerIx + 1, m);

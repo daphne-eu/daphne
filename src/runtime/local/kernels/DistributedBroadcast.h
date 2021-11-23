@@ -88,13 +88,11 @@ struct DistributedBroadcast<DenseMatrix<double>>
             ProtoDataConverter::convertToProto(mat, &protoMat);
             auto workerAddr = workers.at(i);
 
-            auto channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
-            auto stub = distributed::Worker::NewStub(channel);
-
             distributed::StoredData storedData;
             
+            auto channel = caller.GetOrCreateChannel(workerAddr);
             StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
-            caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
+            caller.addAsyncCall(workerAddr, storedInfo, protoMat);
         
         }
         // get results

@@ -37,9 +37,10 @@ template<class StoredInfo, class Argument, class ReturnType>
 class DistributedCaller {
 private:
     
-    
-    /**  @brief This structure is returned by getNextResult()
+    /**
+     * @brief Map to keep channels
      */
+    std::map<std::string, std::shared_ptr<grpc::Channel>> channels;
     struct ResultData 
     {
         // Contains struct StoredInfo, that was passed when call was made
@@ -59,21 +60,41 @@ private:
     int callCounter = 0;
     grpc::CompletionQueue cq_;
 
+
+    // Specialized functions to match appropriate async call
+    std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::StoredData>> MakeAsyncCall(
+        std::unique_ptr<distributed::Worker::Stub> &stub, 
+        grpc::ClientContext &context, 
+        const distributed::Matrix &arg) {        
+            return stub->AsyncStore(&context, arg, &cq_);
+    }
+
+    std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::ComputeResult>> MakeAsyncCall(
+        std::unique_ptr<distributed::Worker::Stub> &stub, 
+        grpc::ClientContext &context, 
+        const distributed::Task &arg) {
+            return stub->AsyncCompute(&context, arg, &cq_);
+    }
+
+    std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::Matrix>> MakeAsyncCall(
+        std::unique_ptr<distributed::Worker::Stub> &stub, 
+        grpc::ClientContext &context, 
+        const distributed::StoredData &arg) {
+            return stub->AsyncTransfer(&context, arg, &cq_);
+    }
 public:
     DistributedCaller() {};
     ~DistributedCaller() {};
 
     /**
-    * @brief Enqueues an asynchronous call to be executed
+    * @brief Enqueues an asynchronous Transfer call to be executed
     * 
-    * @param  *AsyncFunction An AsyncFunction to be executed, provided by *.proto files (E.g. AsyncCompute)
-    * @param  &object The object (stub) that will be used to execute the "AsyncFunction"
+    * @param  workerAddr An address to make the call
     * @param  StoredInfo An StoredInfo type returned when call response is ready
     * @param  Argument Argument passed to the asynchronous call
     */
     void addAsyncCall(
-            std::unique_ptr<grpc::ClientAsyncResponseReader<ReturnType>> (distributed::Worker::Stub::*AsyncFunction)(grpc::ClientContext*, const Argument&, grpc::CompletionQueue*),
-            distributed::Worker::Stub &object,
+            std::string workerAddr,
             StoredInfo storedInfo,
             const Argument arg
             )
@@ -82,7 +103,33 @@ public:
 
         call->storedInfo = storedInfo;
         
-        auto response_reader = (object.*AsyncFunction)(&call->context_, arg, &cq_);
+        auto channel = GetOrCreateChannel(workerAddr);
+        auto stub = distributed::Worker::NewStub(channel);
+
+        auto response_reader = MakeAsyncCall(stub, call->context_, arg);
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        callCounter++;
+    }
+    /**
+    * @brief Enqueues an asynchronous Transfer call to be executed
+    * 
+    * @param  workerAddr An address to make the call
+    * @param  StoredInfo An StoredInfo type returned when call response is ready
+    * @param  Argument Argument passed to the asynchronous call
+    */
+    void addAsyncCall(
+            std::shared_ptr<grpc::Channel> channel,
+            StoredInfo storedInfo,
+            const Argument arg
+            )
+    {
+        AsyncClientCall *call = new AsyncClientCall;
+
+        call->storedInfo = storedInfo;
+        
+        auto stub = distributed::Worker::NewStub(channel);
+
+        auto response_reader = MakeAsyncCall(stub, call->context_, arg);
         response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
     }
@@ -111,6 +158,25 @@ public:
     */
     bool isQueueEmpty() {
         return (callCounter == 0);
+    };
+
+    /**
+    * @brief Get or Create a new channel for an address
+    * 
+    * @param workerAddr The address to get the channel for
+    */
+    std::shared_ptr<grpc::Channel> GetOrCreateChannel(std::string workerAddr) {
+        if (channels.count(workerAddr))
+            return channels.at(workerAddr);
+        else { 
+            // Create and store channel
+            grpc::ChannelArguments ch_args;
+            ch_args.SetMaxSendMessageSize(-1);
+            ch_args.SetMaxReceiveMessageSize(-1);
+            auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);
+            channels.insert({workerAddr, channel});
+            return channel;
+        }
     };
 
     
