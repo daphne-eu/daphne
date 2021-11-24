@@ -78,11 +78,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         mlir::PassManager pm(&context_);
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-        if(distributed_) {
-            pm.addPass(mlir::daphne::createDistributeComputationsPass());
-        }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
+        if(distributed_) {
+            pm.addPass(mlir::daphne::createDistributeComputationsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
+        }
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
             // TODO: this can be moved outside without problem, should we?

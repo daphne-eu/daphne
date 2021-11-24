@@ -124,6 +124,11 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         inputs);
 
     // Execution
+    // TODO Before we run the passes, we should insert information on shape
+    // (and potentially other properties) into the types of the arguments of
+    // the DISTRIBUTED_FUNCTION_NAME function. At least the shape can be
+    // obtained from the cached data partitions in localData_. Then, shape
+    // inference etc. should work within this function.
     if (!executor.runPasses(module.get())) {
         std::stringstream ss;
         ss << "Module Pass Error.\n";

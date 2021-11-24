@@ -38,15 +38,19 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
                     ConversionPatternRewriter &rewriter) const override
     {
         std::vector<Value> distributedInputs;
-        for (auto operand : operands) {
+        for (auto zipIt : llvm::zip(operands, op.getOperandDistrPrimitives())) {
+            Value operand = std::get<0>(zipIt);
+            bool isBroadcast = std::get<1>(zipIt);
             if (operand.getType().isa<daphne::HandleType>()) {
                 distributedInputs.push_back(operand);
             }
             else {
                 // TODO: if DistributedCollectOp, just use handle input of it
-                distributedInputs.push_back(rewriter.create<daphne::DistributeOp>(op->getLoc(),
-                    daphne::HandleType::get(getContext(), operand.getType()),
-                    operand));
+                Type t = daphne::HandleType::get(getContext(), operand.getType());
+                if(isBroadcast)
+                    distributedInputs.push_back(rewriter.create<daphne::BroadcastOp>(op->getLoc(), t, operand));
+                else
+                    distributedInputs.push_back(rewriter.create<daphne::DistributeOp>(op->getLoc(), t, operand));
             }
         }
         auto results = op.createEquivalentDistributedDAG(rewriter, distributedInputs);
