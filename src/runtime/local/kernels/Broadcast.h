@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDBROADCAST_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDBROADCAST_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_BROADCAST_H
+#define SRC_RUNTIME_LOCAL_KERNELS_BROADCAST_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -34,7 +34,7 @@
 // ****************************************************************************
 
 template<class DT>
-struct DistributedBroadcast
+struct Broadcast
 {
     static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
 };
@@ -44,9 +44,9 @@ struct DistributedBroadcast
 // ****************************************************************************
 
 template<class DT>
-void distributedBroadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
+void broadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
 {
-    DistributedBroadcast<DT>::apply(res, mat, ctx);
+    Broadcast<DT>::apply(res, mat, ctx);
 }
 
 // ****************************************************************************
@@ -54,7 +54,7 @@ void distributedBroadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
 // ****************************************************************************
 
 template<>
-struct DistributedBroadcast<DenseMatrix<double>>
+struct Broadcast<DenseMatrix<double>>
 {
     static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
@@ -111,4 +111,4 @@ struct DistributedBroadcast<DenseMatrix<double>>
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDBROADCAST_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_BROADCAST_H

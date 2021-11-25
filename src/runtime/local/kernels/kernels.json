@@ -1511,8 +1511,8 @@
     },
     {
         "kernelTemplate": {
-            "header": "DistributedBroadcast.h",
-            "opName": "distributedBroadcast",
+            "header": "Broadcast.h",
+            "opName": "broadcast",
             "returnType": "void",
             "templateParams": [
                 {
