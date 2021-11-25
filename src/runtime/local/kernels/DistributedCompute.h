@@ -67,34 +67,79 @@ struct DistributedCompute<DenseMatrix<double>>
         auto lhs = args[0];
         auto rhs = args[1];
 
+        const size_t numRowsLhs = lhs->getRows();
+        const size_t numColsLhs = lhs->getCols();
+        const size_t numRowsRhs = rhs->getRows();
+        const size_t numColsRhs = rhs->getCols();
+
         struct StoredInfo {
             DistributedIndex *ix;
             DistributedData *data;
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         Handle<DenseMatrix<double>>::HandleMap resMap;
-        for (auto &pair : lhs->getMap()) {
-            auto ix = pair.first;
-            auto lhsData = pair.second;
-            auto rhsData = rhs->getMap().find(ix)->second;
+        if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
+            for (auto &pair : lhs->getMap()) {
+                auto ix = pair.first;
+                auto lhsData = pair.second;
+                auto rhsData = rhs->getMap().find(ix)->second;
 
-            if (lhsData.getAddress() == rhsData.getAddress()) {                
+                if (lhsData.getAddress() == rhsData.getAddress()) {                
 
-                distributed::Task task;
-                *task.add_inputs()->mutable_stored() = lhsData.getData();
-                *task.add_inputs()->mutable_stored() = rhsData.getData();
-                task.set_mlir_code(mlirCode);
-                
-                StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
+                    distributed::Task task;
+                    *task.add_inputs()->mutable_stored() = lhsData.getData();
+                    *task.add_inputs()->mutable_stored() = rhsData.getData();
+                    task.set_mlir_code(mlirCode);
+                    
+                    StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                    caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                }
+                else {
+                    // TODO: send data between workers
+                    throw std::runtime_error(
+                        "Data shuffling not yet supported"
+                    );
+                }
             }
-            else {
-                // TODO: send data between workers
-                throw std::runtime_error(
-                    "Data shuffling not yet supported"
-                );
+        }
+        else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+            for (auto &pair : lhs->getMap()) {
+                auto ix = pair.first;
+                auto lhsData = pair.second;
+                DistributedData *rhsDataPtr = nullptr;
+                for (auto &pairRhs : rhs->getMap()){
+                    if (pairRhs.second.getAddress() == lhsData.getAddress()) {
+                        rhsDataPtr = new DistributedData(pairRhs.second);
+                        break;
+                    }
+                }
+                auto rhsData = DistributedData(*rhsDataPtr);
+                if (lhsData.getAddress() == rhsData.getAddress()) {                
+
+                    distributed::Task task;
+                    *task.add_inputs()->mutable_stored() = lhsData.getData();
+                    *task.add_inputs()->mutable_stored() = rhsData.getData();
+                    task.set_mlir_code(mlirCode);
+                    
+                    StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
+
+                    caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                }
+                else {
+                    // TODO: send data between workers
+                    throw std::runtime_error(
+                        "Data shuffling not yet supported"
+                    );
+                }
             }
+        }
+        else {
+            assert(
+                    false && "lhs and rhs must either have the same dimensions, "
+                    "or rhs be a row/column vector with the "
+                    "width/height of the other"
+            );
         }
         // Get Results
         while (!caller.isQueueEmpty()){
