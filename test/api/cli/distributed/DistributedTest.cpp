@@ -33,14 +33,25 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
 {
     auto addr1 = "0.0.0.0:50051";
     auto addr2 = "0.0.0.0:50052";
-    WorkerImpl workerImpl1;
-    WorkerImpl workerImpl2;
-    auto server1 = startDistributedWorker(addr1, &workerImpl1);
-    auto server2 = startDistributedWorker(addr2, &workerImpl2);
-    std::thread thread1 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl1);
-    std::thread thread2 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl2);
+    pid_t pid1 = fork();
+    if(pid1 == -1)
+        throw std::runtime_error("could not create child process");
+    if (pid1 == 0) {
+        WorkerImpl workerImpl1;
+        auto server1 = startDistributedWorker(addr1, &workerImpl1);
+        // Never returns
+        workerImpl1.HandleRpcs();
+    }
+    pid_t pid2 = fork();
+    if(pid2 == -1)
+        throw std::runtime_error("could not create child process");
+    if (pid2 == 0){
+        WorkerImpl workerImpl2;
+        auto server2 = startDistributedWorker(addr2, &workerImpl2);
+        // Never returns
+        workerImpl2.HandleRpcs();        
+    }
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
-
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
     for (auto i = 1u; i < 3; ++i) {
         auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
@@ -63,10 +74,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
 
         CHECK(outLocal.str() == outDist.str());
     }
-    server1->Shutdown();
-    workerImpl1.cq_->Shutdown();
-    thread1.join();
-    server2->Shutdown();
-    workerImpl2.cq_->Shutdown();
-    thread2.join();
+    kill(pid1, SIGKILL);
+    kill(pid2, SIGKILL);
+    wait(NULL);   
 }
