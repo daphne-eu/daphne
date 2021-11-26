@@ -85,6 +85,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
+            pm.addPass(mlir::createCSEPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
         }
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());

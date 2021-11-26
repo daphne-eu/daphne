@@ -952,12 +952,12 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
 // Distributed Operations
 // ****************************************************************************
 
-def Daphne_DistributeOp : Daphne_Op<"distribute"> {
+def Daphne_DistributeOp : Daphne_Op<"distribute", [NoSideEffect]> {
     let arguments = (ins Matrix:$mat);
     let results = (outs Handle:$res);
 }
 
-def Daphne_BroadcastOp : Daphne_Op<"broadcast"> {
+def Daphne_BroadcastOp : Daphne_Op<"broadcast", [NoSideEffect]> {
     let arguments = (ins Matrix:$mat);
     let results = (outs Handle:$res);
 }

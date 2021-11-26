@@ -41,11 +41,20 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
         for (auto zipIt : llvm::zip(operands, op.getOperandDistrPrimitives())) {
             Value operand = std::get<0>(zipIt);
             bool isBroadcast = std::get<1>(zipIt);
-            if (operand.getType().isa<daphne::HandleType>()) {
+            if (operand.getType().isa<daphne::HandleType>())
+                // The operand is already distributed/broadcasted, we can
+                // directly use it.
+                // TODO Check if it is distributed the way we need it here
+                // (distributed/broadcasted), but so far, this is not tracked
+                // at compile-time.
                 distributedInputs.push_back(operand);
-            }
+            else if (auto co = dyn_cast_or_null<daphne::DistributedCollectOp>(operand.getDefiningOp()))
+                // The operand has just been collected from a distributed data
+                // object, so we should reuse the original distributed data
+                // object.
+                distributedInputs.push_back(co.arg());
             else {
-                // TODO: if DistributedCollectOp, just use handle input of it
+                // The operands need to be distributed/broadcasted first.
                 Type t = daphne::HandleType::get(getContext(), operand.getType());
                 if(isBroadcast)
                     distributedInputs.push_back(rewriter.create<daphne::BroadcastOp>(op->getLoc(), t, operand));
