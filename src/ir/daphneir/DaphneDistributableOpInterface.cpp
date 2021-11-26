@@ -142,3 +142,29 @@ IMPL_EWBINARYOP(EwLtOp)
 IMPL_EWBINARYOP(EwLeOp)
 IMPL_EWBINARYOP(EwGtOp)
 IMPL_EWBINARYOP(EwGeOp)
+
+std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(
+        OpBuilder &builder, ValueRange distributedInputs
+) {
+    auto loc = getLoc();
+    auto compute = builder.create<daphne::DistributedComputeOp>(loc,
+        ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
+        distributedInputs);
+    auto &block = compute.body().emplaceBlock();
+    auto arg = block.addArgument(getWrappedType(distributedInputs[0]));
+
+    {
+        mlir::OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPoint(&block, block.begin());
+
+        auto aggOp = builder.create<RowAggMaxOp>(loc, arg.getType(), arg);
+        builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{aggOp});
+    }
+
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(loc, compute.getResult(0))});
+    return ret;
+}
+
+std::vector<bool> daphne::RowAggMaxOp::getOperandDistrPrimitives() {
+    return {false};
+}
