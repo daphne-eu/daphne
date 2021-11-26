@@ -68,6 +68,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
     if (keyword == "Matrix") {
         ssize_t numRows = -1;
         ssize_t numCols = -1;
+        double sparsity = -1.0;
         mlir::Type elementType;
         if (
             parser.parseLess() ||
@@ -79,14 +80,33 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
             // TODO Parse #cols if there was no '?'.
             //parser.parseInteger<ssize_t>(numCols) ||
             parser.parseXInDimensionList() ||
-            parser.parseType(elementType) ||
-            parser.parseGreater()
+            parser.parseType(elementType)
         ) {
+            return nullptr;
+        }
+        // additional properties (only print/read them when present, as this will probably get more and more)
+        if (succeeded(parser.parseOptionalColon())) {
+            while (failed(parser.parseOptionalGreater())) {
+                if (succeeded(parser.parseKeyword("sp"))) {
+                    if (sparsity != -1.0) {
+                        // read sparsity twice
+                        return nullptr;
+                    }
+                    if (parser.parseLSquare() || parser.parseFloat(sparsity) || parser.parseRSquare()) {
+                        return nullptr;
+                    }
+                }
+                else {
+                    return nullptr;
+                }
+            }
+        }
+        else if(parser.parseGreater()) {
             return nullptr;
         }
 
         return MatrixType::get(
-                parser.getBuilder().getContext(), elementType, numRows, numCols
+                parser.getBuilder().getContext(), elementType, numRows, numCols, -1.0
         );
     }
     else if (keyword == "Frame") {
@@ -102,6 +122,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
             parser.parseOptionalQuestion() ||
             // TODO Parse #cols if there was no '?'.
             //parser.parseInteger<ssize_t>(numCols) ||
+            // TODO Parse sparsity
             parser.parseColon()
         ) {
             return nullptr;
@@ -141,6 +162,10 @@ std::string unknownStrIf(ssize_t val) {
     return (val == -1) ? "?" : std::to_string(val);
 }
 
+std::string unknownStrIf(double val) {
+    return (val == -1.0) ? "?" : std::to_string(val);
+}
+
 void mlir::daphne::DaphneDialect::printType(mlir::Type type,
                                             mlir::DialectAsmPrinter &os) const
 {
@@ -148,7 +173,12 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "Matrix<"
                 << unknownStrIf(t.getNumRows()) << 'x'
                 << unknownStrIf(t.getNumCols()) << 'x'
-                << t.getElementType() << '>';
+                << t.getElementType();
+        auto sparsity = t.getSparsity();
+        if (sparsity != -1.0) {
+            os << ":sp[" << sparsity << ']';
+        }
+        os << '>';
     }
     else if (auto t = type.dyn_cast<mlir::daphne::FrameType>()) {
         os << "Frame<"
@@ -194,7 +224,61 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "Target";
     else if (type.isa<mlir::daphne::UnknownType>())
         os << "Unknown";
-};
+}
+
+namespace mlir::daphne {
+    namespace detail {
+        struct MatrixTypeStorage : public ::mlir::TypeStorage {
+            // TODO: adapt epsilon for equality check (I think the only use is saving memory for the MLIR-IR representation of this type)
+            //  the choosen epsilon directly defines how accurate our sparsity inference can be
+            constexpr static const float epsilon = 1e-6;
+            MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows, ssize_t numCols, float sparsity)
+                : elementType(elementType), numRows(numRows), numCols(numCols), sparsity(sparsity) {}
+
+            /// The hash key is a tuple of the parameter types.
+            using KeyTy = std::tuple<::mlir::Type, ssize_t, ssize_t, float>;
+            bool operator==(const KeyTy &tblgenKey) const {
+                if(!(elementType == std::get<0>(tblgenKey)))
+                    return false;
+                if(numRows != std::get<1>(tblgenKey))
+                    return false;
+                if(numCols != std::get<2>(tblgenKey))
+                    return false;
+                if(std::fabs(sparsity - std::get<3>(tblgenKey)) >= epsilon)
+                    return false;
+                return true;
+            }
+            static ::llvm::hash_code hashKey(const KeyTy &tblgenKey) {
+                auto float_hashable = static_cast<ssize_t>(std::get<3>(tblgenKey) / epsilon);
+                return ::llvm::hash_combine(std::get<0>(tblgenKey),
+                    std::get<1>(tblgenKey),
+                    std::get<2>(tblgenKey),
+                    float_hashable);
+            }
+
+            /// Define a construction method for creating a new instance of this
+            /// storage.
+            static MatrixTypeStorage *construct(::mlir::TypeStorageAllocator &allocator,
+                                                const KeyTy &tblgenKey) {
+                auto elementType = std::get<0>(tblgenKey);
+                auto numRows = std::get<1>(tblgenKey);
+                auto numCols = std::get<2>(tblgenKey);
+                auto sparsity = std::get<3>(tblgenKey);
+
+                return new(allocator.allocate<MatrixTypeStorage>())
+                    MatrixTypeStorage(elementType, numRows, numCols, sparsity);
+            }
+            ::mlir::Type elementType;
+            ssize_t numRows;
+            ssize_t numCols;
+            float sparsity;
+        };
+    }
+    ::mlir::Type MatrixType::getElementType() const { return getImpl()->elementType; }
+    ssize_t MatrixType::getNumRows() const { return getImpl()->numRows; }
+    ssize_t MatrixType::getNumCols() const { return getImpl()->numCols; }
+    float MatrixType::getSparsity() const { return getImpl()->sparsity; }
+}
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
 {
@@ -205,7 +289,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(
         ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
         Type elementType,
-        ssize_t numRows, ssize_t numCols
+        ssize_t numRows, ssize_t numCols, float sparsity
 )
 {
     if (
@@ -221,6 +305,8 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
         ) && (
             // Number of rows and columns are valid (-1 for unknown).
             numRows >= -1 && numCols >= -1
+        ) && (
+            sparsity == -1 || (sparsity >= 0.0 && sparsity <= 1.0)
         )
     )
         return mlir::success();

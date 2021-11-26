@@ -23,6 +23,7 @@ set(TEST_SOURCES
         api/cli/distributed/DistributedTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
+        api/cli/inference/SparsityTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp

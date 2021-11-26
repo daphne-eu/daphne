@@ -138,7 +138,7 @@ namespace {
         // Run inference
         mlir::PassManager pm(function->getContext(), "func");
         pm.enableVerifier(false);
-        pm.addPass(daphne::createInferencePass({true, true, false, true}));
+        pm.addPass(daphne::createInferencePass({true, true, false, true, false}));
         if(failed(pm.run(function))) {
             function.emitError() << "could not infer types for a call of function template: " << function.getName();
             return nullptr;

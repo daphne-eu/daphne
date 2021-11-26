@@ -28,16 +28,18 @@
 namespace mlir::daphne {
     std::unique_ptr<Pass> createDistributeComputationsPass();
     struct InferenceConfig {
-        InferenceConfig(bool PartialInferenceAllowed,
-                        bool TypeInference,
-                        bool ShapeInference,
-                        bool FrameLabelInference);
+        InferenceConfig(bool partialInferenceAllowed,
+                        bool typeInference,
+                        bool shapeInference,
+                        bool frameLabelInference,
+                        bool sparsityInference);
         bool partialInferenceAllowed;
         bool typeInference;
         bool shapeInference;
         bool frameLabelInference;
+        bool sparsityInference;
     };
-    std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true});
+    std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createLowerToLLVMPass();
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");

@@ -49,15 +49,17 @@ def Matrix : Daphne_Type<"Matrix"> {
     // TODO Maybe we should rename "element type" to "value type" everywhere.
     let parameters = (ins
         "::mlir::Type":$elementType,
-        "ssize_t":$numRows, "ssize_t":$numCols
+        "ssize_t":$numRows, "ssize_t":$numCols, "float":$sparsity
     );
     let genVerifyDecl = 1;
+    // NOTE: float needs special treatment for equality check and hashing (epsilon)
+    let genStorageClass = 0;
 
     let builders = [
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0);
         }]>,
     ];
 
@@ -67,11 +69,15 @@ def Matrix : Daphne_Type<"Matrix"> {
         // new value.
 
         ::mlir::daphne::MatrixType withElementType(::mlir::Type elementType) {
-            return get(getContext(), elementType, getNumRows(), getNumCols());
+            return get(getContext(), elementType, getNumRows(), getNumCols(), getSparsity());
         }
 
         ::mlir::daphne::MatrixType withShape(ssize_t numRows, ssize_t numCols) {
-            return get(getContext(), getElementType(), numRows, numCols);
+            return get(getContext(), getElementType(), numRows, numCols, getSparsity());
+        }
+
+        ::mlir::daphne::MatrixType withSparsity(float sparsity) {
+            return get(getContext(), getElementType(), getNumRows(), getNumCols(), sparsity);
         }
 
         // The following method returns a MatrixType with the same element type

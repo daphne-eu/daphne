@@ -340,6 +340,10 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::VectorizedPipelineOp,
             daphne::GenericCallOp
     >();
+    // trivial casts are done in `LowerToLLVM`, note that this isn't necessary (we could also allow kernels)
+    target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
+        return op.isTrivialCast();
+    });
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = nullptr;
