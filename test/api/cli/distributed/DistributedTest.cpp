@@ -53,7 +53,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
     }
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
-    for (auto i = 1u; i < 3; ++i) {
+    for (auto i = 1u; i < 4; ++i) {
         auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
 
         std::stringstream outLocal;
