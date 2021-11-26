@@ -67,6 +67,12 @@ struct DistributeComputationsPass
 };
 }
 
+bool onlyMatrixOperands(Operation * op) {
+    return llvm::all_of(op->getOperandTypes(), [](Type t) {
+        return t.isa<daphne::MatrixType>();
+    });
+}
+
 void DistributeComputationsPass::runOnOperation()
 {
     auto module = getOperation();
@@ -79,7 +85,15 @@ void DistributeComputationsPass::runOnOperation()
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
-      return !llvm::isa<daphne::Distributable>(op) || op->getParentOfType<daphne::DistributedComputeOp>();
+        // An operation is legal (does not need to be replaced), if ...
+        return
+                // ... it is not distributable
+                !llvm::isa<daphne::Distributable>(op) ||
+                // ... it is inside some distributed computation already
+                op->getParentOfType<daphne::DistributedComputeOp>() ||
+                // ... not all of its operands are matrices
+                // TODO Support distributing frames and scalars.
+                !onlyMatrixOperands(op);
     });
 
     patterns.insert<Distribute>(&getContext());
