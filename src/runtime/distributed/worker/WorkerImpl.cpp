@@ -34,6 +34,7 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
+#include "CallData.h"
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
@@ -42,6 +43,37 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 }
 
 WorkerImpl::~WorkerImpl() = default;
+
+// void WorkerImpl::StartHandleThread() {
+//     HandleRpcsThread = std::thread(&WorkerImpl::HandleRpcs, this);
+// }
+// void WorkerImpl::TerminateHandleThread() {
+//     cq_->Shutdown();
+//     HandleRpcsThread.join();
+// }
+void WorkerImpl::HandleRpcs() {
+    // Spawn a new CallData instance to serve new clients.
+    new StoreCallData(this, cq_.get());
+    new ComputeCallData(this, cq_.get());
+    new TransferCallData(this, cq_.get());
+    void* tag;  // uniquely identifies a request.
+    bool ok;
+    // Block waiting to read the next event from the completion queue. The
+    // event is uniquely identified by its tag, which in this case is the
+    // memory address of a CallData instance.
+    // The return value of Next should always be checked. This return value
+    // tells us whether there is any kind of event or cq_ is shutting down.
+    while (cq_->Next(&tag, &ok)) {        
+        if(ok){         
+            // Thread pool ? with caution. For now on each worker only one thread operates (sefe IO).
+            // We might need to add locks inside Store/Compute/Transfer methods if we deploy threads
+            static_cast<CallData*>(tag)->Proceed();
+        } else {
+            // TODO maybe handle this internally ?
+            delete tag;
+        }
+    }
+  }
 
 grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
                                const ::distributed::Matrix *request,
@@ -70,7 +102,7 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {
-        auto message = "Failed parse source string.\n";
+        auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
         return ::grpc::Status(::grpc::StatusCode::ABORTED, message);
     }
@@ -92,6 +124,11 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         inputs);
 
     // Execution
+    // TODO Before we run the passes, we should insert information on shape
+    // (and potentially other properties) into the types of the arguments of
+    // the DISTRIBUTED_FUNCTION_NAME function. At least the shape can be
+    // obtained from the cached data partitions in localData_. Then, shape
+    // inference etc. should work within this function.
     if (!executor.runPasses(module.get())) {
         std::stringstream ss;
         ss << "Module Pass Error.\n";

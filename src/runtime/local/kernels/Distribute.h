@@ -25,6 +25,7 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 #include <runtime/distributed/worker/ProtoDataConverter.h>
+#include <runtime/local/kernels/DistributedCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -74,6 +75,13 @@ struct Distribute<DenseMatrix<double>>
         auto workerIx = 0ul;
         auto blockSize = DistributedData::BLOCK_SIZE;
 
+        struct StoredInfo {
+            DistributedIndex *ix ;
+            std::string workerAddr;
+            std::shared_ptr<grpc::Channel> channel;
+        };        
+        DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
+
         Handle<DenseMatrix<double>>::HandleMap map;
         for (auto r = 0ul; r < (mat->getNumRows() - 1) / blockSize + 1; ++r) {
             for (auto c = 0ul; c < (mat->getNumCols() - 1) / blockSize + 1; ++c) {
@@ -83,8 +91,6 @@ struct Distribute<DenseMatrix<double>>
                 auto channel = grpc::CreateChannel(workerAddr, grpc::InsecureChannelCredentials());
                 auto stub = distributed::Worker::NewStub(channel);
 
-                grpc::ClientContext context;
-
                 distributed::Matrix protoMat;
                 ProtoDataConverter::convertToProto(mat,
                     &protoMat,
@@ -93,22 +99,24 @@ struct Distribute<DenseMatrix<double>>
                     c * blockSize,
                     std::min((c + 1) * blockSize, mat->getNumCols()));
 
-                distributed::StoredData storedData;
-                auto status = stub->Store(&context, protoMat, &storedData);
-
-                if (!status.ok()) {
-                    throw std::runtime_error(
-                        status.error_message()
-                    );
-                }
-
-                DistributedIndex ix(r, c);
-                DistributedData data(storedData, workerAddr, channel);
-                map.insert({ix, data});
+                StoredInfo storedInfo ({new DistributedIndex(r, c), workerAddr, channel});
+                caller.addAsyncCall(&distributed::Worker::Stub::AsyncStore, *stub, storedInfo, protoMat);
 
                 if (++workerIx == workers.size())
                     workerIx = 0;
             }
+        }
+        // get results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto ix = response.storedInfo.ix;
+            auto workerAddr = response.storedInfo.workerAddr;
+            auto channel = response.storedInfo.channel;
+
+            auto storedData = response.result;
+
+            DistributedData data(storedData, workerAddr, channel);
+            map.insert({*ix, data});
         }
         res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
     }

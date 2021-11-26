@@ -1,0 +1,8 @@
+// Updating variable in loop, same shape.
+X = fill(12, 2, 3);
+i = 0;
+while(i < 3) {
+    X = X + 1;
+    i = i + 1;
+}
+print(sum(X));

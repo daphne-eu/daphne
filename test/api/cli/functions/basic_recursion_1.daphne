@@ -1,0 +1,11 @@
+// simple recursive function with multiple returns
+def fib(n : si64) -> si64 {
+    if (n <= 0)
+        return 0;
+    if (n <= 2)
+        return 1;
+    return fib(n - 1) + fib(n - 2);
+}
+
+for(i in 0:7)
+    print(fib(i));

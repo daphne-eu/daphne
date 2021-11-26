@@ -28,9 +28,18 @@ namespace mlir::daphne
 using namespace mlir;
 
 // ****************************************************************************
-// Vector split and combine utility functions
+// DistributableOpInterface utilities
 // ****************************************************************************
 // For families of operations.
+
+Type getWrappedType(Value v) {
+    // Get the type wrapped into this distributed handle.
+    Type wrappedType = v.getType().cast<daphne::HandleType>().getDataType();
+    // Remove all information on interesting properties except for the type.
+    // This is necessary since these properties do not necessarily hold for a
+    // distributed partition of the whole data object.
+    return wrappedType.dyn_cast<daphne::MatrixType>().withSameElementType();
+}
 
 template<class EwBinaryOp>
 std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *op, mlir::OpBuilder &builder,
@@ -41,8 +50,8 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
         ArrayRef<Type>{daphne::HandleType::get(op->getContext(), op->getType())},
         distributedInputs);
     auto &block = compute.body().emplaceBlock();
-    auto argLhs = block.addArgument(distributedInputs[0].getType().cast<daphne::HandleType>().getDataType());
-    auto argRhs = block.addArgument(distributedInputs[1].getType().cast<daphne::HandleType>().getDataType());
+    auto argLhs = block.addArgument(getWrappedType(distributedInputs[0]));
+    auto argRhs = block.addArgument(getWrappedType(distributedInputs[1]));
 
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
@@ -56,42 +65,106 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
     return ret;
 }
 
+template<class EwBinaryOp>
+std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
+    Type tL0 = op->lhs().getType();
+    auto tL  = tL0.dyn_cast<daphne::MatrixType>();
+    Type tR0 = op->rhs().getType();
+    auto tR  = tR0.dyn_cast<daphne::MatrixType>();
+    const ssize_t nrL = tL.getNumRows();
+    const ssize_t ncL = tL.getNumCols();
+    const ssize_t nrR = tR.getNumRows();
+    const ssize_t ncR = tR.getNumCols();
+    
+    if(nrL == -1 || nrR == -1 || ncL == -1 || ncR == -1)
+        throw std::runtime_error(
+                "unknown shapes of left and/or right operand to elementwise "
+                "binary operation are not supported while deciding "
+                "distribute/broadcast"
+        );
+    
+    if(nrL == nrR && ncL == ncR) // matrix-matrix
+        return {false, false}; // distribute both inputs
+    else if(nrR == 1 && ncL == ncR) // matrix-row
+        return {false, true}; // distribute lhs, broadcast rhs
+    else if(nrL == nrR && ncR == 1) // matrix-col
+        return {false, true}; // distribute lhs, broadcast rhs
+    else
+        throw std::runtime_error(
+                "mismatching shapes of left and right operand to elementwise "
+                "binary operation while deciding distribute/broadcast"
+        );
+}
+
 // ****************************************************************************
-// CreateEquivalentDistributedDAG implementations
+// DistributableOpInterface implementations
 // ****************************************************************************
 
-#define IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(OP) \
+#define IMPL_EWBINARYOP(OP) \
     std::vector<mlir::Value> mlir::daphne::OP::createEquivalentDistributedDAG(mlir::OpBuilder &builder, \
         mlir::ValueRange distributedInputs) \
     { \
         return createEquivalentDistributedDAG_EwBinaryOp(this, builder, distributedInputs); \
+    } \
+    \
+    std::vector<bool> mlir::daphne::OP::getOperandDistrPrimitives() { \
+        return getOperandDistrPrimitives_EwBinaryOp(this); \
     }
 
+// TODO We should use traits (like for shape inference) so that we don't need
+// to repeat here.
+
 // Arithmetic
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwAddOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwSubOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwMulOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwDivOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwPowOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwModOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwLogOp)
+IMPL_EWBINARYOP(EwAddOp)
+IMPL_EWBINARYOP(EwSubOp)
+IMPL_EWBINARYOP(EwMulOp)
+IMPL_EWBINARYOP(EwDivOp)
+IMPL_EWBINARYOP(EwPowOp)
+IMPL_EWBINARYOP(EwModOp)
+IMPL_EWBINARYOP(EwLogOp)
 
 // Min/max
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwMinOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwMaxOp)
+IMPL_EWBINARYOP(EwMinOp)
+IMPL_EWBINARYOP(EwMaxOp)
 
 // Logical
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwAndOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwOrOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwXorOp)
+IMPL_EWBINARYOP(EwAndOp)
+IMPL_EWBINARYOP(EwOrOp)
+IMPL_EWBINARYOP(EwXorOp)
 
 // Strings
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwConcatOp)
+IMPL_EWBINARYOP(EwConcatOp)
 
 // Comparisons
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwEqOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwNeqOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwLtOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwLeOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwGtOp)
-IMPL_CREATEEQUIVALENTDISTRIBUTEDDAG_EWBINARYOP(EwGeOp)
+IMPL_EWBINARYOP(EwEqOp)
+IMPL_EWBINARYOP(EwNeqOp)
+IMPL_EWBINARYOP(EwLtOp)
+IMPL_EWBINARYOP(EwLeOp)
+IMPL_EWBINARYOP(EwGtOp)
+IMPL_EWBINARYOP(EwGeOp)
+
+std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(
+        OpBuilder &builder, ValueRange distributedInputs
+) {
+    auto loc = getLoc();
+    auto compute = builder.create<daphne::DistributedComputeOp>(loc,
+        ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
+        distributedInputs);
+    auto &block = compute.body().emplaceBlock();
+    auto arg = block.addArgument(getWrappedType(distributedInputs[0]));
+
+    {
+        mlir::OpBuilder::InsertionGuard guard(builder);
+        builder.setInsertionPoint(&block, block.begin());
+
+        auto aggOp = builder.create<RowAggMaxOp>(loc, arg.getType(), arg);
+        builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{aggOp});
+    }
+
+    std::vector<Value> ret({builder.create<daphne::DistributedCollectOp>(loc, compute.getResult(0))});
+    return ret;
+}
+
+std::vector<bool> daphne::RowAggMaxOp::getOperandDistrPrimitives() {
+    return {false};
+}

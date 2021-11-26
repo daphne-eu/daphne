@@ -34,6 +34,6 @@ const std::string dirPath = "test/api/cli/controlflow/";
         } \
     }
 
-MAKE_TEST_CASE("if", 4)
-MAKE_TEST_CASE("for", 16)
-MAKE_TEST_CASE("while", 4)
+MAKE_TEST_CASE("if", 7)
+MAKE_TEST_CASE("for", 18)
+MAKE_TEST_CASE("while", 8)

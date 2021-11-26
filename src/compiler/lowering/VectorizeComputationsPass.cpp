@@ -210,6 +210,7 @@ void VectorizeComputationsPass::runOnOperation()
                 });
             }
         }
+        // TODO: remove size information in bodyBlock
         builder.setInsertionPointToEnd(bodyBlock);
         builder.create<daphne::ReturnOp>(loc, results);
     }

@@ -31,6 +31,18 @@ target_link_libraries(AllKernels PUBLIC DataStructures IO Proto ProtoDataConvert
         ${OPENBLAS_LIBRARIES})
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
+
+# *****************************************************************************
+# DistributedCommunication library
+# *****************************************************************************
+
+set(SOURCES DistributedCaller.h)
+set(LIBS Proto)
+
+add_library(DistributedCaller ${SOURCES})
+target_link_libraries(DistributedCaller PRIVATE ${LIBS})
+
+
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})

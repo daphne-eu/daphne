@@ -88,7 +88,7 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
 
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">,
-    NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>
+    NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
     //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
@@ -103,10 +103,7 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 }
 
 def Daphne_SeqOp : Daphne_Op<"seq", [
-    // TODO We can known the exact number of rows at compile-time, but due to
-    // possible floating point rounding problems, it is a little bit involved
-    // (see the seq-kernel). We will add it later.
-    OneCol, //DeclareOpInterfaceMethods<InferNumRowsOpInterface>
+    OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>
 ]> {
     let arguments = (ins NumScalar:$from, NumScalar:$to, NumScalar:$inc);
     let results = (outs MatrixOf<[NumScalar]>);
@@ -197,6 +194,7 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 : Daphne_Op<name, !listconcat(traits, [
     DeclareOpInterfaceMethods<DistributableOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     ShapeEwBinary
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
@@ -257,9 +255,7 @@ def Daphne_ConcatOp : Daphne_Op<"concat"> {
 // ----------------------------------------------------------------------------
 
 class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []>
-: Daphne_EwBinaryOp<name, inputScalarType, !listconcat([
-    DeclareOpInterfaceMethods<InferTypesOpInterface>
-], traits)> {
+: Daphne_EwBinaryOp<name, inputScalarType, traits> {
     // TODO: We do not enforce (matrix of) boolean output any more, but should
     // think about that again.
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
@@ -284,7 +280,8 @@ class Daphne_AggOp<string name, Type inScalarType, list<OpTrait> traits = []> : 
 // Full aggregation
 // ----------------------------------------------------------------------------
 
-class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []> : Daphne_AggOp<name, scalarType, traits> {
+class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []>
+: Daphne_AggOp<name, scalarType, !listconcat(traits, [DeclareOpInterfaceMethods<InferTypesOpInterface>])> {
     let results = (outs scalarType:$res);
 }
 
@@ -315,7 +312,7 @@ class Daphne_ColAggOp<string name, Type inScalarType, Type outScalarType = inSca
 
 def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar, NumScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar, AnyScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
-def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar>;
+def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar, AnyScalar, [DeclareOpInterfaceMethods<DistributableOpInterface>]>;
 def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar>;
 def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar>;
 def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
@@ -960,6 +957,11 @@ def Daphne_DistributeOp : Daphne_Op<"distribute"> {
     let results = (outs Handle:$res);
 }
 
+def Daphne_BroadcastOp : Daphne_Op<"broadcast"> {
+    let arguments = (ins Matrix:$mat);
+    let results = (outs Handle:$res);
+}
+
 def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect, IsolatedFromAbove, IsolatedFromAbove]> {
     let arguments = (ins Variadic<Handle>:$args);
     let results = (outs Variadic<Handle>:$res);
@@ -1216,6 +1218,24 @@ def Daphne_CallKernelOp : Daphne_Op<"call_kernel"> {
     let extraClassDeclaration = [{
         StringAttr getCalleeAttr() { return (*this)->getAttrOfType<StringAttr>("callee"); }
     }];
+}
+
+def Daphne_GenericCallOp : Daphne_Op<"generic_call"> {
+    let summary = "User defined function call";
+
+    let arguments = (ins SymbolNameAttr:$callee, Variadic<AnyType>:$inputs);
+    let results = (outs Variadic<AnyType>);
+
+    let builders = [
+        OpBuilder<(ins "StringAttr":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+            $_state.addOperands(operands);
+            $_state.addAttribute("callee", callee);
+            $_state.addTypes(results);
+        }]>,
+        OpBuilder<(ins "StringRef":$callee, CArg<"ValueRange", "{}">:$operands, CArg<"TypeRange", "{}">:$results), [{
+            build($_builder, $_state, $_builder.getStringAttr(callee), operands, results);
+        }]>,
+    ];
 }
 
 class Daphne_ElementwiseBinaryOp<string mnemonic, list<OpTrait> traits = []> :

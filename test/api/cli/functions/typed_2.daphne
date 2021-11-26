@@ -1,0 +1,12 @@
+// multiple definitions with different types, with typed and untyped returns (inputs typed)
+def function(mat : matrix<f64>) {
+    return sum(mat);
+}
+def function(mat : matrix<si64>) -> si64 {
+    return sum(mat);
+}
+
+// check if there is a problem when result is not used
+function(rand(100, 10, 0.0, 1.0, 1.0, 7));
+print(function(rand(100, 10, 0.0, 1.0, 1.0, 7)));
+print(function(rand(100, 10, 0, 10, 1.0, 11)));

@@ -45,6 +45,8 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
 }
 
 ssize_t getSizeOrUnknown(Value v) {
+    if (!v.getDefiningOp()) // check if block argument
+        return -1;
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
             return intAttr.getValue().getLimitedValue();
@@ -52,6 +54,38 @@ ssize_t getSizeOrUnknown(Value v) {
     if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
         return getSizeOrUnknown(co.arg());
     return -1; // the value of the scalar is unknown at the moment
+}
+
+// TODO This is just a quick and dirty workaround. Make this a central utility.
+int64_t getConstantInt(Value v) {
+    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
+            return intAttr.getValue().getLimitedValue();
+    // TODO Remove this once we support constant propagation (see #151).
+    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
+        return getConstantInt(co.arg());
+    if(auto co = llvm::dyn_cast<daphne::EwSubOp>(v.getDefiningOp()))
+        return getConstantInt(co.lhs()) - getConstantInt(co.rhs());
+    if(auto co = llvm::dyn_cast<daphne::EwDivOp>(v.getDefiningOp()))
+        return getConstantInt(co.lhs()) / getConstantInt(co.rhs());
+    if(auto co = llvm::dyn_cast<daphne::NumColsOp>(v.getDefiningOp()))
+        return getSizeOrUnknown(co.arg());
+    throw std::runtime_error("expected an integer constant");
+}
+
+// TODO This is just a quick and dirty workaround. Make this a central utility.
+double getConstantDouble(Value v) {
+    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto floatAttr = co.value().dyn_cast<FloatAttr>())
+            return floatAttr.getValue().convertToDouble();
+    // TODO Remove this once we support constant propagation (see #151).
+    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp())) {
+        if(co.arg().getType().isF64())
+            return getConstantDouble(co.arg());
+        else
+            return static_cast<double>(getConstantInt(co.arg()));
+    }
+    throw std::runtime_error("expected a floating-point constant");
 }
 
 ssize_t inferNumRowsFromArgs(ValueRange vs) {
@@ -136,6 +170,25 @@ ssize_t daphne::CartesianOp::inferNumRows() {
     auto ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
     auto ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
     return ftLhs.getNumRows() * ftRhs.getNumRows();
+}
+
+ssize_t daphne::SeqOp::inferNumRows() {
+    if(from().getType().isF64()) {
+        double vFrom = getConstantDouble(from());
+        double vTo = getConstantDouble(to());
+        double vInc = getConstantDouble(inc());
+        return floor(vTo / vInc - vFrom / vInc) + 1;
+    }
+    else if(from().getType().isSignedInteger(64)) {
+        int64_t vFrom = getConstantInt(from());
+        int64_t vTo = getConstantInt(to());
+        int64_t vInc = getConstantInt(inc());
+        return abs(vTo - vFrom) / abs(vInc) + 1;
+    }
+    throw std::runtime_error(
+            "at the moment, shape inference for SeqOp supports only F64 and "
+            "SI64 value types"
+    );
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CreateFrameOp::inferShape() {

@@ -25,6 +25,8 @@ def DistributableOpInterface : OpInterface<"Distributable"> {
   }];
 
   let methods = [
+    InterfaceMethod<"Decide which distribution primitive (`false` for distribute or `true` for broadcast) to apply for each individual operand.",
+                    "std::vector<bool>", "getOperandDistrPrimitives">,
     InterfaceMethod<"Get the equivalent distributed operations.",
                     "std::vector<Value>", "createEquivalentDistributedDAG",
                     (ins "mlir::OpBuilder&":$builder, "mlir::ValueRange":$distributedInputs)>

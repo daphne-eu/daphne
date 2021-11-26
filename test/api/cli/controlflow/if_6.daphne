@@ -1,0 +1,7 @@
+// Assign new value in then/else branches, same shape.
+X = fill(10, 2, 3);
+if(true)
+    X = X + 1;
+else
+    X = fill(20, 2, 3);
+print(sum(X));

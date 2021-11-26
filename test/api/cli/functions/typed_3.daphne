@@ -1,0 +1,11 @@
+// multiple definitions with different number of arguments (inputs typed)
+def f(a : si64) {
+    print(a);
+}
+def f(a : si64, b : si64) {
+    print(a);
+    print(b);
+}
+
+f(1);
+f(2, 3);

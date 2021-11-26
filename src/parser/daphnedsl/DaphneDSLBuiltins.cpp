@@ -134,13 +134,17 @@ template<class AllAggOp, class RowAggOp, class ColAggOp, class GrpAggOp>
 mlir::Value DaphneDSLBuiltins::createAnyAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     const size_t numArgs = args.size();
     checkNumArgsBetween(func, numArgs, 1, 3);
-    if(args.size() == 1)
+    if(args.size() == 1) {
+        if(args[0].getType() == utils.unknownType) {
+            return static_cast<mlir::Value>(builder.create<AllAggOp>(loc, utils.unknownType, args[0]));
+        }
         return static_cast<mlir::Value>(
-                builder.create<AllAggOp>(
-                        // TODO this crashes if the input is not a matrix
-                        loc, args[0].getType().dyn_cast<mlir::daphne::MatrixType>().getElementType(), args[0]
-                )
+            builder.create<AllAggOp>(
+                // TODO this crashes if the input is not a matrix
+                loc, args[0].getType().dyn_cast<mlir::daphne::MatrixType>().getElementType(), args[0]
+            )
         );
+    }
     else if(numArgs == 2)
         return createRowOrColAggOp<RowAggOp, ColAggOp>(loc, func, args);
     else // numArgs == 3
