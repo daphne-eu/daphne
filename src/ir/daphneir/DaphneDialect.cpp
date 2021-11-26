@@ -355,6 +355,7 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
 // ****************************************************************************
 
 mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
+#if 0
     if(auto in = operands[0].dyn_cast_or_null<IntegerAttr>()) {
         if(getType().isa<IntegerType>()) {
             return IntegerAttr::get(getType(), in.getValue());
@@ -366,6 +367,7 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
         }
     }
     // TODO: int to float and float to int?
+#endif
     return {};
 }
 
@@ -403,20 +405,20 @@ mlir::OpFoldResult mlir::daphne::EwMulOp::fold(ArrayRef<Attribute> operands) {
 mlir::OpFoldResult mlir::daphne::EwDivOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a / b; };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(b == 0) {
-          std::string msg = "Can't divide by 0";
-          emitError() << msg;
-          throw std::runtime_error(msg);
-      }
-      return a.sdiv(b);
+        if(b == 0) {
+            std::string msg = "Can't divide by 0";
+            emitError() << msg;
+            throw std::runtime_error(msg);
+        }
+        return a.sdiv(b);
     };
     auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(b == 0) {
-          std::string msg = "Can't divide by 0";
-          emitError() << msg;
-          throw std::runtime_error(msg);
-      }
-      return a.udiv(b);
+        if(b == 0) {
+            std::string msg = "Can't divide by 0";
+            emitError() << msg;
+            throw std::runtime_error(msg);
+        }
+        return a.udiv(b);
     };
 
     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
@@ -439,20 +441,20 @@ mlir::OpFoldResult mlir::daphne::EwPowOp::fold(ArrayRef<Attribute> operands) {
 
 mlir::OpFoldResult mlir::daphne::EwModOp::fold(ArrayRef<Attribute> operands) {
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(b == 0) {
-          std::string msg = "Can't compute mod 0";
-          emitError() << msg;
-          throw std::runtime_error(msg);
-      }
-      return a.srem(b);
+        if(b == 0) {
+            std::string msg = "Can't compute mod 0";
+            emitError() << msg;
+            throw std::runtime_error(msg);
+        }
+        return a.srem(b);
     };
     auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(b == 0) {
-          std::string msg = "Can't compute mod 0";
-          emitError() << msg;
-          throw std::runtime_error(msg);
-      }
-      return a.urem(b);
+        if(b == 0) {
+            std::string msg = "Can't compute mod 0";
+            emitError() << msg;
+            throw std::runtime_error(msg);
+        }
+        return a.urem(b);
     };
     if(getType().isSignedInteger()) {
         if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
@@ -467,8 +469,8 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(ArrayRef<Attribute> operands) {
 
 mlir::OpFoldResult mlir::daphne::EwLogOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
-      // Equivalent to log_b(a)
-      return ilogb(a) / ilogb(b);
+        // Equivalent to log_b(a)
+        return ilogb(a) / ilogb(b);
     };
     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
         return res;
@@ -478,16 +480,16 @@ mlir::OpFoldResult mlir::daphne::EwLogOp::fold(ArrayRef<Attribute> operands) {
 mlir::OpFoldResult mlir::daphne::EwMinOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::minimum(a, b); };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(a.slt(b))
-          return a;
-      else
-          return b;
+        if(a.slt(b))
+            return a;
+        else
+            return b;
     };
     auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(a.ult(b))
-          return a;
-      else
-          return b;
+        if(a.ult(b))
+            return a;
+        else
+            return b;
     };
     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
         return res;
@@ -505,16 +507,16 @@ mlir::OpFoldResult mlir::daphne::EwMinOp::fold(ArrayRef<Attribute> operands) {
 mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::maximum(a, b); };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(a.sgt(b))
-          return a;
-      else
-          return b;
+        if(a.sgt(b))
+            return a;
+        else
+            return b;
     };
     auto uintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
-      if(a.ugt(b))
-          return a;
-      else
-          return b;
+        if(a.ugt(b))
+            return a;
+        else
+            return b;
     };
     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
         return res;

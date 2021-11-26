@@ -962,7 +962,7 @@ def Daphne_BroadcastOp : Daphne_Op<"broadcast"> {
     let results = (outs Handle:$res);
 }
 
-def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect, IsolatedFromAbove, IsolatedFromAbove]> {
+def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect, IsolatedFromAbove]> {
     let arguments = (ins Variadic<Handle>:$args);
     let results = (outs Variadic<Handle>:$res);
     let regions = (region SizedRegion<1>:$body);
