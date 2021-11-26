@@ -113,6 +113,43 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
 }
 
 /**
+ * @brief Executes the specified program with the given arguments in the background.
+ *  
+ * @param out The file descriptor where to redirect standart output.
+ * @param err The file descriptor where to redirect standart error.
+ * @param execPath The path to the executable.
+ * @param args The arguments to pass. Despite the variadic template, each
+ * element should be of type `char *`. The first one should be the name of the
+ * program itself. The last one does *not* need to be a null pointer.
+ * @return The process id of the child process.
+ * 
+ */
+template<typename... Args>
+pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ... args) {        
+    
+    // Try to create the child process.
+    pid_t p = fork();
+    
+    if(p == -1)
+        throw std::runtime_error("could not create child process");
+    else if(p) { // parent        
+        // Return pid
+        return p;
+    }
+    else { // child
+        // Redirect stdout and stderr to the pipe.
+        dup2(out, STDOUT_FILENO);
+        dup2(err, STDERR_FILENO);
+        // Execute other program.
+        execl(execPath, args..., static_cast<char *>(nullptr));
+        
+        // execl does not return, unless it failed.
+        throw std::runtime_error("could not execute the program");
+    }
+}
+
+
+/**
  * @brief Executes the given DaphneDSL script with the command line interface
  * of the DAPHNE Prototype and captures `stdout`, `stderr`, and the status code.
  * 
