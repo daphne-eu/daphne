@@ -505,6 +505,7 @@
             ["double", "double", "double"],
             ["float", "float", "float"],
             ["int64_t", "int64_t", "int64_t"],
+            ["uint64_t", "uint64_t", "uint64_t"],
             ["uint32_t", "uint32_t", "uint32_t"]
         ],
         "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
@@ -838,6 +839,9 @@
             ["double"],
             ["float"],
             ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
             ["uint32_t"],
             ["uint8_t"],
             ["bool"],

@@ -24,6 +24,7 @@ set(TEST_SOURCES
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/literals/LiteralsTest.cpp
+        api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
