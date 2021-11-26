@@ -1,0 +1,57 @@
+// TODO: lower precision float and integers
+a_f = 1.2345678;
+b_f = 42.1234901;
+a_si = 99;
+b_si = -99;
+a_ui = as.ui64(899);
+b_ui = as.ui64(171);
+t = true;
+f = false;
+// TODO: string concat
+
+print(t && t);
+print(t && f);
+print(f && t);
+print(f && f);
+print(t || t);
+print(t || f);
+print(f || t);
+print(f || f);
+
+print(a_f +  b_f);
+print(a_f -  b_f);
+print(a_f *  b_f);
+print(a_f /  b_f);
+// TODO: pow constant folding
+print(a_f == b_f);
+print(a_f != b_f);
+print(a_f <  b_f);
+print(a_f <= b_f);
+print(a_f >  b_f);
+print(a_f >= b_f);
+
+print(a_si +  b_si);
+print(a_si -  b_si);
+print(a_si *  b_si);
+print(a_si /  b_si);
+print(a_si %  b_si);
+// TODO: pow constant folding
+print(a_si == b_si);
+print(a_si != b_si);
+print(a_si <  b_si);
+print(a_si <= b_si);
+print(a_si >  b_si);
+print(a_si >= b_si);
+
+print(a_ui +  b_ui);
+print(a_ui -  b_ui);
+print(a_ui *  b_ui);
+print(a_ui /  b_ui);
+print(a_ui %  b_ui);
+// TODO: pow constant folding
+print(a_ui == b_ui);
+print(a_ui != b_ui);
+print(a_ui <  b_ui);
+print(a_ui <= b_ui);
+print(a_ui >  b_ui);
+print(a_ui >= b_ui);
