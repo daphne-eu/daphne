@@ -211,15 +211,16 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
             $_state.addOperands({lhs, rhs});
         }]>
     ];
+    let hasFolder = 1;
 }
 
 // ----------------------------------------------------------------------------
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [EwSparseIfBoth]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth]>;
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth]>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [EwSparseIfEither]>;
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative, EwSparseIfEither]>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
 def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar>;
@@ -229,16 +230,16 @@ def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", FloatScalar>;
 // Min/max
 // ----------------------------------------------------------------------------
 
-def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar>;
-def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar>;
+def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, [Commutative]>;
+def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [Commutative]>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>>;
-def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>>;
-def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntScalar]>>;
+def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>, [Commutative]>;
+def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>, [Commutative]>;
+def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntScalar]>, [Commutative]>;
 
 // ----------------------------------------------------------------------------
 // Strings
@@ -264,8 +265,8 @@ class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = [
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
 }
 
-def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar>;
-def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar>;
+def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]>;
+def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, [Commutative]>;
 def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
 def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
 def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
@@ -315,7 +316,7 @@ class Daphne_ColAggOp<string name, Type inScalarType, Type outScalarType = inSca
 
 def Daphne_RowAggSumOp    : Daphne_RowAggOp<"sumRow"   , NumScalar, NumScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 def Daphne_RowAggMinOp    : Daphne_RowAggOp<"minRow"   , AnyScalar, AnyScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
-def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar>;
+def Daphne_RowAggMaxOp    : Daphne_RowAggOp<"maxRow"   , AnyScalar, AnyScalar, [DeclareOpInterfaceMethods<DistributableOpInterface>]>;
 def Daphne_RowAggIdxMinOp : Daphne_RowAggOp<"idxminRow", NumScalar>;
 def Daphne_RowAggIdxMaxOp : Daphne_RowAggOp<"idxmaxRow", NumScalar>;
 def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
@@ -936,6 +937,7 @@ def Daphne_CastOp : Daphne_Op<"cast", [
     // specified as the output type when creating a CastOp.
     let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$res);
+    let hasFolder = 1;
 
     let extraClassDeclaration = [{
         bool isTrivialCast() {
@@ -974,17 +976,17 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
 // Distributed Operations
 // ****************************************************************************
 
-def Daphne_DistributeOp : Daphne_Op<"distribute"> {
+def Daphne_DistributeOp : Daphne_Op<"distribute", [NoSideEffect]> {
     let arguments = (ins Matrix:$mat);
     let results = (outs Handle:$res);
 }
 
-def Daphne_BroadcastOp : Daphne_Op<"broadcast"> {
+def Daphne_BroadcastOp : Daphne_Op<"broadcast", [NoSideEffect]> {
     let arguments = (ins Matrix:$mat);
     let results = (outs Handle:$res);
 }
 
-def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect]> {
+def Daphne_DistributedComputeOp : Daphne_Op<"distributedCompute", [NoSideEffect, IsolatedFromAbove]> {
     let arguments = (ins Variadic<Handle>:$args);
     let results = (outs Variadic<Handle>:$res);
     let regions = (region SizedRegion<1>:$body);
@@ -1132,6 +1134,7 @@ def Daphne_InitCUDAContextOp : Daphne_Op<"initCUDAContext"> {
 // ****************************************************************************
 
 // TODO: should be recursive side effects
+// TODO: use symbol handling (should be isolated from above, but needs reference to daphne context)
 def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOperandSegments]> {
     let summary = "Performs multi-threaded vector-wise computations of the input.";
 

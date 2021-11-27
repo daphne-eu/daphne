@@ -76,6 +76,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             }
         }
         mlir::PassManager pm(&context_);
+        pm.addPass(mlir::createCanonicalizerPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
@@ -83,12 +85,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
+            pm.addPass(mlir::createCSEPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
         }
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
-            // TODO: this can be moved outside without problem, should we?
-            pm.addPass(mlir::createCanonicalizerPass());
         }
+        pm.addPass(mlir::createCanonicalizerPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
