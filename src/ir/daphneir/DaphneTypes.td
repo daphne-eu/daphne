@@ -49,7 +49,7 @@ def Matrix : Daphne_Type<"Matrix"> {
     // TODO Maybe we should rename "element type" to "value type" everywhere.
     let parameters = (ins
         "::mlir::Type":$elementType,
-        "ssize_t":$numRows, "ssize_t":$numCols, "float":$sparsity
+        "ssize_t":$numRows, "ssize_t":$numCols, "double":$sparsity
     );
     let genVerifyDecl = 1;
     // NOTE: float needs special treatment for equality check and hashing (epsilon)
@@ -76,7 +76,7 @@ def Matrix : Daphne_Type<"Matrix"> {
             return get(getContext(), getElementType(), numRows, numCols, getSparsity());
         }
 
-        ::mlir::daphne::MatrixType withSparsity(float sparsity) {
+        ::mlir::daphne::MatrixType withSparsity(double sparsity) {
             return get(getContext(), getElementType(), getNumRows(), getNumCols(), sparsity);
         }
 

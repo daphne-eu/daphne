@@ -941,19 +941,22 @@ def Daphne_CastOp : Daphne_Op<"cast", [
 
     let extraClassDeclaration = [{
         bool isTrivialCast() {
-            auto inTy = arg().getType();
-            auto outTy = res().getType();
-            if (inTy == outTy) {
-                return true;
-            }
-            auto inMatTy = inTy.dyn_cast<daphne::MatrixType>();
-            auto outMatTy = outTy.dyn_cast<daphne::MatrixType>();
-            if (inMatTy && outMatTy) {
-                // ignore some properties that might differ due to SCF operations
-                // TODO: maybe size could also be ignored
-                if (inMatTy.withSparsity(-1.0) == outMatTy.withSparsity(-1.0)) {
+            return arg().getType() == res().getType();
+        }
+        /**
+         * @brief This cast just removes specifics from a matrix type, making them unknown instead.
+         *
+         * Usually casts like this need to exist to make the IR correct for SCF operations.
+         * @return true if this cast just tags some known information unknown, false otherwise
+         */
+        bool isMatrixPropertyCast() {
+            auto inTy = arg().getType().dyn_cast<daphne::MatrixType>();
+            auto outTy = res().getType().dyn_cast<daphne::MatrixType>();
+            if (inTy && outTy) {
+                if (inTy.withSparsity(-1.0) == outTy.withSparsity(-1.0)) {
                     return true;
                 }
+                // TODO: extend when we have more properties
             }
             return false;
         }

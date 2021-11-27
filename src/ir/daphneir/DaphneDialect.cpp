@@ -233,12 +233,12 @@ namespace mlir::daphne {
         struct MatrixTypeStorage : public ::mlir::TypeStorage {
             // TODO: adapt epsilon for equality check (I think the only use is saving memory for the MLIR-IR representation of this type)
             //  the choosen epsilon directly defines how accurate our sparsity inference can be
-            constexpr static const float epsilon = 1e-6;
-            MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows, ssize_t numCols, float sparsity)
+            constexpr static const double epsilon = 1e-6;
+            MatrixTypeStorage(::mlir::Type elementType, ssize_t numRows, ssize_t numCols, double sparsity)
                 : elementType(elementType), numRows(numRows), numCols(numCols), sparsity(sparsity) {}
 
             /// The hash key is a tuple of the parameter types.
-            using KeyTy = std::tuple<::mlir::Type, ssize_t, ssize_t, float>;
+            using KeyTy = std::tuple<::mlir::Type, ssize_t, ssize_t, double>;
             bool operator==(const KeyTy &tblgenKey) const {
                 if(!(elementType == std::get<0>(tblgenKey)))
                     return false;
@@ -273,13 +273,13 @@ namespace mlir::daphne {
             ::mlir::Type elementType;
             ssize_t numRows;
             ssize_t numCols;
-            float sparsity;
+            double sparsity;
         };
     }
     ::mlir::Type MatrixType::getElementType() const { return getImpl()->elementType; }
     ssize_t MatrixType::getNumRows() const { return getImpl()->numRows; }
     ssize_t MatrixType::getNumCols() const { return getImpl()->numCols; }
-    float MatrixType::getSparsity() const { return getImpl()->sparsity; }
+    double MatrixType::getSparsity() const { return getImpl()->sparsity; }
 }
 
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
@@ -291,7 +291,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(
         ::llvm::function_ref<::mlir::InFlightDiagnostic()> emitError,
         Type elementType,
-        ssize_t numRows, ssize_t numCols, float sparsity
+        ssize_t numRows, ssize_t numCols, double sparsity
 )
 {
     if (
@@ -441,19 +441,59 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
 // ****************************************************************************
 
 mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
-#if 0
+    if (isTrivialCast()) {
+        if (operands[0])
+            return {operands[0]};
+        else
+            return {arg()};
+    }
     if(auto in = operands[0].dyn_cast_or_null<IntegerAttr>()) {
-        if(getType().isa<IntegerType>()) {
-            return IntegerAttr::get(getType(), in.getValue());
+        auto apInt = in.getValue();
+        if(auto outTy = getType().dyn_cast<IntegerType>()) {
+            // TODO: throw exception if bits truncated?
+            if(outTy.isUnsignedInteger()) {
+                apInt = apInt.zextOrTrunc(outTy.getWidth());
+            }
+            else if(outTy.isSignedInteger()) {
+                apInt = apInt.sextOrTrunc(outTy.getWidth());
+            }
+            return IntegerAttr::getChecked(getLoc(), outTy, apInt);
+        }
+        if(getType().isF64()) {
+            if(in.getType().isSignedInteger()) {
+                return FloatAttr::getChecked(getLoc(),
+                    getType(),
+                    llvm::APIntOps::RoundSignedAPIntToDouble(in.getValue()));
+            }
+            if(in.getType().isUnsignedInteger()) {
+                return FloatAttr::getChecked(getLoc(), getType(), llvm::APIntOps::RoundAPIntToDouble(in.getValue()));
+            }
+        }
+        if(getType().isF32()) {
+            if(in.getType().isSignedInteger()) {
+                return FloatAttr::getChecked(getLoc(),
+                    getType(),
+                    llvm::APIntOps::RoundSignedAPIntToFloat(in.getValue()));
+            }
+            if(in.getType().isUnsignedInteger()) {
+                return FloatAttr::get(getType(), llvm::APIntOps::RoundAPIntToFloat(in.getValue()));
+            }
         }
     }
-    else if(auto in = operands[0].dyn_cast_or_null<FloatAttr>()) {
-        if(getType().isa<FloatType>()) {
-            return FloatAttr::get(getType(), in.getValue());
+    if(auto in = operands[0].dyn_cast_or_null<FloatAttr>()) {
+        auto val = in.getValueAsDouble();
+        if(getType().isF64()) {
+            return FloatAttr::getChecked(getLoc(), getType(), val);
+        }
+        if(getType().isF32()) {
+            return FloatAttr::getChecked(getLoc(), getType(), static_cast<float>(val));
+        }
+        if(getType().isIntOrIndex()) {
+            auto num = static_cast<int64_t>(val);
+            return IntegerAttr::getChecked(getLoc(), getType(), num);
         }
     }
     // TODO: int to float and float to int?
-#endif
     return {};
 }
 
@@ -521,7 +561,12 @@ mlir::OpFoldResult mlir::daphne::EwDivOp::fold(ArrayRef<Attribute> operands) {
 }
 
 mlir::OpFoldResult mlir::daphne::EwPowOp::fold(ArrayRef<Attribute> operands) {
-    // TODO: EwPowOp constant folding
+    // TODO: EwPowOp integer constant folding
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
+        return std::pow(a.convertToDouble(), b.convertToDouble());
+    };
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
     return {};
 }
 
