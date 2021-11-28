@@ -49,7 +49,7 @@ def Matrix : Daphne_Type<"Matrix"> {
     // TODO Maybe we should rename "element type" to "value type" everywhere.
     let parameters = (ins
         "::mlir::Type":$elementType,
-        "ssize_t":$numRows, "ssize_t":$numCols, "double":$sparsity
+        "ssize_t":$numRows, "ssize_t":$numCols, "double":$sparsity, "MatrixRepresentation":$representation
     );
     let genVerifyDecl = 1;
     // NOTE: float needs special treatment for equality check and hashing (epsilon)
@@ -59,25 +59,29 @@ def Matrix : Daphne_Type<"Matrix"> {
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1, -1.0);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Dense);
         }]>,
     ];
 
-    let extraClassDeclaration = [{
+let extraClassDeclaration = [{
         // The following methods return a MatrixType with the same parameters
         // as this MatrixType, except for one parameter, which is replaced by a
         // new value.
 
         ::mlir::daphne::MatrixType withElementType(::mlir::Type elementType) {
-            return get(getContext(), elementType, getNumRows(), getNumCols(), getSparsity());
+            return get(getContext(), elementType, getNumRows(), getNumCols(), getSparsity(), getRepresentation());
         }
 
         ::mlir::daphne::MatrixType withShape(ssize_t numRows, ssize_t numCols) {
-            return get(getContext(), getElementType(), numRows, numCols, getSparsity());
+            return get(getContext(), getElementType(), numRows, numCols, getSparsity(), getRepresentation());
         }
 
         ::mlir::daphne::MatrixType withSparsity(double sparsity) {
-            return get(getContext(), getElementType(), getNumRows(), getNumCols(), sparsity);
+            return get(getContext(), getElementType(), getNumRows(), getNumCols(), sparsity, getRepresentation());
+        }
+
+        ::mlir::daphne::MatrixType withRepresentation(::mlir::daphne::MatrixRepresentation rep) {
+            return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), rep);
         }
 
         // The following method returns a MatrixType with the same element type
@@ -85,6 +89,30 @@ def Matrix : Daphne_Type<"Matrix"> {
 
         ::mlir::daphne::MatrixType withSameElementType() {
             return get(getContext(), getElementType());
+        }
+
+        /**
+         * @brief Check if other has strictly less information than this matrix type.
+         * @param other other matrix type to compare against
+         * @return true if this type has more information, false otherwise
+         */
+        bool isSpecializationOf(::mlir::daphne::MatrixType other) {
+            if (getElementType() != other.getElementType())
+                return false;
+
+            if (other.getNumRows() != -1 && getNumRows() != other.getNumRows())
+                return false;
+
+            if (other.getNumCols() != -1 && getNumCols() != other.getNumCols())
+                return false;
+
+            if (other.getSparsity() != -1.0 && getSparsity() != other.getSparsity())
+                return false;
+
+            if(other.getRepresentation() != ::mlir::daphne::MatrixRepresentation::Default
+                && getRepresentation() != other.getRepresentation())
+                return false;
+            return true;
         }
     }];
 }
