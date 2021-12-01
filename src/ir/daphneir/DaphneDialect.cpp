@@ -108,7 +108,7 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         }
 
         return MatrixType::get(
-                parser.getBuilder().getContext(), elementType, numRows, numCols, -1.0
+                parser.getBuilder().getContext(), elementType, numRows, numCols, sparsity
         );
     }
     else if (keyword == "Frame") {
@@ -493,7 +493,6 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
             return IntegerAttr::getChecked(getLoc(), getType(), num);
         }
     }
-    // TODO: int to float and float to int?
     return {};
 }
 

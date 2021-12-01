@@ -27,7 +27,7 @@ def InferSparsityOpInterface : OpInterface<"InferSparsity"> {
 
     let methods = [
         InterfaceMethod<
-                "Infer the sparsity(s) the output data object(s).",
+                "Infer the sparsity(s) of the output data object(s).",
                 "std::vector<double>", "inferSparsity", (ins)
         >
     ];

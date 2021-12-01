@@ -32,9 +32,9 @@ def SparsityFromArg : SparsityFromIthArg<0>;
 // Traits determining sparsity for elementwise ops
 // ****************************************************************************
 
-// if both elements are zero is the result is zero
+// if both elements are zero, the result is zero
 def EwSparseIfBoth : NativeOpTrait<"EwSparseIfBoth">;
-// if either elements is zero is the result is zero
+// if either element is zero, the result is zero
 def EwSparseIfEither : NativeOpTrait<"EwSparseIfEither">;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNEINFERSPARSITYTRAITS_TD

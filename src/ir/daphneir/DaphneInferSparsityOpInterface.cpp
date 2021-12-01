@@ -39,7 +39,7 @@ double getSparsityOrUnknownFromType(Value v) {
         return mt.getSparsity();
     else // scalar or frame
         // TODO: read scalar value (if 0 -> sparsity 0.0)
-        return 1.0;
+        return -1.0;
 }
 
 double getSparsityOrUnknownFromScalar(Value v) {
@@ -88,6 +88,8 @@ std::vector<double> daphne::TriOp::inferSparsity() {
 // Sparsity inference trait implementations
 // ****************************************************************************
 
+// TODO This is also used in DaphneInferShapeOpInterface.cpp, make it a central
+// utility.
 /**
  * @brief Utility for trying a parametric trait for all values of the parameter
  * from 0 to some upper bound.
