@@ -538,7 +538,6 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
             return IntegerAttr::getChecked(getLoc(), getType(), num);
         }
     }
-    // TODO: int to float and float to int?
     return {};
 }
 

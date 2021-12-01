@@ -21,13 +21,13 @@
 #include <utility>
 
 // ****************************************************************************
-// Shape inference traits
+// Sparsity inference traits
 // ****************************************************************************
 
 // All of these traits address operations with **exactly one result**.
 // Supporting multiple results would complicate the traits unnecessarily, given
 // the low number of DaphneIR operations with multiple results. Thus,
-// operations with multiple results should simply implement the shape inference
+// operations with multiple results should simply implement the sparsity inference
 // interface instead of using traits.
 
 namespace mlir::OpTrait {
@@ -55,6 +55,7 @@ template<class ConcreteOp>
 class EwSparseIfEither : public TraitBase<ConcreteOp, EwSparseIfEither> {};
 template<class ConcreteOp>
 class EwSparseIfBoth : public TraitBase<ConcreteOp, EwSparseIfBoth> {};
+
 }
 
 // ****************************************************************************
@@ -82,8 +83,8 @@ namespace mlir::daphne {
  * have any relevant traits or interfaces, -1.0 (unknown) will be returned for sparsity.
  *
  * @param op The operation whose results' sparsities shall be inferred.
- * @return A vector of sparsity. The i-th
- * pair in this vector represents the sparsity of the i-th result of the given
+ * @return A vector of sparsity. The i-th element in this vector represents the
+ * sparsity of the i-th result of the given
  * operation. A value of -1.0 for any sparsity indicates
  * that this number is not known (yet).
  */
