@@ -156,7 +156,6 @@ public:
     //std::cout<<"chunk"<<schedulingStep<< "is "<< chunkSize<<std::endl;
     return chunkSize;
     } 
-
 };
 
 #endif //SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
