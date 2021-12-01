@@ -72,20 +72,16 @@ public:
             res = DataObjectFactory::create<DenseMatrix<VT>>(input1->getNumRows(), input1->getNumCols(), false);
 
         // create tasks and close input
-        // TODO UNIBAS - integration hook scheduling
-        
         uint64_t rlen = input1->getNumRows();
         uint64_t startChunk=0;
         uint64_t endChunk=0;
         uint64_t batchsize = 1; // row-at-a-time
         uint64_t chunkParam=1;
-        //std::cout<<"tasks "<<rlen<<" workers "<<_numThreads<<std::endl;
         LoadPartitioning lp(STATIC, rlen, chunkParam,_numThreads, false); 
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
                 func, res, input1, input2, startChunk, endChunk, batchsize));
-            //std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
             startChunk= endChunk;
         }
         q->closeInput();
@@ -117,7 +113,6 @@ public:
                  VectorCombine *combines,
                  bool verbose)
     {
-        //auto numTasks = _numThreads * 4;
         uint64_t len = 0;
         // due to possible broadcasting we have to check all inputs
         for (auto i = 0u; i < numInputs; ++i) {
@@ -126,7 +121,7 @@ public:
         } 
         // create task queue (w/o size-based blocking)
         TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
-         if(const char* env_m = std::getenv("DAPHNE_THREADS")){
+        if(const char* env_m = std::getenv("DAPHNE_THREADS")){
             _numThreads= std::stoi(env_m);
         }
         // create workers threads
@@ -147,13 +142,11 @@ public:
         std::mutex resLock;
 
         // create tasks and close input
-        // TODO UNIBAS - integration hook scheduling
         uint64_t startChunk = 0;
         uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
         uint64_t chunkParam = 1;
         LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false); 
-        //std::cout<<"worker "<<_numThreads<<std::endl;
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
@@ -170,7 +163,6 @@ public:
                 startChunk,
                 endChunk,
                 batchsize));
-           // std::cout<<"ChunkSize "<<endChunk-startChunk<<" Start " << startChunk<<" endChunk "<<endChunk<<std::endl;
             startChunk= endChunk;
         } 
         q->closeInput();

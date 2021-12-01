@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <cmath>
+
 #ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
 #define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
+
+#include <cmath>
 #include <cstdlib>
 #include <string>
-#include <iostream>
 
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
                             PLS, MSTATIC, MFSC, PSS};
@@ -58,7 +59,6 @@ public:
             method= getMethod(env_m);
         } 
         schedulingMethod = method;
-        //std::cout<<"Method "<<schedulingMethod<<std::endl;
         totalTasks = tasks;
         double tSize = (totalTasks+workers-1.0)/workers;
         mfscChunk = ceil(tSize*log(2.0)/log((1.0*tSize)));
@@ -80,7 +80,7 @@ public:
     bool hasNextChunk(){
         return scheduledTasks < totalTasks; 
     }  
- uint64_t getNextChunk(){
+    uint64_t getNextChunk(){
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
             case STATIC:{//STATIC
@@ -104,7 +104,7 @@ public:
                 chunkSize = (uint64_t) ceil(pow(0.5,actualStep+1)*(totalTasks/totalWorkers));
                 break;
             }
-            case TFSS:{//trapezoid factoring self-schedduling (TFSS)
+            case TFSS:{//trapezoid factoring self-scheduling (TFSS)
                 chunkSize = (uint64_t) ceil((double) remainingTasks/ ((double) 2.0*totalWorkers));
                 break;
             }
@@ -147,14 +147,13 @@ public:
                 chunkSize = (uint64_t)ceil(totalTasks/totalWorkers/4.0);
                 break;
             }
-    }
-    chunkSize = std::max(chunkSize,chunkParam);
-    chunkSize = std::min(chunkSize, remainingTasks);
-    schedulingStep++;
-    scheduledTasks+=chunkSize;
-    remainingTasks-=chunkSize;
-    //std::cout<<"chunk"<<schedulingStep<< "is "<< chunkSize<<std::endl;
-    return chunkSize;
+        }
+        chunkSize = std::max(chunkSize,chunkParam);
+        chunkSize = std::min(chunkSize, remainingTasks);
+        schedulingStep++;
+        scheduledTasks+=chunkSize;
+        remainingTasks-=chunkSize;
+        return chunkSize;
     } 
 };
 
