@@ -31,7 +31,6 @@
 
 void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) {
     CancelingErrorListener errorListener;
-    auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
     // TODO: we could remove `sourceName` arg and instead use location from module for filename
     auto module = llvm::cast<mlir::ModuleOp>(builder.getBlock()->getParentOp());
 
@@ -44,13 +43,16 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         // Run ANTLR-based DaphneDSL parser.
         antlr4::ANTLRInputStream input(stream);
         input.name = sourceName;
+
         DaphneDSLGrammarLexer lexer(&input);
         lexer.removeErrorListeners();
         lexer.addErrorListener(&errorListener);
         antlr4::CommonTokenStream tokens(&lexer);
+
         DaphneDSLGrammarParser parser(&tokens);
-        // TODO: evaluate if overloading error handler makes sense
-        parser.setErrorHandler(errorStrategy);
+        parser.removeErrorListeners();
+        parser.addErrorListener(&errorListener);
+
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
         DaphneDSLVisitor visitor(module, builder, args);
         visitor.visitScript(ctx);
