@@ -40,7 +40,7 @@ using namespace std;
 using namespace mlir;
 
 void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec]" << endl;
+    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" << endl;
 }
 
 int

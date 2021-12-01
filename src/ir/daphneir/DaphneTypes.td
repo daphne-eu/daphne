@@ -63,7 +63,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         }]>,
     ];
 
-let extraClassDeclaration = [{
+    let extraClassDeclaration = [{
         // The following methods return a MatrixType with the same parameters
         // as this MatrixType, except for one parameter, which is replaced by a
         // new value.

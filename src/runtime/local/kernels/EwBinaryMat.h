@@ -300,7 +300,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
                         if(rVal != 0) {
                             valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
                             colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
-                            posLhs++;
+                            posLhs++; // TODO bug? it gets incremented in the for loop already
                             posRes++;
                         }
                     }

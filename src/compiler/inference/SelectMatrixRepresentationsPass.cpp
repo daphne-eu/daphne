@@ -47,6 +47,8 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                     }
                 }
             }
+            // TODO For later: Don't duplicate the special treatment of SCF
+            // ops from InferencePass.
             // ----------------------------------------------------------------
             // Special treatment for some SCF operations
             // ----------------------------------------------------------------
