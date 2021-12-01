@@ -80,7 +80,7 @@ public:
     bool hasNextChunk(){
         return scheduledTasks < totalTasks; 
     }  
- uint64_t getNextChunk(){
+    uint64_t getNextChunk(){
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
             case STATIC:{//STATIC
@@ -155,7 +155,7 @@ public:
     remainingTasks-=chunkSize;
     //std::cout<<"chunk"<<schedulingStep<< "is "<< chunkSize<<std::endl;
     return chunkSize;
-    } 
+    }  
 
 };
 
