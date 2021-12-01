@@ -24,6 +24,7 @@ add_dependencies(mlir-headers MLIRDaphneOpsEnumsIncGen)
 add_mlir_interface(DaphneDistributableOpInterface)
 add_mlir_interface(DaphneInferFrameLabelsOpInterface)
 add_mlir_interface(DaphneInferShapeOpInterface)
+add_mlir_interface(DaphneInferSparsityOpInterface)
 add_mlir_interface(DaphneInferTypesOpInterface)
 add_mlir_interface(DaphneVectorizableOpInterface)
 
@@ -38,6 +39,7 @@ add_mlir_dialect_library(MLIRDaphne
     DaphneDistributableOpInterface.cpp
     DaphneInferFrameLabelsOpInterface.cpp
     DaphneInferShapeOpInterface.cpp
+    DaphneInferSparsityOpInterface.cpp
     DaphneInferTypesOpInterface.cpp
     DaphneVectorizableOpInterface.cpp
 

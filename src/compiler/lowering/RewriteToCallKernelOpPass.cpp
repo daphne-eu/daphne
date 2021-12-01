@@ -340,6 +340,9 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::VectorizedPipelineOp,
             daphne::GenericCallOp
     >();
+    target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
+        return op.isTrivialCast() || op.isMatrixPropertyCast();
+    });
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
     mlir::Value dctx = nullptr;

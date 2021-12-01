@@ -22,6 +22,8 @@ include "ir/daphneir/DaphneTypes.td"
 include "ir/daphneir/DaphneDistributableOpInterface.td"
 include "ir/daphneir/DaphneInferFrameLabelsOpInterface.td"
 include "ir/daphneir/DaphneInferShapeOpInterface.td"
+include "ir/daphneir/DaphneInferSparsityOpInterface.td"
+include "ir/daphneir/DaphneInferSparsityTraits.td"
 include "ir/daphneir/DaphneInferTypesOpInterface.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
@@ -88,7 +90,8 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
 
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">,
-    NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>
+    NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    SparsityFromIthScalar<4>
 ]> {
     //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
@@ -103,7 +106,7 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 }
 
 def Daphne_SeqOp : Daphne_Op<"seq", [
-    OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>
+    OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>, CompletelyDense
 ]> {
     let arguments = (ins NumScalar:$from, NumScalar:$to, NumScalar:$inc);
     let results = (outs MatrixOf<[NumScalar]>);
@@ -128,7 +131,8 @@ def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
 def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromIthArg<0>, NumColsFromIthArg<1>
+    NumRowsFromIthArg<0>, NumColsFromIthArg<1>,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs);
     let results = (outs MatrixOf<[NumScalar]>:$res);
@@ -214,9 +218,9 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative]>;
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth]>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth]>;
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative, EwSparseIfEither]>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar>;
 def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar>;
@@ -480,7 +484,7 @@ def Daphne_InsertRowOp : Daphne_Op<"insertRow"> {
 // ****************************************************************************
 
 def Daphne_ReshapeOp : Daphne_Op<"reshape", [
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, SparsityFromArg
 ]> {
     let arguments = (ins Matrix:$arg, Size:$numRows, Size:$numCols);
     let results = (outs Matrix:$res);
@@ -488,7 +492,7 @@ def Daphne_ReshapeOp : Daphne_Op<"reshape", [
 
 def Daphne_TransposeOp : Daphne_Op<"transpose", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, NumColsFromArgNumRows
+    NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg
 ]> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
@@ -695,7 +699,7 @@ def Daphne_DiagVectorOp : Daphne_Op<"diagVector", [
 //def Daphne_LowerTriOp : Daphne_TriOp<"lowerTri">;
 //def Daphne_UpperTriOp : Daphne_TriOp<"upperTri">;
 def Daphne_TriOp : Daphne_Op<"tri", [
-    ShapeFromArg
+    ShapeFromArg, DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     let arguments = (ins Matrix:$arg, BoolScalar:$upper, BoolScalar:$diag, BoolScalar:$values);
     let results = (outs Matrix:$res);
@@ -934,6 +938,29 @@ def Daphne_CastOp : Daphne_Op<"cast", [
     let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOrFrame, AnyScalar]>:$res);
     let hasFolder = 1;
+
+    let extraClassDeclaration = [{
+        bool isTrivialCast() {
+            return arg().getType() == res().getType();
+        }
+        /**
+         * @brief This cast just removes specifics from a matrix type, making them unknown instead.
+         *
+         * Usually casts like this need to exist to make the IR correct for SCF operations.
+         * @return true if this cast just tags some known information unknown, false otherwise
+         */
+        bool isMatrixPropertyCast() {
+            auto inTy = arg().getType().dyn_cast<daphne::MatrixType>();
+            auto outTy = res().getType().dyn_cast<daphne::MatrixType>();
+            if (inTy && outTy) {
+                if (inTy.withSparsity(-1.0) == outTy.withSparsity(-1.0)) {
+                    return true;
+                }
+                // TODO: extend when we have more properties
+            }
+            return false;
+        }
+    }];
 }
 
 def Daphne_CopyOp : Daphne_Op<"copy"> {
