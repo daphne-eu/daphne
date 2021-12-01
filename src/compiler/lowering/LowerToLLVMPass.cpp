@@ -116,6 +116,19 @@ struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
     }
 };
 
+struct CastOpLowering : public OpRewritePattern<daphne::CastOp> {
+    using OpRewritePattern<daphne::CastOp>::OpRewritePattern;
+
+    LogicalResult matchAndRewrite(daphne::CastOp op,
+                                  PatternRewriter &rewriter) const final {
+        if(op.isTrivialCast() || op.isMatrixPropertyCast()) {
+            rewriter.replaceOp(op, op.getOperand());
+            return success();
+        }
+        return failure();
+    }
+};
+
 /// ConstantOp lowering for types not handled before (str)
 
 class ConstantOpLowering : public OpConversionPattern<daphne::ConstantOp>
@@ -179,10 +192,12 @@ public:
         else {
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
-
+#if 1
+            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+#else
             // NOTE: this fixes printing due to an error in the LLVMDialect, but is the wrong behaviour.
             //  Use this for debugging only
-            /*if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
+            if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
                 auto ty = IntegerType::get(getContext(), iTy.getWidth());
                 rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(),
                     ty,
@@ -190,8 +205,8 @@ public:
             }
             else {
                 rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
-            }*/
-            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+            }
+#endif
         }
 
         return success();
@@ -223,7 +238,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
             else if (failed(typeConverter->convertType(type, args)))
                 emitError(loc) << "Couldn't convert operand type `" << type << "`\n";
         }
-        
+
         std::vector<Type> argsLLVM;
         for (size_t i = 0; i < args.size(); i++) {
             Type type = args[i]; //.cast<Type>();
@@ -682,6 +697,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
+    // for trivial casts no lowering to kernels -> higher benefit
+    patterns.insert<CastOpLowering>(&getContext(), 2);
     patterns.insert<
             CallKernelOpLowering,
             CreateVariadicPackOpLowering,

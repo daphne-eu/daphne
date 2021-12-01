@@ -28,12 +28,34 @@
 
 using namespace mlir;
 
-daphne::InferenceConfig::InferenceConfig(bool PartialInferenceAllowed,
-                                         bool TypeInference,
-                                         bool ShapeInference,
-                                         bool FrameLabelInference)
-    : partialInferenceAllowed(PartialInferenceAllowed), typeInference(TypeInference), shapeInference(ShapeInference),
-      frameLabelInference(FrameLabelInference) {}
+daphne::InferenceConfig::InferenceConfig(bool partialInferenceAllowed,
+                                         bool typeInference,
+                                         bool shapeInference,
+                                         bool frameLabelInference,
+                                         bool sparsityInference)
+    : partialInferenceAllowed(partialInferenceAllowed), typeInference(typeInference), shapeInference(shapeInference),
+      frameLabelInference(frameLabelInference), sparsityInference(sparsityInference) {}
+
+namespace {
+    /**
+     * @brief Removes properties that are fragile to changes in SCF operations (currently only sparsity). This
+     * ensures that they are valid in loop bodies. This is done inserting a `CastOp`
+     * @param opOperand The operand to the SCF operation
+     * @return the new type without the properties
+     */
+    Type removeSCFVariantProperties(OpOperand &opOperand) {
+        auto ty = opOperand.get().getType();
+        auto matTy = ty.dyn_cast<daphne::MatrixType>();
+        if(matTy && matTy.getSparsity() != -1.0) {
+            OpBuilder builder(opOperand.getOwner());
+            auto castOp = builder
+                .create<daphne::CastOp>(opOperand.getOwner()->getLoc(), matTy.withSparsity(-1.0), opOperand.get());
+            opOperand.set(castOp);
+            return castOp.getType();
+        }
+        return ty;
+    }
+}
 
 /**
  * @brief A compiler pass infering various properties of the data objects.
@@ -47,7 +69,7 @@ daphne::InferenceConfig::InferenceConfig(bool PartialInferenceAllowed,
  * Note that the actual inference logic is outsourced to MLIR operation
  * interfaces.
  */
-// TODO Currently, the properties to be infered are hardcoded, but we should
+// TODO Currently, the properties to be inferred are hardcoded, but we should
 // make them configurable, whereby different instances of this pass should be
 // able to infer different sets of properties.
 class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
@@ -77,40 +99,71 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
             // need the labels in all cases.
         }
 
-        // Shape inference.
-        if(cfg.shapeInference && returnsUnknownShape(op)) {
+        // Shape or Sparsity inference.
+        bool doShapeInference = cfg.shapeInference && returnsUnknownShape(op);
+        bool doSparsityInference = cfg.sparsityInference && returnsUnknownSparsity(op);
+        if(doShapeInference || doSparsityInference) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
             // Handle all non-SCF operations
             // ----------------------------------------------------------------
             if(!isScfOp) {
-                // Try to infer the shapes of all results of this operation.
-                std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
-                const size_t numRes = op->getNumResults();
-                if(shapes.size() != numRes)
-                    throw std::runtime_error(
-                            "shape inference for op " +
-                            op->getName().getStringRef().str() + " returned " +
-                            std::to_string(shapes.size()) + " shapes, but the "
-                            "op has " + std::to_string(numRes) + " results"
-                    );
-                // Set the infered shapes on all results of this operation.
-                for(size_t i = 0; i < numRes; i++) {
-                    const ssize_t numRows = shapes[i].first;
-                    const ssize_t numCols = shapes[i].second;
-                    Value rv = op->getResult(i);
-                    const Type rt = rv.getType();
-                    if(auto mt = rt.dyn_cast<daphne::MatrixType>())
-                        rv.setType(mt.withShape(numRows, numCols));
-                    else if(auto ft = rt.dyn_cast<daphne::FrameType>())
-                        rv.setType(ft.withShape(numRows, numCols));
-                    else
+                if (doShapeInference) {
+                    // Try to infer the shapes of all results of this operation.
+                    std::vector<std::pair<ssize_t, ssize_t>> shapes = daphne::tryInferShape(op);
+                    const size_t numRes = op->getNumResults();
+                    if(shapes.size() != numRes)
                         throw std::runtime_error(
-                                "shape inference cannot set the shape of op " +
-                                op->getName().getStringRef().str() +
-                                " operand " + std::to_string(i) + ", since it "
-                                "is neither a matrix nor a frame"
+                            "shape inference for op " +
+                                op->getName().getStringRef().str() + " returned " +
+                                std::to_string(shapes.size()) + " shapes, but the "
+                                                                "op has " + std::to_string(numRes) + " results"
                         );
+                    // Set the infered shapes on all results of this operation.
+                    for(size_t i = 0 ; i < numRes ; i++) {
+                        const ssize_t numRows = shapes[i].first;
+                        const ssize_t numCols = shapes[i].second;
+                        Value rv = op->getResult(i);
+                        const Type rt = rv.getType();
+                        if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+                            rv.setType(mt.withShape(numRows, numCols));
+                        else if(auto ft = rt.dyn_cast<daphne::FrameType>())
+                            rv.setType(ft.withShape(numRows, numCols));
+                        else
+                            throw std::runtime_error(
+                                "shape inference cannot set the shape of op " +
+                                    op->getName().getStringRef().str() +
+                                    " operand " + std::to_string(i) + ", since it "
+                                                                      "is neither a matrix nor a frame"
+                            );
+                    }
+                }
+                if (doSparsityInference) {
+                    // Try to infer the sparsity of all results of this operation.
+                    std::vector<double> sparsities = daphne::tryInferSparsity(op);
+                    const size_t numRes = op->getNumResults();
+                    if(sparsities.size() != numRes)
+                        throw std::runtime_error(
+                            "sparsity inference for op " +
+                                op->getName().getStringRef().str() + " returned " +
+                                std::to_string(sparsities.size()) + " shapes, but the "
+                                                                "op has " + std::to_string(numRes) + " results"
+                        );
+                    // Set the inferred sparsities on all results of this operation.
+                    for(size_t i = 0 ; i < numRes ; i++) {
+                        const double sparsity = sparsities[i];
+                        Value rv = op->getResult(i);
+                        const Type rt = rv.getType();
+                        if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+                            rv.setType(mt.withSparsity(sparsity));
+                        else
+                            throw std::runtime_error(
+                                "sparsity inference cannot set the shape of op " +
+                                    op->getName().getStringRef().str() +
+                                    " operand " + std::to_string(i) + ", since it "
+                                                                      "is not a matrix"
+                            );
+                    }
                 }
             }
             // ----------------------------------------------------------------
@@ -125,7 +178,7 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                 // Transfer the WhileOp's operand types to the block arguments
                 // and results to fulfill constraints on the WhileOp.
                 for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
-                    Type t = whileOp.getOperand(i).getType();
+                    Type t = removeSCFVariantProperties(whileOp->getOpOperand(i));
                     beforeBlock.getArgument(i).setType(t);
                     afterBlock.getArgument(i).setType(t);
                     whileOp.getResult(i).setType(t);
@@ -141,7 +194,7 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                 // throw a readable error message.
                 Operation * yieldOp = afterBlock.getTerminator();
                 for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
-                    Type yieldedTy = yieldOp->getOperand(i).getType();
+                    Type yieldedTy = removeSCFVariantProperties(yieldOp->getOpOperand(i));
                     Type resultTy = op->getResult(i).getType();
                     if(yieldedTy != resultTy)
                         throw std::runtime_error(
@@ -159,7 +212,7 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
                 for(size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                    Type t = forOp.getIterOperands()[i].getType();
+                    Type t = removeSCFVariantProperties(forOp.getIterOpOperands()[i]);
                     block.getArgument(i + numIndVars).setType(t);
                     forOp.getResult(i).setType(t);
                 }
@@ -173,7 +226,7 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                 // throw a readable error message.
                 Operation * yieldOp = block.getTerminator();
                 for(size_t i = 0; i < forOp.getNumIterOperands(); i++) {
-                    Type yieldedTy = yieldOp->getOperand(i).getType();
+                    Type yieldedTy = removeSCFVariantProperties(yieldOp->getOpOperand(i));
                     Type resultTy = op->getResult(i).getType();
                     if(yieldedTy != resultTy)
                         throw std::runtime_error(
@@ -198,8 +251,8 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                 scf::YieldOp thenYield = ifOp.thenYield();
                 scf::YieldOp elseYield = ifOp.elseYield();
                 for(size_t i = 0; i < ifOp.getNumResults(); i++) {
-                    Type thenTy = thenYield.getOperand(i).getType();
-                    Type elseTy = elseYield.getOperand(i).getType();
+                    Type thenTy = removeSCFVariantProperties(thenYield->getOpOperand(i));
+                    Type elseTy = removeSCFVariantProperties(elseYield->getOpOperand(i));
                     if(thenTy != elseTy)
                         throw std::runtime_error(
                                 "a variable must not be assigned values of "
@@ -254,6 +307,14 @@ public:
                 return mt.getNumRows() == -1 || mt.getNumCols() == -1;
             if(auto ft = rt.dyn_cast<daphne::FrameType>())
                 return ft.getNumRows() == -1 || ft.getNumCols() == -1;
+            return false;
+        });
+    }
+
+    static bool returnsUnknownSparsity(Operation * op) {
+        return llvm::any_of(op->getResultTypes(), [](Type rt) {
+            if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+                return mt.getSparsity() == -1.0;
             return false;
         });
     }
