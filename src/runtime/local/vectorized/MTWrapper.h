@@ -20,6 +20,7 @@
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/Workers.h>
+#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <thread>
@@ -52,8 +53,11 @@ public:
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
         DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
     {
+        if(const char* env_m = std::getenv("DAPHNE_THREADS")){
+            _numThreads= std::stoi(env_m);
+        }
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows());
+        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows()); // this the maximum possible number of tasks should we start with something smaller and it grows as ended?!
 
         // create workers threads
         WorkerCPU* workers[_numThreads];
@@ -68,20 +72,24 @@ public:
             res = DataObjectFactory::create<DenseMatrix<VT>>(input1->getNumRows(), input1->getNumCols(), false);
 
         // create tasks and close input
-        // TODO UNIBAS - integration hook scheduling
         uint64_t rlen = input1->getNumRows();
-        uint64_t blksize = (uint64_t)ceil((double)rlen/_numThreads/4);
+        uint64_t startChunk=0;
+        uint64_t endChunk=0;
         uint64_t batchsize = 1; // row-at-a-time
-        for(uint32_t k=0; (k<_numThreads*4) & (k*blksize<rlen); k++) {
+        uint64_t chunkParam=1;
+        LoadPartitioning lp(STATIC, rlen, chunkParam,_numThreads, false); 
+        while(lp.hasNextChunk()){
+            endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
-                func, res, input1, input2, k*blksize, std::min((k+1)*blksize,rlen), batchsize));
+                func, res, input1, input2, startChunk, endChunk, batchsize));
+            startChunk= endChunk;
         }
         q->closeInput();
-
+        
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
-
+ 
         // cleanups
         for(uint32_t i=0; i<_numThreads; i++)
             delete workers[i];
@@ -105,10 +113,17 @@ public:
                  VectorCombine *combines,
                  bool verbose)
     {
-        auto numTasks = _numThreads * 4;
+        uint64_t len = 0;
+        // due to possible broadcasting we have to check all inputs
+        for (auto i = 0u; i < numInputs; ++i) {
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+                len = std::max(len, inputs[i]->getNumRows());
+        } 
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(numTasks);
-
+        TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
+        if(const char* env_m = std::getenv("DAPHNE_THREADS")){
+            _numThreads= std::stoi(env_m);
+        }
         // create workers threads
         WorkerCPU* workers[_numThreads];
         std::thread workerThreads[_numThreads];
@@ -127,16 +142,13 @@ public:
         std::mutex resLock;
 
         // create tasks and close input
-        // TODO UNIBAS - integration hook scheduling
-        uint64_t len = 0;
-        // due to possible broadcasting we have to check all inputs
-        for (auto i = 0u; i < numInputs; ++i) {
-            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
-                len = std::max(len, inputs[i]->getNumRows());
-        }
-        uint64_t blksize = (len - 1) / numTasks + 1; // integer ceil
+        uint64_t startChunk = 0;
+        uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
-        for(uint32_t k = 0; k * blksize < len; k++) {
+        uint64_t chunkParam = 1;
+        LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false); 
+        while(lp.hasNextChunk()){
+            endChunk += lp.getNextChunk();
             q->enqueueTask(new CompiledPipelineTask<VT>(
                 func,
                 resLock,
@@ -148,10 +160,11 @@ public:
                 outCols,
                 splits,
                 combines,
-                k * blksize,
-                std::min((k + 1) * blksize, len),
+                startChunk,
+                endChunk,
                 batchsize));
-        }
+            startChunk= endChunk;
+        } 
         q->closeInput();
 
         // barrier (wait for completed computation)
