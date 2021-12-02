@@ -30,8 +30,17 @@ const std::string dirPath = "test/api/cli/algorithms/";
 
 TEST_CASE("components", TAG_ALGORITHMS) {
     checkDaphneStatusCode(
-            StatusCode::SUCCESS, dirPath + "components.daphne",
-            "--args", "n=100", "e=1000"
+        StatusCode::SUCCESS, dirPath + "components.daphne",
+        "--args", "n=100", "e=1000"
+    );
+}
+
+TEST_CASE("componentsSparse", TAG_ALGORITHMS) {
+    // TODO: check against mode without `--select-matrix-representations` by reading file or when the sparse and dense
+    //  random kernels have the same values for same seed
+    checkDaphneStatusCode(
+        StatusCode::SUCCESS, dirPath + "components.daphne",
+        "--select-matrix-representations", "--args", "n=100", "e=100"
     );
 }
 
