@@ -944,7 +944,7 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             return arg().getType() == res().getType();
         }
         /**
-         * @brief This cast just removes specifics from a matrix type, making them unknown instead.
+         * @brief This cast just removes detailed properties from a matrix type, making them unknown instead.
          *
          * Usually casts like this need to exist to make the IR correct for SCF operations.
          * @return true if this cast just tags some known information unknown, false otherwise
@@ -952,11 +952,8 @@ def Daphne_CastOp : Daphne_Op<"cast", [
         bool isMatrixPropertyCast() {
             auto inTy = arg().getType().dyn_cast<daphne::MatrixType>();
             auto outTy = res().getType().dyn_cast<daphne::MatrixType>();
-            if (inTy && outTy) {
-                if (inTy.withSparsity(-1.0) == outTy.withSparsity(-1.0)) {
-                    return true;
-                }
-                // TODO: extend when we have more properties
+            if (inTy && outTy && inTy.isSpecializationOf(outTy)) {
+                return true;
             }
             return false;
         }
