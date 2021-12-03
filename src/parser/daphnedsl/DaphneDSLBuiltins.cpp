@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -309,27 +310,6 @@ mlir::ResultRange DaphneDSLBuiltins::createPoolFwdOp(mlir::Location loc, const s
 // ****************************************************************************
 // Other utilities
 // ****************************************************************************
-
-// TODO Copied here from FrameLabelInference, have it just once.
-std::string getConstantString2(mlir::Value v) {
-    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>())
-            return strAttr.getValue().str();
-    throw std::runtime_error(
-            "the given value must be a constant of string type"
-    );
-}
-
-FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
-    std::string filenameStr;
-
-    if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
-        filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
-    else
-        filenameStr = getConstantString2(filename);
-
-    return FileMetaData::ofFile(filenameStr);
-}
 
 antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     using namespace mlir::daphne;
@@ -965,7 +945,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 1);
 
         mlir::Value filename = args[0];
-        FileMetaData fmd = getFileMetaData(func, filename);
+        FileMetaData fmd = CompilerUtils::getFileMetaData(filename);
 
         mlir::Type resType;
 
@@ -985,6 +965,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 labels = new std::vector<std::string>(fmd.labels);
 
             resType = mlir::daphne::FrameType::get(
+                    // TODO Inserting #rows/#cols here could cause problems, if
+                    // the frame is involved in any SCF ops (if/while/for).
                     builder.getContext(), cts, fmd.numRows, fmd.numCols, labels
             );
         }

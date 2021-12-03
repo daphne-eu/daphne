@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
+#include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <mlir/IR/Value.h>
-
-#include <runtime/local/io/FileMetaData.h>
 
 #include <vector>
 #include <stdexcept>
@@ -210,15 +209,8 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
-    // We don't know the exact number of groups here.
-    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(fileName().getDefiningOp())) {
-        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
-            auto filename = strAttr.getValue().str();
-            FileMetaData fmd = FileMetaData::ofFile(filename);
-            return {{fmd.numRows, fmd.numCols}};
-        }
-    }
-    return {{-1, -1}};
+    FileMetaData fmd = CompilerUtils::getFileMetaData(fileName());
+    return {{fmd.numRows, fmd.numCols}};
 }
 
 // ****************************************************************************
