@@ -82,10 +82,10 @@ struct Broadcast<DenseMatrix<double>>
         
         Handle<DenseMatrix<double>>::HandleMap map;   
 
-        for (auto i=0ul; i < workers.size(); i++){
+        distributed::Matrix protoMat;
+        ProtoDataConverter::convertToProto(mat, &protoMat);
         
-            distributed::Matrix protoMat;
-            ProtoDataConverter::convertToProto(mat, &protoMat);
+        for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
 
             auto channel = caller.GetOrCreateChannel(workerAddr);
