@@ -64,29 +64,42 @@ struct DistributedCollect<DenseMatrix<double>>
         };
         DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
-        auto blockSize = DistributedData::BLOCK_SIZE;
+        // auto blockSize = DistributedData::BLOCK_SIZE;
         res = DataObjectFactory::create<DenseMatrix<double>>(handle->getRows(), handle->getCols(), false);
         for (auto &pair : handle->getMap()) {
             auto ix = pair.first;
             auto data = pair.second;
 
-            auto stub = distributed::Worker::NewStub(data.getChannel());            
-            
             StoredInfo storedInfo({new DistributedIndex(ix)});
 
-            caller.addAsyncCall(&distributed::Worker::Stub::AsyncTransfer, *stub, storedInfo, data.getData());            
+            caller.addAsyncCall(data.getChannel(), storedInfo, data.getData());
         }
+        // Get num workers
+        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+        assert(envVar && "Environment variable has to be set");
+        std::string workersStr(envVar);
+        std::string delimiter(",");
+
+        size_t pos;
+        auto workersSize = 0;
+        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+            workersSize++;
+            workersStr.erase(0, pos + delimiter.size());
+        }
+        workersSize++;
         // Get Results
+        auto k = res->getNumRows() / workersSize;
+        auto m = res->getNumRows() % workersSize;        
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
             ProtoDataConverter::convertFromProto(matProto,
                 res,
-                ix->getRow() * blockSize,
-                std::min((ix->getRow() + 1) * blockSize, res->getNumRows()),
-                ix->getCol() * blockSize,
-                std::min((ix->getCol() + 1) * blockSize, res->getNumCols()));
+                ix->getRow() * k + std::min(ix->getRow(), m),
+                (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
+                0,
+                res->getNumCols());
         }      
     }
 };
