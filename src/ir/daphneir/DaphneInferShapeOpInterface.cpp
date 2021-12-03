@@ -18,6 +18,8 @@
 
 #include <mlir/IR/Value.h>
 
+#include <runtime/local/io/FileMetaData.h>
+
 #include <vector>
 #include <stdexcept>
 #include <utility>
@@ -205,6 +207,18 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
     const size_t numRows = arg().getType().dyn_cast<daphne::MatrixType>().getNumRows();
     return {{numRows, 1}, {-1, 1}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
+    // We don't know the exact number of groups here.
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(fileName().getDefiningOp())) {
+        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
+            auto filename = strAttr.getValue().str();
+            FileMetaData fmd = FileMetaData::ofFile(filename);
+            return {{fmd.numRows, fmd.numCols}};
+        }
+    }
+    return {{-1, -1}};
 }
 
 // ****************************************************************************

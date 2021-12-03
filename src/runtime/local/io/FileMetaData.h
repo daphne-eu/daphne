@@ -38,17 +38,19 @@ struct FileMetaData {
     bool isSingleValueType;
     std::vector<ValueTypeCode> schema;
     std::vector<std::string> labels;
+    const ssize_t numNonZeros;
     
     FileMetaData(
             size_t numRows,
             size_t numCols,
             bool isSingleValueType,
             std::vector<ValueTypeCode> schema,
-            std::vector<std::string> labels
+            std::vector<std::string> labels,
+            ssize_t numNonZeros = -1
     ) :
             numRows(numRows), numCols(numCols),
             isSingleValueType(isSingleValueType), schema(schema),
-            labels(labels)
+            labels(labels), numNonZeros(numNonZeros)
     {
         //
     }
@@ -102,21 +104,32 @@ struct FileMetaData {
         }
         
         std::vector<std::string> labels;
-        
+
+        // TODO: number of non zeros should not require labels to be set (improve meta format)
+        ssize_t numNonZeros = -1;
         // Labels are optional.
-        const std::streamoff pos = ifs.tellg();
-        ifs.seekg(0, std::ios_base::end);
-        if(pos != ifs.tellg()) {
-            // If we have not reached the end of the stream yet.
-            ifs.seekg(pos, std::ios_base::beg);
-            for(size_t i = 0; i < numCols; i++) {
-                ifs.getline(buf, bufSize, ',');
-                labels.push_back(buf);
+        if(!ifs.eof()) {
+            ifs.getline(buf, bufSize, ',');
+            std::string optLine(buf);
+            size_t i = 0;
+            if(optLine.find("nnz=") == 0) {
+                numNonZeros = std::stoll(optLine.substr(std::strlen("nnz=")));
+            }
+            else {
+                // If we have not reached the end of the stream yet.
+                labels.emplace_back(buf);
+                i++;
+            }
+            if(!ifs.eof()) {
+                for(; i < numCols ; i++) {
+                    ifs.getline(buf, bufSize, ',');
+                    labels.emplace_back(buf);
+                }
             }
         }
         // else: labels remains empty
 
-        return FileMetaData(numRows, numCols, isSingleValueType, schema, labels);
+        return FileMetaData(numRows, numCols, isSingleValueType, schema, labels, numNonZeros);
     }
 };
 

@@ -881,6 +881,10 @@
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "uint8_t"]],
             ["Frame"],
             ["char"]
         ]
@@ -1040,6 +1044,7 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["CSRMatrix", "double"]],
             ["Frame"]
         ]
     },

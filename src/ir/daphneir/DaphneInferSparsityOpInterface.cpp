@@ -18,6 +18,8 @@
 
 #include <mlir/IR/Value.h>
 
+#include <runtime/local/io/FileMetaData.h>
+
 #include <vector>
 #include <stdexcept>
 #include <utility>
@@ -82,6 +84,20 @@ std::vector<double> daphne::TriOp::inferSparsity() {
     }
     // TODO: remove diagonal
     return {argTy.getSparsity() / 2.0};
+}
+
+std::vector<double> daphne::ReadOp::inferSparsity() {
+    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(fileName().getDefiningOp())) {
+        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
+            auto filename = strAttr.getValue().str();
+            FileMetaData fmd = FileMetaData::ofFile(filename);
+            if (fmd.numNonZeros == -1)
+                return {-1.0};
+            // TODO: maybe use type shape info instead of file? (would require correct order of optimization passes)
+            return {(static_cast<double>(fmd.numNonZeros) / fmd.numRows) / fmd.numCols};
+        }
+    }
+    return {-1.0};
 }
 
 // ****************************************************************************
