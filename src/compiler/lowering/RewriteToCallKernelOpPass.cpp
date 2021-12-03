@@ -61,8 +61,14 @@ namespace
         else if(auto matTy = t.dyn_cast<daphne::MatrixType>())
             if(generalizeToStructure)
                 return "Structure";
-            else
-                return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+            else {
+                switch(matTy.getRepresentation()) {
+                case daphne::MatrixRepresentation::Dense:
+                    return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+                case daphne::MatrixRepresentation::Sparse:
+                    return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+                }
+            }
         else if(t.isa<daphne::FrameType>())
             if(generalizeToStructure)
                 return "Structure";

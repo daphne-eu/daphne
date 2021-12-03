@@ -27,6 +27,10 @@ def Inference: FunctionPass<"inference"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }
 
+def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
+    let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
+}
+
 //def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
 //    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
 //}
