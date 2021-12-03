@@ -65,15 +65,16 @@ struct DistributedCompute<DenseMatrix<double>>
     {
         assert((num_args == 1 || num_args == 2)&& "Only binary and unary supported for now");
         struct StoredInfo {
-                DistributedIndex *ix;
-                DistributedData *data;
-            };
+            DistributedIndex *ix;
+            DistributedData *data;
+        };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         Handle<DenseMatrix<double>>::HandleMap resMap;        
         size_t resultRows, resultColumns;
         // ****************************************************************************
         // Unary operations
         // ****************************************************************************
+        // Tailored to row-wise aggregation.
         if (num_args == 1){
             auto arg = args[0];
             resultRows = arg->getRows();
@@ -93,6 +94,7 @@ struct DistributedCompute<DenseMatrix<double>>
         // ****************************************************************************
         // Binary operations
         // ****************************************************************************
+        // Tailored to element-wise binary operations.
         if (num_args == 2){
             auto lhs = args[0];
             auto rhs = args[1];
@@ -103,7 +105,7 @@ struct DistributedCompute<DenseMatrix<double>>
             const size_t numColsRhs = rhs->getCols();
 
             // ****************************************************************************
-            // Handle <- Matrix @ Matrix
+            // Handle <- Matrix, Matrix
             // ****************************************************************************
             if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
                 resultRows = numRowsLhs;
@@ -133,7 +135,7 @@ struct DistributedCompute<DenseMatrix<double>>
                 }
             }
             // ****************************************************************************
-            // Handle <- Matrix @ row
+            // Handle <- Matrix, row
             // ****************************************************************************
             else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
                 resultRows = numRowsLhs;

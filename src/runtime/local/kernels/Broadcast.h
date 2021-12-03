@@ -88,8 +88,6 @@ struct Broadcast<DenseMatrix<double>>
             ProtoDataConverter::convertToProto(mat, &protoMat);
             auto workerAddr = workers.at(i);
 
-            distributed::StoredData storedData;
-            
             auto channel = caller.GetOrCreateChannel(workerAddr);
             StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
             caller.addAsyncCall(workerAddr, storedInfo, protoMat);

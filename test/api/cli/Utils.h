@@ -115,8 +115,8 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
 /**
  * @brief Executes the specified program with the given arguments in the background.
  *  
- * @param out The file descriptor where to redirect standart output.
- * @param err The file descriptor where to redirect standart error.
+ * @param out The file descriptor where to redirect standard output.
+ * @param err The file descriptor where to redirect standard error.
  * @param execPath The path to the executable.
  * @param args The arguments to pass. Despite the variadic template, each
  * element should be of type `char *`. The first one should be the name of the
