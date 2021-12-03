@@ -47,6 +47,19 @@
 #include <utility>
 #include <vector>
 
+namespace mlir::daphne {
+    enum class MatrixRepresentation {
+        Dense = 0,
+        // default is dense
+        Default = MatrixRepresentation::Dense,
+        Sparse = 1,
+    };
+
+    std::string matrixRepresentationToString(MatrixRepresentation rep);
+
+    MatrixRepresentation stringToMatrixRepresentation(const std::string &str);
+}
+
 // ... the following tablegen'erated headers.
 #define GET_TYPEDEF_CLASSES
 #include <ir/daphneir/DaphneOpsTypes.h.inc>

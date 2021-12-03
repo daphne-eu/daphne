@@ -39,9 +39,12 @@
 #include <memory>
 #include <utility>
 
-DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUserConfig  cfg)
-: distributed_(distributed), vectorized_(vectorized), user_config_(std::move(cfg))
-{
+DaphneIrExecutor::DaphneIrExecutor(bool distributed,
+                                   bool vectorized,
+                                   bool selectMatrixRepresentations,
+                                   DaphneUserConfig cfg)
+    : distributed_(distributed), vectorized_(vectorized), selectMatrixRepresentations_(selectMatrixRepresentations),
+      userConfig_(std::move(cfg)) {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
@@ -82,6 +85,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
+        if(selectMatrixRepresentations_) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representation"));
+        }
         if(distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
@@ -92,9 +99,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
         }
         pm.addPass(mlir::createCanonicalizerPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_));
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
         pm.addPass(mlir::createLowerToCFGPass());
@@ -119,11 +126,11 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
 
         llvm::SmallVector<llvm::StringRef, 1> sharedLibRefs;
         // TODO Find these at run-time.
-        if(user_config_.libdir.empty()) {
+        if(userConfig_.libdir.empty()) {
             sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
         }
         else {
-            sharedLibRefs.insert(sharedLibRefs.end(), user_config_.library_paths.begin(), user_config_.library_paths.end());
+            sharedLibRefs.insert(sharedLibRefs.end(), userConfig_.library_paths.begin(), userConfig_.library_paths.end());
         }
 
 #ifdef USE_CUDA
