@@ -30,7 +30,7 @@ private:
         std::stringstream ss;
         ss << recognizer->getInputStream()->getSourceName() << ':' << line << ':' << charPositionInLine << ' '
            << msg;
-        throw std::runtime_error(ss.str());
+        throw antlr4::ParseCancellationException(ss.str());
     }
 };
 

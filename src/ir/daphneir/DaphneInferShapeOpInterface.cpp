@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <mlir/IR/Value.h>
@@ -205,6 +206,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
     const size_t numRows = arg().getType().dyn_cast<daphne::MatrixType>().getNumRows();
     return {{numRows, 1}, {-1, 1}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
+    FileMetaData fmd = CompilerUtils::getFileMetaData(fileName());
+    return {{fmd.numRows, fmd.numCols}};
 }
 
 // ****************************************************************************
