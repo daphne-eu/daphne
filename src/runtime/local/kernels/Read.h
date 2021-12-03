@@ -99,6 +99,7 @@ struct Read<CSRMatrix<VT>> {
         for (auto r = 0u; r < rowColumnPairs->getNumRows(); ++r) {
             positions.emplace(rowColumnPairs->get(r, 0), rowColumnPairs->get(r, 1));
         }
+        DataObjectFactory::destroy(rowColumnPairs);
 
         auto *rowOffsets = res->getRowOffsets();
         rowOffsets[0] = 0;

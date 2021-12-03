@@ -87,6 +87,8 @@ std::vector<double> daphne::TriOp::inferSparsity() {
 }
 
 std::vector<double> daphne::ReadOp::inferSparsity() {
+    // TODO Use CompilerUtils::getFileMetaData() here, but it throws if the
+    // file name is not a constant (after constant propagation).
     if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(fileName().getDefiningOp())) {
         if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
             auto filename = strAttr.getValue().str();
