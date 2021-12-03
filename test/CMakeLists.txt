@@ -101,7 +101,7 @@ endif()
 add_executable(run_tests
     ${TEST_SOURCES}
 )
-add_dependencies(run_tests daphnec)
+add_dependencies(run_tests daphnec DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})

@@ -34,7 +34,8 @@ int main(int argc, char *argv[])
     WorkerImpl my_service;
     my_service.cq_ = builder.AddCompletionQueue();
     builder.RegisterService(&my_service.service_);
-
+    builder.SetMaxReceiveMessageSize(INT_MAX);
+    builder.SetMaxSendMessageSize(INT_MAX);
     std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
 
     std::cout << "Started Distributed Worker on `" << addr << "`\n";

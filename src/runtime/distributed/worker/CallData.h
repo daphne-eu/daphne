@@ -37,7 +37,7 @@ public:
         Proceed();
     }
 
-    void Proceed();
+    void Proceed() override;
 
 private:
     WorkerImpl *worker;
@@ -71,7 +71,7 @@ public:
         Proceed();
     }
 
-    void Proceed();
+    void Proceed() override;
 
 private:
     WorkerImpl *worker;
@@ -105,7 +105,7 @@ public:
         // Invoke the serving logic right away.
         Proceed();
     }
-    void Proceed();
+    void Proceed() override;
 private:
     WorkerImpl *worker;
     distributed::Worker::AsyncService *service_;
