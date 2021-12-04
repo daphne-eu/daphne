@@ -849,3 +849,40 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
     }
     return {};
 }
+
+/**
+ * @brief Replaces a `DistributeOp` by a `DistributedReadOp`, if its input
+ * value (a) is defined by a `ReadOp`, and (b) is not used elsewhere.
+ * @param context
+ */
+struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::DistributeOp> {
+    SimplifyDistributeRead(mlir::MLIRContext *context)
+        : OpRewritePattern<mlir::daphne::DistributeOp>(context, 1) {
+        //
+    }
+    
+    mlir::LogicalResult
+    matchAndRewrite(
+            mlir::daphne::DistributeOp op, mlir::PatternRewriter &rewriter
+    ) const override {
+        mlir::daphne::ReadOp readOp = op.mat().getDefiningOp<mlir::daphne::ReadOp>();
+        if(!readOp || !readOp.getOperation()->hasOneUse())
+            return mlir::failure();
+        rewriter.replaceOp(
+                op, {rewriter.create<mlir::daphne::DistributedReadOp>(
+                        readOp.getLoc(), op.getType(), readOp.fileName()
+                )}
+        );
+        // TODO Instead of erasing the ReadOp here, the compiler should
+        // generally remove unused SSA values. Then, we might even drop the
+        // hasOneUse requirement above.
+        rewriter.eraseOp(readOp);
+        return mlir::success();
+    }
+};
+
+void mlir::daphne::DistributeOp::getCanonicalizationPatterns(
+        RewritePatternSet &results, MLIRContext *context
+) {
+    results.add<SimplifyDistributeRead>(context);
+}

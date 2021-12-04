@@ -976,9 +976,16 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
 // Distributed Operations
 // ****************************************************************************
 
+def Daphne_DistributedReadOp : Daphne_Op<"distributedRead", [NoSideEffect]> {
+    let arguments = (ins StrScalar:$fileName);
+    let results = (outs Handle:$res);
+}
+
 def Daphne_DistributeOp : Daphne_Op<"distribute", [NoSideEffect]> {
     let arguments = (ins Matrix:$mat);
     let results = (outs Handle:$res);
+
+    let hasCanonicalizer = 1;
 }
 
 def Daphne_BroadcastOp : Daphne_Op<"broadcast", [NoSideEffect]> {
