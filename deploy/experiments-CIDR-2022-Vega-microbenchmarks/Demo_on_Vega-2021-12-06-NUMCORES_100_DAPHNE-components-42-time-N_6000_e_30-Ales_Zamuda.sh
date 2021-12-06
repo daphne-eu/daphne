@@ -90,7 +90,7 @@ echo "... only the mixed components:"
 cat TIME | grep "DenseMatrix(" | awk '{for (i=1; i<=NF; i++) if ($i-i+2) printf("%s ", $i-i+2); print"";}'
 
 echo -e "\n\n\nThis is the comparison of timings 1-5 (one worker) and 6..10 (all workers):"
-cat TIME | grep "seconds for compute" | awk '{print $1}' > TIME.g
+cat TIME | grep "seconds for compute" | awk '{print $1}' | tee TIME.g
 cat TIME.g | gnuplot -p -e "set terminal dumb size 120, 25; set autoscale; plot '-' with boxes notitle"
 
 echo -e "\n\n* \\ + \\ The Vega DEMO is now complete. Thanks for attending! / + / *"

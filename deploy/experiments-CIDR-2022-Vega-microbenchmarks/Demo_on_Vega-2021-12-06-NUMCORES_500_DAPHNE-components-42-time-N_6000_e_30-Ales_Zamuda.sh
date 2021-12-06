@@ -16,6 +16,8 @@
 
 # This script runs an experiment on Vega.
 
+[ -z "$NUMCORES" ] && export NUMCORES=500 # change this to parameterize the number of distributed workers
+
 reset;
 
 echo "Welcome to the DEMO on Vega for components-42-time (DAPHNE Consortium, 2021-12-06)."
