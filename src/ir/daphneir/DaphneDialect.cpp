@@ -504,6 +504,9 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
             }
             return IntegerAttr::getChecked(getLoc(), outTy, apInt);
         }
+        if(auto outTy = getType().dyn_cast<IndexType>()) {
+            return IntegerAttr::getChecked(getLoc(), outTy, apInt);
+        }
         if(getType().isF64()) {
             if(in.getType().isSignedInteger()) {
                 return FloatAttr::getChecked(getLoc(),
@@ -756,6 +759,25 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) 
     return {};
 }
 
+// TODO This is duplicated from EwConcatOp. Actually, ConcatOp itself is only
+// a temporary workaround, so it should be removed altogether later.
+mlir::OpFoldResult mlir::daphne::ConcatOp::fold(ArrayRef<Attribute> operands) {
+    assert(operands.size() == 2 && "binary op takes two operands");
+    if(!operands[0] || !operands[1])
+        return {};
+    if(operands[0].getType() != operands[1].getType())
+        return {};
+
+    if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
+        auto lhs = operands[0].cast<StringAttr>();
+        auto rhs = operands[1].cast<StringAttr>();
+
+        auto concated = lhs.getValue().str() + rhs.getValue().str();
+        return StringAttr::get(concated, getType());
+    }
+    return {};
+}
+
 mlir::OpFoldResult mlir::daphne::EwEqOp::fold(ArrayRef<Attribute> operands) {
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
@@ -848,6 +870,83 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
             return res;
     }
     return {};
+}
+
+/**
+ * @brief Replaces NumRowsOp by a constant, if the #rows of the input is known
+ * (e.g., due to shape inference).
+ */
+mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(
+        mlir::daphne::NumRowsOp op, PatternRewriter &rewriter
+) {
+    ssize_t numRows = -1;
+    
+    mlir::Type inTy = op.arg().getType();
+    if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
+        numRows = t.getNumRows();
+    else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
+        numRows = t.getNumRows();
+    
+    if(numRows != -1) {
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
+                op, rewriter.getIndexAttr(numRows)
+        );
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Replaces NumColsOp by a constant, if the #cols of the input is known
+ * (e.g., due to shape inference).
+ */
+mlir::LogicalResult mlir::daphne::NumColsOp::canonicalize(
+        mlir::daphne::NumColsOp op, PatternRewriter &rewriter
+) {
+    ssize_t numCols = -1;
+    
+    mlir::Type inTy = op.arg().getType();
+    if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
+        numCols = t.getNumCols();
+    else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
+        numCols = t.getNumCols();
+    
+    if(numCols != -1) {
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
+                op, rewriter.getIndexAttr(numCols)
+        );
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
+/**
+ * @brief Replaces NumCellsOp by a constant, if the #rows and #cols of the
+ * input is known (e.g., due to shape inference).
+ */
+mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(
+        mlir::daphne::NumCellsOp op, PatternRewriter &rewriter
+) {
+    ssize_t numRows = -1;
+    ssize_t numCols = -1;
+    
+    mlir::Type inTy = op.arg().getType();
+    if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>()) {
+        numRows = t.getNumRows();
+        numCols = t.getNumCols();
+    }
+    else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>()) {
+        numRows = t.getNumRows();
+        numCols = t.getNumCols();
+    }
+    
+    if(numRows != -1 && numCols != -1) {
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
+                op, rewriter.getIndexAttr(numRows * numCols)
+        );
+        return mlir::success();
+    }
+    return mlir::failure();
 }
 
 /**

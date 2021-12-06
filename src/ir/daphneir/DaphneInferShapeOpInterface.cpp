@@ -51,9 +51,6 @@ ssize_t getSizeOrUnknown(Value v) {
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
             return intAttr.getValue().getLimitedValue();
-    // TODO Remove this once we support constant propagation (see #151).
-    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
-        return getSizeOrUnknown(co.arg());
     return -1; // the value of the scalar is unknown at the moment
 }
 
@@ -62,15 +59,6 @@ int64_t getConstantInt(Value v) {
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
             return intAttr.getValue().getLimitedValue();
-    // TODO Remove this once we support constant propagation (see #151).
-    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
-        return getConstantInt(co.arg());
-    if(auto co = llvm::dyn_cast<daphne::EwSubOp>(v.getDefiningOp()))
-        return getConstantInt(co.lhs()) - getConstantInt(co.rhs());
-    if(auto co = llvm::dyn_cast<daphne::EwDivOp>(v.getDefiningOp()))
-        return getConstantInt(co.lhs()) / getConstantInt(co.rhs());
-    if(auto co = llvm::dyn_cast<daphne::NumColsOp>(v.getDefiningOp()))
-        return getSizeOrUnknown(co.arg());
     throw std::runtime_error("expected an integer constant");
 }
 
@@ -79,13 +67,6 @@ double getConstantDouble(Value v) {
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto floatAttr = co.value().dyn_cast<FloatAttr>())
             return floatAttr.getValue().convertToDouble();
-    // TODO Remove this once we support constant propagation (see #151).
-    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp())) {
-        if(co.arg().getType().isF64())
-            return getConstantDouble(co.arg());
-        else
-            return static_cast<double>(getConstantInt(co.arg()));
-    }
     throw std::runtime_error("expected a floating-point constant");
 }
 
@@ -175,16 +156,26 @@ ssize_t daphne::CartesianOp::inferNumRows() {
 
 ssize_t daphne::SeqOp::inferNumRows() {
     if(from().getType().isF64()) {
-        double vFrom = getConstantDouble(from());
-        double vTo = getConstantDouble(to());
-        double vInc = getConstantDouble(inc());
-        return floor(vTo / vInc - vFrom / vInc) + 1;
+        try {
+            double vFrom = getConstantDouble(from());
+            double vTo = getConstantDouble(to());
+            double vInc = getConstantDouble(inc());
+            return floor(vTo / vInc - vFrom / vInc) + 1;
+        }
+        catch(const std::runtime_error & e) {
+            return -1;
+        }
     }
     else if(from().getType().isSignedInteger(64)) {
-        int64_t vFrom = getConstantInt(from());
-        int64_t vTo = getConstantInt(to());
-        int64_t vInc = getConstantInt(inc());
-        return abs(vTo - vFrom) / abs(vInc) + 1;
+        try {
+            int64_t vFrom = getConstantInt(from());
+            int64_t vTo = getConstantInt(to());
+            int64_t vInc = getConstantInt(inc());
+            return abs(vTo - vFrom) / abs(vInc) + 1;
+        }
+        catch(const std::runtime_error & e) {
+            return -1;
+        }
     }
     throw std::runtime_error(
             "at the moment, shape inference for SeqOp supports only F64 and "
@@ -339,7 +330,13 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation* op) {
             // and right.
             auto shapeLhs = getShape(op->getOperand(0));
             auto shapeRhs = getShape(op->getOperand(1));
-            if(shapeRhs.first == -1 || shapeRhs.second == -1) {
+            // This first case is just a workaround, we should decide later how
+            // to treat incomplete knowledge of the shapes.
+            if(shapeLhs.first == -1 && shapeLhs.second == 1 && shapeRhs.first == -1 && shapeRhs.second == 1) {
+                numRows = -1;
+                numCols = 1;
+            }
+            else if(shapeRhs.first == -1 || shapeRhs.second == -1) {
                 numRows = -1;
                 numCols = -1;
             }
