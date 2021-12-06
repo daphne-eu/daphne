@@ -44,12 +44,14 @@ public:
     }
     ~MTWrapper() = default;
 
+    // Deprecated
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
         DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2)
     {
         execute(func, res, input1, input2, false);
     }
 
+    // Deprecated
     void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
         DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
     {

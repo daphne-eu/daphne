@@ -50,9 +50,6 @@ double getSparsityOrUnknownFromScalar(Value v) {
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto doubleAttr = co.value().dyn_cast<FloatAttr>())
             return doubleAttr.getValue().convertToDouble();
-    // TODO Remove this once we support constant propagation (see #151).
-    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
-        return getSparsityOrUnknownFromScalar(co.arg());
     return -1.0; // the value of the scalar is unknown at the moment
 }
 

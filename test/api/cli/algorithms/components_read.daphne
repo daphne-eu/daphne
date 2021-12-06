@@ -1,0 +1,29 @@
+// Connected components.
+
+// Arguments:
+// - f ... filename of the adjacency matrix (provide as `--args f=\"foo.csv\"`)
+
+// Read adjacency matrix.
+G = readMatrix($f);
+
+// This workaround enforces that the distributed read of G happens before the
+// loop. It is necessary due to a lack in the DAPHNE compiler, which will be
+// fixed soon.
+print(sum(aggMax(G, 0)));
+
+// Initialization.
+maxi = 1000;
+c = seq(1.0, as.f64(nrow(G)), 1.0); // init w/ vertex IDs
+diff = inf;
+iter = 1;
+
+// Iterative computation of connected components (decisive part).
+while(as.si64(diff > 0.0) && iter <= maxi) {
+    u = max(aggMax(G * t(c), 0), c);
+    diff = sum(u != c);
+    c = u;
+    iter = iter + 1;
+}
+
+// Result output.
+print(c);
