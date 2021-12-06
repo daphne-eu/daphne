@@ -1,10 +1,10 @@
 #!/bin/bash
 set -x
 ########################
-NUMCORES=10 # change this to parameterize the number of distributed workers
 #export DEMO_USE_CUDA="-p gpu"
-DAPHNEparam_components_N=6000
-DAPHNEparam_components_e=30
+[ -z "$NUMCORES" ] && export NUMCORES=10 # change this to parameterize the number of distributed workers
+[ -z "$DAPHNEparam_components_N" ] && export DAPHNEparam_components_N=6000
+[ -z "$DAPHNEparam_components_e" ] && export DAPHNEparam_components_e=30
 ########################
 
 tar xf build.tgz # unpack the workload
@@ -44,7 +44,7 @@ set -x
 for DEMO_SEQUENCE in {1..5}; do
         echo -e "\n" Using ONLY ONE DISTRIBUTED WORKER $WORKERS: running the demo sequence no. $DEMO_SEQUENCE ...
 
-	time srun ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components-42-time.daphne --args n='${DAPHNEparam_components_N}' e='${DAPHNEparam_components_e} | awk '{a[NR]=$0} END {print(a[1](a[4]-a[2])/1000000000, "seconds with input generation, ", (a[4]-a[3])/1000000000, "seconds for compute WITH ONLY ONE DISTRIBUTED WORKER"); for (i=5; i<=NR; i++)printf("%s ",a[i]);print;}'
+	time srun ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components-42-time.daphne --args n='${DAPHNEparam_components_N}' e='${DAPHNEparam_components_e} | awk '{a[NR]=$0} END {print((a[2]-a[1])/1000000000, "seconds for compute WITH ONLY ONE DISTRIBUTED WORKER"); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
         sleep 1
 done
 
@@ -60,7 +60,7 @@ echo -e "\nReady to run this demo executable in a sequence using all distributed
 for DEMO_SEQUENCE in {1..5}; do
         echo -e "\n" Running the demo sequence no. $DEMO_SEQUENCE ...
 
-	time srun ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components-42-time.daphne --args n='${DAPHNEparam_components_N}' e='${DAPHNEparam_components_e} | awk '{a[NR]=$0} END {print(a[1](a[4]-a[2])/1000000000, "seconds with input generation, ", (a[4]-a[3])/1000000000, "seconds for compute"); for (i=5; i<=NR; i++)printf("%s ",a[i]);print;}'
+	time srun ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components-42-time.daphne --args n='${DAPHNEparam_components_N}' e='${DAPHNEparam_components_e} | awk '{a[NR]=$0} END {print((a[2]-a[1])/1000000000, "seconds for compute"); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
 done
 
 
@@ -72,11 +72,3 @@ scancel -n Dworkers
 wait
 exit
 
-#time srun --cpu-bind=cores --nodes=5 --ntasks-per-node=20 --cpus-per-task=2 singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker
-#time srun --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 singularity exec ../d.sif build/bin/daphnec sqlexample.daphne
-#time srun --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=2 singularity exec ../d.sif build/bin/daphnec sqlexample.daphne
-
-#srun --cpu-bind=cores --cpus-per-task=2 -n 1 bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID ))'  
-#srun --cpu-bind=cores --cpus-per-task=2 -n 1 bash -c 'singularity exec ~/sing/d.sif ~/sing/d/build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID ))' 
-#export WORKERS=$(cat WORKERS.* |  xargs |sed -e 's/ /,/g')
-        time singularity exec ../d.sif bash -c "DISTRIBUTED_WORKERS=localhost:50000,localhost:50001 build/bin/daphnec e.daphne --vec"

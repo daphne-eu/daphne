@@ -1,7 +1,4 @@
 #!/bin/bash
-#cp -p ~/MOEA/projects/codes/daphne/*.daphne .
-#cp -p ~/sing/d/e.daphne .
-
 echo "Packaging latest files for daphnec/DistributedWorker deployment..."
 
 (

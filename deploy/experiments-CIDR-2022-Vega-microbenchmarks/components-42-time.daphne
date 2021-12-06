@@ -32,7 +32,6 @@ while(as.si64(diff > 0.0) && iter <= maxi) {
 // Report on timing
 timePostWhile = now();
 print(timePreWhile);
-print("\n");
 print(timePostWhile);
 
 
