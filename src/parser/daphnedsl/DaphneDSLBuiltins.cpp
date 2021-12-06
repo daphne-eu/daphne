@@ -974,6 +974,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             // If an individual value type was specified per column
             // (fmd.isSingleValueType == false), then this silently uses the
             // type of the first column.
+            // TODO: add sparsity information here already (if present), currently not possible as many other ops
+            //  just take input types as output types, which is incorrect for sparsity
             resType = utils.matrixOf(utils.mlirTypeForCode(fmd.schema[0]));
 
         return static_cast<mlir::Value>(builder.create<ReadOp>(

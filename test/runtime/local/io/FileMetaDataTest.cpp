@@ -76,3 +76,15 @@ TEST_CASE("FileMetaData::ofFile (single value type, labels not given)", TAG_IO) 
     CHECK(fmd.schema[0] == ValueTypeCode::F32);
     REQUIRE(fmd.labels.empty());
 }
+
+TEST_CASE("FileMetaData::ofFile (single value type, labels given, number of non zeros given)", TAG_IO) {
+    FileMetaData fmd = FileMetaData::ofFile("./test/runtime/local/io/SomeFile4.csv");
+
+    CHECK(fmd.numRows == 10);
+    REQUIRE(fmd.numCols == 10);
+    CHECK(fmd.isSingleValueType);
+    REQUIRE(fmd.schema.size() == 1);
+    CHECK(fmd.schema[0] == ValueTypeCode::F64);
+    REQUIRE(fmd.labels.empty());
+    CHECK(fmd.numNonZeros == 2);
+}

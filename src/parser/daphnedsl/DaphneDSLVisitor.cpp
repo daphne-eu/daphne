@@ -431,6 +431,7 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
 
     // Parse the string that was passed as the value for this argument on the
     // command line as a DaphneDSL literal.
+    // TODO: fix for string literals when " are not escaped or not present
     std::istringstream stream(it->second);
     antlr4::ANTLRInputStream input(stream);
     input.name = "argument"; // TODO Does this make sense?
