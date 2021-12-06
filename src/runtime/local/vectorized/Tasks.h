@@ -42,6 +42,7 @@ public:
     void execute() override {}
 };
 
+// Deprecated
 // single operation task (multi-threaded operations)
 template <class VT>
 class SingleOpTask : public Task {

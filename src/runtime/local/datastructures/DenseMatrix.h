@@ -293,6 +293,7 @@ public:
     }
 
     DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) {
+        // TODO Use DataObjFactory.
         return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
     }
 
