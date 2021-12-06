@@ -21,9 +21,9 @@ outputFormat = sys.argv[5]
 
 
 # Worker addresses
-workerAddressList = [ "localhost:" + str(i) for i in range(50000, numWorkers)]
+workerAddressList = [ "localhost:" + str(i) for i in range(50000, 50000 + numWorkers)]
 
-if (numWorkers > len(workerAddressList)):
+if (numWorkers > len(workerAddressList)):    
     print("You must specify addresses for all workers (inside the script).")
     exit()
 
