@@ -1034,7 +1034,8 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
 
 // TODO Take asynchronous read into account.
 def Daphne_ReadOp : Daphne_Op<"read", [
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     // TODO We might add arguments for a UDF later.
     let arguments = (ins StrScalar:$fileName);
