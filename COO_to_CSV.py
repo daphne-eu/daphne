@@ -21,13 +21,8 @@ outputFormat = sys.argv[5]
 
 
 # Worker addresses
-workerAddressList = [
-    "localhost:5000",
-    "localhost:5001",
-    "localhost:5002",
-    "localhost:5003",
-    "localhost:5004",
-]
+workerAddressList = [ "localhost:" + str(i) for i in range(50000, numWorkers)]
+
 if (numWorkers > len(workerAddressList)):
     print("You must specify addresses for all workers (inside the script).")
     exit()
@@ -61,6 +56,9 @@ if (outputFormat == "DenseMatrix"):
     # Parse Dense
     with open(filename) as f:
         for line in f:
+            # Skip comments in csv 
+            if line.startswith("#"):
+                continue 
             splitted = line.split()
             r = int(splitted[0])
             c = int(splitted[1])
@@ -111,12 +109,17 @@ if (outputFormat == "COOFormat"):
     csrMat = [ [] for i in range(size)]
     # Parse CSR
     with open(filename) as f:
-        for line in f:    
+        for line in f:   
+            # Skip comments in csv 
+            if line.startswith("#"):
+                continue 
             splitted = line.split()
             r = int(splitted[0])
             c = int(splitted[1])
-            csrMat[r - 1].append(c)
-            csrMat[c - 1].append(r)
+            csrMat[r].append(c)
+            # For symmetry. If statement is needed for duplicates, because some edges present symmetry, but some don't
+            if r not in csrMat[c]:
+                csrMat[c].append(r)
     
     # Create segments, this functions works exactly like Distribute.h Kernel
     rowSegments = list(split(list(range(size)), numWorkers))
@@ -133,7 +136,7 @@ if (outputFormat == "COOFormat"):
         for row in rowSegment:
             connectedVertices = csrMat[row]
             for vertex in connectedVertices:
-                fcsv.write(str(row + 1) + "," + str(vertex) + "\n")
+                fcsv.write(str(row) + "," + str(vertex) + "\n")
 
         # Handles file (master)
         # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
