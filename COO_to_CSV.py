@@ -33,16 +33,27 @@ if (numWorkers > len(workerAddressList)):
     exit()
 
 
-availableFormats = ["DenseMatrix", "CSRMatrix"]
+availableFormats = ["DenseMatrix", "COOFormat"]
 if (outputFormat not in availableFormats):
     print("Available matrix representation support: ")
     print(availableFormats)
     exit()
 
+######################### DO NOT EDIT #########################
+
 # Split among workers
 def split(a, n):
     k, m = divmod(len(a), n)
     return (a[i*k+min(i, m):(i+1)*k+min(i+1, m)] for i in range(n))
+
+
+handlesFile = open(outputFile + "_handles.csv", 'w')
+
+# Metadata file
+handlesFileMeta = open(outputFile + "_handles.csv.meta", 'w')
+handlesFileMeta.write(str(size) + "," + str(size) + ",1,f64")
+handlesFileMeta.close()
+
 
 if (outputFormat == "DenseMatrix"):
     mat = np.zeros(shape=(size, size))
@@ -70,14 +81,7 @@ if (outputFormat == "DenseMatrix"):
     #     foriginalMat.write("\n")
 
     # Create segments, this functions works exactly like Distribute.h Kernel
-    rowSegments = list(split(list(range(size)), numWorkers))
-    
-    handlesFile = open(outputFile + "_handles.csv", 'w')
-    
-    # Metadata file
-    handlesFileMeta = open(outputFile + "_handles.csv.meta", 'w')
-    handlesFileMeta.write(str(size) + "," + str(size) + ",1,f64")
-    handlesFileMeta.close()
+    rowSegments = list(split(list(range(size)), numWorkers))    
 
     for i, rowSegment in enumerate(rowSegments):        
         outputFilename = outputFile + "_" + str(i) + ".csv"
@@ -101,3 +105,36 @@ if (outputFormat == "DenseMatrix"):
         # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
         handlesFile.write(workerAddressList[i] + "," + outputFilename + "," + str(i) + ",0," + str(len(rowSegment)) + "," + str(size) + "\n")
 
+
+if (outputFormat == "COOFormat"):
+
+    csrMat = [ [] for i in range(size)]
+    # Parse CSR
+    with open(filename) as f:
+        for line in f:    
+            splitted = line.split()
+            r = int(splitted[0])
+            c = int(splitted[1])
+            csrMat[r - 1].append(c)
+            csrMat[c - 1].append(r)
+    
+    # Create segments, this functions works exactly like Distribute.h Kernel
+    rowSegments = list(split(list(range(size)), numWorkers))
+
+    for i, rowSegment in enumerate(rowSegments):        
+        outputFilename = outputFile + "_" + str(i) + ".csv"
+
+        fcsv = open(outputFilename, 'w')
+        
+        fcsvMeta = open(outputFilename + ".meta", 'w')
+        fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64")
+        fcsvMeta.close()
+
+        for row in rowSegment:
+            connectedVertices = csrMat[row]
+            for vertex in connectedVertices:
+                fcsv.write(str(row + 1) + "," + str(vertex) + "\n")
+
+        # Handles file (master)
+        # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
+        handlesFile.write(workerAddressList[i] + "," + outputFilename + "," + str(i) + ",0," + str(len(rowSegment)) + "," + str(size) + "\n")
