@@ -1,0 +1,2 @@
+mat = readMatrix("test/api/cli/distributed/distributedRead/mat.csv");
+print(mat+mat);

@@ -1,0 +1,2 @@
+0.0.0.0:50051,test/api/cli/distributed/distributedRead/mat1.csv,0,0,5,10
+0.0.0.0:50052,test/api/cli/distributed/distributedRead/mat2.csv,1,0,5,10
