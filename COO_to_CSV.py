@@ -107,6 +107,7 @@ if (outputFormat == "DenseMatrix"):
 if (outputFormat == "COOFormat"):
 
     csrMat = [ [] for i in range(size)]
+    numNonZeros = 0
     # Parse CSR
     with open(filename) as f:
         for line in f:   
@@ -117,8 +118,10 @@ if (outputFormat == "COOFormat"):
             r = int(splitted[0])
             c = int(splitted[1])
             csrMat[r].append(c)
+            numNonZeros += 1
             # For symmetry. If statement is needed for duplicates, because some edges present symmetry, but some don't
             if r not in csrMat[c]:
+                numNonZeros += 1
                 csrMat[c].append(r)
     
     # Create segments, this functions works exactly like Distribute.h Kernel
@@ -130,7 +133,7 @@ if (outputFormat == "COOFormat"):
         fcsv = open(outputFilename, 'w')
         
         fcsvMeta = open(outputFilename + ".meta", 'w')
-        fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64")
+        fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64,nnz=" + str(numNonZeros))
         fcsvMeta.close()
 
         for row in rowSegment:
