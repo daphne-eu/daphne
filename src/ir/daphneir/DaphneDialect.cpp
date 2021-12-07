@@ -513,7 +513,7 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
                     getType(),
                     llvm::APIntOps::RoundSignedAPIntToDouble(in.getValue()));
             }
-            if(in.getType().isUnsignedInteger()) {
+            if(in.getType().isUnsignedInteger() || in.getType().isIndex()) {
                 return FloatAttr::getChecked(getLoc(), getType(), llvm::APIntOps::RoundAPIntToDouble(in.getValue()));
             }
         }

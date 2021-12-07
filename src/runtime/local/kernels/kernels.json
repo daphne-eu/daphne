@@ -1589,7 +1589,8 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"]],
+            [["CSRMatrix", "double"]]
         ]
     },
     {
@@ -1599,17 +1600,21 @@
             "returnType": "void",
             "templateParams": [
                 {
-                    "name": "DT",
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgs",
                     "isDataType": true
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "Handle<DT> *&",
+                    "type": "Handle<DTRes> *&",
                     "name": "res"
                 },
                 {
-                    "type": "const Handle<DT> **",
+                    "type": "const Handle<DTArgs> **",
                     "name": "args"
                 },
                 {
@@ -1623,7 +1628,8 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"], "Structure"],
+            [["CSRMatrix", "double"], "Structure"]
         ]
     },
     {

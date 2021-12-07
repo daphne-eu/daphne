@@ -84,11 +84,15 @@ def Matrix : Daphne_Type<"Matrix"> {
             return get(getContext(), getElementType(), getNumRows(), getNumCols(), getSparsity(), rep);
         }
 
-        // The following method returns a MatrixType with the same element type
-        // as this MatrixType, but all other parameters reset.
+        // The following methods return a MatrixType preserving the specified
+        // properties and resetting all others.
 
         ::mlir::daphne::MatrixType withSameElementType() {
             return get(getContext(), getElementType());
+        }
+
+        ::mlir::daphne::MatrixType withSameElementTypeAndRepr() {
+            return get(getContext(), getElementType(), -1, -1, -1.0, getRepresentation());
         }
 
         /**

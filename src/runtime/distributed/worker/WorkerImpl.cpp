@@ -30,7 +30,9 @@
 #include "WorkerImpl.h"
 
 #include <runtime/distributed/worker/ProtoDataConverter.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/Read.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
@@ -197,8 +199,10 @@ grpc::Status WorkerImpl::Transfer(::grpc::ServerContext *context,
                                   const ::distributed::StoredData *request,
                                   ::distributed::Matrix *response)
 {
-    auto *mat = readOrGetMatrix(request->filename(), request->num_rows(), request->num_cols());
-    ProtoDataConverter::convertToProto(mat, response);
+    Matrix<double> *mat = readOrGetMatrix(request->filename(), request->num_rows(), request->num_cols(), false);
+    auto matDense = dynamic_cast<DenseMatrix<double> *>(mat);
+    assert(matDense && "Transfer is only implemented for DenseMatrix");
+    ProtoDataConverter::convertToProto(matDense, response);
     return ::grpc::Status::OK;
 }
 
@@ -238,28 +242,40 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const distributed::Work
         // TODO: all types
         auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();
         assert(matTy && matTy.getElementType().isa<mlir::Float64Type>() && "We only support double matrices for now!");
-        return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols());
+        bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;
+        return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols(), isSparse);
     }
     default:assert(false && "We only support stored data for now");
     }
 }
 
-DenseMatrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols)
+Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse)
 {
-    DenseMatrix<double> *m = nullptr;
     auto data_it = localData_.find(filename);
     if (data_it != localData_.end()) {
         // Data already cached
-        m = static_cast<DenseMatrix<double> *>(data_it->second);
+        return static_cast<Matrix<double> *>(data_it->second);
     }
     else {
         // Data not yet loaded -> load from file
-        struct File *file = openFile(filename.c_str());
-        char delim = ',';
-        readCsv(m, file, numRows, numCols, delim);
+        Matrix<double> * m = nullptr;
+        if(isSparse) {
+            CSRMatrix<double> *m2 = nullptr;
+            read<CSRMatrix<double>>(m2, filename.c_str(), nullptr);
+            m = m2;
+        }
+        else {
+            DenseMatrix<double> *m2 = nullptr;
+            struct File *file = openFile(filename.c_str());
+            char delim = ',';
+            // TODO use read
+            readCsv<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
+            closeFile(file);
+            m = m2;
+        }
         auto result = localData_.insert({filename, m});
         assert(result.second && "Value should always be inserted");
+        return m;
     }
-    return m;
 }
 

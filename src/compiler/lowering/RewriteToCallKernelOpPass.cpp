@@ -198,9 +198,10 @@ namespace
 //            std::cout << "callee: " << callee.str() << std::endl;
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =
-                llvm::isa<daphne::CreateFrameOp>(op) |
-                llvm::isa<daphne::NumCellsOp>(op) |
-                llvm::isa<daphne::NumColsOp>(op) |
+                llvm::isa<daphne::CreateFrameOp>(op) ||
+                llvm::isa<daphne::DistributedComputeOp>(op) ||
+                llvm::isa<daphne::NumCellsOp>(op) ||
+                llvm::isa<daphne::NumColsOp>(op) ||
                 llvm::isa<daphne::NumRowsOp>(op);
             
             // Append names of result types to the kernel name.

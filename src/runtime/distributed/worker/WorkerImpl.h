@@ -63,7 +63,7 @@ private:
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
 
-    DenseMatrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols);
+    Matrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
     static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
 };
