@@ -36,12 +36,11 @@ protected:
         // nothing to do
     };
 
+public:
     virtual ~Structure()
     {
         // nothing to do
     };
-    
-public:
 
     size_t getNumRows() const
     {
@@ -63,7 +62,8 @@ public:
      * @param os The stream where to print this data object.
      */
     virtual void print(std::ostream & os) const = 0;
-    
+
+    virtual Structure* slice(size_t rl, size_t ru) = 0;
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

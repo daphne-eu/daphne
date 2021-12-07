@@ -288,7 +288,7 @@ public:
         }
     }
 
-    DenseMatrix<ValueType>* slice(size_t rl, size_t ru) {
+    DenseMatrix<ValueType>* slice(size_t rl, size_t ru) override {
         return slice(rl, ru, 0, numCols);
     }
 

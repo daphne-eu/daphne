@@ -1583,10 +1583,6 @@
                 {
                     "name": "DTRes",
                     "isDataType": true
-                },
-                {
-                    "name": "DTIn",
-                    "isDataType": true
                 }
             ],
             "runtimeParams": [
@@ -1595,7 +1591,7 @@
                     "name": "res"
                 },
                 {
-                    "type": "DTIn **",
+                    "type": "Structure **",
                     "name": "inputs"
                 },
                 {
@@ -1629,7 +1625,8 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"]],
+            [["CSRMatrix", "double"]]
         ]
     },
     {

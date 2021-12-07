@@ -362,7 +362,10 @@ public:
             os << rowOffsets.get()[i] << ", ";
         os << std::endl;
     }
-    
+
+    CSRMatrix* slice(size_t rl, size_t ru) override {
+        return DataObjectFactory::create<CSRMatrix>(this, rl, ru);
+    }
 };
 
 template <typename ValueType>

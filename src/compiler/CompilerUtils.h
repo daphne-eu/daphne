@@ -47,6 +47,63 @@ struct CompilerUtils {
 
         return FileMetaData::ofFile(filenameStr);
     }
+
+    static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
+        if(t.isF64())
+            return "double";
+        else if(t.isF32())
+            return "float";
+        else if(t.isSignedInteger(8))
+            return "int8_t";
+        else if(t.isSignedInteger(32))
+            return "int32_t";
+        else if(t.isSignedInteger(64))
+            return "int64_t";
+        else if(t.isUnsignedInteger(8))
+            return "uint8_t";
+        else if(t.isUnsignedInteger(32))
+            return "uint32_t";
+        else if(t.isUnsignedInteger(64))
+            return "uint64_t";
+        else if(t.isSignlessInteger(1))
+            return "bool";
+        else if(t.isIndex())
+            return "size_t";
+        else if(auto matTy = t.dyn_cast<mlir::daphne::MatrixType>())
+            if(generalizeToStructure)
+                return "Structure";
+            else {
+                switch (matTy.getRepresentation()) {
+                case mlir::daphne::MatrixRepresentation::Dense:
+                    return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+                case mlir::daphne::MatrixRepresentation::Sparse:
+                    return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
+                }
+            }
+        else if(t.isa<mlir::daphne::FrameType>())
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "Frame";
+        else if(t.isa<mlir::daphne::StringType>())
+            // This becomes "const char *" (which makes perfect sense for
+            // strings) when inserted into the typical "const DT *" template of
+            // kernel input parameters.
+            return "char";
+        else if(t.isa<mlir::daphne::DaphneContextType>())
+            return "DaphneContext";
+        else if(auto handleTy = t.dyn_cast<mlir::daphne::HandleType>())
+            return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
+        else if(t.isa<mlir::daphne::FileType>())
+            return "File";
+        else if(t.isa<mlir::daphne::DescriptorType>())
+            return "Descriptor";
+        else if(t.isa<mlir::daphne::TargetType>())
+            return "Target";
+        throw std::runtime_error(
+            "no C++ type name known for the given MLIR type"
+        );
+    }
 };
 
 #endif //SRC_COMPILER_COMPILERUTILS_H
