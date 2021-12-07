@@ -25,8 +25,6 @@
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/ReadCsv.h>
 
-#include <queue>
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -85,49 +83,10 @@ struct Read<CSRMatrix<VT>> {
             res = DataObjectFactory::create<CSRMatrix<VT>>(
                 fmd.numRows, fmd.numCols, fmd.numNonZeros, false
             );
-
-        // TODO/FIXME: file format should be inferred from file extension or specified by user
-        // Read file of COO format
         File * file = openFile(filename);
-        DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
-        readCsv(rowColumnPairs, file, static_cast<size_t>(fmd.numNonZeros), 2, ',');
+        // FIXME: ensure file is sorted, or set `sorted` argument correctly
+        readCsv(res, file, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
         closeFile(file);
-
-        // pairs are ordered by first then by second argument (row, then col)
-        using RowColPos = std::pair<size_t, size_t>;
-        std::priority_queue<RowColPos, std::vector<RowColPos>, std::greater<>> positions;
-        for (auto r = 0u; r < rowColumnPairs->getNumRows(); ++r) {
-            positions.emplace(rowColumnPairs->get(r, 0), rowColumnPairs->get(r, 1));
-        }
-        DataObjectFactory::destroy(rowColumnPairs);
-
-        auto *rowOffsets = res->getRowOffsets();
-        rowOffsets[0] = 0;
-        auto *colIdxs = res->getColIdxs();
-        auto *values = res->getValues();
-        size_t currValIdx = 0;
-        size_t rowIdx = 0;
-        while(!positions.empty()) {
-            auto pos = positions.top();
-            if(pos.first >= res->getNumRows() || pos.second >= res->getNumCols()) {
-                throw std::runtime_error("Position [" + std::to_string(pos.first) + ", " + std::to_string(pos.second)
-                    + "] is not part of matrix<" + std::to_string(res->getNumRows()) + ", "
-                    + std::to_string(res->getNumCols()) + ">");
-            }
-            while(rowIdx < pos.first) {
-                rowOffsets[rowIdx + 1] = currValIdx;
-                rowIdx++;
-            }
-            // TODO: valued COO files?
-            values[currValIdx] = 1;
-            colIdxs[currValIdx] = pos.second;
-            currValIdx++;
-            positions.pop();
-        }
-        while(rowIdx < fmd.numRows) {
-            rowOffsets[rowIdx + 1] = currValIdx;
-            rowIdx++;
-        }
     }
 };
 
