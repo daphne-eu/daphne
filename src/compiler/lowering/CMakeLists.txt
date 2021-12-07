@@ -20,6 +20,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     RewriteToCallKernelOpPass.cpp
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
+    WhileLoopInvariantCodeMotionPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

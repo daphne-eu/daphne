@@ -108,6 +108,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
             pm.addPass(mlir::createCanonicalizerPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - canonicalization"));
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());

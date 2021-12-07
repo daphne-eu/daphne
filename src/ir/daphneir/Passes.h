@@ -48,6 +48,7 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createRewriteSqlOpPass();
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass();
+    std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"

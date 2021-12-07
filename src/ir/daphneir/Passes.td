@@ -59,4 +59,8 @@ def SpecializeGenericFunctionsPass : FunctionPass<"specialize-generic-funcs"> {
     let constructor = "mlir::daphne::createSpecializeGenericFunctionsPass()";
 }
 
+def WhileLoopInvariantCodeMotionPass : FunctionPass<"while-loop-invariant-code-motion"> {
+    let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
+}
+
 #endif // SRC_IR_DAPHNEIR_PASSES_TD
