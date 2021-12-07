@@ -438,7 +438,6 @@ public:
                 auto expTy = typeConverter->convertType(op.inputs().getType()[i]);
                 if (expTy != val.getType()) {
                     // casting for scalars
-                    auto ptrTy = val.getType().cast<LLVM::LLVMPointerType>();
                     val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
                     val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
                 }

@@ -292,14 +292,13 @@ public:
             CSRMatrix<VT> **outputs[] = {&lres};
             //execute function on given data binding (batch size)
             _data._func(outputs, linputs.data());
-            //localSink.add(lres, r - _data._rl, false);
-            _resultSink.add(lres, r);
+            localSink.add(lres, r - _data._rl, false);
 
             // cleanup
             lres = nullptr;
             this->cleanupFuncInputs(std::move(linputs));
         }
-        //_resultSink.add(localSink.consume(), _data._rl);
+        _resultSink.add(localSink.consume(), _data._rl);
     }
 };
 
