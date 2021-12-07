@@ -18,6 +18,7 @@
 #include <api/cli/Utils.h>
 
 #include <cstdlib>
+#include <fcntl.h>
 
 #include <tags.h>
 
@@ -32,17 +33,14 @@ const std::string dirPath = "test/api/cli/distributed/";
 TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
 {
     auto addr1 = "0.0.0.0:50051";
-    auto addr2 = "0.0.0.0:50052";
-    WorkerImpl workerImpl1;
-    WorkerImpl workerImpl2;
-    auto server1 = startDistributedWorker(addr1, &workerImpl1);
-    auto server2 = startDistributedWorker(addr2, &workerImpl2);
-    std::thread thread1 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl1);
-    std::thread thread2 = std::thread(&WorkerImpl::HandleRpcs, &workerImpl2);
-    auto distWorkerStr = std::string(addr1) + ',' + addr2;
-
+    auto addr2 = "0.0.0.0:50052";    
+    // Redirect worker output to null
+    int nullFd = open("/dev/null", O_WRONLY);
+    auto pid1 = runProgramInBackground(nullFd, nullFd, "build/src/runtime/distributed/worker/DistributedWorker", "DistributedWorker", addr1);
+    auto pid2 = runProgramInBackground(nullFd, nullFd, "build/src/runtime/distributed/worker/DistributedWorker", "DistributedWorker", addr2);
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
-    for (auto i = 1u; i < 3; ++i) {
+    auto distWorkerStr = std::string(addr1) + ',' + addr2;
+    for (auto i = 1u; i < 4; ++i) {
         auto filename = dirPath + "distributed_" + std::to_string(i) + ".daphne";
 
         std::stringstream outLocal;
@@ -63,10 +61,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
 
         CHECK(outLocal.str() == outDist.str());
     }
-    server1->Shutdown();
-    workerImpl1.cq_->Shutdown();
-    thread1.join();
-    server2->Shutdown();
-    workerImpl2.cq_->Shutdown();
-    thread2.join();
+    kill(pid1, SIGKILL);
+    kill(pid2, SIGKILL);
+    wait(NULL);   
 }

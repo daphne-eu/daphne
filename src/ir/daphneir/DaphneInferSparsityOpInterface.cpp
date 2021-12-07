@@ -50,9 +50,6 @@ double getSparsityOrUnknownFromScalar(Value v) {
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
         if(auto doubleAttr = co.value().dyn_cast<FloatAttr>())
             return doubleAttr.getValue().convertToDouble();
-    // TODO Remove this once we support constant propagation (see #151).
-    if(auto co = llvm::dyn_cast<daphne::CastOp>(v.getDefiningOp()))
-        return getSparsityOrUnknownFromScalar(co.arg());
     return -1.0; // the value of the scalar is unknown at the moment
 }
 
@@ -87,6 +84,8 @@ std::vector<double> daphne::TriOp::inferSparsity() {
 }
 
 std::vector<double> daphne::ReadOp::inferSparsity() {
+    // TODO Use CompilerUtils::getFileMetaData() here, but it throws if the
+    // file name is not a constant (after constant propagation).
     if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(fileName().getDefiningOp())) {
         if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
             auto filename = strAttr.getValue().str();

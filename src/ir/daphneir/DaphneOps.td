@@ -119,6 +119,8 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 class Daphne_NumOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, !listconcat(traits, [NoSideEffect])> {
     let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs Size:$res);
+
+    let hasCanonicalizeMethod = 1;
 }
 
 def Daphne_NumRowsOp : Daphne_NumOp<"numRows">;
@@ -252,6 +254,8 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 def Daphne_ConcatOp : Daphne_Op<"concat"> {
     let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
     let results = (outs StrScalar:$res);
+    
+    let hasFolder = 1;
 }
 
 // ----------------------------------------------------------------------------
@@ -976,9 +980,16 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
 // Distributed Operations
 // ****************************************************************************
 
+def Daphne_DistributedReadOp : Daphne_Op<"distributedRead", [NoSideEffect]> {
+    let arguments = (ins StrScalar:$fileName);
+    let results = (outs Handle:$res);
+}
+
 def Daphne_DistributeOp : Daphne_Op<"distribute", [NoSideEffect]> {
     let arguments = (ins Matrix:$mat);
     let results = (outs Handle:$res);
+
+    let hasCanonicalizer = 1;
 }
 
 def Daphne_BroadcastOp : Daphne_Op<"broadcast", [NoSideEffect]> {

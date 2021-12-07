@@ -1516,6 +1516,32 @@
     },
     {
         "kernelTemplate": {
+            "header": "Broadcast.h",
+            "opName": "broadcast",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "mat"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "DistributedCollect.h",
             "opName": "distributedCollect",
             "returnType": "void",
@@ -1533,6 +1559,32 @@
                 {
                     "type": "const Handle<DT> *",
                     "name": "handle"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedRead.h",
+            "opName": "distributedRead",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "filename"
                 }
             ]
         },

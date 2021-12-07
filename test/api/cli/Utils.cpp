@@ -42,7 +42,8 @@ std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImp
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     workerImpl->cq_ = builder.AddCompletionQueue();
     builder.RegisterService(&workerImpl->service_);    
-    
+    builder.SetMaxReceiveMessageSize(INT_MAX);
+    builder.SetMaxSendMessageSize(INT_MAX);
     
     return builder.BuildAndStart();
 }

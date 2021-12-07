@@ -80,7 +80,7 @@ template<class DT>
 class Handle
 {
 public:
-    using HandleMap = std::map<const DistributedIndex, DistributedData>;
+    using HandleMap = std::multimap<const DistributedIndex, DistributedData>;
 
     Handle(HandleMap map, size_t rows, size_t cols) : map_(map), rows_(rows), cols_(cols)
     {}

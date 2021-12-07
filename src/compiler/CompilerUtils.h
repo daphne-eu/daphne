@@ -37,15 +37,7 @@ struct CompilerUtils {
     }
     
     static FileMetaData getFileMetaData(mlir::Value filename) {
-        std::string filenameStr;
-
-        // TODO Simplify this, we have constant propagation now (see #151).
-        if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
-            filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
-        else
-            filenameStr = getConstantString2(filename);
-
-        return FileMetaData::ofFile(filenameStr);
+        return FileMetaData::ofFile(getConstantString2(filename));
     }
 
     static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
