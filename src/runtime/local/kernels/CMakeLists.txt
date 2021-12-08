@@ -16,7 +16,7 @@
 # directory) as the basis for the pre-compiled kernels library.
 add_custom_command(
         OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
         MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
         DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
@@ -45,20 +45,31 @@ target_link_libraries(DistributedCaller PRIVATE ${LIBS})
 
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    add_custom_command(
+            OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations_generated.cpp
+            COMMAND python3 ARGS genKernelInst.py kernels.json
+                    ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations_generated.cpp CUDA
+            MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
+            DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
+    )
+
     target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
-    set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/)
+    set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
-            ${PREFIX}/context/CUDAContext.cpp
-            ${PREFIX}/kernels/CUDA_Activation.cpp
-            ${PREFIX}/kernels/CUDA_Affine.cpp
-            ${PREFIX}/kernels/CUDA_BatchNorm.cpp
-            ${PREFIX}/kernels/CUDA_BiasAdd.cpp
-            ${PREFIX}/kernels/CUDA_Convolution.cpp
-            ${PREFIX}/kernels/CUDA_kernel_instantiations.cpp
-            ${PREFIX}/kernels/CUDA_MatMul.cpp
-            ${PREFIX}/kernels/CUDA_Pooling.cpp
-            ${PREFIX}/kernels/CUDA_Softmax.cpp)
+            ${PREFIX}/../../context/CUDAContext.cpp
+            ${PREFIX}/../CUDA_Activation.cpp
+            ${PREFIX}/../CUDA_Affine.cpp
+            ${PREFIX}/../CUDA_BatchNorm.cpp
+            ${PREFIX}/../CUDA_BiasAdd.cpp
+            ${PREFIX}/../CUDA_Convolution.cpp
+            ${PREFIX}/../CUDA_Pooling.cpp
+            ${PREFIX}/../CUDA_Softmax.cpp
+            ${PREFIX}/../CUDA_kernel_instantiations.cpp
+            ${PREFIX}/MatMul.cpp
+            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations_generated.cpp
+    )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
