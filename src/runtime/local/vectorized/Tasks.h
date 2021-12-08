@@ -97,7 +97,7 @@ template<class VT>
 class CompiledPipelineTask : public Task
 {
 private:
-    std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> _func;
+    std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))> _func;
     std::mutex &_resLock;
     DenseMatrix<VT> *&_res;
     DenseMatrix<VT> **_inputs;
@@ -110,9 +110,11 @@ private:
     uint64_t _rl;    // row lower index
     uint64_t _ru;    // row upper index
     uint64_t _bsize; // batch size (data binding)
+    uint64_t _offset;
+    DCTX(_ctx);
 
 public:
-    CompiledPipelineTask(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> func,
+    CompiledPipelineTask(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))> func,
                          std::mutex &resLock,
                          DenseMatrix<VT> *&res,
                          DenseMatrix<VT> **inputs,
@@ -124,9 +126,10 @@ public:
                          VectorCombine *combines,
                          uint64_t rl,
                          uint64_t ru,
-                         uint64_t bsize)
+                         uint64_t bsize, uint64_t offset, DCTX(ctx))
         : _func(func), _resLock(resLock), _res(res), _inputs(inputs), _numInputs(numInputs), _numOutputs(numOutputs),
-          _outRows(outRows), _outCols(outCols), _splits(splits), _combines(combines), _rl(rl), _ru(ru), _bsize(bsize)
+          _outRows(outRows), _outCols(outCols), _splits(splits), _combines(combines), _rl(rl), _ru(ru), _bsize(bsize),
+         _offset(offset), _ctx(ctx)
     {}
 
     ~CompiledPipelineTask() override = default;
@@ -136,15 +139,16 @@ public:
         // local add aggregation to minimize locking
         DenseMatrix<VT> *localAddRes = nullptr;
         DenseMatrix<VT> *lres = nullptr;
-        for(uint64_t r = _rl; r < _ru; r += _bsize) {
+        int bsize = _bsize;
+        for(uint64_t r = _rl; r < _ru; r += bsize) {
             //create zero-copy views of inputs/outputs
-            uint64_t r2 = std::min(r + _bsize, _ru);
+            uint64_t r2 = std::min(r + bsize, _ru);
 
             auto linputs = createFuncInputs(r, r2);
             DenseMatrix<VT> **outputs[] = {&lres};
             //execute function on given data binding (batch size)
-            _func(outputs, linputs.data());
-            accumulateOutputs(lres, localAddRes, r, r2);
+            _func(outputs, linputs.data(), _ctx);
+            accumulateOutputs(lres, localAddRes, r-_offset, r2-_offset);
 
             // cleanup
             DataObjectFactory::destroy(lres);
@@ -164,7 +168,7 @@ public:
                 _resLock.unlock();
             }
             else {
-                ewBinaryMat(BinaryOpCode::ADD, _res, _res, localAddRes, nullptr);
+                ewBinaryMat(BinaryOpCode::ADD, _res, _res, localAddRes, _ctx);
                 _resLock.unlock();
                 //cleanup
                 DataObjectFactory::destroy(localAddRes);

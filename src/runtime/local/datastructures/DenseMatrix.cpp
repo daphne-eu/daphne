@@ -24,71 +24,93 @@
 #endif
 
 template<typename ValueType>
-DenseMatrix<ValueType>::~DenseMatrix()
+DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type) :
+        Matrix<ValueType>(maxNumRows, numCols), rowSkip(numCols), lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
-#ifdef USE_CUDA
-    if(cuda_ptr) {
-//#ifndef NDEBUG
-//        std::cerr << "calling cudaFree " << cuda_ptr << std::endl;
-//#endif
-        CHECK_CUDART(cudaFree(cuda_ptr));
-        cuda_ptr = nullptr;
+#ifndef NDEBUG
+    std::cerr << "creating dense matrix of allocation type " << static_cast<int>(type) <<
+              " and dims: " << numRows << "x" << numCols << std::endl;
+#endif
+    if (type == ALLOCATION_TYPE::HOST_ALLOC) {
+        alloc_shared_values();
+        host_buffer_current = true;
+        if(zero)
+            memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
     }
+#ifdef USE_CUDA
+    else if (type == ALLOCATION_TYPE::CUDA_ALLOC) {
+        cudaAlloc();
+        cuda_buffer_current = true;
+    }
+#endif
+    else {
+        throw std::runtime_error("Unknown allocation type: " + std::to_string(static_cast<int>(type)));
+    }
+}
+
+template<typename ValueType>
+DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
+        size_t colUpperExcl) : Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl),
+        lastAppendedRowIdx(0), lastAppendedColIdx(0)
+{
+    assert(src && "src must not be null");
+    assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+    assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
+    assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+    assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+    assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
+    assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
+
+    rowSkip = src->rowSkip;
+    auto offset = rowLowerIncl * src->rowSkip + colLowerIncl;
+    alloc_shared_values(src->values, offset);
+    host_dirty = src->host_dirty;
+    host_buffer_current = src->host_buffer_current;
+    cuda_dirty = src->cuda_dirty;
+    cuda_buffer_current = src->cuda_buffer_current;
+
+#ifdef USE_CUDA
+    if(src->cuda_ptr)
+        alloc_shared_cuda_buffer(src->cuda_ptr, offset);
 #endif
 }
 
 #ifdef USE_CUDA
 template <typename ValueType>
 void DenseMatrix<ValueType>::cudaAlloc() {
-    size_t requested = numRows*numCols*sizeof(ValueType);
-    size_t available; size_t total;
-    auto start = std::chrono::high_resolution_clock::now();
-    cudaMemGetInfo(&available, &total);
-    auto end = std::chrono::high_resolution_clock::now();
-    if(requested > available) {
-        throw std::runtime_error("Insufficient GPU memory! Requested=" + std::to_string(requested) + " Available="
-                + std::to_string(available));
-    }
-#ifndef NDEBUG
-    std::cerr << "cudaMalloc " << requested << " bytes" << " of " << available << "(query time=" <<
-    std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
-#endif
-    CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&cuda_ptr), numRows*numCols*sizeof(ValueType)));
-#ifndef NDEBUG
-    std::cerr << " address=" << cuda_ptr << std::endl;
-#endif
+    alloc_shared_cuda_buffer();
 }
 
 template <typename ValueType>
 void DenseMatrix<ValueType>::cuda2host() {
-//#ifndef NDEBUG
-//    std::cerr << "dev2host" << std::endl;
-//#endif
     if(!values)
-        values = std::make_shared<ValueType>(numRows*numCols);
-    CHECK_CUDART(cudaMemcpy(values.get(), cuda_ptr, numRows*numCols*sizeof(ValueType), cudaMemcpyDeviceToHost));
+        alloc_shared_values();
+    if(cuda_ptr)
+        CHECK_CUDART(cudaMemcpy(values.get(), cuda_ptr.get(), numRows*numCols*sizeof(ValueType), cudaMemcpyDeviceToHost));
+    else
+        throw std::runtime_error("trying to cudaMemcpy from null ptr\n");
     cuda_dirty = false;
 }
 
 template <typename ValueType>
 void DenseMatrix<ValueType>::host2cuda() {
-//#ifndef NDEBUG
-//    std::cerr << "host2dev" << std::endl;
-//#endif
     if (!cuda_ptr) {
         cudaAlloc();
     }
-//    if(values.get() == nullptr) {
-//        std::cout <<" values is null!" << std::endl;
-//        return;
-//    }
-//    if(!cuda_ptr) {
-//        std::cout << " device ptr is still null!" << std::endl;
-//        host_dirty = false;
-//        return;
-//    }
-    CHECK_CUDART(cudaMemcpy(cuda_ptr, values.get(), numRows*numCols*sizeof(ValueType), cudaMemcpyHostToDevice));
+    CHECK_CUDART(cudaMemcpy(cuda_ptr.get(), values.get(), numRows*numCols*sizeof(ValueType), cudaMemcpyHostToDevice));
     host_dirty = false;
+}
+
+
+template<typename ValueType>
+void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset) {
+    if(src) {
+        this->cuda_ptr = std::shared_ptr<ValueType>(src, src.get() + offset);
+    }
+    else {
+        this->cuda_ptr = std::shared_ptr<ValueType>(new ValueType, CudaDeleter<ValueType>());
+        CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&cuda_ptr), this->bufferSize()));
+    }
 }
 
 #endif // USE_CUDA
@@ -97,15 +119,30 @@ template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostre
     os << val;
 }
 
+template<typename ValueType>
+void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> src, size_t offset) {
+    // correct since C++17: Calls delete[] instead of simple delete
+    if(src) {
+        values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
+    }
+    else
+        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
+}
+
+template<typename ValueType>
+size_t DenseMatrix<ValueType>::bufferSize() const {
+    return this->getNumItems() * sizeof(ValueType);
+}
+
 // Convert to an integer to print uint8_t values as numbers
 // even if they fall into the range of special ASCII characters.
 template <> void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const
 {
-    os << (unsigned int)val;
+    os << static_cast<unsigned int>(val);
 }
 template <> void DenseMatrix<signed char>::printValue(std::ostream & os, signed char val) const
 {
-    os << (int)val;
+    os << static_cast<int>(val);
 }
 
 // explicitly instantiate to satisfy linker

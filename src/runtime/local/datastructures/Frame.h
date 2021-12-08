@@ -174,7 +174,7 @@ class Frame : public Structure {
                     "all given matrices must not be a view on a column of a larger matrix"
             );
             *schemaSlot = ValueTypeUtils::codeFor<VT>;
-            std::shared_ptr<VT> orig = colMat2->getValuesSharedPtr();
+            std::shared_ptr<VT[]> orig = colMat2->getValuesSharedPtr();
             *columnsSlot = std::shared_ptr<ColByteType>(orig, reinterpret_cast<ColByteType *>(orig.get()));
             return true;
         }

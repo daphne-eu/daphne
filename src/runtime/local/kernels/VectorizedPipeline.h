@@ -44,7 +44,8 @@ struct VectorizedPipeline
                       int64_t *outCols,
                       int64_t *splits,
                       int64_t *combines,
-                      void *fun,
+                      size_t numFuncs,
+                      void** fun,
                       DCTX(ctx)) = delete;
 };
 
@@ -61,7 +62,8 @@ void vectorizedPipeline(DTRes *&res,
                         int64_t *outCols,
                         int64_t *splits,
                         int64_t *combines,
-                        void *fun,
+                        size_t numFuncs,
+                        void** fun,
                         DCTX(ctx))
 {
     VectorizedPipeline<DTRes, DTIn>::apply(res,
@@ -72,6 +74,7 @@ void vectorizedPipeline(DTRes *&res,
         outCols,
         splits,
         combines,
+        numFuncs,
         fun,
         ctx);
 }
@@ -80,25 +83,30 @@ void vectorizedPipeline(DTRes *&res,
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>>
+template<typename VT>
+struct VectorizedPipeline<DenseMatrix<VT>, DenseMatrix<VT>>
 {
-    static void apply(DenseMatrix<double> *&res,
-                      DenseMatrix<double> **inputs,
+    static void apply(DenseMatrix<VT> *&res,
+                      DenseMatrix<VT> **inputs,
                       size_t numInputs,
                       size_t numOutputs,
                       int64_t *outRows,
                       int64_t *outCols,
                       int64_t *splits,
                       int64_t *combines,
-                      void *fun,
-                      DCTX(ctx))
+                      size_t numFuncs,
+                      void** fun,
+                      DCTX(dctx))
     {
-        auto wrapper = std::make_unique<MTWrapper<double>>();
-        auto function =
-            std::function<void(DenseMatrix<double> ***, DenseMatrix<double> **)>(
-                reinterpret_cast<void (*)(DenseMatrix<double> ***, DenseMatrix<double> **)>(fun));
-        wrapper->execute(function,
+        auto wrapper = std::make_unique<MTWrapper<VT>>();
+        std::vector<std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>> funcs;
+        for (auto i = 0ul; i < numFuncs; ++i) {
+            auto function = std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>(
+                    reinterpret_cast<void (*)(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>(
+                    reinterpret_cast<void*>(fun[i])));
+            funcs.push_back(function);
+        }
+        wrapper->execute(funcs,
             res,
             inputs,
             numInputs,
@@ -107,7 +115,7 @@ struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>>
             outCols,
             reinterpret_cast<VectorSplit *>(splits),
             reinterpret_cast<VectorCombine *>(combines),
-            false);
+            dctx, false);
     }
 };
 

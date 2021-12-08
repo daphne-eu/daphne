@@ -35,31 +35,32 @@ using mlir::daphne::VectorCombine;
 template <class VT>
 class MTWrapper {
 private:
-    uint32_t _numThreads;
+    uint32_t _numThreads{};
 
 public:
     MTWrapper() : MTWrapper(std::thread::hardware_concurrency()) {}
-    MTWrapper(uint32_t numThreads) {
+    explicit MTWrapper(uint32_t numThreads) {
         _numThreads = (numThreads <= 0) ? 32 : numThreads;
     }
     ~MTWrapper() = default;
 
     // Deprecated
-    void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2)
+    [[maybe_unused]] void execute(const std::vector<std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>>& funcs,
+                 DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, DCTX(ctx))
     {
-        execute(func, res, input1, input2, false);
+        execute(funcs, res, input1, input2, ctx, false);
     }
 
     // Deprecated
-    void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
+    void execute(const std::vector<std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>>& funcs,
+        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, DCTX(ctx), bool verbose)
     {
         if(const char* env_m = std::getenv("DAPHNE_THREADS")){
             _numThreads= std::stoi(env_m);
         }
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows()); // this the maximum possible number of tasks should we start with something smaller and it grows as ended?!
+        // this the maximum possible number of tasks should we start with something smaller, and it grows as ended?!
+        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows());
 
         // create workers threads
         WorkerCPU* workers[_numThreads];
@@ -79,32 +80,32 @@ public:
         uint64_t endChunk=0;
         uint64_t batchsize = 1; // row-at-a-time
         uint64_t chunkParam=1;
-        LoadPartitioning lp(STATIC, rlen, chunkParam,_numThreads, false); 
+        LoadPartitioning lp(STATIC, rlen, chunkParam,_numThreads, false);
         while(lp.hasNextChunk()){
             endChunk += lp.getNextChunk();
             q->enqueueTask(new SingleOpTask<VT>(
-                func, res, input1, input2, startChunk, endChunk, batchsize));
+                funcs[0], res, input1, input2, startChunk, endChunk, batchsize));
             startChunk= endChunk;
         }
         q->closeInput();
-        
+
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
- 
+
         // cleanups
         for(uint32_t i=0; i<_numThreads; i++)
             delete workers[i];
         delete q;
     }
 
-    void execute(std::function<void(DenseMatrix<VT>***, DenseMatrix<VT>**)> func,
-                 DenseMatrix<VT> *&res, DenseMatrix<VT> **inputs, size_t numInputs)
+    [[maybe_unused]] void execute(const std::vector<std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>>& funcs,
+                 DenseMatrix<VT> *&res, DenseMatrix<VT> **inputs, size_t numInputs, DCTX(ctx))
     {
-        execute(func, res, inputs, numInputs, false);
+        execute(funcs, res, inputs, numInputs, ctx, false);
     }
 
-    void execute(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> func,
+    void execute(const std::vector<std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **, DCTX(ctx))>>& funcs,
                  DenseMatrix<VT> *&res,
                  DenseMatrix<VT> **inputs,
                  size_t numInputs,
@@ -112,27 +113,43 @@ public:
                  int64_t *outRows,
                  int64_t *outCols,
                  VectorSplit *splits,
-                 VectorCombine *combines,
+                 VectorCombine *combines, DCTX(ctx),
                  bool verbose)
     {
         uint64_t len = 0;
+        auto taskRatioCUDA = 0.0f;
+        auto numCUDAworkerThreads = 0ul;
+
         // due to possible broadcasting we have to check all inputs
         for (auto i = 0u; i < numInputs; ++i) {
-            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS) {
                 len = std::max(len, inputs[i]->getNumRows());
-        } 
-        // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
+                if(ctx && ctx->useCUDA() && funcs.size() > 1)
+                    [[maybe_unused]] auto bla = static_cast<const DenseMatrix<VT>*>(inputs[i])->getValuesCUDA();
+            }
+        }
         if(const char* env_m = std::getenv("DAPHNE_THREADS")){
             _numThreads= std::stoi(env_m);
         }
+
         // create workers threads
-        WorkerCPU* workers[_numThreads];
+        Worker* workers[_numThreads];
         std::thread workerThreads[_numThreads];
-        for(uint32_t i=0; i<_numThreads; i++) {
-            workers[i] = new WorkerCPU(q, verbose);
-            workerThreads[i] = std::thread(runWorker, workers[i]);
+        std::unique_ptr<TaskQueue> q_CUDA{};
+        std::unique_ptr<TaskQueue> q{};
+
+#ifdef USE_CUDA
+        if(ctx && ctx->useCUDA() && funcs.size() > 1 && len > 1) {
+            numCUDAworkerThreads = ctx->cuda_contexts.size();
+            q_CUDA = std::make_unique<BlockingTaskQueue>(len);
+            for(uint32_t i=0; i<numCUDAworkerThreads; i++) {
+                workers[i] = new WorkerCPU(q_CUDA.get(), verbose);
+                workerThreads[i] = std::thread(runWorker, workers[i]);
+            }
+            taskRatioCUDA = 0.6f;
         }
+#endif
+        auto numCPPworkerThreads = std::max(0ul, _numThreads - numCUDAworkerThreads);
 
         assert(numOutputs == 1 && "TODO");
         // output allocation for row-wise combine
@@ -140,35 +157,94 @@ public:
             auto zeroOut = combines[0] == mlir::daphne::VectorCombine::ADD;
             res = DataObjectFactory::create<DenseMatrix<VT>>(outRows[0], outCols[0], zeroOut);
         }
+
         // lock for aggregation combine
         std::mutex resLock;
 
-        // create tasks and close input
-        uint64_t startChunk = 0;
-        uint64_t endChunk = 0;
-        uint64_t batchsize = 100; // 100-rows-at-a-time
-        uint64_t chunkParam = 1;
-        LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false); 
-        while(lp.hasNextChunk()){
-            endChunk += lp.getNextChunk();
-            q->enqueueTask(new CompiledPipelineTask<VT>(
-                func,
-                resLock,
-                res,
-                inputs,
-                numInputs,
-                numOutputs,
-                outRows,
-                outCols,
-                splits,
-                combines,
-                startChunk,
-                endChunk,
-                batchsize));
-            startChunk= endChunk;
-        } 
-        q->closeInput();
+        #ifndef NDEBUG
+        std::cout << "spawning " << _numThreads << " worker threads" << std::endl;
+        #endif
 
+        uint64_t batchsize = 100; // 100-rows-at-a-time
+        size_t cpu_task_len = 0;
+        if(numCPPworkerThreads > 0) {
+            cpu_task_len = std::ceil(static_cast<float>(len) * (1.0f - taskRatioCUDA));
+#ifndef NDEBUG
+            std::cout << "cpu_task_len=" << cpu_task_len << std::endl;
+#endif
+            auto res_cpp = res;
+            if (combines[0] == mlir::daphne::VectorCombine::ROWS)
+                res_cpp = res->slice(0, cpu_task_len);
+
+            // create task queue (w/o size-based blocking)
+            q = std::make_unique<BlockingTaskQueue>(len);
+            for(uint32_t i=numCUDAworkerThreads; i<_numThreads; i++) {
+                workers[i] = new WorkerCPU(q.get(), verbose);
+                workerThreads[i] = std::thread(runWorker, workers[i]);
+            }
+            // create tasks and close input
+            uint64_t startChunk = 0;
+            uint64_t endChunk = 0;
+            auto chunkParam = 1;
+            LoadPartitioning lp(STATIC, cpu_task_len, chunkParam, numCPPworkerThreads, false);
+            while (lp.hasNextChunk()) {
+                endChunk += lp.getNextChunk();
+                q->enqueueTask(new CompiledPipelineTask<VT>(
+                        funcs[0],
+                        resLock,
+                        res_cpp,
+                        inputs,
+                        numInputs,
+                        numOutputs,
+                        outRows,
+                        outCols,
+                        splits,
+                        combines,
+                        startChunk,
+                        endChunk,
+                        batchsize, 0, ctx));
+                startChunk = endChunk;
+            }
+            q->closeInput();
+        }
+
+#ifdef USE_CUDA
+        if(ctx && ctx->useCUDA() && funcs.size() > 1 && len > 1) {
+
+            // ToDo: more elaborate gpu block size
+            auto gpu_task_len = len - cpu_task_len;
+            auto blksize = gpu_task_len / (numCUDAworkerThreads * 2);
+            batchsize = blksize;
+#ifndef NDEBUG
+            std::cout << "gpu tasks from " << cpu_task_len << " to " << len << " == " << len - cpu_task_len
+                      << " tasks. blkSize=" << blksize << std::endl;
+#endif
+            auto res_cuda = res;
+            auto offset = 0ul;
+            if (combines[0] == mlir::daphne::VectorCombine::ROWS) {
+                res_cuda = res->slice(cpu_task_len, len);
+                offset = cpu_task_len;
+            }
+
+            for (uint32_t k = cpu_task_len; k < len; k += blksize) {
+                q_CUDA->enqueueTask(new CompiledPipelineTask<VT>(
+                        funcs[1],
+                        resLock,
+                        res_cuda,
+                        inputs,
+                        numInputs,
+                        numOutputs,
+                        outRows,
+                        outCols,
+                        splits,
+                        combines,
+                        k,
+                        std::min(k + blksize, len),
+                        batchsize, offset, ctx));
+            }
+            q_CUDA->closeInput();
+        }
+#endif
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
@@ -176,7 +252,6 @@ public:
         // cleanups
         for(uint32_t i=0; i<_numThreads; i++)
             delete workers[i];
-        delete q;
     }
 };
 

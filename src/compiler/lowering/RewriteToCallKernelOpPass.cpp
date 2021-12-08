@@ -94,6 +94,10 @@ namespace
         );
     }
 
+    bool isMatrixComputation(Operation *v) {
+        return llvm::any_of(v->getOperandTypes(), [&](Type ty) { return ty.isa<daphne::MatrixType>(); });
+    };
+
     class KernelReplacement : public RewritePattern
     {
         // TODO This method is only required since MLIR does not seem to
@@ -181,29 +185,36 @@ namespace
             std::stringstream callee;
             std::string_view op_name{op->getName().stripDialect().data()};
 #ifdef USE_CUDA
-            //ToDo: this will go away with a gpu ops rewrite pass
-            std::array<std::string_view, 8> gpu_ops({ "affineForward", "avgPoolForward", "batchNorm2DTestForward",
-                    "biasAddForward", "conv2DForward", "maxPoolForward", "reluForward", "softmaxForward",});
-            std::cout << op_name << std::endl;
-            if(cfg.use_cuda) {
-                if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
-                    callee << '_' << op_name << "_CUDA";
+            if(cfg.use_cuda && op->hasTrait<mlir::OpTrait::CUDASupport>() && isMatrixComputation(op)) {
+                //ToDo: this will go away with a gpu ops rewrite pass
+
+                bool ignore_duplicate_pipeline = false;
+                auto cuda_attr = op->getAttr("cuda_device");
+                if(cuda_attr)
+                    ignore_duplicate_pipeline = cuda_attr.dyn_cast<IntegerAttr>().getInt() == -2;
+
+                if((cuda_attr == nullptr || !ignore_duplicate_pipeline)) {
+                    if((op_name.substr(0, 2) == "ew") ||
+                       (op_name == std::string("matMul")) ||
+                       (op_name == std::string("cbind")) ||
+                       (op_name == std::string("transpose")) ||
+                       (op_name == std::string("solve")) ||
+                       (op_name == std::string("extractCol")) ||
+                       (op_name == std::string("syrk")) ||
+                       (op_name == std::string("sumCol")))
+                    {
+                        callee << "CUDA_" << op_name;
+                        op->setAttr("cuda_device", rewriter.getI32IntegerAttr(0));
+                    }
+                    else
+                        callee << '_' << op_name;
                 }
-                else if((op_name == std::string("matMul")) ||
-                        (op_name.substr(0,2) == "ew") ||
-                        (op_name == std::string("cbind")) ||
-                        (op_name == std::string("transpose")) ||
-                        (op_name == std::string("solve")) ||
-                        (op_name == std::string("extractCol")) ||
-                        (op_name == std::string("syrk")) ||
-                        (op_name == std::string("sumCol")))
-                    callee << "CUDA_" << op_name;
                 else
                     callee << '_' << op_name;
             }
             else
 #endif
-                callee << '_' << op_name;
+                    callee << '_' << op_name;
 //            std::cout << "callee: " << callee.str() << std::endl;
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =

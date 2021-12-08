@@ -1756,13 +1756,18 @@
                     "name": "combines"
                 },
                 {
-                    "type": "void *",
+                    "type": "size_t",
+                    "name": "numFuncs"
+                },
+                {
+                    "type": "void **",
                     "name": "fun"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
         ]
     },
     {

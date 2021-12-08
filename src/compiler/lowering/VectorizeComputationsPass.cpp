@@ -23,6 +23,8 @@
 
 #include <memory>
 #include <set>
+#include <mlir/IR/BlockAndValueMapping.h>
+#include <iostream>
 
 using namespace mlir;
 
@@ -31,6 +33,9 @@ namespace
 struct VectorizeComputationsPass
     : public PassWrapper<VectorizeComputationsPass, OperationPass<FuncOp>>
 {
+    const DaphneUserConfig& cfg;
+    explicit VectorizeComputationsPass(const DaphneUserConfig& cfg) : cfg(cfg) { }
+
     void runOnOperation() final;
 };
 }
@@ -213,10 +218,38 @@ void VectorizeComputationsPass::runOnOperation()
         // TODO: remove size information in bodyBlock
         builder.setInsertionPointToEnd(bodyBlock);
         builder.create<daphne::ReturnOp>(loc, results);
+
+        // mark region #1 (body) ops as non-cuda
+        if(cfg.use_cuda) {
+            for (auto &op: pipelineOp.body().front().getOperations()) {
+                if (op.hasTrait<mlir::OpTrait::CUDASupport>()) {
+                    op.setAttr("cuda_device", builder.getI32IntegerAttr(-2));
+                }
+            }
+        }
+
+        bool pipeline_contains_cuda_op = llvm::any_of(pipeline, [&](mlir::daphne::Vectorizable v) {
+            return v->hasTrait<OpTrait::CUDASupport>();
+        });
+#ifndef NDEBUG
+        std::cout << "pipeline contains cuda ops: " << pipeline_contains_cuda_op << std::endl;
+#endif
+
+        // clone body region into cuda region if there's a cuda supported op in body
+        if(cfg.use_cuda && pipeline_contains_cuda_op) {
+            PatternRewriter::InsertionGuard insertGuard(builder);
+            BlockAndValueMapping mapper;
+            pipelineOp.body().cloneInto(&pipelineOp.cuda(), mapper);
+            for (auto &op: pipelineOp.cuda().front().getOperations()) {
+                bool isMat = isMatrixComputation(&op);
+                if (op.hasTrait<mlir::OpTrait::CUDASupport>() && isMat)
+                    op.setAttr("cuda_device", builder.getI32IntegerAttr(-1));
+            }
+        }
     }
 }
 
-std::unique_ptr<Pass> daphne::createVectorizeComputationsPass()
+std::unique_ptr<Pass> daphne::createVectorizeComputationsPass(const DaphneUserConfig& cfg)
 {
-    return std::make_unique<VectorizeComputationsPass>();
+    return std::make_unique<VectorizeComputationsPass>(cfg);
 }

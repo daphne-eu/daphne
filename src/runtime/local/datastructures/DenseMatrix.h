@@ -40,7 +40,7 @@
  * Each instance of this class might represent a sub-matrix of another
  * `DenseMatrix`. Thus, in general, the row skip (see `getRowSkip()`) needs to
  * be added to a pointer to a particular cell in the `values` array in order to
- * obtain a pointer to the corresponsing cell in the next row.
+ * obtain a pointer to the corresponding cell in the next row.
  */
 template <typename ValueType>
 class DenseMatrix : public Matrix<ValueType>
@@ -51,10 +51,14 @@ class DenseMatrix : public Matrix<ValueType>
     using Matrix<ValueType>::numCols;
     
     size_t rowSkip;
-    std::shared_ptr<ValueType> values;
-    ValueType* cuda_ptr = nullptr;
+    std::shared_ptr<ValueType[]> values{};
+    std::shared_ptr<ValueType> cuda_ptr{};
+    uint32_t deleted = 0;
+
     mutable bool cuda_dirty = false;
     mutable bool host_dirty = false;
+    mutable bool cuda_buffer_current = false;
+    mutable bool host_buffer_current = false;
 
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
@@ -75,34 +79,7 @@ class DenseMatrix : public Matrix<ValueType>
      * @param zero Whether the allocated memory of the `values` array shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC) :
-            Matrix<ValueType>(maxNumRows, numCols),
-            rowSkip(numCols),
-            values(new ValueType[maxNumRows * numCols]),
-            lastAppendedRowIdx(0),
-            lastAppendedColIdx(0)
-    {
-//#ifndef NDEBUG
-//        std::cerr << "creating dense matrix of allocation type " << static_cast<int>(type) <<
-//        " and dims: " << numRows << "x" << numCols << std::endl;
-//#endif
-        if (type == ALLOCATION_TYPE::HOST_ALLOC) {
-//            values = std::make_shared<ValueType>(maxNumRows*numCols);
-//            values(new ValueType[maxNumRows * numCols]);
-            host_dirty = true;
-            if(zero)
-                memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
-        }
-#ifdef USE_CUDA
-        else if (type == ALLOCATION_TYPE::CUDA_ALLOC) {
-            cudaAlloc();
-            cuda_dirty = true;
-        }
-#endif
-        else {
-            throw std::runtime_error("Unknown allocation type: " + std::to_string(static_cast<int>(type)));
-        }
-    }
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC);
     
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values
@@ -120,7 +97,6 @@ class DenseMatrix : public Matrix<ValueType>
             lastAppendedColIdx(0)
     {
         assert(values && "values must not be null");
-        host_dirty = true;
     }
             
     /**
@@ -133,27 +109,9 @@ class DenseMatrix : public Matrix<ValueType>
      * @param colLowerIncl Inclusive lower bound for the range of columns to extract.
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
-    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl) :
-            Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl),
-            lastAppendedRowIdx(0),
-            lastAppendedColIdx(0)
-    {
-        assert(src && "src must not be null");
-        assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
-        assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-        assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
-        assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
-        assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
-        assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
-        
-        rowSkip = src->rowSkip;
-        values = std::shared_ptr<ValueType>(src->values, src->values.get() + rowLowerIncl * src->rowSkip + colLowerIncl);
-        host_dirty = src->host_dirty;
-        cuda_dirty = src->cuda_dirty;
-        cuda_ptr = src->cuda_ptr;
-    }
+    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
     
-    virtual ~DenseMatrix();
+    ~DenseMatrix() override = default;
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
@@ -183,10 +141,14 @@ class DenseMatrix : public Matrix<ValueType>
 
     void printValue(std::ostream & os, ValueType val) const;
 
+    void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
+
+    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0);
+
 public:
-    
+
     void shrinkNumRows(size_t numRows) {
-        assert((numRows <= this->numRows) && "number of rows can only the shrinked");
+        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
         // TODO Here we could reduce the allocated size of the values array.
         this->numRows = numRows;
     }
@@ -197,15 +159,28 @@ public:
 
     const ValueType * getValues() const
     {
-        return const_cast<DenseMatrix*>(this)->getValues();
+        if(!values)
+            const_cast<DenseMatrix*>(this)->alloc_shared_values();
+#ifdef USE_CUDA
+        if (cuda_dirty || (!host_buffer_current && cuda_buffer_current)) {
+            cuda2host();
+        }
+        host_buffer_current = true;
+#endif
+        return values.get();
     }
 
     ValueType * getValues()
     {
+        if(!values)
+            alloc_shared_values();
+
 #ifdef USE_CUDA
-        if (cuda_dirty) {
+        if (cuda_dirty || (!host_buffer_current && cuda_buffer_current)) {
             cuda2host();
         }
+        cuda_buffer_current = false;
+        host_buffer_current = true;
         host_dirty = true;
 #endif
         return values.get();
@@ -213,36 +188,48 @@ public:
 
 #ifdef USE_CUDA
     const ValueType* getValuesCUDA() const {
-        return const_cast<DenseMatrix*>(this)->getValuesCUDA();
+        if(!cuda_ptr)
+            const_cast<DenseMatrix*>(this)->alloc_shared_cuda_buffer();
+
+        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
+            host2cuda();
+        }
+        cuda_buffer_current = true;
+        return cuda_ptr.get();
     }
 
     ValueType* getValuesCUDA() {
-//#ifndef NDEBUG
-//        std::cerr << "getValuesCUDA " << cuda_ptr << " cuda_dirty=" << cuda_dirty << " host_dirty=" << host_dirty << std::endl;
-//#endif
-        if(host_dirty) {
+        if(!cuda_ptr)
+            alloc_shared_cuda_buffer();
+
+        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
             host2cuda();
         }
-//#ifndef NDEBUG
-//        else
-//            std::cerr << "skipping allocation =)" << std::endl;
-//#endif
         cuda_dirty = true;
-        return cuda_ptr;
+        cuda_buffer_current = true;
+        host_buffer_current = false;
+        return cuda_ptr.get();
     }
 #endif
 
-    std::shared_ptr<ValueType> getValuesSharedPtr() {
+    std::shared_ptr<ValueType[]> getValuesSharedPtr() {
         return values;
     }
     
     ValueType get(size_t rowIdx, size_t colIdx) const override {
-//        return values.get()[pos(rowIdx, colIdx)];
         return getValues()[pos(rowIdx, colIdx)];
     }
     
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
-        values.get()[pos(rowIdx, colIdx)] = value;
+        auto vals = getValues();
+        vals[pos(rowIdx, colIdx)] = value;
+        //        values.get()[pos(rowIdx, colIdx)] = value;
+        // ToDo: make this better
+//        cuda_buffer_current = false;
+//        host_buffer_current = true;
+//        host_dirty = true;
+//        if (cuda_dirty)
+//            throw std::runtime_error("ERROR: Writing on host buffer while cuda buffer is dirty gets matrix out of sync!");
     }
     
     void prepareAppend() override {
@@ -271,10 +258,6 @@ public:
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
 #ifdef USE_CUDA
         if ((cuda_ptr && cuda_dirty) || !values) {
-//#ifndef NDEBUG
-//            std::cerr << "cuda_ptr=" << cuda_ptr<<std::endl;
-//            std::cerr << "cuda_dirty=" << cuda_dirty << std::endl;
-//#endif
               cuda2host();
         }
 #endif
@@ -297,19 +280,12 @@ public:
         return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
     }
 
-
-    size_t bufferSize() const {
-        return this->getNumItems() * sizeof(ValueType);
-    }
+    size_t bufferSize() const;
 
 #ifdef USE_CUDA
     void cudaAlloc();
     void host2cuda();
     void cuda2host();
-
-    void cudaAlloc() const {
-        const_cast<DenseMatrix*>(this)->cudaAlloc();
-    }
 
     void host2cuda() const {
         const_cast<DenseMatrix*>(this)->host2cuda();
