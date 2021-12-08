@@ -23,7 +23,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include <runtime/local/kernels/CUDA/HostUtils.h>
 
 #include <limits>
 #include <random>

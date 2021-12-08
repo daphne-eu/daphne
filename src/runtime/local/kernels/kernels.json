@@ -420,14 +420,32 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
-            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
-        ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+        "api": [
+            {
+                "name":  ["CUDA_non_implemented_example", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ],
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            },
+            {
+                "name":  ["CUDA_non_implemented_example"],
+                "instantiations": [
+                    [["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint32_t"]]
+                ],
+                "opCodes": ["BIT_AND", "BIT_OR"]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
+                ],
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            }
+        ]
     },
     {
         "kernelTemplate": {
@@ -763,9 +781,14 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
         ]
     },
     {

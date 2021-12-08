@@ -296,6 +296,11 @@ public:
         return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
     }
 
+
+    size_t bufferSize() const {
+        return this->getNumItems() * sizeof(ValueType);
+    }
+
 #ifdef USE_CUDA
     void cudaAlloc();
     void host2cuda();
