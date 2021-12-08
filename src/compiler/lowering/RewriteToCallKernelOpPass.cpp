@@ -189,7 +189,9 @@ namespace
                 if(std::find(gpu_ops.begin(), gpu_ops.end(), op_name) != gpu_ops.end()) {
                     callee << '_' << op_name << "_CUDA";
                 }
-                else if((op_name == std::string("matMul")) || (op_name.substr(0,2) == "ew"))
+                else if((op_name == std::string("matMul")) ||
+                        (op_name.substr(0,2) == "ew") ||
+                        (op_name == std::string("transpose")))
                     callee << "CUDA_" << op_name;
                 else
                     callee << '_' << op_name;
