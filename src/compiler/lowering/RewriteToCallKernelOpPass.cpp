@@ -194,7 +194,8 @@ namespace
                         (op_name == std::string("cbind")) ||
                         (op_name == std::string("transpose")) ||
                         (op_name == std::string("solve")) ||
-                        (op_name == std::string("extractCol")))
+                        (op_name == std::string("extractCol")) ||
+                        (op_name == std::string("syrk")))
                     callee << "CUDA_" << op_name;
                 else
                     callee << '_' << op_name;
