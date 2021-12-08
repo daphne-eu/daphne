@@ -18,7 +18,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/CUDA_InitContext.h>
-#include <runtime/local/kernels/CUDA_MatMul.h>
+#include <runtime/local/kernels/CUDA/MatMul.h>
 
 #include <tags.h>
 
@@ -29,11 +29,11 @@
 template<class DT>
 void checkMatMulCUDA(const DT * lhs, const DT * rhs, const DT * exp, DaphneContext* ctx) {
     DT* res = nullptr;
-    matMul_CUDA<DT, DT, DT>(res, lhs, rhs, ctx);
+    CUDA::matMul<DT, DT, DT>(res, lhs, rhs, ctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMulCUDA", TAG_KERNELS, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
 
     auto dctx = new DaphneContext();

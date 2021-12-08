@@ -20,7 +20,7 @@
 #include <runtime/local/kernels/CUDA_BiasAdd.h>
 #include <runtime/local/kernels/CUDA_Convolution.h>
 #include <runtime/local/kernels/CUDA_InitContext.h>
-#include <runtime/local/kernels/CUDA_MatMul.h>
+//#include <runtime/local/kernels/CUDA_MatMul.h>
 #include <runtime/local/kernels/CUDA_Pooling.h>
 #include <runtime/local/kernels/CUDA_Softmax.h>
 #include <runtime/local/context/DaphneContext.h>
@@ -123,15 +123,15 @@ extern "C" {
     }
 
     // -----------------------------------------------------------------------------------------------------------------
-    void _matMul_CUDA__DenseMatrix_float__DenseMatrix_double__DenseMatrix_float(DenseMatrix<float>** res,
-                const DenseMatrix<float>* lhs, const DenseMatrix<float>* rhs, DCTX(ctx)) {
-        MatMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>::apply(*res, lhs, rhs, ctx);
-    }
-
-    void _matMul_CUDA__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double(DenseMatrix<double>** res,
-                const DenseMatrix<double>* lhs, const DenseMatrix<double>* rhs, DCTX(ctx)) {
-        MatMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>::apply(*res, lhs, rhs, ctx);
-    }
+//    void _matMul_CUDA__DenseMatrix_float__DenseMatrix_double__DenseMatrix_float(DenseMatrix<float>** res,
+//                const DenseMatrix<float>* lhs, const DenseMatrix<float>* rhs, DCTX(ctx)) {
+//        MatMul_CUDA<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>::apply(*res, lhs, rhs, ctx);
+//    }
+//
+//    void _matMul_CUDA__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double(DenseMatrix<double>** res,
+//                const DenseMatrix<double>* lhs, const DenseMatrix<double>* rhs, DCTX(ctx)) {
+//        MatMul_CUDA<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>::apply(*res, lhs, rhs, ctx);
+//    }
 
     // -----------------------------------------------------------------------------------------------------------------
     void _maxPoolForward_CUDA__DenseMatrix_float__size_t__size_t__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t__size_t

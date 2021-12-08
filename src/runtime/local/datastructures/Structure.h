@@ -36,23 +36,25 @@ protected:
         // nothing to do
     };
 
-    virtual ~Structure()
-    {
-        // nothing to do
-    };
+    virtual ~Structure() = default;
     
 public:
 
-    size_t getNumRows() const
+    [[nodiscard]] size_t getNumRows() const
     {
         return numRows;
     }
 
-    size_t getNumCols() const
+    [[nodiscard]] size_t getNumCols() const
     {
         return numCols;
     }
-    
+
+    [[nodiscard]] size_t getNumItems() const
+    {
+        return numRows * numCols;
+    }
+
     /**
      * @brief Prints a human-readable representation of this data object to the
      * given stream.

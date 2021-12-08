@@ -21,7 +21,7 @@
 
 //#include <api/cli/DaphneUserConfig.h>
 #include "IContext.h"
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include <runtime/local/kernels/CUDA/HostUtils.h>
 //#include <cublasLt.h>
 
 #include <cassert>

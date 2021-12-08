@@ -21,6 +21,9 @@
 #include <vector>
 #include <iostream>
 #include <memory>
+
+#include "IContext.h"
+
 #ifdef USE_CUDA
     #include "CUDAContext.h"
 #endif
@@ -44,21 +47,16 @@ struct DaphneContext {
     // creating an individual struct/class for them and adding a single member
     // of that type here, in order to separate concerns and allow a  high-level
     // overview of the context information.
-#ifdef USE_CUDA
+
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
-#endif
+
     DaphneContext() = default;
     
     ~DaphneContext() {
-#ifdef USE_CUDA
-#ifndef NDEBUG
-        std::cout << "destructing DaphneContext" << std::endl;
-#endif
-    for (auto& ctx : cuda_contexts) {
-        ctx->destroy();
-    }
-    cuda_contexts.clear();
-#endif
+        for (auto& ctx : cuda_contexts) {
+            ctx->destroy();
+        }
+        cuda_contexts.clear();
     }
 
 #ifdef USE_CUDA
@@ -67,6 +65,8 @@ struct DaphneContext {
         return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
     }
 #endif
+
+    [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
 };
 
 #endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

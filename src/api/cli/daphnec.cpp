@@ -25,7 +25,7 @@
 #include "mlir/Pass/PassManager.h"
 
 #ifdef USE_CUDA
-    #include "runtime/local/kernels/CUDA_HostUtils.h"
+    #include <runtime/local/kernels/CUDA/HostUtils.h>
 #endif
 
 #include <exception>

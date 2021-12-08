@@ -20,7 +20,7 @@
 #include <chrono>
 
 #ifdef USE_CUDA
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+    #include <runtime/local/kernels/CUDA/HostUtils.h>
 #endif
 
 template<typename ValueType>
