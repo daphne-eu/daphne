@@ -16,7 +16,7 @@
 
 # This script runs an experiment on Vega.
 
-[ -z "$NUMCORES" ] && export NUMCORES=500 # change this to parameterize the number of distributed workers
+[ -z "$NUMCORES" ] && export NUMCORES=1000 # change this to parameterize the number of distributed workers
 
 reset;
 
