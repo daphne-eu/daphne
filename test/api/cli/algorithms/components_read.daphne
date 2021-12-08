@@ -3,6 +3,8 @@
 // Arguments:
 // - f ... filename of the adjacency matrix (provide as `--args f=\"foo.csv\"`)
 
+t0 = now();
+
 // Read adjacency matrix.
 G = readMatrix($f);
 
@@ -12,6 +14,8 @@ c = seq(1.0, as.f64(nrow(G)), 1.0); // init w/ vertex IDs
 diff = inf;
 iter = 1;
 
+t1 = now();
+
 // Iterative computation of connected components (decisive part).
 while(as.si64(diff > 0.0) && iter <= maxi) {
     u = max(aggMax(G * t(c), 0), c);
@@ -19,6 +23,14 @@ while(as.si64(diff > 0.0) && iter <= maxi) {
     c = u;
     iter = iter + 1;
 }
+
+t2 = now();
+
+// Print elapsed times in nano seconds.
+print(t1 - t0); // initialization
+print(t2 - t1); // core algorithm
+// Note that, for distributed execution, (t2 - t1) includes reading the input
+// files due to some reordering done by the compiler.
 
 // Result output.
 print(c);
