@@ -228,15 +228,18 @@ void VectorizeComputationsPass::runOnOperation()
             }
         }
 
-        bool pipeline_contains_cuda_op = llvm::any_of(pipeline, [&](mlir::daphne::Vectorizable v) {
-            return v->hasTrait<OpTrait::CUDASupport>();
+        bool pipeline_contains_unsupported_cuda_op = llvm::any_of(pipeline, [&](mlir::daphne::Vectorizable v) {
+            return !v->hasTrait<OpTrait::CUDASupport>(); //ToDo: inverted check for debugging!
         });
 #ifndef NDEBUG
-        std::cout << "pipeline contains cuda ops: " << pipeline_contains_cuda_op << std::endl;
+        if (pipeline_contains_unsupported_cuda_op) {
+            loc.print(llvm::outs());
+            std::cout << "pipeline contains unsupported cuda op: " << pipeline_contains_unsupported_cuda_op << std::endl;
+        }
 #endif
 
         // clone body region into cuda region if there's a cuda supported op in body
-        if(cfg.use_cuda && pipeline_contains_cuda_op) {
+        if(cfg.use_cuda && !pipeline_contains_unsupported_cuda_op) { //ToDo: inverted check for debugging!
             PatternRewriter::InsertionGuard insertGuard(builder);
             BlockAndValueMapping mapper;
             pipelineOp.body().cloneInto(&pipelineOp.cuda(), mapper);
