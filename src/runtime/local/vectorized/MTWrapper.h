@@ -167,12 +167,13 @@ public:
 
         uint64_t batchsize = 100; // 100-rows-at-a-time
         size_t cpu_task_len = 0;
+        DenseMatrix<VT>* res_cpp{};
         if(numCPPworkerThreads > 0) {
             cpu_task_len = std::ceil(static_cast<float>(len) * (1.0f - taskRatioCUDA));
 #ifndef NDEBUG
             std::cout << "cpu_task_len=" << cpu_task_len << std::endl;
 #endif
-            auto res_cpp = res;
+            res_cpp = res;
             if (combines[0] == mlir::daphne::VectorCombine::ROWS)
                 res_cpp = res->slice(0, cpu_task_len);
 
@@ -209,6 +210,8 @@ public:
         }
 
 #ifdef USE_CUDA
+        DenseMatrix<VT>* res_cuda{};
+        auto offset = 0ul;
         if(ctx && ctx->useCUDA() && funcs.size() > 1 && len > 1) {
 
             // ToDo: more elaborate gpu block size
@@ -219,15 +222,14 @@ public:
             std::cout << "gpu tasks from " << cpu_task_len << " to " << len << " == " << len - cpu_task_len
                       << " tasks. blkSize=" << blksize << std::endl;
 #endif
-            auto res_cuda = res;
-            auto offset = 0ul;
+            res_cuda = res;
             if (combines[0] == mlir::daphne::VectorCombine::ROWS) {
                 res_cuda = res->slice(cpu_task_len, len);
                 offset = cpu_task_len;
             }
 
             for (uint32_t k = cpu_task_len; k < len; k += blksize) {
-                q_CUDA->enqueueTask(new CompiledPipelineTask<VT>(
+                q_CUDA->enqueueTask(new CompiledPipelineTaskCUDA<VT>(
                         funcs[1],
                         resLock,
                         res_cuda,
@@ -248,6 +250,19 @@ public:
         // barrier (wait for completed computation)
         for(uint32_t i=0; i<_numThreads; i++)
             workerThreads[i].join();
+
+#ifdef USE_CUDA
+        if(ctx && ctx->useCUDA() && funcs.size() > 1 && len > 1) {
+            if (combines[0] == mlir::daphne::VectorCombine::ROWS) {
+                const auto& const_res_cuda = *res_cuda;
+                auto data_dest = res->getValues();
+                data_dest += res->getRowSkip() * offset;
+                CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValuesCUDA(), const_res_cuda.bufferSize(), cudaMemcpyDeviceToHost));
+                DataObjectFactory::destroy(res_cuda);
+                DataObjectFactory::destroy(res_cpp);
+            }
+        }
+#endif
 
         // cleanups
         for(uint32_t i=0; i<_numThreads; i++)
