@@ -141,38 +141,43 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
             );
 
         // TODO/FIXME: file format should be inferred from file extension or specified by user
-        // Read file of COO format
-        DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
-        readCsv(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim);
-
         if(sorted) {
-            readCOOSorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
+            readCOOSorted(res, file, numRows, numCols, static_cast<size_t>(numNonZeros), delim);
         }
         else {
             // this internally sorts, so it might be worth considering just directly sorting the dense matrix
+            // Read file of COO format
+            DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
+            readCsv(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim);
             readCOOUnsorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
+            DataObjectFactory::destroy(rowColumnPairs);
         }
-        DataObjectFactory::destroy(rowColumnPairs);
-
     }
 
 private:
     static void readCOOSorted(CSRMatrix<VT> *&res,
-                              DenseMatrix<uint64_t> *rowColumnPairs,
+                              File *file,
                               size_t numRows,
                               size_t numCols,
-                              size_t numNonZeros) {
+                              size_t numNonZeros,
+                              char delim) {
         auto *rowOffsets = res->getRowOffsets();
         // we first write number of non zeros for each row and then compute the cumulative sum
         std::memset(rowOffsets, 0, (numRows + 1) * sizeof(size_t));
         auto *colIdxs = res->getColIdxs();
         auto *values = res->getValues();
 
-        auto *positions = rowColumnPairs->getValues();
-        #pragma clang loop vectorize(enable)
+        char *line;
+        size_t pos;
+        uint64_t row;
+        uint64_t col;
         for (size_t i = 0; i < numNonZeros; ++i) {
-            auto row = positions[i * 2];
-            auto col = positions[i * 2 + 1];
+            line = getLine(file);
+            convertCstr(line, &row);
+            pos = 0;
+            while(line[pos] != delim) pos++;
+            pos++; // skip delimiter
+            convertCstr(line + pos, &col);
 
             rowOffsets[row + 1] += 1;
             values[i] = 1;
