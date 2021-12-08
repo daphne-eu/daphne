@@ -9,6 +9,9 @@ set -x
 
 tar xf build.tgz # unpack the workload
 
+echo -e "\nInfo about the build dir is:"
+cat build/git_source_status_info
+
 echo -e "\nSpawning N new distributed worker daemons, N=" $NUMCORES
 mkdir -p WORKERS/; rm WORKERS/* 2>/dev/null # clean workerlist
 
