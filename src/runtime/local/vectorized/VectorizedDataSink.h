@@ -19,6 +19,7 @@
 
 #include <ir/daphneir/Daphne.h>
 
+#include <mutex>
 #include <queue>
 #include <runtime/local/kernels/Transpose.h>
 

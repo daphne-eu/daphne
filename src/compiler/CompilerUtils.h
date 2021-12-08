@@ -14,8 +14,7 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_COMPILER_COMPILERUTILS_H
-#define SRC_COMPILER_COMPILERUTILS_H
+#pragma once
 
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/io/FileMetaData.h>
@@ -25,7 +24,7 @@
 #include <stdexcept>
 #include <string>
 
-struct CompilerUtils {
+namespace CompilerUtils {
     // TODO Copied here from FrameLabelInference, have it just once.
     static std::string getConstantString2(mlir::Value v) {
         if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
@@ -96,6 +95,8 @@ struct CompilerUtils {
             "no C++ type name known for the given MLIR type"
         );
     }
-};
 
-#endif //SRC_COMPILER_COMPILERUTILS_H
+    static bool isMatrixComputation(mlir::Operation *v) {
+        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
+    }
+};

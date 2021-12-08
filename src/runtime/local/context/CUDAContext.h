@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDACONTEXT_H
-#define DAPHNE_PROTOTYPE_CUDACONTEXT_H
-
 #pragma once
 
 //#include <api/cli/DaphneUserConfig.h>
@@ -30,6 +27,7 @@
 
 class CUDAContext : public IContext {
     int device_id = -1;
+    size_t mem_budget = 0;
 
     cudaDeviceProp device_properties{};
 
@@ -81,6 +79,8 @@ public:
 
     void* getCUDNNWorkspace(size_t size);
 
+    size_t getMemBudget() { return mem_budget; }
+
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
     cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
@@ -95,5 +95,3 @@ public:
 private:
     void init();
 };
-
-#endif //DAPHNE_PROTOTYPE_CUDACONTEXT_H

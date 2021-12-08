@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include "compiler/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -23,6 +24,8 @@
 
 #include <memory>
 #include <set>
+#include <mlir/IR/BlockAndValueMapping.h>
+#include <iostream>
 
 using namespace mlir;
 
@@ -169,6 +172,9 @@ namespace
     struct VectorizeComputationsPass
     : public PassWrapper<VectorizeComputationsPass, OperationPass<FuncOp>>
 {
+    const DaphneUserConfig& cfg;
+    explicit VectorizeComputationsPass(const DaphneUserConfig& cfg) : cfg(cfg) { }
+
     void runOnOperation() final;
 };
 }
@@ -176,14 +182,6 @@ namespace
 void VectorizeComputationsPass::runOnOperation()
 {
     auto func = getOperation();
-
-    auto isMatrixComputation = [](Operation *v)
-    {
-      return llvm::any_of(v->getOperandTypes(), [&](Type ty)
-      {
-        return ty.isa<daphne::MatrixType>();
-      });
-    };
     // TODO: fuse pipelines that have the matching inputs, even if no output of the one pipeline is used by the other.
     //  This requires multi-returns in way more cases, which is not implemented yet.
 
@@ -191,7 +189,7 @@ void VectorizeComputationsPass::runOnOperation()
     std::vector<daphne::Vectorizable> vectOps;
     func->walk([&](daphne::Vectorizable op)
     {
-      if(isMatrixComputation(op))
+      if(CompilerUtils::isMatrixComputation(op))
           vectOps.emplace_back(op);
     });
     std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
@@ -200,7 +198,7 @@ void VectorizeComputationsPass::runOnOperation()
         for(auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
-            if(defOp && isMatrixComputation(defOp)) {
+            if(defOp && CompilerUtils::isMatrixComputation(defOp)) {
                 auto split = std::get<1>(e);
                 // find the corresponding `OpResult` to figure out combine
                 auto opResult = *llvm::find(defOp->getResults(), operand);
@@ -378,10 +376,41 @@ void VectorizeComputationsPass::runOnOperation()
         });
         builder.setInsertionPointToEnd(bodyBlock);
         builder.create<daphne::ReturnOp>(loc, results);
+
+        // mark region #1 (body) ops as non-cuda
+        if(cfg.use_cuda) {
+            for (auto &op: pipelineOp.body().front().getOperations()) {
+                if (op.hasTrait<mlir::OpTrait::CUDASupport>()) {
+                    op.setAttr("cuda_device", builder.getI32IntegerAttr(-2));
+                }
+            }
+        }
+
+        bool pipeline_contains_unsupported_cuda_op = llvm::any_of(pipeline, [&](mlir::daphne::Vectorizable v) {
+            return !v->hasTrait<OpTrait::CUDASupport>(); //ToDo: inverted check for debugging!
+        });
+#ifndef NDEBUG
+        if (pipeline_contains_unsupported_cuda_op) {
+            loc.print(llvm::outs());
+            std::cout << "pipeline contains unsupported cuda op: " << pipeline_contains_unsupported_cuda_op << std::endl;
+        }
+#endif
+
+        // clone body region into cuda region if there's a cuda supported op in body
+        if(cfg.use_cuda && !pipeline_contains_unsupported_cuda_op) { //ToDo: inverted check for debugging!
+            PatternRewriter::InsertionGuard insertGuard(builder);
+            BlockAndValueMapping mapper;
+            pipelineOp.body().cloneInto(&pipelineOp.cuda(), mapper);
+            for (auto &op: pipelineOp.cuda().front().getOperations()) {
+                bool isMat = CompilerUtils::isMatrixComputation(&op);
+                if (op.hasTrait<mlir::OpTrait::CUDASupport>() && isMat)
+                    op.setAttr("cuda_device", builder.getI32IntegerAttr(-1));
+            }
+        }
     }
 }
 
-std::unique_ptr<Pass> daphne::createVectorizeComputationsPass()
+std::unique_ptr<Pass> daphne::createVectorizeComputationsPass(const DaphneUserConfig& cfg)
 {
-    return std::make_unique<VectorizeComputationsPass>();
+    return std::make_unique<VectorizeComputationsPass>(cfg);
 }

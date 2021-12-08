@@ -43,15 +43,20 @@ struct VectorizedPipeline {
                       int64_t *outCols,
                       int64_t *splits,
                       int64_t *combines,
-                      void *fun,
+                      size_t numFuncs,
+                      void** fun,
                       DCTX(ctx)) {
         auto wrapper = std::make_unique<MTWrapper<DTRes>>();
-        auto function =
-            std::function<void(DTRes ***, Structure **)>(
-                reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+        std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
+        for (auto i = 0ul; i < numFuncs; ++i) {
+            auto function = std::function<void(DTRes ***, Structure **, DCTX(ctx))>(
+                    reinterpret_cast<void (*)(DTRes ***, Structure **, DCTX(ctx))>(
+                            reinterpret_cast<void*>(fun[i])));
+            funcs.push_back(function);
+        }
         assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
         DTRes **res[] = {&resIn};
-        wrapper->execute(function,
+        wrapper->execute(funcs,
             res,
             inputs,
             numInputs,
@@ -59,8 +64,7 @@ struct VectorizedPipeline {
             outRows,
             outCols,
             reinterpret_cast<VectorSplit *>(splits),
-            reinterpret_cast<VectorCombine *>(combines),
-            false);
+            reinterpret_cast<VectorCombine *>(combines), ctx,  false);
     }
 };
 
@@ -77,7 +81,8 @@ void vectorizedPipeline(DTRes *&res,
                         int64_t *outCols,
                         int64_t *splits,
                         int64_t *combines,
-                        void *fun,
+                        size_t numFuncs,
+                        void** fun,
                         DCTX(ctx))
 {
     VectorizedPipeline<DTRes>::apply(res,
@@ -88,6 +93,7 @@ void vectorizedPipeline(DTRes *&res,
         outCols,
         splits,
         combines,
+        numFuncs,
         fun,
         ctx);
 }
@@ -103,15 +109,26 @@ void vectorizedPipeline(DTRes *&res1,
                         int64_t *outCols,
                         int64_t *splits,
                         int64_t *combines,
-                        void *fun,
+                        size_t numFuncs,
+                        void** fun,
                         DCTX(ctx)) {
     auto wrapper = std::make_unique<MTWrapper<DTRes>>();
-    auto function =
-        std::function<void(DTRes ***, Structure **)>(
-            reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+//    auto function =
+//        std::function<void(DTRes ***, Structure **)>(
+//            reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+
     assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
+
+    std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
+    for (auto i = 0ul; i < numFuncs; ++i) {
+        auto function = std::function<void(DTRes ***, Structure **, DCTX(ctx))>(
+                reinterpret_cast<void (*)(DTRes ***, Structure **, DCTX(ctx))>(
+                        reinterpret_cast<void*>(fun[i])));
+        funcs.push_back(function);
+    }
+
     DTRes **res[] = {&res1, &res2};
-    wrapper->execute(function,
+    wrapper->execute(funcs,
         res,
         inputs,
         numInputs,
@@ -119,12 +136,7 @@ void vectorizedPipeline(DTRes *&res1,
         outRows,
         outCols,
         reinterpret_cast<VectorSplit *>(splits),
-        reinterpret_cast<VectorCombine *>(combines),
-        false);
+        reinterpret_cast<VectorCombine *>(combines), ctx, false);
 }
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_VECTORIZEDPIPELINE_H

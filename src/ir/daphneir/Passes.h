@@ -43,10 +43,10 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createSelectMatrixRepresentationsPass();
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createInsertFreeOpPass();
-    std::unique_ptr<Pass> createLowerToLLVMPass();
+    std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
-    std::unique_ptr<Pass> createVectorizeComputationsPass();
+    std::unique_ptr<Pass> createVectorizeComputationsPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createRewriteSqlOpPass();
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
