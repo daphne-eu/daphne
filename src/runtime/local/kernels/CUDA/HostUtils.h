@@ -24,6 +24,10 @@
 #include <cublas_v2.h>
 #include <cusparse_v2.h>
 #include <cudnn.h>
+#include <cusolverDn.h>
+
+#include <iostream>
+#include <memory>
 
 #define CHECK_CUDART(call)                                                   \
   do {                                                                    \
@@ -65,6 +69,16 @@
     }                                                                     \
   } while (0)
 
+#define CHECK_CUSOLVER(call)                                                   \
+  do {                                                                    \
+    cusolverStatus_t status = call;                                         \
+    if (status != CUSOLVER_STATUS_SUCCESS) {                                \
+      std::cout << "(CUSOLVER) returned " << status;                          \
+      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
+                << "())" << std::endl;                                    \
+    }                                                                     \
+  } while (0)
+
 #include <string_view>
 
 template <typename T>
@@ -87,5 +101,22 @@ static constexpr auto type_name() noexcept {
     name.remove_suffix(suffix.size());
     return name;
 }
+
+template<typename T>
+struct CudaDeleter {
+    void operator()(T* dev_ptr) const { del(dev_ptr); };
+    static void del(T* dev_ptr) {
+#ifndef NDEBUG
+        std::cerr << "calling cudaFree on dev_ptr: " << dev_ptr << std::endl;
+#endif
+        cudaFree(dev_ptr);
+    }
+};
+
+template<typename T>
+void cuda_deleter(T* dev_ptr) { CudaDeleter<T>::del(dev_ptr); }
+
+template<typename T>
+using CudaUniquePtr = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
 
 #endif //DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H

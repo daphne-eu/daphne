@@ -40,6 +40,9 @@ class CUDAContext : public IContext {
     // cuDNN API
     cudnnHandle_t cudnn_handle{};
 
+    cusolverDnHandle_t cusolver_handle{};
+    cudaStream_t cusolver_stream{};
+
     // preallocate 64MB
     size_t cudnn_workspace_size{};
     void* cudnn_workspace{};
@@ -67,6 +70,8 @@ public:
 //    [[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
     [[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
     [[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
+    [[nodiscard]] cusolverDnHandle_t getCUSOLVERHandle() const { return cusolver_handle; }
+    cudaStream_t getCuSolverStream() { return cusolver_stream; }
 
     template<class T>
     [[nodiscard]] cudnnDataType_t getCUDNNDataType() const;

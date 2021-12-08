@@ -70,6 +70,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/ColBind.cu
             ${PREFIX}/EwBinaryMat.cu
             ${PREFIX}/MatMul.cpp
+            ${PREFIX}/Solve.cu
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations_generated.cpp
     )
@@ -82,6 +83,6 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
     target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse
-            ${CUDA_cudnn_LIBRARY})
+            ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
     #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()
