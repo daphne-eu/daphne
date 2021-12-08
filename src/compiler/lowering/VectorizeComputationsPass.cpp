@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include "compiler/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -44,19 +45,11 @@ void VectorizeComputationsPass::runOnOperation()
 {
     auto func = getOperation();
 
-    auto isMatrixComputation = [](Operation *v)
-    {
-      return llvm::any_of(v->getOperandTypes(), [&](Type ty)
-      {
-        return ty.isa<daphne::MatrixType>();
-      });
-    };
-
     // Find vectorizable operations and their inputs of vectorizable operations
     std::vector<daphne::Vectorizable> vectOps;
     func->walk([&](daphne::Vectorizable op)
     {
-      if(isMatrixComputation(op))
+      if(CompilerUtils::isMatrixComputation(op))
           vectOps.emplace_back(op);
     });
     std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
@@ -65,7 +58,7 @@ void VectorizeComputationsPass::runOnOperation()
         for(auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
-            if(defOp && isMatrixComputation(defOp)) {
+            if(defOp && CompilerUtils::isMatrixComputation(defOp)) {
                 auto split = std::get<1>(e);
                 // find the corresponding `OpResult` to figure out combine
                 auto opResult = *llvm::find(defOp->getResults(), operand);
@@ -244,7 +237,7 @@ void VectorizeComputationsPass::runOnOperation()
             BlockAndValueMapping mapper;
             pipelineOp.body().cloneInto(&pipelineOp.cuda(), mapper);
             for (auto &op: pipelineOp.cuda().front().getOperations()) {
-                bool isMat = isMatrixComputation(&op);
+                bool isMat = CompilerUtils::isMatrixComputation(&op);
                 if (op.hasTrait<mlir::OpTrait::CUDASupport>() && isMat)
                     op.setAttr("cuda_device", builder.getI32IntegerAttr(-1));
             }

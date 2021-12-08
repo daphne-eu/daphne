@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "compiler/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -93,10 +94,6 @@ namespace
                 "no C++ type name known for the given MLIR type"
         );
     }
-
-    bool isMatrixComputation(Operation *v) {
-        return llvm::any_of(v->getOperandTypes(), [&](Type ty) { return ty.isa<daphne::MatrixType>(); });
-    };
 
     class KernelReplacement : public RewritePattern
     {
@@ -185,7 +182,7 @@ namespace
             std::stringstream callee;
             std::string_view op_name{op->getName().stripDialect().data()};
 #ifdef USE_CUDA
-            if(cfg.use_cuda && op->hasTrait<mlir::OpTrait::CUDASupport>() && isMatrixComputation(op)) {
+            if(cfg.use_cuda && op->hasTrait<mlir::OpTrait::CUDASupport>() && CompilerUtils::isMatrixComputation(op)) {
                 //ToDo: this will go away with a gpu ops rewrite pass
 
                 bool ignore_duplicate_pipeline = false;
