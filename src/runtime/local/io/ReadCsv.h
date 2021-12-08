@@ -19,6 +19,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Handle.h>
 #include <runtime/local/kernels/DistributedCaller.h>
@@ -31,6 +32,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
+#include <queue>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -42,6 +44,9 @@
 template <class DTRes> struct ReadCsv {
   static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
                     char delim) = delete;
+
+  static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
+                    ssize_t numNonZeros, bool sorted = true) = delete;
 
   static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
                     char delim, ValueTypeCode *schema) = delete;
@@ -61,6 +66,12 @@ template <class DTRes>
 void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
              char delim, ValueTypeCode *schema) {
   ReadCsv<DTRes>::apply(res, file, numRows, numCols, delim, schema);
+}
+
+template <class DTRes>
+void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
+             char delim, ssize_t numNonZeros, bool sorted = true) {
+    ReadCsv<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted);
 }
 
 // ****************************************************************************
@@ -113,6 +124,113 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
     }
   }
 };
+
+// ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+
+template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows,
+                      size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true) {
+        assert(numNonZeros != -1
+            && "Currently reading of sparse matrices requires a number of non zeros to be defined");
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(
+                numRows, numCols, numNonZeros, false
+            );
+
+        // TODO/FIXME: file format should be inferred from file extension or specified by user
+        if(sorted) {
+            readCOOSorted(res, file, numRows, numCols, static_cast<size_t>(numNonZeros), delim);
+        }
+        else {
+            // this internally sorts, so it might be worth considering just directly sorting the dense matrix
+            // Read file of COO format
+            DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
+            readCsv(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim);
+            readCOOUnsorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
+            DataObjectFactory::destroy(rowColumnPairs);
+        }
+    }
+
+private:
+    static void readCOOSorted(CSRMatrix<VT> *&res,
+                              File *file,
+                              size_t numRows,
+                              size_t numCols,
+                              size_t numNonZeros,
+                              char delim) {
+        auto *rowOffsets = res->getRowOffsets();
+        // we first write number of non zeros for each row and then compute the cumulative sum
+        std::memset(rowOffsets, 0, (numRows + 1) * sizeof(size_t));
+        auto *colIdxs = res->getColIdxs();
+        auto *values = res->getValues();
+
+        char *line;
+        size_t pos;
+        uint64_t row;
+        uint64_t col;
+        for (size_t i = 0; i < numNonZeros; ++i) {
+            line = getLine(file);
+            convertCstr(line, &row);
+            pos = 0;
+            while(line[pos] != delim) pos++;
+            pos++; // skip delimiter
+            convertCstr(line + pos, &col);
+
+            rowOffsets[row + 1] += 1;
+            values[i] = 1;
+            colIdxs[i] = col;
+        }
+        #pragma clang loop vectorize(enable)
+        for (size_t r = 1; r <= numRows; ++r) {
+            rowOffsets[r] += rowOffsets[r - 1];
+        }
+    }
+
+    static void readCOOUnsorted(CSRMatrix<VT> *&res,
+                                DenseMatrix<uint64_t> *rowColumnPairs,
+                                size_t numRows,
+                                size_t numCols,
+                                size_t numNonZeros) {
+        // pairs are ordered by first then by second argument (row, then col)
+        using RowColPos = std::pair<size_t, size_t>;
+        std::priority_queue<RowColPos, std::vector<RowColPos>, std::greater<>> positions;
+        for(auto r = 0u ; r < rowColumnPairs->getNumRows() ; ++r) {
+            positions.emplace(rowColumnPairs->get(r, 0), rowColumnPairs->get(r, 1));
+        }
+
+        auto *rowOffsets = res->getRowOffsets();
+        rowOffsets[0] = 0;
+        auto *colIdxs = res->getColIdxs();
+        auto *values = res->getValues();
+        size_t currValIdx = 0;
+        size_t rowIdx = 0;
+        while(!positions.empty()) {
+            auto pos = positions.top();
+            if(pos.first >= res->getNumRows() || pos.second >= res->getNumCols()) {
+                throw std::runtime_error("Position [" + std::to_string(pos.first) + ", " + std::to_string(pos.second)
+                    + "] is not part of matrix<" + std::to_string(res->getNumRows()) + ", "
+                    + std::to_string(res->getNumCols()) + ">");
+            }
+            while(rowIdx < pos.first) {
+                rowOffsets[rowIdx + 1] = currValIdx;
+                rowIdx++;
+            }
+            // TODO: valued COO files?
+            values[currValIdx] = 1;
+            colIdxs[currValIdx] = pos.second;
+            currValIdx++;
+            positions.pop();
+        }
+        while(rowIdx < numRows) {
+            rowOffsets[rowIdx + 1] = currValIdx;
+            rowIdx++;
+        }
+    }
+};
+
 
 // ----------------------------------------------------------------------------
 // Frame
