@@ -9,7 +9,7 @@ set -x
 
 tar xf build.tgz # unpack the workload
 
-echo -e "\nInfo about the build dir is:"
+echo -e "\nInfo about the daphnec build/ dir is:"
 cat build/git_source_status_info
 
 echo -e "\nSpawning N new distributed worker daemons, N=" $NUMCORES
@@ -39,6 +39,40 @@ squeue -u ales.zamuda # print the generated worker list
 echo -e "\n...starting the use of workers..."
 sleep 5
 date  +"Time is: "%F+%T
+
+
+#----------------------------- BEGIN --components_read
+[ "$1" == "--components_read" ] && (
+# ALL WORKERS
+set +x
+export WORKERS=$(cd WORKERS; echo WORKERS* | sed -e 's/WORKERS.//g' -e 's/ /,/g')
+set -x
+squeue -u ales.zamuda
+
+echo "Mapping datasets..."
+export DISTRIBUTED_WORKERS=$WORKERS
+export COO_to_CSS_scale_factor=1
+[ -z "$2" ] || export COO_to_CSS_scale_factor=$2 
+time srun singularity exec ../d2.sif python3 ./COO_to_CSV-distributed.py datasets/amazon0601.txt 403394 $NUMCORES $COO_to_CSS_scale_factor datasets/Amazon0601 COOFormat
+cat datasets/Amazon0601_handles.csv
+date  +"Time is: "%F+%T
+
+echo -e "\nReady to run this demo executable in a sequence using all distributed workers ..."
+
+for DEMO_SEQUENCE in {1..5}; do
+        echo -e "\n" Running the demo sequence no. $DEMO_SEQUENCE ...
+
+	time srun --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components_read.daphne --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
+done
+
+# TEARING DOWN
+echo -e "\n\nTearing down distributed worker daemons ..."
+scancel -n Dworkers
+
+exit
+) && exit
+#----------------------------- END
+
 
 # ONE WORKER
 set +x

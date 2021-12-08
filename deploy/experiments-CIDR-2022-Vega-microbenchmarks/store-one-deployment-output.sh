@@ -24,3 +24,23 @@ cp -p TIME.g ${logfile}.timing
 cp -p TIME ${logfile}.out
 cat ${logfile}.timing | gnuplot -p -e "set terminal pngcairo enhanced; set output '"${logfile}.timing.png"'; set autoscale; set xlabel 'run number: 1-5 (one node) and 6-10 (1000 DistributedWorker nodes)'; set xtics 1; set xrange [0.5:10.5]; set ylabel 'time [s]'; set key below; set style fill solid 0.8; plot '-' u (\$0+1):1 with boxes lw 2 lc rgb '#7889fb' title 'The components algorithm execution statistics.'"
 )
+
+[ "$1" == "-r" ] && (
+export NUMCORES=$2
+[ -z "$NUMCORES" ] && echo "Usage: $0 -r <numcores>" && exit
+export COO_to_CSS_scale_factor=1
+[ -z "$3" ] || export COO_to_CSS_scale_factor=$3
+
+logDIR=daphnec-outputs/components_read/NUMCORES_${NUMCORES}/COO_to_CSS_scale_factor_${COO_to_CSS_scale_factor}
+mkdir -p $logDIR
+logfile=$logDIR/output-$(date +%F_%T).log
+echo Logging to $logfile
+
+screen -L -Logfile $logfile ./deploy_on_Vega-2021-12-08-DAPHNE-components_read-Ales_Zamuda.sh $COO_to_CSS_scale_factor
+
+cp -p TIME.g ${logfile}.timing
+cp -p TIME ${logfile}.out
+
+cat ${logfile}.timing | gnuplot -p -e "set terminal pngcairo enhanced; set output '"${logfile}.timing.png"'; set autoscale; set xlabel 'run number'; set xtics 1; set xrange [0.5:5.5]; set ylabel 'time [s]'; set key below; set style fill solid 0.8; plot '-' u (\$0+1):1 with boxes lw 2 lc rgb '#7889fb' title 'The components\_read algorithm execution statistics ("${NUMCORES}" DistributedWorker, scale factor "${COO_to_CSS_scale_factor}").'"
+)
+

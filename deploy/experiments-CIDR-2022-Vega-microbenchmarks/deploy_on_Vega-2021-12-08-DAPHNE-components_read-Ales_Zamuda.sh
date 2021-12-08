@@ -16,11 +16,11 @@
 
 # This script runs an experiment on Vega.
 
-[ -z "$NUMCORES" ] && export NUMCORES=100 # change this to parameterize the number of distributed workers
+[ -z "$NUMCORES" ] && export NUMCORES=10 # change this to parameterize the number of distributed workers
 
 reset;
 
-echo "Welcome to the DAPHNE on Vega for components-42-time (DAPHNE Consortium, 2021-12-06)."
+echo "Welcome to the DAPHNE on Vega for components_read (DAPHNE Consortium, 2021-12-08)."
 cat <<EOF
 MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
 MMMMMMMMMMMW0xOXMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
@@ -70,7 +70,7 @@ echo -e "\n\n... Ready to copy the last build to the container ..."
 cd ~/daphne-container/container && rm -rf build/
 cp -rp $(ls -dt1 ~/daphne/build_* | head -n 1) build
 }
-[ "$1" == "-c" ] && compile
+[ "$1" == "-c" ] && compile && exit
 
 time (
 cd ~/daphne-container/container-components 
@@ -79,7 +79,7 @@ echo -e "\n... Ready to package the build...."
 
 echo -e "\n\n... Ready to deploy the package to Vega and run it (spawn workers and serve demo sequences) ..."
 date  +"Time is: "%F+%T
-./deploy+run-at-Vega.sh 
+./deploy+run-at-Vega.sh --components_read $* 
 ) | tee TIME
 
 date  +"Time is: "%F+%T
