@@ -69,6 +69,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/../CUDA_kernel_instantiations.cpp
             ${PREFIX}/ColBind.cu
             ${PREFIX}/EwBinaryMat.cu
+            ${PREFIX}/ExtractCol.cu
             ${PREFIX}/MatMul.cpp
             ${PREFIX}/Solve.cu
             ${PREFIX}/Transpose.cpp
