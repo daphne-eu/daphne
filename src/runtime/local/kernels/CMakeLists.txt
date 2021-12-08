@@ -59,6 +59,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
+            ${PREFIX}/AggCol.cu
             ${PREFIX}/../CUDA_Activation.cpp
             ${PREFIX}/../CUDA_Affine.cpp
             ${PREFIX}/../CUDA_BatchNorm.cpp

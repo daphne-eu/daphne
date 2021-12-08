@@ -30,6 +30,8 @@ float __device__ __forceinline__ SumNeutralElement<float>::get() { return 0.0f; 
 template<>
 double __device__ __forceinline__ SumNeutralElement<double>::get() { return 0.0; }
 
+template<>
+int64_t __device__ __forceinline__ SumNeutralElement<int64_t>::get() { return 0ll; }
 
 template<typename T>
 struct ProdNeutralElement {
@@ -53,6 +55,9 @@ float __device__ __forceinline__ MinNeutralElement<float>::get() { return CUDART
 template<>
 double __device__ __forceinline__ MinNeutralElement<double>::get() { return CUDART_INF; }
 
+template<>
+int64_t __device__ __forceinline__ MinNeutralElement<int64_t>::get() { return 0x7ff0000000000000LL; }
+
 template<typename T>
 struct MaxNeutralElement {
 	static __device__ __forceinline__ T get();
@@ -62,7 +67,10 @@ template<>
 float __device__ __forceinline__ MaxNeutralElement<float>::get() { return -CUDART_INF_F; }
 
 template<>
-double __device__ __forceinline__ MaxNeutralElement<double>::get() { return -CUDART_INF_F; }
+double __device__ __forceinline__ MaxNeutralElement<double>::get() { return -CUDART_INF; }
+
+template<>
+int64_t __device__ __forceinline__ MaxNeutralElement<int64_t>::get() { return -0x7ff0000000000000LL; }
 
 /**
  * Functor op for assignment op. This is a dummy/identity op.
@@ -134,9 +142,6 @@ struct MinOp {
 template<>
 struct MinOp<double> {
 	__device__  __forceinline__  double operator()(double a, double b) const {
-		// if(blockIdx.x==0 && threadIdx.x == 0)
-		// if(threadIdx.x == 0)
-		// printf("bid=%d, tid=%d, a=%f, b=%f =min=> %f\n", blockIdx.x, threadIdx.x, a, b, fmin(a, b));
 		return fmin(a, b);
 	}
 
@@ -155,7 +160,11 @@ struct MinOp<float> {
 		return fminf(a, b);
 	}
 
-	__device__  __forceinline__ static float init() {
+    __device__  __forceinline__ static float exec(float const & a, float const & b) {
+        return fminf(a, b);
+    }
+
+    __device__  __forceinline__ static float init() {
 		return MinNeutralElement<float>::get();
 	}
 };
@@ -165,17 +174,24 @@ struct MinOp<float> {
  */
 template<typename T>
 struct MaxOp {
-	__device__  __forceinline__ T operator()(T a, T b) const {
-		return fmax(a, b);
-	}
+	__device__  __forceinline__ T operator()(T a, T b) const;
+	__device__  __forceinline__ static T exec(const T& a, const T& b);
+	__device__  __forceinline__ static T init();
+};
 
-	__device__  __forceinline__ static T exec(T const & a, T const & b) {
-		return fmax(a, b);
-	}
+template<>
+struct MaxOp<double> {
+    __device__ __forceinline__ double operator()(double a, double b) const {
+        return fmax(a, b);
+    }
 
-	__device__  __forceinline__ static T init() {
-		return MaxNeutralElement<T>::get();
-	}
+    __device__  __forceinline__ static double exec(const double& a, const double& b) {
+        return fmax(a, b);
+    }
+
+    __device__  __forceinline__ static double init() {
+        return MaxNeutralElement<double>::get();
+    }
 };
 
 template<>
@@ -184,13 +200,28 @@ struct MaxOp<float> {
 		return fmaxf(a, b);
 	}
 
-	__device__  __forceinline__ static float exec(float const & a, float const & b) {
+	__device__  __forceinline__ static float exec(const float& a, const float& b) {
 		return fmaxf(a, b);
 	}
 
 	__device__  __forceinline__ static float init() {
 		return MaxNeutralElement<float>::get();
 	}
+};
+
+template<>
+struct MaxOp<int64_t> {
+    __device__ __forceinline__ int64_t operator()(int64_t a, int64_t b) const {
+        return max(a, b);
+    }
+
+    __device__  __forceinline__ static int64_t exec(const int64_t& a, const int64_t& b) {
+        return max(a, b);
+    }
+
+    __device__  __forceinline__ static int64_t init() {
+        return MaxNeutralElement<int64_t>::get();
+    }
 };
 
 /**
