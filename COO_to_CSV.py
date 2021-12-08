@@ -4,20 +4,24 @@ import sys
 import numpy as np
 
 if (len(sys.argv) == 2 and sys.argv[1] == "--help"):
-    print("Usage: ./COO_to_Dense.py cooFile.txt numberOfVertices numberOfWorkers outputFilename outputFormat")
+    print("Usage: ./COO_to_Dense.py cooFile.txt numberOfVertices numberOfWorkers scaleFactor outputFilename outputFormat")
     print("")
     print("Specify worker address list inside the script.")
     exit()
 
-if (len(sys.argv) != 6):
-    print("Usage: ./COO_to_Dense.py cooFile.txt numberOfVertices numberOfWorkers outputFilename outputFormat")
+if (len(sys.argv) != 7):
+    print("Usage: ./COO_to_Dense.py cooFile.txt numberOfVertices numberOfWorkers scaleFactor outputFilename outputFormat")
     exit()
 
 filename = sys.argv[1]
 size = int(sys.argv[2])
 numWorkers = int(sys.argv[3])
-outputFile = sys.argv[4]
-outputFormat = sys.argv[5]
+scaleFactor = int(sys.argv[4])
+outputFile = sys.argv[5]
+outputFormat = sys.argv[6]
+
+if scaleFactor > 1 and scaleFactor % numWorkers != 0:
+    raise RuntimeError("if scaleFactor > 1, numWorkers must be a divisor of scaleFactor, such that each worker gets (scaleFactor/numWorkers) full copies of the dataset")
 
 
 # Worker addresses
@@ -123,32 +127,51 @@ if (outputFormat == "COOFormat"):
                 numNonZeros += 1
                 csrMat[c].append(r)
     
-    # Create segments, this functions works exactly like Distribute.h Kernel
-    rowSegments = list(split(list(range(size)), numWorkers))
+    if scaleFactor == 1: # partition dataset
+        # Create segments, this functions works exactly like Distribute.h Kernel
+        rowSegments = list(split(list(range(size)), numWorkers))
 
-    for i, rowSegment in enumerate(rowSegments):
-        outputFilename = outputFile + "_" + str(i) + ".csv"
+        for i, rowSegment in enumerate(rowSegments):
+            outputFilename = outputFile + "_" + str(i) + ".csv"
 
-        fcsv = open(outputFilename, 'w')
-        
-        numNonZerosSegment = sum([len(csrMat[rowIdx]) for rowIdx in rowSegment])
-        
-        fcsvMeta = open(outputFilename + ".meta", 'w')
-        fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64,nnz=" + str(numNonZerosSegment))
-        fcsvMeta.close()
+            fcsv = open(outputFilename, 'w')
+            
+            numNonZerosSegment = sum([len(csrMat[rowIdx]) for rowIdx in rowSegment])
+            
+            fcsvMeta = open(outputFilename + ".meta", 'w')
+            fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64,nnz=" + str(numNonZerosSegment))
+            fcsvMeta.close()
 
-        startRowIdx = rowSegment[0]
-        for row in rowSegment:
-            connectedVertices = csrMat[row]
-            for vertex in connectedVertices:
-                fcsv.write(str(row - startRowIdx) + "," + str(vertex) + "\n")
+            startRowIdx = rowSegment[0]
+            for row in rowSegment:
+                for col in csrMat[row]:
+                    fcsv.write(str(row - startRowIdx) + "," + str(col) + "\n")
 
-        # Handles file (master)
-        # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
-        handlesFile.write(workerAddressList[i] + "," + outputFilename + "," + str(i) + ",0," + str(len(rowSegment)) + "," + str(size) + "\n")
+            # Handles file (master)
+            # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
+            handlesFile.write(workerAddressList[i] + "," + outputFilename + "," + str(i) + ",0," + str(len(rowSegment)) + "," + str(size) + "\n")
+    elif scaleFactor > 1: # blow up dataset
+        workerFactor = int(scaleFactor / numWorkers)
+        for i in range(numWorkers):
+            outputFilename = outputFile + "_" + str(i) + ".csv"
+
+            fcsv = open(outputFilename, 'w')
+            
+            fcsvMeta = open(outputFilename + ".meta", 'w')
+            fcsvMeta.write(str(size * workerFactor) + "," + str(size * scaleFactor) + ",1,f64,nnz=" + str(numNonZeros * workerFactor))
+            fcsvMeta.close()
+            
+            for k in range(workerFactor):
+                for row in range(size):
+                    for col in csrMat[row]:
+                        fcsv.write(str(row + k * size) + "," + str(col + (i * workerFactor + k) * size) + "\n")
+
+            # Handles file (master)
+            # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
+            handlesFile.write(workerAddressList[i] + "," + outputFilename + "," + str(i) + ",0," + str(size * workerFactor) + "," + str(size * scaleFactor) + "\n")
         
 
 # Metadata file
 handlesFileMeta = open(outputFile + "_handles.csv.meta", 'w')
-handlesFileMeta.write(str(size) + "," + str(size) + ",1,f64,nnz=" + str(numNonZeros))
+handlesFileMeta.write(str(size * scaleFactor) + "," + str(size * scaleFactor) + ",1,f64,nnz=" + str(numNonZeros * scaleFactor))
 handlesFileMeta.close()
