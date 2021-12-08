@@ -14,22 +14,6 @@
 
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
-add_custom_command(
-        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
-        MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
-        DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
-)
-
-# The library of pre-compiled kernels. Will be linked into the JIT-compiled
-# user program.
-add_library(AllKernels SHARED
-            ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
-            Pooling.cpp)
-target_link_libraries(AllKernels PUBLIC DataStructures IO Proto ProtoDataConverter LLVMSupport
-        ${OPENBLAS_LIBRARIES})
-#set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 
 # *****************************************************************************
@@ -54,11 +38,10 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
     )
 
-    target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
+            ${PREFIX}/../../vectorized/Tasks.cpp
             ${PREFIX}/AggCol.cu
             ${PREFIX}/../CUDA_Activation.cpp
             ${PREFIX}/../CUDA_Affine.cpp
@@ -87,7 +70,32 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
-    target_link_libraries(CUDAKernels PRIVATE DataStructures CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse
-            ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
+    target_link_libraries(CUDAKernels PRIVATE DataStructures LLVMSupport CUDA::cudart CUDA::cublasLt CUDA::cublas
+            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
     #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()
+
+add_custom_command(
+        OUTPUT ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        COMMAND python3 ARGS genKernelInst.py kernels.json ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp CPP
+        MAIN_DEPENDENCY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/kernels.json
+        DEPENDS ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/genKernelInst.py
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
+)
+
+list(APPEND LIBS DataStructures IO ProtoDataConverter ${OPENBLAS_LIBRARIES})
+
+# The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
+add_library(AllKernels SHARED
+        ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        Pooling.cpp)
+#set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    list(APPEND LIBS CUDAKernels)
+else()
+    # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
+    list(APPEND LIBS LLVMSupport)
+endif()
+
+target_link_libraries(AllKernels PUBLIC ${LIBS})

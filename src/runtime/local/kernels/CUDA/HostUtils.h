@@ -36,6 +36,7 @@
       std::cout << "(CUDART) returned: " << cudaGetErrorString(status);   \
       std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
                 << "())" << std::endl;                                    \
+        std::abort();       \
     }                                                                     \
   } while (0)
 
@@ -107,9 +108,18 @@ struct CudaDeleter {
     void operator()(T* dev_ptr) const { del(dev_ptr); };
     static void del(T* dev_ptr) {
 #ifndef NDEBUG
-        std::cerr << "calling cudaFree on dev_ptr: " << dev_ptr << std::endl;
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        std::cout << "calling cudaFree on dev_ptr: " << dev_ptr << std::endl;
+        std::cout << "addressof dev_ptr in cudaFree: " << &dev_ptr << std::endl;
 #endif
-        cudaFree(dev_ptr);
+        cudaFree(reinterpret_cast<void*>(dev_ptr));
+#ifndef NDEBUG
+        size_t available; size_t total;
+        cudaMemGetInfo(&available, &total);
+        std::cout << "Available mem: " << (available / (1048576)) << "Mb" << std::endl;
+        std::cout.copyfmt(state);
+#endif
     }
 };
 

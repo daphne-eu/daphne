@@ -1799,13 +1799,18 @@
                     "name": "combines"
                 },
                 {
-                    "type": "void *",
+                    "type": "size_t",
+                    "name": "numFuncs"
+                },
+                {
+                    "type": "void **",
                     "name": "fun"
                 }
             ]
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
             [["CSRMatrix", "double"]]
         ]
     },
@@ -1858,13 +1863,18 @@
                     "name": "combines"
                 },
                 {
-                    "type": "void *",
+                    "type": "size_t",
+                    "name": "numFuncs"
+                },
+                {
+                    "type": "void **",
                     "name": "fun"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]]
         ]
     },
     {

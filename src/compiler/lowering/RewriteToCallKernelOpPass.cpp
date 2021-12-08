@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "compiler/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "compiler/CompilerUtils.h"
@@ -152,7 +153,7 @@ namespace
             }
             else
 #endif
-                callee << '_' << op_name;
+                    callee << '_' << op_name;
 //            std::cout << "callee: " << callee.str() << std::endl;
             // TODO Don't enumerate all ops, decide based on a trait.
             const bool generalizeInputTypes =

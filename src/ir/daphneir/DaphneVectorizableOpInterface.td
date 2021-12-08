@@ -19,6 +19,8 @@
 
 include "mlir/IR/OpBase.td"
 
+def CUDASupport : NativeOpTrait<"CUDASupport">;
+
 def VECTOR_SPLIT_NONE : I64EnumAttrCase<"NONE", 0>;
 def VECTOR_SPLIT_ROWS : I64EnumAttrCase<"ROWS", 1>;
 
