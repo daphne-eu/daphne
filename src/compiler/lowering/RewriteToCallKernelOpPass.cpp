@@ -191,6 +191,7 @@ namespace
                 }
                 else if((op_name == std::string("matMul")) ||
                         (op_name.substr(0,2) == "ew") ||
+                        (op_name == std::string("cbind")) ||
                         (op_name == std::string("transpose")))
                     callee << "CUDA_" << op_name;
                 else
