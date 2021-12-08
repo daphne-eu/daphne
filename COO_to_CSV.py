@@ -28,7 +28,9 @@ if (numWorkers > len(workerAddressList)):
     exit()
 
 
-availableFormats = ["DenseMatrix", "COOFormat"]
+# Don't generate a dense output.
+#availableFormats = ["DenseMatrix", "COOFormat"]
+availableFormats = ["COOFormat"]
 if (outputFormat not in availableFormats):
     print("Available matrix representation support: ")
     print(availableFormats)
@@ -44,12 +46,8 @@ def split(a, n):
 
 handlesFile = open(outputFile + "_handles.csv", 'w')
 
-# Metadata file
-handlesFileMeta = open(outputFile + "_handles.csv.meta", 'w')
-handlesFileMeta.write(str(size) + "," + str(size) + ",1,f64")
-handlesFileMeta.close()
 
-
+# Don't generate a dense output.
 if (outputFormat == "DenseMatrix"):
     mat = np.zeros(shape=(size, size))
     
@@ -117,9 +115,10 @@ if (outputFormat == "COOFormat"):
             splitted = line.split()
             r = int(splitted[0])
             c = int(splitted[1])
-            csrMat[r].append(c)
-            numNonZeros += 1
-            # For symmetry. If statement is needed for duplicates, because some edges present symmetry, but some don't
+            if c not in csrMat[r]:
+                numNonZeros += 1
+                csrMat[r].append(c)
+            # For symmetry (undirected graph).
             if r not in csrMat[c]:
                 numNonZeros += 1
                 csrMat[c].append(r)
@@ -127,20 +126,29 @@ if (outputFormat == "COOFormat"):
     # Create segments, this functions works exactly like Distribute.h Kernel
     rowSegments = list(split(list(range(size)), numWorkers))
 
-    for i, rowSegment in enumerate(rowSegments):        
+    for i, rowSegment in enumerate(rowSegments):
         outputFilename = outputFile + "_" + str(i) + ".csv"
 
         fcsv = open(outputFilename, 'w')
         
+        numNonZerosSegment = sum([len(csrMat[rowIdx]) for rowIdx in rowSegment])
+        
         fcsvMeta = open(outputFilename + ".meta", 'w')
-        fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64,nnz=" + str(numNonZeros))
+        fcsvMeta.write(str(len(rowSegment)) + "," + str(size) + ",1,f64,nnz=" + str(numNonZerosSegment))
         fcsvMeta.close()
 
+        startRowIdx = rowSegment[0]
         for row in rowSegment:
             connectedVertices = csrMat[row]
             for vertex in connectedVertices:
-                fcsv.write(str(row) + "," + str(vertex) + "\n")
+                fcsv.write(str(row - startRowIdx) + "," + str(vertex) + "\n")
 
         # Handles file (master)
         # [address, filename, DistributedIndexRow, DistributedIndexCol, numRows, numCols]        
         handlesFile.write(workerAddressList[i] + "," + outputFilename + "," + str(i) + ",0," + str(len(rowSegment)) + "," + str(size) + "\n")
+        
+
+# Metadata file
+handlesFileMeta = open(outputFile + "_handles.csv.meta", 'w')
+handlesFileMeta.write(str(size) + "," + str(size) + ",1,f64,nnz=" + str(numNonZeros))
+handlesFileMeta.close()
