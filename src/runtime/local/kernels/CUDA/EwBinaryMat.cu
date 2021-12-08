@@ -15,7 +15,7 @@
  */
 
 #include "EwBinaryMat.h"
-#include "runtime/local/kernels/bin_ops.cuh"
+#include "runtime/local/kernels/CUDA/bin_ops.cuh"
 #include <cstdint>
 
 namespace CUDA {

@@ -15,11 +15,7 @@
  */
 
 #pragma once
-#ifndef AGG_OPS_H
-#define AGG_OPS_H
 
-#include <cstdint>
-#include <cmath>
 #include <cuda_runtime.h>
 #include <math_constants.h>
 
@@ -29,10 +25,10 @@ struct SumNeutralElement {
 };
 
 template<>
-float SumNeutralElement<float>::get() { return 0.0f; }
+float __device__ __forceinline__ SumNeutralElement<float>::get() { return 0.0f; }
 
 template<>
-double SumNeutralElement<double>::get() { return 0.0; }
+double __device__ __forceinline__ SumNeutralElement<double>::get() { return 0.0; }
 
 
 template<typename T>
@@ -41,10 +37,10 @@ struct ProdNeutralElement {
 };
 
 template<>
-float ProdNeutralElement<float>::get() { return 1.0f; }
+float __device__ __forceinline__ ProdNeutralElement<float>::get() { return 1.0f; }
 
 template<>
-double ProdNeutralElement<double>::get() { return 1.0; }
+double __device__ __forceinline__ ProdNeutralElement<double>::get() { return 1.0; }
 
 template<typename T>
 struct MinNeutralElement {
@@ -52,10 +48,10 @@ struct MinNeutralElement {
 };
 
 template<>
-float MinNeutralElement<float>::get() { return CUDART_INF_F; }
+float __device__ __forceinline__ MinNeutralElement<float>::get() { return CUDART_INF_F; }
 
 template<>
-double MinNeutralElement<double>::get() { return CUDART_INF; }
+double __device__ __forceinline__ MinNeutralElement<double>::get() { return CUDART_INF; }
 
 template<typename T>
 struct MaxNeutralElement {
@@ -63,10 +59,10 @@ struct MaxNeutralElement {
 };
 
 template<>
-float MaxNeutralElement<float>::get() { return -CUDART_INF_F; }
+float __device__ __forceinline__ MaxNeutralElement<float>::get() { return -CUDART_INF_F; }
 
 template<>
-double MaxNeutralElement<double>::get() { return -CUDART_INF_F; }
+double __device__ __forceinline__ MaxNeutralElement<double>::get() { return -CUDART_INF_F; }
 
 /**
  * Functor op for assignment op. This is a dummy/identity op.
@@ -268,4 +264,3 @@ struct PowOp {
         return ProdNeutralElement<T>::get();
     }
 };
-#endif // __AGG_OPS_H
