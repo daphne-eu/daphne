@@ -1728,7 +1728,9 @@
             [["CSRMatrix", "uint32_t"]],
             [["CSRMatrix", "uint64_t"]],
             [["CSRMatrix", "size_t"]],
-            ["Frame"]
+            ["Frame"],
+            [["Handle", "DenseMatrix", "double"]],
+            [["Handle", "CSRMatrix", "double"]]
         ]
     },
     {

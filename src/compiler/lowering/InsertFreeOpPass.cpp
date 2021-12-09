@@ -40,7 +40,7 @@ struct InsertFreeOpPass : public PassWrapper<InsertFreeOpPass, FunctionPass>
 void processValue(OpBuilder builder, Value v) {
     // TODO Address handles from the distributed runtime.
     // We only need to free DAPHNE data objects like matrices and frames.
-    if(!v.getType().isa<daphne::MatrixType, daphne::FrameType>())
+    if(!v.getType().isa<daphne::MatrixType, daphne::FrameType, daphne::HandleType>())
         return;
     
     Operation * defOp = v.getDefiningOp();

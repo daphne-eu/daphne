@@ -1180,7 +1180,7 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
 }
 
 def Daphne_FreeOp : Daphne_Op<"free"> {
-    let arguments = (ins MatrixOrFrame:$arg);
+    let arguments = (ins AnyTypeOf<[MatrixOrFrame, Handle]>:$arg);
     let results = (outs); // no results
 }
 
