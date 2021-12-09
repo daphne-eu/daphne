@@ -89,16 +89,18 @@ class DenseMatrix : public Matrix<ValueType>
      * @param numCols The exact number of columns.
      * @param values The existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values,
+                std::shared_ptr<ValueType>& cuda_ptr_) :
             Matrix<ValueType>(numRows, numCols),
             rowSkip(numCols),
             values(values),
+            cuda_ptr(cuda_ptr_),
             lastAppendedRowIdx(0),
             lastAppendedColIdx(0)
     {
-        assert(values && "values must not be null");
+        assert((values || cuda_ptr) && "at least values or cuda_ptr must not be null");
     }
-            
+
     /**
      * @brief Creates a `DenseMatrix` around a sub-matrix of another
      * `DenseMatrix` without copying the data.
@@ -210,12 +212,36 @@ public:
         host_buffer_current = false;
         return cuda_ptr.get();
     }
+
+    [[maybe_unused]] bool isBufferDirty(ALLOCATION_TYPE type) const {
+        switch(type) {
+            case ALLOCATION_TYPE::CUDA_ALLOC:
+                return cuda_dirty;
+            case ALLOCATION_TYPE::HOST_ALLOC:
+            default:
+                return host_dirty;
+        }
+    }
+
+    [[maybe_unused]] bool isBufferCurrent(ALLOCATION_TYPE type) const {
+        switch(type) {
+            case ALLOCATION_TYPE::CUDA_ALLOC:
+                return cuda_buffer_current;
+            case ALLOCATION_TYPE::HOST_ALLOC:
+            default:
+                return host_buffer_current;
+        }
+    }
+
+    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
+        return cuda_ptr;
+    }
 #endif
 
-    std::shared_ptr<ValueType[]> getValuesSharedPtr() {
+    std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
     }
-    
+
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         return getValues()[pos(rowIdx, colIdx)];
     }
@@ -275,12 +301,14 @@ public:
         return slice(rl, ru, 0, numCols);
     }
 
-    DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) {
+    DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) const {
         // TODO Use DataObjFactory.
         return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
     }
 
     size_t bufferSize() const;
+
+    DenseMatrix<ValueType>* vectorTranspose() const;
 
 #ifdef USE_CUDA
     void cudaAlloc();

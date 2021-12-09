@@ -57,21 +57,24 @@ namespace CUDA {
     template<typename VT>
     void Transpose<DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
             DCTX(dctx)) {
-        auto ctx = dctx->getCUDAContext(0);
-
         const size_t nr1 = arg->getNumRows();
         const size_t nc1 = arg->getNumCols();
 
-        const VT blend_alpha = 1.0f;
-        const VT blend_beta = 0.0f;
-        const VT *d_arg = arg->getValuesCUDA();
+        if(nr1 == 1 || nc1 == 1) {
+            res = arg->vectorTranspose();
+        }
+        else {
+            auto ctx = dctx->getCUDAContext(0);
+            const VT blend_alpha = 1.0f;
+            const VT blend_beta = 0.0f;
+            const VT *d_arg = arg->getValuesCUDA();
 
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(nc1, nr1, false, ALLOCATION_TYPE::CUDA_ALLOC);
-        VT *d_res = res->getValuesCUDA();
-        launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_arg, d_res);
+            if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(nc1, nr1, false, ALLOCATION_TYPE::CUDA_ALLOC);
+            VT *d_res = res->getValuesCUDA();
+            launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_arg, d_res);
+        }
     }
-
     template struct Transpose<DenseMatrix<double>, DenseMatrix<double>>;
     template struct Transpose<DenseMatrix<float>, DenseMatrix<float>>;
     template struct Transpose<DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
