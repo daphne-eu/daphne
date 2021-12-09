@@ -25,6 +25,8 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
+#include <runtime/local/kernels/DistributedCaller.h>
+
 class DistributedIndex
 {
 public:
@@ -83,7 +85,20 @@ public:
     using HandleMap = std::multimap<const DistributedIndex, DistributedData>;
 
     Handle(HandleMap map, size_t rows, size_t cols) : map_(map), rows_(rows), cols_(cols)
-    {}
+    {
+        DistributedCaller<void*, distributed::StoredData, distributed::Empty> caller;
+        // Free memory on the workers
+        for (auto &pair : map) {
+            auto data = pair.second.getData();
+            auto channel = pair.second.getChannel();
+            caller.asyncFreeMemCall(channel, nullptr, data);
+        }
+        // do nothing, no need to wait
+    }
+
+    ~Handle() {
+
+    }
 
     const HandleMap getMap() const
     { return map_; }

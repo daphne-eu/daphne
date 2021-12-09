@@ -58,6 +58,7 @@ void WorkerImpl::HandleRpcs() {
     new StoreCallData(this, cq_.get());
     new ComputeCallData(this, cq_.get());
     new TransferCallData(this, cq_.get());
+    new FreeMemCallData(this, cq_.get());
     void* tag;  // uniquely identifies a request.
     bool ok;
     // Block waiting to read the next event from the completion queue. The

@@ -129,4 +129,33 @@ private:
     CallStatus status_; // The current serving state.
 };
 
+class FreeMemCallData final : public CallData
+{
+    public:
+        FreeMemCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+            : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
+        {
+            // Invoke the serving logic right away.
+            Proceed();
+        }
+        void Proceed() override;
+    private:
+        WorkerImpl *worker;
+        distributed::Worker::AsyncService *service_;
+        // The producer-consumer queue where for asynchronous server notifications.
+        grpc::ServerCompletionQueue *cq_;
+        grpc::ServerContext ctx_;
+        
+        distributed::StoredData storedData;
+        distributed::Empty emptyMessage;
+        grpc::ServerAsyncResponseWriter<distributed::Empty> responder_;
+
+    enum CallStatus
+    {
+        CREATE,
+        PROCESS,
+        FINISH
+    };
+    CallStatus status_; // The current serving state.
+};
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H

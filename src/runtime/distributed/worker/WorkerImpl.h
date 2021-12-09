@@ -45,7 +45,10 @@ public:
                          ::distributed::ComputeResult *response) ;
     grpc::Status Transfer(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                          ::distributed::Matrix *response);
+                         ::distributed::Matrix *response);
+    grpc::Status FreeMem(::grpc::ServerContext *context,
+                         const ::distributed::StoredData *request,
+                         ::distributed::Empty *emptyMessage);
     distributed::Worker::AsyncService service_;
 private:
     uint64_t tmp_file_counter_ = 0;
