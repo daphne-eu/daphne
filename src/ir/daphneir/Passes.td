@@ -35,6 +35,10 @@ def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
 //    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
 //}
 
+def InsertFreeOp : FunctionPass<"insert-freeop"> {
+    let constructor = "mlir::daphne::createInsertFreeOpPass()";
+}
+
 def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
     let constructor = "mlir::daphne::createLowerToLLVMPass()";
 }
