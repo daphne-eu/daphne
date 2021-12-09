@@ -100,7 +100,7 @@ struct Distribute<DenseMatrix<double>>
                         
             auto channel = caller.GetOrCreateChannel(workerAddr);
             StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr, channel});
-            caller.addAsyncCall(workerAddr, storedInfo, protoMat);
+            caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
             
             // keep track of proccessed rows
             r = (workerIx + 1) * k + std::min(workerIx + 1, m);

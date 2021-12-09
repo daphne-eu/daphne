@@ -26,6 +26,7 @@ service Worker {
   rpc Store (Matrix) returns (StoredData) {}
   rpc Compute (Task) returns (ComputeResult) {}
   rpc Transfer (StoredData) returns (Matrix) {}
+  rpc FreeMem (StoredData) returns (Empty) {}
 }
 
 message WorkData {
@@ -46,4 +47,8 @@ message Task {
 
 message ComputeResult {
   repeated WorkData outputs = 1;
+}
+
+message Empty {
+
 }
