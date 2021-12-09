@@ -33,11 +33,10 @@ using mlir::daphne::VectorCombine;
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTIn>
-struct VectorizedPipeline
-{
+template<class DTRes>
+struct VectorizedPipeline {
     static void apply(DTRes *&res,
-                      DTIn **inputs,
+                      Structure **inputs,
                       size_t numInputs,
                       size_t numOutputs,
                       int64_t *outRows,
@@ -45,16 +44,31 @@ struct VectorizedPipeline
                       int64_t *splits,
                       int64_t *combines,
                       void *fun,
-                      DCTX(ctx)) = delete;
+                      DCTX(ctx)) {
+        auto wrapper = std::make_unique<MTWrapper<DTRes>>();
+        auto function =
+            std::function<void(DTRes ***, Structure **)>(
+                reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+        wrapper->execute(function,
+            res,
+            inputs,
+            numInputs,
+            numOutputs,
+            outRows,
+            outCols,
+            reinterpret_cast<VectorSplit *>(splits),
+            reinterpret_cast<VectorCombine *>(combines),
+            false);
+    }
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTIn>
+template<class DTRes>
 void vectorizedPipeline(DTRes *&res,
-                        DTIn **inputs,
+                        Structure **inputs,
                         size_t numInputs,
                         size_t numOutputs,
                         int64_t *outRows,
@@ -64,7 +78,7 @@ void vectorizedPipeline(DTRes *&res,
                         void *fun,
                         DCTX(ctx))
 {
-    VectorizedPipeline<DTRes, DTIn>::apply(res,
+    VectorizedPipeline<DTRes>::apply(res,
         inputs,
         numInputs,
         numOutputs,
@@ -79,36 +93,5 @@ void vectorizedPipeline(DTRes *&res,
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
-
-template<>
-struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>>
-{
-    static void apply(DenseMatrix<double> *&res,
-                      DenseMatrix<double> **inputs,
-                      size_t numInputs,
-                      size_t numOutputs,
-                      int64_t *outRows,
-                      int64_t *outCols,
-                      int64_t *splits,
-                      int64_t *combines,
-                      void *fun,
-                      DCTX(ctx))
-    {
-        auto wrapper = std::make_unique<MTWrapper<double>>();
-        auto function =
-            std::function<void(DenseMatrix<double> ***, DenseMatrix<double> **)>(
-                reinterpret_cast<void (*)(DenseMatrix<double> ***, DenseMatrix<double> **)>(fun));
-        wrapper->execute(function,
-            res,
-            inputs,
-            numInputs,
-            numOutputs,
-            outRows,
-            outCols,
-            reinterpret_cast<VectorSplit *>(splits),
-            reinterpret_cast<VectorCombine *>(combines),
-            false);
-    }
-};
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_VECTORIZEDPIPELINE_H

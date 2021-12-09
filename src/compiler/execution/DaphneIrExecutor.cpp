@@ -83,7 +83,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-        
+
         // TODO There is a cyclic dependency between (shape) inference and
         // constant folding (included in canonicalization), at the moment we
         // run only three iterations of both passes (see #173).
@@ -96,7 +96,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addPass(mlir::createCanonicalizerPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
-        
+
         if(selectMatrixRepresentations_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representation"));
@@ -114,6 +114,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+            // TODO: add inference here if we have rewrites that could apply to vectorized pipelines due to smaller sizes
         }
         pm.addPass(mlir::createCanonicalizerPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization"));
