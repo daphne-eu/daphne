@@ -32,6 +32,7 @@
 #include <runtime/distributed/worker/ProtoDataConverter.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/kernels/Read.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
@@ -58,6 +59,7 @@ void WorkerImpl::HandleRpcs() {
     new StoreCallData(this, cq_.get());
     new ComputeCallData(this, cq_.get());
     new TransferCallData(this, cq_.get());
+    new FreeMemCallData(this, cq_.get());
     void* tag;  // uniquely identifies a request.
     bool ok;
     // Block waiting to read the next event from the completion queue. The
@@ -282,3 +284,19 @@ Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t 
     }
 }
 
+grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
+                               const ::distributed::StoredData *request,
+                               ::distributed::Empty *emptyMessg)
+{
+    auto filename = request->filename();
+    auto data_it = localData_.find(filename);
+    
+    if (data_it != localData_.end()) {
+        auto * mat = reinterpret_cast<Matrix<double> *>(data_it->second);
+        if(auto m = dynamic_cast<DenseMatrix<double> *>(mat))
+            DataObjectFactory::destroy(m);
+        else if(auto m = dynamic_cast<CSRMatrix<double> *>(mat))
+            DataObjectFactory::destroy(m);
+    }
+    return grpc::Status::OK;
+}

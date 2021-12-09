@@ -88,7 +88,7 @@ struct DistributedCompute<DTRes, Structure>
                 
                 StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(argData)});
 
-                caller.addAsyncCall(argData.getChannel(), storedInfo, task);
+                caller.asyncComputeCall(argData.getChannel(), storedInfo, task);
             }
         }
         // ****************************************************************************
@@ -124,7 +124,7 @@ struct DistributedCompute<DTRes, Structure>
                         
                         StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                        caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                        caller.asyncComputeCall(lhsData.getChannel(), storedInfo, task);
                     }
                     else {
                         // TODO: send data between workers
@@ -160,7 +160,7 @@ struct DistributedCompute<DTRes, Structure>
                     
                         StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                        caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                        caller.asyncComputeCall(lhsData.getChannel(), storedInfo, task);
                     }
                     else {
                         // TODO: send data between workers
