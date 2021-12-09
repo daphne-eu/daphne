@@ -107,7 +107,7 @@ void FreeMemCallData::Proceed() {
     {
         status_ = FINISH;
 
-        new TransferCallData(worker, cq_);
+        new FreeMemCallData(worker, cq_);
 
         grpc::Status status = worker->FreeMem(&ctx_, &storedData, &emptyMessage);
 
