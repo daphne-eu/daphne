@@ -70,6 +70,14 @@ double getConstantDouble(Value v) {
     throw std::runtime_error("expected a floating-point constant");
 }
 
+// TODO This is just a quick and dirty workaround. Make this a central utility.
+float getConstantFloat(Value v) {
+    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
+        if(auto floatAttr = co.value().dyn_cast<FloatAttr>())
+            return floatAttr.getValue().convertToFloat();
+    throw std::runtime_error("expected a floating-point constant");
+}
+
 ssize_t inferNumRowsFromArgs(ValueRange vs) {
     // If the #rows of all arguments is known and matches, then this is the
     // infered #rows. If the known #rows of any two arguments mismatch, an
@@ -155,7 +163,8 @@ ssize_t daphne::CartesianOp::inferNumRows() {
 }
 
 ssize_t daphne::SeqOp::inferNumRows() {
-    if(from().getType().isF64()) {
+    Type fromTy = from().getType();
+    if(fromTy.isF64()) {
         try {
             double vFrom = getConstantDouble(from());
             double vTo = getConstantDouble(to());
@@ -166,7 +175,18 @@ ssize_t daphne::SeqOp::inferNumRows() {
             return -1;
         }
     }
-    else if(from().getType().isSignedInteger(64)) {
+    if(fromTy.isF32()) {
+        try {
+            float vFrom = getConstantFloat(from());
+            float vTo = getConstantFloat(to());
+            float vInc = getConstantFloat(inc());
+            return floor(vTo / vInc - vFrom / vInc) + 1;
+        }
+        catch(const std::runtime_error & e) {
+            return -1;
+        }
+    }
+    else if(fromTy.isSignedInteger(64)) {
         try {
             int64_t vFrom = getConstantInt(from());
             int64_t vTo = getConstantInt(to());
