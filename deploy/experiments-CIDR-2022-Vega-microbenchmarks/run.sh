@@ -69,9 +69,8 @@ done
 # TEARING DOWN
 echo -e "\n\nTearing down distributed worker daemons ..."
 scancel -n Dworkers
-
-exit
-) && exit
+)
+[ "$1" == "--components_read" ] && exit
 #----------------------------- END
 
 
