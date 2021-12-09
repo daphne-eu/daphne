@@ -32,6 +32,7 @@
 #include <runtime/distributed/worker/ProtoDataConverter.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/kernels/Read.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
@@ -290,7 +291,12 @@ grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
     auto filename = request->filename();
     auto data_it = localData_.find(filename);
     
-    if (data_it != localData_.end())
-        delete data_it->second;
+    if (data_it != localData_.end()) {
+        auto * mat = reinterpret_cast<Matrix<double> *>(data_it->second);
+        if(auto m = dynamic_cast<DenseMatrix<double> *>(mat))
+            DataObjectFactory::destroy(m);
+        else if(auto m = dynamic_cast<CSRMatrix<double> *>(mat))
+            DataObjectFactory::destroy(m);
+    }
     return grpc::Status::OK;
 }
