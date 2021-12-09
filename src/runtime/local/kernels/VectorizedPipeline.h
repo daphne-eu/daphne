@@ -35,7 +35,7 @@ using mlir::daphne::VectorCombine;
 
 template<class DTRes>
 struct VectorizedPipeline {
-    static void apply(DTRes *&res,
+    static void apply(DTRes *&resIn,
                       Structure **inputs,
                       size_t numInputs,
                       size_t numOutputs,
@@ -49,6 +49,8 @@ struct VectorizedPipeline {
         auto function =
             std::function<void(DTRes ***, Structure **)>(
                 reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+        assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
+        DTRes **res[] = {&resIn};
         wrapper->execute(function,
             res,
             inputs,
@@ -88,6 +90,37 @@ void vectorizedPipeline(DTRes *&res,
         combines,
         fun,
         ctx);
+}
+
+// TODO: use variable args
+template<class DTRes>
+void vectorizedPipeline(DTRes *&res1,
+                        DTRes *&res2,
+                        Structure **inputs,
+                        size_t numInputs,
+                        size_t numOutputs,
+                        int64_t *outRows,
+                        int64_t *outCols,
+                        int64_t *splits,
+                        int64_t *combines,
+                        void *fun,
+                        DCTX(ctx)) {
+    auto wrapper = std::make_unique<MTWrapper<DTRes>>();
+    auto function =
+        std::function<void(DTRes ***, Structure **)>(
+            reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+    assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
+    DTRes **res[] = {&res1, &res2};
+    wrapper->execute(function,
+        res,
+        inputs,
+        numInputs,
+        numOutputs,
+        outRows,
+        outCols,
+        reinterpret_cast<VectorSplit *>(splits),
+        reinterpret_cast<VectorCombine *>(combines),
+        false);
 }
 
 // ****************************************************************************
