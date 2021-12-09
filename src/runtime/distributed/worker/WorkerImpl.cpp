@@ -283,3 +283,14 @@ Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t 
     }
 }
 
+grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
+                               const ::distributed::StoredData *request,
+                               ::distributed::Empty *emptyMessg)
+{
+    // auto filename = request->filename();
+    // auto data_it = localData_.find(filename);
+    
+    // if (data_it != localData_.end())
+    //     delete data_it->second;
+    return grpc::Status::OK;
+}
