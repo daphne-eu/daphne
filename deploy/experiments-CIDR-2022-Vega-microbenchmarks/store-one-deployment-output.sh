@@ -30,13 +30,15 @@ export NUMCORES=$2
 [ -z "$NUMCORES" ] && echo "Usage: $0 -r <numcores>" && exit
 export COO_to_CSS_scale_factor=1
 [ -z "$3" ] || export COO_to_CSS_scale_factor=$3
+export Run_Algorithm_name=components_read
+[ -z "$4" ] || export Run_Algorithm_name=$4
 
-logDIR=daphnec-outputs/components_read/NUMCORES_${NUMCORES}/COO_to_CSS_scale_factor_${COO_to_CSS_scale_factor}
+logDIR=daphnec-outputs/${Run_Algorithm_name}/NUMCORES_${NUMCORES}/COO_to_CSS_scale_factor_${COO_to_CSS_scale_factor}
 mkdir -p $logDIR
 logfile=$logDIR/output-$(date +%F_%T).log
 echo Logging to $logfile
 
-screen -L -Logfile $logfile ./deploy_on_Vega-2021-12-08-DAPHNE-components_read-Ales_Zamuda.sh $COO_to_CSS_scale_factor
+screen -L -Logfile $logfile ./deploy_on_Vega-2021-12-08-DAPHNE-components_read-Ales_Zamuda.sh $COO_to_CSS_scale_factor ${Run_Algorithm_name}.daphne
 
 cp -p TIME.g ${logfile}.timing
 cp -p TIME ${logfile}.out
