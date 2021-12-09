@@ -85,19 +85,22 @@ public:
     using HandleMap = std::multimap<const DistributedIndex, DistributedData>;
 
     Handle(HandleMap map, size_t rows, size_t cols) : map_(map), rows_(rows), cols_(cols)
+    { }
+
+    ~Handle() 
     {
         DistributedCaller<void*, distributed::StoredData, distributed::Empty> caller;
         // Free memory on the workers
-        for (auto &pair : map) {
+        for (auto &pair : map_) {
             auto data = pair.second.getData();
             auto channel = pair.second.getChannel();
             caller.asyncFreeMemCall(channel, nullptr, data);
         }
-        // do nothing, no need to wait
-    }
-
-    ~Handle() {
-
+        // Check workers' respond status        
+        while (!caller.isQueueEmpty()){
+            // caller obj checks for status
+            auto response = caller.getNextResult();            
+        }
     }
 
     const HandleMap getMap() const
