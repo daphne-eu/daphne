@@ -711,7 +711,7 @@ def Daphne_TriOp : Daphne_Op<"tri", [
 }
 
 def Daphne_SolveOp : Daphne_Op<"solve", [
-    NumRowsFromArg, OneCol, CUDASupport
+    NumRowsFromArg, OneCol
 ]> {
     let arguments = (ins MatrixOf<[FloatScalar]>:$a, MatrixOf<[FloatScalar]>:$b);
     let results = (outs MatrixOf<[FloatScalar]>:$x);
