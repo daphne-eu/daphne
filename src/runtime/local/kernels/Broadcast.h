@@ -90,7 +90,7 @@ struct Broadcast<DenseMatrix<double>>
 
             auto channel = caller.GetOrCreateChannel(workerAddr);
             StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
-            caller.addAsyncCall(workerAddr, storedInfo, protoMat);
+            caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
         
         }
         // get results

@@ -53,88 +53,141 @@ private:
         grpc::ClientContext context_;
         grpc::Status status;
         
-        const DistributedIndex *ix;
         StoredInfo storedInfo;
         ReturnType result;
     };
     int callCounter = 0;
     grpc::CompletionQueue cq_;
 
-
-    // Specialized functions to match appropriate async call
-    std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::StoredData>> MakeAsyncCall(
-        std::unique_ptr<distributed::Worker::Stub> &stub, 
-        grpc::ClientContext &context, 
-        const distributed::Matrix &arg) {        
-            return stub->AsyncStore(&context, arg, &cq_);
-    }
-
-    std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::ComputeResult>> MakeAsyncCall(
-        std::unique_ptr<distributed::Worker::Stub> &stub, 
-        grpc::ClientContext &context, 
-        const distributed::Task &arg) {
-            return stub->AsyncCompute(&context, arg, &cq_);
-    }
-
-    std::unique_ptr<grpc::ClientAsyncResponseReader<distributed::Matrix>> MakeAsyncCall(
-        std::unique_ptr<distributed::Worker::Stub> &stub, 
-        grpc::ClientContext &context, 
-        const distributed::StoredData &arg) {
-            return stub->AsyncTransfer(&context, arg, &cq_);
-    }
 public:
     DistributedCaller() {};
     ~DistributedCaller() {};
-
+    
     /**
-    * @brief Enqueues an asynchronous Transfer call to be executed
+    * @brief Enqueues an asynchronous Store call to be executed.     
     * 
-    * @param  workerAddr An address to make the call
+    * @param  workerAddr An address (or channel) to make the call
     * @param  StoredInfo An StoredInfo type returned when call response is ready
-    * @param  Argument Argument passed to the asynchronous call
+    * @param  arg Argument passed to the asynchronous call
     */
-    void addAsyncCall(
-            std::string workerAddr,
-            StoredInfo storedInfo,
-            const Argument arg
-            )
+    void asyncStoreCall(
+        std::shared_ptr<grpc::Channel> channel,
+        StoredInfo storedInfo,
+        const distributed::Matrix arg
+        )
     {
         AsyncClientCall *call = new AsyncClientCall;
-
         call->storedInfo = storedInfo;
+
+        auto stub = distributed::Worker::NewStub(channel);
+        auto response_reader = stub->AsyncStore(&call->context_, arg, &cq_);
         
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        callCounter++;
+    }
+    void asyncStoreCall(
+        std::string workerAddr,
+        StoredInfo storedInfo,
+        const distributed::Matrix arg
+        )
+    {
         auto channel = GetOrCreateChannel(workerAddr);
-        auto stub = distributed::Worker::NewStub(channel);
-
-        auto response_reader = MakeAsyncCall(stub, call->context_, arg);
-        response_reader->Finish(&call->result, &call->status, (void*)call);
-        callCounter++;
+        asyncStoreCall(channel, storedInfo, arg);
     }
     /**
-    * @brief Enqueues an asynchronous call to be executed. 
-    *        Matches the appropriate function call (Store/Compute/Transfer) based on template parameters.
+    * @brief Enqueues an asynchronous Compute call to be executed.     
     * 
-    * @param  workerAddr An address to make the call
+    * @param  workerAddr An address (or channel) to make the call
     * @param  StoredInfo An StoredInfo type returned when call response is ready
-    * @param  Argument Argument passed to the asynchronous call
+    * @param  arg Argument passed to the asynchronous call
     */
-    void addAsyncCall(
-            std::shared_ptr<grpc::Channel> channel,
-            StoredInfo storedInfo,
-            const Argument arg
-            )
+    void asyncComputeCall(
+        std::shared_ptr<grpc::Channel> channel,
+        StoredInfo storedInfo,
+        const distributed::Task arg
+        )
     {
         AsyncClientCall *call = new AsyncClientCall;
-
         call->storedInfo = storedInfo;
-        
-        auto stub = distributed::Worker::NewStub(channel);
 
-        auto response_reader = MakeAsyncCall(stub, call->context_, arg);
+        auto stub = distributed::Worker::NewStub(channel);
+        auto response_reader = stub->AsyncCompute(&call->context_, arg, &cq_);
+        
         response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
     }
+    void asyncComputeCall(
+        std::string workerAddr,
+        StoredInfo storedInfo,
+        const distributed::Task arg
+        )
+    {
+        auto channel = GetOrCreateChannel(workerAddr);
+        asyncComputeCall(channel, storedInfo, arg);
+    }
+    /**
+    * @brief Enqueues an asynchronous Transfer call to be executed.     
+    * 
+    * @param  workerAddr An address (or channel) to make the call
+    * @param  StoredInfo An StoredInfo type returned when call response is ready
+    * @param  arg Argument passed to the asynchronous call
+    */
+    void asyncTransferCall(
+        std::shared_ptr<grpc::Channel> channel,
+        StoredInfo storedInfo,
+        const distributed::StoredData arg
+        )
+    {
+        AsyncClientCall *call = new AsyncClientCall;
+        call->storedInfo = storedInfo;
 
+        auto stub = distributed::Worker::NewStub(channel);
+        auto response_reader = stub->AsyncTransfer(&call->context_, arg, &cq_);
+        
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        callCounter++;
+    }
+    void asyncTransferCall(
+        std::string workerAddr,
+        StoredInfo storedInfo,
+        const distributed::StoredData arg
+        )
+    {
+        auto channel = GetOrCreateChannel(workerAddr);
+        asyncTransferCall(channel, storedInfo, arg);
+    }
+    
+    /**
+    * @brief Enqueues an asynchronous FreeMem call to be executed.     
+    * 
+    * @param  workerAddr An address (or channel) to make the call
+    * @param  StoredInfo An StoredInfo type returned when call response is ready
+    * @param  arg Argument passed to the asynchronous call
+    */
+    void asyncFreeMemCall(
+        std::shared_ptr<grpc::Channel> channel,
+        StoredInfo storedInfo,
+        const distributed::StoredData arg
+        )
+    {
+        AsyncClientCall *call = new AsyncClientCall;
+        call->storedInfo = storedInfo;
+
+        auto stub = distributed::Worker::NewStub(channel);
+        auto response_reader = stub->AsyncFreeMem(&call->context_, arg, &cq_);
+        
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        callCounter++;
+    }
+    void asyncFreeMemCall(
+        std::string workerAddr,
+        StoredInfo storedInfo,
+        const distributed::StoredData arg
+        )
+    {
+        auto channel = GetOrCreateChannel(workerAddr);
+        asyncFreeMemCall(channels, storedInfo, arg);
+    }
     /**
     * @brief    Get the next available result from the queue of asynchronous calls
     * @result   A struct with two fields. First field is "StoredInfo" struct passed when the call was enqueued
