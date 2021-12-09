@@ -15,7 +15,7 @@ cat build/git_source_status_info
 echo -e "\nSpawning N new distributed worker daemons, N=" $NUMCORES
 mkdir -p WORKERS/; rm WORKERS/* 2>/dev/null # clean workerlist
 
-srun -J Dworkers --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
+srun -J Dworkers --time=30 --mem=100G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
 
 #until [ $(cat WORKERS.* | grep "Started Distributed Worker on " | wc -l) -ge $NUMCORES ]
 date  +"Time is: "%F+%T
@@ -53,6 +53,7 @@ echo "Mapping datasets..."
 export DISTRIBUTED_WORKERS=$WORKERS
 export COO_to_CSS_scale_factor=1
 [ -z "$2" ] || export COO_to_CSS_scale_factor=$2 
+rm datasets/Amazon0601* 2>/dev/null
 time srun singularity exec ../d2.sif python3 ./COO_to_CSV-distributed.py datasets/amazon0601.txt 403394 $NUMCORES $COO_to_CSS_scale_factor datasets/Amazon0601 COOFormat
 cat datasets/Amazon0601_handles.csv
 date  +"Time is: "%F+%T
@@ -62,7 +63,7 @@ echo -e "\nReady to run this demo executable in a sequence using all distributed
 for DEMO_SEQUENCE in {1..5}; do
         echo -e "\n" Running the demo sequence no. $DEMO_SEQUENCE ...
 
-	time srun --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components_read.daphne --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
+	time srun --time=30 --mem=100G ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec components_read.daphne --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
 done
 
 # TEARING DOWN
