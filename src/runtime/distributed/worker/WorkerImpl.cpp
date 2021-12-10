@@ -106,7 +106,7 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     // TODO Once we hand over longer pipelines to the workers, we might not
     // want to hardcode insertFreeOp to false anymore. But maybe we will insert
     // the FreeOps at the coordinator already.
-    DaphneIrExecutor executor(false, false, false, cfg);
+    DaphneIrExecutor executor(false, false, cfg);
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {

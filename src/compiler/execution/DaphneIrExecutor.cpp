@@ -39,10 +39,9 @@
 
 DaphneIrExecutor::DaphneIrExecutor(bool distributed,
                                    bool selectMatrixRepresentations,
-                                   bool insertFreeOp,
                                    DaphneUserConfig cfg)
     : distributed_(distributed), selectMatrixRepresentations_(selectMatrixRepresentations),
-      insertFreeOp_(insertFreeOp), userConfig_(std::move(cfg)) {
+    userConfig_(std::move(cfg)) {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
@@ -116,10 +115,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
 
-        if(insertFreeOp_) {
+        if(userConfig_.use_freeOps)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
-        }
+        if(userConfig_.explain_freeOps)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
+
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
 
         if(userConfig_.use_vectorized_exec) {

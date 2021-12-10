@@ -90,6 +90,9 @@ main(int argc, char** argv)
                 else if(args[argPos] == "--vec") {
                     user_config.use_vectorized_exec = true;
                 }
+                else if(args[argPos] == "--no-free") {
+                    user_config.use_freeOps = false;
+                }
                 else if(args[argPos] == "--explain") {
                     // Todo: parse --explain=[list,of,compiler,passes,to,explain]
                     user_config.explain_kernels = true;
@@ -137,7 +140,7 @@ main(int argc, char** argv)
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepresentations, true, user_config);
+        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepresentations, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

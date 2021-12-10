@@ -15,10 +15,7 @@
  */
 
 
-#ifndef DAPHNE_PROTOTYPE_DAPHNEUSERCONFIG_H
-#define DAPHNE_PROTOTYPE_DAPHNEUSERCONFIG_H
-
-
+#pragma once
 
 #include <vector>
 #include <string>
@@ -32,6 +29,7 @@ struct DaphneUserConfig {
 
     bool use_cuda = false;
     bool use_vectorized_exec = false;
+    bool use_freeOps = true;
 
     bool debug_llvm = false;
     bool explain_kernels = false;
@@ -40,6 +38,7 @@ struct DaphneUserConfig {
     bool explain_property_inference = false;
     bool explain_sql = false;
     bool explain_vectorized = false;
+    bool explain_freeOps = false;
 
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
@@ -53,4 +52,3 @@ struct DaphneUserConfig {
     std::string libdir;
     std::vector<std::string> library_paths;
 };
-#endif //DAPHNE_PROTOTYPE_DAPHNEUSERCONFIG_H
