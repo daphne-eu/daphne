@@ -127,12 +127,13 @@ public:
         auto gpu_task_len = 0ul;
         auto len = 0ul;
         auto batchsize = 100ul; // 100-rows-at-a-time
-
+        auto mem_required = 0ul;
         // due to possible broadcasting we have to check all inputs
         for (auto i = 0u; i < numInputs; ++i) {
             if (splits[i] == mlir::daphne::VectorSplit::ROWS) {
                 len = std::max(len, inputs[i]->getNumRows());
             }
+            mem_required += inputs[i]->bufferSize();
         }
 
         assert(numOutputs == 1 && "TODO");
@@ -141,24 +142,42 @@ public:
             auto zeroOut = combines[0] == mlir::daphne::VectorCombine::ADD;
             res = DataObjectFactory::create<DenseMatrix<VT>>(outRows[0], outCols[0], zeroOut);
         }
+        mem_required += res->bufferSize();
 
         // lock for aggregation combine
         std::mutex resLock;
 
-        #ifndef NDEBUG
-        std::cout << "spawning " << _numThreads - numCUDAworkerThreads << " CPU and " << numCUDAworkerThreads
-                << " CUDA worker threads" << std::endl;
-        #endif
-
 #ifdef USE_CUDA
         std::unique_ptr<TaskQueue> q_CUDA{};
-        auto taskRatioCUDA = 1.0f;
-
         DenseMatrix<VT>* res_cuda{};
-        if(ctx && ctx->useCUDA() && funcs.size() > 1) {
-            gpu_task_len = static_cast<size_t>(std::ceil(static_cast<float>(len) * taskRatioCUDA));
+        if(ctx && ctx->useCUDA() && funcs.size() > 1/* && buffer_usage < 0.99f*/) {
+            // ToDo: multi-device support :-P
+            auto cctx = ctx->getCUDAContext(0);
+            float taskRatioCUDA;
+            auto buffer_usage = static_cast<float>(mem_required) / static_cast<float>(cctx->getMemBudget());
 
+            // ToDo: more sophisticated method for task ratio choice
+            if(buffer_usage < 1.0)
+                taskRatioCUDA = 1.0;
+            else
+                taskRatioCUDA = 0.5;
+            auto row_mem = mem_required / len;
+
+#ifndef NDEBUG
+            std::cout << "Required memory (ins/outs): " << mem_required << "\nRequired mem/row: " << row_mem
+                      << "\nBuffer usage: " << buffer_usage << std::endl;
+#endif
+            gpu_task_len = static_cast<size_t>(std::ceil(static_cast<float>(len) * taskRatioCUDA));
+//            gpu_task_len = std::floor(cctx->getMemBudget() / row_mem);
+//            taskRatioCUDA = static_cast<float>(gpu_task_len) / static_cast<float>(len);
             numCUDAworkerThreads = ctx->cuda_contexts.size();
+            assert(numCUDAworkerThreads == 1 && "TODO: CUDA multi-device support");
+            auto blksize = static_cast<size_t>(std::floor(cctx->getMemBudget() / row_mem));
+            batchsize = blksize;
+#ifndef NDEBUG
+        std::cout << "gpu_task_len:  " << gpu_task_len << "\ntaskRatioCUDA: " << taskRatioCUDA << "\nBlock size: "
+                << blksize << std::endl;
+#endif
             q_CUDA = std::make_unique<BlockingTaskQueue>(len);
             for(uint32_t i=0; i<numCUDAworkerThreads; i++) {
                 workers[i] = new WorkerCPU(q_CUDA.get(), verbose);
@@ -170,12 +189,7 @@ public:
                     [[maybe_unused]] auto bla = static_cast<const DenseMatrix<VT>*>(inputs[i])->getValuesCUDA();
                 }
             }
-            // ToDo: more elaborate gpu block size with mem estimate
-            auto blksize = static_cast<size_t>(gpu_task_len / (numCUDAworkerThreads));
-            batchsize = blksize;
-#ifndef NDEBUG
-            std::cout << "gpu tasks from " << 0 << " to " << gpu_task_len << ". blkSize=" << blksize << std::endl;
-#endif
+
             res_cuda = res;
             if (combines[0] == mlir::daphne::VectorCombine::ROWS) {
                 res_cuda = res->slice(0, gpu_task_len);
@@ -200,6 +214,12 @@ public:
             }
             q_CUDA->closeInput();
         }
+#endif
+
+
+#ifndef NDEBUG
+        std::cout << "spawned " << _numThreads - numCUDAworkerThreads << " CPU and " << numCUDAworkerThreads
+                  << " CUDA worker threads" << std::endl;
 #endif
 
         auto numCPPworkerThreads = 0;

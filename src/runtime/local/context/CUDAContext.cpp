@@ -44,9 +44,13 @@ void CUDAContext::init() {
 
     size_t available; size_t total;
     cudaMemGetInfo(&available, &total);
+    // ToDo: make this a user config item
+    float mem_usage = 0.9f;
+    mem_budget = total * mem_usage;
 #ifndef NDEBUG
-    std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
-    std::cout << "available mem: " << available << " total mem: " << total << std::endl;
+    std::cout << "Using CUDA device " << device_id << ": " << device_properties.name  << "\nAvailable mem: "
+            << available << " Total mem: " << total << " using " << mem_usage * 10 << "% thereof -> " << mem_budget
+            << std::endl;
 #endif
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));

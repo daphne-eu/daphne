@@ -60,7 +60,7 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         const size_t nr2 = rhs->getNumRows();
         const size_t nc2 = rhs->getNumCols();
         assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
-        std::cout << "matmul float" << std::endl;
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
 
@@ -85,7 +85,7 @@ struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
         const size_t nr2 = rhs->getNumRows();
         const size_t nc2 = rhs->getNumCols();
         assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
-        std::cout << "matmul double" << std::endl;
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, false);
 
