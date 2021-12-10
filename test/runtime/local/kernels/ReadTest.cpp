@@ -62,7 +62,6 @@ TEST_CASE("Read - Frame", TAG_KERNELS) {
     CHECK(c1->get(1, 0) == 1.0);
     
     DataObjectFactory::destroy(f);
-    // TODO We cannot do this at the moment due to a bug regarding data sharing.
-//    DataObjectFactory::destroy(c0);
-//    DataObjectFactory::destroy(c1);
+    DataObjectFactory::destroy(c0);
+    DataObjectFactory::destroy(c1);
 }
