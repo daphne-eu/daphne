@@ -297,6 +297,7 @@ grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
             DataObjectFactory::destroy(m);
         else if(auto m = dynamic_cast<CSRMatrix<double> *>(mat))
             DataObjectFactory::destroy(m);
+        localData_.erase(filename);
     }
     return grpc::Status::OK;
 }
