@@ -105,7 +105,7 @@ main(int argc, char** argv)
                     if(device_count < 1)
                         std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
                     else { // NOLINT(readability-misleading-indentation)
-                        std::cout << "Available CUDA devices: " << device_count << std::endl;
+//                        std::cout << "Available CUDA devices: " << device_count << std::endl;
                         user_config.use_cuda = true;
                     }
                 }

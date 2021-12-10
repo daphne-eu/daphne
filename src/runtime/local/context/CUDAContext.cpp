@@ -44,7 +44,7 @@ void CUDAContext::init() {
 
     size_t available; size_t total;
     cudaMemGetInfo(&available, &total);
-#ifndef NDBEBUG
+#ifndef NDEBUG
     std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
     std::cout << "available mem: " << available << " total mem: " << total << std::endl;
 #endif
