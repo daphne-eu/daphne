@@ -145,12 +145,12 @@ struct trySparsityFromIthArg {
 
 std::vector<double> daphne::tryInferSparsity(Operation *op) {
     if(auto inferSparsityOp = llvm::dyn_cast<daphne::InferSparsity>(op))
-        // If the operation implement the sparsity inference interface, we apply
-        // that.
+        // If the operation implements the sparsity inference interface,
+        // we apply that.
         return inferSparsityOp.inferSparsity();
-    else {
-        // If the operation does not implement the sparsity inference interface,
-        // we utilize its sparsity inference traits.
+    else if(op->getNumResults() == 1) {
+        // If the operation does not implement the sparsity inference interface
+        // and has exactly one result, we utilize its sparsity inference traits.
         double sparsity = -1.0;
 
         if(op->hasTrait<CompletelyDense>()) {
@@ -186,5 +186,13 @@ std::vector<double> daphne::tryInferSparsity(Operation *op) {
         tryParamTraitUntil<u, trySparsityFromIthArg>::apply(sparsity, op);
 
         return {sparsity};
+    }
+    else {
+        // If the operation does not implement the sparsity inference interface
+        // and has zero or more than one results, we return unknown.
+        std::vector<double> sparsities;
+        for(size_t i = 0; i < op->getNumResults(); i++)
+            sparsities.push_back(-1);
+        return sparsities;
     }
 }

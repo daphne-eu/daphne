@@ -308,13 +308,14 @@ struct tryShapeFromIthArg {
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation* op) {
     if(auto inferShapeOp = llvm::dyn_cast<daphne::InferShape>(op))
-        // If the operation implement the shape inference interface, we apply
-        // that.
+        // If the operation implements the shape inference interface,
+        // we apply that.
         return inferShapeOp.inferShape();
-    else {
-        // If the operation does not implement the shape inference interface,
-        // we utilize its shape inference traits, or the inference interfaces
-        // for the number of rows and columns (separately).
+    else if(op->getNumResults() == 1) {
+        // If the operation does not implement the shape inference interface
+        // and has exactly one result, we utilize its shape inference traits,
+        // or the inference interfaces for the number of rows and columns
+        // (separately).
         
         ssize_t numRows = -1;
         ssize_t numCols = -1;
@@ -375,5 +376,13 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation* op) {
         // Note that all our shape inference traits assume that the operation
         // has exactly one result (which is the case for most DaphneIR ops).
         return {{numRows, numCols}};
+    }
+    else {
+        // If the operation does not implement the shape inference interface
+        // and has zero or more than one results, we return unknown.
+        std::vector<std::pair<ssize_t, ssize_t>> shapes;
+        for(size_t i = 0; i < op->getNumResults(); i++)
+            shapes.push_back({-1, -1});
+        return shapes;
     }
 }
