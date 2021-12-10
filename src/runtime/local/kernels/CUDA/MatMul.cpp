@@ -58,6 +58,7 @@ namespace CUDA {
             const DenseMatrix<T> *rhs, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
         auto ctx = dctx->getCUDAContext(0);
+        std::cout << "CUDA matmul" << std::endl;
 
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
@@ -90,7 +91,6 @@ namespace CUDA {
         using VT = typename DenseMatrix<T>::VT;
         auto ctx = dctx->getCUDAContext(0);
         cusparseHandle_t handle = ctx->getCusparseHandle();
-
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nr2 = rhs->getNumRows();
