@@ -35,6 +35,10 @@ def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
 //    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
 //}
 
+def InsertFreeOp : FunctionPass<"insert-freeop"> {
+    let constructor = "mlir::daphne::createInsertFreeOpPass()";
+}
+
 def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
     let constructor = "mlir::daphne::createLowerToLLVMPass()";
 }
@@ -57,6 +61,10 @@ def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {
 
 def SpecializeGenericFunctionsPass : FunctionPass<"specialize-generic-funcs"> {
     let constructor = "mlir::daphne::createSpecializeGenericFunctionsPass()";
+}
+
+def WhileLoopInvariantCodeMotionPass : FunctionPass<"while-loop-invariant-code-motion"> {
+    let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
 }
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

@@ -154,9 +154,14 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
                         const double sparsity = sparsities[i];
                         Value rv = op->getResult(i);
                         const Type rt = rv.getType();
-                        if(auto mt = rt.dyn_cast<daphne::MatrixType>())
+                        auto mt = rt.dyn_cast<daphne::MatrixType>();
+                        auto ft = rt.dyn_cast<daphne::FrameType>();
+                        if(mt)
                             rv.setType(mt.withSparsity(sparsity));
-                        else
+                        else if((ft && sparsity != -1) || !ft)
+                            // We do not support sparsity for frames, but if the
+                            // sparsity for a frame result is provided as
+                            // unknown (-1) that's okay.
                             throw std::runtime_error(
                                 "sparsity inference cannot set the shape of op " +
                                     op->getName().getStringRef().str() +

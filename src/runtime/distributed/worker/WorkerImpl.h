@@ -45,7 +45,10 @@ public:
                          ::distributed::ComputeResult *response) ;
     grpc::Status Transfer(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                          ::distributed::Matrix *response);
+                         ::distributed::Matrix *response);
+    grpc::Status FreeMem(::grpc::ServerContext *context,
+                         const ::distributed::StoredData *request,
+                         ::distributed::Empty *emptyMessage);
     distributed::Worker::AsyncService service_;
 private:
     uint64_t tmp_file_counter_ = 0;
@@ -63,7 +66,7 @@ private:
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
 
-    DenseMatrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols);
+    Matrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
     static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
 };

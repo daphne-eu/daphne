@@ -110,16 +110,15 @@ class DenseMatrix : public Matrix<ValueType>
      * 
      * @param numRows The exact number of rows.
      * @param numCols The exact number of columns.
-     * @param values The existing array of values.
+     * @param values A `std::shared_ptr` to an existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType> values) :
             Matrix<ValueType>(numRows, numCols),
             rowSkip(numCols),
             values(values),
             lastAppendedRowIdx(0),
             lastAppendedColIdx(0)
     {
-        assert(values && "values must not be null");
         host_dirty = true;
     }
             

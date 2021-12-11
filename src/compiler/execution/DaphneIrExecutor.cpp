@@ -42,9 +42,10 @@
 DaphneIrExecutor::DaphneIrExecutor(bool distributed,
                                    bool vectorized,
                                    bool selectMatrixRepresentations,
+                                   bool insertFreeOp,
                                    DaphneUserConfig cfg)
     : distributed_(distributed), vectorized_(vectorized), selectMatrixRepresentations_(selectMatrixRepresentations),
-      userConfig_(std::move(cfg)) {
+      insertFreeOp_(insertFreeOp), userConfig_(std::move(cfg)) {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
@@ -93,6 +94,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::createCanonicalizerPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
         pm.addPass(mlir::createCanonicalizerPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
 
         if(selectMatrixRepresentations_) {
@@ -106,6 +109,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
             pm.addPass(mlir::createCanonicalizerPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - canonicalization"));
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
@@ -114,6 +119,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
         pm.addPass(mlir::createCanonicalizerPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization"));
+        if(insertFreeOp_) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
+        }
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_));

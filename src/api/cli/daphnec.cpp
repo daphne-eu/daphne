@@ -130,7 +130,7 @@ main(int argc, char** argv)
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, selectMatrixRepresentations, user_config);
+        executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, selectMatrixRepresentations, true, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

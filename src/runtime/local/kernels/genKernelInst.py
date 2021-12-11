@@ -37,7 +37,15 @@ INDENT = 4 * " "
 DEFAULT_NEWRESPARAM = "res"
 
 def toCppType(t):
-    return "{}<{}>".format(t[0], t[1]) if isinstance(t, list) else t
+    if isinstance(t, list):
+        if len(t) == 2:
+            return "{}<{}>".format(t[0], t[1])
+        elif len(t) == 3:
+            return "{}<{}<{}>>".format(t[0], t[1], t[2])
+        else:
+            raise RuntimeError("unexpected nesting level of template types: {}".format(t))
+    else:
+        return t
 
 def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, outFile):
     # Extract some information.

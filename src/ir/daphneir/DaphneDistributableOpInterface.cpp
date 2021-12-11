@@ -38,7 +38,7 @@ Type getWrappedType(Value v) {
     // Remove all information on interesting properties except for the type.
     // This is necessary since these properties do not necessarily hold for a
     // distributed partition of the whole data object.
-    return wrappedType.dyn_cast<daphne::MatrixType>().withSameElementType();
+    return wrappedType.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
 }
 
 template<class EwBinaryOp>
@@ -57,7 +57,9 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(&block, block.begin());
 
-        auto addOp = builder.create<EwBinaryOp>(loc, argLhs, argRhs);
+        mlir::Type resTyOrig = op->getType();
+        mlir::Type resTy = resTyOrig.dyn_cast<mlir::daphne::MatrixType>().withSameElementTypeAndRepr();
+        auto addOp = builder.create<EwBinaryOp>(loc, resTy, argLhs, argRhs);
         builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{addOp});
     }
 
@@ -157,7 +159,8 @@ std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(
         mlir::OpBuilder::InsertionGuard guard(builder);
         builder.setInsertionPoint(&block, block.begin());
 
-        auto aggOp = builder.create<RowAggMaxOp>(loc, arg.getType(), arg);
+        mlir::Type resTy = getType().dyn_cast<mlir::daphne::MatrixType>().withSameElementTypeAndRepr();
+        auto aggOp = builder.create<RowAggMaxOp>(loc, resTy, arg);
         builder.create<daphne::ReturnOp>(loc, ArrayRef<Value>{aggOp});
     }
 

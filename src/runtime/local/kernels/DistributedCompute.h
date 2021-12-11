@@ -34,31 +34,31 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
+template<class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
+    static void apply(Handle<DTRes> *&res, const Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void distributedCompute(Handle<DT> *&res, const Handle<DT> **args, size_t num_args, const char *mlirCode, DCTX(ctx))
+template<class DTRes, class DTArgs>
+void distributedCompute(Handle<DTRes> *&res, const Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx))
 {
-    DistributedCompute<DT>::apply(res, args, num_args, mlirCode, ctx);
+    DistributedCompute<DTRes, DTArgs>::apply(res, args, num_args, mlirCode, ctx);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct DistributedCompute<DenseMatrix<double>>
+template<class DTRes>
+struct DistributedCompute<DTRes, Structure>
 {
-    static void apply(Handle<DenseMatrix<double>> *&res,
-                      const Handle<DenseMatrix<double>> **args,
+    static void apply(Handle<DTRes> *&res,
+                      const Handle<Structure> **args,
                       size_t num_args,
                       const char *mlirCode,
                       DCTX(ctx))
@@ -69,7 +69,7 @@ struct DistributedCompute<DenseMatrix<double>>
             DistributedData *data;
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
-        Handle<DenseMatrix<double>>::HandleMap resMap;        
+        typename Handle<DTRes>::HandleMap resMap;        
         size_t resultRows, resultColumns;
         // ****************************************************************************
         // Unary operations
@@ -88,7 +88,7 @@ struct DistributedCompute<DenseMatrix<double>>
                 
                 StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(argData)});
 
-                caller.addAsyncCall(argData.getChannel(), storedInfo, task);
+                caller.asyncComputeCall(argData.getChannel(), storedInfo, task);
             }
         }
         // ****************************************************************************
@@ -124,7 +124,7 @@ struct DistributedCompute<DenseMatrix<double>>
                         
                         StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                        caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                        caller.asyncComputeCall(lhsData.getChannel(), storedInfo, task);
                     }
                     else {
                         // TODO: send data between workers
@@ -160,7 +160,7 @@ struct DistributedCompute<DenseMatrix<double>>
                     
                         StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
 
-                        caller.addAsyncCall(lhsData.getChannel(), storedInfo, task);
+                        caller.asyncComputeCall(lhsData.getChannel(), storedInfo, task);
                     }
                     else {
                         // TODO: send data between workers
@@ -188,7 +188,7 @@ struct DistributedCompute<DenseMatrix<double>>
             DistributedData data(computeResult.outputs(0).stored(), lhsdata->getAddress(), lhsdata->getChannel());
             resMap.insert({*ix, data});
         }
-        res = new Handle<DenseMatrix<double>>(resMap, resultRows, resultColumns);        
+        res = new Handle<DTRes>(resMap, resultRows, resultColumns);        
     }
 };
 

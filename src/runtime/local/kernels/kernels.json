@@ -1374,6 +1374,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]]
         ]
     },
@@ -1589,7 +1590,8 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"]],
+            [["CSRMatrix", "double"]]
         ]
     },
     {
@@ -1599,17 +1601,21 @@
             "returnType": "void",
             "templateParams": [
                 {
-                    "name": "DT",
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgs",
                     "isDataType": true
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "Handle<DT> *&",
+                    "type": "Handle<DTRes> *&",
                     "name": "res"
                 },
                 {
-                    "type": "const Handle<DT> **",
+                    "type": "const Handle<DTArgs> **",
                     "name": "args"
                 },
                 {
@@ -1623,7 +1629,8 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"], "Structure"],
+            [["CSRMatrix", "double"], "Structure"]
         ]
     },
     {
@@ -1718,7 +1725,9 @@
             [["CSRMatrix", "uint32_t"]],
             [["CSRMatrix", "uint64_t"]],
             [["CSRMatrix", "size_t"]],
-            ["Frame"]
+            ["Frame"],
+            [["Handle", "DenseMatrix", "double"]],
+            [["Handle", "CSRMatrix", "double"]]
         ]
     },
     {
