@@ -1,6 +1,8 @@
 #!/bin/bash
 #TODO (issue ticket): write a parameters description & help printing for users of this file
 
+echo params: $*
+
 set -x
 ########################
 #export DEMO_USE_CUDA="-p gpu"
@@ -9,19 +11,25 @@ set -x
 [ -z "$DAPHNEparam_components_e" ] && export DAPHNEparam_components_e=30
 ########################
 
-tar xf build.tgz # unpack the workload
+echo "These files will be unpacked:"
+echo "--------------------------------------"
+tar xof build.tgz # unpack the workload
+echo "--------------------------------------"
+echo ""
 
 echo -e "\nInfo about the daphnec build/ dir is:"
 cat build/git_source_status_info
 
 echo -e "\nSpawning N new distributed worker daemons, N=" $NUMCORES
+set +x
 mkdir -p WORKERS/; rm WORKERS/* 2>/dev/null # clean workerlist
+set -x
 
-srun -J Dworkers --time=119 --mem-per-cpu=40G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
+srun -J Dworkers --time=119 --mem-per-cpu=20G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
 
 #until [ $(cat WORKERS.* | grep "Started Distributed Worker on " | wc -l) -ge $NUMCORES ]
 date  +"Time is: "%F+%T
-echo -n "\nWaiting for workers to become available ..."
+echo -en "\nWaiting for workers to become available ..."
 set +x
 until [ $(cd WORKERS; ls -1 WORKERS.* 2>/dev/null | wc -l) -ge $NUMCORES ]
 do
@@ -33,9 +41,12 @@ set -x
 date  +"Time is: "%F+%T
 
 echo -e "\nThis is the demo .daphne executable that will be run:"
+echo "--------------------------------------"
 export Run_Algorithm_name=components-42-time.daphne
 [ -z "$3" ] || export Run_Algorithm_name=$3
 cat ${Run_Algorithm_name}
+echo "--------------------------------------"
+echo ""
 
 echo -e "\nSuccessfully spawned N new distributed worker daemons, N=" $NUMCORES
 squeue -u ales.zamuda # print the generated worker list
@@ -59,12 +70,32 @@ export COO_to_CSS_scale_factor=1
 [ -z "$2" ] || export COO_to_CSS_scale_factor=$2 
 export Run_Algorithm_name=components_read.daphne
 [ -z "$3" ] || export Run_Algorithm_name=$3
-set +x; rm datasets/Amazon0601* 2>/dev/null; set -x
 SCRATCHfs_dir=/exa5/scratch/user/$(whoami)/
-mv datasets ${SCRATCHfs_dir}/
-ln -s ${SCRATCHfs_dir}/datasets/ .
-time srun --time=119 --mem=40G --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d2.sif python3 ./COO_to_CSV-distributed.py datasets/amazon0601.txt 403394 $NUMCORES $COO_to_CSS_scale_factor datasets/Amazon0601 COOFormat
-cat datasets/Amazon0601_handles.csv
+
+(echo "The estimated memory usage (thanks, according to model by Patrick Damme) for this run overhead is: "
+w=$NUMCORES sf=$COO_to_CSS_scale_factor G="57*(2^20)" v=403394 ; bc <<< "$sf * (2 * $G/$w  + $v*8 + $v*32/$w) / (2^30)"; echo GB ) | xargs
+
+if [[ "$4" == "--cached-datasets" ]]; then
+	# re-use the handles template and insert the new worker names
+	echo "REUSING cached datasets."
+	#mv datasets not-used-datasets
+	rm -rf datasets
+	ln -s /exa5/scratch/user/ales.zamuda/${NUMCORES}/datasets .
+	echo $DISTRIBUTED_WORKERS | sed -e 's/,/\n/g' | paste '-' datasets/handles-template | sed -e 's@\t.*,datasets@,datasets@g' > datasets/Amazon0601_handles.csv
+	echo "Handles:"
+	cat datasets/Amazon0601_handles.csv
+else
+	echo "Generating partitioned dataset"
+	set +x; rm datasets/Amazon0601* 2>/dev/null; set -x
+
+#	mv datasets ${SCRATCHfs_dir}/
+#	ln -s ${SCRATCHfs_dir}/datasets/ .
+
+	date  +"Time is: "%F+%T
+	time srun --time=119 --mem-per-cpu=20G --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d2.sif python3 ./COO_to_CSV-distributed.py datasets/amazon0601.txt 403394 $NUMCORES $COO_to_CSS_scale_factor datasets/Amazon0601 COOFormat
+	cat datasets/Amazon0601_handles.csv
+fi
+
 date  +"Time is: "%F+%T
 
 echo -e "\nReady to run this demo executable in a sequence using all distributed workers ..."
@@ -72,8 +103,16 @@ echo -e "\nReady to run this demo executable in a sequence using all distributed
 for DEMO_SEQUENCE in {1..5}; do
         echo -e "\n" Running the demo sequence no. $DEMO_SEQUENCE ...
 
-	time srun --time=119 --mem=40G ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec '${Run_Algorithm_name}' --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
+	time srun --time=119 --mem-per-cpu=20G ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec '${Run_Algorithm_name}' --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
 done
+
+if [[ "$4" == "--cached-datasets" ]]; then
+	echo "Not changing the cache."
+else
+	echo "Archiving the cache. (not.)"
+#	mv ${SCRATCHfs_dir}/datasets ../cache/datasets-$NUMCORES-$COO_to_CSS_scale_factor #preserve the dataset
+	#set +x; rm -rf ${SCRATCHfs_dir}/datasets/ 2>/dev/null; set -x
+fi
 
 # TEARING DOWN
 echo -e "\n\nTearing down distributed worker daemons ..."

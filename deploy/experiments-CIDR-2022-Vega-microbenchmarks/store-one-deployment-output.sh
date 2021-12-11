@@ -38,7 +38,7 @@ mkdir -p $logDIR
 logfile=$logDIR/output-$(date +%F_%T).log
 echo Logging to $logfile
 
-screen -L -Logfile $logfile ./deploy_on_Vega-2021-12-08-DAPHNE-components_read-Ales_Zamuda.sh $COO_to_CSS_scale_factor ${Run_Algorithm_name}.daphne
+screen -L -Logfile $logfile ./deploy_on_Vega-2021-12-08-DAPHNE-components_read-Ales_Zamuda.sh $COO_to_CSS_scale_factor ${Run_Algorithm_name}.daphne $5
 
 cp -p TIME.g ${logfile}.timing
 cp -p TIME ${logfile}.out

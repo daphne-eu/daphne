@@ -154,6 +154,8 @@ if (outputFormat == "COOFormat"):
     elif scaleFactor > 1: # blow up dataset
         workerFactor = int(scaleFactor / numWorkers)
         for i in range(numWorkers):
+            print(".", end="")
+
             outputFilename = outputFile + "_" + str(i) + ".csv"
 
             fcsv = open(outputFilename, 'w')
