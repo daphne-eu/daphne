@@ -1061,7 +1061,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Low-level auxiliary operations
     // ********************************************************************
 
-    if(func == "free") {
+    // TODO Remove this, we have InsertFreeOpPass now, which automatically
+    // inserts FreeOp where needed. For now, we leave this way open for legacy
+    // support.
+    if(func == "free") { // deprecated
         checkNumArgsExact(func, numArgs, 1);
         return builder.create<FreeOp>(
                 loc, args[0]

@@ -51,10 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, single-column", TAG_KERNEL
     DataObjectFactory::destroy(c0);
     DataObjectFactory::destroy(c0Exp);
     DataObjectFactory::destroy(arg);
-    // TODO We cannot do this at the moment, due to a bug in sharing the
-    // ownership of the underlying data (DenseMatrix should be constructed
-    // from a std::shared_ptr in Frame::getColumn()).
-//    DataObjectFactory::destroy(res);
+    DataObjectFactory::destroy(res);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {

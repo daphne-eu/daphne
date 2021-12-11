@@ -1374,6 +1374,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]]
         ]
     },
@@ -1782,7 +1783,9 @@
             [["CSRMatrix", "uint32_t"]],
             [["CSRMatrix", "uint64_t"]],
             [["CSRMatrix", "size_t"]],
-            ["Frame"]
+            ["Frame"],
+            [["Handle", "DenseMatrix", "double"]],
+            [["Handle", "CSRMatrix", "double"]]
         ]
     },
     {

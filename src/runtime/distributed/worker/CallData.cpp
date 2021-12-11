@@ -92,3 +92,30 @@ void TransferCallData::Proceed() {
         delete this;
     }
 }
+
+
+void FreeMemCallData::Proceed() {
+    if (status_ == CREATE)
+    {
+        // Make this instance progress to the PROCESS state.
+        status_ = PROCESS;
+
+        service_->RequestFreeMem(&ctx_, &storedData, &responder_, cq_, cq_,
+                                    this);
+    }
+    else if (status_ == PROCESS)
+    {
+        status_ = FINISH;
+
+        new FreeMemCallData(worker, cq_);
+
+        grpc::Status status = worker->FreeMem(&ctx_, &storedData, &emptyMessage);
+
+        responder_.Finish(emptyMessage, status, this);
+    }
+    else
+    {
+        GPR_ASSERT(status_ == FINISH);
+        delete this;
+    }
+}
