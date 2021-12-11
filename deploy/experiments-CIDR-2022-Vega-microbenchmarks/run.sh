@@ -120,7 +120,7 @@ for DEMO_SEQUENCE in {1..5}; do
 	time srun --time=119 --mem-per-cpu=300G --partition largemem ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 \
 		singularity exec ../d.sif bash \
 			-c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec '${Run_Algorithm_name}' --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | 
-		awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}' | 
+		awk '{a[NR]=$0} END {printf("%s seconds for compute %s %s", a[2]/1000000000, a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}' | 
 		( cat | grep "DenseMatrix(" | awk '{for (i=1; i<=(NF>15?15:NF); i++) printf($i" "); if (NF>15) {printf(" ... ");for (i=(NF-15)>0?NF-25:1; i<=NF; i++) printf($i" "); print""}}') 
 	set +x
 done
