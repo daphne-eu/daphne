@@ -155,6 +155,8 @@ if (outputFormat == "COOFormat"):
         workerFactor = int(scaleFactor / numWorkers)
         for i in range(numWorkers):
             print(".", end="")
+            if (i%50 == 0)
+		print("")
 
             outputFilename = outputFile + "_" + str(i) + ".csv"
 
