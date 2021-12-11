@@ -164,7 +164,19 @@ void VectorizeComputationsPass::runOnOperation()
             nullptr);
         Block *bodyBlock = builder.createBlock(&pipelineOp.body());
 
-        for(auto argTy : ValueRange(operands).getTypes()) {
+        for(size_t i = 0u; i < operands.size(); ++i) {
+            auto argTy = operands[i].getType();
+            switch (vSplitAttrs[i].cast<daphne::VectorSplitAttr>().getValue()) {
+            case daphne::VectorSplit::ROWS: {
+                auto matTy = argTy.cast<daphne::MatrixType>();
+                // only remove row information
+                argTy = matTy.withShape(-1, matTy.getNumCols());
+                break;
+            }
+            case daphne::VectorSplit::NONE:
+                // keep any size information
+                break;
+            }
             bodyBlock->addArgument(argTy);
         }
 
@@ -210,7 +222,13 @@ void VectorizeComputationsPass::runOnOperation()
                 });
             }
         }
-        // TODO: remove size information in bodyBlock
+        bodyBlock->walk([](Operation* op) {
+            for (auto resVal : op->getResults()) {
+                if (auto ty = resVal.getType().dyn_cast<daphne::MatrixType>()) {
+                    resVal.setType(ty.withShape(-1, -1));
+                }
+            }
+        });
         builder.setInsertionPointToEnd(bodyBlock);
         builder.create<daphne::ReturnOp>(loc, results);
     }
