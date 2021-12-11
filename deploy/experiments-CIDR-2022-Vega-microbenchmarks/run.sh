@@ -26,8 +26,9 @@ echo -e "\nSpawning N new distributed worker daemons, N=" $NUMCORES
 set +x
 mkdir -p WORKERS/; rm WORKERS/* 2>/dev/null # clean workerlist
 
+#20GB works fine. lowered to 10GB, hopefully also works. Try lowering even to 5GB at next success.
 set -x
-srun -J Dworkers --time=119 --mem-per-cpu=20G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
+srun -J Dworkers --time=119 --mem-per-cpu=10G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../d.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
 set +x
 
 #until [ $(cat WORKERS.* | grep "Started Distributed Worker on " | wc -l) -ge $NUMCORES ]
@@ -116,7 +117,7 @@ for DEMO_SEQUENCE in {1..5}; do
 		#echo "... only the mixed components:"
 		#cat | grep "DenseMatrix(" | awk '{for (i=1; i<=NF; i++) if ($i-i+2) printf("%s ", $i-i+2); print"";}'
 	set -x
-	time srun --time=119 --mem-per-cpu=20G ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 \
+	time srun --time=119 --mem-per-cpu=300G --partition largemem ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 \
 		singularity exec ../d.sif bash \
 			-c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphnec '${Run_Algorithm_name}' --args f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | 
 		awk '{a[NR]=$0} END {print(a[2]/1000000000, "seconds for compute", a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}' | 
