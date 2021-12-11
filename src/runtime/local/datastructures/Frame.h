@@ -375,7 +375,10 @@ public:
             os << std::endl;
         }
     }
-    
+
+    Frame* slice(size_t rl, size_t ru) override {
+        throw std::runtime_error("Not implemented");
+    }
 };
 
 std::ostream & operator<<(std::ostream & os, const Frame & obj);
