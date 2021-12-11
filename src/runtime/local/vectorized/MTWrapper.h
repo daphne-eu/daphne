@@ -49,7 +49,7 @@ public:
     ~MTWrapper() = default;
 
     void execute(std::function<void(DenseMatrix<VT> ***, Structure **)> func,
-                 DenseMatrix<VT> *&res,
+                 DenseMatrix<VT> ***res,
                  Structure **inputs,
                  size_t numInputs,
                  size_t numOutputs,
@@ -78,13 +78,15 @@ public:
             workerThreads[i] = std::thread(runWorker, workers[i]);
         }
 
-        assert(numOutputs == 1 && "TODO");
         // output allocation for row-wise combine
-        if(res == nullptr && outRows[0] != -1 && outCols[0] != -1) {
-            auto zeroOut = combines[0] == mlir::daphne::VectorCombine::ADD;
-            res = DataObjectFactory::create<DenseMatrix<VT>>(outRows[0], outCols[0], zeroOut);
+        for(size_t i = 0; i < numOutputs; ++i) {
+            if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
+                auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
+                *(res[i]) = DataObjectFactory::create<DenseMatrix<VT>>(outRows[i], outCols[i], zeroOut);
+            }
         }
         // lock for aggregation combine
+        // TODO: multiple locks per output
         std::mutex resLock;
 
         // create tasks and close input
@@ -107,8 +109,8 @@ public:
                     startChunk,
                     endChunk,
                     batchsize,
-                    outRows[0],
-                    outCols[0]},
+                    outRows,
+                    outCols},
                 resLock,
                 res
             ));
@@ -140,7 +142,7 @@ public:
     ~MTWrapper() = default;
 
     void execute(std::function<void(CSRMatrix<VT> ***, Structure **)> func,
-                 CSRMatrix<VT> *&res,
+                 CSRMatrix<VT> ***res,
                  Structure **inputs,
                  size_t numInputs,
                  size_t numOutputs,
@@ -170,7 +172,7 @@ public:
         }
 
         assert(numOutputs == 1 && "TODO");
-        assert(res == nullptr && "TODO");
+        assert(*(res[0]) == nullptr && "TODO");
         VectorizedDataSink<CSRMatrix<VT>> dataSink(combines[0], outRows[0], outCols[0]);
 
         // create tasks and close input
@@ -193,8 +195,8 @@ public:
                     startChunk,
                     endChunk,
                     batchsize,
-                    outRows[0],
-                    outCols[0]},
+                    outRows,
+                    outCols},
                 dataSink
             ));
             startChunk = endChunk;
@@ -204,7 +206,7 @@ public:
         // barrier (wait for completed computation)
         for(uint32_t i = 0 ; i < _numThreads ; i++)
             workerThreads[i].join();
-        res = dataSink.consume();
+        *(res[0]) = dataSink.consume();
 
         // cleanups
         for(uint32_t i = 0 ; i < _numThreads ; i++)

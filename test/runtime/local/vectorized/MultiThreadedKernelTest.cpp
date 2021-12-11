@@ -56,12 +56,13 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
     MTWrapper<DT> *wrapper = new MTWrapper<DT>(4);
+    DT **outputs[] = {&r2};
     Structure *inputs[] = {m1, m2};
     int64_t outRows[] = {1234};
     int64_t outCols[] = {10};
     VectorSplit splits[] = {VectorSplit::ROWS, VectorSplit::ROWS};
     VectorCombine combines[] = {VectorCombine::ROWS};
-    wrapper->execute(&funAdd<DT>, r2, inputs, 2, 1, outRows, outCols, splits, combines, false); //multi-threaded
+    wrapper->execute(&funAdd<DT>, outputs, inputs, 2, 1, outRows, outCols, splits, combines, false); //multi-threaded
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
@@ -83,12 +84,13 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, nullptr); //single-threaded
     MTWrapper<DT> *wrapper = new MTWrapper<DT>(4);
+    DT **outputs[] = {&r2};
     Structure *inputs[] = {m1, m2};
     int64_t outRows[] = {1234};
     int64_t outCols[] = {10};
     VectorSplit splits[] = {VectorSplit::ROWS, VectorSplit::ROWS};
     VectorCombine combines[] = {VectorCombine::ROWS};
-    wrapper->execute(&funMul<DT>, r2, inputs, 2, 1, outRows, outCols, splits, combines, false); //multi-threaded
+    wrapper->execute(&funMul<DT>, outputs, inputs, 2, 1, outRows, outCols, splits, combines, false); //multi-threaded
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 

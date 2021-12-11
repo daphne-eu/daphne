@@ -106,8 +106,8 @@ struct CompiledPipelineTaskData {
     uint64_t _rl;    // row lower index
     uint64_t _ru;    // row upper index
     uint64_t _bsize; // batch size (data binding)
-    int64_t _wholeResultRows; // number of rows of the complete result
-    int64_t _wholeResultCols; // number of cols of the complete result
+    int64_t *_wholeResultRows; // number of rows of the complete result
+    int64_t *_wholeResultCols; // number of cols of the complete result
 
     CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {
         CompiledPipelineTaskData<DT> flatCopy = *this;
@@ -163,84 +163,93 @@ class CompiledPipelineTask : public CompiledPipelineTaskBase<DT> {};
 template<typename VT>
 class CompiledPipelineTask<DenseMatrix<VT>> : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
     std::mutex &_resLock;
-    DenseMatrix<VT> *&_res;
+    DenseMatrix<VT> ***_res;
     using CompiledPipelineTaskBase<DenseMatrix<VT>>::_data;
 public:
-    CompiledPipelineTask(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> *&res)
+    CompiledPipelineTask(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
         : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
 
     void execute() override {
         // local add aggregation to minimize locking
-        DenseMatrix<VT> *localAddRes = nullptr;
-        DenseMatrix<VT> *lres = nullptr;
+        std::vector<DenseMatrix<VT>*> localAddRes(_data._numOutputs);
+        std::vector<DenseMatrix<VT>*> localResults(_data._numOutputs);
         for(uint64_t r = _data._rl ; r < _data._ru ; r += _data._bsize) {
             //create zero-copy views of inputs/outputs
             uint64_t r2 = std::min(r + _data._bsize, _data._ru);
 
             auto linputs = this->createFuncInputs(r, r2);
-            DenseMatrix<VT> **outputs[] = {&lres};
+            std::vector<DenseMatrix<VT>**> outputs;
+            for (auto &lres : localResults) {
+                outputs.push_back(&lres);
+            }
             //execute function on given data binding (batch size)
-            _data._func(outputs, linputs.data());
-            accumulateOutputs(lres, localAddRes, r, r2);
+            _data._func(outputs.data(), linputs.data());
+            accumulateOutputs(localResults, localAddRes, r, r2);
 
             // cleanup
-            DataObjectFactory::destroy(lres);
-            lres = nullptr;
+            for (auto &localResult : localResults) {
+                DataObjectFactory::destroy(localResult);
+                localResult = nullptr;
+            }
             this->cleanupFuncInputs(std::move(linputs));
         }
 
-        if(_data._combines[0] == VectorCombine::ADD) {
-            _resLock.lock();
-            if(_res == nullptr) {
-                _res = localAddRes;
-                _resLock.unlock();
-            }
-            else {
-                ewBinaryMat(BinaryOpCode::ADD, _res, _res, localAddRes, nullptr);
-                _resLock.unlock();
-                //cleanup
-                DataObjectFactory::destroy(localAddRes);
+        for(size_t o = 0; o < _data._numOutputs; ++o) {
+            if(_data._combines[o] == VectorCombine::ADD) {
+                auto &result = *(_res[o]);
+                _resLock.lock();
+                if(result == nullptr) {
+                    result = localAddRes[o];
+                    _resLock.unlock();
+                }
+                else {
+                    ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], nullptr);
+                    _resLock.unlock();
+                    //cleanup
+                    DataObjectFactory::destroy(localAddRes[o]);
+                }
             }
         }
     }
 
 private:
-    void accumulateOutputs(DenseMatrix<VT> *&lres,
-                           DenseMatrix<VT> *&localAddRes,
+    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
+                           std::vector<DenseMatrix<VT> *> &localAddRes,
                            uint64_t rowStart,
                            uint64_t rowEnd) {
         //TODO: in-place computation via better compiled pipelines
         //TODO: multi-return
-        for(auto o = 0u ; o < 1 ; ++o) {
+        for(auto o = 0u ; o < _data._numOutputs ; ++o) {
+            auto &result = *(_res[o]);
             switch (_data._combines[o]) {
             case VectorCombine::ROWS: {
-                auto slice = _res->slice(rowStart, rowEnd);
+                auto slice = result->slice(rowStart, rowEnd);
                 for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
                     for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
-                        slice->set(i, j, lres->get(i, j));
+                        slice->set(i, j, localResults[o]->get(i, j));
                     }
                 }
                 DataObjectFactory::destroy(slice);
                 break;
             }
             case VectorCombine::COLS: {
-                auto slice = _res->slice(0, _data._outRows[o], rowStart, rowEnd);
+                auto slice = result->slice(0, _data._outRows[o], rowStart, rowEnd);
                 for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
                     for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
-                        slice->set(i, j, lres->get(i, j));
+                        slice->set(i, j, localResults[o]->get(i, j));
                     }
                 }
                 DataObjectFactory::destroy(slice);
                 break;
             }
             case VectorCombine::ADD: {
-                if(localAddRes == nullptr) {
+                if(localAddRes[o] == nullptr) {
                     // take lres and reset it to nullptr
-                    localAddRes = lres;
-                    lres = nullptr;
+                    localAddRes[o] = localResults[o];
+                    localResults[o] = nullptr;
                 }
                 else {
-                    ewBinaryMat(BinaryOpCode::ADD, localAddRes, localAddRes, lres, nullptr);
+                    ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
                 }
                 break;
             }
@@ -263,18 +272,19 @@ public:
         : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSink(resultSink) {}
 
     void execute() override {
+        assert(_data._numOutputs == 1 && "TODO");
         size_t localResNumRows;
         size_t localResNumCols;
         switch(_data._combines[0]) {
         case VectorCombine::ROWS: {
-            assert(_data._wholeResultCols != -1 && "TODO");
+            assert(_data._wholeResultCols[0] != -1 && "TODO");
             localResNumRows = _data._ru - _data._rl;
-            localResNumCols = _data._wholeResultCols;
+            localResNumCols = _data._wholeResultCols[0];
             break;
         }
         case VectorCombine::COLS: {
-            assert(_data._wholeResultRows != -1 && "TODO");
-            localResNumRows = _data._wholeResultRows;
+            assert(_data._wholeResultRows[0] != -1 && "TODO");
+            localResNumRows = _data._wholeResultRows[0];
             localResNumCols = _data._ru - _data._rl;
             break;
         }
