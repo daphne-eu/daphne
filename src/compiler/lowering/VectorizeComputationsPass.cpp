@@ -28,7 +28,145 @@ using namespace mlir;
 
 namespace
 {
-struct VectorizeComputationsPass
+    /**
+     * @brief Recursive function checking if the given value is transitively dependant on the operation `op`.
+     * @param value The value to check
+     * @param op The operation to check
+     * @return true if there is a dependency, false otherwise
+     */
+    bool valueDependsOnResultOf(Value value, Operation *op) {
+        if (auto defOp = value.getDefiningOp()) {
+            if (defOp == op)
+                return true;
+#if 0
+            // TODO This crashes if defOp and op are not in the same block.
+            // At the same time, it does not seem to be strictly required.
+            if (defOp->isBeforeInBlock(op))
+                // can't have results of `op` as inputs, as it is defined before
+                return false;
+#endif
+            for (auto operand : defOp->getOperands()) {
+                if (valueDependsOnResultOf(operand, op))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * @brief Check if the vectorizable operation can directly be fused into the pipeline, without requiring any other
+     * operation to be fused first.
+     * @param opBefore The vectorizable operation to check
+     * @param pipeline The pipeline
+     * @return true if it can be directly fused, false otherwise
+     */
+    bool isDirectlyFusible(daphne::Vectorizable opBefore, const std::vector<daphne::Vectorizable>& pipeline) {
+        for (auto pipeOp : pipeline) {
+            for (auto operand : pipeOp->getOperands()) {
+                if (std::find(pipeline.begin(), pipeline.end(), operand.getDefiningOp()) != pipeline.end()) {
+                    // transitive dependencies inside the pipeline are of course fine.
+                    continue;
+                }
+                if (operand.getDefiningOp() != opBefore && valueDependsOnResultOf(operand, opBefore)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
+     * @brief Greedily fuses the operation into the pipeline if possible.
+     * @param operationToPipelineIx A map of operations to their index in the pipelines collection
+     * @param pipelines The collection of pipelines
+     * @param currentPipelineIx The index of the current pipeline into which we want to possibly fuse the operation
+     * @param operationToCheck The operation we possibly want to fuse into the current pipeline
+     */
+    void greedyPipelineFusion(std::map<daphne::Vectorizable, size_t> &operationToPipelineIx,
+                              std::vector<std::vector<daphne::Vectorizable>> &pipelines,
+                              size_t currentPipelineIx, daphne::Vectorizable operationToCheck) {
+        auto &currentPipeline = pipelines[currentPipelineIx];
+        auto existingPipelineIt = operationToPipelineIx.find(operationToCheck);
+        if(existingPipelineIt != operationToPipelineIx.end()) {
+            // existing pipeline is sure to be after the current pipeline (due to reverse iteration order)
+            auto existingPipelineIx = existingPipelineIt->second;
+            auto &existingPipeline = pipelines[existingPipelineIx];
+            for (auto op : currentPipeline) {
+                if (!isDirectlyFusible(op, existingPipeline)) {
+                    continue;
+                }
+            }
+            // append existing to current
+            currentPipeline.insert(currentPipeline.end(), existingPipeline.begin(), existingPipeline.end());
+            for (auto vectorizable : existingPipeline) {
+                operationToPipelineIx[vectorizable] = currentPipelineIx;
+            }
+            // just make it empty, it will be skipped later. Ixs changes and reshuffling is therefore not necessary.
+            existingPipeline.clear();
+        }
+        else if(isDirectlyFusible(operationToCheck, currentPipeline)) {
+            currentPipeline.push_back(operationToCheck);
+            operationToPipelineIx[operationToCheck] = currentPipelineIx;
+        }
+    }
+
+    /**
+     * @brief Moves operation which are between the operations, which should be fused into a single pipeline, before
+     * or after the position where the pipeline will be placed.
+     * @param pipelinePosition The position where the pipeline will be
+     * @param pipeline The pipeline for which this function should be executed
+     */
+    void movePipelineInterleavedOperations(Block::iterator pipelinePosition, const std::vector<daphne::Vectorizable> &pipeline) {
+        // first operation in pipeline vector is last in IR, and the last is the first
+        auto startPos = pipeline.back()->getIterator();
+        auto endPos = pipeline.front()->getIterator();
+        auto currSkip = pipeline.rbegin();
+        std::vector<Operation*> moveBeforeOps;
+        std::vector<Operation*> moveAfterOps;
+        for(auto it = startPos; it != endPos; ++it) {
+            if (it == (*currSkip)->getIterator()) {
+                ++currSkip;
+                continue;
+            }
+
+            bool dependsOnPipeline = false;
+            auto pipelineOpsBeforeIt = currSkip;
+            while (--pipelineOpsBeforeIt != pipeline.rbegin()) {
+                for (auto operand : it->getOperands()) {
+                    if(valueDependsOnResultOf(operand, *pipelineOpsBeforeIt)) {
+                        dependsOnPipeline = true;
+                        break;
+                    }
+                }
+                if (dependsOnPipeline) {
+                    break;
+                }
+            }
+            // check first pipeline op
+            for (auto operand : it->getOperands()) {
+                if(valueDependsOnResultOf(operand, *pipelineOpsBeforeIt)) {
+                    dependsOnPipeline = true;
+                    break;
+                }
+            }
+            if (dependsOnPipeline) {
+                moveAfterOps.push_back(&(*it));
+            }
+            else {
+                moveBeforeOps.push_back(&(*it));
+            }
+        }
+
+        for (auto moveBeforeOp : moveBeforeOps) {
+            moveBeforeOp->moveBefore(pipelinePosition->getBlock(), pipelinePosition);
+        }
+        for (auto moveAfterOp : moveAfterOps) {
+            moveAfterOp->moveAfter(pipelinePosition->getBlock(), pipelinePosition);
+            pipelinePosition = moveAfterOp->getIterator();
+        }
+    }
+
+    struct VectorizeComputationsPass
     : public PassWrapper<VectorizeComputationsPass, OperationPass<FuncOp>>
 {
     void runOnOperation() final;
@@ -46,6 +184,8 @@ void VectorizeComputationsPass::runOnOperation()
         return ty.isa<daphne::MatrixType>();
       });
     };
+    // TODO: fuse pipelines that have the matching inputs, even if no output of the one pipeline is used by the other.
+    //  This requires multi-returns in way more cases, which is not implemented yet.
 
     // Find vectorizable operations and their inputs of vectorizable operations
     std::vector<daphne::Vectorizable> vectOps;
@@ -101,17 +241,17 @@ void VectorizeComputationsPass::runOnOperation()
         auto itRange = possibleMerges.equal_range(v);
         for(auto it = itRange.first; it != itRange.second; ++it) {
             auto operandVectorizable = it->second;
-            // TODO: more in depth check for if merging is possible, currently this is very conservative
-            if(operandVectorizable->hasOneUse()) {
-                pipelines[pipelineIx].push_back(operandVectorizable);
-                operationToPipelineIx[operandVectorizable] = pipelineIx;
-            }
+            // TODO: this fuses greedily, the first pipeline we can fuse this operation into, we do. improve
+            greedyPipelineFusion(operationToPipelineIx, pipelines, pipelineIx, operandVectorizable);
         }
     }
 
     OpBuilder builder(func);
     // Create the `VectorizedPipelineOp`s
     for(auto pipeline : pipelines) {
+        if (pipeline.empty()) {
+            continue;
+        }
         auto valueIsPartOfPipeline = [&](Value operand)
         {
           return llvm::any_of(pipeline, [&](daphne::Vectorizable lv)
@@ -125,9 +265,11 @@ void VectorizeComputationsPass::runOnOperation()
         std::vector<Value> outRows;
         std::vector<Value> outCols;
 
-        // first op in pipeline is last in DAG
-        // TODO: more complex behaviour will be necessary here once `hasOneUse` check above gets more complex
+        // first op in pipeline is last in IR
         builder.setInsertionPoint(pipeline.front());
+        // move all operations, between the operations that will be part of the pipeline, before or after the
+        // completed pipeline
+        movePipelineInterleavedOperations(builder.getInsertionPoint(), pipeline);
         for(auto vIt = pipeline.rbegin(); vIt != pipeline.rend(); ++vIt) {
             auto v = *vIt;
             auto vSplits = v.getVectorSplits();
@@ -153,7 +295,12 @@ void VectorizeComputationsPass::runOnOperation()
                 outCols.push_back(outSize.second);
             }
         }
-        auto loc = pipeline.front().getLoc();
+        std::vector<Location> locs;
+        locs.reserve(pipeline.size());
+        for (auto op : pipeline) {
+            locs.push_back(op->getLoc());
+        }
+        auto loc = builder.getFusedLoc(locs);
         auto pipelineOp = builder.create<daphne::VectorizedPipelineOp>(loc,
             ValueRange(results).getTypes(),
             operands,
