@@ -47,6 +47,9 @@ namespace CUDA {
     template<typename VTres, typename VTlhs, typename VTrhs>
     void ColBind<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>>::apply(DenseMatrix<VTres> *& res,
             const DenseMatrix<VTlhs> * lhs, const DenseMatrix<VTrhs> * rhs, DCTX(dctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA cbind op=" << std::endl;
+#endif
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();

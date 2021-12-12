@@ -28,6 +28,9 @@ namespace CUDA {
     template<typename VT>
     void EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>::apply(BinaryOpCode opCode, DenseMatrix<VT> *&res,
             const DenseMatrix<VT> *lhs, VT rhs, DCTX(ctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA EwBinaryMatSca op=" << static_cast<int>(opCode) << std::endl;
+#endif
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
 

@@ -80,6 +80,9 @@ namespace CUDA {
     template<class VT>
     void Solve<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>>::apply
             (DenseMatrix<VT> *&res, const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, DCTX(dctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA solve op=" << std::endl;
+#endif
         auto ctx = dctx->getCUDAContext(0);
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();

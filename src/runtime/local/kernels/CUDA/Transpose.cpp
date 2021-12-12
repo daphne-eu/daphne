@@ -57,6 +57,9 @@ namespace CUDA {
     template<typename VT>
     void Transpose<DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
             DCTX(dctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA transpose op=" << std::endl;
+#endif
         const size_t nr1 = arg->getNumRows();
         const size_t nc1 = arg->getNumCols();
 

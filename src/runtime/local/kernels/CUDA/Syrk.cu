@@ -52,6 +52,9 @@ namespace CUDA {
     template<typename VTres, typename VTarg>
     void Syrk<DenseMatrix<VTres>, DenseMatrix<VTarg>>::apply(DenseMatrix <VTres> *&res, const DenseMatrix <VTarg> *arg,
             DCTX(dctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA Syrk op=" << std::endl;
+#endif
         using VT = typename DenseMatrix<VTres>::VT;
         auto ctx = dctx->getCUDAContext(0);
 

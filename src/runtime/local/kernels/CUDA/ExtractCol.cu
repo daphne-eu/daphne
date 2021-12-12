@@ -34,7 +34,9 @@ namespace CUDA {
     template<class DTRes, class DTArg, class DTSel>
     void ExtractCol<DenseMatrix<DTRes>, DenseMatrix<DTArg>, DenseMatrix<DTSel>>::apply(DenseMatrix<DTRes>*& res,
             const DenseMatrix<DTArg>* arg, const DenseMatrix<DTSel>* sel, DCTX(ctx)) {
-
+#ifndef NDEBUG
+        std::cout << "----- CUDA extractCol op=" << std::endl;
+#endif
         if(res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<DTRes>>(arg->getNumRows(), sel->getNumRows(), false,
                     ALLOCATION_TYPE::CUDA_ALLOC);

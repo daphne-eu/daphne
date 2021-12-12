@@ -41,6 +41,9 @@ namespace CUDA {
     template<typename VT>
     void AggCol<DenseMatrix<VT>, DenseMatrix<VT>>::apply(AggOpCode opCode, DenseMatrix<VT> *&res,
             const DenseMatrix<VT> *arg, DCTX(ctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA AggCol op=" << static_cast<int>(opCode) << std::endl;
+#endif
         const size_t numCols = arg->getNumCols();
 
         int blockSize;

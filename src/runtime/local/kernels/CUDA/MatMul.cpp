@@ -74,9 +74,15 @@ namespace CUDA {
         VT *d_res = res->getValuesCUDA();
 
         if(nc2 == 1) {
+#ifndef NDEBUG
+            std::cout << "----- CUDA gemv op=" << std::endl;
+#endif
             launch_cublas_gemv<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_lhs, d_rhs, d_res);
         }
         else {
+#ifndef NDEBUG
+            std::cout << "----- CUDA gemm op=" << std::endl;
+#endif
 //             reverse order to accommodate cublas' col major format (-> res = rhs * lhs)
             launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_lhs, d_rhs, d_res);
         }

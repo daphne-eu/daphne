@@ -88,6 +88,9 @@ namespace CUDA {
                                                                                         const DenseMatrix<VTlhs> *lhs,
                                                                                         const DenseMatrix<VTrhs> *rhs,
                                                                                         DCTX(dctx)) {
+#ifndef NDEBUG
+        std::cout << "----- CUDA EwBinaryMat op=" << static_cast<int>(opCode) << std::endl;
+#endif
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
