@@ -550,7 +550,8 @@ public:
             callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i]);
 
         std::vector<Value> newOperands;
-        auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF64Type());
+//        auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF64Type());
+        auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF32Type());
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
 
         // Variadic operand.

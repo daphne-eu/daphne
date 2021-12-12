@@ -74,6 +74,7 @@
                 "name":  ["CPP"],
                 "instantiations": [
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
                     [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
@@ -398,6 +399,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
     },
