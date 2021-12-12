@@ -200,7 +200,7 @@ void VectorizeComputationsPass::runOnOperation()
         for(auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
-            if(defOp && isMatrixComputation(defOp)) {
+            if(defOp && v->getBlock() == defOp->getBlock() && isMatrixComputation(defOp)) {
                 auto split = std::get<1>(e);
                 // find the corresponding `OpResult` to figure out combine
                 auto opResult = *llvm::find(defOp->getResults(), operand);
