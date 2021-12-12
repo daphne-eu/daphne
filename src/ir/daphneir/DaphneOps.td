@@ -220,11 +220,11 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]>;
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth, CUDASupport]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, ]>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth, ]>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative, EwSparseIfEither]>;
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [CUDASupport]>;
-def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [CUDASupport]>;
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, []>;
+def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, []>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar>;
 def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", FloatScalar>;
 
@@ -327,8 +327,7 @@ def Daphne_RowAggMeanOp   : Daphne_RowAggOp<"meanRow"  , FloatScalar>;
 def Daphne_RowAggVarOp    : Daphne_RowAggOp<"varRow"   , FloatScalar>;
 def Daphne_RowAggStddevOp : Daphne_RowAggOp<"stddevRow", FloatScalar>;
 
-def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar, NumScalar, [CUDASupport,
-        DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
+def Daphne_ColAggSumOp    : Daphne_ColAggOp<"sumCol"   , NumScalar, NumScalar, [DeclareOpInterfaceMethods<VectorizableOpInterface>]>;
 def Daphne_ColAggMinOp    : Daphne_ColAggOp<"minCol"   , AnyScalar>;
 def Daphne_ColAggMaxOp    : Daphne_ColAggOp<"maxCol"   , AnyScalar>;
 def Daphne_ColAggIdxMinOp : Daphne_ColAggOp<"idxminCol", NumScalar, Size>;
@@ -402,7 +401,7 @@ def Daphne_CovOp : Daphne_Op<"cov"> {
 // ****************************************************************************
 
 def Daphne_ExtractOp : Daphne_Op<"extract", [
-    NumRowsFromIthArg<1>, NumColsFromIthArgNumRows<2>, CUDASupport
+    NumRowsFromIthArg<1>, NumColsFromIthArgNumRows<2>,
 ]> {
     let summary = "Copies the specified rows and columns from the argument to the result.";
 
@@ -418,7 +417,7 @@ def Daphne_ExtractOp : Daphne_Op<"extract", [
 def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    NumRowsFromIthArg<1>, NumColsFromArg, CUDASupport
+    NumRowsFromIthArg<1>, NumColsFromArg,
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 
@@ -449,7 +448,7 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArg, NumColsFromIthArgNumRows<1>, CUDASupport
+    NumRowsFromArg, NumColsFromIthArgNumRows<1>,
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -497,7 +496,7 @@ def Daphne_ReshapeOp : Daphne_Op<"reshape", [
 
 def Daphne_TransposeOp : Daphne_Op<"transpose", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport
+    NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg,
 ]> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
@@ -519,7 +518,7 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
+    NumRowsFromAllArgs, NumColsFromSumOfAllArgs,
 ]>;
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
     NumRowsFromSumOfAllArgs, NumColsFromAllArgs
@@ -711,7 +710,7 @@ def Daphne_TriOp : Daphne_Op<"tri", [
 }
 
 def Daphne_SolveOp : Daphne_Op<"solve", [
-    NumRowsFromArg, OneCol, CUDASupport
+    NumRowsFromArg, OneCol,
 ]> {
     let arguments = (ins MatrixOf<[FloatScalar]>:$a, MatrixOf<[FloatScalar]>:$b);
     let results = (outs MatrixOf<[FloatScalar]>:$x);
@@ -732,7 +731,7 @@ def Daphne_CTableOp : Daphne_Op<"ctable"> {
 
 def Daphne_SyrkOp : Daphne_Op<"syrk", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, NumColsFromArg, CUDASupport
+    NumRowsFromArgNumCols, NumColsFromArg,
 ]> {
     // TODO: support `A @ t(A)` operation
     let summary = [{Performs the operation `t(A) @ A`}];
