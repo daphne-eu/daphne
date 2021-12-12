@@ -313,4 +313,21 @@ std::vector<std::pair<Value, Value>> daphne::SyrkOp::createOpsOutputSizes(OpBuil
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
     return {{cols, cols}};
 }
+
+std::vector<daphne::VectorSplit> daphne::GemvOp::getVectorSplits()
+{
+    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::ROWS};
+}
+std::vector<daphne::VectorCombine> daphne::GemvOp::getVectorCombines()
+{
+    return {daphne::VectorCombine::ADD};
+}
+std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuilder &builder)
+{
+    auto loc = getLoc();
+    auto sizeTy = builder.getIndexType();
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, mat());
+    auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexAttr(1));
+    return {{cols, one}};
+}
 // ----------------------------------------------------------------------------

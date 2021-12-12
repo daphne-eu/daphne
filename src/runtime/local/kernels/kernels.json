@@ -1450,6 +1450,45 @@
     },
     {
         "kernelTemplate": {
+            "header": "Gemv.h",
+            "opName": "gemv",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTMat",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTVec",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTMat *",
+                    "name": "mat"
+                },
+                {
+                    "type": "const DTVec *",
+                    "name": "vec"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Tri.h",
             "opName": "tri",
             "returnType": "void",

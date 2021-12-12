@@ -753,6 +753,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "syrk") {
         return createSameTypeUnaryOp<SyrkOp>(loc, func, args);
     }
+    if(func == "gemv") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value mat = args[0];
+        mlir::Value vec = args[1];
+        return static_cast<mlir::Value>(builder.create<GemvOp>(
+                loc, mat.getType(), mat, vec
+        ));
+    }
 
     // ********************************************************************
     // Extended relational algebra

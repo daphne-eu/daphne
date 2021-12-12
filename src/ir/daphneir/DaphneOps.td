@@ -739,6 +739,16 @@ def Daphne_SyrkOp : Daphne_Op<"syrk", [
     let results = (outs Matrix:$res);
 }
 
+def Daphne_GemvOp : Daphne_Op<"gemv", [
+    DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    NumRowsFromArgNumCols, OneCol
+]> {
+    // TODO: support `A @ x` operation
+    let summary = [{Performs the operation `t(A) @ x`}];
+    let arguments = (ins Matrix:$mat, Matrix:$vec);
+    let results = (outs Matrix:$res);
+}
+
 // ****************************************************************************
 // Extended relational algebra
 // ****************************************************************************
