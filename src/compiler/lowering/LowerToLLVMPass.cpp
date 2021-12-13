@@ -550,7 +550,21 @@ public:
             callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i]);
 
         std::vector<Value> newOperands;
-        auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF64Type());
+        mlir::Type operandType;
+        auto m32type = rewriter.getF32Type();
+        auto m64type = rewriter.getF64Type();
+        auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
+        if(res_elem_type == m64type)
+            operandType = daphne::MatrixType::get(getContext(), m64type);
+        else if(res_elem_type == m32type)
+            operandType = daphne::MatrixType::get(getContext(), m32type);
+        else {
+            std::string str;
+            llvm::raw_string_ostream output(str);
+            op->getResult(0).getType().print(output);
+            throw std::runtime_error("Unsupported result type for vectorizedPipeline op: " + str);
+        }
+
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
 
         // Variadic operand.
