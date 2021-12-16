@@ -40,6 +40,9 @@ public:
     grpc::Status Store(::grpc::ServerContext *context,
                          const ::distributed::Matrix *request,
                          ::distributed::StoredData *response) ;
+    grpc::Status Broadcast(::grpc::ServerContext *context,
+                         const ::distributed::BroadcastedData *request,
+                         ::distributed::BroadcastedStored *response) ;
     grpc::Status Compute(::grpc::ServerContext *context,
                          const ::distributed::Task *request,
                          ::distributed::ComputeResult *response) ;
