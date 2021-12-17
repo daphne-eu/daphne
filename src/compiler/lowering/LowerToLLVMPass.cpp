@@ -544,25 +544,37 @@ public:
         callee << '_' << op->getName().stripDialect().str();
 
         // TODO: multi-return, pass returns as operand instead
-        // Append names of result types to the kernel name.
-        Operation::result_type_range resultTypes = op->getResultTypes();
-        for(size_t i = 0; i < resultTypes.size(); i++)
-            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i]);
-
-        std::vector<Value> newOperands;
-        mlir::Type operandType;
-        auto m32type = rewriter.getF32Type();
-        auto m64type = rewriter.getF64Type();
-        auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
-        if(res_elem_type == m64type)
-            operandType = daphne::MatrixType::get(getContext(), m64type);
-        else if(res_elem_type == m32type)
-            operandType = daphne::MatrixType::get(getContext(), m32type);
+        if(op->getNumResults() > 0 && op->getNumResults() < 3) {
+            // Append names of result types to the kernel name.
+            Operation::result_type_range resultTypes = op->getResultTypes();
+            for (size_t i = 0; i < resultTypes.size(); i++)
+                callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i]);
+        }
         else {
-            std::string str;
-            llvm::raw_string_ostream output(str);
-            op->getResult(0).getType().print(output);
-            throw std::runtime_error("Unsupported result type for vectorizedPipeline op: " + str);
+            throw std::runtime_error(std::string("Encountered vectorizedPipelineOp with ") +
+                    std::string(std::to_string(op->getNumResults())) +
+                    std::string(" results. We support them with either one or two results atm."));
+        }
+
+        mlir::Type operandType;
+        std::vector<Value> newOperands;
+        if(op->getNumResults() > 0) {
+            auto m32type = rewriter.getF32Type();
+            auto m64type = rewriter.getF64Type();
+            auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
+            if(res_elem_type == m64type)
+                operandType = daphne::MatrixType::get(getContext(), m64type);
+            else if(res_elem_type == m32type)
+                operandType = daphne::MatrixType::get(getContext(), m32type);
+            else {
+                std::string str;
+                llvm::raw_string_ostream output(str);
+                op->getResult(0).getType().print(output);
+                throw std::runtime_error("Unsupported result type for vectorizedPipeline op: " + str);
+            }
+        }
+        else {
+            throw std::runtime_error("vectorizedPipelineOp without inputs not supported at the moment!");
         }
 
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
