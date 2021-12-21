@@ -29,6 +29,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 class SQLVisitor : public SQLGrammarVisitor {
 
@@ -56,6 +57,17 @@ class SQLVisitor : public SQLGrammarVisitor {
 
     ScopedSymbolTable symbolTable;
 
+//TODO: Recognize Literals and somehow handle them for the group expr.
+//GROUP Informations
+    std::unordered_map <std::string, int8_t> groupName;
+    std::vector<std::string> columnName;
+    std::vector<std::string> functionName;
+
+//Flags
+    enum class SQLBit{group=0, codegen, agg, checkgroup};
+    //group has group clause, activated codegen, is a complex general Expression, is a complex Group Expression, has aggregation function.
+    int64_t sqlFlag = 0;
+
 public:
     SQLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
     };
@@ -67,33 +79,53 @@ public:
         view = view_arg;
     };
 
+//script
     antlrcpp::Any visitScript(SQLGrammarParser::ScriptContext * ctx) override;
 
+//sql
     antlrcpp::Any visitSql(SQLGrammarParser::SqlContext * ctx) override;
 
+//query
     antlrcpp::Any visitQuery(SQLGrammarParser::QueryContext * ctx) override;
 
+//select
     antlrcpp::Any visitSelect(SQLGrammarParser::SelectContext * ctx) override;
 
+//subquery
     antlrcpp::Any visitSubquery(SQLGrammarParser::SubqueryContext * ctx) override;
 
+//subqueryExpr
     antlrcpp::Any visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) override;
 
-    antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
+//selectExpr
+    antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) override;
 
+//tableExpr
     antlrcpp::Any visitTableExpr(SQLGrammarParser::TableExprContext * ctx) override;
 
-    antlrcpp::Any visitInnerJoin(SQLGrammarParser::InnerJoinContext * ctx) override;
+//fromExpr
+    antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
 
     antlrcpp::Any visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx) override;
 
-    antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) override;
+//joinExpr
+    antlrcpp::Any visitInnerJoin(SQLGrammarParser::InnerJoinContext * ctx) override;
 
+//whereClause
     antlrcpp::Any visitWhereClause(SQLGrammarParser::WhereClauseContext * ctx) override;
+
+//groupByClause
+    antlrcpp::Any visitGroupByClause(SQLGrammarParser::GroupByClauseContext * ctx) override;
+
+//havingClause
+    antlrcpp::Any visitHavingClause(SQLGrammarParser::HavingClauseContext * ctx) override;
+
+//generalExpr
+    antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
 
     antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) override;
 
-    antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
+    antlrcpp::Any visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext * ctx) override;
 
     antlrcpp::Any visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext * ctx) override;
 
@@ -107,10 +139,13 @@ public:
 
     antlrcpp::Any visitOrExpr(SQLGrammarParser::OrExprContext * ctx) override;
 
+//tableReference
     antlrcpp::Any visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) override;
 
+//selectIdent
     antlrcpp::Any visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) override;
 
+//literal
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };
 

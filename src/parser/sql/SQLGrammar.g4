@@ -36,6 +36,7 @@ select:
     SQL_SELECT selectExpr (',' selectExpr)*
     SQL_FROM tableExpr
     whereClause?
+    groupByClause?
     ;
 
 subquery:
@@ -62,9 +63,17 @@ joinExpr:
 whereClause:
     SQL_WHERE cond=generalExpr;
 
+groupByClause:
+    SQL_GROUP SQL_BY selectIdent (',' selectIdent)*
+    havingClause?;
+
+havingClause:
+    SQL_HAVING cond=generalExpr;
+
 generalExpr:
     literal # literalExpr
     | selectIdent # identifierExpr
+    | func=IDENTIFIER '(' var=generalExpr ')' #groupAggExpr
     | '(' generalExpr ')' # paranthesesExpr
     | lhs=generalExpr op=('*'|'/') rhs=generalExpr # mulExpr
     | lhs=generalExpr op=('+'|'-') rhs=generalExpr # addExpr

@@ -731,7 +731,7 @@ def Daphne_InnerJoinOp : Daphne_Op<"innerJoin", [
 ]> {
     let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
     let results = (outs Frame:$res);
-} 
+}
 def Daphne_FullOuterJoinOp : Daphne_JoinOp<"fullOuterJoin">;
 def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
@@ -822,10 +822,15 @@ def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
 // Grouping
 // ----------------------------------------------------------------------------
 
-def Daphne_GroupOp : Daphne_Op<"group"> {
-    // TODO Maybe colIdxs should be an attribute.
-    let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
-    let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
+// def Daphne_GroupOp : Daphne_Op<"group"> {
+//     // TODO Maybe colIdxs should be an attribute.
+//     let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
+//     let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
+// }
+
+def Daphne_GroupOp : Daphne_Op<"group", [SameVariadicOperandSize]>{
+    let arguments = (ins Frame:$arg, Variadic<StrScalar>:$groupby, Variadic<StrScalar>:$aggregate, TypedArrayAttrBase<Daphne_GroupAggEnum, "enum">:$function);
+    let results = (outs Frame:$res);
 }
 
 // ****************************************************************************
@@ -1090,6 +1095,10 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         //}]>,
         OpBuilder<(ins "std::string":$value), [{
             build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(value));
+        }]>,
+        OpBuilder<(ins "mlir::daphne::GroupEnum":$value), [{
+            auto typeAttr = StringAttr::get($_builder.getContext(), stringifyEnum(value));
+            build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(typeAttr));
         }]>,
     ];
 
