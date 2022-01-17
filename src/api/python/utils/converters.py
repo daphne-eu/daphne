@@ -18,6 +18,9 @@
 # under the License.
 #
 # -------------------------------------------------------------
+import os
+from api.python.operator.operation_node import OperationNode
+from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES
 import numpy as np
 from api.python.operator.nodes.matrix import Matrix
@@ -34,19 +37,22 @@ def from_numpy(mat: np.array,
         :return: A Matrix
         """
 
-        unnamed_params = []
 
-        if len(mat.shape) == 2:
-            named_params = {'rows': mat.shape[0], 'cols': mat.shape[1]}
-        elif len(mat.shape) == 1:
-            named_params = {'rows': mat.shape[0], 'cols': 1}
-        else:
+        unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+        
+       # if len(mat.shape) == 2:
+          #  named_params = {'rows': mat.shape[0], 'cols': mat.shape[1], 'delim:':'","'}
+       # elif len(mat.shape) == 1:
+           # named_params = {'rows': mat.shape[0], 'cols': 1, 'delim:':'","'}
+       # else:
             # TODO Support tensors.
-            raise ValueError("Only two dimensional arrays supported")
+        #    raise ValueError("Only two dimensional arrays supported")
 
         unnamed_params.extend(args)
-        named_params.update(kwargs)
-        return Matrix( 'read', unnamed_params, named_params, local_data=mat)
+        named_params = []
+        #named_params.update(kwargs)
+        return Matrix( 'readMatrix', unnamed_params, named_params, local_data=mat)
+
 
 def rand( rows: int, cols: int,
              min: Union[float, int] = None, max: Union[float, int] = None,sparsity: Union[float, int] = 0, seed: Union[float, int] = 0

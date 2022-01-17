@@ -30,7 +30,7 @@ class OperationNode(DAGNode):
     _output_types: Optional[Iterable[VALID_INPUT_TYPES]]
     _source_node: Optional["DAGNode"]
     _brackets: bool
-
+    data: np.array
     def __init__(self, operation:str, 
                 unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
                 named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None, 
@@ -54,12 +54,14 @@ class OperationNode(DAGNode):
     def compute(self):
         if self._result_var is None:
             self._script = DSLScript()
-            self._script.build_code(self)
+            result = self._script.build_code(self)
             self._script.execute()
             self._script.clear(self)
+            return result
             
     
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
+        
         if self._brackets:
             return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}]'
         if self.operation in BINARY_OPERATIONS:
@@ -67,7 +69,7 @@ class OperationNode(DAGNode):
                 named_input_vars) == 0, 'named parameters can not be used with binary operations'
             assert len(unnamed_input_vars)==2, 'Binary operations need exactly two input variables'
             return f'{var_name}={unnamed_input_vars[0]}{self.operation}{unnamed_input_vars[1]};'
-        inputs_comma_sep = create_params_string(unnamed_input_vars, named_input_vars)
+        inputs_comma_sep = create_params_string(unnamed_input_vars, named_input_vars).format(file_name=var_name)
         if self.output_type == OutputType.NONE:
             return f'{self.operation}({inputs_comma_sep});'
         else:

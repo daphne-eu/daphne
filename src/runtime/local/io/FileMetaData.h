@@ -55,6 +55,33 @@ struct FileMetaData {
         //
     }
     
+    static void ifFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode vtc)
+    {
+        
+        
+        std::string vtc_;
+        if(vtc == ValueTypeCode::F64) vtc_ = "f64";
+            else if(vtc == ValueTypeCode::F32) vtc_ = "f32";
+            else if(vtc == ValueTypeCode::SI64) vtc_ = "si64";
+            else if(vtc == ValueTypeCode::SI32) vtc_ = "si32";
+            else if(vtc == ValueTypeCode::SI8) vtc_ = "si8";
+            else if(vtc == ValueTypeCode::UI64) vtc_ = "ui64";
+            else if(vtc == ValueTypeCode::UI32) vtc_ = "ui32";
+            else if(vtc == ValueTypeCode::UI8) vtc_ = "ui8";
+            else
+              std::cout<<"error";
+        std::string line;
+        std::ofstream ofs(filename + ".meta", std::ios::out);
+        if (!ofs.good())
+            throw std::runtime_error(
+                    "could not open file '" + filename +
+                    "' for writing meta data"
+            );
+        if(ofs.is_open())
+        {
+            ofs << numRows << "," << numCols << "," << isSingleValueType << "," << vtc_;
+        }
+    }
     /**
      * @brief Retrieves the file meta data for the specified file.
      * 

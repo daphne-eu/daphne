@@ -19,6 +19,7 @@
 #
 # -------------------------------------------------------------
 
+import os
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
@@ -35,6 +36,7 @@ class Matrix(OperationNode):
                 local_data: np.array = None, brackets:bool = False)->'Matrix':
         is_python_local_data = False
         if local_data is not None:
+           
             self._np_array = local_data
             is_python_local_data = True
         else:
@@ -44,11 +46,16 @@ class Matrix(OperationNode):
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars)
+        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name)
+
         if self._is_numpy():
-            code_line = code_line.format(file_name=var_name)
+            np.savetxt("../../../src/api/python/tmp/"+var_name+".csv", self._np_array, delimiter=",")
+
         return code_line
 
+  
+        
+        
     def _is_numpy(self) -> bool:
         return self._np_array is not None
     
@@ -84,6 +91,115 @@ class Matrix(OperationNode):
             return Scalar('sum', [self])
         raise ValueError(
             f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+        
+    def sqrt(self) -> 'OperationNode':
+        """Calculate sqrt of matrix.
+        :return: `Matrix` representing operation
+        """
+  
+        return Matrix('sqrt', [self])
+     
+        
+    def mean(self, axis: int = None) -> 'OperationNode':
+        """Calculate mean of matrix.
+        :param axis: can be 0 or 1 to do either row or column means
+        :return: `Matrix` representing operation
+        """
+        if axis == 0:
+            return Matrix('colMeans', [self])
+        elif axis == 1:
+            return Matrix('rowMeans', [self])
+        elif axis is None:
+            return Scalar('mean', [self])
+        raise ValueError(
+            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
     
+    def max(self, axis: int = None) -> 'OperationNode':
+        """Calculate max of matrix.
+        :param axis: can be 0 or 1 to do either row or column aggregation
+        :return: `Matrix` representing operation
+        """
+        if axis == 0:
+            return Matrix( 'colMaxs', [self])
+        elif axis == 1:
+            return Matrix('rowMaxs', [self])
+        elif axis is None:
+            return Scalar('max', [self])
+        raise ValueError(
+            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+
+    def min(self, axis: int = None) -> 'OperationNode':
+        """Calculate max of matrix.
+        :param axis: can be 0 or 1 to do either row or column aggregation
+        :return: `Matrix` representing operation
+        """
+        if axis == 0:
+            return Matrix('colMins', [self])
+        elif axis == 1:
+            return Matrix('rowMins', [self])
+        elif axis is None:
+            return Scalar('min', [self])
+        raise ValueError(
+            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+
+    def var(self, axis: int = None) -> 'OperationNode':
+        """Calculate variance of matrix.
+        :param axis: can be 0 or 1 to do either row or column vars
+        :return: `Matrix` representing operation
+        """
+        if axis == 0:
+            return Matrix('colVars', [self])
+        elif axis == 1:
+            return Matrix('rowVars', [self])
+        elif axis is None:
+            return Scalar( 'var', [self])
+        raise ValueError(
+            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+
+    def abs(self) -> 'Matrix':
+        """Calculate absolute.
+        :return: `Matrix` representing operation
+        """
+        return Matrix( 'abs', [self])
+    
+    def sin(self) -> 'Matrix':
+        """Calculate sin.
+        :return: `Matrix` representing operation
+        """
+        return Matrix( 'sin', [self])
+
+    def cos(self) -> 'Matrix':
+        """Calculate cos.
+        :return: `Matrix` representing operation
+        """
+        return Matrix('cos', [self])
+
+    def tan(self) -> 'Matrix':
+        """Calculate tan.
+        :return: `Matrix` representing operation
+        """
+        return Matrix('tan', [self])
+
+    def asin(self) -> 'Matrix':
+        """Calculate arcsin.
+        :return: `Matrix` representing operation
+        """
+        return Matrix( 'asin', [self])
+
+    def acos(self) -> 'Matrix':
+        """Calculate arccos.
+        :return: `Matrix` representing operation
+        """
+        return Matrix('acos', [self])
+
+    def atan(self) -> 'Matrix':
+        """Calculate arctan.
+        :return: `Matrix` representing operation
+        """
+        return Matrix( 'atan', [self])
+        
     def print(self):
         return OperationNode('print',[self], output_type=OutputType.NONE)
+    
+    def to_csv(self):
+        return OperationNode( 'writeMatrix', [self, '"src/api/python/tmp/{file_name}.csv"'], output_type=OutputType.NONE)

@@ -22,6 +22,7 @@ import os
 from typing import List, Dict
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES
+import numpy as np
 
 class DSLScript:
     dsl_script :str
@@ -35,11 +36,12 @@ class DSLScript:
         self.out_var_name = []
         self._variable_counter = 0
     
-    def build_code(self, dag_root: DAGNode)->None:
+    def build_code(self, dag_root: DAGNode):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
-            self.add_code(f'print({baseOutVarString});')
+            self.add_code(f'writeMatrix({baseOutVarString},"src/api/python/tmp/{baseOutVarString}.csv");')
+            return np.genfromtxt("../../../src/api/python/tmp/"+baseOutVarString+".csv", delimiter=',')
 
     def add_code(self, code:str)->None:
         """Add a line of DSL code to our script

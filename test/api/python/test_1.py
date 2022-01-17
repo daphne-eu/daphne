@@ -20,8 +20,8 @@
 # -------------------------------------------------------------
 import unittest
 import numpy as np
-from api.python.operator.nodes.matrix import Matrix
-from api.python.utils.converters import rand
+from api.python.utils.converters import from_numpy
+
 import random
 
 np.random.seed(7)
@@ -32,28 +32,20 @@ dist_shape = (10, 15)
 min_max = (0, 1)
 sparsity = random.uniform(0.0, 1.0)
 seed = 123
+dim = 5
+np.random.seed(7)
+m3 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
+m3.shape = (dim, dim)
+m4 = np.array(np.random.randint(5, size=dim*dim)+1, dtype=np.double)
+m4.shape = (dim,dim)
 
-
-m1 = rand(rows=shape[0], cols=shape[1],
-                          min=min_max[0], max=min_max[1], seed=seed, sparsity=sparsity)
-
-m2 = rand(rows=shape[0], cols=shape[1],
-                          min=min_max[0], max=min_max[1], seed=seed, sparsity=sparsity)
 
 class TestBinaryOp(unittest.TestCase):
-    def test_binary_op(self):
-        print("Mat1:    ")
-        m1.print().compute()
-        print("Mat2:    ")
-        m2.print().compute()
-        print("M1 + M2:")
-        (m1+m2).compute()
-        print("M1 - M2:")
-        (m1-m2).compute()
-
-    def test_sum1(self):
-        print("Sum of M1:")
-        m1.sum().compute()
-
+   
+    
+    def test_plus(self):
+        result = ((from_numpy(m3)+from_numpy(m4)).compute())
+        print(m3+m4)
+        print(result)
 if __name__ == "__main__":
     unittest.main(exit=False)

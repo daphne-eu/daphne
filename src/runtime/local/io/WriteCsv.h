@@ -38,9 +38,9 @@
 // ****************************************************************************
 
 template <class DTRes> struct WriteCsv {
-  static void apply(DTRes *&res, FILE *file, size_t numRows, size_t numCols) = delete;
+  static void apply(const DTRes *res, File *file, size_t numRows, size_t numCols) = delete;
 
-  static void apply(DTRes *&res, FILE *file, size_t numRows, size_t numCols ValueTypeCode *schema) = delete;
+  static void apply(const DTRes *res, File *file, size_t numRows, size_t numCols, ValueTypeCode *schema) = delete;
 };
 
 // ****************************************************************************
@@ -48,14 +48,14 @@ template <class DTRes> struct WriteCsv {
 // ****************************************************************************
 
 template <class DTRes>
-void writeCsv(DTRes *&res, FILE *file, size_t numRows, size_t numCols) {
-  WriteCsv<DTRes>::apply(res, file, numRows, numCols, delim);
+void writeCsv(const DTRes *res, File *file, size_t numRows, size_t numCols) {
+  WriteCsv<DTRes>::apply(res, file, numRows, numCols);
 }
 
 template <class DTRes>
-void writeCsv(DTRes *&res, FILE *file, size_t numRows, size_t numCols,
+void writeCsv(const DTRes *res, File *file, size_t numRows, size_t numCols,
               ValueTypeCode *schema) {
-  WriteCsv<DTRes>::apply(res, file, numRows, numCols, delim, schema);
+  WriteCsv<DTRes>::apply(res, file, numRows, numCols,  schema);
 }
 
 // ****************************************************************************
@@ -67,25 +67,32 @@ void writeCsv(DTRes *&res, FILE *file, size_t numRows, size_t numCols,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct WriteCsv<DenseMatrix<VT>> {
-  static void apply(DenseMatrix<VT> *&res, FILE* file, size_t numRows,
+  static void apply(const DenseMatrix<VT> *res, File* file, size_t numRows,
                     size_t numCols) {
     assert(file != nullptr && "File required");
     assert(numRows > 0 && "numRows must be > 0");
     assert(numCols > 0 && "numCols must be > 0");
-    std::ofstream myfile;
-    myfile.open(file);
-    VT * valuesRes = res->getValues();
+    if (res == nullptr) printf("WTF\n");
+    const VT * valuesRes = res->getValues();
     size_t cell = 0;
     for (size_t i = 0; i < numRows; ++i)
     {
         for(size_t j = 0; j < numCols; ++j)
         {
-            if(j < (numCols-1))
-                myfile << valuesRes[++cell] << ",";
-            else if (j == (numCols -1)) myfile<<valuesRes[++cell]<<"\n";
+            if(j < (numCols-1)){
+               fprintf(file->identifier, "%f,", (valuesRes[cell++]));
+           }
+            else if (j == (numCols -1)) fprintf(file->identifier,"%f\n", (valuesRes[cell++]));
         }
     }
-   
-      }
+   }
 };
-      
+    
+    template <> struct WriteCsv<Frame>{
+      static void apply(const Frame *res, struct File* file, size_t numRows, size_t numCols,
+                        ValueTypeCode *schema)
+                        {
+                          //do stuff
+                        }
+    };
+#endif // SRC_RUNTIME_LOCAL_IO_WRITECSV_H

@@ -28,10 +28,9 @@ struct File {
 
 inline struct File *openFile(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
-
-  f->identifier = fopen(filename, "r");
+  f->identifier = fopen(filename, "r+");
   f->pos = 0;
-
+  
   if (f->identifier == NULL)
     return NULL;
   return f;
