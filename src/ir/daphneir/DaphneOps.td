@@ -828,8 +828,16 @@ def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
 //     let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
 // }
 
-def Daphne_GroupOp : Daphne_Op<"group", [SameVariadicOperandSize]>{
-    let arguments = (ins Frame:$arg, Variadic<StrScalar>:$groupby, Variadic<StrScalar>:$aggregate, TypedArrayAttrBase<Daphne_GroupAggEnum, "enum">:$function);
+def Daphne_GroupOp : Daphne_Op<"group", [
+    AttrSizedOperandSegments,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>]>{
+    let arguments = (
+        ins Frame:$frame,
+        Variadic<StrScalar>:$keyCol,
+        Variadic<StrScalar>:$aggCol,
+        TypedArrayAttrBase<Daphne_GroupAggEnum, "enum">:$aggFuncs
+    );
     let results = (outs Frame:$res);
 }
 
@@ -1096,10 +1104,10 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         OpBuilder<(ins "std::string":$value), [{
             build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(value));
         }]>,
-        OpBuilder<(ins "mlir::daphne::GroupEnum":$value), [{
-            auto typeAttr = StringAttr::get($_builder.getContext(), stringifyEnum(value));
-            build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(typeAttr));
-        }]>,
+//        OpBuilder<(ins "mlir::daphne::GroupEnum":$value), [{
+//            auto typeAttr = StringAttr::get($_builder.getContext(), stringifyEnum(value));
+//            build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(typeAttr));
+//        }]>,
     ];
 
     let hasFolder = 1;

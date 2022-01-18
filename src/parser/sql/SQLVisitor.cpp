@@ -128,29 +128,6 @@ bool SQLVisitor::hasMLIR(std::string name){
     return (searchview != view.end() || searchalias != alias.end());
 }
 
-// mlir::Value SQLVisitor::getEnum(const std::string & func){
-//     mlir::Location loc = builder.getUnknownLoc();
-//     if(func == "count"){
-//         // return builder.create<mlir::daphne::ConstantOp>(
-//         //         loc,
-//         //         builder.getTypeArrayAttr()
-//         // )
-//     }
-//     if(func == "sum"){
-//
-//     }
-//     if(func == "min"){
-//
-//     }
-//     if(func == "max"){
-//
-//     }
-//     if(func == "avg"){
-//
-//     }
-//     return nullptr;
-// }
-
 bool isBitSet(int64_t flag, int64_t position){
     return ((flag >> position) & 1) == 1;
 }
@@ -164,6 +141,7 @@ void toggleBit(int64_t& flag, int64_t position){
     setBit(flag, position, !isBitSet(flag, position));
 }
 
+//TODO: make memberfucntion!
 mlir::Value createStringConstant(mlir::OpBuilder builder, std::string str){
     mlir::Location loc = builder.getUnknownLoc();
     // Replace escape sequences.
@@ -177,6 +155,160 @@ mlir::Value createStringConstant(mlir::OpBuilder builder, std::string str){
     return static_cast<mlir::Value>(
         builder.create<mlir::daphne::ConstantOp>(loc, str)
     );
+}
+
+//cast singleElement/Matrix to Matrix
+mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
+    mlir::Location loc = builder.getUnknownLoc();
+
+    if(toCast.getType().isa<mlir::daphne::MatrixType>()){
+        return toCast;
+    }else{
+        mlir::Value numRow = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::NumRowsOp>(
+                loc,
+                utils.sizeType,
+                currentFrame
+            ));
+
+        mlir::Value one = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
+            ));
+
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::FillOp>(
+                loc,
+                utils.matrixOf(toCast),
+                toCast,
+                numRow,
+                utils.castSizeIf(one)
+            ));
+    }
+}
+
+mlir::Value SQLVisitor::matrixToFrame(mlir::Value matrix, std::string newColumnName){
+    mlir::Location loc = builder.getUnknownLoc();
+    if(matrix.getType().isa<mlir::daphne::MatrixType>()){
+        //make a Frame from the Matrix.
+        std::vector<mlir::Type> colTypes;
+        std::vector<mlir::Value> cols;
+        std::vector<mlir::Value> labels;
+
+        colTypes.push_back(matrix.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
+        cols.push_back(matrix);
+        labels.push_back(createStringConstant(builder, newColumnName));
+
+        mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::CreateFrameOp>(loc, t, cols, labels)
+        );
+    }else{
+        std::stringstream err_msg;
+        err_msg << "matrixToFrame expects a mlir::daphne::MatrixType\n";
+        throw std::runtime_error(err_msg.str());
+    }
+}
+
+mlir::Value SQLVisitor::addMatrixToCurrentFrame(mlir::Value matrix, std::string newColumnName){
+    mlir::Location loc = builder.getUnknownLoc();
+
+    if(matrix.getType().isa<mlir::daphne::MatrixType>()){
+        mlir::Value add = matrixToFrame(matrix, newColumnName);
+
+        //ADD new Frame to currentFrame
+        std::vector<mlir::Type> currentFrame_colTypes;
+        for(mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            currentFrame_colTypes.push_back(t);
+        for(mlir::Type t : add.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+            currentFrame_colTypes.push_back(t);
+        mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), currentFrame_colTypes);
+
+        currentFrame = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ColBindOp>(
+                loc,
+                resType,
+                currentFrame,
+                add
+            )
+        );
+        return currentFrame;
+    }else{
+        std::stringstream err_msg;
+        err_msg << "addMatrixToCurrentFrame expects a mlir::daphne::MatrixType\n";
+        throw std::runtime_error(err_msg.str());
+    }
+}
+
+mlir::Value SQLVisitor::extractMatrixFromFrame(mlir::Value frame, mlir::Value colname){
+    mlir::Location loc = builder.getUnknownLoc();
+
+    mlir::Type vt = utils.unknownType;
+    mlir::Type resTypeCol = mlir::daphne::FrameType::get(
+            builder.getContext(), {vt}
+    );
+    mlir::Value col = static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ExtractColOp>(
+            loc,
+            resTypeCol,
+            frame,
+            colname
+        )
+    );
+
+    mlir::Type resType = utils.matrixOf(vt);
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
+            loc,
+            resType,
+            col
+    ));
+}
+
+//TODO: Extend
+mlir::Attribute SQLVisitor::getEnum(const std::string & func){
+    mlir::Location loc = builder.getUnknownLoc();
+    if(func == "count"){
+        return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::COUNT));
+    }
+    if(func == "sum"){
+        return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::SUM));
+    }
+    if(func == "min"){
+        return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::MIN));
+    }
+    if(func == "max"){
+        return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::MAX));
+    }
+    if(func == "avg"){
+        return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::AVG));
+    }
+    std::stringstream x;
+    x << "Error: " << func << " does not name an aggregation Function for Group\n";
+    throw std::runtime_error(x.str());
+    return nullptr;
+}
+
+std::string SQLVisitor::getEnumLabelExt(const std::string &func){
+    if(func == "count"){
+        return "COUNT";
+    }
+    if(func == "sum"){
+        return "SUM";
+    }
+    if(func == "min"){
+        return "MIN";
+    }
+    if(func == "max"){
+        return "MAX";
+    }
+    if(func == "avg"){
+        return "AVG";
+    }
+    std::stringstream x;
+    x << "Error: " << func << " does not name an aggregation Function for Group\n";
+    throw std::runtime_error(x.str());
+    return "";
 }
 // ****************************************************************************
 // Visitor functions
@@ -192,7 +324,7 @@ antlrcpp::Any SQLVisitor::visitScript(SQLGrammarParser::ScriptContext * ctx) {
 antlrcpp::Any SQLVisitor::visitSql(SQLGrammarParser::SqlContext * ctx) {
     mlir::Value res = utils.valueOrError(visit(ctx->query()));
     mlir::Location loc = builder.getUnknownLoc();
-    builder.create<mlir::daphne::ConstantOp>(loc, GroupEnum::SUM);
+    // builder.create<mlir::daphne::ConstantOp>(loc, GroupEnum::SUM);
     return res;
 }
 
@@ -206,7 +338,7 @@ antlrcpp::Any SQLVisitor::visitQuery(SQLGrammarParser::QueryContext * ctx) {
 antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value res;
-    setBit(sqlFlag, (int64_t)SQLBit::codegen, 1); //activates code generation in generalExpr.
+    setBit(sqlFlag, (int64_t)SQLBit::codegen, 1); //activates code generation in generalExpr for Join and whereClause
 
     try{
         currentFrame = utils.valueOrError(visit(ctx->tableExpr()));
@@ -282,51 +414,19 @@ antlrcpp::Any SQLVisitor::visitSubqueryExpr(SQLGrammarParser::SubqueryExprContex
 //* Returns what selectIdent (stringIdent/intIdent) returns.
 //*     This is a SSA to ExtractColumn Operation.
 //* Callee: visitSelect
-//* TODO: Return Rename Operation SSA based on this Operation
 //****/
 antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 
     mlir::Value matrix;
-    mlir::Value expr = utils.valueOrError(visit(ctx->var));
+    antlrcpp::Any vExpr = visit(ctx->var);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return expr;
+        return nullptr;
     }
 
-    if(expr.getType().isa<mlir::daphne::MatrixType>()){
-        matrix = expr;
-    }else{
-        mlir::Value numRow = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::NumRowsOp>(
-                loc,
-                utils.sizeType,
-                currentFrame
-            ));
-
-        mlir::Value one = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ConstantOp>(
-                loc,
-                builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-            ));
-
-        matrix = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::FillOp>(
-                loc,
-                utils.matrixOf(expr),
-                expr,
-                numRow,
-                utils.castSizeIf(one)
-            ));
-    }
-
-    //make a Frame from the Matrix.
-    std::vector<mlir::Type> colTypes;
-    std::vector<mlir::Value> cols;
-    std::vector<mlir::Value> labels;
-
-    colTypes.push_back(matrix.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
-    cols.push_back(matrix);
+    mlir::Value expr = utils.valueOrError(vExpr);
+    matrix = castToMatrixColumn(expr);
 
     std::string label;
     if(ctx->aka){
@@ -334,19 +434,11 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * 
     }else{
         label = ctx->getText();
     }
-    labels.push_back(static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ConstantOp>(loc, label)
-    ));
 
-    mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
-    mlir::Value result = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::CreateFrameOp>(loc, t, cols, labels)
-    );
-    return result;
+    return matrixToFrame(matrix, label);
 }
 
-//tableExpr TODO    mlir::Location loc = builder.getUnknownLoc();
-
+//tableExpr
 antlrcpp::Any SQLVisitor::visitTableExpr(SQLGrammarParser::TableExprContext * ctx) {
     currentFrame = utils.valueOrError(visit(ctx->fromExpr()));
     for(auto i = 0; i < ctx->joinExpr().size(); i++){
@@ -395,7 +487,7 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
     }
 }
 
-//joinExpr TODO
+//joinExpr
 antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 
@@ -423,7 +515,7 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext * ct
         ));
 }
 
-//whereClause TODO
+//whereClause TODO: Check if castToMatrixColumn is sufficient (same as HavingClause)
 antlrcpp::Any SQLVisitor::visitWhereClause(SQLGrammarParser::WhereClauseContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
     //WE Create a Matrix of the same length as the frame rows got.
@@ -433,32 +525,37 @@ antlrcpp::Any SQLVisitor::visitWhereClause(SQLGrammarParser::WhereClauseContext 
     // if b is a scalar than all equals true.
     // if b is a vector than elementwise.
     mlir::Value filter;
-    mlir::Value expr = utils.valueOrError(visit(ctx->cond));
-    if(expr.getType().isa<mlir::daphne::MatrixType>()){
-        filter = expr;
-    }else{
-        // mlir::Value numRow = static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::NumRowsOp>(
-        //         loc,
-        //         utils.sizeType,
-        //         currentFrame
-        //     ));
-        //
-        // mlir::Value one = static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::ConstantOp>(
-        //         loc,
-        //         builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-        //     ));
-        //
-        // filter = static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::FillOp>(
-        //         loc,
-        //         utils.matrixOf(expr),
-        //         expr,
-        //         numRow,
-        //         utils.castSizeIf(one)
-        //     ));
-    }
+
+    antlrcpp::Any vExpr = visit(ctx->cond);
+    mlir::Value expr = utils.valueOrError(vExpr);
+    filter = castToMatrixColumn(expr);
+
+    // mlir::Value expr = utils.valueOrError(visit(ctx->cond));
+    // if(expr.getType().isa<mlir::daphne::MatrixType>()){
+    //     filter = expr;
+    // }else{
+    //     // mlir::Value numRow = static_cast<mlir::Value>(
+    //     //     builder.create<mlir::daphne::NumRowsOp>(
+    //     //         loc,
+    //     //         utils.sizeType,
+    //     //         currentFrame
+    //     //     ));
+    //     //
+    //     // mlir::Value one = static_cast<mlir::Value>(
+    //     //     builder.create<mlir::daphne::ConstantOp>(
+    //     //         loc,
+    //     //         builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
+    //     //     ));
+    //     //
+    //     // filter = static_cast<mlir::Value>(
+    //     //     builder.create<mlir::daphne::FillOp>(
+    //     //         loc,
+    //     //         utils.matrixOf(expr),
+    //     //         expr,
+    //     //         numRow,
+    //     //         utils.castSizeIf(one)
+    //     //     ));
+    // }
 
     mlir::Value v = static_cast<mlir::Value>(
         builder.create<mlir::daphne::FilterRowOp>(
@@ -473,61 +570,89 @@ antlrcpp::Any SQLVisitor::visitWhereClause(SQLGrammarParser::WhereClauseContext 
 
 //groupByClause
 antlrcpp::Any SQLVisitor::visitGroupByClause(SQLGrammarParser::GroupByClauseContext * ctx) {
+    mlir::Location loc = builder.getUnknownLoc();
+
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         for(auto i = 0; i < ctx->selectIdent().size(); i++){
-            groupName[ctx->selectIdent(i)->getText()] = 1;
+            groupName.push_back(utils.valueOrError(visit(ctx->selectIdent(i))));
+            //Need to visit the selectIdent too.
+            grouped[ctx->selectIdent(i)->getText()] = 1;
         }
-        if(ctx->havingClause()){
-            visit(ctx->havingClause());
+        // if(ctx->havingClause()){
+        //     visit(ctx->havingClause());
+        // }
+        return nullptr;
+    }else{//TODO:
+        //generate Vectors with data for Group Operation //done?! I mean i will generate them beforehand.
+        //Create Grouping Operation
+        mlir::Type vt = utils.unknownType;
+        std::vector<mlir::Type> colTypes;
+        for(int i = 0; i < groupName.size() + columnName.size(); i++){
+            colTypes.push_back(vt);
         }
-    }else{//TODO: all of it.
-        //Create Grouping Operation. (Visist select Idents)
-        for(int i = 0; i < columnName.size(); i++){
-            std::cout << columnName[i] << "\t" << functionName[i] << "\n";
-        }
+        mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+//TODO: Infer types and it should work
+        currentFrame = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::GroupOp>(
+                loc,
+                resType,
+                currentFrame,
+                groupName,
+                columnName,
+                builder.getArrayAttr(functionName)
+            )
+        );
+
+        // if(ctx->havingClause()){
+        //     visit(ctx->havingClause());
+        // }
     }
-    return currentFrame;
+    return currentFrame; //TODO: REMOVE!
 }
 
-//havingClause TODO same as where
+//havingClause TODO: Check if castToMatrixColumn is sufficient (same as where Clause);
 antlrcpp::Any SQLVisitor::visitHavingClause(SQLGrammarParser::HavingClauseContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-    //WE Create a Matrix of the same length as the frame rows got.
+    // WE Create a Matrix of the same length as the frame rows got.
     // Filled with zeros called a.
     // we compare a with the result of GeneralExpr called b as follows:
     // a != b
     // if b is a scalar than all equals true.
     // if b is a vector than elementwise.
     mlir::Value filter;
-    mlir::Value expr = utils.valueOrError(visit(ctx->cond));
+    antlrcpp::Any vExpr = visit(ctx->cond);
+
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return expr;
+        return nullptr;
     }
-    if(expr.getType().isa<mlir::daphne::MatrixType>()){
-        filter = expr;
-    }else{
-        // mlir::Value numRow = static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::NumRowsOp>(
-        //         loc,
-        //         utils.sizeType,
-        //         currentFrame
-        //     ));
-        //
-        // mlir::Value one = static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::ConstantOp>(
-        //         loc,
-        //         builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-        //     ));
-        //
-        // filter = static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::FillOp>(
-        //         loc,
-        //         utils.matrixOf(expr),
-        //         expr,
-        //         numRow,
-        //         utils.castSizeIf(one)
-        //     ));
-    }
+
+    mlir::Value expr = utils.valueOrError(vExpr);
+    filter = castToMatrixColumn(expr);
+    // if(expr.getType().isa<mlir::daphne::MatrixType>()){
+    //     filter = expr;
+    // }else{
+    //     // mlir::Value numRow = static_cast<mlir::Value>(
+    //     //     builder.create<mlir::daphne::NumRowsOp>(
+    //     //         loc,
+    //     //         utils.sizeType,
+    //     //         currentFrame
+    //     //     ));
+    //     //
+    //     // mlir::Value one = static_cast<mlir::Value>(
+    //     //     builder.create<mlir::daphne::ConstantOp>(
+    //     //         loc,
+    //     //         builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
+    //     //     ));
+    //     //
+    //     // filter = static_cast<mlir::Value>(
+    //     //     builder.create<mlir::daphne::FillOp>(
+    //     //         loc,
+    //     //         utils.matrixOf(expr),
+    //     //         expr,
+    //     //         numRow,
+    //     //         utils.castSizeIf(one)
+    //     //     ));
+    // }
 
     mlir::Value v = static_cast<mlir::Value>(
         builder.create<mlir::daphne::FilterRowOp>(
@@ -543,19 +668,20 @@ antlrcpp::Any SQLVisitor::visitHavingClause(SQLGrammarParser::HavingClauseContex
 //generalExpr
 antlrcpp::Any SQLVisitor::visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) {
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return currentFrame;
-    }else{
-        return utils.valueOrError(visit(ctx->literal()));
+        return nullptr;
     }
+    return utils.valueOrError(visit(ctx->literal()));
 }
 
 antlrcpp::Any SQLVisitor::visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Type vt = utils.unknownType;
 
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){ //TODO
+    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){
+
+    }
+    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){ //TODO Is this Enough?!
         if(!isBitSet(sqlFlag, (int64_t)SQLBit::agg)){
-            if(groupName[ctx->selectIdent()->getText()] == 0){
+            if(grouped[ctx->selectIdent()->getText()] == 0){
                 std::stringstream err_msg;
                 err_msg << "Error during a generalExpr. \"" << ctx->selectIdent()->getText()
                     << "\" Must be part of the Group Expression or have an Aggregation Function";
@@ -565,45 +691,28 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(SQLGrammarParser::IdentifierExprCo
     }
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return currentFrame;
+        return nullptr;
     }
-    mlir::Value colname = utils.valueOrError(visit(ctx->selectIdent()));
-    mlir::Type resTypeCol = mlir::daphne::FrameType::get(
-            builder.getContext(), {vt}
-    );
-    mlir::Value col = static_cast<mlir::Value>(
-        builder.create<mlir::daphne::ExtractColOp>(
-            loc,
-            resTypeCol,
-            currentFrame,
-            colname
-        )
-    );
 
-    mlir::Type resType = utils.matrixOf(vt);
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
-            loc,
-            resType,
-            col
-    ));
+    mlir::Value colname = utils.valueOrError(visit(ctx->selectIdent()));
+    return extractMatrixFromFrame(currentFrame, colname);
 }
 
 antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 
-    mlir::Value res_val;
     std::string newColumnName = "group_" + ctx->var->getText();
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
         throw std::runtime_error("Use of an aggregation function with out a group clause");
     }
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){ //create Column pre Group
-        if(isBitSet(sqlFlag, (int64_t)SQLBit::agg)){
-            throw std::runtime_error("Nested Aggregation Functions");
-        }
+    if(isBitSet(sqlFlag, (int64_t)SQLBit::agg)){ //Not allowed nested Function Call
+        throw std::runtime_error("Nested Aggregation Functions");
+    }
 
-        columnName.push_back(newColumnName); //TODO: Pushback a MLIR::Object that has a string for this row.
-        functionName.push_back(ctx->func->getText()); //TODO: Pushback a function Enum?!
+    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){ //create Column pre Group for in group Aggregation
+        columnName.push_back(createStringConstant(builder, newColumnName));
+        functionName.push_back(getEnum(ctx->func->getText())); //TODO: Pushback a function Enum. Done?!
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
@@ -611,110 +720,39 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContex
         setBit(sqlFlag, (int64_t)SQLBit::agg, 0);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
 
-        mlir::Value matrix;
-        //make expr to a matrix
-        if(expr.getType().isa<mlir::daphne::MatrixType>()){
-            matrix = expr;
-        }else{
-            mlir::Value numRow = static_cast<mlir::Value>(
-                builder.create<mlir::daphne::NumRowsOp>(
-                    loc,
-                    utils.sizeType,
-                    currentFrame
-                ));
-
-            mlir::Value one = static_cast<mlir::Value>(
-                builder.create<mlir::daphne::ConstantOp>(
-                    loc,
-                    builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-                ));
-
-            matrix = static_cast<mlir::Value>(
-                builder.create<mlir::daphne::FillOp>(
-                    loc,
-                    utils.matrixOf(expr),
-                    expr,
-                    numRow,
-                    utils.castSizeIf(one)
-                ));
-        }
-
-        //make a Frame from the Matrix.
-        std::vector<mlir::Type> colTypes;
-        std::vector<mlir::Value> cols;
-        std::vector<mlir::Value> labels;
-
-        colTypes.push_back(matrix.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
-        cols.push_back(matrix);
-        labels.push_back(createStringConstant(builder, newColumnName));
-
-        mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
-        mlir::Value add = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::CreateFrameOp>(loc, t, cols, labels)
-        );
-
-        //ADD Column to currentFrame
-        std::vector<mlir::Type> currentFrame_colTypes;
-        for(mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
-            currentFrame_colTypes.push_back(t);
-        for(mlir::Type t : add.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
-            currentFrame_colTypes.push_back(t);
-        mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
-
-        currentFrame = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ColBindOp>(
-                loc,
-                resType,
-                currentFrame,
-                add
-            )
-        );
-        res_val = currentFrame;
-
-
-
+        //create Matrix from expr //can return expr when it is already a matrix
+        mlir::Value matrix = castToMatrixColumn(expr);
+        currentFrame = addMatrixToCurrentFrame(matrix, newColumnName); //zuweisung gescheht schon in der Funktion also nicht notwendig
+        return nullptr;
     }else{ //Get Column after Group
-
+        std::string newColumnNameAppended = newColumnName + "_" + getEnumLabelExt(ctx->func->getText());//+ ctx->func->getText(); //TODO: We NEED to know which Column got which function applied.
         //Retriev Column from grouped currentFrame
-        mlir::Type vt = utils.unknownType;
-
-        mlir::Value rowname = utils.valueOrError(createStringConstant(builder, newColumnName + ctx->func->getText()));
-        mlir::Type resTypeRow = mlir::daphne::FrameType::get(
-                builder.getContext(), {vt}
-        );
-        mlir::Value row = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ExtractColOp>(
-                loc,
-                resTypeRow,
-                currentFrame,
-                rowname
-            )
-        );
-
-        mlir::Type resType = utils.matrixOf(vt);
-        res_val = static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
-                loc,
-                resType,
-                row
-        ));
-
+        mlir::Value colname = utils.valueOrError(createStringConstant(builder, newColumnNameAppended));
+        return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
     }
-    return res_val;
 }
 
 antlrcpp::Any SQLVisitor::visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext * ctx) {
-    return utils.valueOrError(visit(ctx->generalExpr()));
+    antlrcpp::Any vRes = visit(ctx->generalExpr());
+    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+        return nullptr;
+    }
+    return utils.valueOrError(vRes);
 }
 
 antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext * ctx) {
-    std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    std::string op = ctx->op->getText();
+
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return rhs;
+        return nullptr;
     }
+
+    mlir::Value lhs = utils.valueOrError(vLhs);
+    mlir::Value rhs = utils.valueOrError(vRhs);
 
     if(op == "*")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
@@ -725,14 +763,18 @@ antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext * ctx) {
 }
 
 antlrcpp::Any SQLVisitor::visitAddExpr(SQLGrammarParser::AddExprContext * ctx) {
-    std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    std::string op = ctx->op->getText();
+
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return rhs;
+        return nullptr;
     }
+
+    mlir::Value lhs = utils.valueOrError(vLhs);
+    mlir::Value rhs = utils.valueOrError(vRhs);
 
     if(op == "+")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
@@ -743,14 +785,18 @@ antlrcpp::Any SQLVisitor::visitAddExpr(SQLGrammarParser::AddExprContext * ctx) {
 }
 
 antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) {
-    std::string op = ctx->op->getText();
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    std::string op = ctx->op->getText();
+
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return rhs;
+        return nullptr;
     }
+
+    mlir::Value lhs = utils.valueOrError(vLhs);
+    mlir::Value rhs = utils.valueOrError(vRhs);
 
     if(op == "=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
@@ -770,34 +816,37 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) {
 
 antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return rhs;
+        return nullptr;
     }
+
+    mlir::Value lhs = utils.valueOrError(vLhs);
+    mlir::Value rhs = utils.valueOrError(vRhs);
 
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
 }
 
 antlrcpp::Any SQLVisitor::visitOrExpr(SQLGrammarParser::OrExprContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+
+    antlrcpp::Any vLhs = visit(ctx->lhs);
+    antlrcpp::Any vRhs = visit(ctx->rhs);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        return rhs;
+        return nullptr;
     }
+
+    mlir::Value lhs = utils.valueOrError(vLhs);
+    mlir::Value rhs = utils.valueOrError(vRhs);
 
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
 }
 
 //tableReference
-//*******
-//* TODO:
-//* needs to check if var name already in use in this scope
-//* needs to correctly implement SetColLabelsPrefixOp and how to access these labels
-//*******
 antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) {
     mlir::Location loc = builder.getUnknownLoc();
 

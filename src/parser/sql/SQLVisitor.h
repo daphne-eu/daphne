@@ -34,36 +34,45 @@
 class SQLVisitor : public SQLGrammarVisitor {
 
     ParserUtils utils;
-
     mlir::OpBuilder builder;
-    mlir::Value currentFrame;
-    int i_se = 0;
-
-    //framename, prefix
-    std::unordered_map <std::string, std::string> framePrefix;
-    //prefix, framename
-    std::unordered_map<std::string, std::string> reverseFramePrefix;
-
-    std::unordered_map <std::string, mlir::Value> view;
-    std::unordered_map <std::string, mlir::Value> alias;
-
-    void registerAlias(std::string framename, mlir::Value arg);
-    std::string setFramePrefix(std::string framename, std::string prefix, bool necessary, bool ignore);
-
-    mlir::Value fetchMLIR(std::string framename);    //looks name up in alias and view
-    mlir::Value fetchAlias(std::string framename);   //looks name up only in alias
-    std::string fetchPrefix(std::string framename);
-    bool hasMLIR(std::string name);
-
     ScopedSymbolTable symbolTable;
 
-//TODO: Recognize Literals and somehow handle them for the group expr.
-//GROUP Informations
-    std::unordered_map <std::string, int8_t> groupName;
-    std::vector<std::string> columnName;
-    std::vector<std::string> functionName;
+    int i_se = 0;   //unused?
 
-//Flags
+//special Variables
+    mlir::Value currentFrame; //holds the complete Frame with all columns
+
+//Helper Functions:
+    mlir::Value castToMatrixColumn(mlir::Value toCast);
+    mlir::Value matrixToFrame(mlir::Value matrix, std::string newColumnName);
+    mlir::Value addMatrixToCurrentFrame(mlir::Value matrix, std::string newColumnName);
+    mlir::Value extractMatrixFromFrame(mlir::Value frame, mlir::Value colname);
+    mlir::Attribute getEnum(const std::string & func);
+    std::string getEnumLabelExt(const std::string & func);
+//Data Structures and access functions
+
+    std::unordered_map <std::string, mlir::Value> view; //name, mlir::Value
+    std::unordered_map <std::string, mlir::Value> alias; //name, mlir::Value
+
+    std::unordered_map <std::string, std::string> framePrefix; //framename, prefix
+    std::unordered_map<std::string, std::string> reverseFramePrefix; //prefix, framename
+
+    void registerAlias(std::string framename, mlir::Value arg); //adds framename and arg into alias
+    mlir::Value fetchMLIR(std::string framename);    //looks name up in alias and view
+    mlir::Value fetchAlias(std::string framename);   //looks name up only in alias
+    bool hasMLIR(std::string name);
+
+    std::string setFramePrefix(std::string framename, std::string prefix, bool necessary, bool ignore);
+    std::string fetchPrefix(std::string framename);
+
+    //TODO: Recognize Literals and somehow handle them for the group expr.
+//GROUP Informations
+    std::unordered_map <std::string, int8_t> grouped;
+    std::vector<mlir::Value> groupName;
+    std::vector<mlir::Value> columnName;
+    std::vector<mlir::Attribute> functionName;
+
+    //Flags
     enum class SQLBit{group=0, codegen, agg, checkgroup};
     //group has group clause, activated codegen, is a complex general Expression, is a complex Group Expression, has aggregation function.
     int64_t sqlFlag = 0;

@@ -168,6 +168,29 @@ void daphne::InnerJoinOp::inferFrameLabels() {
     getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
+void daphne::GroupOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    std::vector<std::string> aggColLabels;
+    std::vector<std::string> aggFuncNames;
+
+    for(Value t: keyCol()){ //Adopting keyCol Labels
+        newLabels->push_back(getConstantString(t));
+    }
+
+    for(Value t: aggCol()){
+        aggColLabels.push_back(getConstantString(t));
+    }
+    for(Attribute t: aggFuncs()){
+        GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
+        aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
+    }
+    for(size_t i = 0; i < aggFuncNames.size() && i < aggColLabels.size(); i++){
+        newLabels->push_back(aggColLabels.at(i) + "_" + aggFuncNames.at(i));
+    }
+
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
 void daphne::SetColLabelsOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
     for(Value label : labels()) {
