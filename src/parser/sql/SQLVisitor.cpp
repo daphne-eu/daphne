@@ -416,7 +416,7 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
             visit(ctx->selectExpr(i));
         }
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
-        currentFrame = visit(ctx->groupByClause());
+        visit(ctx->groupByClause());
     }
 
     res = utils.valueOrError(visit(ctx->selectExpr(0)));
