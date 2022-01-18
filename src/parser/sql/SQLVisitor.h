@@ -43,6 +43,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     mlir::Value currentFrame; //holds the complete Frame with all columns
 
 //Helper Functions:
+    mlir::Value createStringConstant(std::string str);
     mlir::Value castToMatrixColumn(mlir::Value toCast);
     mlir::Value matrixToFrame(mlir::Value matrix, std::string newColumnName);
     mlir::Value addMatrixToCurrentFrame(mlir::Value matrix, std::string newColumnName);
