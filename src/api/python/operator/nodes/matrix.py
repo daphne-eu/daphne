@@ -49,8 +49,13 @@ class Matrix(OperationNode):
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name)
 
         if self._is_numpy():
-            np.savetxt("../../../src/api/python/tmp/"+var_name+".csv", self._np_array, delimiter=",")
-
+            if("test/api/python" in os.getcwd()):
+                path = "../../../"
+            else:
+                path = ""
+            with open(path+"src/api/python/tmp/"+var_name+".csv", "wb") as f:
+                np.savetxt(f, self._np_array, delimiter=",")
+                f.close()
         return code_line
 
   

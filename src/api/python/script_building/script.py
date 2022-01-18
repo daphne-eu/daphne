@@ -41,7 +41,11 @@ class DSLScript:
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
             self.add_code(f'writeMatrix({baseOutVarString},"src/api/python/tmp/{baseOutVarString}.csv");')
-            return np.genfromtxt("../../../src/api/python/tmp/"+baseOutVarString+".csv", delimiter=',')
+            if("test/api/python" in os.getcwd()):
+                path = "../../../"
+            else:
+                path = ""
+            return np.genfromtxt(path+"src/api/python/tmp/"+baseOutVarString+".csv", delimiter=',')
 
     def add_code(self, code:str)->None:
         """Add a line of DSL code to our script

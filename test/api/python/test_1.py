@@ -44,8 +44,16 @@ class TestBinaryOp(unittest.TestCase):
    
     
     def test_plus(self):
-        result = ((from_numpy(m3)+from_numpy(m4)).compute())
-        print(m3+m4)
-        print(result)
+        result = ((from_numpy(m3)*from_numpy(m4)).compute())
+        self.assertTrue(np.allclose(result, m3*m4))
+
+    def test_mult(self):
+        result = ((from_numpy(m3)*from_numpy(m4)).compute())
+        self.assertTrue(np.allclose(result, m3*m4))
+
+    def test_div(self):
+        result = ((from_numpy(m3)*from_numpy(m4)).compute())
+        self.assertTrue(np.allclose(result, m3*m4))
+        
 if __name__ == "__main__":
     unittest.main(exit=False)

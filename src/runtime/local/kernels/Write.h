@@ -55,7 +55,7 @@ template<typename VT>
 struct Write<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> * res, const char * filename, DCTX(ctx)) {
         
-        File * file = openFile(filename);
+        File * file = openFileForWrite(filename);
         FileMetaData::ifFile(filename, res->getNumRows(), res->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
         writeCsv(res, file, res->getNumRows(), res->getNumCols());
         closeFile(file);
