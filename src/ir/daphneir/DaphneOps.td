@@ -1091,13 +1091,6 @@ def Daphne_ReadCsvOp : Daphne_Op<"readCsv"> {
     );
     let results = (outs MatrixOrFrame:$res);
 }
-def Daphne_WriteCsvOp : Daphne_Op<"writeCsv"> {
-    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg,
-        AnyTypeOf<[File, Descriptor]>:$input,
-        Size:$numRows, Size:$numCols
-    );
-    let results = (outs);
-}
 
 
 // ****************************************************************************

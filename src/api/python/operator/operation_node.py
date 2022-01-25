@@ -20,13 +20,13 @@
 # -------------------------------------------------------------
 from typing import Dict, Iterable, Optional, Sequence, Union
 from api.python.script_building.dag import DAGNode, OutputType
-from api.python.script_building.script import DSLScript
+from api.python.script_building.script import DaphneDSLScript
 from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
 from api.python.utils.helpers import create_params_string
 import numpy as np
 class OperationNode(DAGNode):  
     _result_var:Optional[Union[float,np.array]]
-    _script:Optional[DSLScript]
+    _script:Optional[DaphneDSLScript]
     _output_types: Optional[Iterable[VALID_INPUT_TYPES]]
     _source_node: Optional["DAGNode"]
     _brackets: bool
@@ -47,17 +47,19 @@ class OperationNode(DAGNode):
                 self._script = None
                 self._source_node = None
                 self._already_added = False
-                self.dsl_name = ""
+                self.DaphneDSL_name = ""
                 self._is_python_local_data = is_python_local_data
                 self._brackets = brackets
                 self._output_type = output_type
     def compute(self):
         if self._result_var is None:
-            self._script = DSLScript()
+            self._script = DaphneDSLScript()
             result = self._script.build_code(self)
             self._script.execute()
             self._script.clear(self)
-            return result
+            if result is None:
+                return
+            return np.genfromtxt(result, delimiter=',')
             
     
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:

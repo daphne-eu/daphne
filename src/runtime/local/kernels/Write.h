@@ -31,7 +31,7 @@
 
 template<class DTRes>
 struct Write {
-    static void apply(const DTRes * res, const char * filename, DCTX(ctx)) = delete;
+    static void apply(const DTRes * arg, const char * filename, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +39,8 @@ struct Write {
 // ****************************************************************************
 
 template<class DTRes>
-void write(const DTRes * res, const char * filename, DCTX(ctx)) {
-    Write<DTRes>::apply(res, filename, ctx);
+void write(const DTRes * arg, const char * filename, DCTX(ctx)) {
+    Write<DTRes>::apply(arg, filename, ctx);
 }
 
 // ****************************************************************************
@@ -53,14 +53,15 @@ void write(const DTRes * res, const char * filename, DCTX(ctx)) {
 
 template<typename VT>
 struct Write<DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> * res, const char * filename, DCTX(ctx)) {
+    static void apply(const DenseMatrix<VT> * arg, const char * filename, DCTX(ctx)) {
         
         File * file = openFileForWrite(filename);
-        FileMetaData::ifFile(filename, res->getNumRows(), res->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
-        writeCsv(res, file, res->getNumRows(), res->getNumCols());
+        FileMetaData::ifFile(filename, arg->getNumRows(), arg->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
+        writeCsv(arg, file);
         closeFile(file);
     }
 };
+
 
 // ----------------------------------------------------------------------------
 // Frame
@@ -68,31 +69,8 @@ struct Write<DenseMatrix<VT>> {
 
 template<>
 struct Write<Frame> {
-    static void apply(const Frame * res, const char * filename, DCTX(ctx)) {
-        FileMetaData fmd = FileMetaData::ofFile(filename);
-        
-        ValueTypeCode * schema;
-        if(fmd.isSingleValueType) {
-            schema = new ValueTypeCode[fmd.numCols];
-            for(size_t i = 0; i < fmd.numCols; i++)
-                schema[i] = fmd.schema[0];
-        }
-        else
-            schema = fmd.schema.data();
-        
-        std::string * labels;
-        if(fmd.labels.empty())
-            labels = nullptr;
-        else
-            labels = fmd.labels.data();
-        
-        
-        File * file = openFile(filename);
-        writeCsv(res, file, fmd.numRows, fmd.numCols, schema);
-        closeFile(file);
-        
-        if(fmd.isSingleValueType)
-            delete[] schema;
+    static void apply(const Frame * arg, const char * filename, DCTX(ctx)) {
+        //TODO
     }
 };
 

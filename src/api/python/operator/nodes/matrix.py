@@ -104,22 +104,9 @@ class Matrix(OperationNode):
   
         return Matrix('sqrt', [self])
      
-        
-    def mean(self, axis: int = None) -> 'OperationNode':
-        """Calculate mean of matrix.
-        :param axis: can be 0 or 1 to do either row or column means
-        :return: `Matrix` representing operation
-        """
-        if axis == 0:
-            return Matrix('colMeans', [self])
-        elif axis == 1:
-            return Matrix('rowMeans', [self])
-        elif axis is None:
-            return Scalar('mean', [self])
-        raise ValueError(
-            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
     
-    def max(self, axis: int = None) -> 'OperationNode':
+    
+    def max(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         """Calculate max of matrix.
         :param axis: can be 0 or 1 to do either row or column aggregation
         :return: `Matrix` representing operation
@@ -133,7 +120,7 @@ class Matrix(OperationNode):
         raise ValueError(
             f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
-    def min(self, axis: int = None) -> 'OperationNode':
+    def min(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         """Calculate max of matrix.
         :param axis: can be 0 or 1 to do either row or column aggregation
         :return: `Matrix` representing operation
@@ -147,64 +134,6 @@ class Matrix(OperationNode):
         raise ValueError(
             f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
 
-    def var(self, axis: int = None) -> 'OperationNode':
-        """Calculate variance of matrix.
-        :param axis: can be 0 or 1 to do either row or column vars
-        :return: `Matrix` representing operation
-        """
-        if axis == 0:
-            return Matrix('colVars', [self])
-        elif axis == 1:
-            return Matrix('rowVars', [self])
-        elif axis is None:
-            return Scalar( 'var', [self])
-        raise ValueError(
-            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
-
-    def abs(self) -> 'Matrix':
-        """Calculate absolute.
-        :return: `Matrix` representing operation
-        """
-        return Matrix( 'abs', [self])
-    
-    def sin(self) -> 'Matrix':
-        """Calculate sin.
-        :return: `Matrix` representing operation
-        """
-        return Matrix( 'sin', [self])
-
-    def cos(self) -> 'Matrix':
-        """Calculate cos.
-        :return: `Matrix` representing operation
-        """
-        return Matrix('cos', [self])
-
-    def tan(self) -> 'Matrix':
-        """Calculate tan.
-        :return: `Matrix` representing operation
-        """
-        return Matrix('tan', [self])
-
-    def asin(self) -> 'Matrix':
-        """Calculate arcsin.
-        :return: `Matrix` representing operation
-        """
-        return Matrix( 'asin', [self])
-
-    def acos(self) -> 'Matrix':
-        """Calculate arccos.
-        :return: `Matrix` representing operation
-        """
-        return Matrix('acos', [self])
-
-    def atan(self) -> 'Matrix':
-        """Calculate arctan.
-        :return: `Matrix` representing operation
-        """
-        return Matrix( 'atan', [self])
         
     def print(self):
         return OperationNode('print',[self], output_type=OutputType.NONE)
-    
-    def to_csv(self):
-        return OperationNode( 'writeMatrix', [self, '"src/api/python/tmp/{file_name}.csv"'], output_type=OutputType.NONE)

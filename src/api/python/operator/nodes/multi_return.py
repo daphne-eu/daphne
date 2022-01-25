@@ -48,7 +48,7 @@ class MultiReturn(OperationNode):
         output="["
         for idx, output_node in enumerate(self._outputs):
             name = f'{var_name}_{idx}'
-            output_node.dsl_name = name
+            output_node.DaphneDSL_name = name
             output += f'{name},'
         output = output[:-1]+"]"
         return f'{output}={self.operation}({inputs_comma_sep})'

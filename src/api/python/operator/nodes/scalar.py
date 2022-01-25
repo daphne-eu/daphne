@@ -21,7 +21,7 @@
 from typing import (TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Tuple,
                     Union)
 from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
 import numpy as np
 from typing import Iterable
 
@@ -49,3 +49,144 @@ class Scalar(OperationNode):
 
     def compute(self) -> Union[np.array]:
         return super().compute()
+
+    
+    def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '+', [self, other])
+
+    # Left hand side
+    def __radd__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '+', [other, self])
+
+    def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '-', [self, other])
+
+    # Left hand side
+    def __rsub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '-', [other, self])
+
+    def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '*', [self, other])
+
+    def __rmul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '*', [other, self])
+
+    def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '/', [self, other])
+
+    def __rtruediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '/', [other, self])
+
+    def __floordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '//', [self, other])
+
+    def __rfloordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
+        return Scalar( '//', [other, self])
+
+    def __lt__(self, other) -> 'Scalar':
+        return Scalar( '<', [self, other])
+
+    def __rlt__(self, other) -> 'Scalar':
+        return Scalar( '<', [other, self])
+
+    def __le__(self, other) -> 'Scalar':
+        return Scalar( '<=', [self, other])
+
+    def __rle__(self, other) -> 'Scalar':
+        return Scalar( '<=', [other, self])
+
+    def __gt__(self, other) -> 'Scalar':
+        return Scalar( '>', [self, other])
+
+    def __rgt__(self, other) -> 'Scalar':
+        return Scalar( '>', [other, self])
+
+    def __ge__(self, other) -> 'Scalar':
+        return Scalar( '>=', [self, other])
+
+    def __rge__(self, other) -> 'Scalar':
+        return Scalar( '>=', [other, self])
+
+    def __eq__(self, other) -> 'Scalar':
+        return Scalar( '==', [self, other])
+
+    def __req__(self, other) -> 'Scalar':
+        return Scalar( '==', [other, self])
+
+    def __ne__(self, other) -> 'Scalar':
+        return Scalar( '!=', [self, other])
+
+    def __rne__(self, other) -> 'Scalar':
+        return Scalar( '!=', [other, self])
+
+    def __matmul__(self, other: 'Scalar') -> 'Scalar':
+        return Scalar( '%*%', [self, other])
+
+    def sum(self) -> 'Scalar':
+        return Scalar( 'sum', [self], output_type=OutputType.DOUBLE)
+
+    def mean(self) -> 'Scalar':
+        return Scalar( 'mean', [self], output_type=OutputType.DOUBLE)
+
+    def var(self, axis: int = None) -> 'Scalar':
+        return Scalar( 'var', [self], output_type=OutputType.DOUBLE)
+
+    def abs(self) -> 'Scalar':
+        """Calculate absolute.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'abs', [self])
+
+    def sin(self) -> 'Scalar':
+        """Calculate sin.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'sin', [self])
+
+    def cos(self) -> 'Scalar':
+        """Calculate cos.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'cos', [self])
+
+    def tan(self) -> 'Scalar':
+        """Calculate tan.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'tan', [self])
+
+    def asin(self) -> 'Scalar':
+        """Calculate arcsin.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'asin', [self])
+
+    def acos(self) -> 'Scalar':
+        """Calculate arccos.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'acos', [self])
+
+    def atan(self) -> 'Scalar':
+        """Calculate arctan.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'atan', [self])
+
+    def sinh(self) -> 'Scalar':
+        """Calculate sin.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'sinh', [self])
+
+    def cosh(self) -> 'Scalar':
+        """Calculate cos.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'cosh', [self])
+
+    def tanh(self) -> 'Scalar':
+        """Calculate tan.
+        :return: `Scalar` representing operation
+        """
+        return Scalar( 'tanh', [self])

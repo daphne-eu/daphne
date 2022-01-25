@@ -38,9 +38,8 @@
 // ****************************************************************************
 
 template <class DTRes> struct WriteCsv {
-  static void apply(const DTRes *res, File *file, size_t numRows, size_t numCols) = delete;
-
-  static void apply(const DTRes *res, File *file, size_t numRows, size_t numCols, ValueTypeCode *schema) = delete;
+  static void apply(const DTRes *arg, File *file, size_t numRows, size_t numCols) = delete;
+  static void apply(DTRes *arg, File *file, ValueTypeCode *schema) = delete;
 };
 
 // ****************************************************************************
@@ -48,14 +47,15 @@ template <class DTRes> struct WriteCsv {
 // ****************************************************************************
 
 template <class DTRes>
-void writeCsv(const DTRes *res, File *file, size_t numRows, size_t numCols) {
-  WriteCsv<DTRes>::apply(res, file, numRows, numCols);
+void writeCsv(const DTRes *arg, File *file) {
+  WriteCsv<DTRes>::apply(arg, file);
 }
 
+
+
 template <class DTRes>
-void writeCsv(const DTRes *res, File *file, size_t numRows, size_t numCols,
-              ValueTypeCode *schema) {
-  WriteCsv<DTRes>::apply(res, file, numRows, numCols,  schema);
+void writeCsv(DTRes *arg, File *file,  ValueTypeCode *schema) {
+  WriteCsv<DTRes>::apply(arg, file, schema);
 }
 
 // ****************************************************************************
@@ -67,32 +67,33 @@ void writeCsv(const DTRes *res, File *file, size_t numRows, size_t numCols,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct WriteCsv<DenseMatrix<VT>> {
-  static void apply(const DenseMatrix<VT> *res, File* file, size_t numRows,
-                    size_t numCols) {
+  static void apply(const DenseMatrix<VT> *arg, File* file) {
     assert(file != nullptr && "File required");
     assert(numRows > 0 && "numRows must be > 0");
     assert(numCols > 0 && "numCols must be > 0");
-    if (res == nullptr) printf("WTF\n");
-    const VT * valuesRes = res->getValues();
+    const VT * valuesArg = arg->getValues();
     size_t cell = 0;
-    for (size_t i = 0; i < numRows; ++i)
+    for (size_t i = 0; i < arg->getNumRows(); ++i)
     {
-        for(size_t j = 0; j < numCols; ++j)
+        for(size_t j = 0; j < arg->getNumCols(); ++j)
         {
-            if(j < (numCols-1)){
-               fprintf(file->identifier, "%f,", (valuesRes[cell++]));
+            if(j < (arg->getNumCols()-1)){
+               fprintf(file->identifier, "%f,", (valuesArg[cell++]));
            }
-            else if (j == (numCols -1)) fprintf(file->identifier,"%f\n", (valuesRes[cell++]));
+            else if (j == (arg->getNumCols() -1)) fprintf(file->identifier,"%f\n", (valuesArg[cell++]));
         }
     }
    }
 };
-    
-    template <> struct WriteCsv<Frame>{
-      static void apply(const Frame *res, struct File* file, size_t numRows, size_t numCols,
-                        ValueTypeCode *schema)
-                        {
-                          //do stuff
-                        }
-    };
+
+  // ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
+
+template <> struct WriteCsv<Frame> {
+  static void apply(Frame *arg, struct File *file, ValueTypeCode *schema) {
+    //TODO
+  }
+};
+  
 #endif // SRC_RUNTIME_LOCAL_IO_WRITECSV_H

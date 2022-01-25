@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence, Union, Optional
 
 class OutputType(Enum):
         MATRIX = auto()
-        LIST = auto()
         NONE = auto()
         DOUBLE = auto()
 
@@ -35,9 +34,9 @@ class DAGNode(ABC):
     _named_output_nodes:Dict[str, Union['DAGNode', str, int, float, bool]]
     _source_node: Optional["DAGNode"]
     _output_type: OutputType
-    _script: Optional["DSLScript"]
+    _script: Optional["DaphneDSLScript"]
     _is_python_local_data: bool
-    _dsl_name: str
+    _DaphneDSL_name: str
 
     def compute() -> Any:
         raise NotImplementedError
@@ -69,9 +68,9 @@ class DAGNode(ABC):
 
 
     @property
-    def dsl_name(self):
-        return self._dsl_name
+    def DaphneDSL_name(self):
+        return self._DaphneDSL_name
 
-    @dsl_name.setter
-    def dsl_name(self, value):
-        self._dsl_name = value
+    @DaphneDSL_name.setter
+    def DaphneDSL_name(self, value):
+        self._DaphneDSL_name = value
