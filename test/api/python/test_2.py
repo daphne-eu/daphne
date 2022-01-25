@@ -21,7 +21,7 @@
 from time import sleep
 import unittest
 import numpy as np
-from api.python.utils.converters import from_numpy
+from api.python.context.daphne_context import DaphneContext
 
 import random
 
@@ -43,18 +43,18 @@ m4.shape = (dim,dim)
 
 class TestBinaryOp(unittest.TestCase):
    
-    
+    daphne_context: DaphneContext = None
     def test_plus(self):
-        (from_numpy(m3).sum().compute())
+        (self.daphne_context.from_numpy(m3).sum().compute())
         
-        (from_numpy(m4).sum().compute())
-        (from_numpy(m4).sum() + from_numpy(m3).sum()).compute()
+        (self.daphne_context.from_numpy(m4).sum().compute())
+        (self.daphne_context.from_numpy(m4).sum() + self.daphne_context.from_numpy(m3).sum()).compute()
 
-        (from_numpy(m4).sum() - from_numpy(m3).sum()).compute()
+        (self.daphne_context.from_numpy(m4).sum() - self.daphne_context.from_numpy(m3).sum()).compute()
 
-        (from_numpy(m4).sum() / from_numpy(m3).sum()).compute()
+        (self.daphne_context.from_numpy(m4).sum() / self.daphne_context.from_numpy(m3).sum()).compute()
 
-        (from_numpy(m4).sum() * from_numpy(m3).sum()).compute()
+        (self.daphne_context.from_numpy(m4).sum() * self.daphne_context.from_numpy(m3).sum()).compute()
         
 if __name__ == "__main__":
     unittest.main(exit=False)

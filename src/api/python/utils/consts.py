@@ -19,7 +19,12 @@
 #
 # -------------------------------------------------------------
 from typing import Union
+import os
 
 VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
 BINARY_OPERATIONS = ['+','-', '/', '//','*','<','<=','>', '>=', '==','!=', '@']
 VALID_ARITHMETIC_TYPES = Union['DAGNode', int, float]
+
+PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
+TMP_PATH = os.path.join(PYTHON_PATH, "tmp")
+PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))

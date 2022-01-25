@@ -18,12 +18,16 @@
 # under the License.
 #
 # -------------------------------------------------------------
-from typing import Dict, Iterable, Optional, Sequence, Union
+from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
 from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
 from api.python.utils.helpers import create_params_string
 import numpy as np
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
+    
 class OperationNode(DAGNode):  
     _result_var:Optional[Union[float,np.array]]
     _script:Optional[DaphneDSLScript]
@@ -31,7 +35,7 @@ class OperationNode(DAGNode):
     _source_node: Optional["DAGNode"]
     _brackets: bool
     data: np.array
-    def __init__(self, operation:str, 
+    def __init__(self, daphne_context,operation:str, 
                 unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
                 named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None, 
                 output_type:OutputType = OutputType.MATRIX, is_python_local_data: bool = False,
@@ -40,6 +44,7 @@ class OperationNode(DAGNode):
                     unnamed_input_nodes = []
                 if named_input_nodes is None:
                     named_input_nodes = []
+                self.daphne_context = daphne_context
                 self.operation = operation
                 self._unnamed_input_nodes = unnamed_input_nodes
                 self._named_input_nodes = named_input_nodes
@@ -53,7 +58,7 @@ class OperationNode(DAGNode):
                 self._output_type = output_type
     def compute(self):
         if self._result_var is None:
-            self._script = DaphneDSLScript()
+            self._script = DaphneDSLScript(self.daphne_context)
             result = self._script.build_code(self)
             self._script.execute()
             self._script.clear(self)

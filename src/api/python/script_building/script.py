@@ -19,10 +19,14 @@
 #
 # -------------------------------------------------------------
 import os
-from typing import List, Dict
+from typing import List, Dict, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES
+from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
 import numpy as np
+
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
 
 class DaphneDSLScript:
     DaphneDSL_script :str
@@ -30,7 +34,8 @@ class DaphneDSLScript:
     out_var_name:List[str]
     _variable_counter: int
 
-    def __init__(self) -> None:
+    def __init__(self, context) -> None:
+        self.daphne_context = context
         self.DaphneDSL_script = ''
         self.inputs = {}
         self.out_var_name = []
@@ -41,8 +46,8 @@ class DaphneDSLScript:
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
             if(dag_root.output_type == OutputType.MATRIX):
-                self.add_code(f'writeMatrix({baseOutVarString},"src/api/python/tmp/{baseOutVarString}.csv");')
-                return str("src/api/python/tmp/"+baseOutVarString+".csv")
+                self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
+                return str(TMP_PATH+"/" + baseOutVarString+ ".csv")
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
@@ -60,18 +65,11 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-        #todo: write all temporary files in /tmp
-        #if not os.path.exists("../../../src/api/python/tmp/"):
-         # os.mkdir("../../../src/api/python/tmp/")
-        if(os.getcwd() != "/home/dzc/prototype"):
-            temp_out_file = open("../../../tmpdaphne.daphne", "w")
-            temp_out_file.writelines(self.DaphneDSL_script)
-            temp_out_file.close()
-            os.chdir("/home/dzc/prototype")
-        else:
-            temp_out_file = open("tmpdaphne.daphne", "w")
-            temp_out_file.writelines(self.DaphneDSL_script)
-            temp_out_file.close()
+        
+        os.chdir(PROTOTYPE_PATH)
+        temp_out_file = open("tmpdaphne.daphne", "w")
+        temp_out_file.writelines(self.DaphneDSL_script)
+        temp_out_file.close()
         os.system("build/bin/daphnec tmpdaphne.daphne")
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
