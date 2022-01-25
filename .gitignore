@@ -1,10 +1,10 @@
 build/
 thirdparty/*
 !thirdparty/llvm-project/
-python/tmp
+src/api/python/tmp
 *.pyc
 *.pyo
-
+tmpdaphne.daphne
 # Created by https://www.toptal.com/developers/gitignore/api/windows,linux,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=windows,linux,python
 
@@ -204,3 +204,5 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,linux,python
+src/api/python/utils/__pycache__/helpers.cpython-39.pyc
+.vscode/
