@@ -31,7 +31,7 @@
 
 /**
  * @brief A sparse matrix in Compressed Sparse Row (CSR) format.
- * 
+ *
  * This matrix implementation is backed by three contiguous arrays. The
  * `values` array contains all non-zero values in the matrix. For each of these
  * non-zero values, the `colIdxs` array contains the number of the column.
@@ -40,7 +40,7 @@
  * `colIdxs` arrays. Additionally, the `rowOffsets` array ends with the offset
  * to the first element after the valid elements in the `values` and `colIdxs`
  * arrays.
- * 
+ *
  * Each instance of this class might represent a sub-matrix of another
  * `CSRMatrix`. Thus, to traverse the matrix by row, you can safely go via the
  * `rowOffsets`, but for traversing the matrix by non-zero value, you must
@@ -52,26 +52,26 @@ class CSRMatrix : public Matrix<ValueType> {
     // fields from the super-classes.
     using Matrix<ValueType>::numRows;
     using Matrix<ValueType>::numCols;
-    
+
     /**
      * @brief The number of rows allocated starting from `rowOffsets`. This can
      * differ from `numRows` if this `CSRMatrix` is a view on a larger
      * `CSRMatrix`.
      */
     size_t numRowsAllocated;
-    
+
     bool isRowAllocatedBefore;
-    
+
     /**
      * @brief The maximum number of non-zero values this matrix was allocated
      * to accommodate.
      */
     size_t maxNumNonZeros;
-    
+
     std::shared_ptr<ValueType> values;
     std::shared_ptr<size_t> colIdxs;
     std::shared_ptr<size_t> rowOffsets;
-    
+
     size_t lastAppendedRowIdx;
 
     // Grant DataObjectFactory access to the private constructors and
@@ -80,19 +80,19 @@ class CSRMatrix : public Matrix<ValueType> {
     friend DataType * DataObjectFactory::create(ArgTypes ...);
     template<class DataType>
     friend void DataObjectFactory::destroy(const DataType * obj);
-    
+
     /**
      * @brief Creates a `CSRMatrix` and allocates enough memory for the
      * specified size in the internal `values`, `colIdxs`, and `rowOffsets`
      * arrays.
-     * 
+     *
      * @param maxNumRows The maximum number of rows.
      * @param numCols The exact number of columns.
      * @param maxNumNonZeros The maximum number of non-zeros in the matrix.
      * @param zero Whether the allocated memory of the internal arrays shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero) : 
+    CSRMatrix(size_t maxNumRows, size_t numCols, size_t maxNumNonZeros, bool zero) :
             Matrix<ValueType>(maxNumRows, numCols),
             numRowsAllocated(maxNumRows),
             isRowAllocatedBefore(false),
@@ -108,11 +108,11 @@ class CSRMatrix : public Matrix<ValueType> {
             memset(rowOffsets.get(), 0, (numRows + 1) * sizeof(size_t));
         }
     }
-    
+
     /**
      * @brief Creates a `CSRMatrix` around a sub-matrix of another `CSRMatrix`
      * without copying the data.
-     * 
+     *
      * @param src The other `CSRMatrix`.
      * @param rowLowerIncl Inclusive lower bound for the range of rows to extract.
      * @param rowUpperExcl Exclusive upper bound for the range of rows to extract.
@@ -127,17 +127,17 @@ class CSRMatrix : public Matrix<ValueType> {
         assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
         assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
         assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
-        
+
         maxNumNonZeros = src->maxNumNonZeros;
         values = src->values;
         colIdxs = src->colIdxs;
         rowOffsets = std::shared_ptr<size_t>(src->rowOffsets, src->rowOffsets.get() + rowLowerIncl);
     }
-    
+
     virtual ~CSRMatrix() {
         // nothing to do
     }
-    
+
     void fillNextPosUntil(size_t nextPos, size_t rowIdx) {
         if(rowIdx > lastAppendedRowIdx) {
             for(size_t r = lastAppendedRowIdx + 2; r <= rowIdx + 1; r++)
@@ -145,24 +145,24 @@ class CSRMatrix : public Matrix<ValueType> {
             lastAppendedRowIdx = rowIdx;
         }
     }
-    
+
 public:
-    
+
     void shrinkNumRows(size_t numRows) {
         assert((numRows <= this->numRows) && "numRows can only the shrinked");
         // TODO Here we could reduce the allocated size of the rowOffsets array.
         this->numRows = numRows;
     }
-    
+
     size_t getNumNonZeros() const {
         return rowOffsets.get()[numRows] - rowOffsets.get()[0];
     }
-    
+
     size_t getNumNonZeros(size_t rowIdx) const {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         return rowOffsets.get()[rowIdx + 1] - rowOffsets.get()[rowIdx];
     }
-    
+
     void shrinkNumNonZeros(size_t numNonZeros) {
         assert((numNonZeros <= getNumNonZeros()) && "numNonZeros can only be shrinked");
         // TODO Here we could reduce the allocated size of the values and
@@ -172,29 +172,29 @@ public:
     ValueType * getValues() {
         return values.get();
     }
-    
+
     const ValueType * getValues() const {
         return values.get();
     }
-    
+
     ValueType * getValues(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
         return values.get() + rowOffsets.get()[rowIdx];
     }
-    
+
     const ValueType * getValues(size_t rowIdx) const {
         return const_cast<CSRMatrix<ValueType> *>(this)->getValues(rowIdx);
     }
-    
+
     size_t * getColIdxs() {
         return colIdxs.get();
     }
-    
+
     const size_t * getColIdxs() const {
         return colIdxs.get();
     }
-    
+
     size_t * getColIdxs(size_t rowIdx) {
         // We allow equality here to enable retrieving a pointer to the end.
         assert((rowIdx <= numRows) && "rowIdx is out of bounds");
@@ -216,7 +216,7 @@ public:
     ValueType get(size_t rowIdx, size_t colIdx) const override {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
-        
+
         const size_t * rowColIdxsBeg = getColIdxs(rowIdx);
         const size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
         const size_t * ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
@@ -228,19 +228,19 @@ public:
             // Entry for the given coordinates present.
             return getValues(rowIdx)[ptrExpected - rowColIdxsBeg];
     }
-    
+
     void set(size_t rowIdx, size_t colIdx, ValueType value) override {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
-        
+
         size_t * rowColIdxsBeg = getColIdxs(rowIdx);
         size_t * rowColIdxsEnd = getColIdxs(rowIdx + 1);
         const size_t * ptrExpected = std::lower_bound(rowColIdxsBeg, rowColIdxsEnd, colIdx);
         const size_t posExpected = ptrExpected - rowColIdxsBeg;
-        
+
         const size_t posEnd = colIdxs.get() + rowOffsets.get()[numRowsAllocated] - rowColIdxsBeg;
         ValueType * rowValuesBeg = getValues(rowIdx);
-        
+
         if(ptrExpected == rowColIdxsEnd || *ptrExpected != colIdx) {
             // No entry for the given coordinates present.
             if(value == ValueType(0))
@@ -280,7 +280,7 @@ public:
                 rowValuesBeg[posExpected] = value;
         }
     }
-    
+
     void prepareAppend() override {
         if(isRowAllocatedBefore)
             // In this case, we assume that the matrix has been populated up to
@@ -290,29 +290,37 @@ public:
             rowOffsets.get()[1] = rowOffsets.get()[0] = 0;
         lastAppendedRowIdx = 0;
     }
-    
+
     // Note that if this matrix is a view on a larger `CSRMatrix`, then
     // `prepareAppend`/`append`/`finishAppend` assume that the larger matrix
     // has been populated up to just before the row range of this view.
     void append(size_t rowIdx, size_t colIdx, ValueType value) override {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
         assert((colIdx < numCols) && "colIdx is out of bounds");
-        
+
         if(value == ValueType(0))
             return;
-        
+
         const size_t nextPos = rowOffsets.get()[lastAppendedRowIdx + 1];
         fillNextPosUntil(nextPos, rowIdx);
-        
+
         values.get()[nextPos] = value;
         colIdxs.get()[nextPos] = colIdx;
         rowOffsets.get()[rowIdx + 1]++;
     }
-    
+
     void finishAppend() override {
         fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
     }
-    
+
+    void printValue(std::ostream & os, ValueType val) const {
+      switch (ValueTypeUtils::codeFor<ValueType>) {
+        case ValueTypeCode::SI8 : os << static_cast<int32_t>(val); break;
+        case ValueTypeCode::UI8 : os << static_cast<uint32_t>(val); break;
+        default : os << val; break;
+      }
+    }
+
     void print(std::ostream & os) const override {
         os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
@@ -327,7 +335,7 @@ public:
             for(size_t i = 0; i < rowNumNonZeros; i++)
                 oneRow[rowColIdxs[i]] = rowValues[i];
             for(size_t c = 0; c < numCols; c++) {
-                os << oneRow[c];
+                printValue(os, oneRow[c]);
                 if (c < numCols - 1)
                     os << ' ';
             }
@@ -335,14 +343,14 @@ public:
         }
         delete[] oneRow;
     }
-    
+
     /**
      * @brief Prints the internal arrays of this matrix.
-     * 
+     *
      * Meant to be used for testing and debugging only. Note that this method
      * works even if the internal state of the matrix is invalid, e.g., due to
      * uninitialized row offsets or column indexes.
-     * 
+     *
      * @param os The stream to print to.
      */
     void printRaw(std::ostream & os) const {

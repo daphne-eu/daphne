@@ -40,12 +40,14 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
 
 void ValueTypeUtils::printValue(std::ostream & os, ValueTypeCode type, const void * array, size_t pos) {
     switch(type) {
-        case ValueTypeCode::SI8:  os << reinterpret_cast<const int8_t  *>(array)[pos]; break;
-        case ValueTypeCode::SI32: os << reinterpret_cast<const int32_t *>(array)[pos]; break;
+        //Conversion int8->int32 for formating as number as opposed to character
+        case ValueTypeCode::SI8:  os << static_cast<int32_t>(reinterpret_cast<const int8_t  *>(array)[pos]); break;
         case ValueTypeCode::SI64: os << reinterpret_cast<const int64_t *>(array)[pos]; break;
-        case ValueTypeCode::UI8:  os << reinterpret_cast<const int8_t  *>(array)[pos]; break;
-        case ValueTypeCode::UI32: os << reinterpret_cast<const int32_t *>(array)[pos]; break;
-        case ValueTypeCode::UI64: os << reinterpret_cast<const int64_t *>(array)[pos]; break;
+        case ValueTypeCode::SI32: os << reinterpret_cast<const int32_t *>(array)[pos]; break;
+        //Conversion uint8->uint32 for formating as number as opposed to character
+        case ValueTypeCode::UI8:  os << static_cast<uint32_t>(reinterpret_cast<const uint8_t  *>(array)[pos]); break;
+        case ValueTypeCode::UI32: os << reinterpret_cast<const uint32_t *>(array)[pos]; break;
+        case ValueTypeCode::UI64: os << reinterpret_cast<const uint64_t *>(array)[pos]; break;
         case ValueTypeCode::F32: os << reinterpret_cast<const float  *>(array)[pos]; break;
         case ValueTypeCode::F64: os << reinterpret_cast<const double *>(array)[pos]; break;
         default: throw std::runtime_error("unknown value type code");
@@ -78,7 +80,7 @@ template<> const std::string ValueTypeUtils::irNameFor<uint32_t> = "ui32";
 template<> const std::string ValueTypeUtils::irNameFor<uint64_t> = "ui64";
 template<> const std::string ValueTypeUtils::irNameFor<float>  = "f32";
 template<> const std::string ValueTypeUtils::irNameFor<double> = "f64";
-    
+
 const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
     switch(type) {
         case ValueTypeCode::SI8:  return cppNameFor<int8_t>;
