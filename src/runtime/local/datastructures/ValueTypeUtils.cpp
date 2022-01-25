@@ -42,8 +42,8 @@ void ValueTypeUtils::printValue(std::ostream & os, ValueTypeCode type, const voi
     switch(type) {
         //Conversion int8->int32 for formating as number as opposed to character
         case ValueTypeCode::SI8:  os << static_cast<int32_t>(reinterpret_cast<const int8_t  *>(array)[pos]); break;
-        case ValueTypeCode::SI64: os << reinterpret_cast<const int64_t *>(array)[pos]; break;
         case ValueTypeCode::SI32: os << reinterpret_cast<const int32_t *>(array)[pos]; break;
+        case ValueTypeCode::SI64: os << reinterpret_cast<const int64_t *>(array)[pos]; break;
         //Conversion uint8->uint32 for formating as number as opposed to character
         case ValueTypeCode::UI8:  os << static_cast<uint32_t>(reinterpret_cast<const uint8_t  *>(array)[pos]); break;
         case ValueTypeCode::UI32: os << reinterpret_cast<const uint32_t *>(array)[pos]; break;
