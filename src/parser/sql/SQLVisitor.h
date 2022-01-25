@@ -37,33 +37,91 @@ class SQLVisitor : public SQLGrammarVisitor {
     mlir::OpBuilder builder;
     ScopedSymbolTable symbolTable;
 
-    int i_se = 0;   //unused?
-
 //special Variables
     mlir::Value currentFrame; //holds the complete Frame with all columns
 
-//Helper Functions:
-    mlir::Value createStringConstant(std::string str);
-    mlir::Value castToMatrixColumn(mlir::Value toCast);
-    mlir::Value matrixToFrame(mlir::Value matrix, std::string newColumnName);
-    mlir::Value addMatrixToCurrentFrame(mlir::Value matrix, std::string newColumnName);
-    mlir::Value extractMatrixFromFrame(mlir::Value frame, mlir::Value colname);
-    mlir::Attribute getEnum(const std::string & func);
-    std::string getEnumLabelExt(const std::string & func);
-//Data Structures and access functions
 
+//Helper Functions:
+
+    /**
+     * @brief creates a mlir-string-value from a c++ String
+     */
+    mlir::Value createStringConstant(std::string str);
+
+    /**
+     * @brief casts a single Attribute Value to a Matrix. Save for Matrix Input.
+     */
+    mlir::Value castToMatrixColumn(mlir::Value toCast);
+
+    /**
+     * @brief Creates a Frame out of a Matrix Column and a name
+     */
+    mlir::Value matrixToFrame(
+        mlir::Value matrix, std::string newColumnName);
+
+    /**
+     * @brief creates ColBindOp to add the matirx to the currentFrame.
+     */
+    mlir::Value addMatrixToCurrentFrame(
+        mlir::Value matrix, std::string newColumnName);
+
+    /**
+     * @brief creates ExtractColOp and CastOp
+     */
+    mlir::Value extractMatrixFromFrame(
+        mlir::Value frame, mlir::Value colname);
+
+    /**
+     * @brief returns GroupEnumAttr for a given aggregation function
+     *
+     * TODO: extend if more aggregation functions get implemented.
+     */
+    mlir::Attribute getEnum(const std::string & func);
+
+    /**
+     * @brief returns result of stringifyGroupEnum for the given func.
+     */
+    std::string getEnumLabelExt(const std::string & func);
+
+
+//Data Structures and access functions
     std::unordered_map <std::string, mlir::Value> view; //name, mlir::Value
     std::unordered_map <std::string, mlir::Value> alias; //name, mlir::Value
 
     std::unordered_map <std::string, std::string> framePrefix; //framename, prefix
     std::unordered_map<std::string, std::string> reverseFramePrefix; //prefix, framename
 
-    void registerAlias(std::string framename, mlir::Value arg); //adds framename and arg into alias
-    mlir::Value fetchMLIR(std::string framename);    //looks name up in alias and view
-    mlir::Value fetchAlias(std::string framename);   //looks name up only in alias
+
+    /**
+     * @brief adds a mlir Value under the string into the alias map for later lookup.
+     */
+    void registerAlias(std::string framename, mlir::Value arg);
+
+    /**
+     * @brief first looks up the Alias map and if the item is not found it looks
+     * into the View map.
+     */
+    mlir::Value fetchMLIR(std::string framename);
+
+    /**
+     * @brief look up in Alias map
+     */
+    mlir::Value fetchAlias(std::string framename);
+
+    /**
+     * @brief looks up if the string specifies a mlir Value in the Alias or View Map
+     */
     bool hasMLIR(std::string name);
 
+    /**
+     * @brief checks if a given prefix already given to annother framename otherwise
+     * registers the prefix for this framename
+     */
     std::string setFramePrefix(std::string framename, std::string prefix, bool necessary, bool ignore);
+
+    /**
+     * @brief looks up the prefix for a given framename
+     */
     std::string fetchPrefix(std::string framename);
 
     //TODO: Recognize Literals and somehow handle them for the group expr.

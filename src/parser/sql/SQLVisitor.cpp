@@ -33,123 +33,9 @@
 
 #include <iostream>
 
-//TODO Documentation
-
 // ****************************************************************************
 // Helper functions
 // ****************************************************************************
-
-template<typename T>
-T fetch(std::unordered_map <std::string, T> x, std::string name){
-    auto search = x.find(name);
-    if(search != x.end()){
-        return search->second;
-    }
-    return NULL;
-}
-
-template<>
-std::string fetch<std::string>(std::unordered_map <std::string, std::string> x, std::string name){
-    auto search = x.find(name);
-    if(search != x.end()){
-        return search->second;
-    }
-    return "";
-}
-
-/**
- * @brief adds a mlir Value under the string into the alias map for later lookup.
- */
-void SQLVisitor::registerAlias(std::string name, mlir::Value arg){
-    alias[name] = arg;
-}
-
-/**
- * @brief checks if a given prefix already given to annother framename otherwise
- * registers the prefix for this framename
- */
-std::string SQLVisitor::setFramePrefix(std::string framename, std::string prefix, bool necessary = true, bool ignore = false){
-    bool frameHasPrefix = !fetch<std::string>(framePrefix, framename).empty();
-    if(frameHasPrefix){
-        if(necessary){
-            std::stringstream x;
-            x << "Error: " << framename << " is marked as necessary for Prefix generation, but already got a Prefix. Please consider an Alias\n";
-            throw std::runtime_error(x.str());
-        }else{
-            return "";
-        }
-    }
-
-    bool inuse = !fetch<std::string>(reverseFramePrefix, prefix).empty() && !ignore;
-    std::string newPrefix = prefix;
-    int i = 1;
-    while(inuse){
-        std::stringstream x;
-        x << prefix << i;
-        newPrefix = x.str();
-        inuse = !fetch<std::string>(reverseFramePrefix, newPrefix).empty();
-    }
-
-    if(!ignore){
-        reverseFramePrefix[newPrefix] = framename;
-    }
-    framePrefix[framename] = newPrefix;
-
-    return newPrefix;
-}
-
-/**
- * @brief look up in Alias map
- */
-mlir::Value SQLVisitor::fetchAlias(std::string name){
-    mlir::Value res = fetch<mlir::Value>(alias, name);
-    if(res != NULL){
-        return res;
-    }
-    std::stringstream x;
-    x << "Error: " << name << " does not name an Alias\n";
-    throw std::runtime_error(x.str());
-}
-
-/**
- * @brief first looks up the Alias map and if the item is not found it looks
- * into the View map.
- */
-mlir::Value SQLVisitor::fetchMLIR(std::string name){
-    mlir::Value res;
-    res = fetch<mlir::Value>(alias, name);
-    if(res != NULL){
-        return res;
-    }
-    res = fetch<mlir::Value>(view, name);
-    if(res != NULL){
-        return res;
-    }
-    std::stringstream x;
-    x << "Error: " << name << " was not registered with the Function \"registerView\" or were given an alias\n";
-    throw std::runtime_error(x.str());
-}
-
-/**
- * @brief looks up the prefix for a given framename
- */
-std::string SQLVisitor::fetchPrefix(std::string name){
-    std::string prefix = fetch<std::string>(framePrefix, name);
-    if(!prefix.empty()){
-        return prefix;
-    }
-    return "";
-}
-
-/**
- * @brief looks up if the string specifies a mlir Value in the Alias or View Map
- */
-bool SQLVisitor::hasMLIR(std::string name){
-    auto searchview = view.find(name);
-    auto searchalias = alias.find(name);
-    return (searchview != view.end() || searchalias != alias.end());
-}
-
 /**
  * @brief Test if the flag at the position is set and returns result
  */
@@ -172,9 +58,110 @@ void toggleBit(int64_t& flag, int64_t position){
     setBit(flag, position, !isBitSet(flag, position));
 }
 
-/**
- * @brief creates a mlir-string-value from a c++ String
- */
+// ****************************************************************************
+// Member Helper functions
+// ****************************************************************************
+
+template<typename T>
+T fetch(std::unordered_map <std::string, T> x, std::string name){
+    auto search = x.find(name);
+    if(search != x.end()){
+        return search->second;
+    }
+    return NULL;
+}
+
+template<>
+std::string fetch<std::string>(
+    std::unordered_map <std::string, std::string> x,
+    std::string name
+)
+{
+    auto search = x.find(name);
+    if(search != x.end()){
+        return search->second;
+    }
+    return "";
+}
+
+void SQLVisitor::registerAlias(std::string name, mlir::Value arg){
+    alias[name] = arg;
+}
+
+std::string SQLVisitor::setFramePrefix(
+    std::string framename,
+    std::string prefix,
+    bool necessary = true,
+    bool ignore = false
+)
+{
+    bool frameHasPrefix = !fetch<std::string>(framePrefix, framename).empty();
+    if(frameHasPrefix){
+        if(necessary){
+            std::stringstream x;
+            x << "Error: " << framename << " is marked as necessary for Prefix generation, but already got a Prefix. Please consider an Alias\n";
+            throw std::runtime_error(x.str());
+        }else{
+            return "";
+        }
+    }
+    bool inuse = !fetch<std::string>(reverseFramePrefix, prefix).empty() && !ignore;
+    std::string newPrefix = prefix;
+    int i = 1;
+    while(inuse){
+        std::stringstream x;
+        x << prefix << i;
+        newPrefix = x.str();
+        inuse = !fetch<std::string>(reverseFramePrefix, newPrefix).empty();
+    }
+
+    if(!ignore){
+        reverseFramePrefix[newPrefix] = framename;
+    }
+    framePrefix[framename] = newPrefix;
+
+    return newPrefix;
+}
+
+mlir::Value SQLVisitor::fetchAlias(std::string name){
+    mlir::Value res = fetch<mlir::Value>(alias, name);
+    if(res != NULL){
+        return res;
+    }
+    std::stringstream x;
+    x << "Error: " << name << " does not name an Alias\n";
+    throw std::runtime_error(x.str());
+}
+
+mlir::Value SQLVisitor::fetchMLIR(std::string name){
+    mlir::Value res;
+    res = fetch<mlir::Value>(alias, name);
+    if(res != NULL){
+        return res;
+    }
+    res = fetch<mlir::Value>(view, name);
+    if(res != NULL){
+        return res;
+    }
+    std::stringstream x;
+    x << "Error: " << name << " was not registered with the Function \"registerView\" or were given an alias\n";
+    throw std::runtime_error(x.str());
+}
+
+std::string SQLVisitor::fetchPrefix(std::string name){
+    std::string prefix = fetch<std::string>(framePrefix, name);
+    if(!prefix.empty()){
+        return prefix;
+    }
+    return "";
+}
+
+bool SQLVisitor::hasMLIR(std::string name){
+    auto searchview = view.find(name);
+    auto searchalias = alias.find(name);
+    return (searchview != view.end() || searchalias != alias.end());
+}
+
 mlir::Value SQLVisitor::createStringConstant(std::string str){
     mlir::Location loc = builder.getUnknownLoc();
     // Replace escape sequences.
@@ -190,9 +177,6 @@ mlir::Value SQLVisitor::createStringConstant(std::string str){
     );
 }
 
-/**
- * @brief casts a single Attribute Value to a Matrix. Save for Matrix Input.
- */
 mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
     mlir::Location loc = builder.getUnknownLoc();
 
@@ -223,10 +207,11 @@ mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
     }
 }
 
-/**
- * @brief Creates a Frame out of a Matrix Column and a name
- */
-mlir::Value SQLVisitor::matrixToFrame(mlir::Value matrix, std::string newColumnName){
+mlir::Value SQLVisitor::matrixToFrame(
+    mlir::Value matrix,
+    std::string newColumnName
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
     if(matrix.getType().isa<mlir::daphne::MatrixType>()){
         //make a Frame from the Matrix.
@@ -249,10 +234,11 @@ mlir::Value SQLVisitor::matrixToFrame(mlir::Value matrix, std::string newColumnN
     }
 }
 
-/**
- * @brief creates ColBindOp to add the matirx to the currentFrame.
- */
-mlir::Value SQLVisitor::addMatrixToCurrentFrame(mlir::Value matrix, std::string newColumnName){
+mlir::Value SQLVisitor::addMatrixToCurrentFrame(
+    mlir::Value matrix,
+    std::string newColumnName
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     if(matrix.getType().isa<mlir::daphne::MatrixType>()){
@@ -282,10 +268,11 @@ mlir::Value SQLVisitor::addMatrixToCurrentFrame(mlir::Value matrix, std::string 
     }
 }
 
-/**
- * @brief creates ExtractColOp and CastOp
- */
-mlir::Value SQLVisitor::extractMatrixFromFrame(mlir::Value frame, mlir::Value colname){
+mlir::Value SQLVisitor::extractMatrixFromFrame(
+    mlir::Value frame,
+    mlir::Value colname
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     mlir::Type vt = utils.unknownType;
@@ -309,11 +296,6 @@ mlir::Value SQLVisitor::extractMatrixFromFrame(mlir::Value frame, mlir::Value co
     ));
 }
 
-/**
- * @brief returns GroupEnumAttr for a given aggregation function
- *
- * TODO: extend if more aggregation Functions get implemented.
- */
 mlir::Attribute SQLVisitor::getEnum(const std::string & func){
     mlir::Location loc = builder.getUnknownLoc();
     if(func == "count"){
@@ -337,77 +319,73 @@ mlir::Attribute SQLVisitor::getEnum(const std::string & func){
     return nullptr;
 }
 
-/**
- * @brief returns result of stringifyGroupEnum for the given func.
- */
 std::string SQLVisitor::getEnumLabelExt(const std::string &func){
-
     return mlir::daphne::stringifyGroupEnum(getEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue()).str();
-    // if(func == "count"){
-    //     return "COUNT";
-    // }
-    // if(func == "sum"){
-    //     return "SUM";
-    // }
-    // if(func == "min"){
-    //     return "MIN";
-    // }
-    // if(func == "max"){
-    //     return "MAX";
-    // }
-    // if(func == "avg"){
-    //     return "AVG";
-    // }
-    // std::stringstream x;
-    // x << "Error: " << func << " does not name an aggregation Function for Group\n";
-    // throw std::runtime_error(x.str());
-    // return "";
 }
 
-
 // ****************************************************************************
-// Visitor functions
+// Visitor functions wrongeedsda
 // ****************************************************************************
 
 //script
-antlrcpp::Any SQLVisitor::visitScript(SQLGrammarParser::ScriptContext * ctx) {
+antlrcpp::Any SQLVisitor::visitScript(
+    SQLGrammarParser::ScriptContext * ctx
+)
+{
     mlir::Value res = utils.valueOrError(visitChildren(ctx));
     return res;
 }
 
 //sql
-antlrcpp::Any SQLVisitor::visitSql(SQLGrammarParser::SqlContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSql(
+    SQLGrammarParser::SqlContext * ctx
+)
+{
     mlir::Value res = utils.valueOrError(visit(ctx->query()));
     mlir::Location loc = builder.getUnknownLoc();
-    // builder.create<mlir::daphne::ConstantOp>(loc, GroupEnum::SUM);
     return res;
 }
 
 //query
-antlrcpp::Any SQLVisitor::visitQuery(SQLGrammarParser::QueryContext * ctx) {
+antlrcpp::Any SQLVisitor::visitQuery(
+    SQLGrammarParser::QueryContext * ctx
+)
+{
     mlir::Value res = utils.valueOrError(visit(ctx->select()));
     return res;
 }
 
 //select
-antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
+antlrcpp::Any SQLVisitor::visitSelect(
+    SQLGrammarParser::SelectContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value res;
-    setBit(sqlFlag, (int64_t)SQLBit::codegen, 1); //activates code generation in generalExpr for Join and whereClause
 
+    //Setting Codegeneration for Where Clause
+    setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
+
+    //Creating a Frame using FROM and JOIN
     try{
         currentFrame = utils.valueOrError(visit(ctx->tableExpr()));
     }catch(std::runtime_error & e){
         std::stringstream err_msg;
-        err_msg << "Error during From statement. Couldn't create Frame.\n\t\t" << e.what();
-
+        err_msg << "Error during From statement. "
+            << "Couldn't create Frame.\n\t\t" << e.what();
         throw std::runtime_error(err_msg.str());
     }
 
+    //If a where clause exist, filter <currentFrame> accordingly.
     if(ctx->whereClause()){
         currentFrame = utils.valueOrError(visit(ctx->whereClause()));
     }
 
+    //In case of a group by clause, we deactivate code generation for a moment
+    //to scan the projection and havingClause for identifiers that need to be
+    //included in the group. NOTE: in case the having or projection includes an
+    //aggregation function we are going to generate the code on which the
+    //aggregation and extend the currentFrame with it.
     if(ctx->groupByClause()){
         setBit(sqlFlag, (int64_t)SQLBit::group, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
@@ -419,6 +397,8 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
         visit(ctx->groupByClause());
     }
 
+    //Runs over the projections and seeks columns and adds them to a Frame,
+    //which is the result of this function
     res = utils.valueOrError(visit(ctx->selectExpr(0)));
     for(auto i = 1; i < ctx->selectExpr().size(); i++){
         mlir::Value add;
@@ -447,7 +427,8 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
             );
         }catch(std::runtime_error & e){
             std::stringstream err_msg;
-            err_msg << "Error during SELECT statement. Couldn't Insert Extracted Columns.\n\t\t" << e.what();
+            err_msg << "Error during SELECT statement. "
+                << "Couldn't Insert Extracted Columns.\n\t\t" << e.what();
             throw std::runtime_error(err_msg.str());
         }
     }
@@ -455,22 +436,28 @@ antlrcpp::Any SQLVisitor::visitSelect(SQLGrammarParser::SelectContext * ctx){
 }
 
 //subquery
-antlrcpp::Any SQLVisitor::visitSubquery(SQLGrammarParser::SubqueryContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSubquery(
+    SQLGrammarParser::SubqueryContext * ctx
+)
+{
+    //TODO: Subquery Implementations
     return visitChildren(ctx);
 }
 
 //subqueryExpr
-antlrcpp::Any SQLVisitor::visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSubqueryExpr(
+    SQLGrammarParser::SubqueryExprContext * ctx
+)
+{
+    //TODO: Subquery Implementations
     return nullptr;
 }
 
 //SelectExpr
-//****
-//* Returns what selectIdent (stringIdent/intIdent) returns.
-//*     This is a SSA to ExtractColumn Operation.
-//* Callee: visitSelect
-//****/
-antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitSelectExpr(
+    SQLGrammarParser::SelectExprContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     mlir::Value matrix;
@@ -480,22 +467,29 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(SQLGrammarParser::SelectExprContext * 
         return nullptr;
     }
 
+    //we get a Matrix or int/float value. From this we generate a Matrix.
     mlir::Value expr = utils.valueOrError(vExpr);
     matrix = castToMatrixColumn(expr);
 
+    //Now we look up what the label for the result should be
     std::string label;
     if(ctx->aka){
         label = ctx->aka->getText();
     }else{
         label = ctx->getText();
     }
-
+    //And generate with the matrix and label a Frame which we return
     return matrixToFrame(matrix, label);
 }
 
 //tableExpr
-antlrcpp::Any SQLVisitor::visitTableExpr(SQLGrammarParser::TableExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitTableExpr(
+    SQLGrammarParser::TableExprContext * ctx
+)
+{
+    //We set the current frame as the result of the fromExpr
     currentFrame = utils.valueOrError(visit(ctx->fromExpr()));
+    //And join other frames to the currentFrame.
     for(auto i = 0; i < ctx->joinExpr().size(); i++){
         currentFrame = utils.valueOrError(visit(ctx->joinExpr(i)));
     }
@@ -503,7 +497,10 @@ antlrcpp::Any SQLVisitor::visitTableExpr(SQLGrammarParser::TableExprContext * ct
 }
 
 //fromExpr
-antlrcpp::Any SQLVisitor::visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx){
+antlrcpp::Any SQLVisitor::visitTableIdentifierExpr(
+    SQLGrammarParser::TableIdentifierExprContext *ctx
+)
+{
     try{
         mlir::Value var = utils.valueOrError(visit(ctx->var));
         return var;
@@ -514,7 +511,12 @@ antlrcpp::Any SQLVisitor::visitTableIdentifierExpr(SQLGrammarParser::TableIdenti
     }
 }
 
-antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitCartesianExpr(
+    SQLGrammarParser::CartesianExprContext * ctx
+)
+{
+    //we have to at least two frames in the fromExpr. We join them together
+    //with the Cartesian product.
     try{
         mlir::Location loc = builder.getUnknownLoc();
         mlir::Value res;
@@ -522,10 +524,12 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
         mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
         std::vector<mlir::Type> colTypes;
-        for(mlir::Type t : lhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+        for(mlir::Type t : lhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes()){
             colTypes.push_back(t);
-        for(mlir::Type t : rhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
+        }
+        for(mlir::Type t : rhs.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes()){
             colTypes.push_back(t);
+        }
         mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
 
         res = static_cast<mlir::Value>(
@@ -538,12 +542,22 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(SQLGrammarParser::CartesianExprCont
         );
         return res;
     }catch(std::runtime_error &){
-        throw std::runtime_error("Unexpected Error during cartesian operation");
+        throw std::runtime_error(
+            "Unexpected Error during Cartesian operation"
+        );
     }
 }
 
 //joinExpr
-antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext * ctx) {
+antlrcpp::Any SQLVisitor::visitInnerJoin(
+    SQLGrammarParser::InnerJoinContext * ctx
+)
+{
+    //we join to frames together. One is the currentFrame and the other is a
+    //new frame. The argument that referneces the currentFrame has to be on the
+    //left side of the Comparisons and the to be joined on the right side.
+    //This behavior could be changed here.
+    //TODO: Make the position independent
     mlir::Location loc = builder.getUnknownLoc();
 
     mlir::Value tojoin = utils.valueOrError(visit(ctx->var));
@@ -570,47 +584,21 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(SQLGrammarParser::InnerJoinContext * ct
         ));
 }
 
-//whereClause TODO: Check if castToMatrixColumn is sufficient (same as HavingClause)
-antlrcpp::Any SQLVisitor::visitWhereClause(SQLGrammarParser::WhereClauseContext * ctx) {
+
+antlrcpp::Any SQLVisitor::visitWhereClause(
+    SQLGrammarParser::WhereClauseContext * ctx
+)
+{
+    //Creates a FilterRowOp with the result of a generalExpr. The result is a
+    //matrix or a single value, vExpr. vExpr gets cast to a matrix, which
+    //FilterRowOp uses. IMPORTANT: FilterRowOp takes up the work to make a
+    //int/float into a boolean for the filtering.
     mlir::Location loc = builder.getUnknownLoc();
-    //WE Create a Matrix of the same length as the frame rows got.
-    // Filled with zeros called a.
-    // we compare a with the result of GeneralExpr called b as follows:
-    // a != b
-    // if b is a scalar than all equals true.
-    // if b is a vector than elementwise.
     mlir::Value filter;
 
     antlrcpp::Any vExpr = visit(ctx->cond);
     mlir::Value expr = utils.valueOrError(vExpr);
     filter = castToMatrixColumn(expr);
-
-    // mlir::Value expr = utils.valueOrError(visit(ctx->cond));
-    // if(expr.getType().isa<mlir::daphne::MatrixType>()){
-    //     filter = expr;
-    // }else{
-    //     // mlir::Value numRow = static_cast<mlir::Value>(
-    //     //     builder.create<mlir::daphne::NumRowsOp>(
-    //     //         loc,
-    //     //         utils.sizeType,
-    //     //         currentFrame
-    //     //     ));
-    //     //
-    //     // mlir::Value one = static_cast<mlir::Value>(
-    //     //     builder.create<mlir::daphne::ConstantOp>(
-    //     //         loc,
-    //     //         builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-    //     //     ));
-    //     //
-    //     // filter = static_cast<mlir::Value>(
-    //     //     builder.create<mlir::daphne::FillOp>(
-    //     //         loc,
-    //     //         utils.matrixOf(expr),
-    //     //         expr,
-    //     //         numRow,
-    //     //         utils.castSizeIf(one)
-    //     //     ));
-    // }
 
     mlir::Value v = static_cast<mlir::Value>(
         builder.create<mlir::daphne::FilterRowOp>(
@@ -624,21 +612,31 @@ antlrcpp::Any SQLVisitor::visitWhereClause(SQLGrammarParser::WhereClauseContext 
 }
 
 //groupByClause
-
-//TODO activate Having
+//TODO check if Having is working
 //TODO Check for Errors when working
-antlrcpp::Any SQLVisitor::visitGroupByClause(SQLGrammarParser::GroupByClauseContext * ctx) {
+antlrcpp::Any SQLVisitor::visitGroupByClause(
+    SQLGrammarParser::GroupByClauseContext * ctx
+)
+{
+    //groupByClause has two moods:
+    //Codegeneration = false:
+    //  groupByClause collects all the column names by which a grouping
+    //  should occur.
+    //  TODO: and calls the havingClause.
+    //Codegeneration = true:
+    //  groupByClause creates the groupingOperation with the gathered
+    //  information from here, having and the projections.
+    //  followed by a having check on the newly grouped result.
     mlir::Location loc = builder.getUnknownLoc();
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         for(auto i = 0; i < ctx->selectIdent().size(); i++){
             groupName.push_back(utils.valueOrError(visit(ctx->selectIdent(i))));
-            //Need to visit the selectIdent too.
             grouped[ctx->selectIdent(i)->getText()] = 1;
         }
-        // if(ctx->havingClause()){
-        //     visit(ctx->havingClause());
-        // }
+        if(ctx->havingClause()){
+            visit(ctx->havingClause());
+        }
         return nullptr;
     }else{
         mlir::Type vt = utils.unknownType;
@@ -646,7 +644,9 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(SQLGrammarParser::GroupByClauseCont
         for(int i = 0; i < groupName.size() + columnName.size(); i++){
             colTypes.push_back(vt);
         }
-        mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        mlir::Type resType = mlir::daphne::FrameType::get(
+            builder.getContext(), colTypes
+        );
         currentFrame = static_cast<mlir::Value>(
             builder.create<mlir::daphne::GroupOp>(
                 loc,
@@ -657,22 +657,20 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(SQLGrammarParser::GroupByClauseCont
                 builder.getArrayAttr(functionName)
             )
         );
-
+        if(ctx->havingClause()){
+            currentFrame = visit(ctx->havingClause());
+        }
     }
     return nullptr;
 }
 
 //havingClause
-//TODO: Check if castToMatrixColumn is sufficient (same as where Clause);
-//TODO activate
-antlrcpp::Any SQLVisitor::visitHavingClause(SQLGrammarParser::HavingClauseContext * ctx) {
+antlrcpp::Any SQLVisitor::visitHavingClause(
+    SQLGrammarParser::HavingClauseContext * ctx
+)
+{
+    //Same as Where
     mlir::Location loc = builder.getUnknownLoc();
-    // WE Create a Matrix of the same length as the frame rows got.
-    // Filled with zeros called a.
-    // we compare a with the result of GeneralExpr called b as follows:
-    // a != b
-    // if b is a scalar than all equals true.
-    // if b is a vector than elementwise.
     mlir::Value filter;
     antlrcpp::Any vExpr = visit(ctx->cond);
 
@@ -682,31 +680,6 @@ antlrcpp::Any SQLVisitor::visitHavingClause(SQLGrammarParser::HavingClauseContex
 
     mlir::Value expr = utils.valueOrError(vExpr);
     filter = castToMatrixColumn(expr);
-    // if(expr.getType().isa<mlir::daphne::MatrixType>()){
-    //     filter = expr;
-    // }else{
-    //     // mlir::Value numRow = static_cast<mlir::Value>(
-    //     //     builder.create<mlir::daphne::NumRowsOp>(
-    //     //         loc,
-    //     //         utils.sizeType,
-    //     //         currentFrame
-    //     //     ));
-    //     //
-    //     // mlir::Value one = static_cast<mlir::Value>(
-    //     //     builder.create<mlir::daphne::ConstantOp>(
-    //     //         loc,
-    //     //         builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
-    //     //     ));
-    //     //
-    //     // filter = static_cast<mlir::Value>(
-    //     //     builder.create<mlir::daphne::FillOp>(
-    //     //         loc,
-    //     //         utils.matrixOf(expr),
-    //     //         expr,
-    //     //         numRow,
-    //     //         utils.castSizeIf(one)
-    //     //     ));
-    // }
 
     mlir::Value v = static_cast<mlir::Value>(
         builder.create<mlir::daphne::FilterRowOp>(
@@ -720,14 +693,20 @@ antlrcpp::Any SQLVisitor::visitHavingClause(SQLGrammarParser::HavingClauseContex
 }
 
 //generalExpr
-antlrcpp::Any SQLVisitor::visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitLiteralExpr(
+    SQLGrammarParser::LiteralExprContext * ctx
+)
+{
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
     return utils.valueOrError(visit(ctx->literal()));
 }
 
-antlrcpp::Any SQLVisitor::visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) {
+//TODO! Documentation and Error checking
+antlrcpp::Any SQLVisitor::visitIdentifierExpr(
+    SQLGrammarParser::IdentifierExprContext * ctx)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){
@@ -737,8 +716,9 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(SQLGrammarParser::IdentifierExprCo
         if(!isBitSet(sqlFlag, (int64_t)SQLBit::agg)){
             if(grouped[ctx->selectIdent()->getText()] == 0){
                 std::stringstream err_msg;
-                err_msg << "Error during a generalExpr. \"" << ctx->selectIdent()->getText()
-                    << "\" Must be part of the Group Expression or have an Aggregation Function";
+                err_msg << "Error during a generalExpr. \""
+                    << ctx->selectIdent()->getText() << "\" Must be part of "
+                    << "the Group Expression or have an Aggregation Function";
                 throw std::runtime_error(err_msg.str());
             }
         }
@@ -752,19 +732,34 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(SQLGrammarParser::IdentifierExprCo
     return extractMatrixFromFrame(currentFrame, colname);
 }
 
-antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitGroupAggExpr(
+    SQLGrammarParser::GroupAggExprContext * ctx
+)
+{
+    //This function should only be called if there is a "group by" in the query
+    //Codegeneration = false:
+    //  This function activates the code generation and ignores the aggreagtion
+    //  It lets the generalExpr create code as usual. When a Value is returned
+    //  it takes this value and adds it to the currentFrame under a new and
+    //  somewhat unique name.
+    //  (TODO: there might be an issue with not unique name generation)
+    //  the name gets saved alongside with the aggregation function.
+    //  After all that, code generation is turned off again.
+    //Codegeneration = true:
+    //  The function looks up the unique name again and extracts a matrix from
+    //  the currentFrame. This Matrix is the result of this function.
     mlir::Location loc = builder.getUnknownLoc();
-
     std::string newColumnName = "group_" + ctx->var->getText();
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
-        throw std::runtime_error("Use of an aggregation function with out a group clause");
+        throw std::runtime_error("Use of an aggregation function without a group clause");
     }
     if(isBitSet(sqlFlag, (int64_t)SQLBit::agg)){ //Not allowed nested Function Call
         throw std::runtime_error("Nested Aggregation Functions");
     }
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){ //create Column pre Group for in group Aggregation
+    //create Column pre Group for in group Aggregation
+    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         columnName.push_back(createStringConstant(newColumnName));
         functionName.push_back(getEnum(ctx->func->getText()));
 
@@ -774,19 +769,20 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(SQLGrammarParser::GroupAggExprContex
         setBit(sqlFlag, (int64_t)SQLBit::agg, 0);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
 
-        //create Matrix from expr //can return expr when it is already a matrix
         mlir::Value matrix = castToMatrixColumn(expr);
-        currentFrame = addMatrixToCurrentFrame(matrix, newColumnName); //zuweisung gescheht schon in der Funktion also nicht notwendig
+        currentFrame = addMatrixToCurrentFrame(matrix, newColumnName);
         return nullptr;
     }else{ //Get Column after Group
         std::string newColumnNameAppended = newColumnName + "_" + getEnumLabelExt(ctx->func->getText());
-        //Retriev Column from grouped currentFrame
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
         return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
     }
 }
 
-antlrcpp::Any SQLVisitor::visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitParanthesesExpr(
+    SQLGrammarParser::ParanthesesExprContext * ctx
+)
+{
     antlrcpp::Any vRes = visit(ctx->generalExpr());
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
@@ -794,7 +790,10 @@ antlrcpp::Any SQLVisitor::visitParanthesesExpr(SQLGrammarParser::ParanthesesExpr
     return utils.valueOrError(vRes);
 }
 
-antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitMulExpr(
+    SQLGrammarParser::MulExprContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
     std::string op = ctx->op->getText();
 
@@ -809,14 +808,21 @@ antlrcpp::Any SQLVisitor::visitMulExpr(SQLGrammarParser::MulExprContext * ctx) {
     mlir::Value rhs = utils.valueOrError(vRhs);
 
     if(op == "*")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(
+            loc, lhs, rhs
+        ));
     if(op == "/")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(
+            loc, lhs, rhs
+        ));
 
     throw std::runtime_error("unexpected op symbol");
 }
 
-antlrcpp::Any SQLVisitor::visitAddExpr(SQLGrammarParser::AddExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitAddExpr(
+    SQLGrammarParser::AddExprContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
     std::string op = ctx->op->getText();
 
@@ -831,14 +837,21 @@ antlrcpp::Any SQLVisitor::visitAddExpr(SQLGrammarParser::AddExprContext * ctx) {
     mlir::Value rhs = utils.valueOrError(vRhs);
 
     if(op == "+")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(
+            loc, lhs, rhs
+        ));
     if(op == "-")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(
+            loc, lhs, rhs
+        ));
 
     throw std::runtime_error("unexpected op symbol");
 }
 
-antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitCmpExpr(
+    SQLGrammarParser::CmpExprContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
     std::string op = ctx->op->getText();
 
@@ -853,22 +866,37 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) {
     mlir::Value rhs = utils.valueOrError(vRhs);
 
     if(op == "=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(
+            loc, lhs, rhs
+        ));
     if(op == "<>")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(
+            loc, lhs, rhs
+        ));
     if(op == "<")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLtOp>(
+            loc, lhs, rhs
+        ));
     if(op == "<=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(
+            loc, lhs, rhs
+        ));
     if(op == ">")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(
+            loc, lhs, rhs
+        ));
     if(op == ">=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(
+            loc, lhs, rhs
+        ));
 
     throw std::runtime_error("unexpected op symbol");
 }
 
-antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitAndExpr(
+    SQLGrammarParser::AndExprContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
@@ -881,10 +909,15 @@ antlrcpp::Any SQLVisitor::visitAndExpr(SQLGrammarParser::AndExprContext * ctx) {
     mlir::Value lhs = utils.valueOrError(vLhs);
     mlir::Value rhs = utils.valueOrError(vRhs);
 
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(
+        loc, lhs, rhs
+    ));
 }
 
-antlrcpp::Any SQLVisitor::visitOrExpr(SQLGrammarParser::OrExprContext * ctx) {
+antlrcpp::Any SQLVisitor::visitOrExpr(
+    SQLGrammarParser::OrExprContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
@@ -897,11 +930,16 @@ antlrcpp::Any SQLVisitor::visitOrExpr(SQLGrammarParser::OrExprContext * ctx) {
     mlir::Value lhs = utils.valueOrError(vLhs);
     mlir::Value rhs = utils.valueOrError(vRhs);
 
-    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(
+        loc, lhs, rhs)
+    );
 }
 
 //tableReference
-antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) {
+antlrcpp::Any SQLVisitor::visitTableReference(
+    SQLGrammarParser::TableReferenceContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     std::string var = ctx->var->getText();
@@ -931,8 +969,11 @@ antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceCo
         );
         return res;
     }
-    catch(std::runtime_error &) {
-        throw std::runtime_error("Frame " + var + " referenced before assignment");
+    catch(std::runtime_error &)
+{
+        throw std::runtime_error(
+            "Frame " + var + " referenced before assignment"
+        );
     }
 }
 
@@ -942,7 +983,10 @@ antlrcpp::Any SQLVisitor::visitTableReference(SQLGrammarParser::TableReferenceCo
 //*     A SSA to ExtractColumn Operation.
 //* Callee: visitSelectExpr
 //****
-antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) {
+antlrcpp::Any SQLVisitor::visitStringIdent(
+    SQLGrammarParser::StringIdentContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
 
     std::string getSTR;
@@ -951,7 +995,10 @@ antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext 
 
     if(ctx->frame){
         if(!hasMLIR(ctx->frame->getText())){
-            throw std::runtime_error("Unknown Frame: " + ctx->frame->getText() + " use before declaration during selection");
+            throw std::runtime_error(
+                "Unknown Frame: " + ctx->frame->getText()
+                + " use before declaration during selection"
+            );
         }
         std::string framePrefix = fetchPrefix(ctx->frame->getText());
         if(!framePrefix.empty()){
@@ -963,9 +1010,13 @@ antlrcpp::Any SQLVisitor::visitStringIdent(SQLGrammarParser::StringIdentContext 
 }
 
 //literal
-antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext * ctx) {
+antlrcpp::Any SQLVisitor::visitLiteral(
+    SQLGrammarParser::LiteralContext * ctx
+)
+{
     mlir::Location loc = builder.getUnknownLoc();
-    if(auto lit = ctx->INT_LITERAL()) {
+    if(auto lit = ctx->INT_LITERAL())
+{
         int64_t val = atol(lit->getText().c_str());
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(
@@ -973,7 +1024,8 @@ antlrcpp::Any SQLVisitor::visitLiteral(SQLGrammarParser::LiteralContext * ctx) {
                 )
         );
     }
-    if(auto lit = ctx->FLOAT_LITERAL()) {
+    if(auto lit = ctx->FLOAT_LITERAL())
+{
         double val = atof(lit->getText().c_str());
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(
