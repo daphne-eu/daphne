@@ -49,7 +49,7 @@ void printSca(int8_t arg, bool newline, bool err, DCTX(ctx)) {
 template<>
 void printSca(uint8_t arg, bool newline, bool err, DCTX(ctx)) {
     std::ostream & os = err ? std::cerr : std::cout;
-    os << static_cast<int32_t>(arg);
+    os << static_cast<uint32_t>(arg);
     if(newline)
         os << std::endl;
 }
