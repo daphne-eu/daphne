@@ -117,12 +117,14 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 
         if(userConfig_.use_vectorized_exec) {
             // TODO: add inference here if we have rewrites that could apply to vectorized pipelines due to smaller sizes
-            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass(userConfig_));
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
             pm.addPass(mlir::createCanonicalizerPass());
         }
-
         if(userConfig_.explain_vectorized)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+
+        if(userConfig_.use_cuda)
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
 
         if(userConfig_.use_freeOps)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
@@ -132,7 +134,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
 
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_));
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         if(userConfig_.explain_kernels)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
