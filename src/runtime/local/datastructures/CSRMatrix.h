@@ -313,6 +313,14 @@ public:
         fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
     }
     
+    void printValue(std::ostream & os, ValueType val) const {
+      switch (ValueTypeUtils::codeFor<ValueType>) {
+        case ValueTypeCode::SI8 : os << static_cast<int32_t>(val); break;
+        case ValueTypeCode::UI8 : os << static_cast<uint32_t>(val); break;
+        default : os << val; break;
+      }
+    }
+
     void print(std::ostream & os) const override {
         os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
@@ -327,7 +335,7 @@ public:
             for(size_t i = 0; i < rowNumNonZeros; i++)
                 oneRow[rowColIdxs[i]] = rowValues[i];
             for(size_t c = 0; c < numCols; c++) {
-                os << oneRow[c];
+                printValue(os, oneRow[c]);
                 if (c < numCols - 1)
                     os << ' ';
             }
