@@ -80,7 +80,7 @@ template<> const std::string ValueTypeUtils::irNameFor<uint32_t> = "ui32";
 template<> const std::string ValueTypeUtils::irNameFor<uint64_t> = "ui64";
 template<> const std::string ValueTypeUtils::irNameFor<float>  = "f32";
 template<> const std::string ValueTypeUtils::irNameFor<double> = "f64";
-
+    
 const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
     switch(type) {
         case ValueTypeCode::SI8:  return cppNameFor<int8_t>;

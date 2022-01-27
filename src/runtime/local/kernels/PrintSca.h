@@ -27,7 +27,7 @@
 
 /**
  * @brief Prints a scalar value to standard output.
- *
+ * 
  * @param arg The value to print.
  */
 template<typename VT>
