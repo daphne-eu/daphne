@@ -35,6 +35,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include "api/cli/CommandLineParser.h"
 
 using namespace std;
 using namespace mlir;
@@ -42,6 +43,33 @@ using namespace mlir;
 void printHelp(const std::string & cmd) {
     cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" << endl;
 }
+
+void initArgs(CommandLineParser *cliParser){
+
+    bool res=cliParser->addNewOption("--help", "print all possible arguments", "");
+    if(!res){
+        cout<<cliParser->getError()<<endl;
+        exit(1);
+    }
+    
+    res=cliParser->addNewOption("--args", "some useful description 1", "{ARG=VAL}");
+    if(!res){
+        cout<<cliParser->getError()<<endl;
+        exit(1);
+    }
+
+    res=cliParser->addNewOption("--vec", "force tiled execution engine", "");
+    if(!res){   
+        cout<<cliParser->getError()<<endl;
+        exit(1);
+    }
+
+    res=cliParser->addNewOption("--select-matrix-representations", "force sparce matrices", "");
+    if(!res){
+        cout<<cliParser->getError()<<endl;
+        exit(1);
+    }
+} 
 
 int
 main(int argc, char** argv)
@@ -54,18 +82,44 @@ main(int argc, char** argv)
     unordered_map<string, string> scriptArgs;
     bool useVectorizedPipelines = false;
     bool selectMatrixRepresentations = false;
+    CommandLineParser cliParser;
+    initArgs(&cliParser);
+
     if(argc < 2) {
-        printHelp(args[0]);
+        cout<<cliParser.getUsageMessage(argv[0])<<endl;
         exit(1);
     }
     else {
         if(args[1] == "-h" || args[1] == "--help") {
-            printHelp(args[0]);
+            cout<< cliParser.getHelpMessage()<<endl;
             exit(0);
         }
         else {
             inputFile = args[1];
-            for(int argPos = 2; argPos < argc; argPos++) {
+            bool res=cliParser.parseCommandLine(argc, argv);
+            if(!res){
+                cout<< cliParser.getError()<<endl;
+                exit(1);
+            }
+            if(cliParser.isDefined("--help")){
+                //ignore it user accidentally passed an extra arg
+                // or print usageMessage and exit();
+                // or print helpMessage and exit() 
+            }
+
+            if(cliParser.isDefined("--args")){
+                    //To discuss should be with , not space
+            }
+
+            if(cliParser.isDefined("--vec")){
+                useVectorizedPipelines = true;
+                cout<<"Tiled execution engine is enabled"<<endl;
+            }
+            if(cliParser.isDefined("--select-matrix-representations")){
+                selectMatrixRepresentations=true;
+                 cout<<"Sparse matrices are forced"<<endl;
+            }
+            /*for(int argPos = 2; argPos < argc; argPos++) {
                 if(args[argPos] == "--args") {
                     int i;
                     for(i = argPos + 1; i < argc; i++) {
@@ -90,7 +144,7 @@ main(int argc, char** argv)
                     printHelp(args[0]);
                     exit(1);
                 }
-            }
+            }*/
         }
     }
 
