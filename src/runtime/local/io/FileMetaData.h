@@ -69,7 +69,8 @@ struct FileMetaData {
             else if(vtc == ValueTypeCode::UI32) vtc_ = "ui32";
             else if(vtc == ValueTypeCode::UI8) vtc_ = "ui8";
             else
-              std::cout<<"error";
+            {//error
+            }
         std::string line;
         std::ofstream ofs(filename + ".meta", std::ios::out);
         if (!ofs.good())

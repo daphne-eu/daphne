@@ -69,8 +69,6 @@ void writeCsv(DTRes *arg, File *file,  ValueTypeCode *schema) {
 template <typename VT> struct WriteCsv<DenseMatrix<VT>> {
   static void apply(const DenseMatrix<VT> *arg, File* file) {
     assert(file != nullptr && "File required");
-    assert(numRows > 0 && "numRows must be > 0");
-    assert(numCols > 0 && "numCols must be > 0");
     const VT * valuesArg = arg->getValues();
     size_t cell = 0;
     for (size_t i = 0; i < arg->getNumRows(); ++i)
