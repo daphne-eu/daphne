@@ -71,7 +71,8 @@ class DenseMatrix : public Matrix<ValueType>
     friend void DataObjectFactory::destroy(const DataType * obj);
 
     /**
-     * @brief Creates a `DenseMatrix` and allocates enough memory for the
+     * @brief Creates a `DenseMatrix` and allocate
+     * s enough memory for the
      * specified maximum size in the `values` array.
      *
      * @param maxNumRows The maximum number of rows.
@@ -90,21 +91,8 @@ class DenseMatrix : public Matrix<ValueType>
      * @param values A `std::shared_ptr` to an existing array of values.
      */
     DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values
-                , std::shared_ptr<ValueType> cuda_ptr_ = nullptr) :
-            Matrix<ValueType>(numRows, numCols),
-            rowSkip(numCols),
-            values(values),
-            cuda_ptr(cuda_ptr_),
-            lastAppendedRowIdx(0),
-            lastAppendedColIdx(0)
-    {
-#ifdef USE_CUDA
-#ifndef NDEBUG
-            std::cout << "Increasing refcount on cuda buffer " << cuda_ptr.get() << " of size" << printBufferSize()
-                    <<  "Mb to " << cuda_ptr.use_count() << std::endl;
-#endif
-#endif
-    }
+                , std::shared_ptr<ValueType> cuda_ptr_ = nullptr) : Matrix<ValueType>(numRows, numCols),
+                rowSkip(numCols), values(values), cuda_ptr(cuda_ptr_), lastAppendedRowIdx(0), lastAppendedColIdx(0) { }
 
     /**
      * @brief Creates a `DenseMatrix` around a sub-matrix of another
@@ -118,19 +106,7 @@ class DenseMatrix : public Matrix<ValueType>
      */
     DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
 
-#if defined USE_CUDA && !defined NDEBUG
-    ~DenseMatrix()
-    {
-        if(cuda_ptr.use_count() > 1)
-            std::cout << "decreasing use_count of DenseMatrix (cuda_ptr=" << cuda_ptr.get() << " of size " <<
-                   printBufferSize() << "Mb to " << cuda_ptr.use_count() << std::endl;
-        else if (cuda_ptr.use_count() > 0)
-            std::cout << "removing DenseMatrix (cuda_ptr=" << cuda_ptr.get() << " of size " <<
-                    printBufferSize() << "Mb" << std::endl;
-    }
-#else
     ~DenseMatrix() override = default;
-#endif
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
         assert((rowIdx < numRows) && "rowIdx is out of bounds");
@@ -205,62 +181,7 @@ public:
         return values.get();
     }
 
-#ifdef USE_CUDA
-    const ValueType* getValuesCUDA() const {
-        if(!cuda_ptr)
-            const_cast<DenseMatrix*>(this)->alloc_shared_cuda_buffer();
 
-        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
-            host2cuda();
-        }
-        cuda_buffer_current = true;
-        return cuda_ptr.get();
-    }
-
-    ValueType* getValuesCUDA() {
-        if(!cuda_ptr)
-            alloc_shared_cuda_buffer();
-
-        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
-            host2cuda();
-        }
-        cuda_dirty = true;
-        cuda_buffer_current = true;
-        host_buffer_current = false;
-        return cuda_ptr.get();
-    }
-
-    [[maybe_unused]] bool isBufferDirty(ALLOCATION_TYPE type) const {
-        switch(type) {
-            case ALLOCATION_TYPE::CUDA_ALLOC:
-                return cuda_dirty;
-            case ALLOCATION_TYPE::HOST_ALLOC:
-            default:
-                return host_dirty;
-        }
-    }
-
-    [[maybe_unused]] bool isBufferCurrent(ALLOCATION_TYPE type) const {
-        switch(type) {
-            case ALLOCATION_TYPE::CUDA_ALLOC:
-                return cuda_buffer_current;
-            case ALLOCATION_TYPE::HOST_ALLOC:
-            default:
-                return host_buffer_current;
-        }
-    }
-
-    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
-        return cuda_ptr;
-    }
-    
-    [[maybe_unused]] void printCUDAValuesSharedPtrUseCount() const {
-        std::ios state(nullptr);
-        state.copyfmt(std::cout);
-        std::cout << "CudaPtr " << cuda_ptr.get() << " use_count: " << cuda_ptr.use_count() << std::endl;
-        std::cout.copyfmt(state);
-    }
-#endif
 
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
@@ -327,10 +248,67 @@ public:
 
     size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
 
+    float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
+
     DenseMatrix<ValueType>* vectorTranspose() const;
 
+
 #ifdef USE_CUDA
-    void cudaAlloc();
+    const ValueType* getValuesCUDA() const {
+        if(!cuda_ptr)
+            const_cast<DenseMatrix*>(this)->alloc_shared_cuda_buffer();
+
+        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
+            host2cuda();
+        }
+        cuda_buffer_current = true;
+        return cuda_ptr.get();
+    }
+
+    ValueType* getValuesCUDA() {
+        if(!cuda_ptr)
+            alloc_shared_cuda_buffer();
+
+        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
+            host2cuda();
+        }
+        cuda_dirty = true;
+        cuda_buffer_current = true;
+        host_buffer_current = false;
+        return cuda_ptr.get();
+    }
+
+    [[maybe_unused]] bool isBufferDirty(ALLOCATION_TYPE type) const {
+        switch(type) {
+            case ALLOCATION_TYPE::CUDA_ALLOC:
+                return cuda_dirty;
+            case ALLOCATION_TYPE::HOST_ALLOC:
+            default:
+                return host_dirty;
+        }
+    }
+
+    [[maybe_unused]] bool isBufferCurrent(ALLOCATION_TYPE type) const {
+        switch(type) {
+            case ALLOCATION_TYPE::CUDA_ALLOC:
+                return cuda_buffer_current;
+            case ALLOCATION_TYPE::HOST_ALLOC:
+            default:
+                return host_buffer_current;
+        }
+    }
+
+    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
+        return cuda_ptr;
+    }
+
+    [[maybe_unused]] void printCUDAValuesSharedPtrUseCount() const {
+        std::ios state(nullptr);
+        state.copyfmt(std::cout);
+        std::cout << "CudaPtr " << cuda_ptr.get() << " use_count: " << cuda_ptr.use_count() << std::endl;
+        std::cout.copyfmt(state);
+    }
+
     void host2cuda();
     void cuda2host();
 
@@ -340,10 +318,9 @@ public:
     void cuda2host() const {
         const_cast<DenseMatrix*>(this)->cuda2host();
     }
-
-    float printBufferSize() {
-      return static_cast<float>(bufferSize()) / (1048576);
-//        return bufferSize() / (1024*1024);
+#else
+    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
+        return nullptr;
     }
 #endif
 };

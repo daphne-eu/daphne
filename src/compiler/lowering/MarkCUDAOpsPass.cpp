@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-
+#ifdef USE_CUDA
 #include "compiler/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
@@ -165,3 +165,4 @@ void MarkCUDAOpsPass::runOnFunction() {
 std::unique_ptr<Pass> daphne::createMarkCUDAOpsPass(const DaphneUserConfig& cfg) {
     return std::make_unique<MarkCUDAOpsPass>(cfg);
 }
+#endif // USE_CUDA

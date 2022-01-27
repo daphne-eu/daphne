@@ -37,7 +37,7 @@ private:
     mlir::MLIRContext context_;
     bool distributed_;
     bool selectMatrixRepresentations_;
-    bool insertFreeOp_;
+    bool insertFreeOp_{};
     DaphneUserConfig userConfig_;
 };
 

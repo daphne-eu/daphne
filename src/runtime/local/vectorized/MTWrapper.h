@@ -59,6 +59,7 @@ protected:
             workers[i] = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
     }
 
+#ifdef USE_CUDA
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         for(uint32_t i=_numCPPThreads; i < _numThreads; i++)
             workers[i] = std::make_unique<WorkerCPU>(q, verbose, 1, batchSize);
@@ -80,14 +81,13 @@ protected:
             }
         }
     }
-
+#endif
     size_t allocateOutput(DT***& res, size_t numOutputs, int64_t* outRows, int64_t* outCols,
             mlir::daphne::VectorCombine* combines) {
         auto mem_required = 0ul;
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
             if((*res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
-//            if(outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 (*res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
                 mem_required += static_cast<DT*>((*res[i]))->bufferSize();

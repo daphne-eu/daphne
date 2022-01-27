@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-#include <parser/daphnedsl/DaphneDSLParser.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include "DaphneIrExecutor.h"
@@ -27,7 +26,6 @@
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
@@ -123,8 +121,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_vectorized)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
 
+#ifdef USE_CUDA
         if(userConfig_.use_cuda)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
+#endif
 
         if(userConfig_.use_freeOps)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());

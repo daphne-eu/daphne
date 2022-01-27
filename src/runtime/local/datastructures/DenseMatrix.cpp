@@ -37,12 +37,10 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         if(zero)
             memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
     }
-#ifdef USE_CUDA
     else if (type == ALLOCATION_TYPE::CUDA_ALLOC) {
-        cudaAlloc();
+        alloc_shared_cuda_buffer();
         cuda_buffer_current = true;
     }
-#endif
     else {
         throw std::runtime_error("Unknown allocation type: " + std::to_string(static_cast<int>(type)));
     }
@@ -66,21 +64,60 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl
     alloc_shared_values(src->values, offset);
     host_dirty = src->host_dirty;
     host_buffer_current = src->host_buffer_current;
+
+#ifdef USE_CUDA
     cuda_dirty = src->cuda_dirty;
     cuda_buffer_current = src->cuda_buffer_current;
 
-#ifdef USE_CUDA
     if(src->cuda_ptr)
         alloc_shared_cuda_buffer(src->cuda_ptr, offset);
 #endif
 }
 
-#ifdef USE_CUDA
-template <typename ValueType>
-void DenseMatrix<ValueType>::cudaAlloc() {
-    alloc_shared_cuda_buffer();
+template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostream & os, ValueType val) const {
+    os << val;
 }
 
+template<typename ValueType>
+void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> src, size_t offset) {
+    // correct since C++17: Calls delete[] instead of simple delete
+    if(src) {
+        values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
+    }
+    else
+        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
+}
+
+template<typename ValueType>
+size_t DenseMatrix<ValueType>::bufferSize() {
+    return this->getNumItems() * sizeof(ValueType);
+}
+
+template<typename ValueType>
+DenseMatrix<ValueType>* DenseMatrix<ValueType>::vectorTranspose() const {
+    assert((this->numRows == 1 || this->numCols == 1) && "no-op transpose for vectors only");
+
+    auto transposed = DataObjectFactory::create<DenseMatrix<ValueType>>(this->getNumCols(), this->getNumRows(),
+                                                                        this->getValuesSharedPtr(), this->getCUDAValuesSharedPtr());
+    transposed->cuda_dirty = this->cuda_dirty;
+    transposed->cuda_buffer_current = this->cuda_buffer_current;
+    transposed->host_dirty = this->host_dirty;
+    transposed->host_buffer_current = this->host_buffer_current;
+    return transposed;
+}
+
+// Convert to an integer to print uint8_t values as numbers
+// even if they fall into the range of special ASCII characters.
+template <> void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const
+{
+    os << static_cast<unsigned int>(val);
+}
+template <> void DenseMatrix<signed char>::printValue(std::ostream & os, signed char val) const
+{
+    os << static_cast<int>(val);
+}
+
+#ifdef USE_CUDA
 template <typename ValueType>
 void DenseMatrix<ValueType>::cuda2host() {
     if(!values)
@@ -139,51 +176,10 @@ void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType>
 //#endif
     }
 }
-
+#else
+    template<typename ValueType>
+    void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset) { }
 #endif // USE_CUDA
-
-template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostream & os, ValueType val) const {
-    os << val;
-}
-
-template<typename ValueType>
-void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> src, size_t offset) {
-    // correct since C++17: Calls delete[] instead of simple delete
-    if(src) {
-        values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
-    }
-    else
-        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
-}
-
-template<typename ValueType>
-size_t DenseMatrix<ValueType>::bufferSize() {
-    return this->getNumItems() * sizeof(ValueType);
-}
-
-template<typename ValueType>
-DenseMatrix<ValueType>* DenseMatrix<ValueType>::vectorTranspose() const {
-    assert((this->numRows == 1 || this->numCols == 1) && "no-op transpose for vectors only");
-
-    auto transposed = DataObjectFactory::create<DenseMatrix<ValueType>>(this->getNumCols(), this->getNumRows(),
-                                                                        this->getValuesSharedPtr(), this->getCUDAValuesSharedPtr());
-    transposed->cuda_dirty = this->cuda_dirty;
-    transposed->cuda_buffer_current = this->cuda_buffer_current;
-    transposed->host_dirty = this->host_dirty;
-    transposed->host_buffer_current = this->host_buffer_current;
-    return transposed;
-}
-
-// Convert to an integer to print uint8_t values as numbers
-// even if they fall into the range of special ASCII characters.
-template <> void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const
-{
-    os << static_cast<unsigned int>(val);
-}
-template <> void DenseMatrix<signed char>::printValue(std::ostream & os, signed char val) const
-{
-    os << static_cast<int>(val);
-}
 
 // explicitly instantiate to satisfy linker
 template class DenseMatrix<double>;

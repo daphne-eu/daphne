@@ -85,7 +85,6 @@ main(int argc, char** argv)
                         );
                     }
                     argPos = i - 1;
-//					std::cout << "argPos=" << argPos << std::endl;
                 }
                 else if(args[argPos] == "--vec") {
                     user_config.use_vectorized_exec = true;
@@ -101,21 +100,18 @@ main(int argc, char** argv)
                 else if(args[argPos] == "--select-matrix-representations") {
                     selectMatrixRepresentations = true;
                 }
-#ifdef USE_CUDA
                 else if(args[argPos] == "--cuda") {
-                    int device_count;
+                    int device_count = 0;
+#ifdef USE_CUDA
                     CHECK_CUDART(cudaGetDeviceCount(&device_count));
+#endif
                     if(device_count < 1)
                         std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
-                    else { // NOLINT(readability-misleading-indentation)
-//                        std::cout << "Available CUDA devices: " << device_count << std::endl;
+                    else {
                         user_config.use_cuda = true;
                     }
                 }
-#endif
-//                else if(args[argPos] == "--libdir") {
-				else if (std::string(args[argPos]).find("--libdir") != std::string::npos) {
-//					std::cout << "found libdir: " << args[argPos] << std::endl;
+                else if (std::string(args[argPos]).find("--libdir") != std::string::npos) {
                     const std::string pair = args[argPos];
                     size_t pos = pair.find('=');
                     if(pos == std::string::npos) {

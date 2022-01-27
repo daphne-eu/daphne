@@ -128,25 +128,6 @@ private:
             uint64_t rowStart, uint64_t rowEnd);
 };
 
-template<class DT>
-class CompiledPipelineTaskCUDA : public CompiledPipelineTaskBase<DT> {};
-
-template<typename VT>
-class CompiledPipelineTaskCUDA<DenseMatrix<VT>> : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
-    std::mutex &_resLock;
-    DenseMatrix<VT> ***_res;
-    using CompiledPipelineTaskBase<DenseMatrix<VT>>::_data;
-public:
-    CompiledPipelineTaskCUDA(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
-            : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
-    
-    void execute(uint32_t fid, uint32_t batchSize) override;
-
-private:
-    void accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
-            uint64_t rowStart, uint64_t rowEnd);
-};
-
 template<typename VT>
 class CompiledPipelineTask<CSRMatrix<VT>> : public CompiledPipelineTaskBase<CSRMatrix<VT>> {
     // TODO: multiple sinks
@@ -155,44 +136,6 @@ class CompiledPipelineTask<CSRMatrix<VT>> : public CompiledPipelineTaskBase<CSRM
 public:
     CompiledPipelineTask(CompiledPipelineTaskData<CSRMatrix<VT>> data, VectorizedDataSink<CSRMatrix<VT>> &resultSink)
         : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSink(resultSink) {}
-
-    void execute(uint32_t fid, uint32_t batchSize) override {
-        assert(_data._numOutputs == 1 && "TODO");
-        size_t localResNumRows;
-        size_t localResNumCols;
-        switch(_data._combines[0]) {
-        case VectorCombine::ROWS: {
-            assert(_data._wholeResultCols[0] != -1 && "TODO");
-            localResNumRows = _data._ru - _data._rl;
-            localResNumCols = _data._wholeResultCols[0];
-            break;
-        }
-        case VectorCombine::COLS: {
-            assert(_data._wholeResultRows[0] != -1 && "TODO");
-            localResNumRows = _data._wholeResultRows[0];
-            localResNumCols = _data._ru - _data._rl;
-            break;
-        }
-        default:
-            throw std::runtime_error("Not implemented");
-        }
-
-        VectorizedDataSink<CSRMatrix<VT>> localSink(_data._combines[0], localResNumRows, localResNumCols);
-        CSRMatrix<VT> *lres = nullptr;
-        for(uint64_t r = _data._rl ; r < _data._ru ; r += batchSize) {
-            //create zero-copy views of inputs/outputs
-            uint64_t r2 = std::min(r + batchSize, _data._ru);
-
-            auto linputs = this->createFuncInputs(r, r2);
-            CSRMatrix<VT> **outputs[] = {&lres};
-            //execute function on given data binding (batch size)
-            _data._funcs[fid](outputs, linputs.data(), _data._ctx);
-            localSink.add(lres, r - _data._rl, false);
-
-            // cleanup
-            lres = nullptr;
-            this->cleanupFuncInputs(std::move(linputs));
-        }
-        _resultSink.add(localSink.consume(), _data._rl);
-    }
+    
+    void execute(uint32_t fid, uint32_t batchSize) override;
 };

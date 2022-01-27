@@ -45,7 +45,6 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createInsertFreeOpPass();
     std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig& cfg);
-    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
     std::unique_ptr<Pass> createRewriteSqlOpPass();
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
@@ -53,6 +52,9 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass();
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
+#ifdef USE_CUDA
+    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
+#endif
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"
