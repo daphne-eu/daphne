@@ -23,6 +23,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
+#include "llvm/Support/CommandLine.h"
 
 #ifdef USE_CUDA
     #include "runtime/local/kernels/CUDA_HostUtils.h"
@@ -35,41 +36,25 @@
 
 #include <cstdlib>
 #include <cstring>
-#include "api/cli/CommandLineParser.h"
+#include<vector>
 
 using namespace std;
 using namespace mlir;
+using namespace llvm::cl;
 
 void printHelp(const std::string & cmd) {
     cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" << endl;
 }
-
-void initArgs(CommandLineParser *cliParser){
-
-    bool res=cliParser->addNewOption("--help", "print all possible arguments", "");
-    if(!res){
-        cout<<cliParser->getError()<<endl;
-        exit(1);
+void tokenize(string const &in, const char delim, vector<std::string> &out)
+{
+    size_t start;
+    size_t end = 0;
+    while ((start = in.find_first_not_of(delim, end)) != string::npos)
+    {
+        end = in.find(delim, start);
+        out.push_back(in.substr(start, end - start));
     }
-    
-    res=cliParser->addNewOption("--args", "some useful description 1", "{ARG=VAL}");
-    if(!res){
-        cout<<cliParser->getError()<<endl;
-        exit(1);
-    }
-
-    res=cliParser->addNewOption("--vec", "force tiled execution engine", "");
-    if(!res){   
-        cout<<cliParser->getError()<<endl;
-        exit(1);
-    }
-
-    res=cliParser->addNewOption("--select-matrix-representations", "force sparce matrices", "");
-    if(!res){
-        cout<<cliParser->getError()<<endl;
-        exit(1);
-    }
-} 
+}
 
 int
 main(int argc, char** argv)
@@ -78,74 +63,41 @@ main(int argc, char** argv)
     // TODO Rather than implementing this ourselves, we should use some library
     // (see issue #105).
     std::vector<std::string> args(argv, argv + argc);
-    string inputFile;
     unordered_map<string, string> scriptArgs;
-    bool useVectorizedPipelines = false;
-    bool selectMatrixRepresentations = false;
-    CommandLineParser cliParser;
-    initArgs(&cliParser);
 
-    if(argc < 2) {
-        cout<<cliParser.getUsageMessage(argv[0])<<endl;
-        exit(1);
-    }
-    else {
-        if(args[1] == "-h" || args[1] == "--help") {
-            cout<< cliParser.getHelpMessage()<<endl;
-            exit(0);
-        }
-        else {
-            inputFile = args[1];
-            bool res=cliParser.parseCommandLine(argc, argv);
-            if(!res){
-                cout<< cliParser.getError()<<endl;
-                exit(1);
-            }
-            if(cliParser.isDefined("--help")){
-                //ignore it user accidentally passed an extra arg
-                // or print usageMessage and exit();
-                // or print helpMessage and exit() 
-            }
+    OptionCategory daphneOptions("daphne Options", "Options for controlling the compilation process.");
 
-            if(cliParser.isDefined("--args")){
-                    //To discuss should be with , not space
-            }
+    opt<bool> useVectorizedPipelines("vec", desc("force tiled execution engine"), cat(daphneOptions));
+   
+    opt<bool> selectMatrixRepresentations("select-matrix-representations", desc("force sparce matrices"),  cat(daphneOptions));
+    alias selectMatrixRepresentationsAlias("s", desc("Alias for -select-matrix-representations"), aliasopt(selectMatrixRepresentations));
 
-            if(cliParser.isDefined("--vec")){
-                useVectorizedPipelines = true;
-                cout<<"Tiled execution engine is enabled"<<endl;
-            }
-            if(cliParser.isDefined("--select-matrix-representations")){
-                selectMatrixRepresentations=true;
-                 cout<<"Sparse matrices are forced"<<endl;
-            }
-            /*for(int argPos = 2; argPos < argc; argPos++) {
-                if(args[argPos] == "--args") {
-                    int i;
-                    for(i = argPos + 1; i < argc; i++) {
-                        const std::string pair = args[i];
-                        size_t pos = pair.find('=');
-                        if(pos == std::string::npos)
-                            break;
-                        scriptArgs.emplace(
+    opt<string> userArgs("args", desc("user arguments to the daphne script <token1=value,token2=value,....>"),  cat(daphneOptions));
+
+    opt<string> inputFile(Positional, desc("<input file>"), Required);
+
+    HideUnrelatedOptions( daphneOptions);
+    ParseCommandLineOptions(argc, argv, " daphne compiler \n\nThis program compiles a daphne script...\n");    
+
+    /*if(useVectorizedPipelines)
+        cout<<"forced vectorization"<<endl;
+
+    if(selectMatrixRepresentations)
+        cout<<"forced sparse matrices"<<endl;
+    */
+    vector<string> tokenArgs;
+    tokenize(userArgs.c_str(), ',',tokenArgs);
+    for(size_t i = 0; i < tokenArgs.size(); i++){
+        const string pair = tokenArgs.at(i);
+        size_t pos = pair.find('=');
+        if(pos == string::npos)
+                break;
+      //  cout<<pair.substr(0, pos)<<","<<pair.substr(pos + 1, pair.size())<<endl;
+        scriptArgs.emplace(
                             pair.substr(0, pos), // arg name
                             pair.substr(pos + 1, pair.size()) // arg value
-                        );
-                    }
-                    argPos = i - 1;
-                }
-                else if(args[argPos] == "--vec") {
-                    useVectorizedPipelines = true;
-                }
-                else if(args[argPos] == "--select-matrix-representations") {
-                    selectMatrixRepresentations = true;
-                }
-                else {
-                    printHelp(args[0]);
-                    exit(1);
-                }
-            }*/
-        }
+                            );
+
     }
 
     // TODO "libdir" and "cuda" should not be script arguments. Script
