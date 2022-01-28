@@ -125,7 +125,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     std::string fetchPrefix(std::string framename);
 
     //TODO: Recognize Literals and somehow handle them for the group expr.
-//GROUP Informations
+//GROUP Information
     std::unordered_map <std::string, int8_t> grouped;
     std::vector<mlir::Value> groupName;
     std::vector<mlir::Value> columnName;

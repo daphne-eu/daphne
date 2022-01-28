@@ -94,7 +94,7 @@ main(int argc, char** argv)
     // arguments are those that can be used from within the DaphneDSL script.
     // However, these two arguments are only required during compilation and
     // runtime, users do not need to access them in a script.
-    
+
     DaphneUserConfig user_config;
     auto it = scriptArgs.find("libdir");
     if(it != scriptArgs.end()) {
@@ -145,18 +145,28 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
+
     // Further process the module, including optimization and lowering passes.
-    if (!executor.runPasses(moduleOp)) {
+    try{
+        if (!executor.runPasses(moduleOp)) {
+            return StatusCode::PASS_ERROR;
+        }
+    }catch(std::exception & e){
+        std::cerr << "Pass error: " << e.what() << std::endl;
         return StatusCode::PASS_ERROR;
     }
 
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
-    auto engine = executor.createExecutionEngine(moduleOp);
-    auto error = engine->invoke("main");
-    if (error) {
-        llvm::errs() << "JIT-Engine invocation failed: " << error;
+    try{
+        auto engine = executor.createExecutionEngine(moduleOp);
+        auto error = engine->invoke("main");
+        if (error) {
+            llvm::errs() << "JIT-Engine invocation failed: " << error;
+            return StatusCode::EXECUTION_ERROR;
+        }
+    }catch(std::exception & e){
+        std::cerr << "Execution error: " << e.what() << std::endl;
         return StatusCode::EXECUTION_ERROR;
     }
 

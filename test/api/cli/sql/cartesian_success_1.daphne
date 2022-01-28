@@ -8,6 +8,6 @@ f2 = frame(c3, "c");
 registerView("x", f1);
 registerView("y", f2);
 
-s = sql("SELECT x.a + 4 as a, y.c as b, 5 as five FroM x, y where x.b > 15.0*5.0;");
+s = sql("SELECT x.a, x.b, y.c FROM x, y;");
 
 print(s);
