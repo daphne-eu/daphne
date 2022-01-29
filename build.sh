@@ -158,7 +158,7 @@ cd $pwdBeforeAntlr
 # Download catch2 release zip (if necessary), and unpack the single header file
 # (if necessary).
 catch2Name=catch2
-catch2ZipName=v2.13.4.zip
+catch2ZipName=v2.13.8.zip
 catch2SingleHeaderName=catch.hpp
 mkdir --parents $catch2Name
 cd $catch2Name
@@ -168,7 +168,7 @@ then
 fi
 if [ ! -f $catch2SingleHeaderName ]
 then
-    unzip -p $catch2ZipName "Catch2-2.13.4/single_include/catch2/catch.hpp" \
+    unzip -p $catch2ZipName "Catch2-2.13.8/single_include/catch2/catch.hpp" \
         > $catch2SingleHeaderName
 fi
 cd ..
