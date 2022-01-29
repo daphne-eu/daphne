@@ -14,6 +14,14 @@
 
 cmake_minimum_required(VERSION 3.17)
 
+# use gcc 8 because CUDA broke on my Ubuntu 21.10
+if (UNIX)
+#    set(CMAKE_CUDA_HOST_COMPILER g++-8 CACHE INTERNAL "" FORCE)
+    #    set(CMAKE_CUDA_HOST_COMPILER clang++ CACHE INTERNAL "" FORCE)
+    set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc CACHE INTERNAL "" FORCE)
+    #    set(CMAKE_CXX_COMPILER g++ CACHE INTERNAL "" FORCE)
+endif()
+
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
