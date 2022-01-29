@@ -17,7 +17,6 @@
 #pragma once
 
 #include <runtime/local/vectorized/TaskQueues.h>
-#include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/VectorizedDataSink.h>
 #include <runtime/local/vectorized/Workers.h>
 #include <runtime/local/vectorized/LoadPartitioning.h>
@@ -49,8 +48,8 @@ protected:
         for (auto i = 0u; i < numInputs; ++i) {
             if (splits[i] == mlir::daphne::VectorSplit::ROWS) {
                 len = std::max(len, inputs[i]->getNumRows());
+                mem_required += inputs[i]->getNumItems() * sizeof(typename DT::VT);
             }
-            mem_required += inputs[i]->getNumItems() * sizeof(typename DT::VT);
         }
         return std::make_pair(len, mem_required);
     }

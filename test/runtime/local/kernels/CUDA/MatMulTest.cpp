@@ -33,11 +33,12 @@ void checkMatMulCUDA(const DT * lhs, const DT * rhs, const DT * exp, DaphneConte
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
-    initCUDAContext(dctx);
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
+    initCUDAContext(dctx.get());
 
     auto m0 = genGivenVals<DT>(3, {
         0, 0, 0,
@@ -94,15 +95,15 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, d
         11
     });
 
-    checkMatMulCUDA(m0, m0, m0, dctx);
-    checkMatMulCUDA(m1, m1, m2, dctx);
-    checkMatMulCUDA(m3, m4, m5, dctx);
-    checkMatMulCUDA(m0, v0, v0, dctx);
-    checkMatMulCUDA(m1, v0, v0, dctx);
-    checkMatMulCUDA(m2, v0, v0, dctx);
-    checkMatMulCUDA(m0, v1, v0, dctx);
-    checkMatMulCUDA(m1, v1, v3, dctx);
-    checkMatMulCUDA(m1, v2, v4, dctx);
+    checkMatMulCUDA(m0, m0, m0, dctx.get());
+    checkMatMulCUDA(m1, m1, m2, dctx.get());
+    checkMatMulCUDA(m3, m4, m5, dctx.get());
+    checkMatMulCUDA(m0, v0, v0, dctx.get());
+    checkMatMulCUDA(m1, v0, v0, dctx.get());
+    checkMatMulCUDA(m2, v0, v0, dctx.get());
+    checkMatMulCUDA(m0, v1, v0, dctx.get());
+    checkMatMulCUDA(m1, v1, v3, dctx.get());
+    checkMatMulCUDA(m1, v2, v4, dctx.get());
 
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
@@ -115,5 +116,4 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, d
     DataObjectFactory::destroy(v2);
     DataObjectFactory::destroy(v3);
     DataObjectFactory::destroy(v4);
-    delete dctx;
 }

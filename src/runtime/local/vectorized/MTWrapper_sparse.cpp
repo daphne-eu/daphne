@@ -15,62 +15,57 @@
  */
 
 #include "MTWrapper.h"
+#include <runtime/local/vectorized/Tasks.h>
 
 template<typename VT>
 void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
         DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, Structure **inputs, size_t numInputs, size_t numOutputs,
-        int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-    // TODO: reduce code duplication
-    uint64_t len = 0;
-    // due to possible broadcasting we have to check all inputs
-    for(auto i = 0u ; i < numInputs ; ++i) {
-        if(splits[i] == mlir::daphne::VectorSplit::ROWS)
-            len = std::max(len, inputs[i]->getNumRows());
-    }
+        const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
+//    // TODO: reduce code duplication
+
+    auto inputProps = this->getInputProperties(inputs, numInputs, splits);
+    auto len = inputProps.first;
+    auto mem_required = inputProps.second;
+    // ToDo: sparse output mem requirements
+    auto row_mem = mem_required / len;
+
     // create task queue (w/o size-based blocking)
-    TaskQueue *q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
-    // create workers threads
-    WorkerCPU *workers[this->_numThreads];
-    std::thread workerThreads[this->_numThreads];
-    for(uint32_t i = 0 ; i < this->_numThreads ; i++) {
-        workers[i] = new WorkerCPU(q, verbose);
-        workerThreads[i] = std::thread(runWorker, workers[i]);
-    }
+    std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
+
+    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+    this->initCPPWorkers(q.get(), batchSize8M, verbose);
+
 
     assert(numOutputs == 1 && "TODO");
     assert(*(res[0]) == nullptr && "TODO");
     VectorizedDataSink<CSRMatrix<VT>> dataSink(combines[0], outRows[0], outCols[0]);
 
+    // lock for aggregation combine
+    // TODO: multiple locks per output
+
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    uint64_t chunkParam = 1;
+    auto chunkParam = 1;
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
-    while(lp.hasNextChunk()) {
+    while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>> {funcs, inputs,
-                numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows, outCols},
-                dataSink));
+        q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs,
+                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                outCols, 0, ctx}, dataSink));
         startChunk = endChunk;
     }
     q->closeInput();
 
-    // barrier (wait for completed computation)
-    for(uint32_t i = 0 ; i < this->_numThreads ; i++)
-        workerThreads[i].join();
+    this->joinAll();
     *(res[0]) = dataSink.consume();
-
-    // cleanups
-    for(uint32_t i = 0 ; i < this->_numThreads ; i++)
-        delete workers[i];
-    delete q;
 }
 
 template<typename VT>
 void MTWrapper<CSRMatrix<VT>>::executeQueuePerDeviceType(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
         DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, Structure **inputs, size_t numInputs, size_t numOutputs,
         int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-    assert("sparse multi queue vect exec not implemented");
+    throw std::runtime_error("sparse multi queue vect exec not implemented");
 }
 
 template class MTWrapper<CSRMatrix<double>>;

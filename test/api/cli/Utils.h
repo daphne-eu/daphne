@@ -48,6 +48,17 @@
  */
 std::string readTextFile(const std::string & filePath);
 
+#ifndef NDEBUG
+template<class T>
+[[maybe_unused]] void LOG(T t) { std::cout << t << std::endl; }
+
+template<class T, class... OtherArgs>
+void LOG(T&& var, OtherArgs&&... args) {
+    std::cout << std::forward<T>(var) << " ";
+    LOG(std::forward<OtherArgs>(args)...);
+}
+#endif
+
 /**
  * @brief Executes the specified program with the given arguments and captures
  * `stdout`, `stderr`, and the status code.
@@ -85,14 +96,22 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         
         // Read data from stdout and stderr of the child from the pipes.
         ssize_t numBytes;
-        while(numBytes = read(linkOut[0], buf, sizeof(buf)))
+        while((numBytes = read(linkOut[0], buf, sizeof(buf))))
             out.write(buf, numBytes);
-        while(numBytes = read(linkErr[0], buf, sizeof(buf)))
+        while((numBytes = read(linkErr[0], buf, sizeof(buf))))
             err.write(buf, numBytes);
-        
+
         // Wait for child's termination.
         int status;
         waitpid(p, &status, 0);
+        if(status != 0) {
+#ifndef NDEBUG
+            std::cout << "stdout: " << out.str() << std::endl;
+            std::cout << "stderr: " << err.str() << std::endl;
+            std::cout << "status: " << status << std::endl;
+            LOG(args...);
+#endif
+        }
         return WIFEXITED(status) ? WEXITSTATUS(status) : -1;
     }
     else { // child
@@ -213,7 +232,7 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
 
     REQUIRE(status == StatusCode::SUCCESS);
     CHECK(out.str() == exp);
-    CHECK(err.str() == "");
+    CHECK(err.str().empty());
 }
 
 /**
@@ -233,7 +252,7 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
  */
 template<typename... Args>
 void compareDaphneToRef(const std::string & refFilePath, const std::string & scriptFilePath, Args ... args) {
-    return compareDaphneToStr(readTextFile(refFilePath.c_str()), scriptFilePath, args...);
+    return compareDaphneToStr(readTextFile(refFilePath), scriptFilePath, args...);
 }
 
 template<typename... Args>
@@ -271,7 +290,7 @@ void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::str
 }
 
 template<typename... Args>
-void compareDaphneToSelfRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+[[maybe_unused]] void compareDaphneToSelfRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
 }
@@ -300,6 +319,6 @@ void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string
  * @param addr The address (usually `0.0.0.0:<port>`) the worker should run on
  * @return The server (has to be kept around for the whole time the worker is in use)
  */
-[[nodiscard]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl);
+[[maybe_unused]] [[nodiscard]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl);
 
 #endif //TEST_API_CLI_UTILS_H

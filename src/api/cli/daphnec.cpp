@@ -96,7 +96,7 @@ main(int argc, char** argv)
                 else if(args[argPos] == "--explain") {
                     // Todo: parse --explain=[list,of,compiler,passes,to,explain]
                     user_config.explain_kernels = true;
-                    user_config.explain_llvm = true;
+//                    user_config.explain_llvm = true;
                 }
                 else if(args[argPos] == "--select-matrix-representations") {
                     selectMatrixRepresentations = true;

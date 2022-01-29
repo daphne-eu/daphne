@@ -95,7 +95,7 @@ void DenseMatrix<ValueType>::cuda2host() {
 template <typename ValueType>
 void DenseMatrix<ValueType>::host2cuda() {
     if (!cuda_ptr) {
-        cudaAlloc();
+        alloc_shared_cuda_buffer();
     }
     CHECK_CUDART(cudaMemcpy(cuda_ptr.get(), values.get(), numRows*numCols*sizeof(ValueType), cudaMemcpyHostToDevice));
     host_dirty = false;
@@ -105,19 +105,18 @@ void DenseMatrix<ValueType>::host2cuda() {
 template<typename ValueType>
 void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset) {
     if(src) {
-#ifndef NDEBUG
-        std::ios state(nullptr);
-        state.copyfmt(std::cout);
-        std::cout << "Increasing refcount on cuda buffer " << src.get() << " of size" << printBufferSize()
-                <<  "Mb from << " << src.use_count() << " to ";
-        std::cout.copyfmt(state);
-#endif
-
+//#ifndef NDEBUG
+//        std::ios state(nullptr);
+//        state.copyfmt(std::cout);
+//        std::cout << "Increasing refcount on cuda buffer " << src.get() << " of size" << printBufferSize()
+//                <<  "Mb from << " << src.use_count() << " to ";
+//        std::cout.copyfmt(state);
+//#endif
         this->cuda_ptr = std::shared_ptr<ValueType>(src, src.get() + offset);
 
-#ifndef NDEBUG
-        std::cout  << src.use_count() << "\n new cuda_ptr's use_count: " << cuda_ptr.use_count() << std::endl;
-#endif
+//#ifndef NDEBUG
+//        std::cout  << src.use_count() << "\n new cuda_ptr's use_count: " << cuda_ptr.use_count() << std::endl;
+//#endif
     }
     else {
         auto* dev_ptr = new ValueType;
@@ -126,18 +125,18 @@ void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType>
             std::cerr << "Warning: setting rowSkip to numCols in alloc_shared_cuda_buffer" << std::endl;
             rowSkip = numCols;
         }
-        std::cout << "Allocating new cuda buffer of size " << printBufferSize() << "Mb at address ";
-        std::ios state(nullptr);
-        state.copyfmt(std::cout);
-        std::cout << "addressof dev_ptr: " << &dev_ptr << std::endl;
+//        std::cout << "Allocating new cuda buffer of size " << printBufferSize() << "Mb at address ";
+//        std::ios state(nullptr);
+//        state.copyfmt(std::cout);
+//        std::cout << "addressof dev_ptr: " << &dev_ptr << std::endl;
 #endif
         CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), this->bufferSize()));
         this->cuda_ptr = std::shared_ptr<ValueType>(dev_ptr, CudaDeleter<ValueType>());
-#ifndef NDEBUG
-        std::cout << "addressof dev_ptr after cudaMalloc: " << &dev_ptr << std::endl;
-        std::cout.copyfmt(state);
-        std::cout << cuda_ptr.get() << " use count: " << cuda_ptr.use_count() << std::endl;
-#endif
+//#ifndef NDEBUG
+//        std::cout << "addressof dev_ptr after cudaMalloc: " << &dev_ptr << std::endl;
+//        std::cout.copyfmt(state);
+//        std::cout << cuda_ptr.get() << " use count: " << cuda_ptr.use_count() << std::endl;
+//#endif
     }
 }
 
