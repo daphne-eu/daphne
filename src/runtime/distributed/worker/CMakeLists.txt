@@ -13,6 +13,17 @@
 # limitations under the License.
 
 # *****************************************************************************
+# CallData library
+# *****************************************************************************
+
+set(SOURCES CallData.cpp)
+set(LIBS Proto)
+
+add_library(CallData ${SOURCES})
+target_link_libraries(CallData PRIVATE ${LIBS})
+
+
+# *****************************************************************************
 # ProtoDataConverter library
 # *****************************************************************************
 
@@ -43,6 +54,7 @@ set(LIBS
         DataStructures
         IO
         ProtoDataConverter
+        CallData
         Proto
         )
 

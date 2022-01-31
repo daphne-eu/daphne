@@ -18,14 +18,22 @@ include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
 set(TEST_SOURCES
         run_tests.cpp
 
+        api/cli/algorithms/AlgorithmsTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
+        api/cli/functions/FunctionsTest.cpp
+        api/cli/functions/RecursiveFunctionsTest.cpp
+        api/cli/io/ReadTest.cpp
+        api/cli/inference/SparsityTest.cpp
+        api/cli/io/ReadTest.cpp
         api/cli/literals/LiteralsTest.cpp
+        api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/sql/SQLTest.cpp
+        api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
         runtime/distributed/worker/WorkerTest.cpp
@@ -63,6 +71,7 @@ set(TEST_SOURCES
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MatMulTest.cpp
+        runtime/local/kernels/QuantizeTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
@@ -94,7 +103,7 @@ endif()
 add_executable(run_tests
     ${TEST_SOURCES}
 )
-add_dependencies(run_tests daphnec)
+add_dependencies(run_tests daphnec DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})

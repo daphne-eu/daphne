@@ -33,11 +33,10 @@ using mlir::daphne::VectorCombine;
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTIn>
-struct VectorizedPipeline
-{
-    static void apply(DTRes *&res,
-                      DTIn **inputs,
+template<class DTRes>
+struct VectorizedPipeline {
+    static void apply(DTRes *&resIn,
+                      Structure **inputs,
                       size_t numInputs,
                       size_t numOutputs,
                       int64_t *outRows,
@@ -45,59 +44,13 @@ struct VectorizedPipeline
                       int64_t *splits,
                       int64_t *combines,
                       void *fun,
-                      DCTX(ctx)) = delete;
-};
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DTRes, class DTIn>
-void vectorizedPipeline(DTRes *&res,
-                        DTIn **inputs,
-                        size_t numInputs,
-                        size_t numOutputs,
-                        int64_t *outRows,
-                        int64_t *outCols,
-                        int64_t *splits,
-                        int64_t *combines,
-                        void *fun,
-                        DCTX(ctx))
-{
-    VectorizedPipeline<DTRes, DTIn>::apply(res,
-        inputs,
-        numInputs,
-        numOutputs,
-        outRows,
-        outCols,
-        splits,
-        combines,
-        fun,
-        ctx);
-}
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-template<>
-struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>>
-{
-    static void apply(DenseMatrix<double> *&res,
-                      DenseMatrix<double> **inputs,
-                      size_t numInputs,
-                      size_t numOutputs,
-                      int64_t *outRows,
-                      int64_t *outCols,
-                      int64_t *splits,
-                      int64_t *combines,
-                      void *fun,
-                      DCTX(ctx))
-    {
-        auto wrapper = std::make_unique<MTWrapper<double>>();
+                      DCTX(ctx)) {
+        auto wrapper = std::make_unique<MTWrapper<DTRes>>();
         auto function =
-            std::function<void(DenseMatrix<double> ***, DenseMatrix<double> **)>(
-                reinterpret_cast<void (*)(DenseMatrix<double> ***, DenseMatrix<double> **)>(fun));
+            std::function<void(DTRes ***, Structure **)>(
+                reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+        assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
+        DTRes **res[] = {&resIn};
         wrapper->execute(function,
             res,
             inputs,
@@ -110,5 +63,68 @@ struct VectorizedPipeline<DenseMatrix<double>, DenseMatrix<double>>
             false);
     }
 };
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DTRes>
+void vectorizedPipeline(DTRes *&res,
+                        Structure **inputs,
+                        size_t numInputs,
+                        size_t numOutputs,
+                        int64_t *outRows,
+                        int64_t *outCols,
+                        int64_t *splits,
+                        int64_t *combines,
+                        void *fun,
+                        DCTX(ctx))
+{
+    VectorizedPipeline<DTRes>::apply(res,
+        inputs,
+        numInputs,
+        numOutputs,
+        outRows,
+        outCols,
+        splits,
+        combines,
+        fun,
+        ctx);
+}
+
+// TODO: use variable args
+template<class DTRes>
+void vectorizedPipeline(DTRes *&res1,
+                        DTRes *&res2,
+                        Structure **inputs,
+                        size_t numInputs,
+                        size_t numOutputs,
+                        int64_t *outRows,
+                        int64_t *outCols,
+                        int64_t *splits,
+                        int64_t *combines,
+                        void *fun,
+                        DCTX(ctx)) {
+    auto wrapper = std::make_unique<MTWrapper<DTRes>>();
+    auto function =
+        std::function<void(DTRes ***, Structure **)>(
+            reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+    assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
+    DTRes **res[] = {&res1, &res2};
+    wrapper->execute(function,
+        res,
+        inputs,
+        numInputs,
+        numOutputs,
+        outRows,
+        outCols,
+        reinterpret_cast<VectorSplit *>(splits),
+        reinterpret_cast<VectorCombine *>(combines),
+        false);
+}
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_VECTORIZEDPIPELINE_H

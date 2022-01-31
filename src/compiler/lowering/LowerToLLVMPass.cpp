@@ -16,6 +16,7 @@
 
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
+#include "compiler/CompilerUtils.h"
 
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
@@ -57,53 +58,6 @@ using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
 using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
 #endif
 
-// TODO We might want to merge this with ValueTypeUtils, and maybe place it
-// somewhere central.
-std::string mlirTypeToCppTypeName(Type t, bool generalizeToStructure) {
-    if(t.isF64())
-        return "double";
-    else if(t.isF32())
-        return "float";
-    else if(t.isSignedInteger(8))
-        return "int8_t";
-    else if(t.isSignedInteger(32))
-        return "int32_t";
-    else if(t.isSignedInteger(64))
-        return "int64_t";
-    else if(t.isUnsignedInteger(8))
-        return "uint8_t";
-    else if(t.isUnsignedInteger(32))
-        return "uint32_t";
-    else if(t.isUnsignedInteger(64))
-        return "uint64_t";
-    else if(t.isSignlessInteger(1))
-        return "bool";
-    else if(t.isIndex())
-        return "size_t";
-    else if(auto matTy = t.dyn_cast<daphne::MatrixType>())
-        if(generalizeToStructure)
-            return "Structure";
-        else
-            return "DenseMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
-    else if(t.isa<daphne::FrameType>())
-        if(generalizeToStructure)
-            return "Structure";
-        else
-            return "Frame";
-    else if(t.isa<daphne::StringType>())
-        // This becomes "const char *" (which makes perfect sense for
-        // strings) when inserted into the typical "const DT *" template of
-        // kernel input parameters.
-        return "char";
-    else if(t.isa<daphne::DaphneContextType>())
-        return "DaphneContext";
-    else if(auto handleTy = t.dyn_cast<daphne::HandleType>())
-        return "Handle_" + mlirTypeToCppTypeName(handleTy.getDataType(), generalizeToStructure);
-    throw std::runtime_error(
-        "no C++ type name known for the given MLIR type"
-    );
-}
-
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
     using OpRewritePattern<daphne::ReturnOp>::OpRewritePattern;
@@ -113,6 +67,19 @@ struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
     {
         rewriter.replaceOpWithNewOp<ReturnOp>(op, op.getOperands());
         return success();
+    }
+};
+
+struct CastOpLowering : public OpRewritePattern<daphne::CastOp> {
+    using OpRewritePattern<daphne::CastOp>::OpRewritePattern;
+
+    LogicalResult matchAndRewrite(daphne::CastOp op,
+                                  PatternRewriter &rewriter) const final {
+        if(op.isTrivialCast() || op.isMatrixPropertyCast()) {
+            rewriter.replaceOp(op, op.getOperand());
+            return success();
+        }
+        return failure();
     }
 };
 
@@ -179,10 +146,12 @@ public:
         else {
             // Constants of all other types are lowered to an mlir::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
-
+#if 1
+            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+#else
             // NOTE: this fixes printing due to an error in the LLVMDialect, but is the wrong behaviour.
             //  Use this for debugging only
-            /*if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
+            if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
                 auto ty = IntegerType::get(getContext(), iTy.getWidth());
                 rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(),
                     ty,
@@ -190,8 +159,8 @@ public:
             }
             else {
                 rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
-            }*/
-            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+            }
+#endif
         }
 
         return success();
@@ -223,7 +192,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
             else if (failed(typeConverter->convertType(type, args)))
                 emitError(loc) << "Couldn't convert operand type `" << type << "`\n";
         }
-        
+
         std::vector<Type> argsLLVM;
         for (size_t i = 0; i < args.size(); i++) {
             Type type = args[i]; //.cast<Type>();
@@ -434,9 +403,6 @@ public:
             static auto ix = 0;
             std::string funcName = "_vect" + std::to_string(++ix);
 
-            // ToDo: unused variable
-            auto &bodyBlock = op.body().front();
-
             // TODO: multi-input multi-return support
             auto i1Ty = IntegerType::get(getContext(), 1);
             auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
@@ -472,7 +438,6 @@ public:
                 auto expTy = typeConverter->convertType(op.inputs().getType()[i]);
                 if (expTy != val.getType()) {
                     // casting for scalars
-                    auto ptrTy = val.getType().cast<LLVM::LLVMPointerType>();
                     val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
                     val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
                 }
@@ -508,12 +473,11 @@ public:
         // Append names of result types to the kernel name.
         Operation::result_type_range resultTypes = op->getResultTypes();
         for(size_t i = 0; i < resultTypes.size(); i++)
-            callee << "__" << mlirTypeToCppTypeName(resultTypes[i], false);
+            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i]);
 
         std::vector<Value> newOperands;
-        // TODO: support different operand types
         auto operandType = daphne::MatrixType::get(getContext(), rewriter.getF64Type());
-        callee << "__" << mlirTypeToCppTypeName(operandType, false);
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
 
         // Variadic operand.
         callee << "_variadic__size_t";
@@ -530,11 +494,11 @@ public:
         callee << "__size_t";
         newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numOutputs)));
         // Variadic num rows operands.
-        callee << "__" << mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
         auto rowsOperands = operands.drop_front(numDataOperands);
         newOperands
             .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs)));
-        callee << "__" << mlirTypeToCppTypeName(rewriter.getIntegerType(64, true), false);
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
         auto colsOperands = rowsOperands.drop_front(numOutputs);
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), colsOperands.take_front(numOutputs)));
 
@@ -591,6 +555,20 @@ private:
     }
 };
 
+class GenericCallOpLowering : public OpConversionPattern<daphne::GenericCallOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::GenericCallOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        rewriter.replaceOpWithNewOp<CallOp>(op, op.callee(), op->getResultTypes(), operands);
+        return success();
+    }
+};
+
 namespace
 {
     struct DaphneLowerToLLVMPass
@@ -612,6 +590,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
     OwningRewritePatternList patterns(&getContext());
 
     LowerToLLVMOptions llvmOptions(&getContext());
+    // TODO: just create CWrappers for `main` and UDFs (currently vectorized pipelines are also emitted)
     llvmOptions.emitCWrappers = true;
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
@@ -668,6 +647,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     target.addLegalOp<ModuleOp>();
 
+    // for trivial casts no lowering to kernels -> higher benefit
+    patterns.insert<CastOpLowering>(&getContext(), 2);
     patterns.insert<
             CallKernelOpLowering,
             CreateVariadicPackOpLowering,
@@ -676,7 +657,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
     patterns.insert<
             ConstantOpLowering,
             ReturnOpLowering,
-            StoreVariadicPackOpLowering
+            StoreVariadicPackOpLowering,
+            GenericCallOpLowering
     >(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This

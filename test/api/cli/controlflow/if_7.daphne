@@ -1,0 +1,17 @@
+// Assign new value in then/else branches, same shape.
+X = fill(10, 2, 3);
+Y = fill(20, 4, 5);
+Z = fill(30, 6, 7);
+if(true) {
+    X = X + 1;
+    Y = Y + 2;
+    Z = Z + 3;
+}
+else {
+    X = fill(-10, 2, 3);
+    Y = fill(-20, 4, 5);
+    Z = fill(-30, 6, 7);
+}
+print(sum(X));
+print(sum(Y));
+print(sum(Z));

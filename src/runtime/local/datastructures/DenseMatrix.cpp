@@ -93,6 +93,21 @@ void DenseMatrix<ValueType>::host2cuda() {
 
 #endif // USE_CUDA
 
+template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostream & os, ValueType val) const {
+    os << val;
+}
+
+// Convert to an integer to print uint8_t values as numbers
+// even if they fall into the range of special ASCII characters.
+template <> void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const
+{
+    os << (unsigned int)val;
+}
+template <> void DenseMatrix<signed char>::printValue(std::ostream & os, signed char val) const
+{
+    os << (int)val;
+}
+
 // explicitly instantiate to satisfy linker
 template class DenseMatrix<double>;
 template class DenseMatrix<float>;

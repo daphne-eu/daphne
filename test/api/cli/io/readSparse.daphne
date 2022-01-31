@@ -1,0 +1,2 @@
+M = readMatrix($filename);
+print(M);

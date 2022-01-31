@@ -17,6 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
+#include <parser/CancelingErrorListener.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarLexer.h"
@@ -28,9 +29,11 @@
 
 #include <istream>
 
-void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream) {
-    mlir::Location loc = builder.getUnknownLoc();
-    
+void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) {
+    CancelingErrorListener errorListener;
+    // TODO: we could remove `sourceName` arg and instead use location from module for filename
+    auto module = llvm::cast<mlir::ModuleOp>(builder.getBlock()->getParentOp());
+
     // Create a single "main"-function and insert DaphneIR operations into it.
     auto * funcBlock = new mlir::Block();
     {
@@ -39,22 +42,33 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         
         // Run ANTLR-based DaphneDSL parser.
         antlr4::ANTLRInputStream input(stream);
-        input.name = "whateverFile"; // TODO
+        input.name = sourceName;
+
         DaphneDSLGrammarLexer lexer(&input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(&errorListener);
         antlr4::CommonTokenStream tokens(&lexer);
+
         DaphneDSLGrammarParser parser(&tokens);
+        parser.removeErrorListeners();
+        parser.addErrorListener(&errorListener);
+
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
-        DaphneDSLVisitor visitor(builder, args);
+        DaphneDSLVisitor visitor(module, builder, args);
         visitor.visitScript(ctx);
-        
+
+        mlir::Location loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
+        if(!builder.getBlock()->empty()) {
+            loc = builder.getBlock()->back().getLoc();
+        }
         builder.create<mlir::daphne::ReturnOp>(loc);
     }
     auto * terminator = funcBlock->getTerminator();
-    auto funcType = mlir::FunctionType::get(
-            builder.getContext(),
-            funcBlock->getArgumentTypes(),
-            terminator->getOperandTypes()
+    auto funcType = builder.getFunctionType(
+        funcBlock->getArgumentTypes(),
+        terminator->getOperandTypes()
     );
+    auto loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
     auto func = builder.create<mlir::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);
 }

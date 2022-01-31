@@ -39,9 +39,13 @@
 #include <memory>
 #include <utility>
 
-DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUserConfig  cfg)
-: distributed_(distributed), vectorized_(vectorized), user_config_(std::move(cfg))
-{
+DaphneIrExecutor::DaphneIrExecutor(bool distributed,
+                                   bool vectorized,
+                                   bool selectMatrixRepresentations,
+                                   bool insertFreeOp,
+                                   DaphneUserConfig cfg)
+    : distributed_(distributed), vectorized_(vectorized), selectMatrixRepresentations_(selectMatrixRepresentations),
+      insertFreeOp_(insertFreeOp), userConfig_(std::move(cfg)) {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
@@ -53,32 +57,75 @@ DaphneIrExecutor::DaphneIrExecutor(bool distributed, bool vectorized, DaphneUser
 
 bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 {
-    if (failed(mlir::verify(module))) {
-        module->emitError("failed to verify the module right after parsing");
-        return false;
-    }
+    // FIXME: operations in `template` functions (functions with unknown inputs) can't be verified
+    //  as their type constraints are not met.
+    //if (failed(mlir::verify(module))) {
+        //module->emitError("failed to verify the module right after parsing");
+        //return false;
+    //}
 
     if (module) {
-        mlir::PassManager pm(&context_);
-
         // This flag is really useful to figure out why the lowering failed
         //llvm::DebugFlag = true;
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+        {
+            mlir::PassManager pm(&context_);
+            pm.enableVerifier(false);
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+            pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
+            if(failed(pm.run(module))) {
+                module->dump();
+                module->emitError("pass error for generic functions");
+                return false;
+            }
+        }
+        mlir::PassManager pm(&context_);
+        pm.addPass(mlir::createCanonicalizerPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-        if (distributed_) {
-            pm.addPass(mlir::daphne::createDistributeComputationsPass());
-        }
+
+        // TODO There is a cyclic dependency between (shape) inference and
+        // constant folding (included in canonicalization), at the moment we
+        // run only three iterations of both passes (see #173).
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInferencePass());
+        pm.addPass(mlir::createCanonicalizerPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(user_config_));
+
+        if(selectMatrixRepresentations_) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representation"));
+        }
+        if(distributed_) {
+            pm.addPass(mlir::daphne::createDistributeComputationsPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
+            pm.addPass(mlir::createCSEPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
+            pm.addPass(mlir::createCanonicalizerPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - canonicalization"));
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
+        }
         if(vectorized_) {
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
-            // TODO: this can be moved outside without problem, should we?
-            pm.addPass(mlir::createCanonicalizerPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+            // TODO: add inference here if we have rewrites that could apply to vectorized pipelines due to smaller sizes
         }
+        pm.addPass(mlir::createCanonicalizerPass());
+        //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization"));
+        if(insertFreeOp_) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
+        }
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(user_config_));
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_));
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
         pm.addPass(mlir::createLowerToCFGPass());
@@ -103,11 +150,11 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
 
         llvm::SmallVector<llvm::StringRef, 1> sharedLibRefs;
         // TODO Find these at run-time.
-        if(user_config_.libdir.empty()) {
+        if(userConfig_.libdir.empty()) {
             sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
         }
         else {
-            sharedLibRefs.insert(sharedLibRefs.end(), user_config_.library_paths.begin(), user_config_.library_paths.end());
+            sharedLibRefs.insert(sharedLibRefs.end(), userConfig_.library_paths.begin(), userConfig_.library_paths.end());
         }
 
 #ifdef USE_CUDA

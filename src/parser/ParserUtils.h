@@ -187,6 +187,27 @@ public:
             return a.as<mlir::Value>();
         throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
     }
+
+    /**
+     * @brief Utility function for getting the file location of the token
+     * @param start Start token of this rule (usually you want to use `ctx->start`)
+     * @return mlir location representing the position of the token in the file
+     */
+    mlir::Location getLoc(antlr4::Token *start) {
+        return mlir::FileLineColLoc::get(builder.getIdentifier(start->getTokenSource()->getSourceName()),
+            start->getLine(),
+            start->getCharPositionInLine());
+    }
+
+    /**
+     * @brief Creates an unique symbol for function symbol names by appending an unique id.
+     * @param functionName the function name
+     * @return the unique function name, due to an unique id
+     */
+    std::string getUniqueFunctionSymbol(const std::string &functionName) {
+        static unsigned functionUniqueId = 0;
+        return functionName + "-" + std::to_string(++functionUniqueId);
+    }
 };
 
 #endif //SRC_PARSER_PARSERUTILS_H

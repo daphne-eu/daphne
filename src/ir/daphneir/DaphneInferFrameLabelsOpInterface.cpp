@@ -218,7 +218,7 @@ void daphne::SetColLabelsPrefixOp::inferFrameLabels() {
         for(auto labelStr : *labelsStr)
             newLabels->push_back(LabelUtils::setPrefix(prefixStr, labelStr));
     else {
-        delete[] newLabels;
+        delete newLabels;
         newLabels = nullptr;
     }
     getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));

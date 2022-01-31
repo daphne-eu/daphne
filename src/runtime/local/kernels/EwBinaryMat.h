@@ -252,6 +252,74 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 };
 
 // ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix, DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        // TODO: lhs broadcast
+        assert((numRows == rhs->getNumRows() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
+        assert((numCols == rhs->getNumCols() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
+
+        size_t maxNnz = 0;
+        switch(opCode) {
+        case BinaryOpCode::MUL: // intersect
+            maxNnz = lhs->getNumNonZeros();
+            break;
+        default:
+            throw std::runtime_error("unknown BinaryOpCode");
+        }
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
+
+        size_t *rowOffsetsRes = res->getRowOffsets();
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        rowOffsetsRes[0] = 0;
+
+        switch(opCode) {
+        case BinaryOpCode::MUL: { // intersect non-zero cells
+            for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
+                size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
+                if(nnzRowLhs) {
+                    // intersect within row
+                    const VT * valuesRowLhs = lhs->getValues(rowIdx);
+                    VT * valuesRowRes = res->getValues(rowIdx);
+                    const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+                    size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+                    auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+                    size_t posRes = 0;
+                    for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
+                        auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
+                        auto rVal = rhs->get(rhsRow, rhsCol);
+                        if(rVal != 0) {
+                            valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
+                            colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+                            posRes++;
+                        }
+                    }
+                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
+                }
+                else
+                    // empty row in result
+                    rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
+            }
+            break;
+        }
+        default:
+            throw std::runtime_error("unknown BinaryOpCode");
+        }
+
+        // TODO Update number of non-zeros in result in the end.
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Matrix <- Matrix, Matrix
 // ----------------------------------------------------------------------------
 

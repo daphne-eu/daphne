@@ -19,6 +19,7 @@
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/EwBinaryMat.h>
+#include <runtime/local/vectorized/VectorizedDataSink.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <functional>
@@ -42,6 +43,7 @@ public:
     void execute() override {}
 };
 
+// Deprecated
 // single operation task (multi-threaded operations)
 template <class VT>
 class SingleOpTask : public Task {
@@ -91,15 +93,10 @@ public:
     }
 };
 
-//TODO tasks for compiled pipelines
-template<class VT>
-class CompiledPipelineTask : public Task
-{
-private:
-    std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> _func;
-    std::mutex &_resLock;
-    DenseMatrix<VT> *&_res;
-    DenseMatrix<VT> **_inputs;
+template<class DT>
+struct CompiledPipelineTaskData {
+    std::function<void(DT ***, Structure **)> _func;
+    Structure **_inputs;
     size_t _numInputs;
     size_t _numOutputs;
     int64_t *_outRows;
@@ -109,127 +106,209 @@ private:
     uint64_t _rl;    // row lower index
     uint64_t _ru;    // row upper index
     uint64_t _bsize; // batch size (data binding)
+    int64_t *_wholeResultRows; // number of rows of the complete result
+    int64_t *_wholeResultCols; // number of cols of the complete result
+
+    CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {
+        CompiledPipelineTaskData<DT> flatCopy = *this;
+        flatCopy._rl = newRl;
+        flatCopy._ru = newRu;
+        return flatCopy;
+    }
+};
+
+template<class DT>
+class CompiledPipelineTaskBase : public Task {
+protected:
+    CompiledPipelineTaskData<DT> _data;
 
 public:
-    CompiledPipelineTask(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> func,
-                         std::mutex &resLock,
-                         DenseMatrix<VT> *&res,
-                         DenseMatrix<VT> **inputs,
-                         size_t numInputs,
-                         size_t numOutputs,
-                         int64_t *outRows,
-                         int64_t *outCols,
-                         VectorSplit *splits,
-                         VectorCombine *combines,
-                         uint64_t rl,
-                         uint64_t ru,
-                         uint64_t bsize)
-        : _func(func), _resLock(resLock), _res(res), _inputs(inputs), _numInputs(numInputs), _numOutputs(numOutputs),
-          _outRows(outRows), _outCols(outCols), _splits(splits), _combines(combines), _rl(rl), _ru(ru), _bsize(bsize)
-    {}
+    explicit CompiledPipelineTaskBase(CompiledPipelineTaskData<DT> data) : _data(data) {}
+    void execute() override = 0;
 
-    ~CompiledPipelineTask() override = default;
+protected:
+    bool isBroadcast(mlir::daphne::VectorSplit splitMethod, Structure *input) {
+        return splitMethod == VectorSplit::NONE || (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
+    }
 
-    void execute() override
-    {
-        // local add aggregation to minimize locking
-        DenseMatrix<VT> *localAddRes = nullptr;
-        DenseMatrix<VT> *lres = nullptr;
-        for(uint64_t r = _rl; r < _ru; r += _bsize) {
-            //create zero-copy views of inputs/outputs
-            uint64_t r2 = std::min(r + _bsize, _ru);
-
-            auto linputs = createFuncInputs(r, r2);
-            DenseMatrix<VT> **outputs[] = {&lres};
-            //execute function on given data binding (batch size)
-            _func(outputs, linputs.data());
-            accumulateOutputs(lres, localAddRes, r, r2);
-
-            // cleanup
-            DataObjectFactory::destroy(lres);
-            lres = nullptr;
-            for(auto i = 0u; i < _numInputs; i++) {
-                if (_splits[i] == VectorSplit::ROWS && _inputs[i]->getNumRows() != 1) {
-                    // slice copy was created
-                    DataObjectFactory::destroy(linputs[i]);
-                }
+    std::vector<Structure *> createFuncInputs(uint64_t rowStart, uint64_t rowEnd) {
+        std::vector<Structure *> linputs;
+        for(auto i = 0u ; i < _data._numInputs ; i++) {
+            if (isBroadcast(_data._splits[i], _data._inputs[i])) {
+                linputs.push_back(_data._inputs[i]);
             }
-        }
-
-        if (_combines[0] == VectorCombine::ADD) {
-            _resLock.lock();
-            if (_res == nullptr) {
-                _res = localAddRes;
-                _resLock.unlock();
+            else if (VectorSplit::ROWS == _data._splits[i]) {
+                linputs.push_back(_data._inputs[i]->slice(rowStart, rowEnd));
             }
             else {
-                ewBinaryMat(BinaryOpCode::ADD, _res, _res, localAddRes, nullptr);
-                _resLock.unlock();
-                //cleanup
-                DataObjectFactory::destroy(localAddRes);
+                llvm_unreachable("Not all vector splits handled");
+            }
+        }
+        return linputs;
+    }
+
+    void cleanupFuncInputs(std::vector<Structure *> &&linputs) {
+        for(auto i = 0u ; i < _data._numInputs ; i++) {
+            if(_data._inputs[i] != linputs[i]) {
+                // slice copy was created
+                DataObjectFactory::destroy(linputs[i]);
+            }
+        }
+    }
+};
+
+template<class DT>
+class CompiledPipelineTask : public CompiledPipelineTaskBase<DT> {};
+
+template<typename VT>
+class CompiledPipelineTask<DenseMatrix<VT>> : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
+    std::mutex &_resLock;
+    DenseMatrix<VT> ***_res;
+    using CompiledPipelineTaskBase<DenseMatrix<VT>>::_data;
+public:
+    CompiledPipelineTask(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
+        : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
+
+    void execute() override {
+        // local add aggregation to minimize locking
+        std::vector<DenseMatrix<VT>*> localAddRes(_data._numOutputs);
+        std::vector<DenseMatrix<VT>*> localResults(_data._numOutputs);
+        for(uint64_t r = _data._rl ; r < _data._ru ; r += _data._bsize) {
+            //create zero-copy views of inputs/outputs
+            uint64_t r2 = std::min(r + _data._bsize, _data._ru);
+
+            auto linputs = this->createFuncInputs(r, r2);
+            std::vector<DenseMatrix<VT>**> outputs;
+            for (auto &lres : localResults) {
+                outputs.push_back(&lres);
+            }
+            //execute function on given data binding (batch size)
+            _data._func(outputs.data(), linputs.data());
+            accumulateOutputs(localResults, localAddRes, r, r2);
+
+            // cleanup
+            for (auto &localResult : localResults) {
+                DataObjectFactory::destroy(localResult);
+                localResult = nullptr;
+            }
+            this->cleanupFuncInputs(std::move(linputs));
+        }
+
+        for(size_t o = 0; o < _data._numOutputs; ++o) {
+            if(_data._combines[o] == VectorCombine::ADD) {
+                auto &result = *(_res[o]);
+                _resLock.lock();
+                if(result == nullptr) {
+                    result = localAddRes[o];
+                    _resLock.unlock();
+                }
+                else {
+                    ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], nullptr);
+                    _resLock.unlock();
+                    //cleanup
+                    DataObjectFactory::destroy(localAddRes[o]);
+                }
             }
         }
     }
 
 private:
-    void accumulateOutputs(DenseMatrix<VT> *&lres, DenseMatrix<VT> *&localAddRes, uint64_t rowStart, uint64_t rowEnd)
-    {
+    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
+                           std::vector<DenseMatrix<VT> *> &localAddRes,
+                           uint64_t rowStart,
+                           uint64_t rowEnd) {
         //TODO: in-place computation via better compiled pipelines
         //TODO: multi-return
-        for(auto o = 0u; o < 1; ++o) {
-            switch (_combines[o]) {
+        for(auto o = 0u ; o < _data._numOutputs ; ++o) {
+            auto &result = *(_res[o]);
+            switch (_data._combines[o]) {
             case VectorCombine::ROWS: {
-                auto slice = _res->slice(rowStart, rowEnd);
-                for(auto i = 0u; i < slice->getNumRows(); ++i) {
-                    for(auto j = 0u; j < slice->getNumCols(); ++j) {
-                        slice->set(i, j, lres->get(i, j));
+                auto slice = result->slice(rowStart, rowEnd);
+                for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
+                    for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
+                        slice->set(i, j, localResults[o]->get(i, j));
                     }
                 }
                 DataObjectFactory::destroy(slice);
                 break;
             }
             case VectorCombine::COLS: {
-                auto slice = _res->slice(0, _outRows[o], rowStart, rowEnd);
-                for(auto i = 0u; i < slice->getNumRows(); ++i) {
-                    for(auto j = 0u; j < slice->getNumCols(); ++j) {
-                        slice->set(i, j, lres->get(i, j));
+                auto slice = result->slice(0, _data._outRows[o], rowStart, rowEnd);
+                for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
+                    for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
+                        slice->set(i, j, localResults[o]->get(i, j));
                     }
                 }
                 DataObjectFactory::destroy(slice);
                 break;
             }
             case VectorCombine::ADD: {
-                if (localAddRes == nullptr) {
+                if(localAddRes[o] == nullptr) {
                     // take lres and reset it to nullptr
-                    localAddRes = lres;
-                    lres = nullptr;
+                    localAddRes[o] = localResults[o];
+                    localResults[o] = nullptr;
                 }
                 else {
-                    ewBinaryMat(BinaryOpCode::ADD, localAddRes, localAddRes, lres, nullptr);
+                    ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
                 }
                 break;
             }
             default: {
                 throw std::runtime_error(("VectorCombine case `"
-                    + std::to_string(static_cast<int64_t>(_combines[o])) + "` not supported"));
+                    + std::to_string(static_cast<int64_t>(_data._combines[o])) + "` not supported"));
             }
             }
         }
     }
+};
 
-    std::vector<DenseMatrix<VT> *> createFuncInputs(uint64_t rowStart, uint64_t rowEnd)
-    {
-        std::vector<DenseMatrix<VT> *> linputs;
-        for(auto i = 0u; i < _numInputs; i++) {
-            if (_splits[i] == VectorSplit::ROWS) {
-                // broadcasting
-                linputs.push_back((_inputs[i]->getNumRows() == 1) ? _inputs[i] : _inputs[i]->slice(rowStart, rowEnd));
-            }
-            else {
-                linputs.push_back(_inputs[i]);
-            }
+template<typename VT>
+class CompiledPipelineTask<CSRMatrix<VT>> : public CompiledPipelineTaskBase<CSRMatrix<VT>> {
+    // TODO: multiple sinks
+    VectorizedDataSink<CSRMatrix<VT>> &_resultSink;
+    using CompiledPipelineTaskBase<CSRMatrix<VT>>::_data;
+public:
+    CompiledPipelineTask(CompiledPipelineTaskData<CSRMatrix<VT>> data, VectorizedDataSink<CSRMatrix<VT>> &resultSink)
+        : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSink(resultSink) {}
+
+    void execute() override {
+        assert(_data._numOutputs == 1 && "TODO");
+        size_t localResNumRows;
+        size_t localResNumCols;
+        switch(_data._combines[0]) {
+        case VectorCombine::ROWS: {
+            assert(_data._wholeResultCols[0] != -1 && "TODO");
+            localResNumRows = _data._ru - _data._rl;
+            localResNumCols = _data._wholeResultCols[0];
+            break;
         }
-        return linputs;
+        case VectorCombine::COLS: {
+            assert(_data._wholeResultRows[0] != -1 && "TODO");
+            localResNumRows = _data._wholeResultRows[0];
+            localResNumCols = _data._ru - _data._rl;
+            break;
+        }
+        default:
+            throw std::runtime_error("Not implemented");
+        }
+
+        VectorizedDataSink<CSRMatrix<VT>> localSink(_data._combines[0], localResNumRows, localResNumCols);
+        CSRMatrix<VT> *lres = nullptr;
+        for(uint64_t r = _data._rl ; r < _data._ru ; r += _data._bsize) {
+            //create zero-copy views of inputs/outputs
+            uint64_t r2 = std::min(r + _data._bsize, _data._ru);
+
+            auto linputs = this->createFuncInputs(r, r2);
+            CSRMatrix<VT> **outputs[] = {&lres};
+            //execute function on given data binding (batch size)
+            _data._func(outputs, linputs.data());
+            localSink.add(lres, r - _data._rl, false);
+
+            // cleanup
+            lres = nullptr;
+            this->cleanupFuncInputs(std::move(linputs));
+        }
+        _resultSink.add(localSink.consume(), _data._rl);
     }
 };
 

@@ -12,6 +12,6 @@ print(h);
 registerView("x", f);
 registerView("y", h);
 
-k = sql("SELECT x.a, y.c, x.b, y.d FroM x, y as k where x.a < 150.0;");
+k = sql("SELECT x.a, y.c, x.b FroM x, y as k;");
 
 print(k);

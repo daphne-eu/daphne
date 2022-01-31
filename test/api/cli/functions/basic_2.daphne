@@ -1,0 +1,6 @@
+// function call with return
+def function() {
+    X = rand(100, 10, 0.0, 1.0, 1.0, 7);
+    return sum(X) * 3.1415;
+}
+print(function());

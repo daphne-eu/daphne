@@ -419,9 +419,11 @@
         "instantiations": [
             [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
+            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
     },
     {
         "kernelTemplate": {
@@ -465,7 +467,7 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
     },
     {
         "kernelTemplate": {
@@ -505,11 +507,10 @@
             ["double", "double", "double"],
             ["float", "float", "float"],
             ["int64_t", "int64_t", "int64_t"],
-            ["uint32_t", "uint32_t", "uint32_t"],
-            ["bool", "double", "double"],
-            ["bool", "int64_t", "int64_t"]
+            ["uint64_t", "uint64_t", "uint64_t"],
+            ["uint32_t", "uint32_t", "uint32_t"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
     },
     {
         "kernelTemplate": {
@@ -589,7 +590,8 @@
         "instantiations": [
             [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "int64_t"], "int64_t"]
+            [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "uint8_t"], "uint8_t"]
         ]
     },
     {
@@ -872,7 +874,11 @@
             ["double"],
             ["float"],
             ["int64_t"],
+            ["int32_t"],
+            ["int8_t"],
+            ["uint64_t"],
             ["uint32_t"],
+            ["uint8_t"],
             ["bool"],
             ["size_t"]
         ]
@@ -907,6 +913,11 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "float"]],
+            [["CSRMatrix", "int64_t"]],
+            [["CSRMatrix", "uint8_t"]],
             ["Frame"],
             ["char"]
         ]
@@ -959,7 +970,10 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "int64_t"], "int64_t"]
+            [["DenseMatrix", "float"], "float"],
+            [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "uint8_t"], "uint8_t"],
+            [["CSRMatrix", "double"], "double"]
         ]
     },
     {
@@ -1063,6 +1077,7 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["CSRMatrix", "double"]],
             ["Frame"]
         ]
     },
@@ -1392,6 +1407,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]]
         ]
     },
@@ -1467,6 +1483,45 @@
     },
     {
         "kernelTemplate": {
+            "header": "Gemv.h",
+            "opName": "gemv",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTMat",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTVec",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTMat *",
+                    "name": "mat"
+                },
+                {
+                    "type": "const DTVec *",
+                    "name": "vec"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Tri.h",
             "opName": "tri",
             "returnType": "void",
@@ -1534,6 +1589,32 @@
     },
     {
         "kernelTemplate": {
+            "header": "Broadcast.h",
+            "opName": "broadcast",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DT> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "mat"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "DistributedCollect.h",
             "opName": "distributedCollect",
             "returnType": "void",
@@ -1560,8 +1641,8 @@
     },
     {
         "kernelTemplate": {
-            "header": "DistributedCompute.h",
-            "opName": "distributedCompute",
+            "header": "DistributedRead.h",
+            "opName": "distributedRead",
             "returnType": "void",
             "templateParams": [
                 {
@@ -1575,7 +1656,38 @@
                     "name": "res"
                 },
                 {
-                    "type": "const Handle<DT> **",
+                    "type": "const char *",
+                    "name": "filename"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]],
+            [["CSRMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedCompute.h",
+            "opName": "distributedCompute",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArgs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "Handle<DTRes> *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const Handle<DTArgs> **",
                     "name": "args"
                 },
                 {
@@ -1589,7 +1701,8 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"], "Structure"],
+            [["CSRMatrix", "double"], "Structure"]
         ]
     },
     {
@@ -1601,10 +1714,6 @@
                 {
                     "name": "DTRes",
                     "isDataType": true
-                },
-                {
-                    "name": "DTIn",
-                    "isDataType": true
                 }
             ],
             "runtimeParams": [
@@ -1613,7 +1722,7 @@
                     "name": "res"
                 },
                 {
-                    "type": "DTIn **",
+                    "type": "Structure **",
                     "name": "inputs"
                 },
                 {
@@ -1647,7 +1756,66 @@
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"]],
+            [["CSRMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "VectorizedPipeline.h",
+            "opName": "vectorizedPipeline",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res1"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res2"
+                },
+                {
+                    "type": "Structure **",
+                    "name": "inputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numInputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numOutputs"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "outRows"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "outCols"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "splits"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "combines"
+                },
+                {
+                    "type": "void *",
+                    "name": "fun"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"]]
         ]
     },
     {
@@ -1687,7 +1855,9 @@
             [["CSRMatrix", "uint32_t"]],
             [["CSRMatrix", "uint64_t"]],
             [["CSRMatrix", "size_t"]],
-            ["Frame"]
+            ["Frame"],
+            [["Handle", "DenseMatrix", "double"]],
+            [["Handle", "CSRMatrix", "double"]]
         ]
     },
     {
@@ -1817,5 +1987,37 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
         ],
         "opCodes": ["AVG", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Quantize.h",
+            "opName": "quantize",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                { "type": "float", "name": "min" },
+                { "type": "float", "name": "max"}
+            ]
+	},
+        "instantiations": [
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "float"]]
+	]
     }
 ]

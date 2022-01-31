@@ -39,6 +39,13 @@ void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const
     CHECK(*res == *exp);
 }
 
+template<class SparseDT, class DT>
+void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, const DT * rhs, const SparseDT * exp) {
+    SparseDT * res = nullptr;
+    ewBinaryMat<SparseDT, SparseDT, DT>(opCode, res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+}
+
 // ****************************************************************************
 // Arithmetic
 // ****************************************************************************
@@ -117,6 +124,62 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
+    // TODO: all Dense - CSR combinations
+    using VT = TestType;
+    using SparseDT = CSRMatrix<VT>;
+    using DT = DenseMatrix<VT>;
+
+    auto m0 = genGivenVals<SparseDT>(4, {
+        0, 1, 1, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    auto m1 = genGivenVals<DT>(4, {
+        1, 2, 0, 0, 1, 3,
+        0, 1, 0, 2, 0, 3,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DT>(4, {
+        3, 0, 3, 3, 3, 3,
+        1, 2, 3, 1, 1, 1,
+        1, 1, 1, 1, 1, 1,
+        1, 2, 3, 1, 3, 2,
+    });
+    auto m3 = genGivenVals<DT>(4, {
+        0, 1, 1, 0, 0, 0,
+        0, 2, 0, 2, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+    auto exp0 = genGivenVals<SparseDT>(4, {
+        0, 2, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+    auto exp1 = genGivenVals<SparseDT>(4, {
+        0, 0, 3, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0,
+    });
+
+    checkSparseDenseEwBinaryMat(BinaryOpCode::MUL, m0, m1, exp0);
+    checkSparseDenseEwBinaryMat(BinaryOpCode::MUL, m0, m2, exp1);
+    checkSparseDenseEwBinaryMat(BinaryOpCode::MUL, m0, m3, m0);
+
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
+    DataObjectFactory::destroy(exp0);
+    DataObjectFactory::destroy(exp1);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
@@ -266,6 +329,36 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DenseMatrix), (VALUE_
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
+}
+
+// ****************************************************************************
+// Logical
+// ****************************************************************************
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(1, {0, 0, 1, 1, 0, 2, 2,     0, VT(-2), VT(-2)});
+    auto m2 = genGivenVals<DT>(1, {0, 1, 0, 1, 2, 0, 2, VT(-2),    0 , VT(-2)});
+    auto m3 = genGivenVals<DT>(1, {0, 0, 0, 1, 0, 0, 1,     0 ,    0 ,     1 });
+    
+    checkEwBinaryMat(BinaryOpCode::AND, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1, m2, m3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+    
+    auto m1 = genGivenVals<DT>(1, {0, 0, 1, 1, 0, 2, 2,     0 , VT(-2), VT(-2)});
+    auto m2 = genGivenVals<DT>(1, {0, 1, 0, 1, 2, 0, 2, VT(-2),     0 , VT(-2)});
+    auto m3 = genGivenVals<DT>(1, {0, 1, 1, 1, 1, 1, 1,     1,      1 ,     1 });
+    
+    checkEwBinaryMat(BinaryOpCode::OR, m1, m2, m3);
+    
+    DataObjectFactory::destroy(m1, m2, m3);
 }
 
 // ****************************************************************************

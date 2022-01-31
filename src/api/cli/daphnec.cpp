@@ -40,7 +40,7 @@ using namespace std;
 using namespace mlir;
 
 void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec]" << endl;
+    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" << endl;
 }
 
 int
@@ -53,6 +53,7 @@ main(int argc, char** argv)
     string inputFile;
     unordered_map<string, string> scriptArgs;
     bool useVectorizedPipelines = false;
+    bool selectMatrixRepresentations = false;
     if(argc < 2) {
         printHelp(args[0]);
         exit(1);
@@ -81,6 +82,9 @@ main(int argc, char** argv)
                 }
                 else if(args[argPos] == "--vec") {
                     useVectorizedPipelines = true;
+                }
+                else if(args[argPos] == "--select-matrix-representations") {
+                    selectMatrixRepresentations = true;
                 }
                 else {
                     printHelp(args[0]);
@@ -125,13 +129,15 @@ main(int argc, char** argv)
 #endif
 
     // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, user_config);
+    DaphneIrExecutor
+        executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, selectMatrixRepresentations, true, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
     // operations are inserted into the module.
     OpBuilder builder(executor.getContext());
-    auto moduleOp = ModuleOp::create(builder.getUnknownLoc());
+    auto loc = mlir::FileLineColLoc::get(builder.getIdentifier(inputFile), 0, 0);
+    auto moduleOp = ModuleOp::create(loc);
     auto * body = moduleOp.getBody();
     builder.setInsertionPoint(body, body->begin());
 

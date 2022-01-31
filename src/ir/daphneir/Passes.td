@@ -27,9 +27,17 @@ def Inference: FunctionPass<"inference"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }
 
+def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
+    let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
+}
+
 //def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
 //    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
 //}
+
+def InsertFreeOp : FunctionPass<"insert-freeop"> {
+    let constructor = "mlir::daphne::createInsertFreeOpPass()";
+}
 
 def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
     let constructor = "mlir::daphne::createLowerToLLVMPass()";
@@ -49,6 +57,14 @@ def VectorizeComputations : FunctionPass<"vectorize-computations"> {
 
 def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
+}
+
+def SpecializeGenericFunctionsPass : FunctionPass<"specialize-generic-funcs"> {
+    let constructor = "mlir::daphne::createSpecializeGenericFunctionsPass()";
+}
+
+def WhileLoopInvariantCodeMotionPass : FunctionPass<"while-loop-invariant-code-motion"> {
+    let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
 }
 
 #endif // SRC_IR_DAPHNEIR_PASSES_TD

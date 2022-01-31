@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -136,13 +137,17 @@ template<class AllAggOp, class RowAggOp, class ColAggOp, class GrpAggOp>
 mlir::Value DaphneDSLBuiltins::createAnyAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     const size_t numArgs = args.size();
     checkNumArgsBetween(func, numArgs, 1, 3);
-    if(args.size() == 1)
+    if(args.size() == 1) {
+        if(args[0].getType() == utils.unknownType) {
+            return static_cast<mlir::Value>(builder.create<AllAggOp>(loc, utils.unknownType, args[0]));
+        }
         return static_cast<mlir::Value>(
-                builder.create<AllAggOp>(
-                        // TODO this crashes if the input is not a matrix
-                        loc, args[0].getType().dyn_cast<mlir::daphne::MatrixType>().getElementType(), args[0]
-                )
+            builder.create<AllAggOp>(
+                // TODO this crashes if the input is not a matrix
+                loc, args[0].getType().dyn_cast<mlir::daphne::MatrixType>().getElementType(), args[0]
+            )
         );
+    }
     else if(numArgs == 2)
         return createRowOrColAggOp<RowAggOp, ColAggOp>(loc, func, args);
     else // numArgs == 3
@@ -307,27 +312,6 @@ mlir::ResultRange DaphneDSLBuiltins::createPoolFwdOp(mlir::Location loc, const s
 // ****************************************************************************
 // Other utilities
 // ****************************************************************************
-
-// TODO Copied here from FrameLabelInference, have it just once.
-std::string getConstantString2(mlir::Value v) {
-    if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>())
-            return strAttr.getValue().str();
-    throw std::runtime_error(
-            "the given value must be a constant of string type"
-    );
-}
-
-FileMetaData DaphneDSLBuiltins::getFileMetaData(const std::string & func, mlir::Value filename) {
-    std::string filenameStr;
-
-    if(auto co = llvm::dyn_cast<mlir::daphne::ConcatOp>(filename.getDefiningOp()))
-        filenameStr = getConstantString2(co.lhs()) + getConstantString2(co.rhs());
-    else
-        filenameStr = getConstantString2(filename);
-
-    return FileMetaData::ofFile(filenameStr);
-}
 
 antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     using namespace mlir::daphne;
@@ -771,6 +755,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     if(func == "syrk") {
         return createSameTypeUnaryOp<SyrkOp>(loc, func, args);
     }
+    if(func == "gemv") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value mat = args[0];
+        mlir::Value vec = args[1];
+        return static_cast<mlir::Value>(builder.create<GemvOp>(
+                loc, mat.getType(), mat, vec
+        ));
+    }
 
     // ********************************************************************
     // Extended relational algebra
@@ -931,8 +923,20 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Conversions, casts, and copying
     // ********************************************************************
 
-    if(func == "copy")
+    if(func == "copy") {
         return createSameTypeUnaryOp<CopyOp>(loc, func, args);
+    }
+    if(func == "quantize") {
+        checkNumArgsExact(func, args.size(), 3);
+        mlir::Value arg = args[0];
+        mlir::Value min = args[1];
+        mlir::Value max = args[2];
+        return static_cast<mlir::Value>(builder.create<QuantizeOp>(
+                loc,
+                utils.matrixOf(builder.getIntegerType(8, false)),
+                arg, min, max
+        ));
+    }
 
     // ********************************************************************
     // Input/output
@@ -959,7 +963,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 1);
 
         mlir::Value filename = args[0];
-        FileMetaData fmd = getFileMetaData(func, filename);
+        FileMetaData fmd = CompilerUtils::getFileMetaData(filename);
 
         mlir::Type resType;
 
@@ -979,13 +983,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 labels = new std::vector<std::string>(fmd.labels);
 
             resType = mlir::daphne::FrameType::get(
-                    builder.getContext(), cts, labels
+                    // TODO Inserting #rows/#cols here could cause problems, if
+                    // the frame is involved in any SCF ops (if/while/for).
+                    builder.getContext(), cts, fmd.numRows, fmd.numCols, labels
             );
         }
         else // func == "read.matrix"
             // If an individual value type was specified per column
             // (fmd.isSingleValueType == false), then this silently uses the
             // type of the first column.
+            // TODO: add sparsity information here already (if present), currently not possible as many other ops
+            //  just take input types as output types, which is incorrect for sparsity
             resType = utils.matrixOf(utils.mlirTypeForCode(fmd.schema[0]));
 
         return static_cast<mlir::Value>(builder.create<ReadOp>(
@@ -1071,7 +1079,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Low-level auxiliary operations
     // ********************************************************************
 
-    if(func == "free") {
+    // TODO Remove this, we have InsertFreeOpPass now, which automatically
+    // inserts FreeOp where needed. For now, we leave this way open for legacy
+    // support.
+    if(func == "free") { // deprecated
         checkNumArgsExact(func, numArgs, 1);
         return builder.create<FreeOp>(
                 loc, args[0]

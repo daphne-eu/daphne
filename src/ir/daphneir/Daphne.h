@@ -38,12 +38,27 @@
 #include <ir/daphneir/DaphneOpsEnums.h.inc>
 #include <ir/daphneir/DaphneDistributableOpInterface.h>
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
+#include <ir/daphneir/DaphneInferSparsityOpInterface.h>
+#include <ir/daphneir/DaphneInferShapeOpInterface.h>
 #include <ir/daphneir/DaphneInferTypesOpInterface.h>
 #include <ir/daphneir/DaphneVectorizableOpInterface.h>
 
 #include <string>
 #include <utility>
 #include <vector>
+
+namespace mlir::daphne {
+    enum class MatrixRepresentation {
+        Dense = 0,
+        // default is dense
+        Default = MatrixRepresentation::Dense,
+        Sparse = 1,
+    };
+
+    std::string matrixRepresentationToString(MatrixRepresentation rep);
+
+    MatrixRepresentation stringToMatrixRepresentation(const std::string &str);
+}
 
 // ... the following tablegen'erated headers.
 #define GET_TYPEDEF_CLASSES

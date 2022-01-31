@@ -33,12 +33,21 @@ const std::string dirPath = "test/api/cli/vectorized/";
             compareDaphneToRef(prefix+".txt", prefix+".daphne", "--vec"); \
         } \
     }
+#define MAKE_TEST_CASE_SPARSE(name) \
+    TEST_CASE(name, TAG_OPERATIONS) { \
+        DYNAMIC_SECTION(name << ".daphne") { \
+            const std::string prefix = dirPath+name; \
+            compareDaphneToRef(prefix+".txt", prefix+".daphne", "--select-matrix-representations", "--vec"); \
+        } \
+    }
 
 MAKE_TEST_CASE("runMatMult")
 MAKE_TEST_CASE("runEwUnary")
 MAKE_TEST_CASE("runEwBinary")
+MAKE_TEST_CASE_SPARSE("runEwBinarySparse")
 MAKE_TEST_CASE("runRowAgg")
 MAKE_TEST_CASE("runColAgg")
+MAKE_TEST_CASE_SPARSE("runColAggSparse")
 MAKE_TEST_CASE("runIndexing")
 MAKE_TEST_CASE("runReorganization")
 MAKE_TEST_CASE("runOther")

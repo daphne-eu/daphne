@@ -20,7 +20,7 @@ print(sum(max(X, Y)));
 // TODO: string ops (concat)
 
 // Comparisons
-Z = X + rand(1, 1000, -1.0, 1.0, 0.5, 11);
+Z = rand(1, 1000, -1.0, 1.0, 0.5, 11);
 print(sum(X == Z));
 print(sum(X != Z));
 print(sum(X < Z));

@@ -19,20 +19,25 @@
 
 #include <runtime/local/vectorized/TaskQueues.h>
 #include <runtime/local/vectorized/Tasks.h>
+#include <runtime/local/vectorized/VectorizedDataSink.h>
 #include <runtime/local/vectorized/Workers.h>
+#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <thread>
 #include <functional>
+#include <queue>
 
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
 
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
+template <class DT>
+class MTWrapper {};
 
-template <class VT>
-class MTWrapper {
+template <typename VT>
+class MTWrapper<DenseMatrix<VT>> {
 private:
     uint32_t _numThreads;
 
@@ -43,18 +48,28 @@ public:
     }
     ~MTWrapper() = default;
 
-    void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2)
+    void execute(std::function<void(DenseMatrix<VT> ***, Structure **)> func,
+                 DenseMatrix<VT> ***res,
+                 Structure **inputs,
+                 size_t numInputs,
+                 size_t numOutputs,
+                 int64_t *outRows,
+                 int64_t *outCols,
+                 VectorSplit *splits,
+                 VectorCombine *combines,
+                 bool verbose)
     {
-        execute(func, res, input1, input2, false);
-    }
-
-    void execute(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>*& res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2, bool verbose)
-    {
+        uint64_t len = 0;
+        // due to possible broadcasting we have to check all inputs
+        for (auto i = 0u; i < numInputs; ++i) {
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+                len = std::max(len, inputs[i]->getNumRows());
+        }
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(input1->getNumRows());
-
+        TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
+        if(const char* env_m = std::getenv("DAPHNE_THREADS")){
+            _numThreads= std::stoi(env_m);
+        }
         // create workers threads
         WorkerCPU* workers[_numThreads];
         std::thread workerThreads[_numThreads];
@@ -63,18 +78,43 @@ public:
             workerThreads[i] = std::thread(runWorker, workers[i]);
         }
 
-        // output allocation (currently only according to input shape only)
-        if( res == nullptr )
-            res = DataObjectFactory::create<DenseMatrix<VT>>(input1->getNumRows(), input1->getNumCols(), false);
+        // output allocation for row-wise combine
+        for(size_t i = 0; i < numOutputs; ++i) {
+            if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
+                auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
+                *(res[i]) = DataObjectFactory::create<DenseMatrix<VT>>(outRows[i], outCols[i], zeroOut);
+            }
+        }
+        // lock for aggregation combine
+        // TODO: multiple locks per output
+        std::mutex resLock;
 
         // create tasks and close input
-        // TODO UNIBAS - integration hook scheduling
-        uint64_t rlen = input1->getNumRows();
-        uint64_t blksize = (uint64_t)ceil((double)rlen/_numThreads/4);
-        uint64_t batchsize = 1; // row-at-a-time
-        for(uint32_t k=0; (k<_numThreads*4) & (k*blksize<rlen); k++) {
-            q->enqueueTask(new SingleOpTask<VT>(
-                func, res, input1, input2, k*blksize, std::min((k+1)*blksize,rlen), batchsize));
+        uint64_t startChunk = 0;
+        uint64_t endChunk = 0;
+        uint64_t batchsize = 100; // 100-rows-at-a-time
+        uint64_t chunkParam = 1;
+        LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false);
+        while(lp.hasNextChunk()){
+            endChunk += lp.getNextChunk();
+            q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
+                    func,
+                    inputs,
+                    numInputs,
+                    numOutputs,
+                    outRows,
+                    outCols,
+                    splits,
+                    combines,
+                    startChunk,
+                    endChunk,
+                    batchsize,
+                    outRows,
+                    outCols},
+                resLock,
+                res
+            ));
+            startChunk = endChunk;
         }
         q->closeInput();
 
@@ -87,79 +127,89 @@ public:
             delete workers[i];
         delete q;
     }
+};
 
-    void execute(std::function<void(DenseMatrix<VT>***, DenseMatrix<VT>**)> func,
-                 DenseMatrix<VT> *&res, DenseMatrix<VT> **inputs, size_t numInputs)
-    {
-        execute(func, res, inputs, numInputs, false);
+template<typename VT>
+class MTWrapper<CSRMatrix<VT>> {
+private:
+    uint32_t _numThreads;
+
+public:
+    MTWrapper() : MTWrapper(std::thread::hardware_concurrency()) {}
+    MTWrapper(uint32_t numThreads) {
+        _numThreads = (numThreads <= 0) ? 32 : numThreads;
     }
+    ~MTWrapper() = default;
 
-    void execute(std::function<void(DenseMatrix<VT> ***, DenseMatrix<VT> **)> func,
-                 DenseMatrix<VT> *&res,
-                 DenseMatrix<VT> **inputs,
+    void execute(std::function<void(CSRMatrix<VT> ***, Structure **)> func,
+                 CSRMatrix<VT> ***res,
+                 Structure **inputs,
                  size_t numInputs,
                  size_t numOutputs,
                  int64_t *outRows,
                  int64_t *outCols,
                  VectorSplit *splits,
                  VectorCombine *combines,
-                 bool verbose)
-    {
-        auto numTasks = _numThreads * 4;
+                 bool verbose) {
+        // TODO: reduce code duplication
+        uint64_t len = 0;
+        // due to possible broadcasting we have to check all inputs
+        for(auto i = 0u ; i < numInputs ; ++i) {
+            if(splits[i] == mlir::daphne::VectorSplit::ROWS)
+                len = std::max(len, inputs[i]->getNumRows());
+        }
         // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(numTasks);
-
+        TaskQueue *q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
+        if(const char *env_m = std::getenv("DAPHNE_THREADS")) {
+            _numThreads = std::stoi(env_m);
+        }
         // create workers threads
-        WorkerCPU* workers[_numThreads];
+        WorkerCPU *workers[_numThreads];
         std::thread workerThreads[_numThreads];
-        for(uint32_t i=0; i<_numThreads; i++) {
+        for(uint32_t i = 0 ; i < _numThreads ; i++) {
             workers[i] = new WorkerCPU(q, verbose);
             workerThreads[i] = std::thread(runWorker, workers[i]);
         }
 
         assert(numOutputs == 1 && "TODO");
-        // output allocation for row-wise combine
-        if(res == nullptr && outRows[0] != -1 && outCols[0] != -1) {
-            auto zeroOut = combines[0] == mlir::daphne::VectorCombine::ADD;
-            res = DataObjectFactory::create<DenseMatrix<VT>>(outRows[0], outCols[0], zeroOut);
-        }
-        // lock for aggregation combine
-        std::mutex resLock;
+        assert(*(res[0]) == nullptr && "TODO");
+        VectorizedDataSink<CSRMatrix<VT>> dataSink(combines[0], outRows[0], outCols[0]);
 
         // create tasks and close input
-        // TODO UNIBAS - integration hook scheduling
-        uint64_t len = 0;
-        // due to possible broadcasting we have to check all inputs
-        for (auto i = 0u; i < numInputs; ++i) {
-            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
-                len = std::max(len, inputs[i]->getNumRows());
-        }
-        uint64_t blksize = (len - 1) / numTasks + 1; // integer ceil
+        uint64_t startChunk = 0;
+        uint64_t endChunk = 0;
         uint64_t batchsize = 100; // 100-rows-at-a-time
-        for(uint32_t k = 0; k * blksize < len; k++) {
-            q->enqueueTask(new CompiledPipelineTask<VT>(
-                func,
-                resLock,
-                res,
-                inputs,
-                numInputs,
-                numOutputs,
-                outRows,
-                outCols,
-                splits,
-                combines,
-                k * blksize,
-                std::min((k + 1) * blksize, len),
-                batchsize));
+        uint64_t chunkParam = 1;
+        LoadPartitioning lp(STATIC, len, chunkParam, _numThreads, false);
+        while(lp.hasNextChunk()) {
+            endChunk += lp.getNextChunk();
+            q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{
+                    func,
+                    inputs,
+                    numInputs,
+                    numOutputs,
+                    outRows,
+                    outCols,
+                    splits,
+                    combines,
+                    startChunk,
+                    endChunk,
+                    batchsize,
+                    outRows,
+                    outCols},
+                dataSink
+            ));
+            startChunk = endChunk;
         }
         q->closeInput();
 
         // barrier (wait for completed computation)
-        for(uint32_t i=0; i<_numThreads; i++)
+        for(uint32_t i = 0 ; i < _numThreads ; i++)
             workerThreads[i].join();
+        *(res[0]) = dataSink.consume();
 
         // cleanups
-        for(uint32_t i=0; i<_numThreads; i++)
+        for(uint32_t i = 0 ; i < _numThreads ; i++)
             delete workers[i];
         delete q;
     }

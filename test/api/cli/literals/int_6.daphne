@@ -1,0 +1,2 @@
+// signed 8-bit integer (should not be printed as character)
+print(as.si8(-42));

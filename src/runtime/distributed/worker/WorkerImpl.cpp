@@ -30,10 +30,14 @@
 #include "WorkerImpl.h"
 
 #include <runtime/distributed/worker/ProtoDataConverter.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/kernels/Read.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
+#include "CallData.h"
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
@@ -42,6 +46,38 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 }
 
 WorkerImpl::~WorkerImpl() = default;
+
+// void WorkerImpl::StartHandleThread() {
+//     HandleRpcsThread = std::thread(&WorkerImpl::HandleRpcs, this);
+// }
+// void WorkerImpl::TerminateHandleThread() {
+//     cq_->Shutdown();
+//     HandleRpcsThread.join();
+// }
+void WorkerImpl::HandleRpcs() {
+    // Spawn a new CallData instance to serve new clients.
+    new StoreCallData(this, cq_.get());
+    new ComputeCallData(this, cq_.get());
+    new TransferCallData(this, cq_.get());
+    new FreeMemCallData(this, cq_.get());
+    void* tag;  // uniquely identifies a request.
+    bool ok;
+    // Block waiting to read the next event from the completion queue. The
+    // event is uniquely identified by its tag, which in this case is the
+    // memory address of a CallData instance.
+    // The return value of Next should always be checked. This return value
+    // tells us whether there is any kind of event or cq_ is shutting down.
+    while (cq_->Next(&tag, &ok)) {        
+        if(ok){         
+            // Thread pool ? with caution. For now on each worker only one thread operates (sefe IO).
+            // We might need to add locks inside Store/Compute/Transfer methods if we deploy threads
+            static_cast<CallData*>(tag)->Proceed();
+        } else {
+            // TODO maybe handle this internally ?
+            delete tag;
+        }
+    }
+  }
 
 grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
                                const ::distributed::Matrix *request,
@@ -66,11 +102,15 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     // ToDo: user config
     DaphneUserConfig cfg{false};
     // TODO Decide if vectorized pipelines should be used on this worker.
-    DaphneIrExecutor executor(false, false, cfg);
+    // TODO Decide if selectMatrixReprs should be used on this worker.
+    // TODO Once we hand over longer pipelines to the workers, we might not
+    // want to hardcode insertFreeOp to false anymore. But maybe we will insert
+    // the FreeOps at the coordinator already.
+    DaphneIrExecutor executor(false, false, false, false, cfg);
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {
-        auto message = "Failed parse source string.\n";
+        auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
         return ::grpc::Status(::grpc::StatusCode::ABORTED, message);
     }
@@ -92,6 +132,11 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         inputs);
 
     // Execution
+    // TODO Before we run the passes, we should insert information on shape
+    // (and potentially other properties) into the types of the arguments of
+    // the DISTRIBUTED_FUNCTION_NAME function. At least the shape can be
+    // obtained from the cached data partitions in localData_. Then, shape
+    // inference etc. should work within this function.
     if (!executor.runPasses(module.get())) {
         std::stringstream ss;
         ss << "Module Pass Error.\n";
@@ -159,8 +204,10 @@ grpc::Status WorkerImpl::Transfer(::grpc::ServerContext *context,
                                   const ::distributed::StoredData *request,
                                   ::distributed::Matrix *response)
 {
-    auto *mat = readOrGetMatrix(request->filename(), request->num_rows(), request->num_cols());
-    ProtoDataConverter::convertToProto(mat, response);
+    Matrix<double> *mat = readOrGetMatrix(request->filename(), request->num_rows(), request->num_cols(), false);
+    auto matDense = dynamic_cast<DenseMatrix<double> *>(mat);
+    assert(matDense && "Transfer is only implemented for DenseMatrix");
+    ProtoDataConverter::convertToProto(matDense, response);
     return ::grpc::Status::OK;
 }
 
@@ -200,28 +247,57 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const distributed::Work
         // TODO: all types
         auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();
         assert(matTy && matTy.getElementType().isa<mlir::Float64Type>() && "We only support double matrices for now!");
-        return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols());
+        bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;
+        return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols(), isSparse);
     }
     default:assert(false && "We only support stored data for now");
     }
 }
 
-DenseMatrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols)
+Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse)
 {
-    DenseMatrix<double> *m = nullptr;
     auto data_it = localData_.find(filename);
     if (data_it != localData_.end()) {
         // Data already cached
-        m = static_cast<DenseMatrix<double> *>(data_it->second);
+        return static_cast<Matrix<double> *>(data_it->second);
     }
     else {
         // Data not yet loaded -> load from file
-        struct File *file = openFile(filename.c_str());
-        char delim = ',';
-        readCsv(m, file, numRows, numCols, delim);
+        Matrix<double> * m = nullptr;
+        if(isSparse) {
+            CSRMatrix<double> *m2 = nullptr;
+            read<CSRMatrix<double>>(m2, filename.c_str(), nullptr);
+            m = m2;
+        }
+        else {
+            DenseMatrix<double> *m2 = nullptr;
+            struct File *file = openFile(filename.c_str());
+            char delim = ',';
+            // TODO use read
+            readCsv<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
+            closeFile(file);
+            m = m2;
+        }
         auto result = localData_.insert({filename, m});
         assert(result.second && "Value should always be inserted");
+        return m;
     }
-    return m;
 }
 
+grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
+                               const ::distributed::StoredData *request,
+                               ::distributed::Empty *emptyMessg)
+{
+    auto filename = request->filename();
+    auto data_it = localData_.find(filename);
+    
+    if (data_it != localData_.end()) {
+        auto * mat = reinterpret_cast<Matrix<double> *>(data_it->second);
+        if(auto m = dynamic_cast<DenseMatrix<double> *>(mat))
+            DataObjectFactory::destroy(m);
+        else if(auto m = dynamic_cast<CSRMatrix<double> *>(mat))
+            DataObjectFactory::destroy(m);
+        localData_.erase(filename);
+    }
+    return grpc::Status::OK;
+}

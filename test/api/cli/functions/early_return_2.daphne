@@ -1,0 +1,15 @@
+// Check if returns only in if and else are enough
+def f(a) {
+    print(a);
+    if (a > 0) {
+        print("a > 0");
+        return 1;
+    }
+    else {
+        print("a <= 0");
+        return 0;
+    }
+}
+
+print(f(10));
+print(f(-10));

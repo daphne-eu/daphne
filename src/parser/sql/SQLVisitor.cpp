@@ -342,7 +342,7 @@ antlrcpp::Any SQLVisitor::visitSql(
 )
 {
     mlir::Value res = utils.valueOrError(visit(ctx->query()));
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     return res;
 }
 
@@ -360,7 +360,7 @@ antlrcpp::Any SQLVisitor::visitSelect(
     SQLGrammarParser::SelectContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     mlir::Value res;
 
     //Setting Codegeneration for Where Clause
@@ -458,7 +458,7 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(
     SQLGrammarParser::SelectExprContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     mlir::Value matrix;
     antlrcpp::Any vExpr = visit(ctx->var);
@@ -518,7 +518,7 @@ antlrcpp::Any SQLVisitor::visitCartesianExpr(
     //we have to at least two frames in the fromExpr. We join them together
     //with the Cartesian product.
     try{
-        mlir::Location loc = builder.getUnknownLoc();
+        mlir::Location loc = utils.getLoc(ctx->start);
         mlir::Value res;
         mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
         mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
@@ -558,7 +558,7 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(
     //left side of the Comparisons and the to be joined on the right side.
     //This behavior could be changed here.
     //TODO: Make the position independent
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     mlir::Value tojoin = utils.valueOrError(visit(ctx->var));
     //rhs is join
@@ -593,7 +593,7 @@ antlrcpp::Any SQLVisitor::visitWhereClause(
     //matrix or a single value, vExpr. vExpr gets cast to a matrix, which
     //FilterRowOp uses. IMPORTANT: FilterRowOp takes up the work to make a
     //int/float into a boolean for the filtering.
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     mlir::Value filter;
 
     antlrcpp::Any vExpr = visit(ctx->cond);
@@ -627,7 +627,7 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(
     //  groupByClause creates the groupingOperation with the gathered
     //  information from here, having and the projections.
     //  followed by a having check on the newly grouped result.
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         for(auto i = 0; i < ctx->selectIdent().size(); i++){
@@ -670,7 +670,7 @@ antlrcpp::Any SQLVisitor::visitHavingClause(
 )
 {
     //Same as Where
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     mlir::Value filter;
     antlrcpp::Any vExpr = visit(ctx->cond);
 
@@ -707,7 +707,7 @@ antlrcpp::Any SQLVisitor::visitLiteralExpr(
 antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     SQLGrammarParser::IdentifierExprContext * ctx)
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){
 
@@ -748,7 +748,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //Codegeneration = true:
     //  The function looks up the unique name again and extracts a matrix from
     //  the currentFrame. This Matrix is the result of this function.
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     std::string newColumnName = "group_" + ctx->var->getText();
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
@@ -794,7 +794,7 @@ antlrcpp::Any SQLVisitor::visitMulExpr(
     SQLGrammarParser::MulExprContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     std::string op = ctx->op->getText();
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
@@ -823,7 +823,7 @@ antlrcpp::Any SQLVisitor::visitAddExpr(
     SQLGrammarParser::AddExprContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     std::string op = ctx->op->getText();
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
@@ -852,7 +852,7 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(
     SQLGrammarParser::CmpExprContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     std::string op = ctx->op->getText();
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
@@ -897,7 +897,7 @@ antlrcpp::Any SQLVisitor::visitAndExpr(
     SQLGrammarParser::AndExprContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
@@ -918,7 +918,7 @@ antlrcpp::Any SQLVisitor::visitOrExpr(
     SQLGrammarParser::OrExprContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
@@ -940,7 +940,7 @@ antlrcpp::Any SQLVisitor::visitTableReference(
     SQLGrammarParser::TableReferenceContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     std::string var = ctx->var->getText();
     std::string prefix = ctx->var->getText();
@@ -987,7 +987,7 @@ antlrcpp::Any SQLVisitor::visitStringIdent(
     SQLGrammarParser::StringIdentContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
 
     std::string getSTR;
     std::string columnSTR = ctx->var->getText();
@@ -1014,7 +1014,7 @@ antlrcpp::Any SQLVisitor::visitLiteral(
     SQLGrammarParser::LiteralContext * ctx
 )
 {
-    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Location loc = utils.getLoc(ctx->start);
     if(auto lit = ctx->INT_LITERAL())
 {
         int64_t val = atol(lit->getText().c_str());

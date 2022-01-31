@@ -38,15 +38,28 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
                     ConversionPatternRewriter &rewriter) const override
     {
         std::vector<Value> distributedInputs;
-        for (auto operand : operands) {
-            if (operand.getType().isa<daphne::HandleType>()) {
+        for (auto zipIt : llvm::zip(operands, op.getOperandDistrPrimitives())) {
+            Value operand = std::get<0>(zipIt);
+            bool isBroadcast = std::get<1>(zipIt);
+            if (operand.getType().isa<daphne::HandleType>())
+                // The operand is already distributed/broadcasted, we can
+                // directly use it.
+                // TODO Check if it is distributed the way we need it here
+                // (distributed/broadcasted), but so far, this is not tracked
+                // at compile-time.
                 distributedInputs.push_back(operand);
-            }
+            else if (auto co = dyn_cast_or_null<daphne::DistributedCollectOp>(operand.getDefiningOp()))
+                // The operand has just been collected from a distributed data
+                // object, so we should reuse the original distributed data
+                // object.
+                distributedInputs.push_back(co.arg());
             else {
-                // TODO: if DistributedCollectOp, just use handle input of it
-                distributedInputs.push_back(rewriter.create<daphne::DistributeOp>(op->getLoc(),
-                    daphne::HandleType::get(getContext(), operand.getType()),
-                    operand));
+                // The operands need to be distributed/broadcasted first.
+                Type t = daphne::HandleType::get(getContext(), operand.getType());
+                if(isBroadcast)
+                    distributedInputs.push_back(rewriter.create<daphne::BroadcastOp>(op->getLoc(), t, operand));
+                else
+                    distributedInputs.push_back(rewriter.create<daphne::DistributeOp>(op->getLoc(), t, operand));
             }
         }
         auto results = op.createEquivalentDistributedDAG(rewriter, distributedInputs);
@@ -63,6 +76,12 @@ struct DistributeComputationsPass
 };
 }
 
+bool onlyMatrixOperands(Operation * op) {
+    return llvm::all_of(op->getOperandTypes(), [](Type t) {
+        return t.isa<daphne::MatrixType>();
+    });
+}
+
 void DistributeComputationsPass::runOnOperation()
 {
     auto module = getOperation();
@@ -75,7 +94,15 @@ void DistributeComputationsPass::runOnOperation()
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
-      return !llvm::isa<daphne::Distributable>(op) || op->getParentOfType<daphne::DistributedComputeOp>();
+        // An operation is legal (does not need to be replaced), if ...
+        return
+                // ... it is not distributable
+                !llvm::isa<daphne::Distributable>(op) ||
+                // ... it is inside some distributed computation already
+                op->getParentOfType<daphne::DistributedComputeOp>() ||
+                // ... not all of its operands are matrices
+                // TODO Support distributing frames and scalars.
+                !onlyMatrixOperands(op);
     });
 
     patterns.insert<Distribute>(&getContext());

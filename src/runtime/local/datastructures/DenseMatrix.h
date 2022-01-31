@@ -110,16 +110,15 @@ class DenseMatrix : public Matrix<ValueType>
      * 
      * @param numRows The exact number of rows.
      * @param numCols The exact number of columns.
-     * @param values The existing array of values.
+     * @param values A `std::shared_ptr` to an existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols, ValueType * values) :
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType> values) :
             Matrix<ValueType>(numRows, numCols),
             rowSkip(numCols),
             values(values),
             lastAppendedRowIdx(0),
             lastAppendedColIdx(0)
     {
-        assert(values && "values must not be null");
         host_dirty = true;
     }
             
@@ -180,7 +179,9 @@ class DenseMatrix : public Matrix<ValueType>
                 memset(v, 0, (colIdx - 1) * sizeof(ValueType));
         }
     }
-    
+
+    void printValue(std::ostream & os, ValueType val) const;
+
 public:
     
     void shrinkNumRows(size_t numRows) {
@@ -267,7 +268,6 @@ public:
     void print(std::ostream & os) const override {
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
-        size_t i = 0;
 #ifdef USE_CUDA
         if ((cuda_ptr && cuda_dirty) || !values) {
 //#ifndef NDEBUG
@@ -279,20 +279,20 @@ public:
 #endif
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
-                os << values.get()[i + c];
+                printValue(os, get(r, c));
                 if (c < numCols - 1)
                     os << ' ';
             }
             os << std::endl;
-            i += rowSkip;
         }
     }
 
-    DenseMatrix<ValueType>* slice(size_t rl, size_t ru) {
+    DenseMatrix<ValueType>* slice(size_t rl, size_t ru) override {
         return slice(rl, ru, 0, numCols);
     }
 
     DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) {
+        // TODO Use DataObjFactory.
         return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
     }
 

@@ -30,9 +30,9 @@ struct SQLParser : public Parser {
     std::unordered_map <std::string, mlir::Value> view;
     void setView(std::unordered_map <std::string, mlir::Value> view);
 
-    void parseStream(mlir::OpBuilder & builder, std::istream & stream) override;
+    void parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) override;
 
-    mlir::Value parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream);
+    mlir::Value parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName);
 
 
 };

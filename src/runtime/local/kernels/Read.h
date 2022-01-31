@@ -68,6 +68,29 @@ struct Read<DenseMatrix<VT>> {
 };
 
 // ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct Read<CSRMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *& res, const char * filename, DCTX(ctx)) {
+        FileMetaData fmd = FileMetaData::ofFile(filename);
+
+        assert(fmd.numNonZeros != -1
+            && "Currently reading of sparse matrices requires a number of non zeros to be defined");
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(
+                fmd.numRows, fmd.numCols, fmd.numNonZeros, false
+            );
+        File * file = openFile(filename);
+        // FIXME: ensure file is sorted, or set `sorted` argument correctly
+        readCsv(res, file, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
+        closeFile(file);
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Frame
 // ----------------------------------------------------------------------------
 

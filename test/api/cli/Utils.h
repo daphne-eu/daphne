@@ -32,6 +32,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <filesystem>
 
 // TODO In all (run/check/compare)Daphne... functions, we might not need to
 // explicitly specify the scriptPath as a parameter, since it could be subsumed
@@ -110,6 +111,43 @@ int runProgram(std::stringstream & out, std::stringstream & err, const char * ex
         throw std::runtime_error("could not execute the program");
     }
 }
+
+/**
+ * @brief Executes the specified program with the given arguments in the background.
+ *  
+ * @param out The file descriptor where to redirect standard output.
+ * @param err The file descriptor where to redirect standard error.
+ * @param execPath The path to the executable.
+ * @param args The arguments to pass. Despite the variadic template, each
+ * element should be of type `char *`. The first one should be the name of the
+ * program itself. The last one does *not* need to be a null pointer.
+ * @return The process id of the child process.
+ * 
+ */
+template<typename... Args>
+pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ... args) {        
+    
+    // Try to create the child process.
+    pid_t p = fork();
+    
+    if(p == -1)
+        throw std::runtime_error("could not create child process");
+    else if(p) { // parent        
+        // Return pid
+        return p;
+    }
+    else { // child
+        // Redirect stdout and stderr to the pipe.
+        dup2(out, STDOUT_FILENO);
+        dup2(err, STDERR_FILENO);
+        // Execute other program.
+        execl(execPath, args..., static_cast<char *>(nullptr));
+        
+        // execl does not return, unless it failed.
+        throw std::runtime_error("could not execute the program");
+    }
+}
+
 
 /**
  * @brief Executes the given DaphneDSL script with the command line interface
@@ -202,6 +240,58 @@ template<typename... Args>
 void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
+}
+
+/**
+ * @brief Compares the standard output of executing a given DaphneDSL script
+ * with the command line interface of the DAPHNE Prototype, to a (simpler) DaphneDSL
+ * script defining the expected behaviour.
+ *
+ * Also checks that the status code indicates a successful execution and that
+ * nothing was printed to standard error.
+ *
+ * @param expScriptFilePath The path to the DaphneDSL script with expected behaviour.
+ * @param actScriptFilePath The path to the DaphneDSL script to check with actual behaviour.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::string &actScriptFilePath, Args ... args) {
+    std::stringstream expOut;
+    std::stringstream expErr;
+    int expStatus = runDaphne(expOut, expErr, expScriptFilePath.c_str(), args...);
+    std::stringstream actOut;
+    std::stringstream actErr;
+    int actStatus = runDaphne(actOut, actErr, actScriptFilePath.c_str(), args...);
+
+    REQUIRE(expStatus == actStatus);
+    CHECK(expOut.str() == actOut.str());
+    CHECK(expErr.str() == actErr.str());
+}
+
+template<typename... Args>
+void compareDaphneToSelfRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    const std::string filePath = dirPath + name + '_' + std::to_string(idx);
+    compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
+}
+
+/**
+ * @brief Compares the standard output of executing a given DaphneDSL script
+ * with a reference script or text file, based on which file is found.
+ */
+template<typename... Args>
+void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    const std::string filePath = dirPath + name + '_' + std::to_string(idx);
+    if (std::filesystem::exists(filePath + ".ref.daphne")) {
+        compareDaphneToSelfRef(filePath + ".ref.daphne", filePath + ".daphne", args...);
+    }
+    else if (std::filesystem::exists(filePath + ".txt")) {
+        compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
+    }
+    else {
+        throw std::runtime_error("Could not find any ref for file `" + filePath + ".daphne`");
+    }
 }
 
 /**

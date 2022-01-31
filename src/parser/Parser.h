@@ -41,8 +41,9 @@ struct Parser {
      * 
      * @param builder The builder to use for generating DaphneIR operations.
      * @param stream The stream to read from.
+     * @param sourceName A name used for source location information.
      */
-    virtual void parseStream(mlir::OpBuilder & builder, std::istream & stream) = 0;
+    virtual void parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) = 0;
     
     /**
      * @brief Generates a DaphneIR representation for the given DSL file.
@@ -57,21 +58,22 @@ struct Parser {
             throw std::runtime_error("could not open file '" + filename + "' for parsing");
 
         // Parse the file contents.
-        parseStream(builder, ifs);
+        parseStream(builder, ifs, filename);
     }
-    
+
     /**
      * @brief Generates a DaphneIR representation for the given DSL string.
      * 
      * @param builder The builder to use for generating DaphneIR operations.
      * @param str The string to read from.
+     * @param sourceName Optional name for the source used in MLIR Locations (defaults to "DSL String")
      */
-    void parseStr(mlir::OpBuilder & builder, const std::string & str) {
+    void parseStr(mlir::OpBuilder & builder, const std::string & str, const std::string & sourceName = "DSL String") {
         // Parse the file contents.
         std::istringstream s(str);
         
         // Parse the string contents.
-        parseStream(builder, s);
+        parseStream(builder, s, sourceName);
     }
 };
 
