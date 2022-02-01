@@ -31,8 +31,6 @@
 #include <cstdlib>
 #include <regex>
 
-#include <iostream>
-
 // ****************************************************************************
 // Helper functions
 // ****************************************************************************
@@ -693,6 +691,13 @@ antlrcpp::Any SQLVisitor::visitHavingClause(
 }
 
 //generalExpr
+
+//For the following generalExpr:
+//  If Code generation is turned off, it will still visit the generalExpr
+//      underneath and then return a nullptr.
+//  If Code generation is turned on, it will generate Code like an addition.
+//  If something else is happening, it got additional Documentation.
+
 antlrcpp::Any SQLVisitor::visitLiteralExpr(
     SQLGrammarParser::LiteralExprContext * ctx
 )
@@ -703,25 +708,20 @@ antlrcpp::Any SQLVisitor::visitLiteralExpr(
     return utils.valueOrError(visit(ctx->literal()));
 }
 
-//TODO! Documentation and Error checking
 antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     SQLGrammarParser::IdentifierExprContext * ctx)
 {
     mlir::Location loc = utils.getLoc(ctx->start);
 
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){
-
-    }
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)){ //TODO Is this Enough?!
-        if(!isBitSet(sqlFlag, (int64_t)SQLBit::agg)){
-            if(grouped[ctx->selectIdent()->getText()] == 0){
-                std::stringstream err_msg;
-                err_msg << "Error during a generalExpr. \""
-                    << ctx->selectIdent()->getText() << "\" Must be part of "
-                    << "the Group Expression or have an Aggregation Function";
-                throw std::runtime_error(err_msg.str());
-            }
-        }
+    if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
+        && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
+        && grouped[ctx->selectIdent()->getText()] == 0) //AND the label is not in group expr
+    {
+        std::stringstream err_msg;
+        err_msg << "Error during a generalExpr. \""
+            << ctx->selectIdent()->getText() << "\" Must be part of "
+            << "the Group Expression or have an Aggregation Function";
+        throw std::runtime_error(err_msg.str());
     }
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
@@ -936,6 +936,8 @@ antlrcpp::Any SQLVisitor::visitOrExpr(
 }
 
 //tableReference
+// Returns a modified Frame.
+// Modification: the Frame labels get a prefix.
 antlrcpp::Any SQLVisitor::visitTableReference(
     SQLGrammarParser::TableReferenceContext * ctx
 )
@@ -978,11 +980,9 @@ antlrcpp::Any SQLVisitor::visitTableReference(
 }
 
 //selectIdent //rowReference
-//****
-//* Returns
-//*     A SSA to ExtractColumn Operation.
-//* Callee: visitSelectExpr
-//****
+
+// Returns A SSA to StringLabel for an ExtractColOp
+// If a Frame is referenced, it checks its availability.
 antlrcpp::Any SQLVisitor::visitStringIdent(
     SQLGrammarParser::StringIdentContext * ctx
 )
@@ -1015,23 +1015,21 @@ antlrcpp::Any SQLVisitor::visitLiteral(
 )
 {
     mlir::Location loc = utils.getLoc(ctx->start);
-    if(auto lit = ctx->INT_LITERAL())
-{
+    if(auto lit = ctx->INT_LITERAL()){
         int64_t val = atol(lit->getText().c_str());
         return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::ConstantOp>(
-                        loc, val
-                )
+            builder.create<mlir::daphne::ConstantOp>(
+                    loc, val
+            )
         );
     }
-    if(auto lit = ctx->FLOAT_LITERAL())
-{
+    if(auto lit = ctx->FLOAT_LITERAL()){
         double val = atof(lit->getText().c_str());
         return static_cast<mlir::Value>(
-                builder.create<mlir::daphne::ConstantOp>(
-                        loc,
-                        builder.getF64FloatAttr(val)
-                )
+            builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getF64FloatAttr(val)
+            )
         );
     }
     throw std::runtime_error("unexpected literal");
