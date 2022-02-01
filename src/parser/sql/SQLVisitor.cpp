@@ -610,8 +610,6 @@ antlrcpp::Any SQLVisitor::visitWhereClause(
 }
 
 //groupByClause
-//TODO check if Having is working
-//TODO Check for Errors when working
 antlrcpp::Any SQLVisitor::visitGroupByClause(
     SQLGrammarParser::GroupByClauseContext * ctx
 )
@@ -620,7 +618,7 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(
     //Codegeneration = false:
     //  groupByClause collects all the column names by which a grouping
     //  should occur.
-    //  TODO: and calls the havingClause.
+    //  TODO: call the havingClause.
     //Codegeneration = true:
     //  groupByClause creates the groupingOperation with the gathered
     //  information from here, having and the projections.
