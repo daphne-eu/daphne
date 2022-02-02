@@ -193,7 +193,7 @@ public:
     [[nodiscard]] size_t getRowSkip() const {
         return rowSkip;
     }
-
+    
     const ValueType * getValues() const
     {
         return const_cast<DenseMatrix*>(this)->getValues();

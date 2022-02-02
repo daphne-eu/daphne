@@ -295,6 +295,10 @@
                 {
                     "type": "DaphneContext *&",
                     "name": "res"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "configPtr"
                 }
             ]
         },
@@ -1954,6 +1958,54 @@
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
         ],
         "opCodes": ["AVG", "MAX"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "RowBind.h",
+            "opName": "rowBind",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTUp",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLow",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTUp *",
+                    "name": "up"
+                },
+                {
+                    "type": "const DTLow *",
+                    "name": "low"
+                },
+                {
+                    "type": "const ValueTypeCode *",
+                    "name": "vtc"
+                },
+                {
+                    "type": "const string *",
+                    "name": "lbl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame", "Frame"]
+        ]
     },
     {
         "kernelTemplate": {

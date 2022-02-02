@@ -19,14 +19,18 @@
 
 #pragma once
 
+#include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/context/DaphneContext.h>
+
+#include <cstdint>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-void createDaphneContext(DaphneContext *& res) {
-    res = new DaphneContext();
+void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
+    auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
+    res = new DaphneContext(*config);
 }
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
