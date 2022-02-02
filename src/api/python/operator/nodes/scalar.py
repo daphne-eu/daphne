@@ -26,18 +26,20 @@ import numpy as np
 from typing import Iterable
 
 from api.python.operator.operation_node import OperationNode
-
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
 
 class Scalar(OperationNode):
     __assign: bool
 
-    def __init__(self, operation: str,
+    def __init__(self, daphne_context: 'DaphneContext', operation: str,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
                  output_type: OutputType = OutputType.DOUBLE,
                  assign: bool = False) -> 'Scalar':
         self.__assign = assign
-        super().__init__( operation, unnamed_input_nodes=unnamed_input_nodes,
+        super().__init__(daphne_context, operation, unnamed_input_nodes=unnamed_input_nodes,
                          named_input_nodes=named_input_nodes, output_type=output_type)
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
@@ -52,72 +54,72 @@ class Scalar(OperationNode):
 
     
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '+', [self, other])
+        return Scalar(self.daphne_context, '+', [self, other])
 
     # Left hand side
     def __radd__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '+', [other, self])
+        return Scalar(self.daphne_context, '+', [other, self])
 
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '-', [self, other])
+        return Scalar(self.daphne_context, '-', [self, other])
 
     # Left hand side
     def __rsub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '-', [other, self])
+        return Scalar(self.daphne_context, '-', [other, self])
 
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '*', [self, other])
+        return Scalar( self.daphne_context,'*', [self, other])
 
     def __rmul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '*', [other, self])
+        return Scalar(self.daphne_context, '*', [other, self])
 
     def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '/', [self, other])
+        return Scalar(self.daphne_context, '/', [self, other])
 
     def __rtruediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '/', [other, self])
+        return Scalar(self.daphne_context, '/', [other, self])
 
     def __floordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '//', [self, other])
+        return Scalar(self.daphne_context, '//', [self, other])
 
     def __rfloordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( '//', [other, self])
+        return Scalar(self.daphne_context, '//', [other, self])
 
     def __lt__(self, other) -> 'Scalar':
-        return Scalar( '<', [self, other])
+        return Scalar(self.daphne_context, '<', [self, other])
 
     def __rlt__(self, other) -> 'Scalar':
-        return Scalar( '<', [other, self])
+        return Scalar(self.daphne_context, '<', [other, self])
 
     def __le__(self, other) -> 'Scalar':
-        return Scalar( '<=', [self, other])
+        return Scalar(self.daphne_context, '<=', [self, other])
 
     def __rle__(self, other) -> 'Scalar':
-        return Scalar( '<=', [other, self])
+        return Scalar(self.daphne_context, '<=', [other, self])
 
     def __gt__(self, other) -> 'Scalar':
-        return Scalar( '>', [self, other])
+        return Scalar(self.daphne_context, '>', [self, other])
 
     def __rgt__(self, other) -> 'Scalar':
-        return Scalar( '>', [other, self])
+        return Scalar(self.daphne_context, '>', [other, self])
 
     def __ge__(self, other) -> 'Scalar':
-        return Scalar( '>=', [self, other])
+        return Scalar(self.daphne_context, '>=', [self, other])
 
     def __rge__(self, other) -> 'Scalar':
-        return Scalar( '>=', [other, self])
+        return Scalar(self.daphne_context, '>=', [other, self])
 
     def __eq__(self, other) -> 'Scalar':
-        return Scalar( '==', [self, other])
+        return Scalar(self.daphne_context, '==', [self, other])
 
     def __req__(self, other) -> 'Scalar':
-        return Scalar( '==', [other, self])
+        return Scalar(self.daphne_context, '==', [other, self])
 
     def __ne__(self, other) -> 'Scalar':
-        return Scalar( '!=', [self, other])
+        return Scalar(self.daphne_context, '!=', [self, other])
 
     def __rne__(self, other) -> 'Scalar':
-        return Scalar( '!=', [other, self])
+        return Scalar(self.daphne_context, '!=', [other, self])
     
     def sqrt(self) -> 'Scalar':
-        return Scalar('sqrt',[self])
+        return Scalar(self.daphne_context,'sqrt',[self])

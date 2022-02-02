@@ -186,6 +186,11 @@ int runDaphne(std::stringstream & out, std::stringstream & err, const char * scr
     return runProgram(out, err, "build/bin/daphnec", "daphnec", scriptPath, args...);
 }
 
+template<typename... Args>
+int runDaphneLib(std::stringstream & out, std::stringstream & err, const char * scriptPath, Args ... args) {
+    return runProgram(out, err, "/bin/python3", "python3", scriptPath, args...);
+}
+
 /**
  * @brief Checks whether executing the given DaphneDSL script with the command
  * line interface of the DAPHNE Prototype returns the given status code.
@@ -235,6 +240,18 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
     CHECK(err.str().empty());
 }
 
+template<typename... Args>
+void compareDaphneToDaphneLibOut(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out_daphne;
+    std::stringstream err_daphne;
+    std::stringstream out_DaphneLib;
+    std::stringstream err_DaphneLib;
+    int status_DaphneLib = runDaphneLib(out_DaphneLib, err_DaphneLib, DaphneLibFilePath.c_str(), args...);
+    int status_daphne = runDaphne(out_daphne, err_daphne, scriptFilePath.c_str(), args...);
+    REQUIRE(status_daphne == status_DaphneLib);
+    CHECK(out_daphne.str() == out_DaphneLib.str());
+    CHECK(err_daphne.str() == err_DaphneLib.str());
+}
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
  * with the command line interface of the DAPHNE Prototype to a reference text
@@ -254,11 +271,19 @@ template<typename... Args>
 void compareDaphneToRef(const std::string & refFilePath, const std::string & scriptFilePath, Args ... args) {
     return compareDaphneToStr(readTextFile(refFilePath), scriptFilePath, args...);
 }
-
+template<typename... Args>
+void compareDaphneToDaphneLib(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
+    return compareDaphneToDaphneLibOut(DaphneLibFilePath, scriptFilePath, args...);
+}
 template<typename... Args>
 void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
+}
+template<typename... Args>
+void compareDaphneToDaphneLibSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    const std::string filePath = dirPath + name + '_' + std::to_string(idx);
+    compareDaphneToDaphneLib(filePath + ".py", filePath + ".daphne", args...);
 }
 
 /**

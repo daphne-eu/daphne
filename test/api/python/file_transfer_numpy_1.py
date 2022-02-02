@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 # -------------------------------------------------------------
 #
 # Licensed to the Apache Software Foundation (ASF) under one
@@ -18,40 +20,18 @@
 # under the License.
 #
 # -------------------------------------------------------------
-from time import sleep
-import unittest
+
+
 import numpy as np
 from api.python.context.daphne_context import DaphneContext
 
-import random
-
-np.random.seed(7)
-# TODO Remove the randomness of the test, such that
-#      inputs for the random operation is predictable
-shape = (random.randrange(1, 7), random.randrange(1, 7))
-dist_shape = (10, 15)
-min_max = (0, 1)
-sparsity = random.uniform(0.0, 1.0)
-seed = 123
 dim = 5
-np.random.seed(7)
-m3 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
-m3.shape = (dim, dim)
-m4 = np.array(np.random.randint(5, size=dim*dim)+1, dtype=np.double)
-m4.shape = (dim,dim)
+m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
+m1.shape = (dim, dim)
 
 
-class TestBinaryOp(unittest.TestCase):
-   
-    daphne_context: DaphneContext = None
-    @classmethod
-    def setUpClass(cls):
-        cls.daphne_context = DaphneContext()
+daphne_context = DaphneContext()
 
-    def test_plus(self):
-        result = (((self.daphne_context.from_numpy(m3))*(self.daphne_context.from_numpy(m4))).compute())
-        print(result)
-        self.assertTrue(np.allclose(result, m3*m4))
-        
-if __name__ == "__main__":
-    unittest.main(exit=False)
+
+result = (daphne_context.from_numpy(m1)).print().compute()
+print(round(m1.sum(),2))

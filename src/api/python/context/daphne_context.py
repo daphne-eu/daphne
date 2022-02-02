@@ -50,7 +50,7 @@ class DaphneContext(object):
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
 
-    def rand( rows: int, cols: int,
+    def rand(self, rows: int, cols: int,
                 min: Union[float, int] = None, max: Union[float, int] = None,sparsity: Union[float, int] = 0, seed: Union[float, int] = 0
                 ) -> 'Matrix':
             """Generates a matrix filled with random values
@@ -80,4 +80,4 @@ class DaphneContext(object):
             if seed is not None:
                 named_input_nodes['seed'] = seed
 
-            return Matrix('rand', [], named_input_nodes=named_input_nodes)
+            return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
