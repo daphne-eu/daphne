@@ -59,11 +59,32 @@ class Matrix(OperationNode):
             with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
                 np.savetxt(f, self._np_array, delimiter=",")
                 f.close()
+
+            with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
+                f.write(str(np.shape(self._np_array)[0])+","+str(np.shape(self._np_array)[1])+","+"1"+","+self.getDType(self._np_array.dtype))
+                f.close()
         return code_line
 
-  
-        
-        
+    def getDType(self, d_type):
+        if d_type == np.dtype('f4'):
+            return "f32"
+        elif d_type == np.dtype('f8'):
+            return "f64"
+        elif d_type == np.dtype('si2'):
+            return "si8"
+        elif d_type == np.dtype('si4'):
+            return "si32"
+        elif d_type == np.dtype('si8'):
+            return "si64"
+        elif d_type == np.dtype('ui2'):
+            return "ui8"
+        elif d_type == np.dtype('ui4'):
+            return "ui8"
+        elif d_type == np.dtype('ui8'):
+            return "ui8"
+        else:
+            print("Error")
+
     def _is_numpy(self) -> bool:
         return self._np_array is not None
     
