@@ -43,4 +43,5 @@ MAKE_TEST_CASE("random_matrix_mult")
 MAKE_TEST_CASE("random_matrix_div")
 MAKE_TEST_CASE("scalar_ops")
 MAKE_TEST_CASE("numpy_matrix_ops")
+MAKE_TEST_CASE("numpy_matrix_ops_extended")
 
