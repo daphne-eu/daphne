@@ -121,6 +121,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_vectorized)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
 
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
+
 #ifdef USE_CUDA
         if(userConfig_.use_cuda)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
@@ -130,8 +132,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
         if(userConfig_.explain_freeOps)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
-
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
 
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());

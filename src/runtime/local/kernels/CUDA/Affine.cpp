@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "CUDA_Affine.h"
+#include "Affine.h"
 
 template<typename T>
 static void launch_cublas_gemm(const CUDAContext& ctx, size_t nr1, size_t nc1, size_t nc2, const T* alpha, const T* beta,
@@ -34,22 +34,20 @@ template<>
                              nc1, beta, d_res, nc2));
 }
 
-namespace Affine {
+namespace CUDA::Affine {
     template<typename DTRes, typename DTArg>
-    void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx)) {
-//        std::cerr << " ----------  affine ----------- " << std::endl;
+    void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx)) {
         auto ctx = dctx->getCUDAContext(0);
         using VT = typename DTRes::VT;
         const size_t nr1 = data->getNumRows();
         const size_t nc1 = data->getNumCols();
-        const size_t nr2 = weights->getNumRows();
         const size_t nc2 = weights->getNumCols();
         const VT blend_alpha = 1;
         VT blend_beta = 0;
         const VT* d_input = data->getValuesCUDA();
         const VT* d_weights = weights->getValuesCUDA();
 
-        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+        assert((nc1 == weights->getNumRows()) && "#cols of lhs and #rows of rhs must be the same");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false, ALLOCATION_TYPE::CUDA_ALLOC);
@@ -59,11 +57,6 @@ namespace Affine {
         launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_input, d_weights, d_res);
 
         if(bias) {
-//            std::cout << " bias vector: " << *bias << std::endl;
-//            std::cout << "data dims: " << data->getNumRows() << "x" << data->getNumCols() << std::endl;
-//            std::cout << "weights dims: " << weights->getNumRows() << "x" << weights->getNumCols() << std::endl;
-//            std::cout << "bias dims: " << bias->getNumRows() << "x" << bias->getNumCols() << std::endl;
-//            std::cout << "res dims: " << res->getNumRows() << "x" << res->getNumCols() << std::endl;
             assert((bias->getNumRows() == 1) && "bias dimensions not matching up with weights matrix (W[MxN] -> b[1xN]");
             const VT* d_bias = bias->getValuesCUDA();
             CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(),
@@ -76,6 +69,6 @@ namespace Affine {
         }
     }
 
-    template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
 }

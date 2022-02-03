@@ -14,12 +14,11 @@
  * limitations under the License.
  */
 
-#include "CUDA_BiasAdd.h"
+#include "BiasAdd.h"
 
-namespace DNN::CUDA {
+namespace CUDA::BiasAdd {
     template<typename DTRes, typename DTArg>
-    void BiasAddForward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
-//        std::cerr << " ----------  biasadd ----------- " << std::endl;
+    void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
         auto ctx = dctx->getCUDAContext(0);
 
         using VT = typename DTRes::VT;
@@ -29,9 +28,6 @@ namespace DNN::CUDA {
         const VT blend_beta = 1;
         const VT* d_input = data->getValuesCUDA();
         const VT* d_bias = bias->getValuesCUDA();
-//        if(res == nullptr)
-//            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc1, false);
-//        VT* d_res = res->getValuesCUDA();
         res = const_cast<DTArg*>(data);
         VT* d_res = const_cast<VT*>(d_input);
 
@@ -44,6 +40,6 @@ namespace DNN::CUDA {
                 ctx->dst_tensor_desc, d_res));
     }
 
-    template struct BiasAddForward<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct BiasAddForward<DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
 }

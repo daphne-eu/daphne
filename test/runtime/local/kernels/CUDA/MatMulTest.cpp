@@ -17,7 +17,7 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
-#include <runtime/local/kernels/CUDA_InitContext.h>
+#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #include <runtime/local/kernels/CUDA/MatMul.h>
 
 #include <tags.h>
@@ -38,7 +38,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::matMul", TAG_KERNELS, (DenseMatrix), (float, d
 
     DaphneUserConfig user_config{};
     auto dctx = std::make_unique<DaphneContext>(user_config);
-    initCUDAContext(dctx.get());
+    CUDA::createCUDAContext(dctx.get());
 
     auto m0 = genGivenVals<DT>(3, {
         0, 0, 0,
