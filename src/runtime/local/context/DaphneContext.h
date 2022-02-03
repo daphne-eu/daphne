@@ -18,12 +18,16 @@
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
 #pragma once
+
+#include <api/cli/DaphneUserConfig.h>
+
 #include <vector>
 #include <iostream>
 #include <memory>
 #ifdef USE_CUDA
     #include "CUDAContext.h"
 #endif
+
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
@@ -44,10 +48,23 @@ struct DaphneContext {
     // creating an individual struct/class for them and adding a single member
     // of that type here, in order to separate concerns and allow a  high-level
     // overview of the context information.
+    
+    /**
+     * @brief The user configuration (including information passed via CLI
+     * arguments etc.).
+     * 
+     * Modifying the configuration is intensionally allowed, since it enables
+     * changing the configuration at run-time via DaphneDSL.
+     */
+    DaphneUserConfig & config;
+    
 #ifdef USE_CUDA
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
 #endif
-    DaphneContext() = default;
+    
+    DaphneContext(DaphneUserConfig & config) : config(config) {
+        //
+    }
     
     ~DaphneContext() {
 #ifdef USE_CUDA

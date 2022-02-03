@@ -295,6 +295,10 @@
                 {
                     "type": "DaphneContext *&",
                     "name": "res"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "configPtr"
                 }
             ]
         },
