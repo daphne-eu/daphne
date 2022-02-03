@@ -61,7 +61,8 @@ void check(const DT* in, const DT* exp, DaphneContext* dctx) {
 TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, double)) {
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
+    DaphneUserConfig config;
+    auto dctx = new DaphneContext(config);
 #ifdef USE_CUDA
     initCUDAContext(dctx);
 #endif
@@ -89,7 +90,8 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
 TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, double)) {
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
+    DaphneUserConfig config;
+    auto dctx = new DaphneContext(config);
 #ifdef USE_CUDA
     initCUDAContext(dctx);
 #endif
