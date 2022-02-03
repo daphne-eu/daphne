@@ -1,7 +1,6 @@
 build/
 thirdparty/*
 !thirdparty/llvm-project/
-src/api/python/tmp/*
 *.pyc
 *.pyo
 tmpdaphne.daphne
