@@ -21,16 +21,16 @@ namespace CUDA {
     template<>
     [[maybe_unused]] void
     launch_cublas_gemv<double>(const CUDAContext &ctx, size_t m, size_t n, const double *alpha, const double *beta,
-                               const double *A, const double *x, double *y) {
+                               const double *A, const double *x, double *y, cublasOperation_t opA) {
         // fixed for row major format
-        CHECK_CUBLAS(cublasDgemv(ctx.getCublasHandle(), CUBLAS_OP_N, m, n, alpha, A, m, x, 1, beta, y, 1));
+        CHECK_CUBLAS(cublasDgemv(ctx.getCublasHandle(), opA, m, n, alpha, A, m, x, 1, beta, y, 1));
     }
 
     template<>
     [[maybe_unused]] void launch_cublas_gemv<float>(const CUDAContext &ctx, size_t m, size_t n, const float *alpha,
-            const float *beta, const float *A, const float *x, float *y) {
+            const float *beta, const float *A, const float *x, float *y, cublasOperation_t opA) {
         // fixed for row major format
-        CHECK_CUBLAS(cublasSgemv(ctx.getCublasHandle(), CUBLAS_OP_N, m, n, alpha, A, m, x, 1, beta, y, 1));
+        CHECK_CUBLAS(cublasSgemv(ctx.getCublasHandle(), opA, m, n, alpha, A, m, x, 1, beta, y, 1));
     }
 
     template<typename T>
@@ -53,7 +53,8 @@ namespace CUDA {
 
 //        launch_cublas_gemv<VT>(*ctx, numRows, numCols, &blend_alpha, &blend_beta, d_mat, d_vec, d_res);
 // Note: This invocation is supposed to be transposed(needed for lm microbench) + fixed for col-major behavior of cublas
-        launch_cublas_gemv<VT>(*ctx, numCols, numRows, &blend_alpha, &blend_beta, d_mat, d_vec, d_res);
+        launch_cublas_gemv<VT>(*ctx, numCols, numRows, &blend_alpha, &blend_beta, d_mat, d_vec,
+                               d_res,CUBLAS_OP_N);
     }
 
     // explicit instantiations to satisfy linker

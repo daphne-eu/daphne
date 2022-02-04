@@ -63,7 +63,8 @@ namespace CUDA {
         VT *d_res = res->getValuesCUDA();
 
         if(nc2 == 1) {
-            launch_cublas_gemv<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_lhs, d_rhs, d_res);
+            launch_cublas_gemv<VT>(*ctx, nc1, nr1, &blend_alpha, &blend_beta, d_lhs, d_rhs,
+                                   d_res, CUBLAS_OP_T);
         }
         else {
 //             reverse order to accommodate cublas' col major format (-> res = rhs * lhs)

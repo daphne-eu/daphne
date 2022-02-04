@@ -24,7 +24,8 @@
 namespace CUDA {
 
     template<typename T>
-    void launch_cublas_gemv(const CUDAContext& ctx, size_t m, size_t n, const T* alpha, const T* beta, const T* A, const T* x, T* y);
+    void launch_cublas_gemv(const CUDAContext& ctx, size_t m, size_t n, const T* alpha, const T* beta, const T* A,
+                            const T* x, T* y, cublasOperation_t opA);
 
     // ****************************************************************************
     // Struct for partial template specialization
