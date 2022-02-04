@@ -93,9 +93,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
     std::unique_ptr<TaskQueue> q_cuda = std::make_unique<BlockingTaskQueue>(gpu_task_len);
     this->initCUDAWorkers(q_cuda.get(), batchSize8M * 4, verbose);
 
-//    auto rc1 = new DenseMatrix<VT>*[numOutputs];
-//    DenseMatrix<VT>*** res_cuda = &rc1;
-    DenseMatrix<VT>*** res_cuda = new DenseMatrix<VT>**[numOutputs];
+    auto*** res_cuda = new DenseMatrix<VT>**[numOutputs];
     //    auto blksize = static_cast<size_t>(std::floor(cctx->getMemBudget() / row_mem));
     auto blksize = gpu_task_len / ctx->cuda_contexts.size();
 #ifndef NDEBUG
@@ -125,10 +123,13 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
 #endif
 
     auto cpu_task_len = len - device_task_len;
-    std::unique_ptr<TaskQueue> q_cpp = std::make_unique<BlockingTaskQueue>(cpu_task_len);
-    this->initCPPWorkers(q_cpp.get(), batchSize8M, verbose);
-    auto*** res_cpp = new DenseMatrix<VT>**[numOutputs];
-    auto offset = device_task_len;
+    DenseMatrix<VT> ***res_cpp{};
+    std::unique_ptr<TaskQueue> q_cpp;
+    if(cpu_task_len > 0) {
+        q_cpp = std::make_unique<BlockingTaskQueue>(cpu_task_len);
+        this->initCPPWorkers(q_cpp.get(), batchSize8M, verbose);
+        res_cpp = new DenseMatrix<VT> **[numOutputs];
+        auto offset = device_task_len;
 
         for (size_t i = 0; i < numOutputs; ++i) {
             res_cpp[i] = new DenseMatrix<VT> *;
@@ -143,35 +144,37 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
             }
         }
 
-    uint64_t startChunk = device_task_len;
-    uint64_t endChunk = 0;
-    auto chunkParam = 1;
-    LoadPartitioning lp(STATIC, cpu_task_len, chunkParam, this->_numCPPThreads, false);
-    while (lp.hasNextChunk()) {
-        endChunk += lp.getNextChunk();
-        q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
-                funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
-                outRows, outCols, offset, ctx}, resLock, res_cpp));
-        startChunk = endChunk;
+        uint64_t startChunk = device_task_len;
+        uint64_t endChunk = device_task_len;
+        auto chunkParam = 1;
+        LoadPartitioning lp(STATIC, cpu_task_len, chunkParam, this->_numCPPThreads, false);
+        while (lp.hasNextChunk()) {
+            endChunk += lp.getNextChunk();
+            q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
+                    funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
+                    outRows, outCols, offset, ctx}, resLock, res_cpp));
+            startChunk = endChunk;
+        }
+        q_cpp->closeInput();
     }
-    q_cpp->closeInput();
-
     this->joinAll();
 
 #ifdef USE_CUDA
-    this->combineOutputs(res, res_cuda, numOutputs, combines, gpu_task_len);
+    this->combineOutputs(res, res_cuda, numOutputs, combines);
 #endif
 
-    for(size_t i = 0; i < numOutputs; ++i) {
-        if(combines[i] == mlir::daphne::VectorCombine::ROWS || combines[i] == mlir::daphne::VectorCombine::COLS)
-            DataObjectFactory::destroy((*res_cpp[i]));
+    if(cpu_task_len > 0) {
+        for (size_t i = 0; i < numOutputs; ++i) {
+            if(combines[i] == mlir::daphne::VectorCombine::ROWS || combines[i] == mlir::daphne::VectorCombine::COLS)
+                DataObjectFactory::destroy((*res_cpp[i]));
+        }
     }
 }
 
 #ifdef USE_CUDA
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseMatrix<VT>***& res_cuda_, size_t numOutputs,
-        mlir::daphne::VectorCombine* combines, size_t gpu_rows) {
+                                                mlir::daphne::VectorCombine* combines) {
     for (size_t i = 0; i < numOutputs; ++i) {
         auto* res = static_cast<DenseMatrix<VT> *>((*res_[i]));
         auto* res_cuda = static_cast<DenseMatrix<VT> *>((*res_cuda_[i]));
@@ -179,10 +182,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
             const auto &const_res_cuda = *res_cuda;
             auto data_dest = res->getValues();
             CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValuesCUDA(), const_res_cuda.bufferSize(),
-                    cudaMemcpyDeviceToHost));
-//            for(auto j=0; j < const_res_cuda.getNumItems(); j++)
-//                std::cout << data_dest[j] << " ";
-//            std::cout << std::endl;
+                                    cudaMemcpyDeviceToHost));
             DataObjectFactory::destroy(res_cuda);
         }
         else if (combines[i] == mlir::daphne::VectorCombine::COLS) {
@@ -191,7 +191,6 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
             auto src_base_ptr = const_res_cuda.getValuesCUDA();
             for(auto j = 0u; j < res_cuda->getNumRows(); ++j) {
                 auto data_src = src_base_ptr + res_cuda->getRowSkip() * j;
-//                auto data_src = src_base_ptr;
                 auto data_dst = dst_base_ptr + res->getRowSkip() * j;
                 CHECK_CUDART(cudaMemcpy(data_dst, data_src,res_cuda->getNumCols() * sizeof(VT),
                                         cudaMemcpyDeviceToHost));
@@ -203,7 +202,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
 #else
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseMatrix<VT>***& res_cuda_, size_t numOutputs,
-        mlir::daphne::VectorCombine* combines, size_t gpu_rows) { }
+        mlir::daphne::VectorCombine* combines) { }
 #endif
 
 template class MTWrapper<DenseMatrix<double>>;

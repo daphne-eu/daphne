@@ -34,7 +34,8 @@ using mlir::daphne::VectorCombine;
 template <typename DT>
 class MTWrapperBase {
 protected:
-    std::vector<std::unique_ptr<Worker>> workers;
+    std::vector<std::unique_ptr<Worker>> cuda_workers;
+    std::vector<std::unique_ptr<Worker>> cpp_workers;
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
@@ -55,14 +56,16 @@ protected:
     }
 
     void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
-        for(uint32_t i=0; i < _numCPPThreads; i++)
-            workers[i] = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
+        cpp_workers.resize(_numCPPThreads);
+        for(auto& w : cpp_workers)
+            w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
     }
 
 #ifdef USE_CUDA
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
-        for(uint32_t i=_numCPPThreads; i < _numThreads; i++)
-            workers[i] = std::make_unique<WorkerCPU>(q, verbose, 1, batchSize);
+        cuda_workers.resize(_numCUDAThreads);
+        for (auto& w : cuda_workers)
+            w = std::make_unique<WorkerCPU>(q, verbose, 1, batchSize);
     }
 
     void cudaPrefetchInputs(Structure** inputs, uint32_t numInputs, size_t mem_required,
@@ -96,11 +99,12 @@ protected:
         return mem_required;
     }
 
-    virtual void combineOutputs(DT***& res, DT***& res_cuda, size_t numOutputs, mlir::daphne::VectorCombine* combines,
-            size_t gpu_rows) = 0;
+    virtual void combineOutputs(DT***& res, DT***& res_cuda, size_t numOutputs, mlir::daphne::VectorCombine* combines) = 0;
 
     void joinAll() {
-        for(auto& w : workers)
+        for(auto& w : cpp_workers)
+            w->join();
+        for(auto& w : cuda_workers)
             w->join();
     }
 
@@ -108,12 +112,12 @@ public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
         numThreads == 0 ? _numThreads = std::thread::hardware_concurrency() : _numThreads = numThreads;
         if(const char* env_m = std::getenv("DAPHNE_THREADS"))
-            _numThreads= std::stoi(env_m);
+            _numThreads = std::stoi(env_m);
+
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
         _numCPPThreads = _numThreads;
         _numThreads = _numCPPThreads + _numCUDAThreads;
-        workers.resize(_numThreads);
 #ifndef NDEBUG
         std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;
@@ -138,12 +142,12 @@ public:
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
             VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
             Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
     void combineOutputs(DenseMatrix<VT>***& res, DenseMatrix<VT>***& res_cuda, size_t numOutputs,
-            mlir::daphne::VectorCombine* combines, size_t gpu_rows);
+            mlir::daphne::VectorCombine* combines);
 };
 
 template<typename VT>
@@ -158,10 +162,10 @@ public:
                             size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
                             size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    void combineOutputs(CSRMatrix<VT>***& res, CSRMatrix<VT>***& res_cuda, size_t numOutputs,
-                        mlir::daphne::VectorCombine* combines, size_t gpu_rows) {}
+    void combineOutputs(CSRMatrix<VT>***& res, CSRMatrix<VT>***& res_cuda, [[maybe_unused]] size_t numOutputs,
+                        [[maybe_unused]] mlir::daphne::VectorCombine* combines) {}
 };
