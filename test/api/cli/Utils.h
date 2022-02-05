@@ -252,6 +252,22 @@ void compareDaphneToDaphneLibOut(const std::string & DaphneLibFilePath, const st
     CHECK(out_daphne.str() == out_DaphneLib.str());
     CHECK(err_daphne.str() == err_DaphneLib.str());
 }
+template<typename... Args>
+void compareDaphneToDaphneLibScalarOut(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out_daphne;
+    std::stringstream err_daphne;
+    std::stringstream out_DaphneLib;
+    std::stringstream err_DaphneLib;
+    std::string result_daphne, result_daphnelib;
+    float epsylon = 0.1;
+    int status_DaphneLib = runDaphneLib(out_DaphneLib, err_DaphneLib, DaphneLibFilePath.c_str(), args...);
+    int status_daphne = runDaphne(out_daphne, err_daphne, scriptFilePath.c_str(), args...);
+    REQUIRE(status_daphne == status_DaphneLib);
+    while(std::getline(out_DaphneLib, result_daphnelib) && std::getline(out_daphne, result_daphne))
+        CHECK(std::stof(result_daphnelib)-std::stof(result_daphne) <= epsylon);
+
+    CHECK(err_daphne.str() == err_DaphneLib.str());
+}
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
  * with the command line interface of the DAPHNE Prototype to a reference text
@@ -274,6 +290,10 @@ void compareDaphneToRef(const std::string & refFilePath, const std::string & scr
 template<typename... Args>
 void compareDaphneToDaphneLib(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
     return compareDaphneToDaphneLibOut(DaphneLibFilePath, scriptFilePath, args...);
+}
+template<typename... Args>
+void compareDaphneToDaphneLibScalar(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
+    return compareDaphneToDaphneLibScalarOut(DaphneLibFilePath, scriptFilePath, args...);
 }
 template<typename... Args>
 void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {

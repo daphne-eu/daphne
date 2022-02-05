@@ -25,12 +25,18 @@
 
 const std::string dirPath = "test/api/python/";
 
-// TODO: check if `vectorizedPipeline` is used and compare vectorization with no vectorization instead of file
 #define MAKE_TEST_CASE(name) \
     TEST_CASE(name, TAG_DAPHNELIB) { \
         DYNAMIC_SECTION(name << ".py") { \
             const std::string prefix = dirPath+name; \
             compareDaphneToDaphneLib(prefix+".py", prefix+".daphne"); \
+        } \
+    }
+#define MAKE_TEST_CASE_SCALAR(name) \
+    TEST_CASE(name, TAG_DAPHNELIB) { \
+        DYNAMIC_SECTION(name << ".py") { \
+            const std::string prefix = dirPath+name; \
+            compareDaphneToDaphneLibScalar(prefix+".py", prefix+".daphne"); \
         } \
     }
 
@@ -42,6 +48,6 @@ MAKE_TEST_CASE("random_matrix_subtraction")
 MAKE_TEST_CASE("random_matrix_mult")
 MAKE_TEST_CASE("random_matrix_div")
 MAKE_TEST_CASE("scalar_ops")
-MAKE_TEST_CASE("numpy_matrix_ops")
-MAKE_TEST_CASE("numpy_matrix_ops_extended")
+MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
+MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
 

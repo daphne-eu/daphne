@@ -34,14 +34,14 @@ daphne_context = DaphneContext()
 
 
 result = (daphne_context.from_numpy(m1)+daphne_context.from_numpy(m2)).compute()
-print(round(result.sum(),2))
+print(result.sum())
 
 result = (daphne_context.from_numpy(m1)-daphne_context.from_numpy(m2)).compute()
-print(round(result.sum()))
+print(result.sum())
 
 result = (daphne_context.from_numpy(m1)*daphne_context.from_numpy(m2)).compute()
-print(round(result.sum(),1))
+print(result.sum())
 
 result = (daphne_context.from_numpy(m1)/daphne_context.from_numpy(m2)).compute()
-print(round(result.sum(),4))
+print(result.sum())
 
