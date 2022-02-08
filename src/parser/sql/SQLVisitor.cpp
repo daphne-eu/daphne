@@ -205,6 +205,22 @@ mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
     }
 }
 
+mlir::Value SQLVisitor::castToIntMatrixColumn(mlir::Value toCast){
+    mlir::Location loc = builder.getUnknownLoc();
+    mlir::Value toCastMatrix = castToMatrixColumn(toCast);
+    mlir::Type vt = utils.getValueTypeByName("si64");
+    mlir::Type resType = utils.matrixOf(vt);
+
+    if(toCastMatrix.getType() != resType){
+        mlir::Value toCastFrame = matrixToFrame(toCastMatrix, "meh"); // We need this step because castOp can't cast a matrix to a matrix
+
+        return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
+                loc, resType, toCastFrame
+        ));
+    }
+    return toCastMatrix;
+}
+
 mlir::Value SQLVisitor::matrixToFrame(
     mlir::Value matrix,
     std::string newColumnName
@@ -907,6 +923,9 @@ antlrcpp::Any SQLVisitor::visitAndExpr(
     mlir::Value lhs = utils.valueOrError(vLhs);
     mlir::Value rhs = utils.valueOrError(vRhs);
 
+    lhs = castToIntMatrixColumn(lhs);
+    rhs = castToIntMatrixColumn(rhs);
+
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(
         loc, lhs, rhs
     ));
@@ -927,6 +946,9 @@ antlrcpp::Any SQLVisitor::visitOrExpr(
 
     mlir::Value lhs = utils.valueOrError(vLhs);
     mlir::Value rhs = utils.valueOrError(vRhs);
+
+    lhs = castToIntMatrixColumn(lhs);
+    rhs = castToIntMatrixColumn(rhs);
 
     return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(
         loc, lhs, rhs)
