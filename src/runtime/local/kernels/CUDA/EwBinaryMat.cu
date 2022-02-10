@@ -117,7 +117,7 @@ namespace CUDA {
                 ewBinMat<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(), N,
                                                   op);
             }
-            else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+            else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatRVec<VTres, decltype(op)>,
                                                            0,
@@ -126,7 +126,7 @@ namespace CUDA {
                 ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(),
                                                       numColsRhs, N, op);
             }
-            else if(numRowsLhs == numRowsRhs && numColsRhs == 1) {
+            else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatCVec<VTres, decltype(op)>,
                                                            0,
@@ -149,7 +149,7 @@ namespace CUDA {
                 ewBinMat<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(), N,
                                                   op);
             }
-            else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+            else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatRVec<VTres, decltype(op)>,
                                                            0,
@@ -158,7 +158,7 @@ namespace CUDA {
                 ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(),
                                                       numColsRhs, N, op);
             }
-            else if(numRowsLhs == numRowsRhs && numColsRhs == 1) {
+            else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatCVec<VTres, decltype(op)>,
                                                            0,
@@ -180,7 +180,7 @@ namespace CUDA {
                 ewBinMat<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(),
                                                   rhs->getValuesCUDA(), N, op);
             }
-            else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+            else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
                 CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatRVec<VTres,
                         decltype(op)>, 0, 0));
                 gridSize = (N + blockSize - 1) / blockSize;
@@ -188,7 +188,7 @@ namespace CUDA {
                 ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(),
                                                       rhs->getValuesCUDA(), numColsRhs, N, op);
             }
-            else if(numRowsLhs == numRowsRhs && numColsRhs == 1) {
+            else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatCVec<VTres, decltype(op)>,
                                                            0, 0));

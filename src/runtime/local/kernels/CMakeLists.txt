@@ -41,7 +41,6 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
-            ${PREFIX}/../../vectorized/Tasks.cpp
             ${PREFIX}/AggCol.cu
             ${PREFIX}/../CUDA_Activation.cpp
             ${PREFIX}/../CUDA_Affine.cpp
@@ -61,7 +60,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Syrk.cu
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDA_kernel_instantiations_generated.cpp
-    )
+        )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
@@ -70,7 +69,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
-    target_link_libraries(CUDAKernels PRIVATE DataStructures LLVMSupport CUDA::cudart CUDA::cublasLt CUDA::cublas
+    target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport CUDA::cudart CUDA::cublasLt CUDA::cublas
             CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
     #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()
@@ -88,6 +87,9 @@ list(APPEND LIBS DataStructures IO ProtoDataConverter ${OPENBLAS_LIBRARIES})
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_dense.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         Pooling.cpp)
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

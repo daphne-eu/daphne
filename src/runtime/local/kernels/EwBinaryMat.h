@@ -81,7 +81,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesRes += res->getRowSkip();
             }
         }
-        else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+        else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
             // matrix op row-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)
@@ -90,7 +90,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesRes += res->getRowSkip();
             }
         }
-        else if(numRowsLhs == numRowsRhs && numColsRhs == 1) {
+        else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
             // matrix op col-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)

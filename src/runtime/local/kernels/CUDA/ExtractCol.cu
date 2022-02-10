@@ -53,6 +53,13 @@ namespace CUDA {
 
         extract_col<<<gridSize, blockSize>>>(res->getValuesCUDA(), arg->getValuesCUDA(), sel->getValuesCUDA(),
                 sel->getNumRows(), arg->getNumCols(), N);
+
+
+//        std::vector<DTRes> res_host(res->getNumItems());
+//        CHECK_CUDART(cudaMemcpy(res_host.data(), res->getValuesCUDA(), res->bufferSize(), cudaMemcpyDeviceToHost));
+//        for(auto j=0; j < res->getNumItems(); j++)
+//            std::cout << res_host[j] << " ";
+//        std::cout << std::endl;
     }
     template struct ExtractCol<DenseMatrix<int64_t>, DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
     template struct ExtractCol<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<int64_t>>;

@@ -122,6 +122,10 @@ void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType>
     else {
         auto* dev_ptr = new ValueType;
 #ifndef NDEBUG
+        if(this->rowSkip != this->numCols) {
+            std::cerr << "Warning: setting rowSkip to numCols in alloc_shared_cuda_buffer" << std::endl;
+            rowSkip = numCols;
+        }
         std::cout << "Allocating new cuda buffer of size " << printBufferSize() << "Mb at address ";
         std::ios state(nullptr);
         state.copyfmt(std::cout);

@@ -83,6 +83,8 @@ struct DaphneContext {
 #endif
 
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
+
+    DaphneUserConfig getUserConfig() { return config; }
 };
 
 #endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

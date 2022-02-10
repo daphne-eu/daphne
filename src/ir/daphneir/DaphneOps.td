@@ -402,7 +402,7 @@ def Daphne_CovOp : Daphne_Op<"cov"> {
 // ****************************************************************************
 
 def Daphne_ExtractOp : Daphne_Op<"extract", [
-    NumRowsFromIthArg<1>, NumColsFromIthArgNumRows<2>, CUDASupport
+    NumRowsFromIthArg<1>, NumColsFromIthArgNumRows<2>
 ]> {
     let summary = "Copies the specified rows and columns from the argument to the result.";
 
@@ -418,7 +418,7 @@ def Daphne_ExtractOp : Daphne_Op<"extract", [
 def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    NumRowsFromIthArg<1>, NumColsFromArg, CUDASupport
+    NumRowsFromIthArg<1>, NumColsFromArg
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 

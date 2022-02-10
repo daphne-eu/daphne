@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_TASKS_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_TASKS_H
+#pragma once
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/EwBinaryMat.h>
@@ -34,7 +33,7 @@ class Task {
 public:
     virtual ~Task() = default;
 
-    virtual void execute() = 0;
+    virtual void execute(uint32_t fid, uint32_t batchSize) = 0;
 };
 
 // task for signaling closed input queue (no more tasks)
@@ -42,78 +41,27 @@ class EOFTask : public Task {
 public:
     EOFTask() = default;
     ~EOFTask() override = default;
-    void execute() override {}
-};
-
-// Deprecated
-// single operation task (multi-threaded operations)
-template <class VT>
-class SingleOpTask : public Task {
-private:
-    void (*_func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*);
-    DenseMatrix<VT>* _res;
-    DenseMatrix<VT>* _input1;
-    DenseMatrix<VT>* _input2;
-    uint64_t _rl{};    // row lower index
-    uint64_t _ru{};    // row upper index
-    uint64_t _bsize{}; // batch size (data binding)
-
-public:
-    SingleOpTask() = default;
-
-    SingleOpTask(uint64_t rl, uint64_t ru, uint64_t bsize) :
-        SingleOpTask(nullptr, nullptr, nullptr, nullptr, rl, ru, bsize) {}
-
-    SingleOpTask(void (*func)(DenseMatrix<VT>*,DenseMatrix<VT>*,DenseMatrix<VT>*),
-        DenseMatrix<VT>* res, DenseMatrix<VT>* input1, DenseMatrix<VT>* input2,
-        uint64_t rl, uint64_t ru, uint64_t bsize)
-    {
-        _func = func;
-        _res = res;
-        _input1 = input1;
-        _input2 = input2;
-        _rl = rl;
-        _ru = ru;
-        _bsize = bsize;
-    }
-
-    ~SingleOpTask() override = default;
-
-    void execute() override {
-       for( uint64_t r = _rl; r < _ru; r+=_bsize ) {
-           //create zero-copy views of inputs/outputs
-           uint64_t r2 = std::min(r+_bsize, _ru);
-           DenseMatrix<VT>* lres = _res->slice(r, r2);
-           DenseMatrix<VT>* linput1 = _input1->slice(r, r2);
-           DenseMatrix<VT>* linput2 = (_input2->getNumRows()==1) ?
-               _input2 : _input2->slice(r, r2); //broadcasting
-           //execute function on given data binding (batch size)
-           _func(lres, linput1, linput2);
-           //cleanup
-           //TODO can't delete views without destroying the underlying arrays + private
-       }
-    }
+    void execute(uint32_t fid, uint32_t batchSize) override {}
 };
 
 template<class DT>
 struct CompiledPipelineTaskData {
-    std::function<void(DT ***, Structure **, DCTX(ctx))> _func;
+    std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> _funcs;
     Structure **_inputs;
     size_t _numInputs;
     size_t _numOutputs;
     int64_t *_outRows;
-    int64_t *_outCols;
+    [[maybe_unused]] int64_t *_outCols;
     VectorSplit *_splits;
     VectorCombine *_combines;
     uint64_t _rl;    // row lower index
     uint64_t _ru;    // row upper index
-    uint64_t _bsize; // batch size (data binding)
     int64_t *_wholeResultRows; // number of rows of the complete result
     int64_t *_wholeResultCols; // number of cols of the complete result
-    uint64_t _offset;
+    [[maybe_unused]] uint64_t _offset;
     DCTX(_ctx);
 
-    CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {
+    [[maybe_unused]] CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {
         CompiledPipelineTaskData<DT> flatCopy = *this;
         flatCopy._rl = newRl;
         flatCopy._ru = newRu;
@@ -128,7 +76,7 @@ protected:
 
 public:
     explicit CompiledPipelineTaskBase(CompiledPipelineTaskData<DT> data) : _data(data) {}
-    void execute() override = 0;
+    void execute(uint32_t fid, uint32_t batchSize) override = 0;
 
 protected:
     bool isBroadcast(mlir::daphne::VectorSplit splitMethod, Structure *input) {
@@ -173,13 +121,30 @@ public:
     CompiledPipelineTask(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
         : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
 
-    void execute() override;
+    void execute(uint32_t fid, uint32_t batchSize) override;
 
 private:
-    void accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
-                           std::vector<DenseMatrix<VT> *> &localAddRes,
-                           uint64_t rowStart,
-                           uint64_t rowEnd);
+    void accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
+            uint64_t rowStart, uint64_t rowEnd);
+};
+
+template<class DT>
+class CompiledPipelineTaskCUDA : public CompiledPipelineTaskBase<DT> {};
+
+template<typename VT>
+class CompiledPipelineTaskCUDA<DenseMatrix<VT>> : public CompiledPipelineTaskBase<DenseMatrix<VT>> {
+    std::mutex &_resLock;
+    DenseMatrix<VT> ***_res;
+    using CompiledPipelineTaskBase<DenseMatrix<VT>>::_data;
+public:
+    CompiledPipelineTaskCUDA(CompiledPipelineTaskData<DenseMatrix<VT>> data, std::mutex &resLock, DenseMatrix<VT> ***res)
+            : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
+    
+    void execute(uint32_t fid, uint32_t batchSize) override;
+
+private:
+    void accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
+            uint64_t rowStart, uint64_t rowEnd);
 };
 
 template<typename VT>
@@ -191,7 +156,7 @@ public:
     CompiledPipelineTask(CompiledPipelineTaskData<CSRMatrix<VT>> data, VectorizedDataSink<CSRMatrix<VT>> &resultSink)
         : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSink(resultSink) {}
 
-    void execute() override {
+    void execute(uint32_t fid, uint32_t batchSize) override {
         assert(_data._numOutputs == 1 && "TODO");
         size_t localResNumRows;
         size_t localResNumCols;
@@ -214,14 +179,14 @@ public:
 
         VectorizedDataSink<CSRMatrix<VT>> localSink(_data._combines[0], localResNumRows, localResNumCols);
         CSRMatrix<VT> *lres = nullptr;
-        for(uint64_t r = _data._rl ; r < _data._ru ; r += _data._bsize) {
+        for(uint64_t r = _data._rl ; r < _data._ru ; r += batchSize) {
             //create zero-copy views of inputs/outputs
-            uint64_t r2 = std::min(r + _data._bsize, _data._ru);
+            uint64_t r2 = std::min(r + batchSize, _data._ru);
 
             auto linputs = this->createFuncInputs(r, r2);
             CSRMatrix<VT> **outputs[] = {&lres};
             //execute function on given data binding (batch size)
-            _data._func(outputs, linputs.data(), _data._ctx);
+            _data._funcs[fid](outputs, linputs.data(), _data._ctx);
             localSink.add(lres, r - _data._rl, false);
 
             // cleanup
@@ -231,5 +196,3 @@ public:
         _resultSink.add(localSink.consume(), _data._rl);
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_TASKS_H
