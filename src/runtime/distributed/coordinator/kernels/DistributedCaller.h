@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_WORKER_DISTRIBUTEDCALLER_H
-#define SRC_RUNTIME_DISTRIBUTED_WORKER_DISTRIBUTEDCALLER_H
-
-#include <runtime/local/datastructures/Handle.h>
+#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCALLER_H
+#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCALLER_H
+#include <grpcpp/grpcpp.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
@@ -198,8 +197,8 @@ public:
         bool ok = false;
         cq_.Next(&got_tag, &ok);
         callCounter--;
-        AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);
-        if (!ok){
+        AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);    
+        if (!(ok && call->status.ok())){
             throw std::runtime_error(
                 call->status.error_message()
             );
@@ -236,4 +235,4 @@ public:
     
 };
 
-#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_DISTRIBUTEDCALLER_H
+#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCALLER_H

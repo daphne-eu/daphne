@@ -19,7 +19,7 @@
 #include <runtime/local/context/DaphneContext.h>
 //#include <runtime/local/datastructures/DataObjectFactory.h>
 //#include <runtime/local/datastructures/DenseMatrix.h>
-//#include <runtime/local/vectorized/MTWrapper.h>
+#include <runtime/distributed/coordinator/kernels/DistributedWrapper.h>
 //#include <ir/daphneir/Daphne.h>
 
 //#include <cassert>
@@ -56,26 +56,18 @@ void distributedPipeline(
         DTRes *& output0,
         const Structure ** inputs,
         size_t numInputs, size_t numOutputs,
-        size_t * outRows, size_t * outCols,
+        int64_t * outRows, int64_t * outCols,
         int64_t * splits, int64_t * combines,
         const char * irCode,
         DCTX(ctx)
 ) {
-    std::cerr << "distributedPipeline-kernel received the following information" << std::endl;
-            
-    std::cerr << "\t" << numInputs << " inputs:" << std::endl;
-    for(size_t i = 0; i < numInputs; i++)
-        std::cerr << "\t\t" << i << ": split mode " << splits[i] << std::endl;
-    
-    std::cerr << "\t" << numOutputs << " outputs:" << std::endl;
-    for(size_t i = 0; i < numOutputs; i++)
-        std::cerr << "\t\t" << i << ": combine mode " << combines[0]
-                << ", size " << outRows[0] << "x" << outCols[0] << std::endl;
-    
-    std::cerr << "\tDaphneIR code: " << std::endl << "```" << std::endl << irCode << "```" << std::endl;
-    
-    std::cerr << "\tNote that the program will most likely crash soon, "
-        "since distributedPipeline does not set the outputs yet" << std::endl;
+    assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
+
+    auto wrapper = std::make_unique<DistributedWrapper<DTRes>>(ctx);
+
+    DTRes **res[] = {&output0};
+    wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows, outCols,
+            reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
 }
 
 // Two outputs.
@@ -85,24 +77,18 @@ void distributedPipeline(
         DTRes *& output1,
         const Structure ** inputs,
         size_t numInputs, size_t numOutputs,
-        size_t * outRows, size_t * outCols,
+        int64_t * outRows, int64_t * outCols,
         int64_t * splits, int64_t * combines,
         const char * irCode,
         DCTX(ctx)
 ) {
-    std::cerr << "distributedPipeline-kernel received the following information" << std::endl;
-            
-    std::cerr << "\t" << numInputs << " inputs:" << std::endl;
-    for(size_t i = 0; i < numInputs; i++)
-        std::cerr << "\t\t" << i << ": split mode " << splits[i] << std::endl;
-    
-    std::cerr << "\t" << numOutputs << " outputs:" << std::endl;
-    for(size_t i = 0; i < numOutputs; i++)
-        std::cerr << "\t\t" << i << ": combine mode " << combines[0]
-                << ", size " << outRows[0] << "x" << outCols[0] << std::endl;
-    
-    std::cerr << "\tDaphneIR code: " << std::endl << "\t```" << std::endl << irCode << "\t```" << std::endl;
-    
-    std::cerr << "\tNote that the program will most likely crash soon, "
-        "since distributedPipeline does not set the outputs yet" << std::endl;
+    assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
+
+    auto wrapper = std::make_unique<DistributedWrapper<DTRes>>(ctx);
+
+    DTRes*** res = new DTRes**[2];
+    res[0] = &output0;
+    res[1] = &output1;
+    wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows, outCols, 
+            reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
 }

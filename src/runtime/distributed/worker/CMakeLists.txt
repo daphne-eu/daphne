@@ -22,7 +22,6 @@ set(LIBS Proto)
 add_library(CallData ${SOURCES})
 target_link_libraries(CallData PRIVATE ${LIBS})
 
-
 # *****************************************************************************
 # ProtoDataConverter library
 # *****************************************************************************

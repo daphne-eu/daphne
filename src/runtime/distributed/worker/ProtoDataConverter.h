@@ -18,26 +18,72 @@
 #define SRC_RUNTIME_DISTRIBUTED_UTILS_PROTODATACONVERTER_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
+template<class DT>
 class ProtoDataConverter
+{ };
+
+// Partial Specilized class for DenseMatrix 
+template<typename VT>
+class ProtoDataConverter<DenseMatrix<VT>>
 {
+private:
+    static const google::protobuf::RepeatedField<VT> getCells(const distributed::Matrix *matProto);
+    static google::protobuf::RepeatedField<VT> *getMutableCells(distributed::Matrix *matProto);
 public:
-    static void convertToProto(const DenseMatrix<double> *mat, distributed::Matrix *matProto);
-    static void convertToProto(const DenseMatrix<double> *mat,
+    static void convertToProto(const DenseMatrix<VT> *mat, distributed::Matrix *matProto);
+    static void convertToProto(const DenseMatrix<VT> *mat,
                                distributed::Matrix *matProto,
                                size_t rowBegin,
                                size_t rowEnd,
                                size_t colBegin,
                                size_t colEnd);
-    static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<double> *mat);
+    static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<VT> *mat);
     static void convertFromProto(const distributed::Matrix &matProto,
-                                 DenseMatrix<double> *mat,
+                                 DenseMatrix<VT> *mat,
                                  size_t rowBegin,
                                  size_t rowEnd,
                                  size_t colBegin,
                                  size_t colEnd);
 };
+
+/* Cover const DenseMatrix case with the same implementation */
+template<typename VT>
+class ProtoDataConverter<const DenseMatrix<VT>> : public ProtoDataConverter<DenseMatrix<VT>>
+{ /* Nothing to implement here */ };
+
+
+// Partial Specilized class for CSRMatrix 
+template<typename VT>
+class ProtoDataConverter<CSRMatrix<VT>>
+{
+private:
+    static const google::protobuf::RepeatedField<VT> getCells(const distributed::Matrix *matProto);
+    static google::protobuf::RepeatedField<VT> *getMutableCells(distributed::Matrix *matProto);
+public:
+    // Overloaded functions for Sparse Matrices
+    static void convertToProto(const CSRMatrix<VT> *mat, distributed::Matrix *matProto);
+    static void convertToProto(const CSRMatrix<VT> *mat,
+                               distributed::Matrix *matProto,
+                               size_t rowBegin,
+                               size_t rowEnd,
+                               size_t colBegin,
+                               size_t colEnd);
+    static void convertFromProto(const distributed::Matrix &matProto, CSRMatrix<VT> *mat);
+    static void convertFromProto(const distributed::Matrix &matProto,
+                                 CSRMatrix<VT> *mat,
+                                 size_t rowBegin,
+                                 size_t rowEnd,
+                                 size_t colBegin,
+                                 size_t colEnd);
+};
+
+/* Cover const CSRMatrix case with the same implementation */
+template<typename VT>
+class ProtoDataConverter<const CSRMatrix<VT>> : public ProtoDataConverter<CSRMatrix<VT>>
+{ /* TODO */ };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_UTILS_PROTODATACONVERTER_H
