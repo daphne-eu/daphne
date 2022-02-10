@@ -14,8 +14,8 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_HANDLE_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_HANDLE_H
+#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H
+#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H
 
 #include <vector>
 #include <string>
@@ -25,7 +25,7 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
-#include <runtime/local/kernels/DistributedCaller.h>
+#include <runtime/distributed/coordinator/kernels/DistributedCaller.h>
 
 class DistributedIndex
 {
@@ -116,4 +116,4 @@ private:
     size_t cols_;
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_HANDLE_H
+#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H

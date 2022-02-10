@@ -121,6 +121,7 @@ add_subdirectory(src/runtime/distributed/proto)
 add_subdirectory(src/runtime/distributed/worker)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/io)
+add_subdirectory(src/runtime/distributed/coordinator/kernels)
 add_subdirectory(src/runtime/local/kernels)
 add_subdirectory(src/util)
 
