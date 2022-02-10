@@ -27,20 +27,9 @@ add_custom_command(
 add_library(AllKernels SHARED
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
             Pooling.cpp)
-target_link_libraries(AllKernels PUBLIC DataStructures IO Proto ProtoDataConverter LLVMSupport
-        ${OPENBLAS_LIBRARIES})
+target_link_libraries(AllKernels PUBLIC DistributedKernels DataStructures IO Proto ProtoDataConverter LLVMSupport
+            ${OPENBLAS_LIBRARIES})       
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
-
-
-# *****************************************************************************
-# DistributedCommunication library
-# *****************************************************************************
-
-set(SOURCES DistributedCaller.h)
-set(LIBS Proto)
-
-add_library(DistributedCaller ${SOURCES})
-target_link_libraries(DistributedCaller PRIVATE ${LIBS})
 
 
 # The library of pre-compiled CUDA kernels
