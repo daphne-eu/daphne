@@ -14,8 +14,8 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_HANDLE_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_HANDLE_H
+#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H
+#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H
 
 #include <vector>
 #include <string>
@@ -25,7 +25,7 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
-#include <runtime/local/kernels/DistributedCaller.h>
+#include <runtime/distributed/coordinator/kernels/DistributedCaller.h>
 
 class DistributedIndex
 {
@@ -116,4 +116,32 @@ private:
     size_t cols_;
 };
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_HANDLE_H
+template<class DT>
+class Handle_v2
+{
+public:
+    // TODO change DistributedData (no need to hold workerAddress there anymore)
+    using HandleMap_v2 = std::map<std::string, std::vector<DistributedData>>;
+
+    Handle_v2 (std::vector<std::string> workerAddresses) {
+        for (auto addr : workerAddresses){
+            
+            map_.insert({addr, std::vector<DistributedData>()});
+        }
+    };
+    
+    ~Handle_v2() 
+    { }
+
+    const HandleMap_v2 getMap() const
+    { return map_; }
+
+    void insertData(std::string addr, DistributedData data){
+        map_[addr].push_back(data);
+    }
+
+private:
+    HandleMap_v2 map_;
+};
+
+#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H

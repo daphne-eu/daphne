@@ -14,18 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
+#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H
+#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Handle.h>
+#include <runtime/distributed/coordinator/datastructures/Handle.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 #include <runtime/distributed/worker/ProtoDataConverter.h>
-#include <runtime/local/kernels/DistributedCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -34,30 +33,30 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
-struct Distribute
+template<class DTRes, class DTArg>
+struct Broadcast
 {
-    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
+    static void apply(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void distribute(Handle<DT> *&res, const DT *mat, DCTX(ctx))
+template<class DTRes, class DTArg>
+void broadcast(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 {
-    Distribute<DT>::apply(res, mat, ctx);
+    Broadcast<DTRes, DTArg>::apply(res, mat, ctx);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct Distribute<DenseMatrix<double>>
+template<class DTRes>
+struct Broadcast<DTRes, DenseMatrix<double>>
 {
-    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle_v2<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -78,32 +77,20 @@ struct Distribute<DenseMatrix<double>>
             DistributedIndex *ix ;
             std::string workerAddr;
             std::shared_ptr<grpc::Channel> channel;
-        };        
+        };
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
+        
 
-        Handle<DenseMatrix<double>>::HandleMap map;
+        distributed::Matrix protoMat;
+        ProtoDataConverter::convertToProto(mat, &protoMat);
+        
+        for (auto i=0ul; i < workers.size(); i++){
+            auto workerAddr = workers.at(i);
 
-        auto r = 0ul;
-        for (auto workerIx = 0ul; workerIx < workers.size() && r < mat->getNumRows(); workerIx++) {            
-            auto workerAddr = workers.at(workerIx);          
-
-            distributed::Matrix protoMat;
-
-            auto k = mat->getNumRows() / workers.size();
-            auto m = mat->getNumRows() % workers.size();
-            ProtoDataConverter::convertToProto(mat,
-                &protoMat,
-                (workerIx * k) + std::min(workerIx, m),
-                (workerIx + 1) * k + std::min(workerIx + 1, m),
-                0,
-                mat->getNumCols());
-                        
             auto channel = caller.GetOrCreateChannel(workerAddr);
-            StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr, channel});
+            StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
             caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
-            
-            // keep track of proccessed rows
-            r = (workerIx + 1) * k + std::min(workerIx + 1, m);
+        
         }
         // get results
         while (!caller.isQueueEmpty()){
@@ -115,10 +102,10 @@ struct Distribute<DenseMatrix<double>>
             auto storedData = response.result;
 
             DistributedData data(storedData, workerAddr, channel);
-            map.insert({*ix, data});
+            res->insertData(workerAddr, data);
         }
-        res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
+        // res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
+#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H

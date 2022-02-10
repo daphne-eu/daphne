@@ -15,18 +15,6 @@
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
 
-
-# *****************************************************************************
-# DistributedCommunication library
-# *****************************************************************************
-
-set(SOURCES DistributedCaller.h)
-set(LIBS Proto)
-
-add_library(DistributedCaller ${SOURCES})
-target_link_libraries(DistributedCaller PRIVATE ${LIBS})
-
-
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_custom_command(
