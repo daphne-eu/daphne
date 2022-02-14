@@ -14,19 +14,20 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_VECTORIZEDDATASINK_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_VECTORIZEDDATASINK_H
+#pragma once
 
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/kernels/Transpose.h>
+#include <util/preprocessor_defs.h>
 
 #include <mutex>
 #include <queue>
-#include <runtime/local/kernels/Transpose.h>
 
 using mlir::daphne::VectorCombine;
 
 template<typename DT>
 class VectorizedDataSink {
+public:
     void add(DT *matrix, size_t startRow) = delete;
 };
 
@@ -57,7 +58,7 @@ public:
             auto rows = matrix->getNumRows();
             auto *off = matrix->getRowOffsets();
             auto *rowNnz = &_rowNnz[0];
-            #pragma clang loop vectorize(enable)
+            PRAGMA_LOOP_VECTORIZE
             for (size_t row = 0; row < rows; ++row) {
                 rowNnz[row] += off[row + 1] - off[row];
             }
@@ -77,7 +78,6 @@ public:
     CSRMatrix<VT> *consume() {
         if(_results.empty()) {
             throw std::runtime_error("Vectorized CSRMatrix without any iterations");
-            return nullptr;
         }
         auto *res = DataObjectFactory::create<CSRMatrix<VT>>(_numRows, _numCols, _numNnz, false);
         auto *resRowOff = res->getRowOffsets();
@@ -106,7 +106,7 @@ public:
         }
         else if (_combine == VectorCombine::COLS) {
             auto *rowNnz = &_rowNnz[0];
-            #pragma clang loop vectorize(enable)
+            PRAGMA_LOOP_VECTORIZE
             for (size_t row = 0; row < _numRows; ++row) {
                 resRowOff[row + 1] = resRowOff[row] + rowNnz[row];
                 // reuse rowNnz to place new values
@@ -143,5 +143,3 @@ public:
         return res;
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_VECTORIZEDDATASINK_H

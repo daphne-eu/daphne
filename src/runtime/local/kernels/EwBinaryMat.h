@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -124,7 +123,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
         assert((numCols == rhs->getNumCols()) && "lhs and rhs must have the same dimensions");
         
-        size_t maxNnz = 0;
+        size_t maxNnz;
         switch(opCode) {
             case BinaryOpCode::ADD: // merge
                 maxNnz = lhs->getNumNonZeros() + rhs->getNumNonZeros();
@@ -266,7 +265,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         assert((numRows == rhs->getNumRows() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
         assert((numCols == rhs->getNumCols() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
 
-        size_t maxNnz = 0;
+        size_t maxNnz;
         switch(opCode) {
         case BinaryOpCode::MUL: // intersect
             maxNnz = lhs->getNumNonZeros();
@@ -346,5 +345,3 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->finishAppend();
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H

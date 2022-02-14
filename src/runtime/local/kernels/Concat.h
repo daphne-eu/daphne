@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CONCAT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CONCAT_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 
-//#include <cassert>
 #include <cstddef>
 #include <cstring>
 
@@ -28,16 +26,14 @@
 // ****************************************************************************
 
 void concat(char *& res, const char * lhs, const char * rhs, DCTX(ctx)) {
-    const size_t lenLhs = strlen(lhs);
-    const size_t lenRhs = strlen(rhs);
-    const size_t lenRes = lenLhs + lenRhs;
+    const auto lenLhs = std::string_view(lhs).size();
+    const auto lenRhs = std::string_view(rhs).size();
+    const auto lenRes = lenLhs + lenRhs;
     
     if(res == nullptr)
         res = new char[lenRes + 1];
     
-    strncpy(res         , lhs, lenLhs);
-    strncpy(res + lenLhs, rhs, lenRhs);
+    std::memcpy(res         , lhs, lenLhs);
+    std::memcpy(res + lenLhs, rhs, lenRhs);
     res[lenRes] = '\0';
 }
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CONCAT_H

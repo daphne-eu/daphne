@@ -19,9 +19,7 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/kernels/CheckEq.h>
-#include <runtime/local/kernels/AggAll.h>
 #include <runtime/local/kernels/ExtractRow.h>
-#include <runtime/local/kernels/RandMatrix.h>
 
 #include <tags.h>
 
@@ -37,7 +35,7 @@
  * @brief Runs the extractRow-kernel with small input data and performs various
  * checks.
  */
-TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t, uint32_t) {
+TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t, uint32_t) { // NOLINT(cert-err58-cpp)
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
     
@@ -55,12 +53,12 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t, uint32_t)
     std::string labels[] = {"aaa", "bbb", "ccc"};
     auto arg = DataObjectFactory::create<Frame>(colMats, labels);
     
-    Frame * res = nullptr;
-    DTSel * sel;
-    size_t numRowsExp;
-    DenseMatrix<double> * c0Exp;
-    DenseMatrix<int32_t> * c1Exp;
-    DenseMatrix<uint64_t> * c2Exp;
+    Frame* res{};
+    DTSel* sel{};
+    size_t numRowsExp{};
+    DenseMatrix<double>* c0Exp{};
+    DenseMatrix<int32_t>* c1Exp{};
+    DenseMatrix<uint64_t>* c2Exp{};
     SECTION("selecting nothing") {
         numRowsExp = 0;
         sel = DataObjectFactory::create<DTSel>(0, 1, false);
@@ -123,7 +121,7 @@ TEMPLATE_TEST_CASE("ExtractRow - Frame", TAG_KERNELS, double, int64_t, uint32_t)
     DataObjectFactory::destroy(arg);
     DataObjectFactory::destroy(res);
 }
-TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double naive", TAG_KERNELS,uint32_t){
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double naive", TAG_KERNELS,uint32_t){ // NOLINT(cert-err58-cpp)
     auto argMatrix = genGivenVals<DenseMatrix<double>>(4, {
         1.0, 10.0, 3.0, 7.0, 7.0, 7.0,
         17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
@@ -143,7 +141,7 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double naive", TAG_KERNELS,uint32_t
     DataObjectFactory::destroy(resMatrix);
 }
 
-TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double expanding", TAG_KERNELS,uint32_t){
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double expanding", TAG_KERNELS,uint32_t){ // NOLINT(cert-err58-cpp)
     auto argMatrix = genGivenVals<DenseMatrix<double>>(4, {
         1.0, 10.0, 3.0, 7.0, 7.0, 7.0,
         17.0, 1.0, 2.0, 3.0, 7.0, 7.0,
@@ -178,7 +176,7 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix double expanding", TAG_KERNELS,uint
     DataObjectFactory::destroy(expMatrix);
 }
 
-TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int unordered", TAG_KERNELS,uint32_t){
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int unordered", TAG_KERNELS,uint32_t){ // NOLINT(cert-err58-cpp)
     auto argMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
         1, 10, 3, 7, 7, 7,
         17, 1, 2, 3, 7, 7,
@@ -192,8 +190,8 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int unordered", TAG_KERNELS,uint32_
         1,  
         });
      
-    DenseMatrix<int64_t>*  resMatrix=nullptr;
-    DenseMatrix<int64_t>* expMatrix =  genGivenVals<DenseMatrix<int64_t>>(4, {
+    DenseMatrix<int64_t>* resMatrix = nullptr;
+    auto* expMatrix =  genGivenVals<DenseMatrix<int64_t>>(4, {
         7, 7, 1, 2, 3, 7,
         7, 7, 7, 1, 2, 3,
         1, 10, 3, 7, 7, 7,
@@ -207,7 +205,7 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int unordered", TAG_KERNELS,uint32_
     DataObjectFactory::destroy(expMatrix);
 }
 
-TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int repeated with initialized resMatrix", TAG_KERNELS,uint32_t){
+TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int repeated with initialized resMatrix", TAG_KERNELS,uint32_t){ // NOLINT(cert-err58-cpp)
     auto argMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
         1, 10, 3, 7, 7, 7,
         17, 1, 2, 3, 7, 7,
@@ -221,13 +219,13 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int repeated with initialized resMa
         1,
         });
 
-    DenseMatrix<int64_t>*  resMatrix= genGivenVals<DenseMatrix<int64_t>>(4, {
+    auto* resMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
         7, 0, 0, 2, 3, 7,
         7, 7, 7, 1, 2, 3,
         1, 10, 3, -7, -7, 7,
         17, 1, 2, 3, 7, 7
         });
-    DenseMatrix<int64_t>* expMatrix =genGivenVals<DenseMatrix<int64_t>>(4, {
+    auto* expMatrix = genGivenVals<DenseMatrix<int64_t>>(4, {
         17, 1, 2, 3, 7, 7,
         17, 1, 2, 3, 7, 7,
         17, 1, 2, 3, 7, 7,
@@ -240,4 +238,3 @@ TEMPLATE_TEST_CASE("ExtractRow - DenseMatrix int repeated with initialized resMa
     DataObjectFactory::destroy(resMatrix);
     DataObjectFactory::destroy(expMatrix);
 }
-

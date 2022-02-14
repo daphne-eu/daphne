@@ -76,9 +76,8 @@ TEST_CASE("ColBind - Frame", TAG_KERNELS) {
     std::string labels01[] = {l0, l1};
     auto f01 = DataObjectFactory::create<Frame>(cols01, labels01);
     
-    Frame * f234;
-    
-    Frame * res = nullptr;
+    Frame* f234{};
+    Frame* res{};
     SECTION("unique labels") {
         std::vector<Structure *> cols234 = {c2, c3, c4};
         std::string labels234[] = {l2, l3, l4};

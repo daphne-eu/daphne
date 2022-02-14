@@ -50,9 +50,8 @@ namespace CUDA {
 
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
-        const size_t nr2 = rhs->getNumRows();
         const size_t nc2 = rhs->getNumCols();
-        assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
+        assert((nc1 == rhs->getNumRows()) && "#cols of lhs and #rows of rhs must be the same");
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
         const VT *d_lhs = lhs->getValuesCUDA();

@@ -135,18 +135,15 @@ namespace CUDA {
             CHECK_CUDART(cudaMemcpyAsync(&info, d_info, sizeof(int), cudaMemcpyDeviceToHost, ctx->getCuSolverStream()));
             CHECK_CUDART(cudaStreamSynchronize(ctx->getCuSolverStream()));
             if(info > 0)
-                assert(false && "A factor Ui is exactly singular, so the solution could not be computed");
+                throw std::runtime_error("cuSolve: A factor Ui is exactly singular, so the solution could not be computed");
             else if(info < 0)
-                assert(false && std::string(std::string("The ") + std::to_string(info) +
-                                            std::string("-th value had an illegal value.")).c_str());
-            else
-                return;
-
+                throw std::runtime_error(std::string(std::string("cuSolve: The ") + std::to_string(info) +
+                                                     std::string("-th value had an illegal value.")).c_str());
         }
         else if(info > 0)
-            assert(false && "A factor Ui is exactly singular, so the solution could not be computed");
+            throw std::runtime_error("cuSolve: A factor Ui is exactly singular, so the solution could not be computed");
         else if(info < 0)
-            assert(false && std::string(std::string("The ") + std::to_string(info) +
+            throw std::runtime_error(std::string(std::string("cuSolve: The ") + std::to_string(info) +
                                         std::string("-th value had an illegal value.")).c_str());
         cudaFreeAsync(d_A, ctx->getCuSolverStream());
     }

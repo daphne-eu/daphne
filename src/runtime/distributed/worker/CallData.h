@@ -15,8 +15,7 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H
-#define SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H
+#pragma once
 
 #include <runtime/distributed/worker/WorkerImpl.h>
 #include <runtime/distributed/proto/worker.pb.h>
@@ -26,6 +25,7 @@ class CallData
 {
 public:
     virtual void Proceed() = 0;
+    virtual ~CallData() = default;
 };
 class StoreCallData final : public CallData
 {
@@ -158,4 +158,3 @@ class FreeMemCallData final : public CallData
     };
     CallStatus status_; // The current serving state.
 };
-#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_CALLDATA_H
