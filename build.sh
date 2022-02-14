@@ -145,12 +145,12 @@ then
     mkdir --parents $antlrCppRuntimeDirName
     unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
     cd $antlrCppRuntimeDirName
-    mkdir build
-    mkdir run
+    rm -rf ./build
+    mkdir -p build
+    mkdir -p run
     cd build
-    cmake .. -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON
-    make
-    DESTDIR=../run make install
+    cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local
+    cmake --build . --target install
 fi
 cd $pwdBeforeAntlr
 
@@ -176,7 +176,7 @@ cd ..
 # OpenBLAS (basic linear algebra subprograms)
 pwdBeforeOpenBlas=$(pwd)
 openBlasDirName=OpenBLAS
-openBlasVersion=0.3.15
+openBlasVersion=0.3.19
 openBlasZipName=OpenBLAS-$openBlasVersion.zip
 openBlasInstDirName=installed
 mkdir --parents $openBlasDirName
@@ -187,7 +187,7 @@ then
     unzip $openBlasZipName
     mkdir --parents $openBlasInstDirName
     cd OpenBLAS-$openBlasVersion
-    make
+    make -j
     make install PREFIX=../$openBlasInstDirName
 fi
 cd $pwdBeforeOpenBlas
