@@ -34,30 +34,30 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
+template<class DTRes, class DTArg>
 struct Distribute
 {
-    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
+    static void apply(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void distribute(Handle<DT> *&res, const DT *mat, DCTX(ctx))
+template<class DTRes, class DTArg>
+void distribute(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 {
-    Distribute<DT>::apply(res, mat, ctx);
+    Distribute<DTRes, DTArg>::apply(res, mat, ctx);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct Distribute<DenseMatrix<double>>
+template<class DTRes>
+struct Distribute<DTRes, DenseMatrix<double>>
 {
-    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -81,7 +81,7 @@ struct Distribute<DenseMatrix<double>>
         };        
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
 
-        Handle<DenseMatrix<double>>::HandleMap map;
+        typename Handle<DTRes>::HandleMap map;
 
         auto r = 0ul;
         for (auto workerIx = 0ul; workerIx < workers.size() && r < mat->getNumRows(); workerIx++) {            
@@ -117,7 +117,7 @@ struct Distribute<DenseMatrix<double>>
             DistributedData data(storedData, workerAddr, channel);
             map.insert({*ix, data});
         }
-        res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
+        res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());
     }
 };
 
