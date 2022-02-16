@@ -6,23 +6,27 @@
             "returnType": "void",
             "templateParams": [
                 {
-                    "name": "DT",
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
                     "isDataType": true
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "Handle<DT> *&",
+                    "type": "Handle<DTRes> *&",
                     "name": "res"
                 },
                 {
-                    "type": "const DT *",
+                    "type": "const DTArg *",
                     "name": "mat"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            ["Structure", ["DenseMatrix", "double"]]
         ]
     },
     {
@@ -32,23 +36,27 @@
             "returnType": "void",
             "templateParams": [
                 {
-                    "name": "DT",
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
                     "isDataType": true
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "Handle<DT> *&",
+                    "type": "Handle<DTRes> *&",
                     "name": "res"
                 },
                 {
-                    "type": "const DT *",
+                    "type": "const DTArg *",
                     "name": "mat"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            ["Structure", ["DenseMatrix", "double"]]
         ]
     },
     {
