@@ -25,7 +25,7 @@
 #include "mlir/Pass/PassManager.h"
 
 #ifdef USE_CUDA
-    #include "runtime/local/kernels/CUDA_HostUtils.h"
+    #include <runtime/local/kernels/CUDA/HostUtils.h>
 #endif
 
 #include <exception>
@@ -40,7 +40,8 @@ using namespace std;
 using namespace mlir;
 
 void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" << endl;
+    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
+     "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
 }
 
 int
@@ -52,8 +53,9 @@ main(int argc, char** argv)
     std::vector<std::string> args(argv, argv + argc);
     string inputFile;
     unordered_map<string, string> scriptArgs;
-    bool useVectorizedPipelines = false;
     bool selectMatrixRepresentations = false;
+    DaphneUserConfig user_config{};
+//    user_config.debug_llvm = true;
     if(argc < 2) {
         printHelp(args[0]);
         exit(1);
@@ -66,27 +68,61 @@ main(int argc, char** argv)
         else {
             inputFile = args[1];
             for(int argPos = 2; argPos < argc; argPos++) {
+#ifndef NDEBUG
+                std::cout << "arg[" << argPos << "]: " << args[argPos] << std::endl;
+#endif
                 if(args[argPos] == "--args") {
                     int i;
                     for(i = argPos + 1; i < argc; i++) {
                         const std::string pair = args[i];
-                        size_t pos = pair.find('=');
-                        if(pos == std::string::npos)
+                        size_t pos_eq = pair.find('=');
+						size_t pos_dash = pair.find("--");
+                        if(pos_eq == std::string::npos || pos_dash != std::string::npos)
                             break;
                         scriptArgs.emplace(
-                            pair.substr(0, pos), // arg name
-                            pair.substr(pos + 1, pair.size()) // arg value
+                            pair.substr(0, pos_eq), // arg name
+                            pair.substr(pos_eq + 1, pair.size()) // arg value
                         );
                     }
                     argPos = i - 1;
                 }
                 else if(args[argPos] == "--vec") {
-                    useVectorizedPipelines = true;
+                    user_config.use_vectorized_exec = true;
+                }
+                else if(args[argPos] == "--no-free") {
+                    user_config.use_freeOps = false;
+                }
+                else if(args[argPos] == "--explain") {
+                    // Todo: parse --explain=[list,of,compiler,passes,to,explain]
+                    user_config.explain_kernels = true;
+//                    user_config.explain_llvm = true;
                 }
                 else if(args[argPos] == "--select-matrix-representations") {
                     selectMatrixRepresentations = true;
                 }
+                else if(args[argPos] == "--cuda") {
+                    int device_count = 0;
+#ifdef USE_CUDA
+                    CHECK_CUDART(cudaGetDeviceCount(&device_count));
+#endif
+                    if(device_count < 1)
+                        std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+                    else {
+                        user_config.use_cuda = true;
+                    }
+                }
+                else if (std::string(args[argPos]).find("--libdir") != std::string::npos) {
+                    const std::string pair = args[argPos];
+                    size_t pos = pair.find('=');
+                    if(pos == std::string::npos) {
+                        std::cerr << "Warning: Malformed parameter " << pair << std::endl;
+                        continue;
+                    }
+                    user_config.libdir = pair.substr(pos + 1, pair.size());
+                    user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+                }
                 else {
+					std::cout << "unknown arg: " << args[argPos] << std::endl;
                     printHelp(args[0]);
                     exit(1);
                 }
@@ -94,43 +130,13 @@ main(int argc, char** argv)
         }
     }
 
-    // TODO "libdir" and "cuda" should not be script arguments. Script
-    // arguments are those that can be used from within the DaphneDSL script.
-    // However, these two arguments are only required during compilation and
-    // runtime, users do not need to access them in a script.
-    
-    DaphneUserConfig user_config;
-    auto it = scriptArgs.find("libdir");
-    if(it != scriptArgs.end()) {
-        user_config.libdir = it->second;
-        user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
-    }
-
-#ifdef USE_CUDA
-    it = scriptArgs.find("cuda");
-    if(it != scriptArgs.end()) {
-        if(it->second == "1") {
-//            std::cout << "-cuda flag provided" << std::endl;
-            int device_count;
-              CHECK_CUDART(cudaGetDeviceCount(&device_count));
-              if(device_count < 1)
-                  std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
-            else { // NOLINT(readability-misleading-indentation)
-                std::cout << "Available CUDA devices: " << device_count << std::endl;
-                user_config.use_cuda = true;
-            }
-        }
-    }
-
-    it = scriptArgs.find("libdir");
-    if(it != scriptArgs.end()) {
-        user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
-    }
-#endif
+	// add this after the cli args loop to work around args order
+	if(!user_config.libdir.empty() && user_config.use_cuda)
+		user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, selectMatrixRepresentations, true, user_config);
+        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepresentations, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

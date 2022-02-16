@@ -28,26 +28,29 @@
 #define VALUE_TYPES double, float //TODO uint32_t
 
 template<class DT>
-void funAdd(DT*** outputs, Structure** inputs) {
+void funAdd(DT*** outputs, Structure** inputs, DCTX(ctx)) {
     ewBinaryMat(BinaryOpCode::ADD,
         *outputs[0],
         reinterpret_cast<DT*>(inputs[0]),
         reinterpret_cast<DT*>(inputs[1]),
-        nullptr);
+        ctx);
 }
 
 template<class DT>
-void funMul(DT*** outputs, Structure** inputs) {
+void funMul(DT*** outputs, Structure** inputs, DCTX(ctx)) {
     ewBinaryMat(BinaryOpCode::MUL,
         *outputs[0],
         reinterpret_cast<DT*>(inputs[0]),
         reinterpret_cast<DT*>(inputs[1]),
-        nullptr);
+        ctx);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
+
+    DaphneUserConfig user_config{};
+    auto ctx = std::make_unique<DaphneContext>(user_config);
 
     DT *m1 = nullptr, *m2 = nullptr;
     randMatrix<DT, VT>(m1, 1234, 10, 0.0, 1.0, 1.0, 7, nullptr);
@@ -55,18 +58,23 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
 
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
-    MTWrapper<DT> *wrapper = new MTWrapper<DT>(4);
+
+    auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());
+
     DT **outputs[] = {&r2};
     Structure *inputs[] = {m1, m2};
     int64_t outRows[] = {1234};
     int64_t outCols[] = {10};
     VectorSplit splits[] = {VectorSplit::ROWS, VectorSplit::ROWS};
     VectorCombine combines[] = {VectorCombine::ROWS};
-    wrapper->execute(&funAdd<DT>, outputs, inputs, 2, 1, outRows, outCols, splits, combines, false); //multi-threaded
+
+    std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
+    funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
+            DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
+    wrapper->executeSingleQueue(funcs, outputs, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
-    delete wrapper;
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(r1);
@@ -76,6 +84,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
 TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
+    
+    DaphneUserConfig user_config{};
+    auto ctx = std::make_unique<DaphneContext>(user_config);
 
     DT *m1 = nullptr, *m2 = nullptr;
     randMatrix<DT, VT>(m1, 1234, 10, 0.0, 1.0, 1.0, 7, nullptr);
@@ -83,18 +94,22 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
 
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, nullptr); //single-threaded
-    MTWrapper<DT> *wrapper = new MTWrapper<DT>(4);
-    DT **outputs[] = {&r2};
+
+    auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());    DT **outputs[] = {&r2};
+
     Structure *inputs[] = {m1, m2};
     int64_t outRows[] = {1234};
     int64_t outCols[] = {10};
     VectorSplit splits[] = {VectorSplit::ROWS, VectorSplit::ROWS};
     VectorCombine combines[] = {VectorCombine::ROWS};
-    wrapper->execute(&funMul<DT>, outputs, inputs, 2, 1, outRows, outCols, splits, combines, false); //multi-threaded
+
+    std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
+    funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
+                                                                                                 DCTX(ctx))>(reinterpret_cast<void*>(&funMul<DT>))));
+    wrapper->executeSingleQueue(funcs, outputs, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
-    delete wrapper;
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(r1);

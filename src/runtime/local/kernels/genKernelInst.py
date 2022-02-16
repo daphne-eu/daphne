@@ -30,11 +30,13 @@ template arguments.
 # TODO Note that the way the information on the kernel template is specified in
 # the input JSON-file will be simplified significantly later on.
 
+import io
 import json
 import sys
 
 INDENT = 4 * " "
 DEFAULT_NEWRESPARAM = "res"
+
 
 def toCppType(t):
     if isinstance(t, list):
@@ -47,12 +49,19 @@ def toCppType(t):
     else:
         return t
 
-def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, outFile):
+
+def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, outFile, API):
     # Extract some information.
     opName = kernelTemplateInfo["opName"]
     returnType = kernelTemplateInfo["returnType"]
     templateParams = kernelTemplateInfo["templateParams"]
     runtimeParams = kernelTemplateInfo["runtimeParams"]
+    # if API == "CUDA":
+    #     opName = "CUDA" + opName
+    # print(opName)
+    # print(opCodes)
+    # print(templateValues)
+    # print(templateParams)
     if opCodes is not None:
         # We assume that the op-code is the first run-time parameter.
         opCodeType = runtimeParams[0]["type"]
@@ -63,11 +72,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     # Create mapping from original template argument names to assigned C++
     # types.
     templateArgToCppType = {tp["name"]: toCppType(tv) for tp, tv in zip(templateParams, templateValues)}
-
+    # print(templateArgToCppType)
     # Comments indicating values assigned to original template arguments.
-    for tp in templateParams:
-        outFile.write(INDENT + "// {} = {}\n".format(tp["name"], templateArgToCppType[tp["name"]]))
-    
+    # for tp in templateParams:
+    #     outStr = INDENT + "// {} = {}\n".format(tp["name"], templateArgToCppType[tp["name"]])
+    #     outFile.write(outStr)
+
     # The function wrapping the generated kernel instantiation always has
     # the return type void. If the considered kernel returns a scalar value,
     # we prepend an additional run-time parameter. 
@@ -92,28 +102,31 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
     isCreateDaphneContext = opName == "createDaphneContext"
 
-    #typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
+    # typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
         rp["type"]
-        .replace("const ", "")
-        .replace(" **", "" if rp["isOutput"] else "_variadic")
-        .replace(" *", "")
-        .replace("& ", "")
-        .replace("<", "_").replace(">", "")
+            .replace("const ", "")
+            .replace(" **", "" if rp["isOutput"] else "_variadic")
+            .replace(" *", "")
+            .replace("& ", "")
+            .replace("<", "_").replace(">", "")
         for rp in extendedRuntimeParams
     ])
     if typesForName != "":
         typesForName = "__" + typesForName
     params = ", ".join(
-            ["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams] +
-            ([] if isCreateDaphneContext else ["DCTX(ctx)"])
+        ["{} {}".format(rtp["type"], rtp["name"]) for rtp in extendedRuntimeParams] +
+        ([] if isCreateDaphneContext else ["DCTX(ctx)"])
     )
 
     def generateFunction(opCode):
         # Obtain the name of the function to be generated from the opName by
         # removing suffices "Sca"/"Mat"/"Obj" (they are not required here), and
         # potentially by inserting the opCode into the name.
-        funcName = "_" + opName
+        if API != "CPP":
+            funcName = API + "_" + opName
+        else:
+            funcName = "_" + opName
         while funcName[-3:] in ["Sca", "Mat", "Obj"]:
             funcName = funcName[:-3]
         if opCode is not None:
@@ -129,16 +142,16 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}{}({}) {{\n".format(
-                funcName,
-                typesForName,
-                # Run-time parameters, possibly including DaphneContext:
-                params
+            funcName,
+            typesForName,
+            # Run-time parameters, possibly including DaphneContext:
+            params
         ))
-        
+
         # List of parameters for the call.
         # TODO Make the special treatment of PoolForward obsolete, it should go
         # through the same route as all other ops.
-        if opCode is None:# and funcName != "PoolForward":
+        if opCode is None:  # and funcName != "PoolForward":
             callParams = []
         else:
             callParams = ["{}::{}".format(opCodeType, opCode)]
@@ -148,10 +161,10 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             for rp
             in extendedRuntimeParams[(0 if returnType == "void" else 1):]
         ])
-        
+
         # List of template parameters for the call.
         callTemplateParams = [toCppType(tv) for tv in templateValues]
-        
+
         # Body of that function: delegate to the kernel instantiation.
         outFile.write(2 * INDENT)
         if returnType != "void":
@@ -163,38 +176,40 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             outFile.write("{}<{}>::apply({});\n".format(
                 "Pooling::Forward",
                 # Template parameters:
-                ", ".join(["Pooling::"+opCode]+[toCppType(tv) for tv in templateValues]),
+                ", ".join(["Pooling::" + opCode] + [toCppType(tv) for tv in templateValues]),
                 # Run-time parameters:
                 # ", ".join(([] if isCreateDaphneContext else ["ctx"] ) + callParams[1:]),
-                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"] )),
+                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"])),
             ))
         else:
             outFile.write("{}{}({});\n".format(
-                    opName,
-                    # Template parameters, if the kernel is a template:
-                    "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
-                    # Run-time parameters, possibly including DaphneContext:
-                    ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"] )),
+                opName if API == "CPP" else (API + "::" + opName),
+                # Template parameters, if the kernel is a template:
+                "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
+                # Run-time parameters, possibly including DaphneContext:
+                ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"])),
             ))
         outFile.write(INDENT + "}\n")
-    
+
     # Generate the function(s).
     if opCodes is None:
         generateFunction(None)
     else:
         for opCode in opCodes:
             generateFunction(opCode)
-    outFile.write(INDENT + "\n")
+    # outFile.write(INDENT + "\n")
+
 
 def printHelp():
-    print("Usage: python3 {} INPUT_SPEC_FILE OUTPUT_CPP_FILE".format(sys.argv[0]))
+    print("Usage: python3 {} INPUT_SPEC_FILE OUTPUT_CPP_FILE API".format(sys.argv[0]))
     print(__doc__)
+
 
 if __name__ == "__main__":
     if len(sys.argv) == 2 and (sys.argv[1] == "-h" or sys.argv[1] == "--help"):
         printHelp()
         sys.exit(0)
-    elif len(sys.argv) != 3:
+    elif len(sys.argv) != 4:
         print("Wrong number of arguments.")
         print()
         printHelp()
@@ -203,26 +218,77 @@ if __name__ == "__main__":
     # Parse arguments.
     inFilePath = sys.argv[1]
     outFilePath = sys.argv[2]
+    API = sys.argv[3]
+    # print(API + ": -----------")
+    ops_inst_str = ""
+    header_str = ""
 
     # Load the specification (which kernel template shall be instantiated
     # with which template arguments) from a JSON-file.
     with open(inFilePath, "r") as inFile:
         kernelsInfo = json.load(inFile)
 
-    with open(outFilePath, "w") as outFile:
-        outFile.write("// This file was generated by {}. Don't edit manually!\n\n".format(sys.argv[0]))
-        outFile.write("#include <runtime/local/context/DaphneContext.h>\n\n")
         for kernelInfo in kernelsInfo:
             kernelTemplateInfo = kernelInfo["kernelTemplate"]
-            # Comment reporting the kernel name.
-            outFile.write("// {}\n".format("-" * 76))
-            outFile.write("// {}\n".format(kernelTemplateInfo["opName"]))
-            outFile.write("// {}\n\n".format("-" * 76))
-            # Include for the required header.
-            outFile.write("#include <runtime/local/kernels/{}>\n\n".format(kernelTemplateInfo["header"]))
-            # One function per instantiation of the kernel.
-            outFile.write("extern \"C\" {\n\n")
-            opCodes = kernelInfo.get("opCodes", None)
-            for instantiation in kernelInfo["instantiations"]:
-                generateKernelInstantiation(kernelTemplateInfo, instantiation, opCodes, outFile)
-            outFile.write("}\n\n")
+            if "api" in kernelInfo:
+                for api in kernelInfo["api"]:
+                    for name in api["name"]:
+                        # print("Processing API: " + name)
+                        # print(" Instantiations: " + str(api["instantiations"]))
+                        # print(" opCodes: " + str(api["opCodes"]))
+                        if name == API:
+                            # if API == "CUDA":
+                            # Comment reporting the kernel name.
+                            # outFile.write("// {}\n".format("-" * 76))
+                            # outFile.write("// {}\n".format(kernelTemplateInfo["opName"]))
+                            # outFile.write("// {}\n\n".format("-" * 76))
+                            ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+                            ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
+                            ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+                            # Include for the required header.
+                            # outFile.write("#include <runtime/local/kernels/{}>\n\n".format(kernelTemplateInfo["header"]))
+                            if API != "CPP":
+                                header_str = header_str + "#include <runtime/local/kernels/{}/{}>\n".format(API, kernelTemplateInfo["header"])
+                            else:
+                                header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
+
+                            # print("Processing API: " + name)
+                            # print(" Instantiations: " + str(api["instantiations"]))
+                            # print(kernelTemplateInfo)
+                            # print(kernelTemplateInfo["opName"])
+                            # print(" opCodes: " + str(api["opCodes"]))
+
+                            outBuf = io.StringIO()
+                            for instantiation in api["instantiations"]:
+                                generateKernelInstantiation(kernelTemplateInfo, instantiation,
+                                                            api.get("opCodes", None), outBuf, API)
+                            ops_inst_str += outBuf.getvalue()
+            else:
+                if API == "CPP":
+                    # Comment reporting the kernel name.
+                    # outFile.write("// {}\n".format("-" * 76))
+                    # outFile.write("// {}\n".format(kernelTemplateInfo["opName"]))
+                    # outFile.write("// {}\n\n".format("-" * 76))
+                    ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+                    ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
+                    ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+                    # Include for the required header.
+                    # outFile.write("#include <runtime/local/kernels/{}>\n\n".format(kernelTemplateInfo["header"]))
+                    header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
+                    # One function per instantiation of the kernel.
+                    # outFile.write("extern \"C\" {\n\n")
+                    # print("processing cpp only: " + str(kernelTemplateInfo["opName"]))
+                    opCodes = kernelInfo.get("opCodes", None)
+                    outBuf = io.StringIO()
+                    for instantiation in kernelInfo["instantiations"]:
+                        generateKernelInstantiation(kernelTemplateInfo, instantiation, opCodes, outBuf, API)
+                    ops_inst_str += outBuf.getvalue()
+
+
+    with open(outFilePath, "w") as outFile:
+        outFile.write("// This file was generated by {}. Don't edit manually!\n\n".format(sys.argv[0]))
+        outFile.write("#include <runtime/local/context/DaphneContext.h>\n")
+        outFile.write(header_str)
+        outFile.write("\nextern \"C\" {\n")
+        outFile.write(ops_inst_str)
+        outFile.write("}\n")

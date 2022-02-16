@@ -22,9 +22,9 @@
 #include <catch.hpp>
 
 TEST_CASE("initCUDAContext", TAG_KERNELS) {
-    auto dctx = new DaphneContext();
-    initCUDAContext(dctx);
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
+    initCUDAContext(dctx.get());
     auto p = dctx->getCUDAContext(0)->getDeviceProperties();
     CHECK(p);
-    delete dctx;
 }

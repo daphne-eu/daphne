@@ -45,7 +45,7 @@ private:
 
 public:
     BlockingTaskQueue() : BlockingTaskQueue(DEFAULT_MAX_SIZE) {}
-    BlockingTaskQueue(uint64_t capacity) {
+    explicit BlockingTaskQueue(uint64_t capacity) {
         _closedInput = false;
         _capacity = capacity;
     }

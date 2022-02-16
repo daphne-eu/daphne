@@ -39,17 +39,22 @@ namespace mlir::daphne {
         bool frameLabelInference;
         bool sparsityInference;
     };
+
+    // alphabetically sorted list of passes
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});
-    std::unique_ptr<Pass> createSelectMatrixRepresentationsPass();
     std::unique_ptr<Pass> createInsertDaphneContextPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createInsertFreeOpPass();
-    std::unique_ptr<Pass> createLowerToLLVMPass();
+    std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
-    std::unique_ptr<Pass> createRewriteToCallKernelOpPass(const DaphneUserConfig& cfg);
-    std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createRewriteSqlOpPass();
+    std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
+    std::unique_ptr<Pass> createSelectMatrixRepresentationsPass();
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass();
+    std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
+#ifdef USE_CUDA
+    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
+#endif
 
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"
