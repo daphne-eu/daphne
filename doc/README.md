@@ -20,6 +20,7 @@ limitations under the License.
 
 - [Getting Started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md)
 - [Implementing a Built-in Kernel](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ImplementBuiltinKernel.md)
+- [Binary Data Format](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/BinaryFormat.md)
 
 ### Source Code Documentation
 
