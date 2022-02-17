@@ -112,6 +112,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
             false && "the DaphneDSL grammar should prevent zero variables "
             "on the left-hand side of an assignment"
     );
+    return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {

@@ -70,7 +70,8 @@ struct DistributedCompute<DTRes, Structure>
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         typename Handle<DTRes>::HandleMap resMap;        
-        size_t resultRows, resultColumns;
+        size_t resultRows{};
+        size_t resultColumns{};
         // ****************************************************************************
         // Unary operations
         // ****************************************************************************

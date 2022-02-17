@@ -48,17 +48,17 @@ template<class DT>
 struct CompiledPipelineTaskData {
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> _funcs;
     Structure **_inputs;
-    size_t _numInputs;
-    size_t _numOutputs;
-    int64_t *_outRows;
-    [[maybe_unused]] int64_t *_outCols;
-    VectorSplit *_splits;
-    VectorCombine *_combines;
-    uint64_t _rl;    // row lower index
-    uint64_t _ru;    // row upper index
-    int64_t *_wholeResultRows; // number of rows of the complete result
-    int64_t *_wholeResultCols; // number of cols of the complete result
-    [[maybe_unused]] uint64_t _offset;
+    const size_t _numInputs;
+    const size_t _numOutputs;
+    const int64_t *_outRows;
+    const int64_t *_outCols;
+    const VectorSplit *_splits;
+    const VectorCombine *_combines;
+    const uint64_t _rl;    // row lower index
+    const uint64_t _ru;    // row upper index
+    const int64_t *_wholeResultRows; // number of rows of the complete result
+    const int64_t *_wholeResultCols; // number of cols of the complete result
+    const uint64_t _offset;
     DCTX(_ctx);
 
     [[maybe_unused]] CompiledPipelineTaskData<DT> withDifferentRange(uint64_t newRl, uint64_t newRu) {

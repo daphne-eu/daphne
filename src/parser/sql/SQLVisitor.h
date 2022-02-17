@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_SQL_SQLVISITOR_H
-#define SRC_PARSER_SQL_SQLVISITOR_H
+#pragma once
 
 #include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
@@ -29,6 +28,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 class SQLVisitor : public SQLGrammarVisitor {
 
@@ -36,7 +36,6 @@ class SQLVisitor : public SQLGrammarVisitor {
 
     mlir::OpBuilder builder;
     mlir::Value currentFrame;
-    int i_se = 0;
 
 //  PREFIX SHOULD NOT CONTAIN THE DOT.
     //framename, prefix
@@ -47,25 +46,25 @@ class SQLVisitor : public SQLGrammarVisitor {
     std::unordered_map <std::string, mlir::Value> view;
     std::unordered_map <std::string, mlir::Value> alias;
 
-    void registerAlias(std::string framename, mlir::Value arg);
-    std::string setFramePrefix(std::string framename, std::string prefix, bool necessary, bool ignore);
+    void registerAlias(const std::string& framename, mlir::Value arg);
+    std::string setFramePrefix(const std::string& framename, const std::string& prefix, bool necessary, bool ignore);
 
-    mlir::Value fetchMLIR(std::string framename);    //looks name up in alias and view
-    mlir::Value fetchAlias(std::string framename);   //looks name up only in alias
-    std::string fetchPrefix(std::string framename);
-    bool hasMLIR(std::string name);
+    mlir::Value fetchMLIR(const std::string& framename);    //looks name up in alias and view
+    [[maybe_unused]] mlir::Value fetchAlias(const std::string& framename);   //looks name up only in alias
+    std::string fetchPrefix(const std::string& framename);
+    bool hasMLIR(const std::string& name);
 
     ScopedSymbolTable symbolTable;
 
 public:
-    SQLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
+    [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder & builder) : utils(builder), builder(builder) {
     };
 
     SQLVisitor(
         mlir::OpBuilder & builder,
         std::unordered_map <std::string, mlir::Value> view_arg
-    ) : builder(builder), utils(builder) {
-        view = view_arg;
+    ) : utils(builder), builder(builder) {
+        view = std::move(view_arg);
     };
 
     antlrcpp::Any visitScript(SQLGrammarParser::ScriptContext * ctx) override;
@@ -92,5 +91,3 @@ public:
 
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };
-
-#endif //SRC_PARSER_SQL_SQLVISITOR_H

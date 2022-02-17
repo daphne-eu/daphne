@@ -55,7 +55,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/ExtractCol.cu
             ${PREFIX}/Gemv.cpp
             ${PREFIX}/MatMul.cpp
-            ${PREFIX}/Solve.cu
+            ${PREFIX}/Solve.cpp
             ${PREFIX}/Syrk.cu
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp

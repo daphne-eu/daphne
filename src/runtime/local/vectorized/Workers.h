@@ -86,7 +86,7 @@ public:
     }
 };
 
-//entry point for std:thread
-static void runWorker(Worker* worker) {
-    worker->run();
-}
+////entry point for std:thread
+//static void runWorker(Worker* worker) {
+//    worker->run();
+//}
