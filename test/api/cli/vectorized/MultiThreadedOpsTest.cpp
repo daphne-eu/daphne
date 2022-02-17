@@ -25,7 +25,6 @@
 using namespace std::literals;
 
 auto dirPath = "test/api/cli/vectorized/"sv;
-//            const std::string prefix = dirPath+(name);
 
 // TODO: check if `vectorizedPipeline` is used and compare vectorization with no vectorization instead of file
 #define MAKE_TEST_CASE(name, suffix, param) \

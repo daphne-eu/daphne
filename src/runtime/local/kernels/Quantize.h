@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_QUANTIZE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_QUANTIZE_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -67,7 +66,7 @@ void calc_quantization_params(float min, float max, float& scale, uint8_t& quant
 
 uint8_t quantize_value(float a, float scale, uint8_t quantized_zero) {
     // Map
-    float value = quantized_zero + a/scale;
+    float value = static_cast<float>(quantized_zero) + a/scale;
 
     // Clip
     value = (value > 255) ? 255 : value;
@@ -95,10 +94,8 @@ struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
             res = DataObjectFactory::create<DenseMatrix<uint8_t>>(nr1, nc1, false);
         }
         else {
-            const size_t nrRes = res->getNumRows();
-            const size_t ncRes = res->getNumCols();
-            assert((nr1 == nrRes) && "#rows of res and #rows of rhs must be the same");
-            assert((nc1 == ncRes) && "#cols of res and #cols of rhs must be the same");
+            assert((nr1 == res->getNumRows()) && "#rows of res and #rows of rhs must be the same");
+            assert((nc1 == res->getNumCols()) && "#cols of res and #cols of rhs must be the same");
         }
 
         float scale = 0;
@@ -111,5 +108,3 @@ struct Quantize<DenseMatrix<uint8_t>, DenseMatrix<float>> {
         }
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_QUANTIZE_H

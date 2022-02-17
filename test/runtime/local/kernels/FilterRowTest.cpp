@@ -19,7 +19,6 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/kernels/CheckEq.h>
-#include <runtime/local/kernels/AggAll.h>
 #include <runtime/local/kernels/FilterRow.h>
 #include <runtime/local/kernels/RandMatrix.h>
 
@@ -36,7 +35,7 @@
  * @brief Runs the filterRow-kernel with small input data and performs various
  * checks.
  */
-TEMPLATE_TEST_CASE("FilterRow - Frame", TAG_KERNELS, double, int64_t, uint32_t) {
+TEMPLATE_TEST_CASE("FilterRow - Frame", TAG_KERNELS, double, int64_t, uint32_t) { // NOLINT(cert-err58-cpp)
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
     
@@ -54,12 +53,12 @@ TEMPLATE_TEST_CASE("FilterRow - Frame", TAG_KERNELS, double, int64_t, uint32_t) 
     std::string labels[] = {"aaa", "bbb", "ccc"};
     auto arg = DataObjectFactory::create<Frame>(colMats, labels);
     
-    Frame * res = nullptr;
-    DTSel * sel;
-    size_t numRowsExp;
-    DenseMatrix<double> * c0Exp;
-    DenseMatrix<int32_t> * c1Exp;
-    DenseMatrix<uint64_t> * c2Exp;
+    Frame* res{};
+    DTSel* sel{};
+    size_t numRowsExp{};
+    DenseMatrix<double> * c0Exp{};
+    DenseMatrix<int32_t> * c1Exp{};
+    DenseMatrix<uint64_t> * c2Exp{};
     SECTION("selecting nothing") {
         sel = genGivenVals<DTSel>(numRows, {0, 0, 0, 0, 0});
         numRowsExp = 0;
@@ -113,7 +112,7 @@ TEMPLATE_TEST_CASE("FilterRow - Frame", TAG_KERNELS, double, int64_t, uint32_t) 
  * @brief Runs the filterRow-kernel with large random input data only to check
  * if it returns the expected number of rows and doesn't crash.
  */
-TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double, int64_t, uint32_t) {
+TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double, int64_t, uint32_t) { // NOLINT(cert-err58-cpp)
     using VTSel = TestType;
     using DTSel = DenseMatrix<VTSel>;
     
@@ -140,7 +139,7 @@ TEMPLATE_TEST_CASE("FilterRow (large input) - Frame", TAG_KERNELS, double, int64
     filterRow<Frame, Frame, VTSel>(res, arg, sel, nullptr);
     
     // Check expected #rows.
-    const size_t numRowsExp = static_cast<size_t>(round(selectivity * numRows));
+    const auto numRowsExp = static_cast<size_t>(round(selectivity * numRows));
     CHECK(res->getNumRows() == numRowsExp);
     
     DataObjectFactory::destroy(c0);

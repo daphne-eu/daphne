@@ -34,12 +34,12 @@ namespace CompilerUtils {
                 "the given value must be a constant of string type"
         );
     }
-    
-    static FileMetaData getFileMetaData(mlir::Value filename) {
+
+    [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename) {
         return FileMetaData::ofFile(getConstantString2(filename));
     }
 
-    static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
+    [[maybe_unused]] static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -96,7 +96,7 @@ namespace CompilerUtils {
         );
     }
 
-    static bool isMatrixComputation(mlir::Operation *v) {
+    [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
         return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
     }
-};
+}
