@@ -24,7 +24,7 @@
 #endif
 
 template<typename ValueType>
-DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type) :
+DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool initialize, ALLOCATION_TYPE type, int value) :
         Matrix<ValueType>(maxNumRows, numCols), rowSkip(numCols), lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
 #ifndef NDEBUG
@@ -34,11 +34,11 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
     if (type == ALLOCATION_TYPE::HOST_ALLOC) {
         alloc_shared_values();
         host_buffer_current = true;
-        if(zero)
-            memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
+        if(initialize)
+            memset(values.get(), value, maxNumRows * numCols * sizeof(ValueType));
     }
     else if (type == ALLOCATION_TYPE::CUDA_ALLOC) {
-        alloc_shared_cuda_buffer();
+        alloc_shared_cuda_buffer(nullptr, 0, initialize, value);
         cuda_buffer_current = true;
     }
     else {
@@ -140,7 +140,7 @@ void DenseMatrix<ValueType>::host2cuda() {
 
 
 template<typename ValueType>
-void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset) {
+void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset, bool initialize, int value) {
     if(src) {
 //#ifndef NDEBUG
 //        std::ios state(nullptr);
@@ -169,6 +169,8 @@ void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType>
 #endif
         CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), this->bufferSize()));
         this->cuda_ptr = std::shared_ptr<ValueType>(dev_ptr, CudaDeleter<ValueType>());
+        if(initialize)
+            CHECK_CUDART(cudaMemset(this->cuda_ptr.get(), value, this->bufferSize()));
 //#ifndef NDEBUG
 //        std::cout << "addressof dev_ptr after cudaMalloc: " << &dev_ptr << std::endl;
 //        std::cout.copyfmt(state);
@@ -178,7 +180,8 @@ void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType>
 }
 #else
     template<typename ValueType>
-    void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset) { }
+    void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset,
+            bool initialize, int value) { }
 #endif // USE_CUDA
 
 // explicitly instantiate to satisfy linker
