@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-#include "CUDA_BatchNorm.h"
+#include "BatchNorm.h"
 
-namespace BatchNorm {
+namespace CUDA::BatchNorm {
     template<typename DTRes, typename DTArg>
-    void ForwardTest_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta,
-            const DTArg *ema_mean, const DTArg *ema_var, const typename DTArg::VT eps, DCTX(dctx))
+    void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta,
+                                      const DTArg *ema_mean, const DTArg *ema_var, const typename DTArg::VT eps, DCTX(dctx))
     {
-
-//        std::cerr << " ----------  bn ----------- " << std::endl;
-
         auto ctx = dctx->getCUDAContext(0);
         using VT = typename DTRes::VT;
         const size_t nr1 = data->getNumRows();
@@ -52,7 +49,7 @@ namespace BatchNorm {
                 d_gamma, d_beta, d_ema_mean, d_ema_var, eps));
     }
 
-    template struct ForwardTest_CUDA<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct ForwardTest_CUDA<DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
 }
 

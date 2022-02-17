@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_BIASADD_H
-#define DAPHNE_PROTOTYPE_CUDA_BIASADD_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA/HostUtils.h>
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/context/CUDAContext.h"
 
-namespace DNN::CUDA {
-    template<typename DTRes, typename DTArg>
-    struct BiasAddForward {
-        static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx));
-    };
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+namespace CUDA {
+    static void createCUDAContext(DCTX(ctx)) {
+        // ToDo: one context per device
+        ctx->cuda_contexts.emplace_back(CUDAContext::createCudaContext(0));
+    }
 }
-
-#endif // DAPHNE_PROTOTYPE_CUDA_BIASADD_H

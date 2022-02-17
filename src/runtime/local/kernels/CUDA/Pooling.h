@@ -14,27 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_POOLING_H
-#define DAPHNE_PROTOTYPE_CUDA_POOLING_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA/HostUtils.h>
-#include <runtime/local/kernels/Pooling.h>
+#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "HostUtils.h"
+#include "runtime/local/kernels/Pooling.h"
 
-namespace Pooling {
+namespace CUDA::Pooling {
 
+    // introduce generic pooling ops in this namespace
+    using ::Pooling::AVG;
+    using ::Pooling::MAX;
+    
     template<template<typename> class OP, typename DTRes, typename DTArg>
-    struct Forward_CUDA {
+    struct Forward {
         static void apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data,
-                const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
-                const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w,
-                const size_t pad_h, const size_t pad_w, DCTX(dctx));
+                size_t batch_size, size_t num_channels, size_t img_h, size_t img_w,
+                size_t pool_h, size_t pool_w, size_t stride_h, size_t stride_w,
+                size_t pad_h, size_t pad_w, DCTX(dctx));
     };
 }
-
-#endif //DAPHNE_PROTOTYPE_CUDA_POOLING_H
