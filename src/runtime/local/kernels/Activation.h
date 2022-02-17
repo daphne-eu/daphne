@@ -14,26 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_ACTIVATION_H
-#define DAPHNE_PROTOTYPE_CUDA_ACTIVATION_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA/HostUtils.h>
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
 
 namespace Activation {
     struct ReLU {
-        static inline cudnnActivationMode_t getActivationType() { return CUDNN_ACTIVATION_RELU; }
+        static inline int getActivationType() { /* ToDo: ReLU activation */ return 0; }
     };
 
     template<typename OP, typename DTRes, typename DTArg>
-    struct Forward_CUDA {
-        static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
+    struct Forward {
+        static void apply(DTRes *&res, [[maybe_unused]] const DTArg *data, DCTX(dctx)) { throw
+                std::runtime_error("C++ ReLU activation not implemented"); }
     };
 }
-
-#endif // DAPHNE_PROTOTYPE_CUDA_ACTIVATION_H

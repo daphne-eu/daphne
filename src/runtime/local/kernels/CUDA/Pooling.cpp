@@ -14,17 +14,16 @@
  * limitations under the License.
  */
 
-#include "CUDA_Pooling.h"
+#include "runtime/local/kernels/CUDA/Pooling.h"
 
-namespace Pooling {
+namespace CUDA::Pooling {
 
     template<template<typename> class OP, typename DTRes, typename DTArg>
-    void Forward_CUDA<OP, DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w,
+    void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w,
             const DTArg *data, const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w,
             const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
             const size_t pad_w, DCTX(dctx))
     {
-//        std::cerr << " ----------  pool ----------- " << std::endl;
         using VT = typename DTRes::VT;
         auto ctx = dctx->getCUDAContext(0);
         const VT blend_alpha = 1;
@@ -49,7 +48,6 @@ namespace Pooling {
         res_w = w;
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, c, h, w));
 
-//        std::cout << " creating res matrix for pooling: " << batch_size << " " << c << " " << h << " " << w << std::endl;
         if (res == nullptr) {
             res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false, ALLOCATION_TYPE::CUDA_ALLOC);
         }
@@ -59,10 +57,10 @@ namespace Pooling {
                                         d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
     }
 
-    template struct Forward_CUDA<AVG, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward_CUDA<AVG, DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<::Pooling::AVG, DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<::Pooling::AVG, DenseMatrix<double>, DenseMatrix<double>>;
 
-    template struct Forward_CUDA<MAX, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward_CUDA<MAX, DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<::Pooling::MAX, DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<::Pooling::MAX, DenseMatrix<double>, DenseMatrix<double>>;
 }
 

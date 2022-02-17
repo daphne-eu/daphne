@@ -155,8 +155,10 @@ void MarkCUDAOpsPass::runOnFunction() {
         if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
             addCUDAOpsToVectorizedPipeline(builder, pipelineOp);
         else {
-            if(!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op))
+            if((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
+                 llvm::isa<daphne::CreateCUDAContextOp>(op)) {
                 op->setAttr("cuda_device", builder.getI32IntegerAttr(0));
+            }
         }
         WalkResult::advance();
     });

@@ -14,23 +14,16 @@
  * limitations under the License.
  */
 
+#ifdef USE_CUDA
+#include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
+#include "runtime/local/kernels/CUDA/BatchNorm.h"
+#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 
 #include <cassert>
-
-#ifdef USE_CUDA
-    #include <api/cli/DaphneUserConfig.h>
-    #include <runtime/local/kernels/CUDA_BatchNorm.h>
-    #include <runtime/local/kernels/CUDA_InitContext.h>
-#else
- ToDo: cpu version
-    #include <runtime/local/kernels/BatchNorm.h>
-#endif
-
-#include <tags.h>
 #include <catch.hpp>
+#include <tags.h>
 
 template<class DT>
 void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, const DT* ema_var, const DT* exp,
@@ -38,23 +31,18 @@ void check(const DT* in, const DT* gamma, const DT* beta, const DT* ema_mean, co
 {
     DT* res = nullptr;
     typename DT::VT epsilon = 1e-5;
-#ifdef USE_CUDA
-    BatchNorm::ForwardTest_CUDA<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
-#else
-    //"ToDo: cpu version
-    return;
-    BatchNorm::Forward<OP, DT, DT>::apply(res, in, filter, in->getNumRows(), 1, 3, 3);
-#endif
+    CUDA::BatchNorm::Forward<DT, DT>::apply(res, in, gamma, beta, ema_mean, ema_var, epsilon, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(epsilon) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("batchnorm_fwd", TAG_DNN, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("CUDA::BatchNorm::Forward", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
-#ifdef USE_CUDA
-    initCUDAContext(dctx);
-#endif
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
+
+    CUDA::createCUDAContext(dctx.get());
+
 
     auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
     auto gamma = genGivenVals<DT>(1, { 1 });
@@ -64,10 +52,10 @@ TEMPLATE_PRODUCT_TEST_CASE("batchnorm_fwd", TAG_DNN, (DenseMatrix), (float, doub
 
     auto result = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
 
-    check(input, gamma, beta, ema_mean, ema_var, result, dctx);
+    check(input, gamma, beta, ema_mean, ema_var, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
-
-    delete dctx;
 }
+
+#endif // USE_CUDA

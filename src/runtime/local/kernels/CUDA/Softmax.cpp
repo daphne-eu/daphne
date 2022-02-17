@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-#include "CUDA_Softmax.h"
+#include "Softmax.h"
 
-namespace Softmax {
+namespace CUDA::Softmax {
 
     template<typename DTRes, typename DTArg>
-    void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-//        std::cerr << " ----------  softmax ----------- " << std::endl;
+    void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
         auto ctx = dctx->getCUDAContext(0);
         using VT = typename DTRes::VT;
         int n = data->getNumRows();
@@ -41,7 +40,7 @@ namespace Softmax {
                 &blend_alpha, ctx->src_tensor_desc, d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
     }
 
-    template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
 }
 
