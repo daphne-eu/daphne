@@ -126,7 +126,7 @@ class Frame : public Structure {
             schema(new ValueTypeCode[numCols]),
             labels(new std::string[numCols]),
             columns(new std::shared_ptr<ColByteType>[numCols])
-    {        
+    {
         for(size_t i = 0; i < numCols; i++) {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);

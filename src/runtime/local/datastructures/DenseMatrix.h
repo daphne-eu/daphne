@@ -151,7 +151,7 @@ public:
     [[nodiscard]] size_t getRowSkip() const {
         return rowSkip;
     }
-    
+
     const ValueType * getValues() const
     {
         if(!values)
