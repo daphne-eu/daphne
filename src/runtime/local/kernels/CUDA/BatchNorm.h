@@ -14,23 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_BATCHNORM_H
-#define DAPHNE_PROTOTYPE_CUDA_BATCHNORM_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "HostUtils.h"
 
-namespace BatchNorm {
+namespace CUDA::BatchNorm {
     template<typename DTRes, typename DTArg>
-    struct ForwardTest_CUDA {
+    struct Forward {
         static void apply(DTRes *&res, const DTArg *data, const DTArg *gamma, const DTArg *beta, const DTArg *ema_mean,
-                const DTArg *ema_var, const typename DTArg::VT eps, DCTX(dctx));
+                const DTArg *ema_var, typename DTArg::VT eps, DCTX(dctx));
     };
 }
-
-#endif //DAPHNE_PROTOTYPE_CUDA_BATCHNORM_H

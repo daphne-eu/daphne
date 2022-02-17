@@ -374,6 +374,10 @@ public:
     CSRMatrix* slice(size_t rl, size_t ru) override {
         return DataObjectFactory::create<CSRMatrix>(this, rl, ru);
     }
+
+    size_t bufferSize() {
+        return this->getNumItems() * sizeof(ValueType);
+    }
 };
 
 template <typename ValueType>

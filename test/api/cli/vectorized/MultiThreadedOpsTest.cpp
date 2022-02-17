@@ -20,34 +20,46 @@
 
 #include <catch.hpp>
 
-#include <sstream>
 #include <string>
 
-const std::string dirPath = "test/api/cli/vectorized/";
+using namespace std::literals;
+
+auto dirPath = "test/api/cli/vectorized/"sv;
 
 // TODO: check if `vectorizedPipeline` is used and compare vectorization with no vectorization instead of file
-#define MAKE_TEST_CASE(name) \
-    TEST_CASE(name, TAG_OPERATIONS) { \
-        DYNAMIC_SECTION(name << ".daphne") { \
-            const std::string prefix = dirPath+name; \
-            compareDaphneToRef(prefix+".txt", prefix+".daphne", "--vec"); \
+#define MAKE_TEST_CASE(name, suffix, param) \
+    TEST_CASE(std::string(name)+std::string(suffix), TAG_OPERATIONS) { \
+        DYNAMIC_SECTION((name) << ".daphne") { \
+              std::string prefix(dirPath);\
+              prefix += (name);\
+            compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param)); \
         } \
     }
 #define MAKE_TEST_CASE_SPARSE(name) \
     TEST_CASE(name, TAG_OPERATIONS) { \
-        DYNAMIC_SECTION(name << ".daphne") { \
-            const std::string prefix = dirPath+name; \
-            compareDaphneToRef(prefix+".txt", prefix+".daphne", "--select-matrix-representations", "--vec"); \
+        DYNAMIC_SECTION((name) << ".daphne") { \
+              std::string prefix(dirPath);\
+              prefix += (name);\
+              compareDaphneToRef(prefix+".txt", prefix+".daphne", "--select-matrix-representations", "--vec"); \
         } \
     }
 
-MAKE_TEST_CASE("runMatMult")
-MAKE_TEST_CASE("runEwUnary")
-MAKE_TEST_CASE("runEwBinary")
+MAKE_TEST_CASE("runMatMult", "", "--vec")
+MAKE_TEST_CASE("runEwUnary", "", "--vec")
+MAKE_TEST_CASE("runEwBinary", "", "--vec")
 MAKE_TEST_CASE_SPARSE("runEwBinarySparse")
-MAKE_TEST_CASE("runRowAgg")
-MAKE_TEST_CASE("runColAgg")
+MAKE_TEST_CASE("runRowAgg", "", "--vec")
+MAKE_TEST_CASE("runColAgg", "", "--vec")
 MAKE_TEST_CASE_SPARSE("runColAggSparse")
-MAKE_TEST_CASE("runIndexing")
-MAKE_TEST_CASE("runReorganization")
-MAKE_TEST_CASE("runOther")
+MAKE_TEST_CASE("runIndexing", "", "--vec")
+MAKE_TEST_CASE("runReorganization", "", "--vec")
+MAKE_TEST_CASE("runOther", "", "--vec")
+
+//ToDo: make these tests work
+//#ifdef USE_CUDA
+//MAKE_TEST_CASE("runMatMult", "CUDA", "--vec --cuda")
+//MAKE_TEST_CASE("runEwBinary", "CUDA", "--vec --cuda")
+//MAKE_TEST_CASE("runRowAgg", "CUDA", "--vec --cuda")
+//MAKE_TEST_CASE("runColAgg", "CUDA", "--vec --cuda")
+//MAKE_TEST_CASE("runOther", "CUDA", "--vec --cuda")
+//#endif

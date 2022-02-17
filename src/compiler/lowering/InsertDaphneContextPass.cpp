@@ -57,7 +57,7 @@ void InsertDaphneContextPass::runOnFunction()
     );
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
-        builder.create<daphne::InitCUDAContextOp>(loc);
+        builder.create<daphne::CreateCUDAContextOp>(loc);
     }
 #endif
 

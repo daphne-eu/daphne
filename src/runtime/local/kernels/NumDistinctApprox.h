@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_NUMDISTINCTAPPROX_H
-#define SRC_RUNTIME_LOCAL_KERNELS_NUMDISTINCTAPPROX_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <bits/stdint-uintn.h>
@@ -66,8 +65,8 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
   
         uint32_t hashedValueOut = 0;
   
-        for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
-            for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+        for(auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
+            for(auto colIdx = 0ul; colIdx < numCols; colIdx++) {
                 auto el = arg->get(rowIdx, colIdx);
                 MurmurHash3_x86_32(&el, sizeof(VT), seed, &hashedValueOut);
                 uBSet.push(hashedValueOut);
@@ -84,7 +83,7 @@ template <typename VT> struct NumDistinctApprox<DenseMatrix<VT>> {
         double kMinValNormed =
             static_cast<double>(kMinVal) / static_cast<double>(maxVal);
     
-        return (K - 1) / kMinValNormed;
+        return static_cast<size_t>(static_cast<double>((K - 1)) / kMinValNormed);
     }
 };
 
@@ -128,9 +127,9 @@ template <typename VT> struct NumDistinctApprox<CSRMatrix<VT>> {
         const size_t maxVal = std::numeric_limits<std::uint32_t>::max();
         double kMinValNormed =
             static_cast<double>(kMinVal) / static_cast<double>(maxVal);
-  
-        return (K - 1) / kMinValNormed;
+
+        return static_cast<size_t>(static_cast<double>((K - 1)) / kMinValNormed);
+
     }
 };
 
-#endif // SRC_RUNTIME_LOCAL_KERNELS_NUMDISTINCTAPPROX_H

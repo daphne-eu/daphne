@@ -14,22 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_AFFINE_H
-#define DAPHNE_PROTOTYPE_CUDA_AFFINE_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/context/CUDAContext.h"
 
-namespace Affine {
-    template<typename DTRes, typename DTArg>
-    struct Forward_CUDA {
-        static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
-    };
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+namespace CUDA {
+    static void createCUDAContext(DCTX(ctx)) {
+        // ToDo: one context per device
+        ctx->cuda_contexts.emplace_back(CUDAContext::createCudaContext(0));
+    }
 }
-
-#endif // DAPHNE_PROTOTYPE_CUDA_AFFINE_H

@@ -250,6 +250,9 @@ std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep)
         return "dense";
     case MatrixRepresentation::Sparse:
         return "sparse";
+    default:
+        throw std::runtime_error("unknown mlir::daphne::MatrixRepresentation " +
+                std::to_string(static_cast<int>(rep)));
     }
 }
 
@@ -416,6 +419,9 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
         }
     }
     op.body().front().getTerminator()->eraseOperands(eraseIxs);
+    if(!op.cuda().getBlocks().empty())
+        op.cuda().front().getTerminator()->eraseOperands(eraseIxs);
+
     if(resultsToReplace.size() == op->getNumResults()) {
         return failure();
     }
@@ -428,6 +434,8 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
         rewriter.getArrayAttr(vCombineAttrs),
         op.ctx());
     pipelineOp.body().takeBody(op.body());
+    if(!op.cuda().getBlocks().empty())
+        pipelineOp.cuda().takeBody(op.cuda());
     for (auto e : llvm::enumerate(resultsToReplace)) {
         auto resultToReplace = e.value();
         auto i = e.index();

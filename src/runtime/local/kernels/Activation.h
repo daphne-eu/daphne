@@ -14,22 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_BIASADD_H
-#define DAPHNE_PROTOTYPE_CUDA_BIASADD_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
 
-namespace DNN::CUDA {
-    template<typename DTRes, typename DTArg>
-    struct BiasAddForward {
-        static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx));
+namespace Activation {
+    struct ReLU {
+        static inline int getActivationType() { /* ToDo: ReLU activation */ return 0; }
+    };
+
+    template<typename OP, typename DTRes, typename DTArg>
+    struct Forward {
+        static void apply(DTRes *&res, [[maybe_unused]] const DTArg *data, DCTX(dctx)) { throw
+                std::runtime_error("C++ ReLU activation not implemented"); }
     };
 }
-
-#endif // DAPHNE_PROTOTYPE_CUDA_BIASADD_H

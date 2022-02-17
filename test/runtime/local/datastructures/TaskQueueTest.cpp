@@ -21,9 +21,12 @@
 
 TEST_CASE("Task sequence", TAG_DATASTRUCTURES) {
     TaskQueue* bq = new BlockingTaskQueue(5);
-    Task* t1 = new SingleOpTask<double>( 0, 10, 1);
-    Task* t2 = new SingleOpTask<double>(10, 20, 1);
-    Task* t3 = new SingleOpTask<double>(20, 30, 1);
+    std::mutex mtx;
+    CompiledPipelineTaskData<DenseMatrix<double>> data{{}, {}, 0, 0, nullptr, nullptr, nullptr, nullptr, 0, 0,
+            nullptr, nullptr, 0, nullptr};
+    Task* t1 = new CompiledPipelineTask<DenseMatrix<double>>(data, mtx, nullptr);
+    Task* t2 = new CompiledPipelineTask<DenseMatrix<double>>(data, mtx, nullptr);
+    Task* t3 = new CompiledPipelineTask<DenseMatrix<double>>(data, mtx, nullptr);
     
     //check return sequence
     bq->enqueueTask(t1);
@@ -41,8 +44,11 @@ TEST_CASE("Task sequence", TAG_DATASTRUCTURES) {
 
 TEST_CASE("Queue size", TAG_DATASTRUCTURES) {
     TaskQueue* bq = new BlockingTaskQueue(5);
-    Task* t1 = new SingleOpTask<double>( 0, 10, 1);
-    Task* t2 = new SingleOpTask<double>(10, 20, 1);
+    std::mutex mtx;
+    CompiledPipelineTaskData<DenseMatrix<double>> data{{}, {}, 0, 0, nullptr, nullptr, nullptr, nullptr, 0, 0,
+            nullptr, nullptr, 0, nullptr};
+    Task* t1 = new CompiledPipelineTask<DenseMatrix<double>>(data, mtx, nullptr);
+    Task* t2 = new CompiledPipelineTask<DenseMatrix<double>>(data, mtx, nullptr);
 
     // check proper size management
     CHECK(bq->size() == 0);
@@ -62,7 +68,10 @@ TEST_CASE("Queue size", TAG_DATASTRUCTURES) {
 
 TEST_CASE("EOF handling", TAG_DATASTRUCTURES) {
     TaskQueue* bq = new BlockingTaskQueue(5);
-    Task* t1 = new SingleOpTask<double>( 0, 10, 1);
+    std::mutex mtx;
+    CompiledPipelineTaskData<DenseMatrix<double>> data{{}, {}, 0, 0, nullptr, nullptr, nullptr, nullptr, 0, 0,
+            nullptr, nullptr, 0, nullptr};
+    Task* t1 = new CompiledPipelineTask<DenseMatrix<double>>(data, mtx, nullptr);
 
     // check EOF after last task
     bq->enqueueTask(t1);

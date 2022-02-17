@@ -174,7 +174,7 @@ class Frame : public Structure {
                     "all given matrices must not be a view on a column of a larger matrix"
             );
             *schemaSlot = ValueTypeUtils::codeFor<VT>;
-            std::shared_ptr<VT> orig = colMat2->getValuesSharedPtr();
+            std::shared_ptr<VT[]> orig = colMat2->getValuesSharedPtr();
             *columnsSlot = std::shared_ptr<ColByteType>(orig, reinterpret_cast<ColByteType *>(orig.get()));
             return true;
         }
@@ -201,7 +201,7 @@ class Frame : public Structure {
     {
         const size_t numCols = colMats.size();
         assert(numCols && "you must provide at least one column matrix");
-        const size_t numRows = colMats[0]->getNumRows();
+//        const size_t numRows = colMats[0]->getNumRows();
         schema = new ValueTypeCode[numCols];
         this->labels = new std::string[numCols];
         columns = new std::shared_ptr<ColByteType>[numCols];
@@ -325,7 +325,7 @@ public:
         assert((ValueTypeUtils::codeFor<ValueType> == schema[idx]) && "requested value type must match the type of the column");
         return DataObjectFactory::create<DenseMatrix<ValueType>>(
                 numRows, 1,
-                std::shared_ptr<ValueType>(
+                std::shared_ptr<ValueType[]>(
                         columns[idx],
                         reinterpret_cast<ValueType *>(columns[idx].get())
                 )

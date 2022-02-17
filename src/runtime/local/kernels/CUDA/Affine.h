@@ -14,30 +14,17 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H
-#define DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H
-
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "HostUtils.h"
 
-#include <limits>
-#include <random>
-#include <type_traits>
-
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-
-namespace Softmax {
+namespace CUDA::Affine {
     template<typename DTRes, typename DTArg>
-    struct Forward_CUDA {
-        static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
+    struct Forward {
+        static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
     };
 }
-
-#endif //DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H

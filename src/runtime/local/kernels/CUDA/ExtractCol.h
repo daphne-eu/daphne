@@ -14,25 +14,34 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H
-#define DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H
-
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/context/CUDAContext.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <iostream> // remove
+#include <cassert>
+#include <cstddef>
+#include <string>
+
+namespace CUDA {
+    template<class DTRes, class DTArg, class DTSel>
+    struct ExtractCol {
+        static void apply(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) = delete;
+    };
+
+    template<class DTRes, class DTArg, class DTSel>
+    struct ExtractCol<DenseMatrix<DTRes>, DenseMatrix<DTArg>, DenseMatrix<DTSel>> {
+        static void
+        apply(DenseMatrix<DTRes> *&res, const DenseMatrix<DTArg> *arg, const DenseMatrix<DTSel> *sel, DCTX(ctx));
+    };
+
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
-
-static void initCUDAContext(DCTX(ctx)) {
-#ifndef NDEBUG
-    std::cerr << "ToDo: provide user config to initCUDAContext" << std::endl;
-#endif
-    ctx->cuda_contexts.emplace_back(CUDAContext::createCudaContext(0));
+    template<class DTRes, class DTArg, class DTSel>
+    void extractCol(DTRes *&res, const DTArg *arg, const DTSel *sel, DCTX(ctx)) {
+        ExtractCol<DTRes, DTArg, DTSel>::apply(res, arg, sel, ctx);
+    }
 }
-
-#endif //DAPHNE_PROTOTYPE_CUDA_INITCONTEXT_H
