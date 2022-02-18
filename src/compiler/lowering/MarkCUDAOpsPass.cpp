@@ -151,12 +151,11 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
     bool checkUseCUDA(Operation* op) const {
 //        std::cout << "checkUseCUDA: " << op->getName().getStringRef().str() << std::endl;
 
-        bool use_cuda = op->hasTrait<mlir::OpTrait::CUDASupport>();
 #ifndef NDEBUG
         std::string name(op->getName().getStringRef().str());
-        std::cout << name << " CUDA supported=" << use_cuda << std::endl;
+//        std::cout << name << " CUDA supported=" << use_cuda << std::endl;
 #endif
-        use_cuda = use_cuda && CompilerUtils::isMatrixComputation(op);
+        bool use_cuda = CompilerUtils::isMatrixComputation(op);
 #ifndef NDEBUG
         std::cout << name << " isMatrixComputation=" << use_cuda << std::endl;
 #endif
@@ -178,16 +177,16 @@ void MarkCUDAOpsPass::runOnFunction() {
         
         OpBuilder builder(op);
         // handle vectorizedPipelineOps
-        if (auto constOp = llvm::dyn_cast<daphne::ConstantOp>(op))
-        {
+        if (!op->hasTrait<mlir::OpTrait::CUDASupport>()) {
             WalkResult::advance();
             return;
         }
         else if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
             addCUDAOpsToVectorizedPipeline(builder, pipelineOp);
         else {
-            if((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
-                 llvm::isa<daphne::CreateCUDAContextOp>(op)) {
+            if((cfg.force_cuda && llvm::isa<daphne::RandMatrixOp>(op)) ||
+              (!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||
+               llvm::isa<daphne::CreateCUDAContextOp>(op)) {
                 op->setAttr("cuda_device", builder.getI32IntegerAttr(0));
             }
         }

@@ -40,6 +40,9 @@ class CUDAContext : public IContext {
 
     cusolverDnHandle_t cusolver_handle{};
     cudaStream_t cusolver_stream{};
+    cudaStream_t curand_stream{};
+
+    curandGenerator_t prngGPU{};
 
     // preallocate 64MB
     size_t cudnn_workspace_size{};
@@ -70,7 +73,8 @@ public:
     [[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
     [[nodiscard]] cusolverDnHandle_t getCUSOLVERHandle() const { return cusolver_handle; }
     cudaStream_t getCuSolverStream() { return cusolver_stream; }
-
+    cudaStream_t getCuRandStream() { return curand_stream; }
+    curandGenerator_t getRandomGenerator() { return prngGPU; }
     template<class T>
     [[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
 
@@ -79,7 +83,7 @@ public:
 
     void* getCUDNNWorkspace(size_t size);
 
-    size_t getMemBudget() { return mem_budget; }
+    [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};

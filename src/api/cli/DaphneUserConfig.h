@@ -28,6 +28,7 @@
 struct DaphneUserConfig {
 
     bool use_cuda = false;
+    bool force_cuda = true;
     bool use_vectorized_exec = false;
     bool use_freeOps = true;
     bool cuda_fuse_any = false;

@@ -65,7 +65,10 @@ void CUDAContext::init() {
     CHECK_CUSOLVER(cusolverDnCreate(&cusolver_handle));
 
     CHECK_CUDART(cudaStreamCreateWithFlags(&cusolver_stream, cudaStreamNonBlocking));
+    CHECK_CUDART(cudaStreamCreateWithFlags(&curand_stream, cudaStreamNonBlocking));
     CHECK_CUSOLVER(cusolverDnSetStream(cusolver_handle, cusolver_stream));
+
+    CHECK_CURAND(curandCreateGenerator(&prngGPU, CURAND_RNG_PSEUDO_MT19937));
 
     getCUDNNWorkspace(64 * 1024 * 1024);
 

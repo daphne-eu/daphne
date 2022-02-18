@@ -60,7 +60,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
-            CUDA/Fill.cu)
+            CUDA/Fill.cu
+            CUDA/RandMatrix.cu)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
@@ -70,7 +71,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
     target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport CUDA::cudart CUDA::cublasLt CUDA::cublas
-            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
+            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver CUDA::curand)
     #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 endif()
 
@@ -94,7 +95,7 @@ add_library(AllKernels SHARED
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-    list(APPEND LIBS CUDAKernels)
+    list(APPEND LIBS CUDAKernels CUDA::curand)
 else()
     # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
     list(APPEND LIBS LLVMSupport)

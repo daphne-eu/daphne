@@ -33,6 +33,8 @@
 #include <cstdint>
 #include <chrono>
 
+#include "CUDA/HostUtils.h"
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -107,18 +109,27 @@ struct RandMatrix<DenseMatrix<VT>, VT> {
         // Fill Matrix with non-zero/random values
         // TODO It might be faster to pull the check on sparsity out of the
         // loop, including a duplication of the loop.
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++) {
-                if (sparsity >= 0.5) {
-                    valuesRes[c] = distrVal(genVal);
-                    while (valuesRes[c] == 0)
-                        valuesRes[c] = distrVal(genVal);
-                } else {
-                    valuesRes[c] = VT(0);
-                }
-            }
-            valuesRes += res->getRowSkip();
-        }
+//        for(size_t r = 0; r < numRows; r++) {
+//            for(size_t c = 0; c < numCols; c++) {
+//                if (sparsity >= 0.5) {
+//                    valuesRes[c] = distrVal(genVal);
+//                    while (valuesRes[c] == 0)
+//                        valuesRes[c] = distrVal(genVal);
+//                } else {
+//                    valuesRes[c] = VT(0);
+//                }
+//            }
+//            valuesRes += res->getRowSkip();
+//        }
+
+
+        curandGenerator_t prngCPU;
+        CHECK_CURAND(curandCreateGeneratorHost(&prngCPU, CURAND_RNG_PSEUDO_MT19937));
+        CHECK_CURAND(curandSetGeneratorOrdering(prngCPU, CURAND_ORDERING_PSEUDO_LEGACY ));
+        CHECK_CURAND(curandSetPseudoRandomGeneratorSeed(prngCPU, seed));
+
+        printf("Generating random numbers on CPU...\n\n");
+        CHECK_CURAND(curandGenerateUniform(prngCPU, (float *)valuesRes, numRows*numCols));
 
         // Use Knuth's algorithm to calculate unique random indexes equal to insertedValuesLimit, to be set to zero/random value.
         valuesRes = res->getValues();

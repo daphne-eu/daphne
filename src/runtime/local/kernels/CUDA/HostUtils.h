@@ -22,6 +22,7 @@
 #include <cusparse_v2.h>
 #include <cudnn.h>
 #include <cusolverDn.h>
+#include <curand.h>
 
 #include <iostream>
 #include <memory>
@@ -72,6 +73,16 @@
     cusolverStatus_t status = call;                                         \
     if (status != CUSOLVER_STATUS_SUCCESS) {                                \
       std::cout << "(CUSOLVER) returned " << status;                          \
+      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
+                << "())" << std::endl;                                    \
+    }                                                                     \
+  } while (0)
+
+#define CHECK_CURAND(call)                                                \
+  do {                                                                    \
+    curandStatus_t status = call;                                         \
+    if (status != CURAND_STATUS_SUCCESS) {                                \
+      std::cout << "(CURAND) returned " << status;                        \
       std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
                 << "())" << std::endl;                                    \
     }                                                                     \
