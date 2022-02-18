@@ -97,6 +97,9 @@ namespace CompilerUtils {
     }
 
     [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
-        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
+        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty)
+                { return ty.isa<mlir::daphne::MatrixType>(); }) ||
+                llvm::any_of(v->getResultTypes(), [&](mlir::Type ty)
+                { return ty.isa<mlir::daphne::MatrixType>(); });
     }
 }

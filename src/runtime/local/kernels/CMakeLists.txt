@@ -60,7 +60,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
-        )
+            CUDA/Fill.cu)
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 

@@ -103,7 +103,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
         for(auto result : op->getResults()) {
             auto type = result.getType();
             if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
-                opSize += t.getNumRows() * t.getNumCols() * t.getElementType().getIntOrFloatBitWidth();
+                opSize += t.getNumRows() * t.getNumCols() * t.getElementType().getIntOrFloatBitWidth() / 8;
             }
         }
 //        std::cout << "op out size: " << (opSize-inSize) / 1024 << " kB" << std::endl;
@@ -115,8 +115,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
     
     // ToDo: requirements should be set per operator in tablegen
     static bool hasReqMinDims(mlir::Operation* op) {
-        for(auto operand : op->getOperands()) {
-            auto type = operand.getType();
+        auto checkDims = [op](const mlir::Type& type) -> bool {
             if(auto t = type.dyn_cast<mlir::daphne::MatrixType>()) {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
@@ -131,17 +130,44 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
                 }
                 return (rows > 255 || cols > 255);
             }
+            return false;
+        };
+
+        bool ret = false;
+        for(auto type : op->getOperandTypes()) {
+            if((ret = checkDims(type)))
+                break;
         }
-        return false;
+
+        if(!ret) {
+            for (auto type: op->getResultTypes()) {
+                if((ret = checkDims(type)))
+                    break;
+            }
+        }
+        return ret;
     }
     
     bool checkUseCUDA(Operation* op) const {
 //        std::cout << "checkUseCUDA: " << op->getName().getStringRef().str() << std::endl;
-        
+
         bool use_cuda = op->hasTrait<mlir::OpTrait::CUDASupport>();
+#ifndef NDEBUG
+        std::string name(op->getName().getStringRef().str());
+        std::cout << name << " CUDA supported=" << use_cuda << std::endl;
+#endif
         use_cuda = use_cuda && CompilerUtils::isMatrixComputation(op);
+#ifndef NDEBUG
+        std::cout << name << " isMatrixComputation=" << use_cuda << std::endl;
+#endif
         use_cuda = use_cuda && hasReqMinDims(op);
+#ifndef NDEBUG
+        std::cout << name << " hasMinInputDims=" << use_cuda << std::endl;
+#endif
         use_cuda = use_cuda && fitsInMemory(op);
+#ifndef NDEBUG
+        std::cout << name << " fitsInMem=" << use_cuda << std::endl;
+#endif
         return use_cuda;
     }
 };
@@ -152,7 +178,12 @@ void MarkCUDAOpsPass::runOnFunction() {
         
         OpBuilder builder(op);
         // handle vectorizedPipelineOps
-        if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
+        if (auto constOp = llvm::dyn_cast<daphne::ConstantOp>(op))
+        {
+            WalkResult::advance();
+            return;
+        }
+        else if (auto pipelineOp = llvm::dyn_cast<daphne::VectorizedPipelineOp>(op))
             addCUDAOpsToVectorizedPipeline(builder, pipelineOp);
         else {
             if((!llvm::isa<daphne::VectorizedPipelineOp>(op->getParentOp()) && checkUseCUDA(op)) ||

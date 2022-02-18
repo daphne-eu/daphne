@@ -80,7 +80,8 @@ class DenseMatrix : public Matrix<ValueType>
      * @param zero Whether the allocated memory of the `values` array shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC);
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool initialize = false, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC,
+            int value = 0);
     
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values
@@ -122,7 +123,7 @@ class DenseMatrix : public Matrix<ValueType>
                 memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
         }
         else {
-            ValueType * v = values.get() + lastAppendedRowIdx * rowSkip;
+            auto v = values.get() + lastAppendedRowIdx * rowSkip;
             memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
             v += rowSkip;
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
@@ -138,7 +139,7 @@ class DenseMatrix : public Matrix<ValueType>
 
     void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
-    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0);
+    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0, bool initialize = false, int value = 0);
 
 public:
 
