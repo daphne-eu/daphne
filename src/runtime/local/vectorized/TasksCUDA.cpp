@@ -113,3 +113,4 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<De
 
 template class CompiledPipelineTaskCUDA<DenseMatrix<double>>;
 template class CompiledPipelineTaskCUDA<DenseMatrix<float>>;
+template class CompiledPipelineTaskCUDA<DenseMatrix<int64_t>>;

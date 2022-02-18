@@ -91,6 +91,9 @@ public:
     cudnnFilterDescriptor_t filterDesc{};
     cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
+    // A block size of 256 works well in many cases.
+    // Putting it here to avoid hard coding things elsewhere.
+    const uint32_t default_block_size = 256;
 
 private:
     void init();

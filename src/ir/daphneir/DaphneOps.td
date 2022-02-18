@@ -66,6 +66,7 @@ class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
 // ****************************************************************************
 
 def Daphne_FillOp : Daphne_Op<"fill", [
+    DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);

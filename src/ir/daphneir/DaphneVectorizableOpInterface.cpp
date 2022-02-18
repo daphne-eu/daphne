@@ -331,4 +331,20 @@ std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuil
     auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexAttr(1));
     return {{cols, one}};
 }
+std::vector<daphne::VectorSplit> daphne::FillOp::getVectorSplits()
+{
+    return {daphne::VectorSplit::NONE, daphne::VectorSplit::NONE};
+}
+std::vector<daphne::VectorCombine> daphne::FillOp::getVectorCombines()
+{
+    return {daphne::VectorCombine::ROWS};
+}
+std::vector<std::pair<Value, Value>> daphne::FillOp::createOpsOutputSizes(OpBuilder &builder)
+{
+    auto loc = getLoc();
+    auto sizeTy = builder.getIndexType();
+    auto rows = builder.create<daphne::CastOp>(loc, sizeTy, numRows());
+    auto cols = builder.create<daphne::CastOp>(loc, sizeTy, numCols());
+    return {{rows, cols}};
+}
 // ----------------------------------------------------------------------------

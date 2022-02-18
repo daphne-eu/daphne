@@ -46,7 +46,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CUDA::fill", TAG_KERNELS, (DenseMatrix), (float, dou
     checkFill<TestType>(0, 12, 24, dctx.get());
     checkFill<TestType>(12345.6789, 12, 24, dctx.get());
 
-    // ~1.5GB fill - should fit on all CUDA capable devices we intend to support
-    checkFill<TestType>(0, 200000, 1000, dctx.get());
-    checkFill<TestType>(12345.6789, 200000, 1000, dctx.get());
+    // ~800MB fill (for double values)
+    checkFill<TestType>(0, 100000, 1000, dctx.get());
+    checkFill<TestType>(12345.6789, 100000, 1000, dctx.get());
 }

@@ -17,7 +17,6 @@
 #include "Fill.h"
 
 namespace CUDA {
-
     template<class VT>
     __global__ void fill_kernel(VT *res, VT value, size_t N) {
         for (auto i = blockIdx.x * blockDim.x + threadIdx.x; i < N; i += blockDim.x * gridDim.x)
@@ -25,20 +24,16 @@ namespace CUDA {
     }
 
     template<typename VT>
-    void Fill<DenseMatrix<VT>, VT>::apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t
-            numCols, DCTX(ctx)) {
+    void Fill<DenseMatrix<VT>, VT>::apply(DenseMatrix<VT> *&res, VT arg, size_t numRows, size_t numCols, DCTX(dctx)) {
+        auto ctx = dctx->getCUDAContext(0);
         assert(numRows > 0 && "numRows must be > 0");
         assert(numCols > 0 && "numCols must be > 0");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0, ALLOCATION_TYPE::CUDA_ALLOC);
         if(arg != 0) {
-            auto bs = 256;
-//            auto nb = divup(bs, res->getNumItems());
-            auto bn = divup(res->getNumItems(), bs);
-            auto num_sm = ctx->getCUDAContext(0)->getDeviceProperties()->multiProcessorCount;
-//            std::cout << "nb=" << nb << " bn=" << bn << " sm=" << num_sm << "x32=" << num_sm * 32 << std::endl;
-            fill_kernel<<<num_sm, bs>>>(res->getValuesCUDA(), arg, res->getNumItems());
+            fill_kernel<<<ctx->getDeviceProperties()->multiProcessorCount, ctx->default_block_size>>>(
+                    res->getValuesCUDA(), arg, res->getNumItems());
         }
     }
 

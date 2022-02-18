@@ -154,6 +154,7 @@ void CompiledPipelineTask<CSRMatrix<VT>>::execute(uint32_t fid, uint32_t batchSi
 
 template class CompiledPipelineTask<DenseMatrix<double>>;
 template class CompiledPipelineTask<DenseMatrix<float>>;
+template class CompiledPipelineTask<DenseMatrix<int64_t>>;
 
 template class CompiledPipelineTask<CSRMatrix<double>>;
 template class CompiledPipelineTask<CSRMatrix<float>>;

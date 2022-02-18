@@ -558,18 +558,25 @@ public:
         mlir::Type operandType;
         std::vector<Value> newOperands;
         if(op->getNumResults() > 0) {
-            auto m32type = rewriter.getF32Type();
-            auto m64type = rewriter.getF64Type();
+            auto f32type = rewriter.getF32Type();
+            auto f64type = rewriter.getF64Type();
+            auto si64type = rewriter.getIntegerType(64, true);
             auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
-            if(res_elem_type == m64type)
-                operandType = daphne::MatrixType::get(getContext(), m64type);
-            else if(res_elem_type == m32type)
-                operandType = daphne::MatrixType::get(getContext(), m32type);
+            if(res_elem_type == f64type)
+                operandType = daphne::MatrixType::get(getContext(), f64type);
+            else if(res_elem_type == f32type)
+                operandType = daphne::MatrixType::get(getContext(), f32type);
+            else if(res_elem_type == si64type)
+                operandType = daphne::MatrixType::get(getContext(), si64type);
             else {
-                std::string str;
-                llvm::raw_string_ostream output(str);
+                std::string str1;
+                llvm::raw_string_ostream output(str1);
                 op->getResult(0).getType().print(output);
-                throw std::runtime_error("Unsupported result type for vectorizedPipeline op: " + str);
+                std::string str2;
+                llvm::raw_string_ostream output2(str2);
+                res_elem_type.print(output2);
+                throw std::runtime_error("Unsupported result type for vectorizedPipeline op: " + str1 +
+                        " is not matrix of " + str2);
             }
         }
         else {

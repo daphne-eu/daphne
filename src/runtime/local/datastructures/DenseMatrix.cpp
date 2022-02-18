@@ -35,10 +35,10 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         alloc_shared_values();
         host_buffer_current = true;
         if(zero)
-            memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
+            memset(values.get(), 0, bufferSize());
     }
     else if (type == ALLOCATION_TYPE::CUDA_ALLOC) {
-        alloc_shared_cuda_buffer(nullptr, zero);
+        alloc_shared_cuda_buffer(nullptr, 0, zero);
         cuda_buffer_current = true;
     }
     else {
@@ -108,11 +108,13 @@ DenseMatrix<ValueType>* DenseMatrix<ValueType>::vectorTranspose() const {
 
 // Convert to an integer to print uint8_t values as numbers
 // even if they fall into the range of special ASCII characters.
-template <> void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const
+template <>
+[[maybe_unused]] void DenseMatrix<unsigned char>::printValue(std::ostream & os, unsigned char val) const
 {
     os << static_cast<unsigned int>(val);
 }
-template <> void DenseMatrix<signed char>::printValue(std::ostream & os, signed char val) const
+template <>
+[[maybe_unused]] void DenseMatrix<signed char>::printValue(std::ostream & os, signed char val) const
 {
     os << static_cast<int>(val);
 }
@@ -142,41 +144,15 @@ void DenseMatrix<ValueType>::host2cuda() {
 template<typename ValueType>
 void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset, bool zero) {
     if(src) {
-//#ifndef NDEBUG
-//        std::ios state(nullptr);
-//        state.copyfmt(std::cout);
-//        std::cout << "Increasing refcount on cuda buffer " << src.get() << " of size" << printBufferSize()
-//                <<  "Mb from << " << src.use_count() << " to ";
-//        std::cout.copyfmt(state);
-//#endif
         this->cuda_ptr = std::shared_ptr<ValueType>(src, src.get() + offset);
-
-//#ifndef NDEBUG
-//        std::cout  << src.use_count() << "\n new cuda_ptr's use_count: " << cuda_ptr.use_count() << std::endl;
-//#endif
     }
     else {
         auto* dev_ptr = new ValueType;
-#ifndef NDEBUG
-        if(this->rowSkip != this->numCols) {
-            std::cerr << "Warning: setting rowSkip to numCols in alloc_shared_cuda_buffer" << std::endl;
-            rowSkip = numCols;
-        }
-//        std::cout << "Allocating new cuda buffer of size " << printBufferSize() << "Mb at address ";
-//        std::ios state(nullptr);
-//        state.copyfmt(std::cout);
-//        std::cout << "addressof dev_ptr: " << &dev_ptr << std::endl;
-#endif
+
         CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), this->bufferSize()));
         this->cuda_ptr = std::shared_ptr<ValueType>(dev_ptr, CudaDeleter<ValueType>());
         if(zero)
-            CHECK_CUDART(cudaMemset(this->cuda_ptr.get(), 0, this->bufferSize()));
-//#ifndef NDEBUG
-//        std::cout << "addressof dev_ptr after cudaMalloc: " << &dev_ptr << std::endl;
-//        std::cout.copyfmt(state);
-//        std::cout << cuda_ptr.get() << " use count: " << cuda_ptr.use_count() << std::endl;
-//#endif
-    }
+            CHECK_CUDART(cudaMemset(this->cuda_ptr.get(), 0, this->bufferSize()));}
 }
 #else
     template<typename ValueType>
