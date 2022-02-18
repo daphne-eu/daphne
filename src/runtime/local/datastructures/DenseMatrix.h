@@ -122,7 +122,7 @@ class DenseMatrix : public Matrix<ValueType>
                 memset(values.get() + startPosIncl, 0, (endPosExcl - startPosIncl) * sizeof(ValueType));
         }
         else {
-            ValueType * v = values.get() + lastAppendedRowIdx * rowSkip;
+            auto v = values.get() + lastAppendedRowIdx * rowSkip;
             memset(v + lastAppendedColIdx + 1, 0, (numCols - lastAppendedColIdx - 1) * sizeof(ValueType));
             v += rowSkip;
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
@@ -138,7 +138,7 @@ class DenseMatrix : public Matrix<ValueType>
 
     void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
-    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0);
+    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0, bool zero = false);
 
 public:
 

@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H
-#define DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H
-
 #pragma once
 
 #include <cuda.h>
@@ -129,4 +126,7 @@ void cuda_deleter(T* dev_ptr) { CudaDeleter<T>::del(dev_ptr); }
 template<typename T>
 using CudaUniquePtr = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
 
-#endif //DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H
+static inline uint32_t divup(unsigned n, unsigned div)
+{
+    return (n + div - 1) / div;
+}

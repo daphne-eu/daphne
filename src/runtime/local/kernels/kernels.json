@@ -662,11 +662,15 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], "float"],
-            [["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "int64_t"], "int64_t"],
-            [["DenseMatrix", "uint8_t"], "uint8_t"]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], "float"],
+                    [["DenseMatrix", "double"], "double"],
+                    [["DenseMatrix", "int64_t"], "int64_t"],
+                    [["DenseMatrix", "uint8_t"], "uint8_t"]]
+            }
         ]
     },
     {
