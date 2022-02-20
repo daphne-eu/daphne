@@ -93,3 +93,67 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column", TAG_KERNELS
     DataObjectFactory::destroy(c2Fnd);
     DataObjectFactory::destroy(res);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    const size_t numRows = 4;
+    auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows,{VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3),});    
+    std::vector<Structure *> cols = {arg};
+    auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
+
+    Frame * res = nullptr;
+    castObj<Frame, DTArg>(res, arg, nullptr);
+
+    REQUIRE(res->getNumRows() == numRows);
+    REQUIRE(res->getNumCols() == 1);
+    DenseMatrix<VTArg>* fnd = res->getColumn<VTArg>(0);
+    CHECK(*fnd == *arg);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(exp);
+    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    const size_t numRows = 4;
+    const size_t numCols = 3;
+    auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows, {
+        VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3),
+        VTArg(4.4), VTArg(5.5), VTArg(6.6), VTArg(7.7),
+        VTArg(8.8), VTArg(9.9), VTArg(1.0), VTArg(2.0)
+        });
+    
+    auto c0Exp = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3)});
+    auto c1Exp = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(4.4), VTArg(5.5), VTArg(6.6), VTArg(7.7)});
+    auto c2Exp = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(8.8), VTArg(9.9), VTArg(1.0), VTArg(2.0)});
+    std::vector<Structure *> cols = {c0Exp, c1Exp, c2Exp};
+    auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
+    
+    Frame * res = nullptr;
+    castObj<Frame, DTArg>(res, arg, nullptr);
+    REQUIRE(res->getNumRows() == numRows);
+    REQUIRE(res->getNumCols() == numCols);
+    DenseMatrix<VTArg>* c0Fnd = res->getColumn<VTArg>(0);
+    DenseMatrix<VTArg>* c1Fnd = res->getColumn<VTArg>(1);
+    DenseMatrix<VTArg>* c2Fnd = res->getColumn<VTArg>(2);
+    CHECK(*c0Fnd == *c0Exp);
+    CHECK(*c1Fnd == *c1Exp);
+    CHECK(*c2Fnd == *c2Exp);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(exp);
+    DataObjectFactory::destroy(c0Exp);
+    DataObjectFactory::destroy(c1Exp);
+    DataObjectFactory::destroy(c2Exp);
+    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(c0Fnd);
+    DataObjectFactory::destroy(c1Fnd);
+    DataObjectFactory::destroy(c2Fnd);
+    DataObjectFactory::destroy(res);
+}
