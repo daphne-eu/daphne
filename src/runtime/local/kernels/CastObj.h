@@ -119,4 +119,37 @@ public:
     }
 };
 
+// ----------------------------------------------------------------------------
+//  Frame <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTArg>
+class CastObj<Frame, DenseMatrix<VTArg>> {
+
+public:
+    static void apply(Frame *& res, const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        std::vector<Structure *> cols;
+        if (numCols == 1){
+            // The input matrix has a single column, that can be reused 
+            // as the column matrix of the output frame.
+            // Cheap/Low-cost cast from dense matrix to frame.
+            cols.push_back(const_cast<DenseMatrix<VTArg> *>(arg));
+        }
+        else {
+            // The input matrix has multiple columns.
+            // Need to change row-major to column-major layout and 
+            // split matrix into single column matrices.
+            for(size_t c = 0; c < numCols; c++) {
+                auto * colMatrix = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, 1, false);
+                for(size_t r = 0; r < numRows; r++)
+                    colMatrix->set(r, 0, arg->get(r, c));
+                cols.push_back(colMatrix);
+            }   
+        }
+        res = DataObjectFactory::create<Frame>(cols, nullptr);
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H
