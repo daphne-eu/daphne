@@ -301,9 +301,10 @@ public:
           }
           size_t pos = 0;
           if(mm_is_coordinate(file.typecode)){
-              r = atoi(line);
+              //MM coordinates are 1-based, so subtract 1.
+              r = atoi(line)-1;
               while(line[pos++] != ' ');
-              c = atoi(line+pos);
+              c = atoi(line+pos)-1;
               while(line[pos++] != ' ');
           }
           else if(r >= file.rows) { //Matrix is in array format
