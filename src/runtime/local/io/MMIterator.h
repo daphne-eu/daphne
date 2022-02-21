@@ -287,13 +287,15 @@ public:
         using reference   = Entry&;
         using difference_type = std::ptrdiff_t;
     private:
-        pointer m_ptr;
+        pointer m_ptr, next;
+        bool do_next = false;
         MMFile<VT> file;
-        char *line;//[MM_MAX_LINE_LENGTH];
+        char *line;
         size_t r = 0, c = 0;
         VT cur;
         MMIterator() {}
         void readEntry(){
+          //TODO: Handle arbitrary blank lines
           line = getLine(file.f);
           if(file.f->read == -1){
             terminate();
@@ -301,18 +303,30 @@ public:
           }
           size_t pos = 0;
           if(mm_is_coordinate(file.typecode)){
-              //MM coordinates are 1-based, so subtract 1.
               r = atoi(line)-1;
               while(line[pos++] != ' ');
               c = atoi(line+pos)-1;
               while(line[pos++] != ' ');
           }
-          else if(r >= file.rows) { //Matrix is in array format
+          //Matrix is in array format
+          //TODO: Handle traversal of symmetric and skew storage
+          else if(r >= file.rows) {
               r = 0; c++;
               //assert(c < cols && "Number of entries is greater than matrix size");
           }
           convertCstr(line + pos, &cur);
-          *m_ptr = {r++, c, cur};
+          *m_ptr = {r, c, cur};
+          if(mm_is_symmetric(file.typecode) && r != c){
+            // M[i][j] = M[j][i]
+            *next = {c, r, cur};
+            do_next = true;
+          }
+          else if (mm_is_skew(file.typecode)) {
+            // M[i][j] = -M[j][i]
+            *next = {c, r, -cur};
+            do_next = true;
+          }
+          r++;
         }
     public:
         MMIterator(MMFile<VT>& f, bool read = true) : file(f) {
@@ -323,7 +337,11 @@ public:
         pointer operator->() { return m_ptr; }
 
         // Prefix increment
-        MMIterator& operator++() { readEntry(); return *this; }  
+        MMIterator& operator++() {
+          if(do_next) { *m_ptr = *next; do_next = false; }
+          else readEntry();
+          return *this;
+        }   
 
         // Postfix increment
         MMIterator operator++(int) { MMIterator tmp = *this; ++(*this); return tmp; }
