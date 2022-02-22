@@ -36,7 +36,7 @@ namespace CUDA {
 // ****************************************************************************
 
     template<class DTRes, class DTLhs, typename VTRhs>
-    struct EwBinaryMatSca {
+    struct EwBinaryObjSca {
         static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) = delete;
     };
 
@@ -58,7 +58,7 @@ namespace CUDA {
 // ----------------------------------------------------------------------------
 
     template<typename VT>
-    struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
+    struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs, DCTX(ctx));
     };
 }

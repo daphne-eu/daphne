@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include "EwBinaryMatSca.h"
+#include "EwBinaryObjSca.h"
 #include "bin_ops.cuh"
 
 template<class VT, class OP>
@@ -26,7 +26,7 @@ __global__ void ewBinMatSca(VT* res, const VT* lhs, const VT rhs, size_t N, OP o
 
 namespace CUDA {
     template<typename VT>
-    void EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>::apply(BinaryOpCode opCode, DenseMatrix<VT> *&res,
+    void EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>::apply(BinaryOpCode opCode, DenseMatrix<VT> *&res,
             const DenseMatrix<VT> *lhs, VT rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
@@ -70,10 +70,10 @@ namespace CUDA {
 
         else {
             std::cerr << "opCode=" << static_cast<uint32_t>(opCode) << std::endl;
-            throw std::runtime_error("unknown operator for EwBinaryMatSca");
+            throw std::runtime_error("unknown operator for EwBinaryObjSca");
         }
     }
-    template struct EwBinaryMatSca<DenseMatrix<double>, DenseMatrix<double>, double>;
-    template struct EwBinaryMatSca<DenseMatrix<float>, DenseMatrix<float>, float>;
-    template struct EwBinaryMatSca<DenseMatrix<int64_t>, DenseMatrix<int64_t>, int64_t>;
+    template struct EwBinaryObjSca<DenseMatrix<double>, DenseMatrix<double>, double>;
+    template struct EwBinaryObjSca<DenseMatrix<float>, DenseMatrix<float>, float>;
+    template struct EwBinaryObjSca<DenseMatrix<int64_t>, DenseMatrix<int64_t>, int64_t>;
 }

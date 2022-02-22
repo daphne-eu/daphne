@@ -20,9 +20,12 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
+#include <runtime/local/kernels/CastObj.h>
+
 
 #include <cassert>
 #include <cstddef>
@@ -33,17 +36,24 @@
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, typename VTRhs>
-struct EwBinaryMatSca {
+struct EwBinaryObjSca {
     static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
-// Convenience function
+// Convenience functions
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, typename VTRhs>
 void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
-    EwBinaryMatSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+}
+
+template<typename VT>
+void ewBinaryFrameColSca(BinaryOpCode opCode, Frame *& res, const Frame * lhs, VT rhs, size_t c, DCTX(ctx)) {
+    auto * col_res = res->getColumn<VT>(c);
+    auto * col_lhs = lhs->getColumn<VT>(c);
+    ewBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>(opCode, col_res, col_lhs, rhs, nullptr);
 }
 
 // ****************************************************************************
@@ -55,7 +65,7 @@ void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs 
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
+struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
     static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
@@ -82,7 +92,7 @@ struct EwBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct EwBinaryMatSca<Matrix<VT>, Matrix<VT>, VT> {
+struct EwBinaryObjSca<Matrix<VT>, Matrix<VT>, VT> {
     static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, VT rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
@@ -98,6 +108,36 @@ struct EwBinaryMatSca<Matrix<VT>, Matrix<VT>, VT> {
             for(size_t c = 0; c < numCols; c++)
                 res->append(r, c) = func(lhs->get(r, c), rhs);
         res->finishAppend();
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+// Frame <- Frame, scalar
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwBinaryObjSca<Frame, Frame, VT> {
+    static void apply(BinaryOpCode opCode, Frame *& res, const Frame * lhs, VT rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<Frame>(numRows, numCols, lhs->getSchema(), lhs->getLabels(), false);
+        
+        for (size_t c = 0; c < numCols; c++) {
+            switch(lhs->getColumnType(c)) {
+                // For all value types:
+                case ValueTypeCode::F64: ewBinaryFrameColSca<double>(opCode, res, lhs, rhs, c, nullptr); break;
+                case ValueTypeCode::F32: ewBinaryFrameColSca<float>(opCode, res, lhs, rhs, c, nullptr); break;
+                case ValueTypeCode::SI64: ewBinaryFrameColSca<int64_t>(opCode, res, lhs, rhs, c, nullptr); break;
+                case ValueTypeCode::SI32: ewBinaryFrameColSca<int32_t>(opCode, res, lhs, rhs, c, nullptr); break;
+                case ValueTypeCode::SI8 : ewBinaryFrameColSca<int8_t>(opCode, res, lhs, rhs, c, nullptr); break;
+                case ValueTypeCode::UI64: ewBinaryFrameColSca<uint64_t>(opCode, res, lhs, rhs, c, nullptr); break;
+                case ValueTypeCode::UI32: ewBinaryFrameColSca<uint32_t>(opCode, res, lhs, rhs, c, nullptr); break; 
+                case ValueTypeCode::UI8 : ewBinaryFrameColSca<uint8_t>(opCode, res, lhs, rhs, c, nullptr); break; 
+            }
+        }   
     }
 };
 
