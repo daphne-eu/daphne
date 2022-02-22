@@ -1,0 +1,7 @@
+v1 = rand(5,5,1,5,0.5,123);
+v2 = rand(5,5,1,15,0.5,123);
+
+print(sum(v1)+sum(v2));
+print(sum(v2)-sum(v1));
+print(sum(v2)*sum(v1));
+print(sum(v2)/sum(v1));
