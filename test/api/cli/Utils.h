@@ -186,6 +186,21 @@ int runDaphne(std::stringstream & out, std::stringstream & err, const char * scr
     return runProgram(out, err, "build/bin/daphnec", "daphnec", scriptPath, args...);
 }
 
+/**
+ * @brief Executes the given Python script with the `python3` interpreter and
+ * captures `stdout`, `stderr`, and the status code.
+ * 
+ * Typically the Python script will use DaphneLib, the Python API of DAPHNE.
+ * 
+ * @param out The stream where to direct the program's standard output.
+ * @param err The stream where to direct the program's standard error.
+ * @param scriptPath The path to the Python script file to execute.
+ * @param args The arguments to pass in addition to the script's path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ * @return The status code returned by the process, or `-1` if it did not exit
+ * normally.
+ */
 template<typename... Args>
 int runDaphneLib(std::stringstream & out, std::stringstream & err, const char * scriptPath, Args ... args) {
     return runProgram(out, err, "/bin/python3", "python3", scriptPath, args...);
@@ -240,34 +255,6 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
     CHECK(err.str().empty());
 }
 
-template<typename... Args>
-void compareDaphneToDaphneLibOut(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
-    std::stringstream out_daphne;
-    std::stringstream err_daphne;
-    std::stringstream out_DaphneLib;
-    std::stringstream err_DaphneLib;
-    int status_DaphneLib = runDaphneLib(out_DaphneLib, err_DaphneLib, DaphneLibFilePath.c_str(), args...);
-    int status_daphne = runDaphne(out_daphne, err_daphne, scriptFilePath.c_str(), args...);
-    REQUIRE(status_daphne == status_DaphneLib);
-    CHECK(out_daphne.str() == out_DaphneLib.str());
-    CHECK(err_daphne.str() == err_DaphneLib.str());
-}
-template<typename... Args>
-void compareDaphneToDaphneLibScalarOut(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
-    std::stringstream out_daphne;
-    std::stringstream err_daphne;
-    std::stringstream out_DaphneLib;
-    std::stringstream err_DaphneLib;
-    std::string result_daphne, result_daphnelib;
-    float epsylon = 0.1;
-    int status_DaphneLib = runDaphneLib(out_DaphneLib, err_DaphneLib, DaphneLibFilePath.c_str(), args...);
-    int status_daphne = runDaphne(out_daphne, err_daphne, scriptFilePath.c_str(), args...);
-    REQUIRE(status_daphne == status_DaphneLib);
-    while(std::getline(out_DaphneLib, result_daphnelib) && std::getline(out_daphne, result_daphne))
-        CHECK(std::stof(result_daphnelib)-std::stof(result_daphne) <= epsylon);
-
-    CHECK(err_daphne.str() == err_DaphneLib.str());
-}
 /**
  * @brief Compares the standard output of executing the given DaphneDSL script
  * with the command line interface of the DAPHNE Prototype to a reference text
@@ -287,19 +274,74 @@ template<typename... Args>
 void compareDaphneToRef(const std::string & refFilePath, const std::string & scriptFilePath, Args ... args) {
     return compareDaphneToStr(readTextFile(refFilePath), scriptFilePath, args...);
 }
+
+/**
+ * @brief Compares the standard output of the given DaphneDSL script with that
+ * of the given Python/DaphneLib script.
+ * 
+ * Also checks that the status codes indicate a successful execution for both
+ * and that nothing was printed to standard error.
+ * 
+ * @param pythonScriptFilePath
+ * @param daphneDSLScriptFilePath
+ * @param args The arguments to pass in addition to the scripts' path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
 template<typename... Args>
-void compareDaphneToDaphneLib(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
-    return compareDaphneToDaphneLibOut(DaphneLibFilePath, scriptFilePath, args...);
+void compareDaphneToDaphneLib(const std::string & pythonScriptFilePath, const std::string & daphneDSLScriptFilePath, Args ... args) {
+    std::stringstream outDaphne;
+    std::stringstream errDaphne;
+    std::stringstream outDaphneLib;
+    std::stringstream errDaphneLib;
+    int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
+    int statusDaphne = runDaphne(outDaphne, errDaphne, daphneDSLScriptFilePath.c_str(), args...);
+    REQUIRE(statusDaphne == StatusCode::SUCCESS);
+    REQUIRE(statusDaphneLib == 0);
+    CHECK(outDaphne.str() == outDaphneLib.str());
+    CHECK(errDaphne.str().empty());
+    CHECK(errDaphneLib.str().empty());
 }
+
+/**
+ * @brief Approximate floating point comparison of each line in the standard
+ * output of the given DaphneDSL script with that of the given Python/DaphneLib
+ * script.
+ * 
+ * Also checks that the status codes indicate a successful execution for both
+ * and that nothing was printed to standard error.
+ * 
+ * @param pythonScriptFilePath
+ * @param daphneDSLScriptFilePath
+ * @param args The arguments to pass in addition to the scripts' path. Despite
+ * the variadic template, each element should be of type `char *`. The last one
+ * does *not* need to be a null pointer.
+ */
 template<typename... Args>
-void compareDaphneToDaphneLibScalar(const std::string & DaphneLibFilePath, const std::string & scriptFilePath, Args ... args) {
-    return compareDaphneToDaphneLibScalarOut(DaphneLibFilePath, scriptFilePath, args...);
+void compareDaphneToDaphneLibScalar(const std::string & pythonScriptFilePath, const std::string & daphneDSLScriptFilePath, Args ... args) {
+    std::stringstream outDaphne;
+    std::stringstream errDaphne;
+    std::stringstream outDaphneLib;
+    std::stringstream errDaphneLib;
+    std::string resultDaphne, resultDaphneLib;
+    float epsilon = 0.1;
+    int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
+    int statusDaphne = runDaphne(outDaphne, errDaphne, daphneDSLScriptFilePath.c_str(), args...);
+    REQUIRE(statusDaphne == StatusCode::SUCCESS);
+    REQUIRE(statusDaphneLib == 0);
+    while(std::getline(outDaphneLib, resultDaphneLib) && std::getline(outDaphne, resultDaphne)) {
+        CHECK(std::stof(resultDaphneLib) - std::stof(resultDaphne) <= epsilon);
+    }
+    CHECK(errDaphne.str().empty());
+    CHECK(errDaphneLib.str().empty());
 }
+
 template<typename... Args>
 void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
     compareDaphneToRef(filePath + ".txt", filePath + ".daphne", args...);
 }
+
 template<typename... Args>
 void compareDaphneToDaphneLibSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);

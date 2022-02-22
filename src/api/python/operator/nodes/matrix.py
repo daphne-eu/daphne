@@ -18,8 +18,6 @@
 # under the License.
 #
 # -------------------------------------------------------------
-
-
 __all__ = ["Matrix"]
 import os
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
@@ -33,7 +31,6 @@ if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
     
-
 class Matrix(OperationNode):
     _np_array: np.array
 
@@ -48,7 +45,6 @@ class Matrix(OperationNode):
         else:
             self._np_array = None
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets)
-    
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
@@ -100,13 +96,11 @@ class Matrix(OperationNode):
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context,'-', [self, other])
 
-
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '*', [self, other])
 
     def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '/', [self, other])
-    
 
     def __lt__(self, other) -> 'Matrix':
         return Matrix(self.daphne_context, '<', [self, other])
@@ -165,21 +159,18 @@ class Matrix(OperationNode):
         """Calculate sqrt of matrix.
         :return: `Matrix` representing operation
         """
-  
         return Matrix(self.daphne_context,'sqrt', [self])
-     
-    
     
     def max(self, other: 'Matrix') -> 'Matrix':
-        """Calculate max of matrix.
-        :param axis: can be 0 or 1 to do either row or column aggregation
+        """Calculate elementwise max of two matrices.
+        :param other: another matrix
         :return: `Matrix` representing operation
         """
         return Matrix(self.daphne_context, 'max', [self, other])
 
     def min(self, other: 'Matrix') -> 'Matrix':
-        """Calculate max of matrix.
-        :param axis: can be 0 or 1 to do either row or column aggregation
+        """Calculate elementwise min of two matrices.
+        :param other: another matrix
         :return: `Matrix` representing operation
         """
         return Matrix(self.daphne_context, 'min', [self, other])

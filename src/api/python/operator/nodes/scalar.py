@@ -51,7 +51,6 @@ class Scalar(OperationNode):
 
     def compute(self) -> Union[np.array]:
         return super().compute()
-
     
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
         return Scalar(self.daphne_context, '+', [self, other])

@@ -1055,7 +1055,7 @@ def Daphne_ReadOp : Daphne_Op<"read", [
 }
 
 def Daphne_WriteOp : Daphne_Op<"write"> {
-    let arguments = (ins AnyTypeOf<[AnyScalar, MatrixOrFrame]>:$arg, StrScalar:$fileName);
+    let arguments = (ins MatrixOrFrame:$arg, StrScalar:$fileName);
     let results = (outs); // no results
 }
 
@@ -1091,7 +1091,6 @@ def Daphne_ReadCsvOp : Daphne_Op<"readCsv"> {
     );
     let results = (outs MatrixOrFrame:$res);
 }
-
 
 // ****************************************************************************
 // Data preprocessing

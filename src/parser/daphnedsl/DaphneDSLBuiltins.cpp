@@ -990,17 +990,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, resType, filename
         ));
     }
-    // TODO write
-    if(func == "writeFrame" || func == "writeMatrix") {
+    if(func == "writeFrame" || func == "writeMatrix" || func == "write") {
+        // Note that the type of arg already indicates if it is a frame or a
+        // matrix.
         checkNumArgsExact(func, numArgs, 2);
-
         mlir::Value arg = args[0];
         mlir::Value filename = args[1];
-
-
-        return builder.create<WriteOp>(
-                loc, arg, filename
-        );
+        return builder.create<WriteOp>(loc, arg, filename);
     }
     // --------------------------------------------------------------------
     // Low-level
@@ -1050,7 +1046,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 fileOrDescriptor, numRows, numCols, delim
         ));
     }
-   
+
     // ********************************************************************
     // Data preprocessing
     // ********************************************************************

@@ -23,10 +23,9 @@ from enum import Enum, auto
 from typing import TYPE_CHECKING, Any, Dict, Sequence, Union, Optional
 
 class OutputType(Enum):
-        MATRIX = auto()
-        NONE = auto()
-        DOUBLE = auto()
-
+    MATRIX = auto()
+    NONE = auto()
+    DOUBLE = auto()
 
 class DAGNode(ABC):
     _unnamed_input_nodes: Sequence[Union['DAGNode', str, int, float, bool]]
@@ -36,12 +35,14 @@ class DAGNode(ABC):
     _output_type: OutputType
     _script: Optional["DaphneDSLScript"]
     _is_python_local_data: bool
-    _DaphneDSL_name: str
+    _daphnedsl_name: str
 
     def compute() -> Any:
         raise NotImplementedError
+
     def code_line(self, var_name:str, unnamed_input_vars:Sequence[str],named_input_vars:Dict[str,str])->str:
         raise NotImplementedError
+
     @property
     def unnamed_input_nodes(self):
         return self._unnamed_input_nodes
@@ -66,11 +67,10 @@ class DAGNode(ABC):
     def script(self):
         return self._script
 
-
     @property
-    def DaphneDSL_name(self):
-        return self._DaphneDSL_name
+    def daphnedsl_name(self):
+        return self._daphnedsl_name
 
-    @DaphneDSL_name.setter
-    def DaphneDSL_name(self, value):
-        self._DaphneDSL_name = value
+    @daphnedsl_name.setter
+    def daphnedsl_name(self, value):
+        self._daphnedsl_name = value

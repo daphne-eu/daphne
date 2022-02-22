@@ -30,11 +30,12 @@ inline struct File *openFile(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
   f->identifier = fopen(filename, "r");
   f->pos = 0;
-  
+
   if (f->identifier == NULL)
     return NULL;
   return f;
 }
+
 inline struct File *openFileForWrite(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
   f->identifier = fopen(filename, "w+");
@@ -44,6 +45,7 @@ inline struct File *openFileForWrite(const char *filename) {
     return NULL;
   return f;
 }
+
 inline void closeFile(File *f) { fclose(f->identifier); }
 
 inline char *getLine(File *f) {

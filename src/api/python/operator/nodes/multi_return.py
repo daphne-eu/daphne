@@ -18,7 +18,6 @@
 # under the License.
 #
 # -------------------------------------------------------------
-
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
@@ -28,13 +27,11 @@ import numpy as np
 
 from helpers import create_params_string
 
-
 class MultiReturn(OperationNode):
     _np_array: np.array
 
     def __init__(self, operation:str,output_nodes, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None):
- 
         self._outputs = output_nodes
         super().__init__(operation, unnamed_input_nodes, named_input_nodes, OutputType.MULTI_RETURN, False)
     
@@ -48,7 +45,7 @@ class MultiReturn(OperationNode):
         output="["
         for idx, output_node in enumerate(self._outputs):
             name = f'{var_name}_{idx}'
-            output_node.DaphneDSL_name = name
+            output_node.daphnedsl_name = name
             output += f'{name},'
         output = output[:-1]+"]"
         return f'{output}={self.operation}({inputs_comma_sep})'

@@ -1,9 +1,5 @@
 build/
 thirdparty/*
 !thirdparty/llvm-project/
-*.pyc
-*.pyo
-tmpdaphne.daphne
 __pycache__/
-*.py[cod]
-*$py.class
+tmpdaphne.daphne

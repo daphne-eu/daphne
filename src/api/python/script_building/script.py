@@ -29,14 +29,14 @@ if TYPE_CHECKING:
     from context.daphne_context import DaphneContext
 
 class DaphneDSLScript:
-    DaphneDSL_script :str
+    daphnedsl_script :str
     inputs: Dict[str, DAGNode]
     out_var_name:List[str]
     _variable_counter: int
 
     def __init__(self, context) -> None:
         self.daphne_context = context
-        self.DaphneDSL_script = ''
+        self.daphnedsl_script = ''
         self.inputs = {}
         self.out_var_name = []
         self._variable_counter = 0
@@ -58,7 +58,7 @@ class DaphneDSLScript:
         
         :param code: the DaphneDSL code line
         """
-        self.DaphneDSL_script += code +'\n'
+        self.daphnedsl_script += code +'\n'
     
     def clear(self, dag_root:DAGNode):
         self._dfs_clear_dag_nodes(dag_root)
@@ -68,7 +68,7 @@ class DaphneDSLScript:
         
         os.chdir(PROTOTYPE_PATH)
         temp_out_file = open("tmpdaphne.daphne", "w")
-        temp_out_file.writelines(self.DaphneDSL_script)
+        temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
         os.system("build/bin/daphnec tmpdaphne.daphne")
 
@@ -82,8 +82,8 @@ class DaphneDSLScript:
                 return 'TRUE' if dag_node else 'FALSE'
             return str(dag_node)
         #if node has name -> its already defined in the script -> reuse it
-        if dag_node.DaphneDSL_name != "":
-            return dag_node.DaphneDSL_name
+        if dag_node.daphnedsl_name != "":
+            return dag_node.daphnedsl_name
         
         if dag_node._source_node is not None:
             self._dfs_dag_nodes(dag_node._source_node)
@@ -96,22 +96,22 @@ class DaphneDSLScript:
                 
                 named_input_vars[name] = self._dfs_dag_nodes(input_node)
                 if isinstance(input_node, DAGNode) and input_node._output_type == OutputType.LIST:
-                    dag_node._DaphneDSL_name = named_input_vars[name] + name
-                    return dag_node._DaphneDSL_name
+                    dag_node._daphnedsl_name = named_input_vars[name] + name
+                    return dag_node._daphnedsl_name
 
         
-        if dag_node._DaphneDSL_name != "":
-            return dag_node._DaphneDSL_name
+        if dag_node._daphnedsl_name != "":
+            return dag_node._daphnedsl_name
 
-        dag_node._DaphneDSL_name = self._next_unique_var()
-        code_line = dag_node.code_line(dag_node.DaphneDSL_name, unnamed_input_vars, named_input_vars)
+        dag_node._daphnedsl_name = self._next_unique_var()
+        code_line = dag_node.code_line(dag_node.daphnedsl_name, unnamed_input_vars, named_input_vars)
         self.add_code(code_line)
-        return dag_node._DaphneDSL_name
+        return dag_node._daphnedsl_name
 
     def _dfs_clear_dag_nodes(self, dag_node:VALID_INPUT_TYPES)->str:
         if not isinstance(dag_node, DAGNode):
             return
-        dag_node._DaphneDSL_name = ""
+        dag_node._daphnedsl_name = ""
         for n in dag_node.unnamed_input_nodes:
             self._dfs_clear_dag_nodes(n)
         if(isinstance(dag_node.named_input_nodes, dict)):

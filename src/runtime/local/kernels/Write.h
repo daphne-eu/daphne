@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/WriteCsv.h>
@@ -29,18 +28,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes>
+template<class DTArg>
 struct Write {
-    static void apply(const DTRes * arg, const char * filename, DCTX(ctx)) = delete;
+    static void apply(const DTArg * arg, const char * filename, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void write(const DTRes * arg, const char * filename, DCTX(ctx)) {
-    Write<DTRes>::apply(arg, filename, ctx);
+template<class DTArg>
+void write(const DTArg * arg, const char * filename, DCTX(ctx)) {
+    Write<DTArg>::apply(arg, filename, ctx);
 }
 
 // ****************************************************************************
@@ -54,23 +53,10 @@ void write(const DTRes * arg, const char * filename, DCTX(ctx)) {
 template<typename VT>
 struct Write<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> * arg, const char * filename, DCTX(ctx)) {
-        
         File * file = openFileForWrite(filename);
-        FileMetaData::ifFile(filename, arg->getNumRows(), arg->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
+        FileMetaData::toFile(filename, arg->getNumRows(), arg->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
         writeCsv(arg, file);
         closeFile(file);
-    }
-};
-
-
-// ----------------------------------------------------------------------------
-// Frame
-// ----------------------------------------------------------------------------
-
-template<>
-struct Write<Frame> {
-    static void apply(const Frame * arg, const char * filename, DCTX(ctx)) {
-        //TODO
     }
 };
 
