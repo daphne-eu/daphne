@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DIAGVECTOR_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DIAGVECTOR_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <string.h>
 #include <cstddef>
 #include <cassert>
-#include <stdio.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -58,8 +55,7 @@ struct DiagVector<DenseMatrix<VT>> {
         //------handling corner cases -------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         const size_t numRows = arg->getNumRows(); // number of rows
-        const size_t numCols = arg->getNumCols(); // number of columns
-        assert(numRows==numCols && "arg matrix should be square matrix");
+        assert(numRows==arg->getNumCols() && "arg matrix should be square matrix");
         assert(numRows!=0 && "arg matrix cannot be empty");
         if(res==nullptr){
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
@@ -84,8 +80,7 @@ struct DiagVector<CSRMatrix<VT>> {
         //-------handling corner cases ---------
         assert(arg!=nullptr&& "arg must not be nullptr"); // the arg matrix cannot be a nullptr
         const size_t numRows = arg->getNumRows(); // number of rows
-        const size_t numCols = arg->getNumCols(); // number of columns
-        assert(numRows==numCols && "arg matrix should be square matrix");
+        assert(numRows==arg->getNumCols() && "arg matrix should be square matrix");
         assert(numRows!=0 && "arg matrix cannot be empty");
         if(res==nullptr){ 
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, 1,  false);
@@ -94,9 +89,9 @@ struct DiagVector<CSRMatrix<VT>> {
         const size_t *rowOffsets = arg->getRowOffsets();
         const size_t *colIndxs= arg->getColIdxs();
         VT * resValues = res->getValues();
-        size_t startRowOffset = 0;
-        size_t endRowOffset = 0;
-        VT targetValue=0;
+        size_t startRowOffset;
+        size_t endRowOffset;
+        VT targetValue;
         for (size_t i =0 ; i< numRows;++i){
             startRowOffset = rowOffsets[i];
             endRowOffset = rowOffsets[i+1];
@@ -112,4 +107,3 @@ struct DiagVector<CSRMatrix<VT>> {
         }
     }
 };
-#endif

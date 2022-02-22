@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#include "CUDA_Activation.h"
+#include "Activation.h"
 
-namespace Activation {
+namespace CUDA::Activation {
     template<typename OP, typename DTRes, typename DTArg>
-    void Forward_CUDA<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
+    void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
         auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
         using VT = typename DTRes::VT;
         const size_t nr1 = data->getNumRows();
@@ -27,7 +27,6 @@ namespace Activation {
         const VT blend_beta = 0;
         const VT* d_input = data->getValuesCUDA();
 
-//        std::cerr << " ----------  relu ----------- " << std::endl;
         if (res == nullptr) {
             res = DataObjectFactory::create<DTRes>(nr1, nc1, false, ALLOCATION_TYPE::CUDA_ALLOC);
         }
@@ -42,7 +41,7 @@ namespace Activation {
                 d_input, &blend_beta, ctx->dst_tensor_desc, d_res));
     }
 
-    template struct Forward_CUDA<ReLU, DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward_CUDA<ReLU, DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<ReLU, DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<ReLU, DenseMatrix<double>, DenseMatrix<double>>;
 }
 

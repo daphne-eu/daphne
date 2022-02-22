@@ -56,12 +56,10 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     returnType = kernelTemplateInfo["returnType"]
     templateParams = kernelTemplateInfo["templateParams"]
     runtimeParams = kernelTemplateInfo["runtimeParams"]
-    # if API == "CUDA":
-    #     opName = "CUDA" + opName
-    # print(opName)
-    # print(opCodes)
-    # print(templateValues)
-    # print(templateParams)
+    opCodeAsTemplateParam = False
+    if "opCodeAsTemplateParam" in kernelTemplateInfo:
+        opCodeAsTemplateParam = True if kernelTemplateInfo["opCodeAsTemplateParam"] == 1 else False
+
     if opCodes is not None:
         # We assume that the op-code is the first run-time parameter.
         opCodeType = runtimeParams[0]["type"]
@@ -72,7 +70,8 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     # Create mapping from original template argument names to assigned C++
     # types.
     templateArgToCppType = {tp["name"]: toCppType(tv) for tp, tv in zip(templateParams, templateValues)}
-    # print(templateArgToCppType)
+
+    # ToDo: commented by mdokter - maybe remove. I think this would be too verbose
     # Comments indicating values assigned to original template arguments.
     # for tp in templateParams:
     #     outStr = INDENT + "// {} = {}\n".format(tp["name"], templateArgToCppType[tp["name"]])
@@ -96,6 +95,9 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             rp["type"] = rp["type"].replace(tp["name"], templateArgToCppType[tp["name"]])
         if rp["type"].endswith("*&"):
             rp["type"] = rp["type"][:-2] + "**"
+            rp["isOutput"] = True
+        if rp["type"].endswith("&"):
+            rp["type"] = rp["type"][:-1]
             rp["isOutput"] = True
         elif "isOutput" not in rp:
             rp["isOutput"] = False
@@ -129,16 +131,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             funcName = "_" + opName
         while funcName[-3:] in ["Sca", "Mat", "Obj"]:
             funcName = funcName[:-3]
+        funcName = funcName.replace("::", "_")
+
         if opCode is not None:
-            # We assume that the name of the op-code type ends with "OpCode".
-            # TODO Make the special treatment of PoolForward obsolete, it
-            # should go through the same route as all other ops.
-            if funcName == "_PoolForward":
-                funcName = "_" + opCode.lower() + funcName[1:]
-            else:
-                opCodeWord = opCodeType[:-len("OpCode")]
-                funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
-                funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
+            opCodeWord = opCodeType[:-len("OpCode")]
+            funcName = funcName.replace(opCodeWord, opCode[0].upper() + opCode[1:].lower())
+            funcName = funcName.replace(opCodeWord.lower(), opCode.lower())
 
         # Signature of the function wrapping the kernel instantiation.
         outFile.write(INDENT + "void {}{}({}) {{\n".format(
@@ -149,46 +147,37 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
         ))
 
         # List of parameters for the call.
-        # TODO Make the special treatment of PoolForward obsolete, it should go
-        # through the same route as all other ops.
-        if opCode is None:  # and funcName != "PoolForward":
+        if opCode is None or opCodeAsTemplateParam:
             callParams = []
         else:
             callParams = ["{}::{}".format(opCodeType, opCode)]
+
         callParams.extend([
             # Dereference double pointer for output parameters.
             "{}{}".format("*" if (rp["type"].endswith("**") and rp["isOutput"]) else "", rp["name"])
-            for rp
-            in extendedRuntimeParams[(0 if returnType == "void" else 1):]
+            for rp in extendedRuntimeParams[(0 if returnType == "void" else 1):]
         ])
 
         # List of template parameters for the call.
         callTemplateParams = [toCppType(tv) for tv in templateValues]
+        if opCodeAsTemplateParam and opCode is not None:
+            opCodeWord = opCodeType[:-len("OpCode")]
+            callTemplateParams = ["{}::{}".format(opCodeWord if API == "CPP" else API + "::" + opCodeWord, opCode)] + callTemplateParams
 
         # Body of that function: delegate to the kernel instantiation.
         outFile.write(2 * INDENT)
         if returnType != "void":
             outFile.write("*{} = ".format(DEFAULT_NEWRESPARAM))
 
-        # TODO Make the special treatment of PoolForward obsolete, it should go
-        # through the same route as all other ops.
-        if opName == "PoolForward":
-            outFile.write("{}<{}>::apply({});\n".format(
-                "Pooling::Forward",
-                # Template parameters:
-                ", ".join(["Pooling::" + opCode] + [toCppType(tv) for tv in templateValues]),
-                # Run-time parameters:
-                # ", ".join(([] if isCreateDaphneContext else ["ctx"] ) + callParams[1:]),
-                ", ".join(callParams[1:] + ([] if isCreateDaphneContext else ["ctx"])),
-            ))
-        else:
-            outFile.write("{}{}({});\n".format(
-                opName if API == "CPP" else (API + "::" + opName),
-                # Template parameters, if the kernel is a template:
-                "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
-                # Run-time parameters, possibly including DaphneContext:
-                ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"])),
-            ))
+        kernelCallString = "{}{}::apply({});\n" if opCodeAsTemplateParam else "{}{}({});\n"
+
+        outFile.write(kernelCallString.format(
+            opName if API == "CPP" else (API + "::" + opName),
+            # Template parameters, if the kernel is a template:
+            "<{}>".format(", ".join(callTemplateParams)) if len(templateValues) else "",
+            # Run-time parameters, possibly including DaphneContext:
+            ", ".join(callParams + ([] if isCreateDaphneContext else ["ctx"])),
+        ))
         outFile.write(INDENT + "}\n")
 
     # Generate the function(s).
@@ -219,7 +208,6 @@ if __name__ == "__main__":
     inFilePath = sys.argv[1]
     outFilePath = sys.argv[2]
     API = sys.argv[3]
-    # print(API + ": -----------")
     ops_inst_str = ""
     header_str = ""
 
@@ -234,29 +222,21 @@ if __name__ == "__main__":
                 for api in kernelInfo["api"]:
                     for name in api["name"]:
                         # print("Processing API: " + name)
-                        # print(" Instantiations: " + str(api["instantiations"]))
-                        # print(" opCodes: " + str(api["opCodes"]))
+                        # print("  OpName: " + kernelTemplateInfo["opName"])
+                        # print("  Instantiations: " + str(api["instantiations"]))
+                        # if "opCodes" in api:
+                        #     print("  opCodes: " + str(api["opCodes"]))
                         if name == API:
-                            # if API == "CUDA":
                             # Comment reporting the kernel name.
-                            # outFile.write("// {}\n".format("-" * 76))
-                            # outFile.write("// {}\n".format(kernelTemplateInfo["opName"]))
-                            # outFile.write("// {}\n\n".format("-" * 76))
                             ops_inst_str += INDENT + "// {}\n".format("-" * 76)
                             ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
                             ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+
                             # Include for the required header.
-                            # outFile.write("#include <runtime/local/kernels/{}>\n\n".format(kernelTemplateInfo["header"]))
                             if API != "CPP":
                                 header_str = header_str + "#include <runtime/local/kernels/{}/{}>\n".format(API, kernelTemplateInfo["header"])
                             else:
                                 header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
-
-                            # print("Processing API: " + name)
-                            # print(" Instantiations: " + str(api["instantiations"]))
-                            # print(kernelTemplateInfo)
-                            # print(kernelTemplateInfo["opName"])
-                            # print(" opCodes: " + str(api["opCodes"]))
 
                             outBuf = io.StringIO()
                             for instantiation in api["instantiations"]:
@@ -266,18 +246,13 @@ if __name__ == "__main__":
             else:
                 if API == "CPP":
                     # Comment reporting the kernel name.
-                    # outFile.write("// {}\n".format("-" * 76))
-                    # outFile.write("// {}\n".format(kernelTemplateInfo["opName"]))
-                    # outFile.write("// {}\n\n".format("-" * 76))
                     ops_inst_str += INDENT + "// {}\n".format("-" * 76)
                     ops_inst_str += INDENT + "// {}\n".format(kernelTemplateInfo["opName"])
                     ops_inst_str += INDENT + "// {}\n".format("-" * 76)
+
                     # Include for the required header.
-                    # outFile.write("#include <runtime/local/kernels/{}>\n\n".format(kernelTemplateInfo["header"]))
                     header_str = header_str + "#include <runtime/local/kernels/{}>\n".format(kernelTemplateInfo["header"])
                     # One function per instantiation of the kernel.
-                    # outFile.write("extern \"C\" {\n\n")
-                    # print("processing cpp only: " + str(kernelTemplateInfo["opName"]))
                     opCodes = kernelInfo.get("opCodes", None)
                     outBuf = io.StringIO()
                     for instantiation in kernelInfo["instantiations"]:

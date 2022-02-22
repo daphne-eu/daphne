@@ -85,7 +85,7 @@ protected:
         }
     }
 #endif
-    size_t allocateOutput(DT***& res, size_t numOutputs, int64_t* outRows, int64_t* outCols,
+    size_t allocateOutput(DT***& res, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
             mlir::daphne::VectorCombine* combines) {
         auto mem_required = 0ul;
         // output allocation for row-wise combine
@@ -147,7 +147,7 @@ public:
             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
     void combineOutputs(DenseMatrix<VT>***& res, DenseMatrix<VT>***& res_cuda, size_t numOutputs,
-            mlir::daphne::VectorCombine* combines);
+            mlir::daphne::VectorCombine* combines) override;
 };
 
 template<typename VT>
@@ -159,7 +159,7 @@ public:
             MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
     void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
-                            size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
+                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
     [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
@@ -167,5 +167,5 @@ public:
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
     void combineOutputs(CSRMatrix<VT>***& res, CSRMatrix<VT>***& res_cuda, [[maybe_unused]] size_t numOutputs,
-                        [[maybe_unused]] mlir::daphne::VectorCombine* combines) {}
+                        [[maybe_unused]] mlir::daphne::VectorCombine* combines) override {}
 };

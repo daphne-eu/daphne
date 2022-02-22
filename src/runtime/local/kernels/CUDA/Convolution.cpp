@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-#include "CUDA_Convolution.h"
+#include "Convolution.h"
 
-namespace Convolution {
+namespace CUDA::Convolution {
     template<typename DTRes, typename DTArg>
-    void Forward_CUDA<DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data, const DTArg *filter, const DTArg *bias,
+    void Forward<DTRes, DTArg>::apply(DTRes *&res, size_t& res_h, size_t& res_w, const DTArg *data, const DTArg *filter, const DTArg *bias,
             const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
             const size_t filter_w, const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w, DCTX(dctx))
     {
-//        assert(data->getNumRows() == batch_size && "Convolution: input rows must match batch_size");
-//        assert(data->getNumCols() == (num_channels * img_h * img_w) && "Convolution: input cols must match C*H*W");
-
-//std::cerr << " ----------  conv ----------- " << std::endl;
-
         auto ctx = dctx->getCUDAContext(0);
         using VT = typename DTRes::VT;
         auto F = filter->getNumRows(); // num filters
@@ -79,20 +74,8 @@ namespace Convolution {
             int returnedAlgoCount = -1;
             cudnnConvolutionFwdAlgoPerf_t results[2 * CUDNN_CONVOLUTION_FWD_ALGO_COUNT];
 
-            // Setup for findFastest call
-//#ifndef NDEBUG
-//            std::cout << "Testing cudnnFindConvolutionForwardAlgorithm ...\n";
-//#endif
             CHECK_CUDNN(cudnnFindConvolutionForwardAlgorithm(ctx->getCUDNNHandle(), ctx->src_tensor_desc, ctx->filter_desc,
                                                              ctx->conv_desc, ctx->dst_tensor_desc, requestedAlgoCount, &returnedAlgoCount, results));
-//#ifndef NDEBUG
-//            for(int algoIndex = 0; algoIndex < returnedAlgoCount; ++algoIndex) {
-//                std::cout << "^^^^ " << cudnnGetErrorString(results[algoIndex].status) << " for Algo: "
-//                        <<  results[algoIndex].algo << ": " << results[algoIndex].time << " time requiring "
-//                        << results[algoIndex].memory << " memory\n" << std::endl;
-//
-//            }
-//#endif
             algo = results[0].algo;
             ctx->conv_algorithm = algo;
         }
@@ -130,7 +113,7 @@ namespace Convolution {
         }
     }
 
-    template struct Forward_CUDA<DenseMatrix<float>, DenseMatrix<float>>;
-    template struct Forward_CUDA<DenseMatrix<double>, DenseMatrix<double>>;
+    template struct Forward<DenseMatrix<float>, DenseMatrix<float>>;
+    template struct Forward<DenseMatrix<double>, DenseMatrix<double>>;
 }
 

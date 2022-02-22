@@ -14,5 +14,5 @@
 
 add_library(Util
         MurmurHash3.cpp
-)
+		preprocessor_defs.h)
 target_link_libraries(Util)

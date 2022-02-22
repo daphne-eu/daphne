@@ -250,6 +250,9 @@ std::string mlir::daphne::matrixRepresentationToString(MatrixRepresentation rep)
         return "dense";
     case MatrixRepresentation::Sparse:
         return "sparse";
+    default:
+        throw std::runtime_error("unknown mlir::daphne::MatrixRepresentation " +
+                std::to_string(static_cast<int>(rep)));
     }
 }
 

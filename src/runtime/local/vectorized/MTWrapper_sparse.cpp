@@ -20,9 +20,9 @@
 template<typename VT>
 void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
         DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, Structure **inputs, size_t numInputs, size_t numOutputs,
-        int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-//    // TODO: reduce code duplication
-
+        const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx),
+        bool verbose) {
+//     TODO: reduce code duplication
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
     auto len = inputProps.first;
     auto mem_required = inputProps.second;
@@ -62,7 +62,7 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
 }
 
 template<typename VT>
-void MTWrapper<CSRMatrix<VT>>::executeQueuePerDeviceType(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
+[[maybe_unused]] void MTWrapper<CSRMatrix<VT>>::executeQueuePerDeviceType(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
         DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, Structure **inputs, size_t numInputs, size_t numOutputs,
         int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     throw std::runtime_error("sparse multi queue vect exec not implemented");

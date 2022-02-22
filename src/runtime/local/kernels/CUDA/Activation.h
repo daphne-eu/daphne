@@ -14,30 +14,26 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H
-#define DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H
+#ifndef DAPHNE_PROTOTYPE_ACTIVATION_H
+#define DAPHNE_PROTOTYPE_ACTIVATION_H
 
 #pragma once
 
-#include <runtime/local/context/CUDAContext.h>
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA/HostUtils.h>
+#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "HostUtils.h"
 
-#include <limits>
-#include <random>
-#include <type_traits>
+namespace CUDA::Activation {
+    struct ReLU {
+        static inline cudnnActivationMode_t getActivationType() { return CUDNN_ACTIVATION_RELU; }
+    };
 
-#include <cassert>
-#include <cstddef>
-#include <cstdint>
-
-namespace Softmax {
-    template<typename DTRes, typename DTArg>
-    struct Forward_CUDA {
+    template<typename OP, typename DTRes, typename DTArg>
+    struct Forward {
         static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
     };
 }
 
-#endif //DAPHNE_PROTOTYPE_CUDA_SOFTMAX_H
+#endif // DAPHNE_PROTOTYPE_ACTIVATION_H

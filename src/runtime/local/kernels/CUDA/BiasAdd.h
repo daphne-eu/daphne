@@ -14,17 +14,17 @@
  * limitations under the License.
  */
 
+#pragma once
 
-#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
+#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "HostUtils.h"
 
-#include <tags.h>
-
-#include <catch.hpp>
-
-TEST_CASE("CreateCUDAContext", TAG_KERNELS) {
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
-    auto p = dctx->getCUDAContext(0)->getDeviceProperties();
-    CHECK(p);
+namespace CUDA::BiasAdd {
+    template<typename DTRes, typename DTArg>
+    struct Forward {
+        static void apply(DTRes *&res, const DTArg *input, const DTArg *bias, DCTX(dctx));
+    };
 }

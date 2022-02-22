@@ -14,17 +14,25 @@
  * limitations under the License.
  */
 
+#pragma once
 
-#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
+#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/datastructures/DataObjectFactory.h"
+#include "runtime/local/datastructures/DenseMatrix.h"
+#include "HostUtils.h"
 
-#include <tags.h>
+#include <limits>
+#include <random>
+#include <type_traits>
 
-#include <catch.hpp>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
 
-TEST_CASE("CreateCUDAContext", TAG_KERNELS) {
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-    CUDA::createCUDAContext(dctx.get());
-    auto p = dctx->getCUDAContext(0)->getDeviceProperties();
-    CHECK(p);
+namespace CUDA::Softmax {
+    template<typename DTRes, typename DTArg>
+    struct Forward {
+        static void apply(DTRes *&res, const DTArg *data, DCTX(dctx));
+    };
 }

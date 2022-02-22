@@ -62,9 +62,9 @@ struct DaphneContext {
      * Modifying the configuration is intensionally allowed, since it enables
      * changing the configuration at run-time via DaphneDSL.
      */
-    DaphneUserConfig & config;
+    DaphneUserConfig& config;
 
-    DaphneContext(DaphneUserConfig & config) : config(config) {
+    explicit DaphneContext(DaphneUserConfig& config) : config(config) {
         //
     }
 
@@ -83,8 +83,8 @@ struct DaphneContext {
 #endif
 
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
-
-    DaphneUserConfig getUserConfig() { return config; }
+    
+    [[maybe_unused]] [[nodiscard]] DaphneUserConfig getUserConfig() const { return config; }
 };
 
 #endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

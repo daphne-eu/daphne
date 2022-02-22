@@ -1150,7 +1150,7 @@ def Daphne_DestroyDaphneContextOp : Daphne_Op<"destroyDaphneContext"> {
 }
 
 
-def Daphne_InitCUDAContextOp : Daphne_Op<"initCUDAContext"> {
+def Daphne_CreateCUDAContextOp : Daphne_Op<"createCUDAContext", [CUDASupport]> {
     let arguments = (ins);
     let results = (outs);
 }
