@@ -168,7 +168,14 @@ template <> struct CheckEq<Frame> {
             return false;
 
         if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)))
-            return false;   
+            return false;
+
+        const std::string * labelsLhs = lhs->getLabels();
+        const std::string * labelsRhs = rhs->getLabels();
+        for (size_t c = 0; c < numCols; c++) {
+            if(labelsLhs[c] != labelsRhs[c])
+                return false;
+        }
         
         for (size_t c = 0; c < numCols; c++)
         {
