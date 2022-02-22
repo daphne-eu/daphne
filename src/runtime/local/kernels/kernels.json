@@ -2101,14 +2101,6 @@
                 {
                     "type": "const DTLow *",
                     "name": "low"
-                },
-                {
-                    "type": "const ValueTypeCode *",
-                    "name": "vtc"
-                },
-                {
-                    "type": "const string *",
-                    "name": "lbl"
                 }
             ]
         },

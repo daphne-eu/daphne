@@ -32,7 +32,7 @@
 
 template<class DTRes, class DTUp, class DTLow>
 struct RowBind {
-    static void apply(DTRes *& res, const DTUp * ups, const DTLow * lows, const ValueTypeCode * vtc, const string * lbl, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,8 +45,8 @@ struct RowBind {
 // }
 
 template<class DTRes, class DTUp, class DTLow>
-void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, const ValueTypeCode * vtc, const string * lbl, DCTX(ctx)) {
-    RowBind<DTRes, DTUp, DTLow>::apply(res, ups, lows, vtc, lbl, ctx);
+void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) {
+    RowBind<DTRes, DTUp, DTLow>::apply(res, ups, lows, ctx);
 }
 
 // ****************************************************************************
@@ -59,7 +59,7 @@ void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, const ValueType
 
 template<typename VT>
 struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * ups, const DenseMatrix<VT> * lows, const ValueTypeCode * schema, const string * labels, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * ups, const DenseMatrix<VT> * lows, DCTX(ctx)) {
         const size_t numCols = ups->getNumCols();
         assert((numCols == lows->getNumCols()) && "ups and lows must have the same number of columns");
         
@@ -83,13 +83,22 @@ struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
 };
 
 // ----------------------------------------------------------------------------
-// Frame <- Frame, Frame, schema, labels
+// Frame <- Frame, Frame
 // ----------------------------------------------------------------------------
 
 template<>
 struct RowBind<Frame, Frame, Frame> {
-    static void apply(Frame *& res, const Frame * ups, const Frame * lows, const ValueTypeCode * schema, const string * labels, const  DCTX(ctx)) {
-        res = DataObjectFactory::create<Frame>(ups->getNumRows()+lows->getNumRows(), ups->getNumCols(), schema, labels, 0);
+    static void apply(Frame *& res, const Frame * ups, const Frame * lows, const  DCTX(ctx)) {
+        res = DataObjectFactory::create<Frame>(ups->getNumRows()+lows->getNumRows(), ups->getNumCols(), ups->getSchema(), ups->getLabels(), 0);
+        for(size_t i=0; i< ups->getNumCols(); i++){
+            
+            const double * colUps = ups->getColumn<double>(i)->getValues();
+            const double * colLows = lows->getColumn<double>(i)->getValues();
+            double * colRes = res->getColumn<double>(i)->getValues();
+            
+            memcpy(colRes , colUps, ups->getNumRows() * sizeof(double));
+            memcpy(colRes +  ups->getNumRows(), colLows, ups->getNumRows() * sizeof(double));
+        }
     }
 };
 

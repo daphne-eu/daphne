@@ -55,10 +55,8 @@ TEMPLATE_PRODUCT_TEST_CASE("RowBind", TAG_KERNELS, (DenseMatrix), (double, uint3
     });
     
     DT * res = nullptr;
-    ValueTypeCode schemas[] = {};
-    std::string labels0123[] = {};
         
-    rowBind<DT, DT, DT>(res, m0, m1, schemas, labels0123, nullptr);
+    rowBind<DT, DT, DT>(res, m0, m1, nullptr);
     CHECK(*res == *exp);
     
     DataObjectFactory::destroy(m0);
@@ -76,10 +74,10 @@ TEST_CASE("RowBind - Frame", TAG_KERNELS) {
     auto c5 = genGivenVals<DenseMatrix<double>>(3, {20, 60, 70});
     auto c6 = genGivenVals<DenseMatrix<double>>(3, {30, 70, 110});
     auto c7 = genGivenVals<DenseMatrix<double>>(3, {40, 80, 120});
-//     auto c04 = genGivenVals<DenseMatrix<double>>(7, {1, 5, 9, 13, 17, 50, 90});
-//     auto c15 = genGivenVals<DenseMatrix<double>>(7, {2, 6, 10, 14, 20, 60, 70});
-//     auto c26 = genGivenVals<DenseMatrix<double>>(7, {3, 7, 11, 15, 30, 70, 110});
-//     auto c37 = genGivenVals<DenseMatrix<double>>(7, {4, 8, 12, 16, 40, 80, 120});
+    auto c04 = genGivenVals<DenseMatrix<double>>(7, {1, 5, 9, 13, 17, 50, 90});
+    auto c15 = genGivenVals<DenseMatrix<double>>(7, {2, 6, 10, 14, 20, 60, 70});
+    auto c26 = genGivenVals<DenseMatrix<double>>(7, {3, 7, 11, 15, 30, 70, 110});
+    auto c37 = genGivenVals<DenseMatrix<double>>(7, {4, 8, 12, 16, 40, 80, 120});
 
     std::string l0 = "a";
     std::string l1 = "b";
@@ -97,7 +95,7 @@ TEST_CASE("RowBind - Frame", TAG_KERNELS) {
     SECTION("unique labels") {
         std::vector<Structure *> cols4567 = {c4, c5, c6, c7};
         f4567 = DataObjectFactory::create<Frame>(cols4567, labels0123);
-        rowBind<Frame, Frame, Frame>(res, f0123, f4567, schemas, labels0123, nullptr);
+        rowBind<Frame, Frame, Frame>(res, f0123, f4567, nullptr);
         
         // Check dimensions.
         REQUIRE(res->getNumRows() == 7);
@@ -118,10 +116,10 @@ TEST_CASE("RowBind - Frame", TAG_KERNELS) {
         CHECK(schemaRes[3] == ValueTypeCode::F64);
 
         // Check column data. 
-//         CHECK(*(res->getColumn<double>(0)) == *c04);
-//         CHECK(*(res->getColumn<double>(1)) == *c15);
-//         CHECK(*(res->getColumn<double>(2)) == *c26);
-//         CHECK(*(res->getColumn<double>(3)) == *c37);
+        CHECK(*(res->getColumn<double>(0)) == *c04);
+        CHECK(*(res->getColumn<double>(1)) == *c15);
+        CHECK(*(res->getColumn<double>(2)) == *c26);
+        CHECK(*(res->getColumn<double>(3)) == *c37);
 
     }
     
@@ -133,6 +131,10 @@ TEST_CASE("RowBind - Frame", TAG_KERNELS) {
     DataObjectFactory::destroy(c5);
     DataObjectFactory::destroy(c6);
     DataObjectFactory::destroy(c7);
+    DataObjectFactory::destroy(c04);
+    DataObjectFactory::destroy(c15);
+    DataObjectFactory::destroy(c26);
+    DataObjectFactory::destroy(c37);
     DataObjectFactory::destroy(f0123);
     DataObjectFactory::destroy(f4567);
     DataObjectFactory::destroy(res);
