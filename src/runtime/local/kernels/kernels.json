@@ -489,7 +489,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "EwBinaryMatSca.h",
+            "header": "EwBinaryObjSca.h",
             "opName": "ewBinaryMatSca",
             "returnType": "void",
             "templateParams": [
