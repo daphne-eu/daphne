@@ -37,7 +37,7 @@
 template<class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(Handle<DTRes> *&res, const Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
+    static void apply(Handle<DTRes> *&res, Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,7 +45,7 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DTRes, class DTArgs>
-void distributedCompute(Handle<DTRes> *&res, const Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx))
+void distributedCompute(Handle_v2<DTRes> *&res, Handle_v2<DTArgs> *args, size_t num_args, const char *mlirCode, DCTX(ctx))
 {
     DistributedCompute<DTRes, DTArgs>::apply(res, args, num_args, mlirCode, ctx);
 }
@@ -57,139 +57,51 @@ void distributedCompute(Handle<DTRes> *&res, const Handle<DTArgs> **args, size_t
 template<class DTRes>
 struct DistributedCompute<DTRes, Structure>
 {
-    static void apply(Handle<DTRes> *&res,
-                      const Handle<Structure> **args,
+    static void apply(Handle_v2<DTRes> *&res,
+                      Handle_v2<Structure> *args,
                       size_t num_args,
                       const char *mlirCode,
                       DCTX(ctx))
     {
-        assert((num_args == 1 || num_args == 2)&& "Only binary and unary supported for now");
         struct StoredInfo {
-            DistributedIndex *ix;
+            std::string addr;
             DistributedData *data;
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
-        typename Handle<DTRes>::HandleMap resMap;        
-        size_t resultRows{};
-        size_t resultColumns{};
-        // ****************************************************************************
-        // Unary operations
-        // ****************************************************************************
-        // Tailored to row-wise aggregation.
-        if (num_args == 1){
-            auto arg = args[0];
-            resultRows = arg->getRows();
-            resultColumns = 1;
-            for (auto &pair : arg->getMap()){
-                auto ix = pair.first;
-                auto argData = pair.second;
-                distributed::Task task;
-                *task.add_inputs()->mutable_stored() = argData.getData();
-                task.set_mlir_code(mlirCode);
-                
-                StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(argData)});
-
-                caller.asyncComputeCall(argData.getChannel(), storedInfo, task);
+        auto map = args->getMap();
+        for (auto &pair : map){
+            auto addr = pair.first;
+            auto dataVector = pair.second;
+            distributed::Task task;
+            
+            // Pass all the nessecary arguments for the pipeline
+            for (auto data : dataVector){
+                *task.add_inputs()->mutable_stored() = data.getData();
             }
-        }
-        // ****************************************************************************
-        // Binary operations
-        // ****************************************************************************
-        // Tailored to element-wise binary operations.
-        if (num_args == 2){
-            auto lhs = args[0];
-            auto rhs = args[1];
+            task.set_mlir_code(mlirCode);
 
-            const size_t numRowsLhs = lhs->getRows();
-            const size_t numColsLhs = lhs->getCols();
-            const size_t numRowsRhs = rhs->getRows();
-            const size_t numColsRhs = rhs->getCols();
+            StoredInfo storedInfo ({addr, new DistributedData(dataVector[0])});
 
-            // ****************************************************************************
-            // Handle <- Matrix, Matrix
-            // ****************************************************************************
-            if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
-                resultRows = numRowsLhs;
-                resultColumns = numColsLhs;
-                for (auto &pair : lhs->getMap()) {
-                    auto ix = pair.first;
-                    auto lhsData = pair.second;
-                    auto rhsData = rhs->getMap().find(ix)->second;
-
-                    if (lhsData.getAddress() == rhsData.getAddress()) {                
-
-                        distributed::Task task;
-                        *task.add_inputs()->mutable_stored() = lhsData.getData();
-                        *task.add_inputs()->mutable_stored() = rhsData.getData();
-                        task.set_mlir_code(mlirCode);
-                        
-                        StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
-
-                        caller.asyncComputeCall(lhsData.getChannel(), storedInfo, task);
-                    }
-                    else {
-                        // TODO: send data between workers
-                        throw std::runtime_error(
-                            "Data shuffling not yet supported"
-                        );
-                    }
-                }
-            }
-            // ****************************************************************************
-            // Handle <- Matrix, row
-            // ****************************************************************************
-            else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
-                resultRows = numRowsLhs;
-                resultColumns = numColsLhs;
-                for (auto &pair : lhs->getMap()) {
-                    auto ix = pair.first;
-                    auto lhsData = pair.second;
-                    DistributedData *rhsDataPtr = nullptr;
-                    for (auto &pairRhs : rhs->getMap()){
-                        if (pairRhs.second.getAddress() == lhsData.getAddress()) {
-                            rhsDataPtr = new DistributedData(pairRhs.second);
-                            break;
-                        }
-                    }
-                    auto rhsData = DistributedData(*rhsDataPtr);
-                    if (lhsData.getAddress() == rhsData.getAddress()) {                
-
-                        distributed::Task task;
-                        *task.add_inputs()->mutable_stored() = lhsData.getData();
-                        *task.add_inputs()->mutable_stored() = rhsData.getData();
-                        task.set_mlir_code(mlirCode);
-                    
-                        StoredInfo storedInfo ({new DistributedIndex(ix), new DistributedData(lhsData)});
-
-                        caller.asyncComputeCall(lhsData.getChannel(), storedInfo, task);
-                    }
-                    else {
-                        // TODO: send data between workers
-                        throw std::runtime_error(
-                            "Data shuffling not yet supported"
-                        );
-                    }
-                }
-            }
-            else {
-                assert(
-                        false && "lhs and rhs must either have the same dimensions, "
-                        "or rhs be a row/column vector with the "
-                        "width/height of the other"
-                );
-            }
+            // TODO for now resuing channels seems to slow down things... 
+            // It is faster if we generate channel for each call and let gRPC handle resources internally
+            // We might need to change this in the future and re-use channels ( data.getChannel() )
+            caller.asyncComputeCall(addr, storedInfo, task);
         }
         // Get Results
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
-            auto ix = response.storedInfo.ix;
-            auto lhsdata = response.storedInfo.data;
+            auto addr = response.storedInfo.addr;
+            auto storedData = response.storedInfo.data;
             
             auto computeResult = response.result;
-            DistributedData data(computeResult.outputs(0).stored(), lhsdata->getAddress(), lhsdata->getChannel());
-            resMap.insert({*ix, data});
+            // Recieve all outputs and store it to Handle_v2
+            for (size_t i = 0; i < computeResult.outputs_size(); i++){
+                // TODO DistributedData needs to be updated. No need to hold address (check Handle.h)
+                DistributedData data(computeResult.outputs(i).stored(), storedData->getAddress(), storedData->getChannel());
+                res->insertData(addr, data);
+            }
         }
-        res = new Handle<DTRes>(resMap, resultRows, resultColumns);        
+        // res = new Handle<DTRes>(resMap, resultRows, resultColumns);        
     }
 };
 

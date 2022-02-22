@@ -17,24 +17,12 @@
 #ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H
 #define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H
 
-#include <runtime/local/vectorized/TaskQueues.h>
-#include <runtime/local/vectorized/Tasks.h>
-#include <runtime/local/vectorized/VectorizedDataSink.h>
-#include <runtime/local/vectorized/Workers.h>
-#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <runtime/distributed/coordinator/kernels/Broadcast.h>
 #include <runtime/distributed/coordinator/kernels/Distribute.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCollect.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
-
-#include <thread>
-#include <functional>
-#include <queue>
-
-//TODO use the wrapper to cache threads
-//TODO generalize for arbitrary inputs (not just binary)
 
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
@@ -57,7 +45,7 @@ public:
     }
     ~DistributedWrapper() = default; //TODO Terminate workers (e.g. with gRPC, resource manager, etc.)
 
-    void execute(std::function<void(DenseMatrix<VT> ***, Structure **)> func,
+    void execute(const char *mlirCode,
                  DenseMatrix<VT> ***res,
                  Structure **inputs,
                  size_t numInputs,
@@ -91,27 +79,38 @@ public:
             }
         }
         
-        // Distribute and broadcast inputs
-        Handle<Structure> **handles;
-        handles = new Handle<Structure>*[numInputs];
-        for (auto i = 0u; i < numInputs; ++i) {
+        // Distribute and broadcast inputs        
+        // We create Handle_v2 object here and we pass it to each primitive.
+        // Each primitive (i.e. distribute/broadcast) populates this handle with data information for each worker
+        Handle_v2<Structure> *handle = new Handle_v2<Structure>(workers);    
+        for (auto i = 0u; i < numInputs; ++i) {            
             if (isBroadcast(splits[i], inputs[i])){
-                broadcast(handles[i], (DenseMatrix<VT>*)inputs[i], nullptr);   
+                broadcast(handle, (DenseMatrix<VT>*)inputs[i], nullptr);   
             }
             else {
-                distribute(handles[i], (DenseMatrix<VT>*)inputs[i], nullptr);
+                distribute(handle, (DenseMatrix<VT>*)inputs[i], nullptr);
             }
         }
-        Handle<DenseMatrix<double>> *resHandle = NULL;
-        //TODO delete this
-        const *mlirCode;
-        // distributedCompute(resHandle
+        Handle_v2<Structure> *resHandle = nullptr;
+   
+        //TODO This is hardcoded for now, will be deleted
+        std::string code (
+        "   func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>) -> (!daphne.Matrix<?x?xf64>) {\n "
+        "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
+        "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
+        "     %2 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n "
+        "     %3 = \"daphne.ewAdd\"(%2, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n "
+        "     \"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n "
+        "   }\n "
+        );
+        mlirCode = code.c_str();
         
-        distributedCompute(resHandle, handles, numInputs, mlirCode, nullptr);
+        // TODO numInputs is not needed anymore, we need to update distributedCompute primitive/kernel
+        distributedCompute(resHandle, handle, numInputs, mlirCode, nullptr);
 
         // Collect
-        // TODO check *combines for aggregations and use additional kernels        
-        distributedCollect(*res[0], resHandle, nullptr);
+        // TODO check *combines for aggregations and use corresponding distributed primitives
+        // distributedCollect(*res[0], resHandle, nullptr);
         
         
     }

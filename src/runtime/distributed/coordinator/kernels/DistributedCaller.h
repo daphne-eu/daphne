@@ -198,8 +198,8 @@ public:
         bool ok = false;
         cq_.Next(&got_tag, &ok);
         callCounter--;
-        AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);
-        if (!ok){
+        AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);    
+        if (!(ok && call->status.ok())){
             throw std::runtime_error(
                 call->status.error_message()
             );

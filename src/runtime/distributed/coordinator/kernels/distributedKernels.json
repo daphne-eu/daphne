@@ -1,64 +1,5 @@
 [
-    {
-        "kernelTemplate": {
-            "header": "Distribute.h",
-            "opName": "distribute",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "Handle<DTRes> *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTArg *",
-                    "name": "mat"
-                }
-            ]
-        },
-        "instantiations": [
-            ["Structure", ["DenseMatrix", "double"]]
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "Broadcast.h",
-            "opName": "broadcast",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "Handle<DTRes> *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTArg *",
-                    "name": "mat"
-                }
-            ]
-        },
-        "instantiations": [
-            ["Structure", ["DenseMatrix", "double"]]
-        ]
-    },
+ 
     {
         "kernelTemplate": {
             "header": "DistributedCollect.h",
@@ -110,45 +51,6 @@
         "instantiations": [
             [["DenseMatrix", "double"]],
             [["CSRMatrix", "double"]]
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "DistributedCompute.h",
-            "opName": "distributedCompute",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTArgs",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "Handle<DTRes> *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const Handle<DTArgs> **",
-                    "name": "args"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numArgs"
-                },
-                {
-                    "type": "const char *",
-                    "name": "mlirCode"
-                }
-            ]
-        },
-        "instantiations": [
-            [["DenseMatrix", "double"], "Structure"],
-            [["CSRMatrix", "double"], "Structure"]
         ]
     }
 ]

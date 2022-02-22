@@ -116,4 +116,32 @@ private:
     size_t cols_;
 };
 
+template<class DT>
+class Handle_v2
+{
+public:
+    // TODO change DistributedData (no need to hold workerAddress there anymore)
+    using HandleMap_v2 = std::map<std::string, std::vector<DistributedData>>;
+
+    Handle_v2 (std::vector<std::string> workerAddresses) {
+        for (auto addr : workerAddresses){
+            
+            map_.insert({addr, std::vector<DistributedData>()});
+        }
+    };
+    
+    ~Handle_v2() 
+    { }
+
+    const HandleMap_v2 getMap() const
+    { return map_; }
+
+    void insertData(std::string addr, DistributedData data){
+        map_[addr].push_back(data);
+    }
+
+private:
+    HandleMap_v2 map_;
+};
+
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_DATASTRUCTURES_HANDLE_H

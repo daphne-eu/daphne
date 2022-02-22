@@ -36,7 +36,7 @@
 template<class DTRes, class DTArg>
 struct Broadcast
 {
-    static void apply(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
+    static void apply(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,7 +44,7 @@ struct Broadcast
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void broadcast(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx))
+void broadcast(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 {
     Broadcast<DTRes, DTArg>::apply(res, mat, ctx);
 }
@@ -56,7 +56,7 @@ void broadcast(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 template<class DTRes>
 struct Broadcast<DTRes, DenseMatrix<double>>
 {
-    static void apply(Handle<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle_v2<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -80,7 +80,6 @@ struct Broadcast<DTRes, DenseMatrix<double>>
         };
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
         
-        typename Handle<DTRes>::HandleMap map;   
 
         distributed::Matrix protoMat;
         ProtoDataConverter::convertToProto(mat, &protoMat);
@@ -103,9 +102,9 @@ struct Broadcast<DTRes, DenseMatrix<double>>
             auto storedData = response.result;
 
             DistributedData data(storedData, workerAddr, channel);
-            map.insert({*ix, data});
+            res->insertData(workerAddr, data);
         }
-        res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());
+        // res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());
     }
 };
 
