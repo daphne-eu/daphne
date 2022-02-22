@@ -43,6 +43,7 @@ Newer versions should work as well, older versions might work as well.
 | ninja | 1.10.0 | |
 | pkg-config | 0.29.1 | |
 | python3 | 3.8.5 | |
+| numpy | 1.19.5 | |
 | java (e.g. openjdk) | 11 (1.7 should be fine) | |
 | gfortran | 9.3.0 | |
 | uuid-dev |  | |

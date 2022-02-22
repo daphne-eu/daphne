@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_IO_READCSV_H
-#define SRC_RUNTIME_LOCAL_IO_READCSV_H
+#pragma once
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -26,6 +25,8 @@
 
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
+
+#include <util/preprocessor_defs.h>
 
 #include <type_traits>
 
@@ -158,7 +159,7 @@ private:
     static void readCOOSorted(CSRMatrix<VT> *&res,
                               File *file,
                               size_t numRows,
-                              size_t numCols,
+            [[maybe_unused]] size_t numCols,
                               size_t numNonZeros,
                               char delim) {
         auto *rowOffsets = res->getRowOffsets();
@@ -183,7 +184,8 @@ private:
             values[i] = 1;
             colIdxs[i] = col;
         }
-        #pragma clang loop vectorize(enable)
+//        #pragma clang loop vectorize(enable)
+        PRAGMA_LOOP_VECTORIZE
         for (size_t r = 1; r <= numRows; ++r) {
             rowOffsets[r] += rowOffsets[r - 1];
         }
@@ -426,5 +428,3 @@ template <class DT> struct ReadCsv<Handle<DT>> {
     res = new Handle<DT>(map, numRows, numCols);
   }
 };
-
-#endif // SRC_RUNTIME_LOCAL_IO_READCSV_H

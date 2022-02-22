@@ -61,7 +61,7 @@ void sample(DTRes *& res, VTArg range, size_t size, bool withReplacement, int64_
 
 template<typename VT>
 struct Sample<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, VT range, size_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
+    static void apply(DenseMatrix<VT> *& res, VT range, int64_t size, bool withReplacement, int64_t seed, DCTX(ctx)) {
         assert(size > 0 && "size (rows) must be > 0");
         assert(range > 0 && "range must be > 0");        
         if ( ! withReplacement ){
@@ -96,7 +96,7 @@ struct Sample<DenseMatrix<VT>, VT> {
         if (withReplacement) {            
 
             VT *valuesRes = res->getValues();
-            for (size_t c = 0; c < size; c++)
+            for (int64_t c = 0; c < size; c++)
             {
                 valuesRes[c] = distrVal(genVal);
             }
@@ -109,7 +109,7 @@ struct Sample<DenseMatrix<VT>, VT> {
                 
                 std::unordered_set<VT> contained;
                 VT *valuesRes = res->getValues();
-                for (size_t c = 0; c < size; c++)
+                for (int64_t c = 0; c < size; c++)
                 {
                     VT generatedValue = distrVal(genVal);
                     while (contained.find(generatedValue) != contained.end()){
@@ -122,10 +122,10 @@ struct Sample<DenseMatrix<VT>, VT> {
             // Else if range is `int` the above method does not work efficiently.
             // Ex. size = range, finding the correct number is increasingly
             // harder as we fill the array. We must implement an efficient algorithm
-            // to create non duplicate numbers (see Knuth's algorithm).                         
+            // to create non-duplicate numbers (see Knuth's algorithm).
             else {                
                 VT *valuesRes = res->getValues();
-                size_t iRange, iSize;
+                int64_t iRange, iSize;
                 iSize = 0;
 
                 for (iRange = 0; iRange < range && iSize < size; iRange++) {

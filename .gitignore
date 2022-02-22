@@ -1,3 +1,5 @@
 build/
 thirdparty/*
 !thirdparty/llvm-project/
+__pycache__/
+tmpdaphne.daphne

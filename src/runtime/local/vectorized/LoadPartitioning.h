@@ -53,7 +53,7 @@ private:
         return actual_step+1;
     }
 public:
-    LoadPartitioning(int method, uint64_t tasks, int64_t chunk, uint32_t workers, bool autochunk){
+    LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autochunk){
         
         if(const char* env_m = std::getenv("DAPHNE_TASK_PARTITION")){
             method= getMethod(env_m);
@@ -84,7 +84,7 @@ public:
         uint64_t chunkSize = 0;
         switch (schedulingMethod){
             case STATIC:{//STATIC
-                chunkSize = (uint64_t) ceil(totalTasks/totalWorkers);
+                chunkSize = std::ceil(totalTasks/totalWorkers);
                 break;
             }
             case SS:{// self-scheduling (SS)

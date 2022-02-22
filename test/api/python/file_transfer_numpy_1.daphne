@@ -1,0 +1,3 @@
+V0=readMatrix("src/api/python/tmp/V0.csv");
+print(V0);
+print(sum(V0));

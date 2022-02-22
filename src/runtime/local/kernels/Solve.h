@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_SOLVE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_SOLVE_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -56,13 +55,12 @@ void solve(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
 template<>
 struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
     static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, DCTX(ctx)) {
-        const size_t nr1 = lhs->getNumRows();
-        const size_t nc1 = lhs->getNumCols();
-        const size_t nr2 = rhs->getNumRows();
-        const size_t nc2 = rhs->getNumCols();
-        assert((nr1 == nr2) && "#rows of lhs and #rows of rhs must be the same");
+        const auto nr1 = static_cast<int>(lhs->getNumRows());
+        const auto nc1 = static_cast<int>(lhs->getNumCols());
+        const auto nc2 = static_cast<int>(rhs->getNumCols());
+        assert((nr1 == static_cast<int>(rhs->getNumRows())) && "#rows of lhs and #rows of rhs must be the same");
         assert((nr1 == nc1) && "#rows and #cols of lhs must be the same");
-        assert((lhs->getRowSkip() == nc1) && "#cols of lhs must match row skip");
+        assert((static_cast<int>(lhs->getRowSkip()) == nc1) && "#cols of lhs must match row skip");
         assert((nc2==1) && "#cols of rhs must be 1");
 
         if(res == nullptr)
@@ -73,7 +71,7 @@ struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         float work[nr1*nc1]; // LU factorization of gesv
         memcpy(work, lhs->getValues(), nr1*nc1*sizeof(float));         //for in-place A
         memcpy(res->getValues(), rhs->getValues(), nr1*sizeof(float)); //for in-place b-out
-        int info = LAPACKE_sgesv(LAPACK_ROW_MAJOR, nr1, 1, work, nc1, ipiv, res->getValues(), 1);
+        [[maybe_unused]] int info = LAPACKE_sgesv(LAPACK_ROW_MAJOR, nr1, 1, work, nc1, ipiv, res->getValues(), 1);
         assert((info<=0) && "A factor Ui is exactly singular, so the solution could not be computed");
     }
 };
@@ -81,13 +79,12 @@ struct Solve<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
 template<>
 struct Solve<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
     static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, DCTX(ctx)) {
-        const size_t nr1 = lhs->getNumRows();
-        const size_t nc1 = lhs->getNumCols();
-        const size_t nr2 = rhs->getNumRows();
-        const size_t nc2 = rhs->getNumCols();
-        assert((nr1 == nr2) && "#rows of lhs and #rows of rhs must be the same");
+        const auto nr1 = static_cast<int>(lhs->getNumRows());
+        const auto nc1 = static_cast<int>(lhs->getNumCols());
+        const auto nc2 = static_cast<int>(rhs->getNumCols());
+        assert((nr1 == static_cast<int>(rhs->getNumRows())) && "#rows of lhs and #rows of rhs must be the same");
         assert((nr1 == nc1) && "#rows and #cols of lhs must be the same");
-        assert((lhs->getRowSkip() == nc1) && "#cols of lhs must match row skip");
+        assert((static_cast<int>(lhs->getRowSkip()) == nc1) && "#cols of lhs must match row skip");
         assert((nc2==1) && "#cols of rhs must be 1");
 
         if(res == nullptr)
@@ -98,9 +95,7 @@ struct Solve<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
         double work[nr1*nc1]; // LU factorization of gesv
         memcpy(work, lhs->getValues(), nr1*nc1*sizeof(double));         //for in-place A
         memcpy(res->getValues(), rhs->getValues(), nr1*sizeof(double)); //for in-place b-out
-        int info = LAPACKE_dgesv(LAPACK_ROW_MAJOR, nr1, 1, work, nc1, ipiv, res->getValues(), 1);
+        [[maybe_unused]] int info = LAPACKE_dgesv(LAPACK_ROW_MAJOR, nr1, 1, work, nc1, ipiv, res->getValues(), 1);
         assert((info<=0) && "A factor Ui is exactly singular, so the solution could not be computed");
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SOLVE_H

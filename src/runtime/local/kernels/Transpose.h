@@ -56,19 +56,25 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
 
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
+        // skip data movement for vectors
+        if (numRows == 1 || numCols == 1) {
+            res = arg->vectorTranspose();
+        }
+        else {
+            if (res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
 
-        const VT * valuesArg = arg->getValues();
-        const size_t rowSkipArg = arg->getRowSkip();
-        const size_t rowSkipRes = res->getRowSkip();
-        for(size_t r = 0; r < numRows; r++) {
-            VT * valuesRes = res->getValues() + r;
-            for(size_t c = 0; c < numCols; c++) {
-                *valuesRes = valuesArg[c];
-                valuesRes += rowSkipRes;
+            const VT *valuesArg = arg->getValues();
+            const size_t rowSkipArg = arg->getRowSkip();
+            const size_t rowSkipRes = res->getRowSkip();
+            for (size_t r = 0; r < numRows; r++) {
+                VT *valuesRes = res->getValues() + r;
+                for (size_t c = 0; c < numCols; c++) {
+                    *valuesRes = valuesArg[c];
+                    valuesRes += rowSkipRes;
+                }
+                valuesArg += rowSkipArg;
             }
-            valuesArg += rowSkipArg;
         }
     }
 };

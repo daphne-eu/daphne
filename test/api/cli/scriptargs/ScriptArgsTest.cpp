@@ -45,5 +45,5 @@ TEST_CASE("Superfluous script argument", TAG_SCRIPTARGS) {
     // the user.
     // Passing superfluous script arguments, that are not actually used by the
     // script is okay.
-    checkDaphneStatusCode(StatusCode::SUCCESS, scriptPath, "--args", "foo=123", "bar=456");
+    checkDaphneStatusCode(StatusCode::SUCCESS, scriptPath, "--args", "foo=123,bar=456");
 }

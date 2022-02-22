@@ -26,7 +26,7 @@
 #include "llvm/Support/CommandLine.h"
 
 #ifdef USE_CUDA
-    #include "runtime/local/kernels/CUDA_HostUtils.h"
+    #include <runtime/local/kernels/CUDA/HostUtils.h>
 #endif
 
 #include <exception>
@@ -36,14 +36,15 @@
 
 #include <cstdlib>
 #include <cstring>
-#include<vector>
+#include <vector>
 
 using namespace std;
 using namespace mlir;
 using namespace llvm::cl;
 
 void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" << endl;
+    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
+     "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
 }
 void tokenize(string const &in, const char delim, vector<std::string> &out)
 {
@@ -59,84 +60,81 @@ void tokenize(string const &in, const char delim, vector<std::string> &out)
 int
 main(int argc, char** argv)
 {
-    // Parse command line arguments.
-    // TODO Rather than implementing this ourselves, we should use some library
-    // (see issue #105).
-    std::vector<std::string> args(argv, argv + argc);
-    unordered_map<string, string> scriptArgs;
-
+    // ************************************************************************
+    // Parse command line arguments
+    // ************************************************************************
+    
     OptionCategory daphneOptions("daphne Options", "Options for controlling the compilation process.");
 
     opt<bool> useVectorizedPipelines("vec", desc("force tiled execution engine"), cat(daphneOptions));
-   
+    opt<bool> noFree("no-free", desc("don't insert FreeOp"), cat(daphneOptions));
     opt<bool> selectMatrixRepresentations("select-matrix-representations", desc("force sparce matrices"),  cat(daphneOptions));
     alias selectMatrixRepresentationsAlias("s", desc("Alias for -select-matrix-representations"), aliasopt(selectMatrixRepresentations));
-
+    // TODO: parse --explain=[list,of,compiler,passes,to,explain]
+    opt<bool> explainKernels("explain-kernels", desc("show IR after lowering to kernel calls"),  cat(daphneOptions));
+    opt<bool> cuda("cuda", desc("use CUDA"),  cat(daphneOptions));
+    opt<string> libDir("libdir", desc("the directory containing kernel libraries"),  cat(daphneOptions));
     opt<string> userArgs("args", desc("user arguments to the daphne script <token1=value,token2=value,....>"),  cat(daphneOptions));
 
     opt<string> inputFile(Positional, desc("<input file>"), Required);
 
     HideUnrelatedOptions( daphneOptions);
-    ParseCommandLineOptions(argc, argv, " daphne compiler \n\nThis program compiles a daphne script...\n");    
+    ParseCommandLineOptions(argc, argv, " daphne compiler \n\nThis program compiles a daphne script...\n");
+    
+    // ************************************************************************
+    // Process parsed arguments
+    // ************************************************************************
+    
+    // Initialize user configuration.
+    
+    DaphneUserConfig user_config{};
+    
+//    user_config.debug_llvm = true;
+    user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.use_freeOps = !noFree;
+    user_config.explain_kernels = explainKernels;
+    user_config.libdir = libDir;
+    user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+    
+    if(cuda) {
+        int device_count = 0;
+#ifdef USE_CUDA
+        CHECK_CUDART(cudaGetDeviceCount(&device_count));
+#endif
+        if(device_count < 1)
+            std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+        else {
+            user_config.use_cuda = true;
+        }
+    }
 
-    /*if(useVectorizedPipelines)
-        cout<<"forced vectorization"<<endl;
+    // add this after the cli args loop to work around args order
+    if(!user_config.libdir.empty() && user_config.use_cuda)
+            user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 
-    if(selectMatrixRepresentations)
-        cout<<"forced sparse matrices"<<endl;
-    */
+    // Extract script args.
+    
+    unordered_map<string, string> scriptArgs;
     vector<string> tokenArgs;
     tokenize(userArgs.c_str(), ',',tokenArgs);
     for(size_t i = 0; i < tokenArgs.size(); i++){
         const string pair = tokenArgs.at(i);
         size_t pos = pair.find('=');
         if(pos == string::npos)
-                break;
-      //  cout<<pair.substr(0, pos)<<","<<pair.substr(pos + 1, pair.size())<<endl;
+            break;
         scriptArgs.emplace(
-                            pair.substr(0, pos), // arg name
-                            pair.substr(pos + 1, pair.size()) // arg value
-                            );
-
+                pair.substr(0, pos), // arg name
+                pair.substr(pos + 1, pair.size()) // arg value
+        );
     }
-
-    // TODO "libdir" and "cuda" should not be script arguments. Script
-    // arguments are those that can be used from within the DaphneDSL script.
-    // However, these two arguments are only required during compilation and
-    // runtime, users do not need to access them in a script.
     
-    DaphneUserConfig user_config;
-    auto it = scriptArgs.find("libdir");
-    if(it != scriptArgs.end()) {
-        user_config.libdir = it->second;
-        user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
-    }
-
-#ifdef USE_CUDA
-    it = scriptArgs.find("cuda");
-    if(it != scriptArgs.end()) {
-        if(it->second == "1") {
-//            std::cout << "-cuda flag provided" << std::endl;
-            int device_count;
-              CHECK_CUDART(cudaGetDeviceCount(&device_count));
-              if(device_count < 1)
-                  std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
-            else { // NOLINT(readability-misleading-indentation)
-                std::cout << "Available CUDA devices: " << device_count << std::endl;
-                user_config.use_cuda = true;
-            }
-        }
-    }
-
-    it = scriptArgs.find("libdir");
-    if(it != scriptArgs.end()) {
-        user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
-    }
-#endif
+    // ************************************************************************
+    // Compile and execute script
+    // ************************************************************************
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), useVectorizedPipelines, selectMatrixRepresentations, true, user_config);
+        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepresentations, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
