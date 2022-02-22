@@ -105,11 +105,8 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column", TAG_KERNEL
 
     Frame * res = nullptr;
     castObj<Frame, DTArg>(res, arg, nullptr);
-
     REQUIRE(res->getNumRows() == numRows);
     REQUIRE(res->getNumCols() == 1);
-    DenseMatrix<VTArg>* fnd = res->getColumn<VTArg>(0);
-    CHECK(*fnd == *arg);
     CHECK(*res == *exp);
 
     DataObjectFactory::destroy(exp);
@@ -130,32 +127,20 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column", TAG_KERNELS
         VTArg(9.9), VTArg(1.0), VTArg(2.0)
         });
     
-    auto c0Exp = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(3.3), VTArg(6.6), VTArg(9.9)});
-    auto c1Exp = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(1.1), VTArg(4.4), VTArg(7.7), VTArg(1.0)});
-    auto c2Exp = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(2.2), VTArg(5.5), VTArg(8.8), VTArg(2.0)});
-    std::vector<Structure *> cols = {c0Exp, c1Exp, c2Exp};
+    auto c0 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(3.3), VTArg(6.6), VTArg(9.9)});
+    auto c1 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(1.1), VTArg(4.4), VTArg(7.7), VTArg(1.0)});
+    auto c2 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(2.2), VTArg(5.5), VTArg(8.8), VTArg(2.0)});
+    std::vector<Structure *> cols = {c0, c1, c2};
     auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
     
     Frame * res = nullptr;
     castObj<Frame, DTArg>(res, arg, nullptr);
     REQUIRE(res->getNumRows() == numRows);
     REQUIRE(res->getNumCols() == numCols);
-    DenseMatrix<VTArg>* c0Fnd = res->getColumn<VTArg>(0);
-    DenseMatrix<VTArg>* c1Fnd = res->getColumn<VTArg>(1);
-    DenseMatrix<VTArg>* c2Fnd = res->getColumn<VTArg>(2);
-    CHECK(*c0Fnd == *c0Exp);
-    CHECK(*c1Fnd == *c1Exp);
-    CHECK(*c2Fnd == *c2Exp);
     CHECK(*res == *exp);
 
     DataObjectFactory::destroy(exp);
-    DataObjectFactory::destroy(c0Exp);
-    DataObjectFactory::destroy(c1Exp);
-    DataObjectFactory::destroy(c2Exp);
     DataObjectFactory::destroy(arg);
-    DataObjectFactory::destroy(c0Fnd);
-    DataObjectFactory::destroy(c1Fnd);
-    DataObjectFactory::destroy(c2Fnd);
     DataObjectFactory::destroy(res);
 }
 
