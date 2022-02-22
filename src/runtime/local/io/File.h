@@ -28,6 +28,7 @@ struct File {
 
 inline struct File *openFile(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
+
   f->identifier = fopen(filename, "r");
   f->pos = 0;
 
@@ -38,6 +39,7 @@ inline struct File *openFile(const char *filename) {
 
 inline struct File *openFileForWrite(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
+
   f->identifier = fopen(filename, "w+");
   f->pos = 0;
   
