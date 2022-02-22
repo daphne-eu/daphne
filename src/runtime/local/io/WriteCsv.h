@@ -68,10 +68,15 @@ struct WriteCsv<DenseMatrix<VT>> {
         {
             for(size_t j = 0; j < arg->getNumCols(); ++j)
             {
+                fprintf(
+                        file->identifier,
+                        std::is_floating_point<VT>::value ? "%f" : (std::is_same<VT, long int>::value ? "%ld" : "%d"),
+                        valuesArg[cell++]
+                );
                 if(j < (arg->getNumCols() - 1))
-                    fprintf(file->identifier, "%f,", (valuesArg[cell++]));
-                else if (j == (arg->getNumCols() - 1))
-                    fprintf(file->identifier,"%f\n", (valuesArg[cell++]));
+                    fprintf(file->identifier, ",");
+                else
+                    fprintf(file->identifier, "\n");
             }
         }
    }
