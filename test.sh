@@ -29,6 +29,10 @@ set -e
 # Build tests.
 ./build.sh --target run_tests
 
+# Preparations for running DaphneLib (Python API) tests.
+export PYTHONPATH=$PYTHONPATH:$(pwd)/src/
+mkdir --parents src/api/python/tmp
+
 # Run tests.
 build/test/run_tests $@
 

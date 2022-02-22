@@ -1130,6 +1130,35 @@
     },
     {
         "kernelTemplate": {
+            "header": "Write.h",
+            "opName": "write",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "filename"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Replace.h",
             "opName": "replace",
             "returnType": "void",
