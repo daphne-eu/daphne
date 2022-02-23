@@ -221,3 +221,82 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEq, empty matrices", TAG_KERNELS, (CSRMatrix), 
         CHECK_FALSE(*view1 == *view2);
     }
 }
+
+TEST_CASE("CheckEq, frames", TAG_KERNELS) {
+    using VT0 = int64_t;
+    using VT1 = double;
+    using VT2 = float;
+    using VT3 = uint32_t;
+
+    const size_t numRows = 4;
+
+    auto c0 = genGivenVals<DenseMatrix<VT0>>(numRows, {VT0(0.0), VT0(1.1), VT0(2.2), VT0(3.3)});
+    auto c1 = genGivenVals<DenseMatrix<VT1>>(numRows, {VT1(4.4), VT1(5.5), VT1(6.6), VT1(7.7)});
+    auto c2 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.8), VT2(9.9), VT2(1.0), VT2(2.0)});
+   
+    std::vector<Structure *> cols = {c0, c1, c2};
+    auto frame1 = DataObjectFactory::create<Frame>(cols, nullptr);
+    
+    SECTION("same inst") {
+        CHECK(*frame1 == *frame1);
+    }
+    SECTION("diff inst, same schema, same cont, no labels") {
+        auto c3 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.8), VT2(9.9), VT2(1.0), VT2(2.0)});
+        std::vector<Structure *> cols2 = {c0, c1, c3};
+        auto frame2 = DataObjectFactory::create<Frame>(cols2, nullptr);
+        CHECK(*frame1 == *frame2);
+        DataObjectFactory::destroy(frame2);
+        DataObjectFactory::destroy(c3);
+    }
+    SECTION("diff inst, diff schema, same cont, no labels") {
+        auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, {VT3(8.8), VT3(9.9), VT3(1.0), VT3(2.0)});
+        std::vector<Structure *> cols2 = {c0, c1, c3};
+        auto frame2 = DataObjectFactory::create<Frame>(cols2, nullptr);
+        CHECK_FALSE(*frame1 == *frame2);
+        DataObjectFactory::destroy(frame2);
+        DataObjectFactory::destroy(c3);
+    }
+    SECTION("diff inst, same schema, diff cont, no labels") {
+        auto c3 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.0), VT2(0.9), VT2(1.0), VT2(0.2)});
+        std::vector<Structure *> cols2 = {c0, c1, c3};
+        auto frame2 = DataObjectFactory::create<Frame>(cols2, nullptr);
+        CHECK_FALSE(*frame1 == *frame2);
+        DataObjectFactory::destroy(frame2);
+        DataObjectFactory::destroy(c3);
+    }
+    SECTION("diff inst, diff schema, diff cont, no labels") {
+        auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, {VT3(8.0), VT3(0.9), VT3(1.0), VT3(0.2)});
+        std::vector<Structure *> cols2 = {c0, c1, c3};
+        auto frame2 = DataObjectFactory::create<Frame>(cols2, nullptr);
+        CHECK_FALSE(*frame1 == *frame2);
+        DataObjectFactory::destroy(frame2);
+        DataObjectFactory::destroy(c3);
+    }
+    SECTION("diff inst, same schema, same cont, same labels") {
+        auto c3 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.8), VT2(9.9), VT2(1.0), VT2(2.0)});
+        std::string * labels1 =  new std::string[3] {"ab", "cde", "fghi"};
+        std::string * labels2 =  new std::string[3] {"ab", "cde", "fghi"};
+        frame1 = DataObjectFactory::create<Frame>(cols, labels1);
+        std::vector<Structure *> cols2 = {c0, c1, c3};
+        auto frame2 = DataObjectFactory::create<Frame>(cols2, labels2);
+        CHECK(*frame1 == *frame2);
+        DataObjectFactory::destroy(frame2);
+        DataObjectFactory::destroy(c3);
+    }
+    SECTION("diff inst, same schema, same cont, diff labels") {
+        auto c3 = genGivenVals<DenseMatrix<VT2>>(numRows, {VT2(8.8), VT2(9.9), VT2(1.0), VT2(2.0)});
+        std::string * labels1 =  new std::string[3] {"ab", "cde", "fghi"};
+        std::string * labels2 =  new std::string[3] {"ab", "cde", "fxyz"};
+        frame1 = DataObjectFactory::create<Frame>(cols, labels1);
+        std::vector<Structure *> cols2 = {c0, c1, c3};
+        auto frame2 = DataObjectFactory::create<Frame>(cols2, labels2);
+        CHECK_FALSE(*frame1 == *frame2);
+        DataObjectFactory::destroy(frame2);
+        DataObjectFactory::destroy(c3);
+    }
+
+    DataObjectFactory::destroy(frame1);
+    DataObjectFactory::destroy(c0);
+    DataObjectFactory::destroy(c1);
+    DataObjectFactory::destroy(c2);
+}

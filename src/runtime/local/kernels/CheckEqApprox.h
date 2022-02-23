@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include <cstddef>
 #include <cstring>
@@ -159,4 +160,64 @@ struct CheckEqApprox<CSRMatrix<VT>> {
 
     }
 };
+
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
+
+template <> struct CheckEqApprox<Frame> {
+    static bool apply(const Frame * lhs, const Frame * rhs, double eps, DCTX(ctx)) {
+        if(lhs == rhs)
+            return true;
+        
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+        
+        if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
+            return false;
+        
+        if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)))
+            return false;
+
+        const std::string * labelsLhs = lhs->getLabels();
+        const std::string * labelsRhs = rhs->getLabels();
+        for (size_t c = 0; c < numCols; c++) {
+            if(labelsLhs[c] != labelsRhs[c])
+                return false;
+        }
+        
+        for (size_t c = 0; c < numCols; c++)
+        {
+            switch(lhs->getColumnType(c)) {
+                // For all value types:
+                case ValueTypeCode::F64: if(!checkEqApprox(lhs->getColumn<double>(c),
+                    rhs->getColumn<double>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::F32: if (!checkEqApprox(lhs->getColumn<float>(c),
+                    rhs->getColumn<float>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::SI64: if (!checkEqApprox(lhs->getColumn<int64_t>(c),
+                    rhs->getColumn<int64_t>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::SI32: if (!checkEqApprox(lhs->getColumn<int32_t>(c),
+                    rhs->getColumn<int32_t>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::SI8 : if (!checkEqApprox(lhs->getColumn<int8_t>(c),
+                    rhs->getColumn<int8_t>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::UI64: if (!checkEqApprox(lhs->getColumn<uint64_t>(c),
+                    rhs->getColumn<uint64_t>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::UI32: if (!checkEqApprox(lhs->getColumn<uint32_t>(c), 
+                    rhs->getColumn<uint32_t>(c), eps, ctx)) return false;
+                    break;
+                case ValueTypeCode::UI8 : if (!checkEqApprox(lhs->getColumn<uint8_t>(c),
+                    rhs->getColumn<uint8_t>(c), eps, ctx)) return false;
+                    break;
+            }
+        }   
+        return true;
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CHECKEQAPPROX_H
