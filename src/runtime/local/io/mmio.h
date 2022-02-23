@@ -49,21 +49,23 @@ template <class DTRes> struct ReadMM {
 
 template <class DTRes>
 void readMM(DTRes *&res, const char *filename) {
-  ReadMM<DTRes>::apply(res, file);
+  ReadMM<DTRes>::apply(res, filename);
 }
 
 template <typename VT> struct ReadMM<DenseMatrix<VT>> {
-  static void readMM(DenseMatrix<VT> *&res, const char *filename){
+  static void apply(DenseMatrix<VT> *&res, const char *filename){
     MMFile<VT> mmfile(filename);
     if(res == nullptr)
       res = DataObjectFactory::create<DenseMatrix<VT>>(
         mmfile.numberRows(),
-        mmfile.numberCols()
+        mmfile.numberCols(),
+        false
       );
     VT *valuesRes = res->getValues();
     for (auto &entry : mmfile)
       valuesRes[entry.row * mmfile.numberRows() + entry.col] = entry.val;
     return;
+    ~mmfile;
   }
 };
 #endif // MM_IO_H

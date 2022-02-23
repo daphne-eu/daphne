@@ -45,6 +45,7 @@ set(TEST_SOURCES
 
         runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
+        runtime/local/io/ReadMMTest.cpp
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp

@@ -19,12 +19,14 @@
 
 #include <iterator>
 #include <cstddef>
+#include <cstring>
 
 #define MM_MAX_LINE_LENGTH 1025
 #define MatrixMarketBanner "%%MatrixMarket"
 #define MM_MAX_TOKEN_LENGTH 64
 
 #include <runtime/local/io/File.h>
+#include <runtime/local/io/utils.h>
 
 typedef char MM_typecode[4];
 
@@ -260,7 +262,6 @@ public:
             mm_read_mtx_array_size(f, &rows, &cols);
             nnz = rows*cols;
         }
-        std::cout << "Size is " << rows << "x" << cols << std::endl;
     }
     ~MMFile(){ /*closeFile(f);*/ }
     size_t numberRows() { return rows; }
