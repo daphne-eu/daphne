@@ -111,6 +111,7 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 # *****************************************************************************
 
 add_subdirectory(src/api/cli)
+add_subdirectory(src/api/general)
 add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)
