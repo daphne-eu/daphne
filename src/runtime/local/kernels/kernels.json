@@ -1991,11 +1991,11 @@
                 },
                 {
                     "type": "size_t",
-                    "name": "rowLowerIncl"
+                    "name": "lowerIncl"
                 },
                 {
                     "type": "size_t",
-                    "name": "rowUpperExcl"
+                    "name": "upperExcl"
                 }
             ]
         },
