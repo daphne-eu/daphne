@@ -53,10 +53,10 @@ void broadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct Broadcast<DenseMatrix<double>>
+template<typename VT>
+struct Broadcast<DenseMatrix<VT>>
 {
-    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle<DenseMatrix<VT>> *&res, const DenseMatrix<VT> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -80,10 +80,10 @@ struct Broadcast<DenseMatrix<double>>
         };
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
         
-        Handle<DenseMatrix<double>>::HandleMap map;   
+        typename Handle<DenseMatrix<VT>>::HandleMap map;   
 
         distributed::Matrix protoMat;
-        ProtoDataConverter::convertToProto(mat, &protoMat);
+        ProtoDataConverter<VT>::convertToProto(mat, &protoMat);
         
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
@@ -101,11 +101,14 @@ struct Broadcast<DenseMatrix<double>>
             auto channel = response.storedInfo.channel;
 
             auto storedData = response.result;
-
+            if(std::is_floating_point<VT>())
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
+            else
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
             DistributedData data(storedData, workerAddr, channel);
             map.insert({*ix, data});
         }
-        res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
+        res = new Handle<DenseMatrix<VT>>(map, mat->getNumRows(), mat->getNumCols());
     }
 };
 

@@ -54,10 +54,10 @@ void distribute(Handle<DT> *&res, const DT *mat, DCTX(ctx))
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct Distribute<DenseMatrix<double>>
+template<typename VT>
+struct Distribute<DenseMatrix<VT>>
 {
-    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle<DenseMatrix<VT>> *&res, const DenseMatrix<VT> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -81,7 +81,7 @@ struct Distribute<DenseMatrix<double>>
         };        
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
 
-        Handle<DenseMatrix<double>>::HandleMap map;
+        typename Handle<DenseMatrix<VT>>::HandleMap map;
 
         auto r = 0ul;
         for (auto workerIx = 0ul; workerIx < workers.size() && r < mat->getNumRows(); workerIx++) {            
@@ -91,7 +91,7 @@ struct Distribute<DenseMatrix<double>>
 
             auto k = mat->getNumRows() / workers.size();
             auto m = mat->getNumRows() % workers.size();
-            ProtoDataConverter::convertToProto(mat,
+            ProtoDataConverter<VT>::convertToProto(mat,
                 &protoMat,
                 (workerIx * k) + std::min(workerIx, m),
                 (workerIx + 1) * k + std::min(workerIx + 1, m),
@@ -112,12 +112,15 @@ struct Distribute<DenseMatrix<double>>
             auto workerAddr = response.storedInfo.workerAddr;
             auto channel = response.storedInfo.channel;
 
-            auto storedData = response.result;
-
+            distributed::StoredData storedData = response.result;
+            if(std::is_floating_point<VT>())
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
+            else
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
             DistributedData data(storedData, workerAddr, channel);
             map.insert({*ix, data});
         }
-        res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
+        res = new Handle<DenseMatrix<VT>>(map, mat->getNumRows(), mat->getNumCols());
     }
 };
 

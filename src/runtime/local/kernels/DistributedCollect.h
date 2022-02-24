@@ -54,10 +54,10 @@ void distributedCollect(DT *&res, const Handle<DT> *handle, DCTX(ctx))
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<>
-struct DistributedCollect<DenseMatrix<double>>
+template<typename VT>
+struct DistributedCollect<DenseMatrix<VT>>
 {
-    static void apply(DenseMatrix<double> *&res, const Handle<DenseMatrix<double>> *handle, DCTX(ctx))
+    static void apply(DenseMatrix<VT> *&res, const Handle<DenseMatrix<VT>> *handle, DCTX(ctx))
     {
         struct StoredInfo{
             DistributedIndex *ix;
@@ -65,14 +65,14 @@ struct DistributedCollect<DenseMatrix<double>>
         DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
         // auto blockSize = DistributedData::BLOCK_SIZE;
-        res = DataObjectFactory::create<DenseMatrix<double>>(handle->getRows(), handle->getCols(), false);
+        res = DataObjectFactory::create<DenseMatrix<VT>>(handle->getRows(), handle->getCols(), false);
         for (auto &pair : handle->getMap()) {
             auto ix = pair.first;
             auto data = pair.second;
 
             StoredInfo storedInfo({new DistributedIndex(ix)});
-
-            caller.asyncTransferCall(data.getChannel(), storedInfo, data.getData());
+            distributed::StoredData storedData = data.getData();
+            caller.asyncTransferCall(data.getChannel(), storedInfo, storedData);
         }
         // Get num workers
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
@@ -94,7 +94,7 @@ struct DistributedCollect<DenseMatrix<double>>
             auto response = caller.getNextResult();
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
-            ProtoDataConverter::convertFromProto(matProto,
+            ProtoDataConverter<VT>::convertFromProto(matProto,
                 res,
                 ix->getRow() * k + std::min(ix->getRow(), m),
                 (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
