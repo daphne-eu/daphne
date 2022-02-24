@@ -168,35 +168,42 @@ template <> struct CheckEq<Frame> {
             return false;
 
         if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)))
-            return false;   
+            return false;
+
+        const std::string * labelsLhs = lhs->getLabels();
+        const std::string * labelsRhs = rhs->getLabels();
+        for (size_t c = 0; c < numCols; c++) {
+            if(labelsLhs[c] != labelsRhs[c])
+                return false;
+        }
         
         for (size_t c = 0; c < numCols; c++)
         {
             switch(lhs->getColumnType(c)) {
                 // For all value types:
                 case ValueTypeCode::F64: if(!checkEq(lhs->getColumn<double>(c),
-                    rhs->getColumn<double>(c), nullptr)) return false;
+                    rhs->getColumn<double>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::F32: if (!checkEq(lhs->getColumn<float>(c),
-                    rhs->getColumn<float>(c), nullptr)) return false;
+                    rhs->getColumn<float>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::SI64: if (!checkEq(lhs->getColumn<int64_t>(c),
-                    rhs->getColumn<int64_t>(c), nullptr)) return false;
+                    rhs->getColumn<int64_t>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::SI32: if (!checkEq(lhs->getColumn<int32_t>(c),
-                    rhs->getColumn<int32_t>(c), nullptr)) return false;
+                    rhs->getColumn<int32_t>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::SI8 : if (!checkEq(lhs->getColumn<int8_t>(c),
-                    rhs->getColumn<int8_t>(c), nullptr)) return false;
+                    rhs->getColumn<int8_t>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::UI64: if (!checkEq(lhs->getColumn<uint64_t>(c),
-                    rhs->getColumn<uint64_t>(c), nullptr)) return false;
+                    rhs->getColumn<uint64_t>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::UI32: if (!checkEq(lhs->getColumn<uint32_t>(c), 
-                    rhs->getColumn<uint32_t>(c), nullptr)) return false;
+                    rhs->getColumn<uint32_t>(c), ctx)) return false;
                     break;
                 case ValueTypeCode::UI8 : if (!checkEq(lhs->getColumn<uint8_t>(c),
-                    rhs->getColumn<uint8_t>(c), nullptr)) return false;
+                    rhs->getColumn<uint8_t>(c), ctx)) return false;
                     break;
             }
         }   
