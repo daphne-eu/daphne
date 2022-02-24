@@ -309,12 +309,6 @@ public:
               c = atoi(line+pos)-1;
               while(line[pos++] != ' ');
           }
-          //Matrix is in array format
-          //TODO: Handle traversal of symmetric and skew storage
-          else if(r >= file.rows) {
-              r = 0; c++;
-              //assert(c < cols && "Number of entries is greater than matrix size");
-          }
           convertCstr(line + pos, &cur);
           *m_ptr = {r, c, cur};
           if(mm_is_symmetric(file.typecode) && r != c){
@@ -327,7 +321,12 @@ public:
             *next = {c, r, -cur};
             do_next = true;
           }
-          r++;
+          //TODO: Handle traversal of symmetric and skew storage
+          //For when matrix is in array format
+          if(++r >= file.rows) {
+            r = 0; c++;
+            //assert(c < cols && "Number of entries is greater than matrix size");
+          }
         }
     public:
         MMIterator(MMFile<VT>& f, bool read = true) : file(f) {

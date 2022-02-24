@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <limits>
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -42,6 +42,30 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM", TAG_KERNELS, (DenseMatrix), (int32_t)) {
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(0, 0) == 1);
+  CHECK(m->get(3, 4) == 9);
+  CHECK(m->get(7, 4) == 4);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 4;
+  size_t numCols = 3;
+
+  char filename[] = "./test/runtime/local/io/aig.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(0, 0) == 1);
+  CHECK(m->get(1, 0) == 2);
+  CHECK(m->get(0, 1) == 5);
+  CHECK(m->get(3, 2) == 12);
+  CHECK(m->get(2, 1) == 7);
 
   DataObjectFactory::destroy(m);
 }
