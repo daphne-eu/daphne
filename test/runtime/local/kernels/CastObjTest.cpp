@@ -105,8 +105,6 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column", TAG_KERNEL
 
     Frame * res = nullptr;
     castObj<Frame, DTArg>(res, arg, nullptr);
-    REQUIRE(res->getNumRows() == numRows);
-    REQUIRE(res->getNumCols() == 1);
     CHECK(*res == *exp);
 
     DataObjectFactory::destroy(exp);
@@ -119,7 +117,6 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column", TAG_KERNELS
     using VTArg = typename DTArg::VT;
 
     const size_t numRows = 4;
-    const size_t numCols = 3;
     auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows, {
         VTArg(0.0), VTArg(1.1), VTArg(2.2),
         VTArg(3.3), VTArg(4.4), VTArg(5.5),
@@ -135,8 +132,6 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column", TAG_KERNELS
     
     Frame * res = nullptr;
     castObj<Frame, DTArg>(res, arg, nullptr);
-    REQUIRE(res->getNumRows() == numRows);
-    REQUIRE(res->getNumCols() == numCols);
     CHECK(*res == *exp);
 
     DataObjectFactory::destroy(exp);
@@ -182,7 +177,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame and back, multi-column", TA
     CHECK(*m1 == *res1);
     CHECK(*m2 == *res2);
 
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m0, f0, res0);
+    DataObjectFactory::destroy(m1, f1, res1);
+    DataObjectFactory::destroy(m2, f2, res2);
 }

@@ -131,9 +131,10 @@ public:
         const size_t numCols = arg->getNumCols();
         const size_t numRows = arg->getNumRows();
         std::vector<Structure *> cols;
-        if (numCols == 1){
-            // The input matrix has a single column, that can be reused 
-            // as the column matrix of the output frame.
+        if (numCols == 1 && arg->getRowSkip() == 1) {
+            // The input matrix has a single column and is not a view into a
+            // column range of another matrix, so it can be reused as the
+            // column matrix of the output frame.
             // Cheap/Low-cost cast from dense matrix to frame.
             cols.push_back(const_cast<DenseMatrix<VTArg> *>(arg));
         }
