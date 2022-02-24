@@ -28,20 +28,20 @@
 #include <cstdint>
 #include <limits>
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM", TAG_KERNELS, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
-  size_t numRows = 497;
-  size_t numCols = 507;
+  size_t numRows = 9;
+  size_t numCols = 9;
 
-  char filename[] = "./test/runtime/local/io/crg.mtx";
+  char filename[] = "./test/runtime/local/io/cig.mtx";
   readMM(m, filename);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
-  CHECK(m->get(5, 0) == 0.25599762);
+  CHECK(m->get(0, 0) == 1);
 
   DataObjectFactory::destroy(m);
 }

@@ -288,7 +288,7 @@ public:
         using reference   = Entry&;
         using difference_type = std::ptrdiff_t;
     private:
-        pointer m_ptr, next;
+        pointer m_ptr = (pointer)malloc(sizeof(Entry)*2), next = m_ptr+1;
         bool do_next = false;
         MMFile<VT> file;
         char *line;
@@ -333,13 +333,15 @@ public:
         MMIterator(MMFile<VT>& f, bool read = true) : file(f) {
           if(read) readEntry();
         }
+        ~MMIterator() { free((void*)std::min(m_ptr, next)); }
+
         void terminate() { *m_ptr = { -1ul, -1ul, cur}; }
         reference operator*() const { return *m_ptr; }
         pointer operator->() { return m_ptr; }
 
         // Prefix increment
         MMIterator& operator++() {
-          if(do_next) { *m_ptr = *next; do_next = false; }
+          if(do_next) { std::swap(m_ptr, next); do_next = false; }
           else readEntry();
           return *this;
         }   
@@ -354,6 +356,7 @@ public:
     MMIterator begin() {
       return MMIterator(*this);
     }
+
     MMIterator end() {
       MMIterator dummy = MMIterator(*this, false);
       dummy.terminate();

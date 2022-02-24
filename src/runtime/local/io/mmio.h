@@ -65,7 +65,6 @@ template <typename VT> struct ReadMM<DenseMatrix<VT>> {
     for (auto &entry : mmfile)
       valuesRes[entry.row * mmfile.numberRows() + entry.col] = entry.val;
     return;
-    ~mmfile;
   }
 };
 #endif // MM_IO_H
