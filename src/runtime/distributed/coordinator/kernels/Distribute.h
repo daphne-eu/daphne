@@ -36,28 +36,7 @@
 template<class DT>
 struct Distribute
 {
-    static void apply(DT *mat, DCTX(ctx)) = delete;
-};
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DT>
-void distribute(DT *mat, DCTX(ctx))
-{
-    Distribute<DT>::apply(mat, ctx);
-}
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-template<>
-struct Distribute<const DenseMatrix<double>>
-{
-    static void apply(const DenseMatrix<double> *mat, DCTX(ctx))
-    {
+    static void apply(DT *mat, DCTX(ctx)) {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
         std::string workersStr(envVar);
@@ -89,7 +68,7 @@ struct Distribute<const DenseMatrix<double>>
 
             auto k = mat->getNumRows() / workers.size();
             auto m = mat->getNumRows() % workers.size();
-            ProtoDataConverter::convertToProto(mat,
+            ProtoDataConverter<typename DT::VT>::convertToProto(mat,
                 &protoMat,
                 (workerIx * k) + std::min(workerIx, m),
                 (workerIx + 1) * k + std::min(workerIx + 1, m),
@@ -110,7 +89,10 @@ struct Distribute<const DenseMatrix<double>>
             auto workerAddr = response.storedInfo.workerAddr;
 
             auto storedData = response.result;
-
+            if(std::is_floating_point<typename DT::VT>())
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
+            else
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
             DistributedData data(*ix, storedData);
             dataMap[workerAddr] = data;
         }
@@ -119,5 +101,16 @@ struct Distribute<const DenseMatrix<double>>
         mat->dataPlacement = dataPlacement;
     }
 };
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DT>
+void distribute(DT *mat, DCTX(ctx))
+{
+    Distribute<DT>::apply(mat, ctx);
+}
+
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H

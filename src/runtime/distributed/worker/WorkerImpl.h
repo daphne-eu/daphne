@@ -65,10 +65,43 @@ private:
                                                             google::protobuf::RepeatedPtrField<distributed::WorkData> workInputs,
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
-
-    Matrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
+    
+    template<typename VT>
+    Matrix<VT> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
     static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
+    
+    /**
+     * @brief Helper store function using templates in order to handle
+     * different types.
+     * 
+     * @tparam VT double/int etc.
+     */
+    template<typename VT>
+    grpc::Status templateStore(::grpc::ServerContext *context,
+                         const ::distributed::Matrix *request,
+                         ::distributed::StoredData *response) ;
+
+    /**
+     * @brief Helper transfer function using templates in order to handle
+     * different types.
+     * 
+     * @tparam VT double/int etc.
+     */
+    template<typename VT>
+    grpc::Status templateTransfer(::grpc::ServerContext *context,
+                          const ::distributed::StoredData *request,
+                         ::distributed::Matrix *response);
+                         /**
+     * @brief Helper FreeMem function using templates in order to handle
+     * different types.
+     * 
+     * @tparam VT double/int etc.
+     */
+    template<typename VT>
+    grpc::Status templateFreeMem(::grpc::ServerContext *context,
+                         const ::distributed::StoredData *request,
+                         ::distributed::Empty *emptyMessage);
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H

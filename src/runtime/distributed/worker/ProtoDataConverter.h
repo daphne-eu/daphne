@@ -21,19 +21,24 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
+template<typename VT>
 class ProtoDataConverter
 {
+private:
+    static const google::protobuf::RepeatedField<VT> getCells(const distributed::Matrix *matProto);
+    static google::protobuf::RepeatedField<VT> *getMutableCells(distributed::Matrix *matProto);
+    
 public:
-    static void convertToProto(const DenseMatrix<double> *mat, distributed::Matrix *matProto);
-    static void convertToProto(const DenseMatrix<double> *mat,
+    static void convertToProto(const DenseMatrix<VT> *mat, distributed::Matrix *matProto);
+    static void convertToProto(const DenseMatrix<VT> *mat,
                                distributed::Matrix *matProto,
                                size_t rowBegin,
                                size_t rowEnd,
                                size_t colBegin,
                                size_t colEnd);
-    static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<double> *mat);
+    static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<VT> *mat);
     static void convertFromProto(const distributed::Matrix &matProto,
-                                 DenseMatrix<double> *mat,
+                                 DenseMatrix<VT> *mat,
                                  size_t rowBegin,
                                  size_t rowEnd,
                                  size_t colBegin,

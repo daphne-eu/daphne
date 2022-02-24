@@ -35,27 +35,7 @@
 template<class DT>
 struct Broadcast
 {
-    static void apply(DT *mat, DCTX(ctx)) = delete;
-};
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DT>
-void broadcast(DT *mat, DCTX(ctx))
-{
-    Broadcast<DT>::apply(mat, ctx);
-}
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-template<>
-struct Broadcast<const DenseMatrix<double>>
-{
-    static void apply(const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(DT *mat, DCTX(ctx)) 
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -79,7 +59,7 @@ struct Broadcast<const DenseMatrix<double>>
         
 
         distributed::Matrix protoMat;
-        ProtoDataConverter::convertToProto(mat, &protoMat);
+        ProtoDataConverter<typename DT::VT>::convertToProto(mat, &protoMat);
         
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
@@ -95,14 +75,29 @@ struct Broadcast<const DenseMatrix<double>>
             auto workerAddr = response.storedInfo.workerAddr;            
 
             auto storedData = response.result;
-
+            if(std::is_floating_point<typename DT::VT>())
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
+            else
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
             DistributedData data(storedData);
             dataMap[workerAddr] = data;
         }
         DataPlacement dataPlacement(dataMap);
         dataPlacement.isPlacedOnWorkers = true;
         mat->dataPlacement = dataPlacement;        
-    }
+    };
 };
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DT>
+void broadcast(DT *mat, DCTX(ctx))
+{
+    Broadcast<DT>::apply(mat, ctx);
+}
+
+
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H

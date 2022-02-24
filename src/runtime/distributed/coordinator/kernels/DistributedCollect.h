@@ -38,27 +38,7 @@ using mlir::daphne::VectorCombine;
 template<class DT>
 struct DistributedCollect
 {
-    static void apply(DT *&mat, DCTX(ctx)) = delete;
-};
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DT>
-void distributedCollect(DT *&mat, DCTX(ctx))
-{
-    DistributedCollect<DT>::apply(mat, ctx);
-}
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-template<>
-struct DistributedCollect<DenseMatrix<double>>
-{
-    static void apply(DenseMatrix<double> *&mat, DCTX(ctx))
+    static void apply(DT *&mat, DCTX(ctx)) 
     {
         struct StoredInfo{
             DistributedIndex *ix;
@@ -112,7 +92,7 @@ struct DistributedCollect<DenseMatrix<double>>
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
             if (combineType == VectorCombine::ROWS) {
-                ProtoDataConverter::convertFromProto(matProto,
+                ProtoDataConverter<typename DT::VT>::convertFromProto(matProto,
                     mat,
                     ix->getRow() * k + std::min(ix->getRow(), m),
                     (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
@@ -120,7 +100,7 @@ struct DistributedCollect<DenseMatrix<double>>
                     mat->getNumCols());
             }
             else if (combineType == VectorCombine::COLS) {
-                ProtoDataConverter::convertFromProto(matProto,
+                ProtoDataConverter<typename DT::VT>::convertFromProto(matProto,
                     mat,
                     0,
                     mat->getNumRows(),
@@ -129,7 +109,17 @@ struct DistributedCollect<DenseMatrix<double>>
             }
             mat->dataPlacement.isPlacedOnWorkers = false;
         }      
-    }
+    };
 };
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DT>
+void distributedCollect(DT *&mat, DCTX(ctx))
+{
+    DistributedCollect<DT>::apply(mat, ctx);
+}
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOLLECT_H

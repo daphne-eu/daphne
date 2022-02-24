@@ -160,7 +160,7 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
             readCsv(matOrig, file, rows, cols, delim);
 
             auto *received = DataObjectFactory::create<DenseMatrix<double>>(mat.num_rows(), mat.num_cols(), false);
-            ProtoDataConverter::convertFromProto(mat, received);
+            ProtoDataConverter<double>::convertFromProto(mat, received);
 
             DenseMatrix<double> *matOrigTimes2 = nullptr;
             EwBinaryMat<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>::apply(BinaryOpCode::ADD,

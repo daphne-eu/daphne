@@ -24,6 +24,13 @@ message StoredData {
   string filename = 1;
   uint64 num_rows = 2;
   uint64 num_cols = 3;
+  enum Type {
+    DenseMatrix_f64 = 0;
+    DenseMatrix_i64 = 1;
+    CSRMatrix_f64 = 2;
+    CSRMatrix_i64 = 3;
+  }
+  Type type = 4;
 }
 
 message Matrix {
