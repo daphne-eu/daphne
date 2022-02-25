@@ -229,6 +229,18 @@ then
     popd
 fi
 
+#OpenMPI
+ompiDirName=ompi
+ompiInstDir=$(pwd)/$ompiDirName/installed
+ompiVersion=5.0.x
+if [ ! -d $ompiDirName ]
+then 
+    wget https://github.com/open-mpi/ompi/archive/refs/heads/v$ompiVersion.zip
+    unzip v$ompiVersion.zip
+    cd $ompiDirName-$ompiVersion
+    ./configure --prefix=<path> |& tee config.out
+    
+    
 #------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
