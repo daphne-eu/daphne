@@ -69,3 +69,45 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG", TAG_KERNELS, (DenseMatrix), (int32_t)) 
 
   DataObjectFactory::destroy(m);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG", TAG_KERNELS, (DenseMatrix), (double)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 497;
+  size_t numCols = 507;
+
+  char filename[] = "./test/runtime/local/io/crg.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(5, 0) == 0.25599762);
+  CHECK(m->get(6, 0) == 0.13827993);
+  CHECK(m->get(200, 4) == 0.20001954);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS", TAG_KERNELS, (DenseMatrix), (double)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 66;
+  size_t numCols = 66;
+
+  char filename[] = "./test/runtime/local/io/crs.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(36, 29) == 926.188986068);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = 0; c<numCols; c++)
+      CHECK(m->get(r,c) == m->get(c,r));
+
+  DataObjectFactory::destroy(m);
+}
