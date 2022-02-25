@@ -230,6 +230,7 @@ then
 fi
 
 #OpenMPI
+pwdBeforeOMPI=$(pwd)
 ompiDirName=ompi
 ompiInstDir=$(pwd)/$ompiDirName/installed
 ompiVersion=5.0.x
@@ -237,10 +238,14 @@ if [ ! -d $ompiDirName ]
 then 
     wget https://github.com/open-mpi/ompi/archive/refs/heads/v$ompiVersion.zip
     unzip v$ompiVersion.zip
+    mkdir --parents $ompiInstDir
     cd $ompiDirName-$ompiVersion
-    ./configure --prefix=<path> |& tee config.out
-    
-    
+    ./configure --prefix=../$ompiInstDir |& tee config.out
+    make -j 8 |& tee make.out
+    make install |& tee install.out
+fi
+cd $pwdBeforeOMPI
+
 #------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
