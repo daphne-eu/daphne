@@ -14,17 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_MTWRAPPER_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_MTWRAPPER_H
+#pragma once
 
 #include <runtime/local/vectorized/TaskQueues.h>
-#include <runtime/local/vectorized/Tasks.h>
 #include <runtime/local/vectorized/VectorizedDataSink.h>
 #include <runtime/local/vectorized/Workers.h>
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <ir/daphneir/Daphne.h>
 
-#include <thread>
 #include <functional>
 #include <queue>
 
@@ -33,186 +30,142 @@
 
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
-template <class DT>
-class MTWrapper {};
 
-template <typename VT>
-class MTWrapper<DenseMatrix<VT>> {
-private:
-    uint32_t _numThreads;
+template <typename DT>
+class MTWrapperBase {
+protected:
+    std::vector<std::unique_ptr<Worker>> cuda_workers;
+    std::vector<std::unique_ptr<Worker>> cpp_workers;
+    uint32_t _numThreads{};
+    uint32_t _numCPPThreads{};
+    uint32_t _numCUDAThreads{};
+    DCTX(_ctx);
 
-public:
-    MTWrapper() : MTWrapper(std::thread::hardware_concurrency()) {}
-    MTWrapper(uint32_t numThreads) {
-        _numThreads = (numThreads <= 0) ? 32 : numThreads;
-    }
-    ~MTWrapper() = default;
+    std::pair<size_t, size_t> getInputProperties(Structure** inputs, size_t numInputs, VectorSplit* splits) {
+        auto len = 0ul;
+        auto mem_required = 0ul;
 
-    void execute(std::function<void(DenseMatrix<VT> ***, Structure **)> func,
-                 DenseMatrix<VT> ***res,
-                 Structure **inputs,
-                 size_t numInputs,
-                 size_t numOutputs,
-                 int64_t *outRows,
-                 int64_t *outCols,
-                 VectorSplit *splits,
-                 VectorCombine *combines,
-                 bool verbose)
-    {
-        uint64_t len = 0;
         // due to possible broadcasting we have to check all inputs
         for (auto i = 0u; i < numInputs; ++i) {
-            if (splits[i] == mlir::daphne::VectorSplit::ROWS)
+            if (splits[i] == mlir::daphne::VectorSplit::ROWS) {
                 len = std::max(len, inputs[i]->getNumRows());
-        }
-        // create task queue (w/o size-based blocking)
-        TaskQueue* q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
-        if(const char* env_m = std::getenv("DAPHNE_THREADS")){
-            _numThreads= std::stoi(env_m);
-        }
-        // create workers threads
-        WorkerCPU* workers[_numThreads];
-        std::thread workerThreads[_numThreads];
-        for(uint32_t i=0; i<_numThreads; i++) {
-            workers[i] = new WorkerCPU(q, verbose);
-            workerThreads[i] = std::thread(runWorker, workers[i]);
-        }
-
-        // output allocation for row-wise combine
-        for(size_t i = 0; i < numOutputs; ++i) {
-            if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
-                auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
-                *(res[i]) = DataObjectFactory::create<DenseMatrix<VT>>(outRows[i], outCols[i], zeroOut);
+                mem_required += inputs[i]->getNumItems() * sizeof(typename DT::VT);
             }
         }
-        // lock for aggregation combine
-        // TODO: multiple locks per output
-        std::mutex resLock;
-
-        // create tasks and close input
-        uint64_t startChunk = 0;
-        uint64_t endChunk = 0;
-        uint64_t batchsize = 100; // 100-rows-at-a-time
-        uint64_t chunkParam = 1;
-        LoadPartitioning lp(STATIC, len, chunkParam,_numThreads,false);
-        while(lp.hasNextChunk()){
-            endChunk += lp.getNextChunk();
-            q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
-                    func,
-                    inputs,
-                    numInputs,
-                    numOutputs,
-                    outRows,
-                    outCols,
-                    splits,
-                    combines,
-                    startChunk,
-                    endChunk,
-                    batchsize,
-                    outRows,
-                    outCols},
-                resLock,
-                res
-            ));
-            startChunk = endChunk;
-        }
-        q->closeInput();
-
-        // barrier (wait for completed computation)
-        for(uint32_t i=0; i<_numThreads; i++)
-            workerThreads[i].join();
-
-        // cleanups
-        for(uint32_t i=0; i<_numThreads; i++)
-            delete workers[i];
-        delete q;
+        return std::make_pair(len, mem_required);
     }
+
+    void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
+        cpp_workers.resize(_numCPPThreads);
+        for(auto& w : cpp_workers)
+            w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
+    }
+
+#ifdef USE_CUDA
+    void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
+        cuda_workers.resize(_numCUDAThreads);
+        for (auto& w : cuda_workers)
+            w = std::make_unique<WorkerCPU>(q, verbose, 1, batchSize);
+    }
+
+    void cudaPrefetchInputs(Structure** inputs, uint32_t numInputs, size_t mem_required,
+            mlir::daphne::VectorSplit* splits) {
+        // ToDo: multi-device support :-P
+        auto cctx = _ctx->getCUDAContext(0);
+        auto buffer_usage = static_cast<float>(mem_required) / static_cast<float>(cctx->getMemBudget());
+#ifndef NDEBUG
+        std::cout << "\nVect pipe total in/out buffer usage: " << buffer_usage << std::endl;
+#endif
+        if(buffer_usage < 1.0) {
+            for (auto i = 0u; i < numInputs; ++i) {
+                if(splits[i] == mlir::daphne::VectorSplit::ROWS) {
+                    [[maybe_unused]] auto bla = static_cast<const DT*>(inputs[i])->getValuesCUDA();
+                }
+            }
+        }
+    }
+#endif
+    size_t allocateOutput(DT***& res, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
+            mlir::daphne::VectorCombine* combines) {
+        auto mem_required = 0ul;
+        // output allocation for row-wise combine
+        for(size_t i = 0; i < numOutputs; ++i) {
+            if((*res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
+                auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
+                (*res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
+                mem_required += static_cast<DT*>((*res[i]))->bufferSize();
+            }
+        }
+        return mem_required;
+    }
+
+    virtual void combineOutputs(DT***& res, DT***& res_cuda, size_t numOutputs, mlir::daphne::VectorCombine* combines) = 0;
+
+    void joinAll() {
+        for(auto& w : cpp_workers)
+            w->join();
+        for(auto& w : cuda_workers)
+            w->join();
+    }
+
+public:
+    explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
+        numThreads == 0 ? _numThreads = std::thread::hardware_concurrency() : _numThreads = numThreads;
+        if(const char* env_m = std::getenv("DAPHNE_THREADS"))
+            _numThreads = std::stoi(env_m);
+
+        if(ctx && ctx->useCUDA() && numFunctions > 1)
+            _numCUDAThreads = ctx->cuda_contexts.size();
+        _numCPPThreads = _numThreads;
+        _numThreads = _numCPPThreads + _numCUDAThreads;
+#ifndef NDEBUG
+        std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
+                  << std::endl;
+#endif
+    }
+
+    virtual ~MTWrapperBase() = default;
+};
+
+template<typename DT>
+class MTWrapper : public MTWrapperBase<DT> {};
+
+template<typename VT>
+class MTWrapper<DenseMatrix<VT>> : public  MTWrapperBase<DenseMatrix<VT>> {
+public:
+    using PipelineFunc = void(DenseMatrix<VT> ***, Structure **, DCTX(ctx));
+
+    explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
+            MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
+
+    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, Structure** inputs,
+            size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
+            VectorCombine* combines, DCTX(ctx), bool verbose);
+
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
+            Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
+            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+
+    void combineOutputs(DenseMatrix<VT>***& res, DenseMatrix<VT>***& res_cuda, size_t numOutputs,
+            mlir::daphne::VectorCombine* combines) override;
 };
 
 template<typename VT>
-class MTWrapper<CSRMatrix<VT>> {
-private:
-    uint32_t _numThreads;
-
+class MTWrapper<CSRMatrix<VT>> : public MTWrapperBase<CSRMatrix<VT>> {
 public:
-    MTWrapper() : MTWrapper(std::thread::hardware_concurrency()) {}
-    MTWrapper(uint32_t numThreads) {
-        _numThreads = (numThreads <= 0) ? 32 : numThreads;
-    }
-    ~MTWrapper() = default;
+    using PipelineFunc = void(CSRMatrix<VT> ***, Structure **, DCTX(ctx));
 
-    void execute(std::function<void(CSRMatrix<VT> ***, Structure **)> func,
-                 CSRMatrix<VT> ***res,
-                 Structure **inputs,
-                 size_t numInputs,
-                 size_t numOutputs,
-                 int64_t *outRows,
-                 int64_t *outCols,
-                 VectorSplit *splits,
-                 VectorCombine *combines,
-                 bool verbose) {
-        // TODO: reduce code duplication
-        uint64_t len = 0;
-        // due to possible broadcasting we have to check all inputs
-        for(auto i = 0u ; i < numInputs ; ++i) {
-            if(splits[i] == mlir::daphne::VectorSplit::ROWS)
-                len = std::max(len, inputs[i]->getNumRows());
-        }
-        // create task queue (w/o size-based blocking)
-        TaskQueue *q = new BlockingTaskQueue(len); // again here is the maximum possible number of tasks
-        if(const char *env_m = std::getenv("DAPHNE_THREADS")) {
-            _numThreads = std::stoi(env_m);
-        }
-        // create workers threads
-        WorkerCPU *workers[_numThreads];
-        std::thread workerThreads[_numThreads];
-        for(uint32_t i = 0 ; i < _numThreads ; i++) {
-            workers[i] = new WorkerCPU(q, verbose);
-            workerThreads[i] = std::thread(runWorker, workers[i]);
-        }
+    explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
+            MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-        assert(numOutputs == 1 && "TODO");
-        assert(*(res[0]) == nullptr && "TODO");
-        VectorizedDataSink<CSRMatrix<VT>> dataSink(combines[0], outRows[0], outCols[0]);
+    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
+                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
+                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-        // create tasks and close input
-        uint64_t startChunk = 0;
-        uint64_t endChunk = 0;
-        uint64_t batchsize = 100; // 100-rows-at-a-time
-        uint64_t chunkParam = 1;
-        LoadPartitioning lp(STATIC, len, chunkParam, _numThreads, false);
-        while(lp.hasNextChunk()) {
-            endChunk += lp.getNextChunk();
-            q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{
-                    func,
-                    inputs,
-                    numInputs,
-                    numOutputs,
-                    outRows,
-                    outCols,
-                    splits,
-                    combines,
-                    startChunk,
-                    endChunk,
-                    batchsize,
-                    outRows,
-                    outCols},
-                dataSink
-            ));
-            startChunk = endChunk;
-        }
-        q->closeInput();
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
+                            size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
+                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-        // barrier (wait for completed computation)
-        for(uint32_t i = 0 ; i < _numThreads ; i++)
-            workerThreads[i].join();
-        *(res[0]) = dataSink.consume();
-
-        // cleanups
-        for(uint32_t i = 0 ; i < _numThreads ; i++)
-            delete workers[i];
-        delete q;
-    }
+    void combineOutputs(CSRMatrix<VT>***& res, CSRMatrix<VT>***& res_cuda, [[maybe_unused]] size_t numOutputs,
+                        [[maybe_unused]] mlir::daphne::VectorCombine* combines) override {}
 };
-
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_MTWRAPPER_H

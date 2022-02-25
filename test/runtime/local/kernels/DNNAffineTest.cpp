@@ -14,57 +14,44 @@
  * limitations under the License.
  */
 
+#include <api/cli/DaphneUserConfig.h>
+#include "runtime/local/kernels/CUDA/Affine.h"
+#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 
+#include <catch.hpp>
 #include <cassert>
+#include <tags.h>
 
 #ifdef USE_CUDA
-    #include <api/cli/DaphneUserConfig.h>
-    #include <runtime/local/kernels/CUDA_Affine.h>
-    #include <runtime/local/kernels/CUDA_InitContext.h>
-#else
-// ToDo: cpu version
-//    #include <runtime/local/kernels/Affine.h>
-#endif
-
-#include <tags.h>
-#include <catch.hpp>
 
 template<class DT>
         void check(const DT* in, const DT* W, const DT* b, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
-#ifdef USE_CUDA
-    Affine::Forward_CUDA<DT, DT>::apply(res, in, W, b, dctx);
-#else
-    //"ToDo: cpu version
-    return;
-    Affine::Forward<OP, DT, DT>::apply(res, in, dctx);
-#endif
+    CUDA::Affine::Forward<DT, DT>::apply(res, in, W, b, dctx);
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("affine_fwd", TAG_DNN, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("affine_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
-#ifdef USE_CUDA
-    initCUDAContext(dctx);
-#endif
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
+    CUDA::createCUDAContext(dctx.get());
 
     auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
     auto weights = genGivenVals<DT>(9, { 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9});
-    //ToDo:
     auto bias = genGivenVals<DT>(1, { 0 });
 
     // expected output when used with settings filter 2x2, stride 1x1, padding 0x0
     auto result = genGivenVals<DT>(1, { 105, 105});
 
-    check(input, weights, bias, result, dctx);
+    check(input, weights, bias, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
-
-    delete dctx;
 }
+
+#endif

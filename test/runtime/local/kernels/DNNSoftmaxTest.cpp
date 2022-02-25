@@ -16,42 +16,30 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CheckEq.h>
+
 
 #include <cassert>
+#include <catch.hpp>
+#include <tags.h>
 
 #ifdef USE_CUDA
     #include <api/cli/DaphneUserConfig.h>
-    #include <runtime/local/kernels/CUDA_Softmax.h>
-    #include <runtime/local/kernels/CUDA_InitContext.h>
-#else
-// ToDo: cpu version
-//    #include <runtime/local/kernels/Softmax.h>
-#endif
-
-#include <tags.h>
-#include <catch.hpp>
+    #include "runtime/local/kernels/CUDA/Softmax.h"
+    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 
 template<class DT>
 void check(const DT* in, const DT* exp, DaphneContext* dctx) {
     DT* res = nullptr;
-#ifdef USE_CUDA
-    Softmax::Forward_CUDA<DT, DT>::apply(res, in, dctx);
-#else
-    //"ToDo: cpu version
-    return;
-    Softmax::Forward<OP, DT, DT>::apply(res, in, dctx);
-#endif
+    CUDA::Softmax::Forward<DT, DT>::apply(res, in, dctx);
     CHECK(Approx(*(res->getValues())).epsilon(1e-6) == *(exp->getValues()));
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("softmax_fwd", TAG_DNN, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("softmax_fwd", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
-#ifdef USE_CUDA
-    initCUDAContext(dctx);
-#endif
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
+    CUDA::createCUDAContext(dctx.get());
 
     auto input = genGivenVals<DT>(1, { -3, -2, -1, 0, 1, 2, 3, 4, 5});
 
@@ -59,10 +47,10 @@ TEMPLATE_PRODUCT_TEST_CASE("softmax_fwd", TAG_DNN, (DenseMatrix), (float, double
     auto result = genGivenVals<DT>(1, { 0.000212079, 0.00057649, 0.00156706, 0.00425972, 0.0115791, 0.0314753, 0.0855588,
             0.232573, 0.632199});
 
-    check(input, result, dctx);
+    check(input, result, dctx.get());
 
     DataObjectFactory::destroy(input);
     DataObjectFactory::destroy(result);
-
-    delete dctx;
 }
+
+#endif // USE_CUDA

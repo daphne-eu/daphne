@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include "compiler/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -23,6 +24,7 @@
 
 #include <memory>
 #include <set>
+#include <iostream>
 
 using namespace mlir;
 
@@ -157,33 +159,23 @@ namespace
             }
         }
 
-        for (auto moveBeforeOp : moveBeforeOps) {
+        for(auto moveBeforeOp: moveBeforeOps) {
             moveBeforeOp->moveBefore(pipelinePosition->getBlock(), pipelinePosition);
         }
-        for (auto moveAfterOp : moveAfterOps) {
+        for(auto moveAfterOp: moveAfterOps) {
             moveAfterOp->moveAfter(pipelinePosition->getBlock(), pipelinePosition);
             pipelinePosition = moveAfterOp->getIterator();
         }
     }
 
-    struct VectorizeComputationsPass
-    : public PassWrapper<VectorizeComputationsPass, OperationPass<FuncOp>>
-{
-    void runOnOperation() final;
-};
+    struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<FuncOp>> {
+        void runOnOperation() final;
+    };
 }
 
 void VectorizeComputationsPass::runOnOperation()
 {
     auto func = getOperation();
-
-    auto isMatrixComputation = [](Operation *v)
-    {
-      return llvm::any_of(v->getOperandTypes(), [&](Type ty)
-      {
-        return ty.isa<daphne::MatrixType>();
-      });
-    };
     // TODO: fuse pipelines that have the matching inputs, even if no output of the one pipeline is used by the other.
     //  This requires multi-returns in way more cases, which is not implemented yet.
 
@@ -191,7 +183,7 @@ void VectorizeComputationsPass::runOnOperation()
     std::vector<daphne::Vectorizable> vectOps;
     func->walk([&](daphne::Vectorizable op)
     {
-      if(isMatrixComputation(op))
+      if(CompilerUtils::isMatrixComputation(op))
           vectOps.emplace_back(op);
     });
     std::vector<daphne::Vectorizable> vectorizables(vectOps.begin(), vectOps.end());
@@ -200,7 +192,7 @@ void VectorizeComputationsPass::runOnOperation()
         for(auto e : llvm::zip(v->getOperands(), v.getVectorSplits())) {
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
-            if(defOp && v->getBlock() == defOp->getBlock() && isMatrixComputation(defOp)) {
+            if(defOp && v->getBlock() == defOp->getBlock() && CompilerUtils::isMatrixComputation(defOp)) {
                 auto split = std::get<1>(e);
                 // find the corresponding `OpResult` to figure out combine
                 auto opResult = *llvm::find(defOp->getResults(), operand);
@@ -249,13 +241,11 @@ void VectorizeComputationsPass::runOnOperation()
     OpBuilder builder(func);
     // Create the `VectorizedPipelineOp`s
     for(auto pipeline : pipelines) {
-        if (pipeline.empty()) {
+        if(pipeline.empty()) {
             continue;
         }
-        auto valueIsPartOfPipeline = [&](Value operand)
-        {
-          return llvm::any_of(pipeline, [&](daphne::Vectorizable lv)
-          { return lv == operand.getDefiningOp(); });
+        auto valueIsPartOfPipeline = [&](Value operand) {
+            return llvm::any_of(pipeline, [&](daphne::Vectorizable lv) { return lv == operand.getDefiningOp(); });
         };
         std::vector<Attribute> vSplitAttrs;
         std::vector<Attribute> vCombineAttrs;
@@ -287,17 +277,17 @@ void VectorizeComputationsPass::runOnOperation()
                 vCombineAttrs.push_back(daphne::VectorCombineAttr::get(&getContext(), vCombine));
             }
             locations.push_back(v->getLoc());
-            for(auto result : v->getResults()) {
+            for(auto result: v->getResults()) {
                 results.push_back(result);
             }
-            for (auto outSize : v.createOpsOutputSizes(builder)) {
+            for(auto outSize: v.createOpsOutputSizes(builder)) {
                 outRows.push_back(outSize.first);
                 outCols.push_back(outSize.second);
             }
         }
         std::vector<Location> locs;
         locs.reserve(pipeline.size());
-        for (auto op : pipeline) {
+        for(auto op: pipeline) {
             locs.push_back(op->getLoc());
         }
         auto loc = builder.getFusedLoc(locs);
@@ -314,15 +304,15 @@ void VectorizeComputationsPass::runOnOperation()
         for(size_t i = 0u; i < operands.size(); ++i) {
             auto argTy = operands[i].getType();
             switch (vSplitAttrs[i].cast<daphne::VectorSplitAttr>().getValue()) {
-            case daphne::VectorSplit::ROWS: {
-                auto matTy = argTy.cast<daphne::MatrixType>();
-                // only remove row information
-                argTy = matTy.withShape(-1, matTy.getNumCols());
-                break;
-            }
-            case daphne::VectorSplit::NONE:
-                // keep any size information
-                break;
+                case daphne::VectorSplit::ROWS: {
+                    auto matTy = argTy.cast<daphne::MatrixType>();
+                    // only remove row information
+                    argTy = matTy.withShape(-1, matTy.getNumCols());
+                    break;
+                }
+                case daphne::VectorSplit::NONE:
+                    // keep any size information
+                    break;
             }
             bodyBlock->addArgument(argTy);
         }
@@ -344,34 +334,33 @@ void VectorizeComputationsPass::runOnOperation()
 
             auto pipelineReplaceResults = pipelineOp->getResults().drop_front(resultsIx).take_front(numResults);
             resultsIx += numResults;
-            for(auto z : llvm::zip(v->getResults(), pipelineReplaceResults)) {
+            for(auto z: llvm::zip(v->getResults(), pipelineReplaceResults)) {
                 auto old = std::get<0>(z);
                 auto replacement = std::get<1>(z);
 
                 // TODO: switch to type based size inference instead
                 // FIXME: if output is dynamic sized, we can't do this
                 // replace `NumRowOp` and `NumColOp`s for output size inference
-                for (auto &use : old.getUses()) {
-                    auto *op = use.getOwner();
-                    if (auto nrowOp = llvm::dyn_cast<daphne::NumRowsOp>(op)) {
+                for(auto& use: old.getUses()) {
+                    auto* op = use.getOwner();
+                    if(auto nrowOp = llvm::dyn_cast<daphne::NumRowsOp>(op)) {
                         nrowOp.replaceAllUsesWith(pipelineOp.out_rows()[replacement.getResultNumber()]);
                         nrowOp.erase();
                     }
-                    if (auto ncolOp = llvm::dyn_cast<daphne::NumColsOp>(op)) {
+                    if(auto ncolOp = llvm::dyn_cast<daphne::NumColsOp>(op)) {
                         ncolOp.replaceAllUsesWith(pipelineOp.out_cols()[replacement.getResultNumber()]);
                         ncolOp.erase();
                     }
                 }
                 // Replace only if not used by pipeline op
-                old.replaceUsesWithIf(replacement, [&](OpOperand &opOperand)
-                {
-                  return llvm::count(pipeline, opOperand.getOwner()) == 0;
+                old.replaceUsesWithIf(replacement, [&](OpOperand& opOperand) {
+                    return llvm::count(pipeline, opOperand.getOwner()) == 0;
                 });
             }
         }
         bodyBlock->walk([](Operation* op) {
-            for (auto resVal : op->getResults()) {
-                if (auto ty = resVal.getType().dyn_cast<daphne::MatrixType>()) {
+            for(auto resVal: op->getResults()) {
+                if(auto ty = resVal.getType().dyn_cast<daphne::MatrixType>()) {
                     resVal.setType(ty.withShape(-1, -1));
                 }
             }
@@ -381,7 +370,6 @@ void VectorizeComputationsPass::runOnOperation()
     }
 }
 
-std::unique_ptr<Pass> daphne::createVectorizeComputationsPass()
-{
+std::unique_ptr<Pass> daphne::createVectorizeComputationsPass() {
     return std::make_unique<VectorizeComputationsPass>();
 }

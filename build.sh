@@ -145,12 +145,12 @@ then
     mkdir --parents $antlrCppRuntimeDirName
     unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
     cd $antlrCppRuntimeDirName
-    mkdir build
-    mkdir run
+    rm -rf ./build
+    mkdir -p build
+    mkdir -p run
     cd build
-    cmake .. -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON
-    make
-    DESTDIR=../run make install
+    cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local
+    cmake --build . --target install
 fi
 cd $pwdBeforeAntlr
 
@@ -158,17 +158,15 @@ cd $pwdBeforeAntlr
 # Download catch2 release zip (if necessary), and unpack the single header file
 # (if necessary).
 catch2Name=catch2
-catch2ZipName=v2.13.4.zip
+catch2Version=2.13.8 # for upgrades, it suffices to simply change the version here
+catch2ZipName=v$catch2Version.zip
 catch2SingleHeaderName=catch.hpp
 mkdir --parents $catch2Name
 cd $catch2Name
-if [ ! -f $catch2ZipName ]
+if [ ! -f $catch2ZipName ] || [ ! -f $catch2SingleHeaderName ]
 then
     wget https://github.com/catchorg/Catch2/archive/refs/tags/$catch2ZipName
-fi
-if [ ! -f $catch2SingleHeaderName ]
-then
-    unzip -p $catch2ZipName "Catch2-2.13.4/single_include/catch2/catch.hpp" \
+    unzip -p $catch2ZipName "Catch2-$catch2Version/single_include/catch2/catch.hpp" \
         > $catch2SingleHeaderName
 fi
 cd ..
@@ -176,7 +174,7 @@ cd ..
 # OpenBLAS (basic linear algebra subprograms)
 pwdBeforeOpenBlas=$(pwd)
 openBlasDirName=OpenBLAS
-openBlasVersion=0.3.15
+openBlasVersion=0.3.19
 openBlasZipName=OpenBLAS-$openBlasVersion.zip
 openBlasInstDirName=installed
 mkdir --parents $openBlasDirName
@@ -187,7 +185,7 @@ then
     unzip $openBlasZipName
     mkdir --parents $openBlasInstDirName
     cd OpenBLAS-$openBlasVersion
-    make
+    make -j
     make install PREFIX=../$openBlasInstDirName
 fi
 cd $pwdBeforeOpenBlas

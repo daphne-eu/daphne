@@ -74,7 +74,7 @@ void WorkerImpl::HandleRpcs() {
             static_cast<CallData*>(tag)->Proceed();
         } else {
             // TODO maybe handle this internally ?
-            delete tag;
+            delete static_cast<CallData*>(tag);
         }
     }
   }
@@ -106,7 +106,7 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     // TODO Once we hand over longer pipelines to the workers, we might not
     // want to hardcode insertFreeOp to false anymore. But maybe we will insert
     // the FreeOps at the coordinator already.
-    DaphneIrExecutor executor(false, false, false, false, cfg);
+    DaphneIrExecutor executor(false, false, cfg);
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
     if (!module) {
@@ -216,7 +216,7 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
                                                                     std::vector<void *> &outputs,
                                                                     std::vector<void *> &inputs)
 {
-    assert(functionType.getNumInputs() == workInputs.size()
+    assert(static_cast<int>(functionType.getNumInputs()) == workInputs.size()
         && "Number of inputs received have to match number of MLIR fragment inputs");
     std::vector<void *> inputsAndOutputs;
 
@@ -232,7 +232,8 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
         inputsAndOutputs.push_back(&inputs.back());
     }
 
-    for (const auto &type : functionType.getResults()) {
+//    for (const auto &type : functionType.getResults()) {
+    for(auto i = 0ul; i < functionType.getResults().size(); ++i) {
         outputs.push_back(nullptr);
         inputsAndOutputs.push_back(&outputs.back());
     }
@@ -250,7 +251,9 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const distributed::Work
         bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;
         return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols(), isSparse);
     }
-    default:assert(false && "We only support stored data for now");
+    default:
+//        assert(false && "We only support stored data for now");
+        throw std::runtime_error("We only support stored data for now");
     }
 }
 
@@ -278,8 +281,9 @@ Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t 
             closeFile(file);
             m = m2;
         }
-        auto result = localData_.insert({filename, m});
-        assert(result.second && "Value should always be inserted");
+//        auto result = localData_.insert({filename, m});
+//        assert(result.second && "Value should always be inserted");
+        assert(localData_.insert({filename, m}).second && "Value should always be inserted");
         return m;
     }
 }
@@ -290,7 +294,7 @@ grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
 {
     auto filename = request->filename();
     auto data_it = localData_.find(filename);
-    
+
     if (data_it != localData_.end()) {
         auto * mat = reinterpret_cast<Matrix<double> *>(data_it->second);
         if(auto m = dynamic_cast<DenseMatrix<double> *>(mat))
