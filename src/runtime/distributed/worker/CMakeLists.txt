@@ -68,6 +68,8 @@ target_link_libraries(WorkerImpl PRIVATE ${LIBS})
 # *****************************************************************************
 
 add_executable(DistributedWorker main.cpp)
+add_executable(DistributedWorkerMPI MPIImpl.cpp)
+
 target_link_libraries(DistributedWorker
         PRIVATE
         Proto

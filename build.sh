@@ -191,6 +191,7 @@ fi
 cd $pwdBeforeOpenBlas
 
 # gRPC
+pwdBeforeGrpc=$(pwd)
 grpcDirName=grpc
 grpcInstDir=$(pwd)/$grpcDirName/installed
 if [ ! -d $grpcDirName ]
@@ -226,23 +227,60 @@ then
 
     popd
 fi
+cd $pwdBeforeGrpc
 
 #OpenMPI
-pwdBeforeOMPI=$(pwd)
-ompiDirName=ompi
-ompiInstDir=$(pwd)/$ompiDirName/installed
-ompiVersion=5.0.x
-if [ ! -d $ompiDirName ]
+# pwdBeforeOMPI=$(pwd)
+# ompiDirName=openmpi
+# ompiVersion=4.1
+# ompiPackage=$ompiDirName-$ompiVersion.2
+# ompiInstDir=$(pwd)/$ompiPackage/installed
+# if [ ! -d $ompiDirName ]
+# then 
+#     wget https://download.open-mpi.org/release/open-mpi/v$ompiVersion/$ompiPackage.tar.gz
+#     tar -xvzf $ompiPackage.tar.gz
+#     mkdir --parents $ompiInstDir
+#     cd $ompiPackage
+    
+#     ./configure --prefix=$ompiInstDir 
+#     make -j4 all 
+#     make install
+    
+#     echo "export PATH=\"\$PATH:${ompiInstDir}/bin\"" >> $HOME/.bashrc
+#     echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:${ompiInstDir}/lib\"" >> $HOME/.bashrc
+#     source ~/.bashrc
+# fi
+# cd ..
+# rm $ompiPackage.tar.gz
+# cd $pwdBeforeOMPI
+
+#MPICH
+pwdBeforeMPICH=$(pwd)
+mpichDirName=mpich
+mpichVersion=4.0.1
+mpichPackage=$mpichDirName-$mpichVersion
+mpichInstDir=$(pwd)/$mpichDirName/installed
+if [ ! -d $mpichDirName ]
 then 
-    wget https://github.com/open-mpi/ompi/archive/refs/heads/v$ompiVersion.zip
-    unzip v$ompiVersion.zip
-    mkdir --parents $ompiInstDir
-    cd $ompiDirName-$ompiVersion
-    ./configure --prefix=../$ompiInstDir |& tee config.out
-    make -j 8 |& tee make.out
-    make install |& tee install.out
+    wget https://www.mpich.org/static/downloads/$mpichVersion/mpich-$mpichVersion.tar.gz
+    tar -xvzf $mpichPackage.tar.gz
+    mv $pwdBeforeMPICH/$mpichPackage $pwdBeforeMPICH/$mpichDirName
+    mkdir --parents $mpichInstDir
+    cd $mpichDirName
+    
+    ./configure --prefix=$mpichInstDir 2>&1 | tee c.txt
+    make -j4 2>&1 | tee m.txt
+    make install 2>&1 | tee mi.txt
+    #PATH=$mpichDirName/bin:$PATH ; export PATH
+    
+    echo "export PATH=\"\$PATH:${mpichInstDir}/bin\"" >> $HOME/.bashrc
+    echo "export LD_LIBRARY_PATH=\"\$LD_LIBRARY_PATH:${mpichInstDir}/lib\"" >> $HOME/.bashrc
+    source ~/.bashrc
+    cd ..
+    rm $mpichPackage.tar.gz
 fi
-cd $pwdBeforeOMPI
+echo $pwdBeforeMPICH
+cd $pwdBeforeMPICH
 
 #------------------------------------------------------------------------------
 # Build MLIR
@@ -295,7 +333,9 @@ cmake -G Ninja .. \
     -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
     -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName \
     -DOPENBLAS_INST_DIR=$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
-    -DCMAKE_PREFIX_PATH="$grpcInstDir"
+    -DCMAKE_PREFIX_PATH="$grpcInstDir" \
+    -DMPI_CXX_COMPILER=$mpichInstDir/bin/mpicxx \
+    -DMPI_C_COMPILER=$mpichInstDir/bin/mpicc \
 # optional cmake flags (to be added to the command above):
 # -DUSE_CUDA=ON
 # -DCMAKE_BUILD_TYPE=Debug

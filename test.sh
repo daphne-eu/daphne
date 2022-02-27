@@ -36,4 +36,5 @@ mkdir --parents src/api/python/tmp
 # Run tests.
 build/test/run_tests $@
 
+
 set +e

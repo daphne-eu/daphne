@@ -40,6 +40,7 @@ set(TEST_SOURCES
         api/python/DaphneLibTest.cpp
         
         runtime/distributed/worker/WorkerTest.cpp
+        runtime/distributed/worker/MPITest.cpp
         
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
@@ -103,6 +104,7 @@ endif()
 add_executable(run_tests
     ${TEST_SOURCES}
 )
+
 add_dependencies(run_tests daphnec DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)

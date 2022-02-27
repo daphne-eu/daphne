@@ -99,6 +99,12 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
 endif()
 
+find_package(MPI REQUIRED)
+# add: add_executable(my_mpi_bin src1.cpp src2.cpp)
+# target include: target_include_directories(my_mpi_bin PRIVATE ${MPI_CXX_INCLUDE_PATH})
+# target compile: target_compile_options(my_mpi_bin PRIVATE ${MPI_CXX_COMPILE_FLAGS} my_extra_compile_flags)
+# target link: target_link_libraries(my_mpi_bin ${MPI_CXX_LIBRARIES} ${MPI_CXX_LINK_FLAGS} my_extra_link_flags)
+
 # *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
