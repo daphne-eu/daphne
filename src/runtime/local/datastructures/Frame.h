@@ -377,7 +377,19 @@ public:
     }
 
     Frame* slice(size_t rl, size_t ru) override {
-        throw std::runtime_error("Not implemented");
+        return slice(rl, ru, 0, numCols);
+    }
+
+    Frame* sliceCol(size_t cl, size_t cu) {
+        return slice(0, numRows, cl, cu);
+    }
+
+    Frame* slice(size_t rl, size_t ru, size_t cl, size_t cu) const {
+        size_t colIdxs[cu-cl];
+        size_t i = 0;
+        for(size_t c = cl; c < cu; c++, i++)
+            colIdxs[i] = c;
+        return DataObjectFactory::create<Frame>(this, rl, ru, cu-cl, colIdxs);
     }
 };
 

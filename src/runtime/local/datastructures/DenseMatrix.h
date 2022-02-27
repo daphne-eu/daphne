@@ -239,9 +239,12 @@ public:
         return slice(rl, ru, 0, numCols);
     }
 
+    DenseMatrix<ValueType>* sliceCol(size_t cl, size_t cu) {
+        return slice(0, numRows, cl, cu);
+    }
+
     DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) const {
-        // TODO Use DataObjFactory.
-        return new DenseMatrix<ValueType>(this, rl, ru, cl, cu);
+        return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru, cl, cu);
     }
 
     size_t bufferSize();
