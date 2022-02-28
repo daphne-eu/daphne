@@ -23,6 +23,7 @@
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
+#include "llvm/Support/CommandLine.h"
 
 #ifdef USE_CUDA
     #include <runtime/local/kernels/CUDA/HostUtils.h>
@@ -35,108 +36,144 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 using namespace std;
 using namespace mlir;
+using namespace llvm::cl;
 
 void printHelp(const std::string & cmd) {
     cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
      "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
 }
 
+void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<string, string>& scriptArgsFinal) {
+    for(const std::string& pair : scriptArgsCli) {
+        size_t pos = pair.find('=');
+        if(pos == string::npos)
+            throw std::runtime_error("script arguments must be specified as name=value, but found '" + pair + "'");
+        scriptArgsFinal.emplace(
+                pair.substr(0, pos), // arg name
+                pair.substr(pos + 1, pair.size()) // arg value
+        );
+    }
+}
+
 int
 main(int argc, char** argv)
 {
-    // Parse command line arguments.
-    // TODO Rather than implementing this ourselves, we should use some library
-    // (see issue #105).
-    std::vector<std::string> args(argv, argv + argc);
-    string inputFile;
-    unordered_map<string, string> scriptArgs;
-    bool selectMatrixRepresentations = false;
+    // ************************************************************************
+    // Parse command line arguments
+    // ************************************************************************
+    
+    // Option categories.
+    // TODO We will probably subdivide the options into multiple groups later.
+    OptionCategory daphneOptions("DAPHNE Options");
+
+    // Options.
+    opt<bool> useVectorizedPipelines(
+            "vec", cat(daphneOptions),
+            desc("Enable vectorized execution engine")
+    );
+    opt<bool> noFree(
+            "no-free", cat(daphneOptions),
+            desc("Don't insert FreeOp")
+    );
+    opt<bool> selectMatrixRepr(
+            "select-matrix-repr", cat(daphneOptions),
+            desc(
+                    "Automatically choose physical matrix representations "
+                    "(e.g., dense/sparse)"
+            )
+    );
+    alias selectMatrixReprAlias( // to still support the longer old form
+            "select-matrix-representations", aliasopt(selectMatrixRepr),
+            desc("Alias for --select-matrix-repr")
+    );
+    // TODO: parse --explain=[list,of,compiler,passes,to,explain]
+    opt<bool> explainKernels(
+            "explain-kernels", cat(daphneOptions),
+            desc("Show DaphneIR after lowering to kernel calls")
+    );
+    opt<bool> cuda(
+            "cuda", cat(daphneOptions),
+            desc("Use CUDA")
+    );
+    opt<string> libDir(
+            "libdir", cat(daphneOptions),
+            desc("The directory containing kernel libraries")
+    );
+    llvm::cl::list<string> scriptArgs1(
+            "args", cat(daphneOptions),
+            desc(
+                    "Alternative way of specifying arguments to the DaphneDSL "
+                    "script; must be a comma-separated list of name-value-pairs, "
+                    "e.g., `--args x=1,y=2.2`"
+            ),
+            CommaSeparated
+    );
+
+    // Positional arguments.
+    opt<string> inputFile(Positional, desc("script"), Required);
+    llvm::cl::list<string> scriptArgs2(ConsumeAfter, desc("[arguments]"));
+
+    // Parse arguments.
+    HideUnrelatedOptions(daphneOptions);
+    extrahelp(
+            "\nEXAMPLES:\n\n"
+            "  daphnec example.daphne\n"
+            "  daphnec --vec example.daphne x=1 y=2.2 z=\"foo\"\n"
+            "  daphnec --vec --args x=1,y=2.2,z=\"foo\" example.daphne\n"
+            "  daphnec --vec --args x=1,y=2.2 example.daphne z=\"foo\"\n"
+    );
+    ParseCommandLineOptions(
+            argc, argv,
+            "The DAPHNE Prototype.\n\nThis program compiles and executes a DaphneDSL script.\n"
+    );
+    
+    // ************************************************************************
+    // Process parsed arguments
+    // ************************************************************************
+    
+    // Initialize user configuration.
+    
     DaphneUserConfig user_config{};
+    
 //    user_config.debug_llvm = true;
-    if(argc < 2) {
-        printHelp(args[0]);
-        exit(1);
-    }
-    else {
-        if(args[1] == "-h" || args[1] == "--help") {
-            printHelp(args[0]);
-            exit(0);
-        }
-        else {
-            inputFile = args[1];
-            for(int argPos = 2; argPos < argc; argPos++) {
-#ifndef NDEBUG
-                std::cout << "arg[" << argPos << "]: " << args[argPos] << std::endl;
-#endif
-                if(args[argPos] == "--args") {
-                    int i;
-                    for(i = argPos + 1; i < argc; i++) {
-                        const std::string pair = args[i];
-                        size_t pos_eq = pair.find('=');
-						size_t pos_dash = pair.find("--");
-                        if(pos_eq == std::string::npos || pos_dash != std::string::npos)
-                            break;
-                        scriptArgs.emplace(
-                            pair.substr(0, pos_eq), // arg name
-                            pair.substr(pos_eq + 1, pair.size()) // arg value
-                        );
-                    }
-                    argPos = i - 1;
-                }
-                else if(args[argPos] == "--vec") {
-                    user_config.use_vectorized_exec = true;
-                }
-                else if(args[argPos] == "--no-free") {
-                    user_config.use_freeOps = false;
-                }
-                else if(args[argPos] == "--explain") {
-                    // Todo: parse --explain=[list,of,compiler,passes,to,explain]
-                    user_config.explain_kernels = true;
-//                    user_config.explain_llvm = true;
-                }
-                else if(args[argPos] == "--select-matrix-representations") {
-                    selectMatrixRepresentations = true;
-                }
-                else if(args[argPos] == "--cuda") {
-                    int device_count = 0;
+    user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.use_freeOps = !noFree;
+    user_config.explain_kernels = explainKernels;
+    user_config.libdir = libDir;
+    user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
+    
+    if(cuda) {
+        int device_count = 0;
 #ifdef USE_CUDA
-                    CHECK_CUDART(cudaGetDeviceCount(&device_count));
+        CHECK_CUDART(cudaGetDeviceCount(&device_count));
 #endif
-                    if(device_count < 1)
-                        std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
-                    else {
-                        user_config.use_cuda = true;
-                    }
-                }
-                else if (std::string(args[argPos]).find("--libdir") != std::string::npos) {
-                    const std::string pair = args[argPos];
-                    size_t pos = pair.find('=');
-                    if(pos == std::string::npos) {
-                        std::cerr << "Warning: Malformed parameter " << pair << std::endl;
-                        continue;
-                    }
-                    user_config.libdir = pair.substr(pos + 1, pair.size());
-                    user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
-                }
-                else {
-					std::cout << "unknown arg: " << args[argPos] << std::endl;
-                    printHelp(args[0]);
-                    exit(1);
-                }
-            }
+        if(device_count < 1)
+            std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;
+        else {
+            user_config.use_cuda = true;
         }
     }
 
-	// add this after the cli args loop to work around args order
-	if(!user_config.libdir.empty() && user_config.use_cuda)
-		user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
+    // add this after the cli args loop to work around args order
+    if(!user_config.libdir.empty() && user_config.use_cuda)
+            user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
+
+    // Extract script args.
+    unordered_map<string, string> scriptArgsFinal;
+    parseScriptArgs(scriptArgs2, scriptArgsFinal);
+    parseScriptArgs(scriptArgs1, scriptArgsFinal);
+    
+    // ************************************************************************
+    // Compile and execute script
+    // ************************************************************************
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepresentations, user_config);
+        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepr, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
@@ -149,7 +186,7 @@ main(int argc, char** argv)
 
     // Parse the input file and generate the corresponding DaphneIR operations
     // inside the module, assuming DaphneDSL as the input format.
-    DaphneDSLParser parser(scriptArgs);
+    DaphneDSLParser parser(scriptArgsFinal);
     try {
         parser.parseFile(builder, inputFile);
     }
