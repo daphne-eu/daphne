@@ -59,7 +59,7 @@ template <typename VT> struct ReadMM<DenseMatrix<VT>> {
       res = DataObjectFactory::create<DenseMatrix<VT>>(
         mmfile.numberRows(),
         mmfile.numberCols(),
-        false
+        mmfile.entryCount() != mmfile.numberCols() * mmfile.numberRows()
       );
     VT *valuesRes = res->getValues();
     for (auto &entry : mmfile)

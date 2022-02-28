@@ -42,6 +42,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(0, 0) == 1);
+  CHECK(m->get(2, 0) == 0);
   CHECK(m->get(3, 4) == 9);
   CHECK(m->get(7, 4) == 4);
 
@@ -106,8 +107,57 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS", TAG_KERNELS, (DenseMatrix), (double)) {
   CHECK(m->get(36, 29) == 926.188986068);
 
   for(int r = 0; r<numRows; r++)
-    for(int c = 0; c<numCols; c++)
+    for(int c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK", TAG_KERNELS, (DenseMatrix), (double)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 66;
+  size_t numCols = 66;
+
+  char filename[] = "./test/runtime/local/io/crk.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(29, 36) == -926.188986068);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->get(r,c) == -m->get(c,r));
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 24;
+  size_t numCols = 24;
+
+  char filename[] = "./test/runtime/local/io/cps.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get( 0, 0) != 0);
+  CHECK(m->get( 1, 0) == 0);
+  CHECK(m->get(3, 15) != 0);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = r+1; c<numCols; c++)
+      if(m->get(r,c) == 0)
+        CHECK(m->get(c,r) == 0);
+      else
+        CHECK(m->get(c,r) != 0);
 
   DataObjectFactory::destroy(m);
 }

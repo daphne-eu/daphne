@@ -261,11 +261,18 @@ public:
         else{
             mm_read_mtx_array_size(f, &rows, &cols);
             nnz = rows*cols;
+            if(mm_is_skew(typecode))
+              nnz-= rows;
         }
     }
     ~MMFile(){ /*closeFile(f);*/ }
     size_t numberRows() { return rows; }
     size_t numberCols() { return cols; }
+    /* entryCount is the number of entries in the file
+       and not exactly the same as number of non-zeroes.
+       When the file is coordinate + (skew-)symmetric,
+       nnz/2 <= entryCount <= nnz.
+    */
     size_t entryCount() { return nnz; }
 
     struct Entry {
@@ -304,12 +311,16 @@ public:
           }
           size_t pos = 0;
           if(mm_is_coordinate(file.typecode)){
-              r = atoi(line)-1;
+              //Assumes only single space between values
+              r = atoi(line) - 1;
               while(line[pos++] != ' ');
-              c = atoi(line+pos)-1;
+              c = atoi(line + pos) - 1;
               while(line[pos++] != ' ');
           }
-          convertCstr(line + pos, &cur);
+
+          if(!mm_is_pattern(file.typecode))
+            convertCstr(line + pos, &cur);
+
           *m_ptr = {r, c, cur};
           if(mm_is_symmetric(file.typecode) && r != c){
             // M[i][j] = M[j][i]
@@ -330,6 +341,7 @@ public:
         }
     public:
         MMIterator(MMFile<VT>& f, bool read = true) : file(f) {
+          if(mm_is_pattern(file.typecode)) cur = true;
           if(read) readEntry();
         }
         ~MMIterator() { free((void*)std::min(m_ptr, next)); }
