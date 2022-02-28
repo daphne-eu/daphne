@@ -51,6 +51,11 @@ TEST_CASE("Superfluous script argument", TAG_SCRIPTARGS) {
     checkDaphneStatusCode(StatusCode::SUCCESS, scriptPath.c_str(), "--args", "foo=123,bar=456");
 }
 
+TEST_CASE("Duplicate script argument") {
+    const std::string scriptPath = dirPath + "printSingleArg.daphne";
+    checkDaphneStatusCode(StatusCode::PARSER_ERROR, scriptPath.c_str(), "--args", "foo=123,foo=456");
+}
+
 TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
     std::stringstream out;
     std::stringstream err;

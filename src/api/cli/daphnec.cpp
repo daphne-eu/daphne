@@ -52,10 +52,11 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
         size_t pos = pair.find('=');
         if(pos == string::npos)
             throw std::runtime_error("script arguments must be specified as name=value, but found '" + pair + "'");
-        scriptArgsFinal.emplace(
-                pair.substr(0, pos), // arg name
-                pair.substr(pos + 1, pair.size()) // arg value
-        );
+        const string argName = pair.substr(0, pos);
+        const string argValue = pair.substr(pos + 1, pair.size());
+        if(scriptArgsFinal.count(argName))
+            throw runtime_error("script argument: '" + argName + "' was provided more than once");
+        scriptArgsFinal.emplace(argName, argValue);
     }
 }
 
@@ -164,8 +165,14 @@ main(int argc, char** argv)
 
     // Extract script args.
     unordered_map<string, string> scriptArgsFinal;
-    parseScriptArgs(scriptArgs2, scriptArgsFinal);
-    parseScriptArgs(scriptArgs1, scriptArgsFinal);
+    try {
+        parseScriptArgs(scriptArgs2, scriptArgsFinal);
+        parseScriptArgs(scriptArgs1, scriptArgsFinal);
+    }
+    catch(exception& e) {
+        std::cerr << "Parser error: " << e.what() << std::endl;
+        return StatusCode::PARSER_ERROR;
+    }
     
     // ************************************************************************
     // Compile and execute script
