@@ -66,24 +66,71 @@ main(int argc, char** argv)
     // Parse command line arguments
     // ************************************************************************
     
-    OptionCategory daphneOptions("daphne Options", "Options for controlling the compilation process.");
+    // Option categories.
+    // TODO We will probably subdivide the options into multiple groups later.
+    OptionCategory daphneOptions("DAPHNE Options");
 
-    opt<bool> useVectorizedPipelines("vec", desc("force tiled execution engine"), cat(daphneOptions));
-    opt<bool> noFree("no-free", desc("don't insert FreeOp"), cat(daphneOptions));
-    opt<bool> selectMatrixRepresentations("select-matrix-representations", desc("force sparce matrices"),  cat(daphneOptions));
-    alias selectMatrixRepresentationsAlias("s", desc("Alias for -select-matrix-representations"), aliasopt(selectMatrixRepresentations));
+    // Options.
+    opt<bool> useVectorizedPipelines(
+            "vec", cat(daphneOptions),
+            desc("Enable vectorized execution engine")
+    );
+    opt<bool> noFree(
+            "no-free", cat(daphneOptions),
+            desc("Don't insert FreeOp")
+    );
+    opt<bool> selectMatrixRepr(
+            "select-matrix-repr", cat(daphneOptions),
+            desc(
+                    "Automatically choose physical matrix representations "
+                    "(e.g., dense/sparse)"
+            )
+    );
+    alias selectMatrixReprAlias( // to still support the longer old form
+            "select-matrix-representations", aliasopt(selectMatrixRepr),
+            desc("Alias for --select-matrix-repr")
+    );
     // TODO: parse --explain=[list,of,compiler,passes,to,explain]
-    opt<bool> explainKernels("explain-kernels", desc("show IR after lowering to kernel calls"),  cat(daphneOptions));
-    opt<bool> cuda("cuda", desc("use CUDA"),  cat(daphneOptions));
-    opt<string> libDir("libdir", desc("the directory containing kernel libraries"),  cat(daphneOptions));
-    
-    llvm::cl::list<string> userArgs1("args", desc("<user arguments to the daphne script>"), CommaSeparated, cat(daphneOptions));
+    opt<bool> explainKernels(
+            "explain-kernels", cat(daphneOptions),
+            desc("Show DaphneIR after lowering to kernel calls")
+    );
+    opt<bool> cuda(
+            "cuda", cat(daphneOptions),
+            desc("Use CUDA")
+    );
+    opt<string> libDir(
+            "libdir", cat(daphneOptions),
+            desc("The directory containing kernel libraries")
+    );
+    llvm::cl::list<string> userArgs1(
+            "args", cat(daphneOptions),
+            desc(
+                    "Alternative way of specifying arguments to the DaphneDSL "
+                    "script; must be a comma-separated list of name-value-pairs, "
+                    "e.g., `--args x=1,y=2.2`"
+            ),
+            CommaSeparated
+    );
 
-    opt<string> inputFile(Positional, desc("<input file>"), Required);
-    llvm::cl::list<string> userArgs2(ConsumeAfter, desc("<user arguments to the daphne script>"));
+    // Positional arguments.
+    opt<string> inputFile(Positional, desc("script"), Required);
+    llvm::cl::list<string> userArgs2(ConsumeAfter, desc("[arguments]"));
 
-    HideUnrelatedOptions( daphneOptions);
-    ParseCommandLineOptions(argc, argv, " daphne compiler \n\nThis program compiles a daphne script...\n");
+    // Parse arguments.
+    HideUnrelatedOptions(daphneOptions);
+    std::stringstream extraHelp;
+    extrahelp(
+            "\nEXAMPLES:\n\n"
+            "  daphnec example.daphne\n"
+            "  daphnec --vec example.daphne x=1 y=2.2 z=\"foo\"\n"
+            "  daphnec --vec --args x=1,y=2.2,z=\"foo\" example.daphne\n"
+            "  daphnec --vec --args x=1,y=2.2 example.daphne z=\"foo\"\n"
+    );
+    ParseCommandLineOptions(
+            argc, argv,
+            "The DAPHNE Prototype.\n\nThis program compiles and executes a DaphneDSL script.\n"
+    );
     
     // ************************************************************************
     // Process parsed arguments
@@ -127,7 +174,7 @@ main(int argc, char** argv)
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepresentations, user_config);
+        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepr, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
