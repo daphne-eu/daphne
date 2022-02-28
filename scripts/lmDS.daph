@@ -109,7 +109,7 @@ lambda = scale_lambda * regularization;
 
 # THE DIRECT SOLVE ALGORITHM
 A = t(X) @ X;
-b = t(X) @ y;
+b = t(t(y) @ X); #TODO t(X) @ y (--vec issue)
 if (intercept_status == 2) {
 #    A = t(diag (scale_X) @ A + shift_X @ A [m_ext, ]);
 #    A =   diag (scale_X) @ A + shift_X @ A [m_ext, ];
