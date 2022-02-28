@@ -47,12 +47,12 @@ void printHelp(const std::string & cmd) {
      "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
 }
 
-void parseUserArgs(const llvm::cl::list<string>& userArgs, unordered_map<string, string>& scriptArgs) {
-    for(const std::string& pair : userArgs) {
+void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<string, string>& scriptArgsFinal) {
+    for(const std::string& pair : scriptArgsCli) {
         size_t pos = pair.find('=');
         if(pos == string::npos)
             throw std::runtime_error("script arguments must be specified as name=value, but found '" + pair + "'");
-        scriptArgs.emplace(
+        scriptArgsFinal.emplace(
                 pair.substr(0, pos), // arg name
                 pair.substr(pos + 1, pair.size()) // arg value
         );
@@ -103,7 +103,7 @@ main(int argc, char** argv)
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
-    llvm::cl::list<string> userArgs1(
+    llvm::cl::list<string> scriptArgs1(
             "args", cat(daphneOptions),
             desc(
                     "Alternative way of specifying arguments to the DaphneDSL "
@@ -115,11 +115,10 @@ main(int argc, char** argv)
 
     // Positional arguments.
     opt<string> inputFile(Positional, desc("script"), Required);
-    llvm::cl::list<string> userArgs2(ConsumeAfter, desc("[arguments]"));
+    llvm::cl::list<string> scriptArgs2(ConsumeAfter, desc("[arguments]"));
 
     // Parse arguments.
     HideUnrelatedOptions(daphneOptions);
-    std::stringstream extraHelp;
     extrahelp(
             "\nEXAMPLES:\n\n"
             "  daphnec example.daphne\n"
@@ -164,9 +163,9 @@ main(int argc, char** argv)
             user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 
     // Extract script args.
-    unordered_map<string, string> scriptArgs;
-    parseUserArgs(userArgs2, scriptArgs);
-    parseUserArgs(userArgs1, scriptArgs);
+    unordered_map<string, string> scriptArgsFinal;
+    parseScriptArgs(scriptArgs2, scriptArgsFinal);
+    parseScriptArgs(scriptArgs1, scriptArgsFinal);
     
     // ************************************************************************
     // Compile and execute script
@@ -187,7 +186,7 @@ main(int argc, char** argv)
 
     // Parse the input file and generate the corresponding DaphneIR operations
     // inside the module, assuming DaphneDSL as the input format.
-    DaphneDSLParser parser(scriptArgs);
+    DaphneDSLParser parser(scriptArgsFinal);
     try {
         parser.parseFile(builder, inputFile);
     }
