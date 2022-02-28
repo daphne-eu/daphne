@@ -46,14 +46,16 @@ void printHelp(const std::string & cmd) {
     cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
      "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
 }
-void tokenize(string const &in, const char delim, vector<std::string> &out)
-{
-    size_t start;
-    size_t end = 0;
-    while ((start = in.find_first_not_of(delim, end)) != string::npos)
-    {
-        end = in.find(delim, start);
-        out.push_back(in.substr(start, end - start));
+
+void parseUserArgs(const llvm::cl::list<string>& userArgs, unordered_map<string, string>& scriptArgs) {
+    for(const std::string& pair : userArgs) {
+        size_t pos = pair.find('=');
+        if(pos == string::npos)
+            throw std::runtime_error("script arguments must be specified as name=value, but found '" + pair + "'");
+        scriptArgs.emplace(
+                pair.substr(0, pos), // arg name
+                pair.substr(pos + 1, pair.size()) // arg value
+        );
     }
 }
 
@@ -74,9 +76,11 @@ main(int argc, char** argv)
     opt<bool> explainKernels("explain-kernels", desc("show IR after lowering to kernel calls"),  cat(daphneOptions));
     opt<bool> cuda("cuda", desc("use CUDA"),  cat(daphneOptions));
     opt<string> libDir("libdir", desc("the directory containing kernel libraries"),  cat(daphneOptions));
-    opt<string> userArgs("args", desc("user arguments to the daphne script <token1=value,token2=value,....>"),  cat(daphneOptions));
+    
+    llvm::cl::list<string> userArgs1("args", desc("<user arguments to the daphne script>"), CommaSeparated, cat(daphneOptions));
 
     opt<string> inputFile(Positional, desc("<input file>"), Required);
+    llvm::cl::list<string> userArgs2(ConsumeAfter, desc("<user arguments to the daphne script>"));
 
     HideUnrelatedOptions( daphneOptions);
     ParseCommandLineOptions(argc, argv, " daphne compiler \n\nThis program compiles a daphne script...\n");
@@ -113,20 +117,9 @@ main(int argc, char** argv)
             user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 
     // Extract script args.
-    
     unordered_map<string, string> scriptArgs;
-    vector<string> tokenArgs;
-    tokenize(userArgs.c_str(), ',',tokenArgs);
-    for(size_t i = 0; i < tokenArgs.size(); i++){
-        const string pair = tokenArgs.at(i);
-        size_t pos = pair.find('=');
-        if(pos == string::npos)
-            break;
-        scriptArgs.emplace(
-                pair.substr(0, pos), // arg name
-                pair.substr(pos + 1, pair.size()) // arg value
-        );
-    }
+    parseUserArgs(userArgs2, scriptArgs);
+    parseUserArgs(userArgs1, scriptArgs);
     
     // ************************************************************************
     // Compile and execute script
