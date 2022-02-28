@@ -239,7 +239,12 @@ fi
 
 llvmName=llvm-project
 cd $llvmName
-llvmCommit=$(git log -1 --format=%H)
+llvmCommit="llvmCommit-local-none"
+if [ -d .git ]
+then
+    llvmCommit=$(git log -1 --format=%H)
+fi
+
 if [ ! -f $llvmCommitFilePath ] || [ $(cat $llvmCommitFilePath) != $llvmCommit ]
 then
     echo "Need to build MLIR/LLVM."
