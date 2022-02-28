@@ -122,10 +122,10 @@ main(int argc, char** argv)
     HideUnrelatedOptions(daphneOptions);
     extrahelp(
             "\nEXAMPLES:\n\n"
-            "  daphnec example.daphne\n"
-            "  daphnec --vec example.daphne x=1 y=2.2 z=\"foo\"\n"
-            "  daphnec --vec --args x=1,y=2.2,z=\"foo\" example.daphne\n"
-            "  daphnec --vec --args x=1,y=2.2 example.daphne z=\"foo\"\n"
+            "  daphne example.daphne\n"
+            "  daphne --vec example.daphne x=1 y=2.2 z=\"foo\"\n"
+            "  daphne --vec --args x=1,y=2.2,z=\"foo\" example.daphne\n"
+            "  daphne --vec --args x=1,y=2.2 example.daphne z=\"foo\"\n"
     );
     ParseCommandLineOptions(
             argc, argv,

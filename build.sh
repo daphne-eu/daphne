@@ -82,7 +82,7 @@ llvmCommitFilePath=$thirdpartyPath/llvm-last-built-commit.txt
 #******************************************************************************
 
 # Defaults.
-target="daphnec"
+target="daphne"
 
 while [[ $# -gt 0 ]]
 do

@@ -116,7 +116,7 @@ print(m + m);
 print(t(m));
 ```
 
-... and execute it as follows: `build/bin/daphnec example.daphne`.
+... and execute it as follows: `build/bin/daphne example.daphne`.
 
 ### Building and running with containers [Alternative path for building and running the prototype and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
@@ -144,7 +144,7 @@ Singularity> ./build.sh #or ./test.sh
 
 ### Exploring the Source Code
 
-As an **entry point for exploring the source code**, you might want to have a look at the code behind the `daphnec` executable, which can be found in `src/api/cli/daphnec.cpp`.
+As an **entry point for exploring the source code**, you might want to have a look at the code behind the `daphne` executable, which can be found in `src/api/cli/daphne.cpp`.
 
 On the top-level, there are the following directories:
 

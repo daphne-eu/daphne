@@ -30,9 +30,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND LIB_DEPS CUDAKernels)
 endif()
 
-add_llvm_executable(daphnec daphnec.cpp DaphneUserConfig.h DEPENDS ${LIB_DEPS})
+add_llvm_executable(daphne daphne.cpp DaphneUserConfig.h DEPENDS ${LIB_DEPS})
 
-llvm_update_compile_flags(daphnec)
-target_link_libraries(daphnec PRIVATE ${LIBS})
+llvm_update_compile_flags(daphne)
+target_link_libraries(daphne PRIVATE ${LIBS})
 
-mlir_check_all_link_libraries(daphnec)
+mlir_check_all_link_libraries(daphne)
