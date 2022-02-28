@@ -439,10 +439,15 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
     let results = (outs MatrixOrFrame:$res);
 }
 
-// TODO This was added rather quickly, we should think about it and perhaps do
-// it in a more principled way.
 def Daphne_SliceRowOp : Daphne_Op<"sliceRow"> {
-    let arguments = (ins MatrixOrFrame:$source, Size:$rowLowerIncl, Size:$rowUpperExcl);
+    let summary = "Copies the specified rows from the argument to the result.";
+
+    let description = [{
+        Copies the rows of a data object `source` (matrix or frame) at the
+        positions in `[lowerIncl, upperExcl)` to the result.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Size:$lowerIncl, Size:$upperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -470,6 +475,18 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     }];
 
     let arguments = (ins MatrixOrFrame:$source, AnyTypeOf<[Selection, StrScalar]>:$selectedCols);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_SliceColOp : Daphne_Op<"sliceCol"> {
+    let summary = "Copies the specified columns from the argument to the result.";
+
+    let description = [{
+        Copies the columns of a data object `source` (matrix or frame) at the
+        positions in `[lowerIncl, upperExcl)` to the result.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, Size:$lowerIncl, Size:$upperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
