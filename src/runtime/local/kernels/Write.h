@@ -64,7 +64,7 @@ template<>
 struct Write<Frame> {
     static void apply(const Frame * arg, const char * filename, DCTX(ctx)) {
         File * file = openFileForWrite(filename);
-        FileMetaData::toFile(filename, arg->getNumRows(), arg->getNumCols(), 1, arg->getSchema());
+        FileMetaData::toFile(filename, arg->getNumRows(), arg->getNumCols(), 0, arg->getSchema());
         writeCsv(arg, file);
         closeFile(file);
     }
