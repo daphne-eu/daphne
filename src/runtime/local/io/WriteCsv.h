@@ -81,5 +81,36 @@ struct WriteCsv<DenseMatrix<VT>> {
         }
    }
 };
-  
+
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
+
+template <> struct WriteCsv<Frame> {
+  static void apply(const Frame *arg, File* file) {
+      
+    assert(file != nullptr && "File required");
+        for (size_t i = 0; i < arg->getNumRows(); ++i)
+        {
+            for(size_t j = 0; j < arg->getNumCols(); ++j)
+            {
+                fprintf(
+                         file->identifier,
+                        (arg->getColumnType(j) == ValueTypeCode::F32
+                            || arg->getColumnType(j) == ValueTypeCode::F64) ? "%f" : 
+                            ((arg->getColumnType(j) == ValueTypeCode::SI32
+                            || arg->getColumnType(j) == ValueTypeCode::SI64
+                            || arg->getColumnType(j) == ValueTypeCode::UI32
+                            || arg->getColumnType(j) == ValueTypeCode::UI64)) ? "%ld" : "%d"),
+                        arg[i][j]
+                );
+                if(j < (arg->getNumCols() - 1))
+                    fprintf(file->identifier, ",");
+                else
+                    fprintf(file->identifier, "\n");
+            }
+        }
+    }
+    
+};
 #endif // SRC_RUNTIME_LOCAL_IO_WRITECSV_H

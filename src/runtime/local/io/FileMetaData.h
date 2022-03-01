@@ -76,7 +76,32 @@ struct FileMetaData {
         if(ofs.is_open())
             ofs << numRows << "," << numCols << "," << isSingleValueType << "," << vtc_;
     }
-    
+    static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode* schema)
+    {
+        std::string vtc_;
+        std::ofstream ofs(filename + ".meta", std::ios::out);
+        if (!ofs.good())
+            throw std::runtime_error(
+                    "could not open file '" + filename +
+                    "' for writing meta data"
+            );
+        if(ofs.is_open())
+        {
+            ofs << numRows << "," << numCols << "," << isSingleValueType << ",";
+            for(int i = 0; i < numCols; i++) 
+            {
+                 if(schema[i] == ValueTypeCode::F64)  ofs<<"f64";
+        else if(schema[i]  == ValueTypeCode::F32)  ofs<<"f32";
+        else if(schema[i]  == ValueTypeCode::SI64) ofs<<"si64";
+        else if(schema[i]  == ValueTypeCode::SI32) ofs<<"si32";
+        else if(schema[i]  == ValueTypeCode::SI8)  ofs<<"si8";
+        else if(schema[i]  == ValueTypeCode::UI64) ofs<<"ui64";
+        else if(schema[i]  == ValueTypeCode::UI32) ofs<<"ui32";
+        else if(schema[i]  == ValueTypeCode::UI8)  ofs<<"ui8";
+        else throw std::runtime_error("unknown value type code");
+            }
+        }
+    }
     /**
      * @brief Retrieves the file meta data for the specified file.
      * 
