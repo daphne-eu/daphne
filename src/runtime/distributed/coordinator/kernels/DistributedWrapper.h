@@ -26,11 +26,9 @@
 
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
-template <class DT>
-class DistributedWrapper {};
 
-template <typename VT>
-class DistributedWrapper<DenseMatrix<VT>> {
+template <class DT>
+class DistributedWrapper {
 private:
     DCTX(_ctx);
 
@@ -46,7 +44,7 @@ public:
     ~DistributedWrapper() = default; //TODO Terminate workers (e.g. with gRPC, resource manager, etc.)
 
     void execute(const char *mlirCode,
-                 DenseMatrix<VT> ***res,
+                 DT ***res,
                  const Structure **inputs,
                  size_t numInputs,
                  size_t numOutputs,
@@ -73,7 +71,7 @@ public:
         for(size_t i = 0; i < numOutputs; ++i) {
             if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
-                *(res[i]) = DataObjectFactory::create<DenseMatrix<VT>>(outRows[i], outCols[i], zeroOut);
+                *(res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
             }
         }
         
@@ -87,10 +85,14 @@ public:
                 continue;
 
             if (isBroadcast(splits[i], inputs[i])){
-                broadcast((const DenseMatrix<VT>*)inputs[i], _ctx);
+                // TODO for now we assume inputs and outputs are of the same type but this might be not true.
+                // Broadcast needs to receive a specific type (not Structure).
+                // Broadcast internally uses  protobufs (see more at ProtoDataConverter) and we need
+                // to specify Dense/CSR<double/int>.
+                broadcast((DT*)inputs[i], _ctx);
             }
             else {
-                distribute((const DenseMatrix<VT>*)inputs[i], _ctx);
+                distribute((DT*)inputs[i], _ctx);
             }
         }
           
@@ -106,9 +108,5 @@ public:
     }
 };
 
-// TODO for CSR
-template<typename VT>
-class DistributedWrapper<CSRMatrix<VT>> {
-};
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H

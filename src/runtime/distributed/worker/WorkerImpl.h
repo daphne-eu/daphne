@@ -66,8 +66,8 @@ private:
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
     
-    template<typename VT>
-    Matrix<VT> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
+    template<class DT>
+    Matrix<typename DT::VT> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
     static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
     
@@ -77,10 +77,12 @@ private:
      * 
      * @tparam VT double/int etc.
      */
-    template<typename VT>
-    grpc::Status templateStore(::grpc::ServerContext *context,
+    template<class DT>
+    grpc::Status StoreType(::grpc::ServerContext *context,
                          const ::distributed::Matrix *request,
                          ::distributed::StoredData *response) ;
+    template<class DT>
+    DT* CreateMatrix(const ::distributed::Matrix *mat);
 
     /**
      * @brief Helper transfer function using templates in order to handle
@@ -88,8 +90,8 @@ private:
      * 
      * @tparam VT double/int etc.
      */
-    template<typename VT>
-    grpc::Status templateTransfer(::grpc::ServerContext *context,
+    template<class DT>
+    grpc::Status TransferType(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
                          ::distributed::Matrix *response);
                          /**
@@ -99,7 +101,7 @@ private:
      * @tparam VT double/int etc.
      */
     template<typename VT>
-    grpc::Status templateFreeMem(::grpc::ServerContext *context,
+    grpc::Status FreeMemType(::grpc::ServerContext *context,
                          const ::distributed::StoredData *request,
                          ::distributed::Empty *emptyMessage);
 };

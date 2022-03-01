@@ -59,7 +59,7 @@ struct Broadcast
         
 
         distributed::Matrix protoMat;
-        ProtoDataConverter<typename DT::VT>::convertToProto(mat, &protoMat);
+        ProtoDataConverter<DT>::convertToProto(mat, &protoMat);
         
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
@@ -75,17 +75,22 @@ struct Broadcast
             auto workerAddr = response.storedInfo.workerAddr;            
 
             auto storedData = response.result;
-            if(std::is_floating_point<typename DT::VT>())
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
-            else
+            if (std::is_same<DT, DenseMatrix<double>>::value)
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);            
+            if (std::is_same<DT, DenseMatrix<int64_t>>::value)
                 storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
+            if (std::is_same<DT, CSRMatrix<double>>::value)
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64);
+            if (std::is_same<DT, CSRMatrix<int64_t>>::value)
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64);
+            
             DistributedData data(storedData);
             dataMap[workerAddr] = data;
         }
         DataPlacement dataPlacement(dataMap);
         dataPlacement.isPlacedOnWorkers = true;
         mat->dataPlacement = dataPlacement;        
-    };
+    };           
 };
 
 // ****************************************************************************

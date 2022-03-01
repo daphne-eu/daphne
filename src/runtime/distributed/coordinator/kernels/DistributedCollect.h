@@ -92,7 +92,7 @@ struct DistributedCollect
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
             if (combineType == VectorCombine::ROWS) {
-                ProtoDataConverter<typename DT::VT>::convertFromProto(matProto,
+                ProtoDataConverter<DT>::convertFromProto(matProto,
                     mat,
                     ix->getRow() * k + std::min(ix->getRow(), m),
                     (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
@@ -100,7 +100,7 @@ struct DistributedCollect
                     mat->getNumCols());
             }
             else if (combineType == VectorCombine::COLS) {
-                ProtoDataConverter<typename DT::VT>::convertFromProto(matProto,
+                ProtoDataConverter<DT>::convertFromProto(matProto,
                     mat,
                     0,
                     mat->getNumRows(),
