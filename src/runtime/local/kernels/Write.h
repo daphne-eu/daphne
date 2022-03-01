@@ -60,7 +60,7 @@ struct Write<DenseMatrix<VT>> {
     }
 };
 
-template<typename VT>
+template<>
 struct Write<Frame> {
     static void apply(const Frame * arg, const char * filename, DCTX(ctx)) {
         File * file = openFileForWrite(filename);

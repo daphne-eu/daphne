@@ -19,7 +19,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-
+#include <inttypes.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
 
@@ -94,16 +94,22 @@ template <> struct WriteCsv<Frame> {
         {
             for(size_t j = 0; j < arg->getNumCols(); ++j)
             {
-                fprintf(
-                         file->identifier,
-                        (arg->getColumnType(j) == ValueTypeCode::F32
-                            || arg->getColumnType(j) == ValueTypeCode::F64) ? "%f" : 
-                            ((arg->getColumnType(j) == ValueTypeCode::SI32
-                            || arg->getColumnType(j) == ValueTypeCode::SI64
-                            || arg->getColumnType(j) == ValueTypeCode::UI32
-                            || arg->getColumnType(j) == ValueTypeCode::UI64)) ? "%ld" : "%d"),
-                        arg[i][j]
-                );
+                 auto array = arg->getColumnRaw(j);
+                 auto type = arg->getColumnType(j);
+                 switch(type) {
+                    //Conversion int8->int32 for formating as number as opposed to character
+                    case ValueTypeCode::SI8:  fprintf(file->identifier, "%" PRId8, static_cast<int32_t>(reinterpret_cast<const int8_t  *>(array)[i])); break;
+                    case ValueTypeCode::SI32: fprintf(file->identifier, "%" PRId32, reinterpret_cast<const int32_t *>(array)[i]); break;
+                    case ValueTypeCode::SI64: fprintf(file->identifier, "%" PRId64, reinterpret_cast<const int64_t *>(array)[i]); break;
+                    //Conversion uint8->uint32 for formating as number as opposed to character
+                    case ValueTypeCode::UI8:  fprintf(file->identifier, "%" PRIu8, static_cast<uint32_t>(reinterpret_cast<const uint8_t  *>(array)[i])); break;
+                    case ValueTypeCode::UI32: fprintf(file->identifier, "%" PRIu32, reinterpret_cast<const uint32_t *>(array)[i]); break;
+                    case ValueTypeCode::UI64: fprintf(file->identifier,  "%" PRIu64,reinterpret_cast<const uint64_t *>(array)[i]); break;
+                    case ValueTypeCode::F32: fprintf(file->identifier, "%f", reinterpret_cast<const float  *>(array)[i]); break;
+                    case ValueTypeCode::F64: fprintf(file->identifier, "%f", reinterpret_cast<const double *>(array)[i]); break;
+                    default: throw std::runtime_error("unknown value type code");
+                }
+                
                 if(j < (arg->getNumCols() - 1))
                     fprintf(file->identifier, ",");
                 else
