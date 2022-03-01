@@ -93,25 +93,25 @@ struct FileMetaData
                 "' for writing meta data");
         if (ofs.is_open())
         {
-            ofs << numRows << "," << numCols << "," << isSingleValueType << ",";
+            ofs << numRows << "," << numCols << "," << isSingleValueType;
             for (size_t i = 0; i < numCols; i++)
             {
                 if (schema[i] == ValueTypeCode::F64)
-                    ofs << "f64";
+                    ofs << ",f64";
                 else if (schema[i] == ValueTypeCode::F32)
-                    ofs << "f32";
+                    ofs << ",f32";
                 else if (schema[i] == ValueTypeCode::SI64)
-                    ofs << "si64";
+                    ofs << ",si64";
                 else if (schema[i] == ValueTypeCode::SI32)
-                    ofs << "si32";
+                    ofs << ",si32";
                 else if (schema[i] == ValueTypeCode::SI8)
-                    ofs << "si8";
+                    ofs << ",si8";
                 else if (schema[i] == ValueTypeCode::UI64)
-                    ofs << "ui64";
+                    ofs << ",ui64";
                 else if (schema[i] == ValueTypeCode::UI32)
-                    ofs << "ui32";
+                    ofs << ",ui32";
                 else if (schema[i] == ValueTypeCode::UI8)
-                    ofs << "ui8";
+                    ofs << ",ui8";
                 else
                     throw std::runtime_error("unknown value type code");
             }
