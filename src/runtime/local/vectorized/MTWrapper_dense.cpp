@@ -31,12 +31,38 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
+    int queueMode = 0;
+    int _numDeques;
+    if(queueMode == 0) {
+        // One centralized queue
+        _numDeques = 1;
+    } else if (queueMode == 1) {
+        // One queue per socket (or group)
+        std::cout << "Not supported yet." << std::endl;
+    } else if (queueMode == 2) {
+        // One queue per thread
+        _numDeques = this->_numThreads;
+    }
+//std::cout << "_numDeques: " << _numDeques << std::endl;
+
+
     // create task queue (w/o size-based blocking)
-    std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
+    std::vector<std::unique_ptr<TaskQueue>> q;
+    std::vector<TaskQueue*> qvector;
+    for(uint32_t i=0; i<this->_numThreads; i++) {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(i, &cpuset);
+        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
+        //q.emplace_back(new BlockingTaskQueue(len));
+        q.push_back(std::move(tmp));
+        qvector.push_back(q[i].get());
+    }
+    //std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(q.get(), batchSize8M, verbose);
-
+    this->initCPPWorkers(qvector, batchSize8M, verbose, _numDeques, queueMode);
 #ifdef USE_CUDA
     if(this->_numCUDAThreads) {
         this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
@@ -55,16 +81,25 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
+    uint64_t currentItr = 0;
+    uint64_t target;
     auto chunkParam = 1;
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
+        target = currentItr%_numDeques;
+        q[target]->enqueueTaskOnTarget(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
                 inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                outCols, 0, ctx}, resLock, res));
+                outCols, 0, ctx}, resLock, res), target);
         startChunk = endChunk;
+        currentItr++;
     }
-    q->closeInput();
+    //std::cout << "len is " << len << std::endl;
+    //std::cout << "Total Itr: " << currentItr << std::endl;
+    //q[0]->closeInput();
+    for(int i=0; i<_numDeques; i++) {
+        q[i]->closeInput();
+    }
 
     this->joinAll();
 }
@@ -84,6 +119,17 @@ template<typename VT>
     // lock for aggregation combine
     // TODO: multiple locks per output
     std::mutex resLock;
+
+    int queueMode = 0;
+    int _numDeques;
+    if(queueMode == 0) {
+        _numDeques = 1;
+    } else if (queueMode == 1) {
+        //One queue per socket (or group)
+        std::cout << "Not supported yet." << std::endl;
+    } else if (queueMode == 2) {
+        _numDeques = this->_numThreads;
+    }
 
 #ifdef USE_CUDA
     // ToDo: multi-device support :-P
@@ -124,13 +170,21 @@ template<typename VT>
 
     auto cpu_task_len = len - device_task_len;
     DenseMatrix<VT> ***res_cpp{};
-    std::unique_ptr<TaskQueue> q_cpp;
+    std::vector<std::unique_ptr<TaskQueue>> q_cpp;
+    std::vector<TaskQueue*> q_cppvector;
     if(cpu_task_len > 0) {
-        q_cpp = std::make_unique<BlockingTaskQueue>(cpu_task_len);
-        this->initCPPWorkers(q_cpp.get(), batchSize8M, verbose);
-        res_cpp = new DenseMatrix<VT> **[numOutputs];
-        auto offset = device_task_len;
-
+        for(uint32_t i=0; i<this->_numThreads; i++) {
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(i, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+            std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
+            q_cpp.push_back(std::move(tmp));
+            q_cppvector.push_back(q_cpp[i].get());
+            this->initCPPWorkers(q_cppvector, batchSize8M, verbose, _numDeques, queueMode);
+        }
+            res_cpp = new DenseMatrix<VT> **[numOutputs];
+            auto offset = device_task_len;
         for (size_t i = 0; i < numOutputs; ++i) {
             res_cpp[i] = new DenseMatrix<VT> *;
             if(combines[i] == mlir::daphne::VectorCombine::ROWS) {
@@ -146,16 +200,22 @@ template<typename VT>
 
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
+        uint64_t currentItr = 0;
+        uint64_t target;
         auto chunkParam = 1;
         LoadPartitioning lp(STATIC, cpu_task_len, chunkParam, this->_numCPPThreads, false);
         while (lp.hasNextChunk()) {
             endChunk += lp.getNextChunk();
-            q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
+            target = currentItr%_numDeques;
+            q_cpp[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
                     funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
                     outRows, outCols, offset, ctx}, resLock, res_cpp));
             startChunk = endChunk;
+            currentItr++;
         }
-        q_cpp->closeInput();
+        for(int i=0; i<_numDeques; i++) {
+            q_cpp[i]->closeInput();
+        }
     }
     this->joinAll();
 

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <thread>
+#include <sched.h>
 
 class Worker {
 protected:
@@ -55,14 +56,18 @@ public:
 };
 
 class WorkerCPU : public Worker {
-    TaskQueue* _q;
+    //TaskQueue* _q[64];
+    std::vector<TaskQueue*> _q;
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
+    int _threadID;
+    int _numDeques;
+    int _queueMode;
 public:
     // this constructor is to be used in practice
-    WorkerCPU(TaskQueue* tq, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100) : Worker(), _q(tq),
-            _verbose(verbose), _fid(fid), _batchSize(batchSize) {
+    WorkerCPU(std::vector<TaskQueue*> deques, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numDeques = 0, int queueMode = 0) : Worker(), _q(deques),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numDeques(numDeques), _queueMode(queueMode) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
@@ -70,19 +75,48 @@ public:
     ~WorkerCPU() override = default;
 
     void run() override {
-        Task* t = _q->dequeueTask();
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(_threadID, &cpuset);
+        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        int target_deque = 0;
+
+        if( _queueMode == 0 ) {
+            target_deque = 0;
+        } else if ( _queueMode == 1 ) {
+            std::cout << "Queue mode not supported yet." << std::endl;
+        } else if ( _queueMode == 2 ) {
+            target_deque = _threadID;
+        }
+
+        Task* t = _q[target_deque]->dequeueTask();
 
         while( !isEOF(t) ) {
-            //execute self-contained task
             if( _verbose )
                 std::cerr << "WorkerCPU: executing task." << std::endl;
             t->execute(_fid, _batchSize);
             delete t;
+
             //get next tasks (blocking)
-            t = _q->dequeueTask();
+            t = _q[target_deque]->dequeueTask();
         }
+
+        // Reached the end of own queue, now attempting to steal from other queues
+        if( _numDeques > 1 ) {
+            target_deque = (target_deque+1)%_numDeques;
+            while(target_deque != _threadID) {
+                t = _q[target_deque]->dequeueTask();
+                if( isEOF(t) ) {
+                    target_deque = (target_deque+1)%_numDeques;
+                } else {
+                t->execute(_fid, _batchSize);
+                delete t;
+                }
+            }
+        }
+
         if( _verbose )
-            std::cerr << "WorkerCPU: received EOF, finalized." << std::endl;
+            std::cerr << "WorkerCPU: received EOF on all queues, finalized." << std::endl;
     }
 };
 

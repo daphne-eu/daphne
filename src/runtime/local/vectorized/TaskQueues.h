@@ -21,6 +21,7 @@
 #include <mutex>
 #include <condition_variable>
 #include <runtime/local/vectorized/Tasks.h>
+#include <sched.h>
 
 const uint64_t DEFAULT_MAX_SIZE = 100000;
 
@@ -29,6 +30,7 @@ public:
     virtual ~TaskQueue() = default;
 
     virtual void enqueueTask(Task* t) = 0;
+    virtual void enqueueTaskOnTarget(Task* t, int i) = 0;
     virtual Task* dequeueTask() = 0;
     virtual uint64_t size() = 0;
     virtual void closeInput() = 0;
@@ -50,6 +52,18 @@ public:
         _capacity = capacity;
     }
     ~BlockingTaskQueue() override = default;
+
+    void enqueueTaskOnTarget(Task* t, int i) override {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(i, &cpuset);
+        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        std::unique_lock<std::mutex> ul(_qmutex);
+        while( _data.size() + 1 > _capacity )
+            _cv.wait(ul);
+        _data.push_back(t);
+        _cv.notify_one();
+    }
 
     void enqueueTask(Task* t) override {
         // lock mutex, released at end of scope
