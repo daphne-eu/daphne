@@ -111,7 +111,11 @@ done;
 
 
 # Make sure that the submodule(s) have been updated since the last clone/pull.
-# git submodule update --init --recursive
+# But only if this is a git repo.
+if [ -d .git ]
+then
+    git submodule update --init --recursive
+fi
 
 
 #******************************************************************************
@@ -240,7 +244,7 @@ fi
 llvmName=llvm-project
 cd $llvmName
 llvmCommit="llvmCommit-local-none"
-if [ -d .git ]
+if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit=$(git log -1 --format=%H)
 fi
