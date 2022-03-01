@@ -60,4 +60,14 @@ struct Write<DenseMatrix<VT>> {
     }
 };
 
+template<typename VT>
+struct Write<Frame> {
+    static void apply(const Frame * arg, const char * filename, DCTX(ctx)) {
+        File * file = openFileForWrite(filename);
+        FileMetaData::toFile(filename, arg->getNumRows(), arg->getNumCols(), 1, arg->getSchema());
+        writeCsv(arg, file);
+        closeFile(file);
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_WRITE_H

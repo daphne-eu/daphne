@@ -1,0 +1,128 @@
+# -------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# -------------------------------------------------------------
+
+__all__ = ["Frame"]
+
+import os
+from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
+
+from api.python.script_building.dag import OutputType
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
+from api.python.operator.operation_node import OperationNode
+from api.python.operator.nodes.scalar import Scalar
+import numpy as np
+import pandas as pd
+
+from api.python.utils.helpers import get_slice_string
+
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
+
+
+class Frame(OperationNode):
+
+    _pd_dataframe: pd.DataFrame
+
+    def __init__(self, daphne_context: "DaphneContext", operation: str,
+                 unnamed_input_nodes: Union[str,
+                                            Iterable[VALID_INPUT_TYPES]] = None,
+                 named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
+                 local_data: pd.DataFrame = None, brackets: bool = False) -> "Frame":
+        is_python_local_data = False
+        if local_data is not None:
+            self._pd_dataframe = local_data
+            is_python_local_data = True
+            
+        else:
+            self._pd_dataframe = None
+        
+        super().__init__(daphne_context, operation, unnamed_input_nodes,
+                         named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
+
+    
+
+    def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
+        code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
+        if self._is_pandas():
+            self._pd_dataframe.to_csv(TMP_PATH+"/"+var_name+".csv", header=False, index=False)
+            with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
+                    f.write(str(self._pd_dataframe.shape[0])+","+str(self._pd_dataframe.shape[1])+",0")
+                    for col in self._pd_dataframe:
+                        f.write(","+self.getDType(self._pd_dataframe[col].dtypes))
+                    #for col_name in self._pd_dataframe.columns:
+                     #   f.write(col_name+",")
+                    f.close()
+        return code_line
+
+    def compute(self, verbose: bool = False, lineage: bool = False) -> Union[pd.DataFrame]:
+        if self._is_pandas():
+            if verbose:
+                print("[Pandas Frame - No Compilation necessary]")
+            return self._pd_dataframe
+        else:
+            return super().compute(verbose, lineage)
+
+    def _is_pandas(self) -> bool:
+        return self._pd_dataframe is not None
+
+    def getDType(self, d_type):
+        if d_type == "int64":
+            return "ui64"
+        elif d_type == "float64":
+            return "f64"
+        else:
+            print("Error")
+    def rbind(self, other) -> 'Frame':
+        """
+        Row-wise frame concatenation, by concatenating the second frame as additional rows to the first frame. 
+        :param: The other frame to bind to the right hand side
+        :return: The OperationNode containing the concatenated frames.
+        """
+
+        return Frame(self.daphne_context, "rbind", [self, other])
+
+    def cbind(self, other) -> 'Frame':
+        """
+        Column-wise frame concatenation, by concatenating the second frame as additional columns to the first frame. 
+        :param: The other frame to bind to the right hand side.
+        :return: The Frame containing the concatenated frames.
+        """
+        return Frame(self.daphne_context, "cbind", [self, other])
+
+    def replace(self, pattern: str, replacement: str) -> 'Frame':
+        """
+        Replace all instances of string with replacement string
+        :param: pattern the string to replace
+        :param: replacement the string to replace with
+        :return: The Frame containing the replaced values 
+        """
+        return Frame(self.daphne_context, "replace", named_input_nodes={"target": self, "pattern": f"'{pattern}'", "replacement": f"'{replacement}'"})
+
+    def __str__(self):
+        return "FrameNode"
+
+    def __getitem__(self, i) -> 'Frame':
+        sliceIns = get_slice_string(i)
+        return Frame(self.daphne_context, '', [self, sliceIns], brackets=True)
+    
+    def print(self):
+        return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
