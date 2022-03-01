@@ -54,6 +54,10 @@ void distributedCollect(DT *&res, const Handle<DT> *handle, DCTX(ctx))
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// DenseMatrix
+// ----------------------------------------------------------------------------
+
 template<typename VT>
 struct DistributedCollect<DenseMatrix<VT>>
 {
@@ -64,8 +68,9 @@ struct DistributedCollect<DenseMatrix<VT>>
         };
         DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
-        // auto blockSize = DistributedData::BLOCK_SIZE;
+        // auto blockSize = DistributedData::BLOCK_SIZE;        
         res = DataObjectFactory::create<DenseMatrix<VT>>(handle->getRows(), handle->getCols(), false);
+        
         for (auto &pair : handle->getMap()) {
             auto ix = pair.first;
             auto data = pair.second;
@@ -94,7 +99,63 @@ struct DistributedCollect<DenseMatrix<VT>>
             auto response = caller.getNextResult();
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
-            ProtoDataConverter<VT>::convertFromProto(matProto,
+            ProtoDataConverter<DenseMatrix<VT>>::convertFromProto(matProto,
+                res,
+                ix->getRow() * k + std::min(ix->getRow(), m),
+                (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
+                0,
+                res->getNumCols());
+        }      
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct DistributedCollect<CSRMatrix<VT>>
+{
+    static void apply(CSRMatrix<VT> *&res, const Handle<CSRMatrix<VT>> *handle, DCTX(ctx))
+    {
+        struct StoredInfo{
+            DistributedIndex *ix;
+        };
+        DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
+
+        // auto blockSize = DistributedData::BLOCK_SIZE;
+        // TODO store inside handle nonZeroValues ? Right now we reserve too much space for no reason
+        res = DataObjectFactory::create<CSRMatrix<VT>>(handle->getRows(), handle->getCols(), handle->getRows() * handle->getCols(), true);
+        
+        for (auto &pair : handle->getMap()) {
+            auto ix = pair.first;
+            auto data = pair.second;
+
+            StoredInfo storedInfo({new DistributedIndex(ix)});
+            distributed::StoredData storedData = data.getData();
+            caller.asyncTransferCall(data.getChannel(), storedInfo, storedData);
+        }
+        // Get num workers
+        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+        assert(envVar && "Environment variable has to be set");
+        std::string workersStr(envVar);
+        std::string delimiter(",");
+
+        size_t pos;
+        auto workersSize = 0;
+        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+            workersSize++;
+            workersStr.erase(0, pos + delimiter.size());
+        }
+        workersSize++;
+        // Get Results
+        auto k = res->getNumRows() / workersSize;
+        auto m = res->getNumRows() % workersSize;        
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto ix = response.storedInfo.ix;
+            auto matProto = response.result;
+            ProtoDataConverter<CSRMatrix<VT>>::convertFromProto(matProto,
                 res,
                 ix->getRow() * k + std::min(ix->getRow(), m),
                 (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),

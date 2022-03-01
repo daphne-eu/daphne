@@ -35,28 +35,8 @@
 
 template<class DT>
 struct Broadcast
-{
-    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
-};
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DT>
-void broadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
-{
-    Broadcast<DT>::apply(res, mat, ctx);
-}
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-template<typename VT>
-struct Broadcast<DenseMatrix<VT>>
-{
-    static void apply(Handle<DenseMatrix<VT>> *&res, const DenseMatrix<VT> *mat, DCTX(ctx))
+{    
+    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -80,10 +60,10 @@ struct Broadcast<DenseMatrix<VT>>
         };
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
         
-        typename Handle<DenseMatrix<VT>>::HandleMap map;   
+        typename Handle<DT>::HandleMap map;   
 
         distributed::Matrix protoMat;
-        ProtoDataConverter<VT>::convertToProto(mat, &protoMat);
+        ProtoDataConverter<DT>::convertToProto(mat, &protoMat);
         
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
@@ -101,15 +81,31 @@ struct Broadcast<DenseMatrix<VT>>
             auto channel = response.storedInfo.channel;
 
             auto storedData = response.result;
-            if(std::is_floating_point<VT>())
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
-            else
+            if (std::is_same<DT, DenseMatrix<double>>::value)
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);            
+            if (std::is_same<DT, DenseMatrix<int64_t>>::value)
                 storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
+            if (std::is_same<DT, CSRMatrix<double>>::value)
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64);
+            if (std::is_same<DT, CSRMatrix<int64_t>>::value)
+                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64);
+            
             DistributedData data(storedData, workerAddr, channel);
             map.insert({*ix, data});
         }
-        res = new Handle<DenseMatrix<VT>>(map, mat->getNumRows(), mat->getNumCols());
+        res = new Handle<DT>(map, mat->getNumRows(), mat->getNumCols());
     }
 };
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DT>
+void broadcast(Handle<DT> *&res, const DT *mat, DCTX(ctx))
+{
+    Broadcast<DT>::apply(res, mat, ctx);
+}
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_BROADCAST_H

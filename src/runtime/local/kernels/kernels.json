@@ -1680,7 +1680,9 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
         ]
     },
     {
@@ -1707,7 +1709,9 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
         ]
     },
     {
@@ -1734,7 +1738,9 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"]]
         ]
     },
     {
@@ -1801,7 +1807,8 @@
         "instantiations": [
             [["DenseMatrix", "double"], "Structure"],
             [["DenseMatrix", "int64_t"], "Structure"],
-            [["CSRMatrix", "double"], "Structure"]
+            [["CSRMatrix", "double"], "Structure"],
+            [["CSRMatrix", "int64_t"], "Structure"]
         ]
     },
     {
@@ -1967,7 +1974,8 @@
             ["Frame"],
             [["Handle", "DenseMatrix", "double"]],
             [["Handle", "DenseMatrix", "int64_t"]],
-            [["Handle", "CSRMatrix", "double"]]
+            [["Handle", "CSRMatrix", "double"]],
+            [["Handle", "CSRMatrix", "int64_t"]]
         ]
     },
     {
