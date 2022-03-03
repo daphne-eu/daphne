@@ -33,5 +33,13 @@ m1 = pd.DataFrame(
     [52, 54, 86.2]],
     columns=['a', 'b', 'c'])
 
-res = daphne_context.from_pandas(m1).print().compute()
-print(res)
+m2 = pd.DataFrame(
+    [[1, 2, 3],
+    [4, 5, 6],
+    [9, 7, 8],
+    [52, 54, 86.2]],
+    columns=['d', 'e', 'f'])
+
+daphne_context.from_pandas(m1).print().compute()
+daphne_context.from_pandas(m2).print().compute()
+daphne_context.from_pandas(m1).cbind(daphne_context.from_pandas(m2)).print().compute()

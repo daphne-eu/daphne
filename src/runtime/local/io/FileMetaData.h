@@ -83,7 +83,7 @@ struct FileMetaData
         if (ofs.is_open())
             ofs << numRows << "," << numCols << "," << isSingleValueType << "," << vtc_;
     }
-    static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, const ValueTypeCode *schema)
+    static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, const ValueTypeCode *schema, const std::string * labels)
     {
         std::string vtc_;
         std::ofstream ofs(filename + ".meta", std::ios::out);
@@ -114,6 +114,10 @@ struct FileMetaData
                     ofs << ",ui8";
                 else
                     throw std::runtime_error("unknown value type code");
+            }
+            for(size_t i = 0; i < numCols; i++)
+            {
+                ofs <<","<<labels[i];
             }
         }
     }

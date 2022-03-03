@@ -31,7 +31,6 @@ from api.python.operator.nodes.scalar import Scalar
 import numpy as np
 import pandas as pd
 
-from api.python.utils.helpers import get_slice_string
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -68,8 +67,8 @@ class Frame(OperationNode):
                     f.write(str(self._pd_dataframe.shape[0])+","+str(self._pd_dataframe.shape[1])+",0")
                     for col in self._pd_dataframe:
                         f.write(","+self.getDType(self._pd_dataframe[col].dtypes))
-                    #for col_name in self._pd_dataframe.columns:
-                     #   f.write(col_name+",")
+                    for col_name in self._pd_dataframe.columns:
+                        f.write(","+col_name)
                     f.close()
         return code_line
 
@@ -108,21 +107,6 @@ class Frame(OperationNode):
         """
         return Frame(self.daphne_context, "cbind", [self, other])
 
-    def replace(self, pattern: str, replacement: str) -> 'Frame':
-        """
-        Replace all instances of string with replacement string
-        :param: pattern the string to replace
-        :param: replacement the string to replace with
-        :return: The Frame containing the replaced values 
-        """
-        return Frame(self.daphne_context, "replace", named_input_nodes={"target": self, "pattern": f"'{pattern}'", "replacement": f"'{replacement}'"})
 
-    def __str__(self):
-        return "FrameNode"
-
-    def __getitem__(self, i) -> 'Frame':
-        sliceIns = get_slice_string(i)
-        return Frame(self.daphne_context, '', [self, sliceIns], brackets=True)
-    
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
