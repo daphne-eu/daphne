@@ -32,3 +32,14 @@ add_library(DaphneDSLParser STATIC
 target_link_libraries(DaphneDSLParser PRIVATE
         antlr4_static
 )
+
+add_library(DaphneDSLParserShared STATIC
+        DaphneDSLBuiltins.cpp
+        DaphneDSLParser.cpp
+        DaphneDSLVisitor.cpp
+        ${ANTLR4_SRC_FILES_DaphneDSLGrammar}
+)
+
+target_link_libraries(DaphneDSLParserShared PRIVATE
+        antlr4_shared
+)
