@@ -23,6 +23,10 @@ def DistributeComputations : FunctionPass<"distribute-computations"> {
     let constructor = "mlir::daphne::createDistributeComputationsPass()";
 }
 
+def DistributePipelines : FunctionPass<"distribute-pipelines"> {
+    let constructor = "mlir::daphne::createDistributePipelinesPass()";
+}
+
 def Inference: FunctionPass<"inference"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }

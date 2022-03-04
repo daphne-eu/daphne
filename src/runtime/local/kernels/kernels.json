@@ -2745,5 +2745,127 @@
         "instantiations": [
             ["Frame"]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedPipeline.h",
+            "opName": "distributedPipeline",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "output0"
+                },
+                {
+                    "type": "const Structure **",
+                    "name": "inputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numInputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numOutputs"
+                },
+                {
+                    "type": "size_t *",
+                    "name": "outRows"
+                },
+                {
+                    "type": "size_t *",
+                    "name": "outCols"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "splits"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "combines"
+                },
+                {
+                    "type": "const char *",
+                    "name": "irCode"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DistributedPipeline.h",
+            "opName": "distributedPipeline",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "output0"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "output1"
+                },
+                {
+                    "type": "const Structure **",
+                    "name": "inputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numInputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numOutputs"
+                },
+                {
+                    "type": "size_t *",
+                    "name": "outRows"
+                },
+                {
+                    "type": "size_t *",
+                    "name": "outCols"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "splits"
+                },
+                {
+                    "type": "int64_t *",
+                    "name": "combines"
+                },
+                {
+                    "type": "const char *",
+                    "name": "irCode"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"]]
+                ]
+            }
+        ]
     }
 ]
