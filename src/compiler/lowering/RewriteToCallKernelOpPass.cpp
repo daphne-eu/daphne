@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 using namespace mlir;
 
@@ -264,6 +265,108 @@ namespace
             return success();
         }
     };
+    
+    class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::DistributedPipelineOp> {
+        Value dctx;
+        
+    public:
+        using OpConversionPattern::OpConversionPattern;
+        DistributedPipelineKernelReplacement(MLIRContext * mctx, Value dctx, PatternBenefit benefit = 2)
+        : OpConversionPattern(mctx, benefit), dctx(dctx)
+        {
+        }
+
+        LogicalResult matchAndRewrite(daphne::DistributedPipelineOp op, ArrayRef<Value> operands,
+                                      ConversionPatternRewriter &rewriter) const override
+        {
+            size_t numOutputs = op.outputs().size();
+            size_t numInputs = op.inputs().size();
+            
+            if(numOutputs > 2)
+                throw std::runtime_error(
+                        "distributed pipelines with more than 2 outputs are "
+                        "not supported at the moment"
+                );
+            
+            std::stringstream callee;
+            callee << "_distributedPipeline"; // kernel name
+            for(size_t i = 0; i < numOutputs; i++)
+                callee << "__DenseMatrix_double"; // outputs
+            callee
+                << "__Structure_variadic" // inputs
+                << "__size_t" // numOutputs
+                << "__size_t" // numInputs
+                << "__size_t" // outRows
+                << "__size_t" // outCols
+                << "__int64_t" // splits
+                << "__int64_t" // combines
+                << "__char"; // irCode
+            
+            MLIRContext* mctx = rewriter.getContext();
+            
+            Location loc = op.getLoc();
+            Type vptObj = daphne::VariadicPackType::get(mctx, daphne::MatrixType::get(mctx, rewriter.getF64Type()));
+            Type vptSize = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, false));
+            Type vptInt64 = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, true));
+            
+            // Variadic pack for inputs.
+            auto cvpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptObj, rewriter.getIndexAttr(numInputs));
+            for(size_t i = 0; i < numInputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc, cvpInputs, op.inputs()[i], rewriter.getIndexAttr(i)
+                );
+            // Constants for #inputs and #outputs.
+            auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
+            auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
+            // Variadic pack for out_rows.
+            auto cvpOutRows = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
+            for(size_t i = 0; i < numOutputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc, cvpOutRows, op.out_rows()[i], rewriter.getIndexAttr(i)
+                );
+            // Variadic pack for out_cols.
+            auto cvpOutCols = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
+            for(size_t i = 0; i < numOutputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc, cvpOutCols, op.out_cols()[i], rewriter.getIndexAttr(i)
+                );
+            // Variadic pack for splits.
+            auto cvpSplits = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getIndexAttr(numInputs));
+            for(size_t i = 0; i < numInputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc,
+                        cvpSplits,
+                        rewriter.create<daphne::ConstantOp>(
+                                loc, static_cast<int64_t>(op.splits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())
+                        ),
+                        rewriter.getIndexAttr(i)
+                );
+            // Variadic pack for combines.
+            auto cvpCombines = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getIndexAttr(numOutputs));
+            for(size_t i = 0; i < numOutputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc,
+                        cvpCombines,
+                        rewriter.create<daphne::ConstantOp>(
+                                loc, static_cast<int64_t>(op.combines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())
+                        ),
+                        rewriter.getIndexAttr(i)
+                );
+            
+            // Create CallKernelOp.
+            std::vector<Value> newOperands = {
+                cvpInputs, coNumInputs, coNumOutputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.ir(), dctx
+            };
+            rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(
+                    op.getOperation(),
+                    callee.str(),
+                    newOperands,
+                    op.outputs().getTypes()
+            );
+            
+            return success();
+        }
+    };
 
     struct RewriteToCallKernelOpPass
     : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
@@ -306,7 +409,10 @@ void RewriteToCallKernelOpPass::runOnFunction()
     });
 
     // Apply conversion to CallKernelOps.
-    patterns.insert<KernelReplacement>(&getContext(), dctx);
+    patterns.insert<
+            KernelReplacement,
+            DistributedPipelineKernelReplacement
+    >(&getContext(), dctx);
     if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
 
