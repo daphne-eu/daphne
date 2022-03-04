@@ -45,8 +45,8 @@ namespace CUDA {
 // ****************************************************************************
 
     template<class DTRes, class DTLhs, typename VTRhs>
-    void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
-        EwBinaryMatSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
+        EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
     }
 
 // ****************************************************************************

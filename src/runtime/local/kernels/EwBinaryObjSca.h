@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMATSCA_H
-#define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMATSCA_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYOBJSCA_H
+#define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYOBJSCA_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -45,7 +45,7 @@ struct EwBinaryObjSca {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, typename VTRhs>
-void ewBinaryMatSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
+void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
     EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
@@ -53,7 +53,7 @@ template<typename VT>
 void ewBinaryFrameColSca(BinaryOpCode opCode, Frame *& res, const Frame * lhs, VT rhs, size_t c, DCTX(ctx)) {
     auto * col_res = res->getColumn<VT>(c);
     auto * col_lhs = lhs->getColumn<VT>(c);
-    ewBinaryMatSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>(opCode, col_res, col_lhs, rhs, nullptr);
+    ewBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>(opCode, col_res, col_lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -128,17 +128,17 @@ struct EwBinaryObjSca<Frame, Frame, VT> {
         for (size_t c = 0; c < numCols; c++) {
             switch(lhs->getColumnType(c)) {
                 // For all value types:
-                case ValueTypeCode::F64: ewBinaryFrameColSca<double>(opCode, res, lhs, rhs, c, nullptr); break;
-                case ValueTypeCode::F32: ewBinaryFrameColSca<float>(opCode, res, lhs, rhs, c, nullptr); break;
-                case ValueTypeCode::SI64: ewBinaryFrameColSca<int64_t>(opCode, res, lhs, rhs, c, nullptr); break;
-                case ValueTypeCode::SI32: ewBinaryFrameColSca<int32_t>(opCode, res, lhs, rhs, c, nullptr); break;
-                case ValueTypeCode::SI8 : ewBinaryFrameColSca<int8_t>(opCode, res, lhs, rhs, c, nullptr); break;
-                case ValueTypeCode::UI64: ewBinaryFrameColSca<uint64_t>(opCode, res, lhs, rhs, c, nullptr); break;
-                case ValueTypeCode::UI32: ewBinaryFrameColSca<uint32_t>(opCode, res, lhs, rhs, c, nullptr); break; 
-                case ValueTypeCode::UI8 : ewBinaryFrameColSca<uint8_t>(opCode, res, lhs, rhs, c, nullptr); break; 
+                case ValueTypeCode::F64: ewBinaryFrameColSca<double>(opCode, res, lhs, rhs, c, ctx); break;
+                case ValueTypeCode::F32: ewBinaryFrameColSca<float>(opCode, res, lhs, rhs, c, ctx); break;
+                case ValueTypeCode::SI64: ewBinaryFrameColSca<int64_t>(opCode, res, lhs, rhs, c, ctx); break;
+                case ValueTypeCode::SI32: ewBinaryFrameColSca<int32_t>(opCode, res, lhs, rhs, c, ctx); break;
+                case ValueTypeCode::SI8 : ewBinaryFrameColSca<int8_t>(opCode, res, lhs, rhs, c, ctx); break;
+                case ValueTypeCode::UI64: ewBinaryFrameColSca<uint64_t>(opCode, res, lhs, rhs, c, ctx); break;
+                case ValueTypeCode::UI32: ewBinaryFrameColSca<uint32_t>(opCode, res, lhs, rhs, c, ctx); break; 
+                case ValueTypeCode::UI8 : ewBinaryFrameColSca<uint8_t>(opCode, res, lhs, rhs, c, ctx); break; 
             }
         }   
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMATSCA_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_EWBINARYOBJSCA_H
