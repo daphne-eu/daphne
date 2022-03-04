@@ -376,11 +376,11 @@ public:
         }
     }
 
-    Frame* slice(size_t rl, size_t ru) override {
+    Frame* slice(size_t rl, size_t ru) const override {
         return slice(rl, ru, 0, numCols);
     }
 
-    Frame* sliceCol(size_t cl, size_t cu) {
+    Frame* sliceCol(size_t cl, size_t cu) const {
         return slice(0, numRows, cl, cu);
     }
 

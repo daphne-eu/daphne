@@ -371,7 +371,7 @@ public:
         os << std::endl;
     }
 
-    CSRMatrix* slice(size_t rl, size_t ru) override {
+    CSRMatrix* slice(size_t rl, size_t ru) const override {
         return DataObjectFactory::create<CSRMatrix>(this, rl, ru);
     }
 

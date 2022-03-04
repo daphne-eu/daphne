@@ -65,7 +65,7 @@ public:
      */
     virtual void print(std::ostream & os) const = 0;
 
-    virtual Structure* slice(size_t rl, size_t ru) = 0;
+    virtual Structure* slice(size_t rl, size_t ru) const = 0;
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

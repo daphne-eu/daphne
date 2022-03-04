@@ -58,7 +58,7 @@ void sliceCol(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExc
 template<typename VT>
 struct SliceCol<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = const_cast<DenseMatrix<VT> *>(arg)->sliceCol(lowerIncl, upperExcl);
+        res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
 
@@ -68,7 +68,7 @@ struct SliceCol<DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template <> struct SliceCol<Frame, Frame> {
     static void apply(Frame *& res, const Frame * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = const_cast<Frame *>(arg)->sliceCol(lowerIncl, upperExcl);
+        res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H

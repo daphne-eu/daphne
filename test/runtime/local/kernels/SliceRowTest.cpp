@@ -29,7 +29,7 @@
 
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("SliceRow, DenseMatrix", TAG_KERNELS, DenseMatrix, (double, int64_t, uint32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("SliceRow", TAG_KERNELS, DenseMatrix, (double, int64_t, uint32_t)) {
     using DT = TestType;
     
     std::vector<typename DT::VT> vals = {
@@ -53,7 +53,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow, DenseMatrix", TAG_KERNELS, DenseMatrix, (d
     DataObjectFactory::destroy(res);
 }
 
-TEST_CASE("SliceRow, Frame", TAG_KERNELS) {
+TEST_CASE("SliceRow - Frame", TAG_KERNELS) {
     using VT = double;
 
     auto c0 = genGivenVals<DenseMatrix<VT>>(4, {0.0, 1.1, 2.2, 3.3});
