@@ -31,16 +31,19 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
-    int queueMode = 0;
+    int queueMode = 1;
     int _numDeques;
-    if(queueMode == 0) {
-        // One centralized queue
+    if( queueMode == 0 ) {
         _numDeques = 1;
-    } else if (queueMode == 1) {
-        // One queue per socket (or group)
-        std::cout << "Not supported yet." << std::endl;
-    } else if (queueMode == 2) {
-        // One queue per thread
+    } else if( queueMode == 1 ) {
+        std::string line;
+        std::ifstream possibleNodesFile("/sys/devices/system/node/possible");
+        std::getline(possibleNodesFile, line);
+        possibleNodesFile.close();
+        int split = line.find_first_of("-");
+        _numDeques = stoi(line.substr(split+1))-stoi(line.substr(0, split))+1;
+//std::cout << "Num Deques: " << _numDeques << std::endl;
+    } else if( queueMode == 2 ) {
         _numDeques = this->_numThreads;
     }
 //std::cout << "_numDeques: " << _numDeques << std::endl;
@@ -49,7 +52,7 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     // create task queue (w/o size-based blocking)
     std::vector<std::unique_ptr<TaskQueue>> q;
     std::vector<TaskQueue*> qvector;
-    for(uint32_t i=0; i<this->_numThreads; i++) {
+    for(int i=0; i<_numDeques; i++) {
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
         CPU_SET(i, &cpuset);
@@ -81,18 +84,18 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    uint64_t currentItr = 0;
+    //uint64_t currentItr = 0;
     uint64_t target;
     auto chunkParam = 1;
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        target = currentItr%_numDeques;
+        target = int(((float(startChunk))/(len+1))*_numDeques);
         q[target]->enqueueTaskOnTarget(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
                 inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                 outCols, 0, ctx}, resLock, res), target);
         startChunk = endChunk;
-        currentItr++;
+        //currentItr++;
     }
     //std::cout << "len is " << len << std::endl;
     //std::cout << "Total Itr: " << currentItr << std::endl;
@@ -120,14 +123,19 @@ template<typename VT>
     // TODO: multiple locks per output
     std::mutex resLock;
 
-    int queueMode = 0;
+    int queueMode = 1;
     int _numDeques;
-    if(queueMode == 0) {
+    if( queueMode == 0 ) {
         _numDeques = 1;
-    } else if (queueMode == 1) {
-        //One queue per socket (or group)
-        std::cout << "Not supported yet." << std::endl;
-    } else if (queueMode == 2) {
+    } else if( queueMode == 1 ) {
+        std::string line;
+        std::ifstream possibleNodesFile("/sys/devices/system/node/possible");
+        std::getline(possibleNodesFile, line);
+        possibleNodesFile.close();
+        int split = line.find_first_of("-");
+        _numDeques = stoi(line.substr(split+1))-stoi(line.substr(0, split))+1;
+//std::cout << "Num Deques: " << _numDeques << std::endl;
+    } else if( queueMode == 2 ) {
         _numDeques = this->_numThreads;
     }
 

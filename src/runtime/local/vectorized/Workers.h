@@ -18,6 +18,7 @@
 
 #include <thread>
 #include <sched.h>
+#include <fstream>
 
 class Worker {
 protected:
@@ -62,12 +63,13 @@ class WorkerCPU : public Worker {
     uint32_t _fid;
     uint32_t _batchSize;
     int _threadID;
-    int _numDeques;
+    int _numaID;
+    int _numQueues;
     int _queueMode;
 public:
     // this constructor is to be used in practice
-    WorkerCPU(std::vector<TaskQueue*> deques, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numDeques = 0, int queueMode = 0) : Worker(), _q(deques),
-            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numDeques(numDeques), _queueMode(queueMode) {
+    WorkerCPU(std::vector<TaskQueue*> deques, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0) : Worker(), _q(deques),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
@@ -83,9 +85,14 @@ public:
 
         if( _queueMode == 0 ) {
             target_deque = 0;
-        } else if ( _queueMode == 1 ) {
-            std::cout << "Queue mode not supported yet." << std::endl;
-        } else if ( _queueMode == 2 ) {
+        } else if( _queueMode == 1) {
+            std::string line;
+            std::ifstream cpuNodeFile("/sys/devices/system/cpu/cpu" + std::to_string(_threadID) + "/topology/physical_package_id");
+            std::getline(cpuNodeFile, line);
+            cpuNodeFile.close();
+            _numaID = stoi(line);
+            target_deque = _numaID;
+        } else if( _queueMode == 2) {
             target_deque = _threadID;
         }
 
@@ -103,7 +110,19 @@ public:
 
         // Reached the end of own queue, now attempting to steal from other queues
         if( _numDeques > 1 ) {
-            target_deque = (target_deque+1)%_numDeques;
+        target_deque = (target_deque+1)%_numQueues;
+        if(queueMode == 1) {
+            while(target_deque != _numaID) {
+                t = _q[target_deque]->dequeueTask();
+                if( isEOF(t) ) {
+                    target_deque = (target_deque+1)%_numQueues;
+                } else {
+                    t->execute(_fid, _batchSize);
+                    delete t;
+                    }
+                }
+            }
+        } else if( queueMode == 2 ) {
             while(target_deque != _threadID) {
                 t = _q[target_deque]->dequeueTask();
                 if( isEOF(t) ) {
