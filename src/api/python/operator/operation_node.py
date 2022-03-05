@@ -65,6 +65,15 @@ class OperationNode(DAGNode):
             result = self._script.build_code(self)
             self._script.execute()
             self._script.clear(self)
+            if self._output_type == OutputType.FRAME:
+                df = pd.read_csv(result)
+                f = open(result+".meta")
+                fmd = f.read().split(",")
+                df.columns=fmd[1+2+int(fmd[1]):]
+                result = df
+            if self._output_type == OutputType.MATRIX:  
+                result = np.genfromtxt(result, delimiter=',')
+                
             if result is None:
                 return
             return result

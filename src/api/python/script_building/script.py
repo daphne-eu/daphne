@@ -48,14 +48,11 @@ class DaphneDSLScript:
             self.out_var_name.append(baseOutVarString)
             if(dag_root.output_type == OutputType.MATRIX):
                 self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return np.genfromtxt(TMP_PATH+"/" + baseOutVarString+ ".csv", delimiter=',')
+                return TMP_PATH+"/" + baseOutVarString+ ".csv"
             elif(dag_root.output_type == OutputType.FRAME):
                 self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                df = pd.read_csv(TMP_PATH+"/" + baseOutVarString+ ".csv")
-                f = open(TMP_PATH+"/" + baseOutVarString+ ".csv.meta")
-                fmd = f.read().split(",")
-                df.columns=fmd[1+2+int(fmd[1]):]
-                return df
+                
+                return TMP_PATH+"/" + baseOutVarString+ ".csv"
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
