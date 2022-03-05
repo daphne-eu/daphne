@@ -108,3 +108,10 @@ class Frame(OperationNode):
 
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)
+        
+    
+    def cartesian(self, other) -> 'Frame':
+        """
+        cartesian product
+        """
+        return Frame(self.daphne_context, "cartesian", [self, other])
