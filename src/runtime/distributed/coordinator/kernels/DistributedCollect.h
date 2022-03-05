@@ -34,20 +34,20 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
+template<class DTres, class DTarg>
 struct DistributedCollect
 {
-    static void apply(DT *&res, const Handle<DT> *handle, DCTX(ctx)) = delete;
+    static void apply(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *handle, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void distributedCollect(DT *&res, const Handle<DT> *handle, DCTX(ctx))
+template<class DTres, class DTarg>
+void distributedCollect(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *handle, DCTX(ctx))
 {
-    DistributedCollect<DT>::apply(res, handle, ctx);
+    DistributedCollect<DTres, DTarg>::apply(res, resIdx, handle, ctx);
 }
 
 // ****************************************************************************
@@ -55,24 +55,27 @@ void distributedCollect(DT *&res, const Handle<DT> *handle, DCTX(ctx))
 // ****************************************************************************
 
 template<>
-struct DistributedCollect<DenseMatrix<double>>
+struct DistributedCollect<DenseMatrix<double>, Structure>
 {
-    static void apply(DenseMatrix<double> *&res, const Handle<DenseMatrix<double>> *handle, DCTX(ctx))
+    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle_v2<Structure> *handle, DCTX(ctx))
     {
         struct StoredInfo{
             DistributedIndex *ix;
+            std::string workerAddr;
+            std::shared_ptr<grpc::Channel> channel;
         };
         DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
-        // auto blockSize = DistributedData::BLOCK_SIZE;
-        res = DataObjectFactory::create<DenseMatrix<double>>(handle->getRows(), handle->getCols(), false);
+        assert (res != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
+
         for (auto &pair : handle->getMap()) {
             auto ix = pair.first;
-            auto data = pair.second;
+            // Collect specified result index
+            auto data = pair.second[resIdx];
 
-            StoredInfo storedInfo({new DistributedIndex(ix)});
-
-            caller.asyncTransferCall(data.getChannel(), storedInfo, data.getData());
+            // TODO this is uneccesary
+            StoredInfo storedInfo ({new DistributedIndex(0, 0)});
+            caller.asyncTransferCall(data.getAddress(), storedInfo, data.getData());
         }
         // Get num workers
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");

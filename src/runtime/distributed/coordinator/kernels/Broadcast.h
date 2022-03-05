@@ -74,6 +74,7 @@ struct Broadcast<DTRes, DenseMatrix<double>>
         // auto blockSize = DistributedData::BLOCK_SIZE;
 
         struct StoredInfo {
+            // TODO this is uneccesary
             DistributedIndex *ix ;
             std::string workerAddr;
             std::shared_ptr<grpc::Channel> channel;
