@@ -100,7 +100,8 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
                                  ::distributed::ComputeResult *response)
 {
     // ToDo: user config
-    DaphneUserConfig cfg{false};
+    DaphneUserConfig cfg;
+    cfg.use_vectorized_exec = true;
     // TODO Decide if vectorized pipelines should be used on this worker.
     // TODO Decide if selectMatrixReprs should be used on this worker.
     // TODO Once we hand over longer pipelines to the workers, we might not
