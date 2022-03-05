@@ -1159,6 +1159,43 @@
     },
     {
         "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpy",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTArg",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "VTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "int ",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Replace.h",
             "opName": "replace",
             "returnType": "void",

@@ -14,32 +14,42 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_READ_H
-#define SRC_RUNTIME_LOCAL_KERNELS_READ_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
+#define SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Frame.h>
-#include <runtime/local/io/File.h>
-#include <runtime/local/io/FileMetaData.h>
+
+#include <algorithm>
+#include <random>
+#include <set>
+#include <type_traits>
+
+#include <cassert>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <chrono>
+
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<>
+template<class DTRes, typename VTArg>
 struct ReceiveFromNumpy {
-    static void apply(int* arg, int size) = delete;
+    static void apply(DTRes *& res, VTArg* arg, int size, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<>
-void receiveFromNumpy(int* arg, int size, DCTX(ctx)) {
-    ReceiveFromNumpy<DTRes>::apply(arg, ctx);
+template<class DTRes, typename VTArg>
+void receiveFromNumpy(DTRes *& res, VTArg* arg, int size, DCTX(ctx)) {
+    ReceiveFromNumpy<DTRes>::apply(res, arg, size, ctx);
 }
 
 // ****************************************************************************
@@ -52,10 +62,11 @@ void receiveFromNumpy(int* arg, int size, DCTX(ctx)) {
 
 template<typename VT>
 struct ReceiveFromNumpy<DenseMatrix<VT>> {
-    static void apply(int* arg, int size, DCTX(ctx)) {
-        
+    static void apply(DenseMatrix<VT> *& res, VT* arg, int size, DCTX(ctx)) {
+    
+        res = DataObjectFactory::create<DenseMatrix<VT>>(rows, cols, arg);
     }
 };
 
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_READ_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
