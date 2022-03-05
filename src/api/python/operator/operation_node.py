@@ -24,6 +24,7 @@ from api.python.script_building.script import DaphneDSLScript
 from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
 from api.python.utils.helpers import create_params_string
 import numpy as np
+import pandas as pd
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
@@ -34,7 +35,7 @@ class OperationNode(DAGNode):
     _output_types: Optional[Iterable[VALID_INPUT_TYPES]]
     _source_node: Optional["DAGNode"]
     _brackets: bool
-    data: np.array
+    data: Optional[Union[pd.DataFrame,np.array]]
 
     def __init__(self, daphne_context,operation:str, 
                 unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
@@ -64,9 +65,18 @@ class OperationNode(DAGNode):
             result = self._script.build_code(self)
             self._script.execute()
             self._script.clear(self)
+            if self._output_type == OutputType.FRAME:
+                df = pd.read_csv(result)
+                f = open(result+".meta")
+                fmd = f.read().split(",")
+                df.columns=fmd[1+2+int(fmd[1]):]
+                result = df
+            if self._output_type == OutputType.MATRIX:  
+                result = np.genfromtxt(result, delimiter=',')
+                
             if result is None:
                 return
-            return np.genfromtxt(result, delimiter=',')
+            return result
     
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
         if self._brackets:

@@ -21,6 +21,8 @@
 
 __all__ = ["DaphneContext"]
 
+from api.python.operator.nodes.frame import Frame
+import pandas as pd
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH
 import numpy as np
 from api.python.operator.nodes.matrix import Matrix
@@ -43,6 +45,22 @@ class DaphneContext(object):
         unnamed_params.extend(args)
         named_params = []
         return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+
+    def from_pandas(self, df: pd.DataFrame,
+            *args: Sequence[VALID_INPUT_TYPES],
+            **kwargs: Dict[str, VALID_INPUT_TYPES]) -> Frame:
+        """Generate DAGNode representing matrix with data given by a numpy array.
+        :param mat: the numpy array
+        :param args: unnamed parameters
+        :param kwargs: named parameters
+        :return: A Matrix
+        """
+
+        unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+
+        unnamed_params.extend(args)
+        named_params = []
+        return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df)
 
     def rand(self, rows: int, cols: int,
             min: Union[float, int] = None, max: Union[float, int] = None,sparsity: Union[float, int] = 0, seed: Union[float, int] = 0
