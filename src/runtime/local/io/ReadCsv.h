@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCaller.h>
 
 #include <runtime/local/io/File.h>
@@ -119,18 +118,3 @@ template <> struct ReadCsv<Frame> {
     closeFile(file);
   }
 };
-
-
-// ----------------------------------------------------------------------------
-// Handle
-// ----------------------------------------------------------------------------
-
-template <class DT> struct ReadCsv<Handle<DT>> {
-  static void apply(Handle<DT> *&res, const char *filename, 
-                      size_t numRows, size_t numCols, char delim) {
-    struct File *file = openFile(filename);
-    readCsvFile(res, file, numRows, numCols, delim);
-    closeFile(file);
-  }
-};
-

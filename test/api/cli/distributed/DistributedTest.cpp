@@ -57,7 +57,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
             std::stringstream outDist;
             std::stringstream errDist;
             setenv(envVar, distWorkerStr.c_str(), 1);
-            status = runDaphne(outDist, errDist, filename.c_str());
+            status = runDaphne(outDist, errDist, std::string("--vec").c_str(), filename.c_str());
             unsetenv(envVar);
             CHECK(errDist.str() == "");
             REQUIRE(status == StatusCode::SUCCESS);
@@ -80,7 +80,7 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
         std::stringstream outDist;
         std::stringstream errDist;
         setenv(envVar, distWorkerStr.c_str(), 1);
-        status = runDaphne(outDist, errDist, filenameDistr.c_str());
+        status = runDaphne(outDist, errDist, std::string("--vec").c_str(), filenameDistr.c_str());
         unsetenv(envVar);
         CHECK(errDist.str() == "");
         REQUIRE(status == StatusCode::SUCCESS);

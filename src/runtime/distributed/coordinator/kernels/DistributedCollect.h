@@ -20,63 +20,41 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-
 #include <runtime/distributed/worker/ProtoDataConverter.h>
 
 #include <cassert>
 #include <cstddef>
 
+using mlir::daphne::VectorCombine;
+
+
 // ****************************************************************************
-// Struct for partial template specialization
+// Template speciliazations for each communication framework (gRPC, OPENMPI, etc.)
 // ****************************************************************************
 
-template<class DTres, class DTarg>
-struct DistributedCollect
+template<DISTRIBUTED_BACKEND backend, class DT>
+struct CollectImplementationClass
 {
-    static void apply(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *handle, DCTX(ctx)) = delete;
+    static void apply(DT *&mat, DCTX(ctx));
 };
 
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DTres, class DTarg>
-void distributedCollect(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *handle, DCTX(ctx))
+template<DISTRIBUTED_BACKEND backend, class DT>
+void collectImplementation(DT *&mat, DCTX(ctx)) 
 {
-    DistributedCollect<DTres, DTarg>::apply(res, resIdx, handle, ctx);
+    CollectImplementationClass<backend, DT>::apply(mat, ctx);
 }
 
 // ****************************************************************************
-// (Partial) template specializations for different data/value types
+// gRPC implementation
 // ****************************************************************************
-
-template<>
-struct DistributedCollect<DenseMatrix<double>, Structure>
+template<class DT>
+struct CollectImplementationClass<DISTRIBUTED_BACKEND::GRPC, DT>
 {
-    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle_v2<Structure> *handle, DCTX(ctx))
-    {
-        struct StoredInfo{
-            DistributedIndex *ix;
-            std::string workerAddr;
-            std::shared_ptr<grpc::Channel> channel;
-        };
-        DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
-
-        assert (res != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
-
-        for (auto &pair : handle->getMap()) {
-            auto ix = pair.first;
-            // Collect specified result index
-            auto data = pair.second[resIdx];
-
-            // TODO this is uneccesary
-            StoredInfo storedInfo ({new DistributedIndex(0, 0)});
-            caller.asyncTransferCall(data.getAddress(), storedInfo, data.getData());
-        }
+    static void apply(DT *&mat, DCTX(ctx)) 
+    {        
         // Get num workers
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -90,21 +68,71 @@ struct DistributedCollect<DenseMatrix<double>, Structure>
             workersStr.erase(0, pos + delimiter.size());
         }
         workersSize++;
-        // Get Results
-        auto k = res->getNumRows() / workersSize;
-        auto m = res->getNumRows() % workersSize;        
+
+        struct StoredInfo{
+            size_t omd_id;
+        };
+        DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
+
+
+        auto omdVector = mat->getObjectMetaDataByType(ALLOCATION_TYPE::DISTRIBUTED);
+        for (auto &omd : *omdVector) {
+            auto address = omd->allocation->getLocation();
+            
+            auto distributedData = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();
+            StoredInfo storedInfo({omd->omd_id});
+            distributed::StoredData protoData;
+            protoData.set_filename(distributedData.filename);
+            protoData.set_num_rows(distributedData.numRows);
+            protoData.set_num_cols(distributedData.numCols);                       
+
+            caller.asyncTransferCall(address, storedInfo, protoData);
+        }
+                
+        
+
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
-            auto ix = response.storedInfo.ix;
+            auto omd_id = response.storedInfo.omd_id;
+            auto omd = mat->getObjectMetaDataByID(omd_id);
+            auto data = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();            
+
             auto matProto = response.result;
-            ProtoDataConverter::convertFromProto(matProto,
-                res,
-                ix->getRow() * k + std::min(ix->getRow(), m),
-                (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
-                0,
-                res->getNumCols());
+            ProtoDataConverter<DT>::convertFromProto(
+                matProto, mat,
+                omd->range->r_start, omd->range->r_start + omd->range->r_len,
+                omd->range->c_start, omd->range->c_start + omd->range->c_len);                
+            data.isPlacedAtWorker = false;
+            dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);
         }      
     }
 };
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+
+template<class DT>
+struct DistributedCollect
+{
+    static void apply(DT *&mat, DCTX(ctx)) 
+    {
+       
+        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
+        // Is there anything to do that is framework agnostic?        
+        collectImplementation<DISTRIBUTED_BACKEND::GRPC, DT>(mat, ctx);
+  
+    };
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DT>
+void distributedCollect(DT *&mat, DCTX(ctx))
+{
+    DistributedCollect<DT>::apply(mat, ctx);
+}
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOLLECT_H

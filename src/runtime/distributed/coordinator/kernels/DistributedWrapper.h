@@ -26,11 +26,9 @@
 
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
-template <class DT>
-class DistributedWrapper {};
 
-template <typename VT>
-class DistributedWrapper<DenseMatrix<VT>> {
+template <class DT>
+class DistributedWrapper {
 private:
     DCTX(_ctx);
 
@@ -46,19 +44,18 @@ public:
     ~DistributedWrapper() = default; //TODO Terminate workers (e.g. with gRPC, resource manager, etc.)
 
     void execute(const char *mlirCode,
-                 DenseMatrix<VT> ***res,
+                 DT ***res,
                  const Structure **inputs,
                  size_t numInputs,
                  size_t numOutputs,
-                 size_t *outRows,
-                 size_t *outCols,
+                 int64_t *outRows,
+                 int64_t *outCols,
                  VectorSplit *splits,
                  VectorCombine *combines)                 
     {        
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         // assert(envVar && "Environment variable has to be set");
-        // std::string workersStr(envVar);
-        std::string workersStr("localhost:5000");    
+        std::string workersStr(envVar);        
         std::string delimiter(",");
 
         size_t pos;
@@ -74,68 +71,38 @@ public:
         for(size_t i = 0; i < numOutputs; ++i) {
             if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
-                *(res[i]) = DataObjectFactory::create<DenseMatrix<VT>>(outRows[i], outCols[i], zeroOut);
+                // TODO we know result is only DenseMatrix<double> for now,
+                // but in the future this will change to support other DataTypes
+                *(res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
             }
         }
         
         // Distribute and broadcast inputs        
-        // We create Handle_v2 object here and we pass it to each primitive.
-        // Each primitive (i.e. distribute/broadcast) populates this handle with data information for each worker
-        Handle_v2<Structure> *handle = new Handle_v2<Structure>(workers);    
-        for (auto i = 0u; i < numInputs; ++i) {            
+        // Each primitive sends information to workers and changes the Structures' metadata information 
+        for (auto i = 0u; i < numInputs; ++i) {
+            // if already placed on workers, skip
+            // TODO maybe this is not enough. We might also need to check if data resides in the specific way we need to.
+            // (i.e. rows/cols splitted accordingly). If it does then we can skip.
+                    
             if (isBroadcast(splits[i], inputs[i])){
-                broadcast(handle, (const DenseMatrix<VT>*)inputs[i], _ctx);   
+                broadcast(inputs[i], _ctx);
             }
             else {
-                distribute(handle, (const DenseMatrix<VT>*)inputs[i], _ctx);
+                distribute(inputs[i], _ctx);
             }
         }
-        Handle_v2<Structure> *resHandle = nullptr;
           
-        //TODO This is hardcoded for now, will be deleted
-        // std::string code (
-        // "   func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>) -> (!daphne.Matrix<?x?xf64>) {\n "
-        // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // "     %2 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n "
-        // "     %3 = \"daphne.ewAdd\"(%2, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n "
-        // "     \"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n "
-        // "   }\n "
-        // );
-        // This seems to work better for now... TODO fix generated mlir code
-        // "func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>, %arg3: !daphne.Matrix<?x?xf64>, %arg4: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
-        // // // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // // // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        //     "   %0 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "   %1 = \"daphne.ewAdd\"(%0, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "   %2 = \"daphne.ewMul\"(%1, %arg3) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "   %3 = \"daphne.ewMul\"(%2, %arg4) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "\"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n"
-        //     "}"
-        // );
-        // mlirCode = code.c_str();
-        
-        // TODO numInputs is not needed anymore, we need to update distributedCompute primitive/kernel
-        distributedCompute(resHandle, handle, numInputs, mlirCode, _ctx);
+        distributedCompute(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
 
         // Collect
-        // TODO check *combines for aggregations and use corresponding distributed primitives
         for (size_t o = 0; o < numOutputs; o++){
-            if (combines[o] == VectorCombine::ROWS){
-                distributedCollect(*res[0], o, resHandle, _ctx);
-            }
-            else {
-                assert ("we only support rows collect at the moment");
-            }
+            assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
+            distributedCollect(*res[o], _ctx);           
         }
         
         
     }
 };
 
-// TODO for CSR
-template<typename VT>
-class DistributedWrapper<CSRMatrix<VT>> {
-};
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H

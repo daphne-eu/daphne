@@ -19,16 +19,114 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 
+#include <grpcpp/grpcpp.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
-#include <runtime/distributed/worker/ProtoDataConverter.h>
-
 #include <cassert>
 #include <cstddef>
+
+using mlir::daphne::VectorCombine;
+
+
+// ****************************************************************************
+// Template speciliazations for each communication framework (gRPC, OPENMPI, etc.)
+// ****************************************************************************
+
+template<DISTRIBUTED_BACKEND backend, class DTRes>
+struct ComputeImplementation
+{
+    static void apply(DTRes **&res, size_t numOutputs, const Structure **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx)) = delete;    
+};
+
+template<DISTRIBUTED_BACKEND backend, class DTRes>
+void computeImplementation(DTRes **&res,
+                      size_t numOutputs,
+                      const Structure **args,
+                      size_t numInputs,
+                      const char *mlirCode,
+                      VectorCombine *vectorCombine,
+                      DCTX(ctx))
+{
+    ComputeImplementation<backend, DTRes>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, ctx);
+}
+// ****************************************************************************
+// gRPC implementation
+// ****************************************************************************
+template<class DTRes>
+struct ComputeImplementation<DISTRIBUTED_BACKEND::GRPC, DTRes>
+{    
+    static void apply(DTRes **&res,
+                      size_t numOutputs,
+                      const Structure **args,
+                      size_t numInputs,
+                      const char *mlirCode,
+                      VectorCombine *vectorCombine,
+                      DCTX(ctx))
+    {        
+        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+        assert(envVar && "Environment variable has to be set");
+        std::string workersStr(envVar);
+        std::string delimiter(",");
+
+        size_t pos;
+        std::vector<std::string> workers;
+        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+            workers.push_back(workersStr.substr(0, pos));
+            workersStr.erase(0, pos + delimiter.size());
+        }
+        workers.push_back(workersStr);
+        struct StoredInfo {
+            std::string addr;
+        };                
+        DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
+
+        // Broadcast at workers
+        for (auto addr : workers) {                        
+            distributed::Task task;
+            
+            // Pass all the nessecary arguments for the pipeline
+            for (size_t i = 0; i < numInputs; i++) {
+                // Find input for this worker
+                auto omd = args[i]->getObjectMetaDataByLocation(addr);
+
+                auto distrData = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();
+                distributed::StoredData protoData;
+                protoData.set_filename(distrData.filename);
+                protoData.set_num_rows(distrData.numRows);
+                protoData.set_num_cols(distrData.numCols); 
+                
+                *task.add_inputs()->mutable_stored()= protoData;
+            }
+            task.set_mlir_code(mlirCode);           
+            StoredInfo storedInfo({addr});    
+            // TODO for now resuing channels seems to slow things down... 
+            // It is faster if we generate channel for each call and let gRPC handle resources internally
+            // We might need to change this in the future and re-use channels ( data.getChannel() )
+            caller.asyncComputeCall(addr, storedInfo, task);
+        }
+
+        
+        // Get Results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto addr = response.storedInfo.addr;
+            
+            auto computeResult = response.result;            
+            
+            for (int i = 0; i < computeResult.outputs_size(); i++){
+                auto omd = (*res[i])->getObjectMetaDataByLocation(addr);                
+                DistributedData data = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();
+
+                data.filename = computeResult.outputs()[i].stored().filename();
+                data.numRows = computeResult.outputs()[i].stored().num_rows();
+                data.numCols = computeResult.outputs()[i].stored().num_cols();
+                dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);                  
+            }            
+        }
+    };
+};
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -37,7 +135,7 @@
 template<class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(Handle<DTRes> *&res, Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
+    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,9 +143,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DTRes, class DTArgs>
-void distributedCompute(Handle_v2<DTRes> *&res, Handle_v2<DTArgs> *args, size_t num_args, const char *mlirCode, DCTX(ctx))
+void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx))
 {
-    DistributedCompute<DTRes, DTArgs>::apply(res, args, num_args, mlirCode, ctx);
+    DistributedCompute<DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, ctx);
 }
 
 // ****************************************************************************
@@ -55,53 +153,106 @@ void distributedCompute(Handle_v2<DTRes> *&res, Handle_v2<DTArgs> *args, size_t 
 // ****************************************************************************
 
 template<class DTRes>
-struct DistributedCompute<DTRes, Structure>
+struct DistributedCompute<DTRes, const Structure>
 {
-    static void apply(Handle_v2<DTRes> *&res,
-                      Handle_v2<Structure> *args,
-                      size_t num_args,
+    static void apply(DTRes **&res,
+                      size_t numOutputs,
+                      const Structure **args,
+                      size_t numInputs,
                       const char *mlirCode,
+                      VectorCombine *vectorCombine,
                       DCTX(ctx))
     {
-        struct StoredInfo {
-            std::string addr;
-            DistributedData *data;
-        };
-        DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
-        auto map = args->getMap();
-        for (auto &pair : map){
-            auto addr = pair.first;
-            auto dataVector = pair.second;
-            distributed::Task task;
-            
-            // Pass all the nessecary arguments for the pipeline
-            for (auto data : dataVector){
-                *task.add_inputs()->mutable_stored() = data.getData();
-            }
-            task.set_mlir_code(mlirCode);
+        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+        assert(envVar && "Environment variable has to be set");
+        std::string workersStr(envVar);
+        std::string delimiter(",");
 
-            StoredInfo storedInfo ({addr, new DistributedData(dataVector[0])});
-
-            // TODO for now resuing channels seems to slow down things... 
-            // It is faster if we generate channel for each call and let gRPC handle resources internally
-            // We might need to change this in the future and re-use channels ( data.getChannel() )
-            caller.asyncComputeCall(addr, storedInfo, task);
+        size_t pos;
+        std::vector<std::string> workers;
+        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+            workers.push_back(workersStr.substr(0, pos));
+            workersStr.erase(0, pos + delimiter.size());
         }
-        // Get Results
-        while (!caller.isQueueEmpty()){
-            auto response = caller.getNextResult();
-            auto addr = response.storedInfo.addr;
-            auto storedData = response.storedInfo.data;
-            
-            auto computeResult = response.result;
-            // Recieve all outputs and store it to Handle_v2
-            for (size_t i = 0; i < computeResult.outputs_size(); i++){
-                // TODO DistributedData needs to be updated. No need to hold address (check Handle.h)
-                DistributedData data(computeResult.outputs(i).stored(), storedData->getAddress(), storedData->getChannel());
-                res->insertData(addr, data);
+        workers.push_back(workersStr);
+        
+
+        // Initialize Distributed index array, needed for results
+        DistributedIndex *ix[numOutputs];
+        for (size_t i = 0; i <numOutputs; i++)
+            ix[i] = new DistributedIndex(0, 0);
+        
+
+        
+        
+         // Iterate over workers
+        // Pass all the nessecary arguments for the pipeline
+        for (auto addr : workers) {
+            for (size_t i = 0; i < numOutputs; i++){                 
+                // Get Result ranges
+                auto combineType = vectorCombine[i];
+                auto workersSize = workers.size();
+                size_t k = 0, m = 0;                
+                if (combineType == VectorCombine::ROWS) {
+                    k = (*res[i])->getNumRows() / workersSize;
+                    m = (*res[i])->getNumRows() % workersSize;
+                }
+                else if (combineType == VectorCombine::COLS){
+                    k = (*res[i])->getNumCols() / workersSize;
+                    m = (*res[i])->getNumCols() % workersSize;
+                }
+                else
+                    assert(!"Only Rows/Cols combineType supported atm");
+
+                IAllocationDescriptor *allocationDescriptor;
+                DistributedData data;
+                data.ix = *ix[i];
+                data.vectorCombine = vectorCombine[i];
+                data.isPlacedAtWorker = true;
+
+                allocationDescriptor = new AllocationDescriptorDistributed(
+                                                ctx,
+                                                addr,
+                                                data);
+                // Update distributed index for next iteration
+                // and set ranges for objmetadata
+                Range range;
+                if (vectorCombine[i] == VectorCombine::ROWS) {
+                    ix[i] = new DistributedIndex(ix[i]->getRow() + 1, ix[i]->getCol());            
+                    
+                    range.r_start = data.ix.getRow() * k + std::min(data.ix.getRow(), m);
+                    range.r_len = ((data.ix.getRow() + 1) * k + std::min((data.ix.getRow() + 1), m)) - range.r_start;
+                    range.c_start = 0;
+                    range.c_len = (*res[i])->getNumCols();
+                }
+                if (vectorCombine[i] == VectorCombine::COLS) {
+                    ix[i] = new DistributedIndex(ix[i]->getRow(), ix[i]->getCol() + 1);
+                    
+                    range.r_start = 0; 
+                    range.r_len = (*res[i])->getNumRows(); 
+                    range.c_start = data.ix.getCol() * k + std::min(data.ix.getCol(), m);
+                    range.c_len = ((data.ix.getCol() + 1) * k + std::min((data.ix.getCol() + 1), m)) - range.c_start;
+                }
+
+                // If omd already exists for this worker, update the range and data
+                if (auto omd = (*res[i])->getObjectMetaDataByLocation(addr)) { 
+                    (*res[i])->updateRangeObjectMetaDataByID(omd->omd_id, &range);
+                    dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);                    
+                }
+                else { // else create new omd entry
+                    allocationDescriptor = new AllocationDescriptorDistributed(
+                                                ctx, 
+                                                addr,
+                                                data);            
+                    ((*res[i]))->addObjectMetaData(allocationDescriptor, &range);                    
+                } 
             }
         }
-        // res = new Handle<DTRes>(resMap, resultRows, resultColumns);        
+
+        // TODO choose implementation
+        // Possible to call all implementations and each one will try to find allocators (MPI, gRPC)
+        // if none is find, then the implementation simply returns.
+        computeImplementation<DISTRIBUTED_BACKEND::GRPC, DTRes>(res, numOutputs, args, numInputs, mlirCode, vectorCombine, ctx);                
     }
 };
 

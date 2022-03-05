@@ -56,7 +56,7 @@ void distributedPipeline(
         DTRes *& output0,
         const Structure ** inputs,
         size_t numInputs, size_t numOutputs,
-        size_t * outRows, size_t * outCols,
+        int64_t * outRows, int64_t * outCols,
         int64_t * splits, int64_t * combines,
         const char * irCode,
         DCTX(ctx)
@@ -77,7 +77,7 @@ void distributedPipeline(
         DTRes *& output1,
         const Structure ** inputs,
         size_t numInputs, size_t numOutputs,
-        size_t * outRows, size_t * outCols,
+        int64_t * outRows, int64_t * outCols,
         int64_t * splits, int64_t * combines,
         const char * irCode,
         DCTX(ctx)
