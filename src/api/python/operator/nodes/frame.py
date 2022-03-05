@@ -72,13 +72,11 @@ class Frame(OperationNode):
                     f.close()
         return code_line
 
-    def compute(self, verbose: bool = False, lineage: bool = False) -> Union[pd.DataFrame]:
+    def compute(self) -> Union[pd.DataFrame]:
         if self._is_pandas():
-            if verbose:
-                print("[Pandas Frame - No Compilation necessary]")
             return self._pd_dataframe
         else:
-            return super().compute(verbose, lineage)
+            return super().compute()
 
     def _is_pandas(self) -> bool:
         return self._pd_dataframe is not None

@@ -40,6 +40,7 @@ m2 = pd.DataFrame(
     [52, 54, 86.2]],
     columns=['d', 'e', 'f'])
 
-daphne_context.from_pandas(m1).print().compute()
-daphne_context.from_pandas(m2).print().compute()
-daphne_context.from_pandas(m1).cbind(daphne_context.from_pandas(m2)).print().compute()
+matrix1 = daphne_context.from_pandas(m1)
+matrix2 = daphne_context.from_pandas(m2)
+df = matrix1.cbind(matrix2).compute()
+print(df)

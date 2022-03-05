@@ -44,7 +44,6 @@ class DaphneDSLScript:
     
     def build_code(self, dag_root: DAGNode):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
-        
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
             if(dag_root.output_type == OutputType.MATRIX):
@@ -52,7 +51,7 @@ class DaphneDSLScript:
                 return np.genfromtxt(TMP_PATH+"/" + baseOutVarString+ ".csv", delimiter=',')
             elif(dag_root.output_type == OutputType.FRAME):
                 self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return pd.read_csv(TMP_PATH+"/" + baseOutVarString+ ".csv")
+                return pd.read_csv(TMP_PATH+"/" + baseOutVarString+ ".csv", header=None)
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
