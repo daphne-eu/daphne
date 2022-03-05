@@ -115,3 +115,11 @@ class Frame(OperationNode):
         cartesian product
         """
         return Frame(self.daphne_context, "cartesian", [self, other])
+
+    def numRows(self) -> 'Scalar':
+        ":return: Scalar containing number of rows of frame"
+        return Scalar(self.daphne_context, 'nrow',[self])
+
+    def numCols(self) -> 'Scalar':
+        ":return: Scalar containing number of columns of frame"
+        return Scalar(self.daphne_context, 'ncol',[self])

@@ -43,4 +43,8 @@ m2 = pd.DataFrame(
 matrix1 = daphne_context.from_pandas(m1)
 matrix2 = daphne_context.from_pandas(m2)
 df = matrix1.cartesian(matrix2).compute()
+
+matrix2.numCols().print().compute()
+matrix2.numRows().print().compute()
+print()
 print(df)
