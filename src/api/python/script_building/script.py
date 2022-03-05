@@ -51,7 +51,11 @@ class DaphneDSLScript:
                 return np.genfromtxt(TMP_PATH+"/" + baseOutVarString+ ".csv", delimiter=',')
             elif(dag_root.output_type == OutputType.FRAME):
                 self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return pd.read_csv(TMP_PATH+"/" + baseOutVarString+ ".csv", header=None)
+                df = pd.read_csv(TMP_PATH+"/" + baseOutVarString+ ".csv")
+                f = open(TMP_PATH+"/" + baseOutVarString+ ".csv.meta")
+                fmd = f.read().split(",")
+                df.columns=fmd[1+2+int(fmd[1]):]
+                return df
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
