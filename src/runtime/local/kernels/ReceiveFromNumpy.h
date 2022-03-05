@@ -38,18 +38,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
+template<class DTRes, typename VT>
 struct ReceiveFromNumpy {
-    static void apply(DTRes *& res, VTArg* arg, int size, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, VT arg, size_t size, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VTArg>
-void receiveFromNumpy(DTRes *& res, VTArg* arg, int size, DCTX(ctx)) {
-    ReceiveFromNumpy<DTRes>::apply(res, arg, size, ctx);
+template<class DTRes, typename VT>
+void receiveFromNumpy(DTRes *& res, VT arg, size_t size, DCTX(ctx)) {
+    ReceiveFromNumpy<DTRes, VT>::apply(res, arg, size, ctx);
 }
 
 // ****************************************************************************
@@ -61,10 +61,10 @@ void receiveFromNumpy(DTRes *& res, VTArg* arg, int size, DCTX(ctx)) {
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct ReceiveFromNumpy<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, VT* arg, int size, DCTX(ctx)) {
+struct ReceiveFromNumpy<DenseMatrix<VT>, VT> {
+    static void apply(DenseMatrix<VT> *& res, VT arg, size_t size, DCTX(ctx)) {
     
-        res = DataObjectFactory::create<DenseMatrix<VT>>(rows, cols, arg);
+        res = DataObjectFactory::create<DenseMatrix<VT>>(size, size, arg);
     }
 };
 

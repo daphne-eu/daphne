@@ -64,7 +64,7 @@ extern "C" int
 doMain(char* script_path)
 {
     int argc = 2;
-    char * argv[] = {"daphne", path};
+    char * argv[] = {"daphne", script_path};
     
     // ************************************************************************
     // Parse command line arguments
