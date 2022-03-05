@@ -37,7 +37,7 @@
 template<class DTRes, class DTArg>
 struct Distribute
 {
-    static void apply(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
+    static void apply(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,7 +45,7 @@ struct Distribute
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void distribute(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx))
+void distribute(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 {
     Distribute<DTRes, DTArg>::apply(res, mat, ctx);
 }
@@ -57,7 +57,7 @@ void distribute(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 template<class DTRes>
 struct Distribute<DTRes, DenseMatrix<double>>
 {
-    static void apply(Handle_v2<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -77,7 +77,6 @@ struct Distribute<DTRes, DenseMatrix<double>>
         struct StoredInfo {
             DistributedIndex *ix ;
             std::string workerAddr;
-            std::shared_ptr<grpc::Channel> channel;
         };        
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
 
@@ -97,8 +96,7 @@ struct Distribute<DTRes, DenseMatrix<double>>
                 0,
                 mat->getNumCols());
                         
-            auto channel = caller.GetOrCreateChannel(workerAddr);
-            StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr, channel});
+            StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr});
             caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
             
             // keep track of proccessed rows
@@ -109,11 +107,10 @@ struct Distribute<DTRes, DenseMatrix<double>>
             auto response = caller.getNextResult();
             auto ix = response.storedInfo.ix;
             auto workerAddr = response.storedInfo.workerAddr;
-            auto channel = response.storedInfo.channel;
 
             auto storedData = response.result;
 
-            DistributedData data(storedData, workerAddr, channel);
+            DistributedData data(*ix, storedData);
             res->insertData(workerAddr, data);
         }
         // res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());

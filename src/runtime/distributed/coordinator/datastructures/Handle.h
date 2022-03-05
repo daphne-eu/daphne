@@ -30,6 +30,8 @@
 class DistributedIndex
 {
 public:
+    DistributedIndex() : row_(0), col_(0)
+    {}
     DistributedIndex(size_t row, size_t col) : row_(row), col_(col)
     {}
 
@@ -62,82 +64,63 @@ public:
     // TODO: make configurable
     const static size_t BLOCK_SIZE = 512;
 
-    DistributedData(distributed::StoredData data, std::string addr, std::shared_ptr<grpc::Channel> channel)
-        : data_(data), addr_(addr), channel_(channel)
+    DistributedData(DistributedIndex ix, distributed::StoredData data)
+        : ix_(ix), data_(data)
+    {}
+    DistributedData(distributed::StoredData data)
+        : data_(data)
     {}
 
+    const DistributedIndex getDistributedIndex() const
+    { return ix_; }
     const distributed::StoredData getData() const
     { return data_; }
-    const std::string &getAddress() const
-    { return addr_; }
-    std::shared_ptr<grpc::Channel> getChannel()
-    { return channel_; }
 private:
-    distributed::StoredData data_;
-    std::string addr_;
-    std::shared_ptr<grpc::Channel> channel_;
+    DistributedIndex ix_;
+    distributed::StoredData data_;    
 };
+
 
 template<class DT>
 class Handle
 {
 public:
-    using HandleMap = std::multimap<const DistributedIndex, DistributedData>;
-
-    Handle(HandleMap map, size_t rows, size_t cols) : map_(map), rows_(rows), cols_(cols)
-    { }
-
-    ~Handle() 
-    {
-        DistributedCaller<void*, distributed::StoredData, distributed::Empty> caller;
-        // Free memory on the workers
-        for (auto &pair : map_) {
-            auto data = pair.second.getData();
-            auto channel = pair.second.getChannel();
-            caller.asyncFreeMemCall(channel, nullptr, data);
-        }
-        // Check workers' respond status        
-        while (!caller.isQueueEmpty()){
-            // caller obj checks for status
-            auto response = caller.getNextResult();            
-        }
-    }
-
-    const HandleMap getMap() const
-    { return map_; }
-    size_t getRows() const
-    { return rows_; }
-    size_t getCols() const
-    { return cols_; }
-
-private:
-    HandleMap map_;
-    size_t rows_;
-    size_t cols_;
-};
-
-template<class DT>
-class Handle_v2
-{
-public:
+    struct WorkerInfo {
+        std::vector<DistributedData> distributedDataArray;
+        std::shared_ptr<grpc::Channel> channel_;
+    };
     // TODO change DistributedData (no need to hold workerAddress there anymore)
-    using HandleMap_v2 = std::map<std::string, std::vector<DistributedData>>;
+    using HandleMap_v2 = std::map<std::string, WorkerInfo>;
 
-    Handle_v2 (std::vector<std::string> workerAddresses) {
-        for (auto addr : workerAddresses){
-            
-            map_.insert({addr, std::vector<DistributedData>()});
+    Handle (std::vector<std::string> workerAddresses) {
+        for (auto addr : workerAddresses){            
+            // TODO Save created channel
+            map_.insert({addr, {std::vector<DistributedData>(), nullptr}});
         }
     };
     
-    ~Handle_v2() 
-    { }
+    ~Handle() 
+    { 
+        // TODO updated new destructor 
+        // DistributedCaller<void*, distributed::StoredData, distributed::Empty> caller;
+        // // Free memory on the workers
+        // for (auto &pair : map_) {
+        //     auto data = pair.second.getData();
+        //     auto channel = pair.second.getChannel();
+        //     caller.asyncFreeMemCall(channel, nullptr, data);
+        // }
+        // // Check workers' respond status        
+        // while (!caller.isQueueEmpty()){
+        //     // caller obj checks for status
+        //     auto response = caller.getNextResult();            
+        // }
+    }
 
     const HandleMap_v2 getMap() const
     { return map_; }
 
     void insertData(std::string addr, DistributedData data){
-        map_[addr].push_back(data);
+        map_[addr].distributedDataArray.push_back(data);
     }
 
 private:

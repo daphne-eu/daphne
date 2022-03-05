@@ -36,7 +36,7 @@
 template<class DTRes, class DTArg>
 struct Broadcast
 {
-    static void apply(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
+    static void apply(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -44,7 +44,7 @@ struct Broadcast
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void broadcast(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx))
+void broadcast(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 {
     Broadcast<DTRes, DTArg>::apply(res, mat, ctx);
 }
@@ -56,7 +56,7 @@ void broadcast(Handle_v2<DTRes> *&res, const DTArg *mat, DCTX(ctx))
 template<class DTRes>
 struct Broadcast<DTRes, DenseMatrix<double>>
 {
-    static void apply(Handle_v2<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(Handle<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -74,10 +74,7 @@ struct Broadcast<DTRes, DenseMatrix<double>>
         // auto blockSize = DistributedData::BLOCK_SIZE;
 
         struct StoredInfo {
-            // TODO this is uneccesary
-            DistributedIndex *ix ;
             std::string workerAddr;
-            std::shared_ptr<grpc::Channel> channel;
         };
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
         
@@ -88,21 +85,18 @@ struct Broadcast<DTRes, DenseMatrix<double>>
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
 
-            auto channel = caller.GetOrCreateChannel(workerAddr);
-            StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
+            StoredInfo storedInfo ({workerAddr});
             caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
         
         }
         // get results
         while (!caller.isQueueEmpty()){
-            auto response = caller.getNextResult();
-            auto ix = response.storedInfo.ix;
-            auto workerAddr = response.storedInfo.workerAddr;
-            auto channel = response.storedInfo.channel;
+            auto response = caller.getNextResult();            
+            auto workerAddr = response.storedInfo.workerAddr;            
 
             auto storedData = response.result;
 
-            DistributedData data(storedData, workerAddr, channel);
+            DistributedData data(storedData);
             res->insertData(workerAddr, data);
         }
         // res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());

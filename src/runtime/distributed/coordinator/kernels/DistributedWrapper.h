@@ -57,8 +57,7 @@ public:
     {        
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         // assert(envVar && "Environment variable has to be set");
-        // std::string workersStr(envVar);
-        std::string workersStr("localhost:5000");    
+        std::string workersStr(envVar);        
         std::string delimiter(",");
 
         size_t pos;
@@ -79,9 +78,9 @@ public:
         }
         
         // Distribute and broadcast inputs        
-        // We create Handle_v2 object here and we pass it to each primitive.
+        // We create Handle object here and we pass it to each primitive.
         // Each primitive (i.e. distribute/broadcast) populates this handle with data information for each worker
-        Handle_v2<Structure> *handle = new Handle_v2<Structure>(workers);    
+        Handle<Structure> *handle = DataObjectFactory::create<Handle<Structure>>(workers);    
         for (auto i = 0u; i < numInputs; ++i) {            
             if (isBroadcast(splits[i], inputs[i])){
                 broadcast(handle, (const DenseMatrix<VT>*)inputs[i], _ctx);   
@@ -90,10 +89,10 @@ public:
                 distribute(handle, (const DenseMatrix<VT>*)inputs[i], _ctx);
             }
         }
-        Handle_v2<Structure> *resHandle = nullptr;
+        Handle<Structure> *resHandle = DataObjectFactory::create<Handle<Structure>>(workers);
           
         //TODO This is hardcoded for now, will be deleted
-        // std::string code (
+        std::string code (
         // "   func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>) -> (!daphne.Matrix<?x?xf64>) {\n "
         // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
         // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
@@ -103,17 +102,17 @@ public:
         // "   }\n "
         // );
         // This seems to work better for now... TODO fix generated mlir code
-        // "func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>, %arg3: !daphne.Matrix<?x?xf64>, %arg4: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
-        // // // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // // // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        //     "   %0 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "   %1 = \"daphne.ewAdd\"(%0, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "   %2 = \"daphne.ewMul\"(%1, %arg3) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "   %3 = \"daphne.ewMul\"(%2, %arg4) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-        //     "\"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n"
-        //     "}"
-        // );
-        // mlirCode = code.c_str();
+        "func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>, %arg3: !daphne.Matrix<?x?xf64>, %arg4: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
+        // // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
+        // // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
+            "   %0 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+            "   %1 = \"daphne.ewAdd\"(%0, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+            "   %2 = \"daphne.ewMul\"(%1, %arg3) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+            "   %3 = \"daphne.ewMul\"(%2, %arg4) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
+            "\"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n"
+            "}"
+        );
+        mlirCode = code.c_str();
         
         // TODO numInputs is not needed anymore, we need to update distributedCompute primitive/kernel
         distributedCompute(resHandle, handle, numInputs, mlirCode, _ctx);
@@ -122,7 +121,7 @@ public:
         // TODO check *combines for aggregations and use corresponding distributed primitives
         for (size_t o = 0; o < numOutputs; o++){
             if (combines[o] == VectorCombine::ROWS){
-                distributedCollect(*res[0], o, resHandle, _ctx);
+                distributedCollect(*res[o], o, resHandle, _ctx);
             }
             else {
                 assert ("we only support rows collect at the moment");

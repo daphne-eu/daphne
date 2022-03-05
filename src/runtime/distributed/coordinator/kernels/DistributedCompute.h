@@ -45,7 +45,7 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DTRes, class DTArgs>
-void distributedCompute(Handle_v2<DTRes> *&res, Handle_v2<DTArgs> *args, size_t num_args, const char *mlirCode, DCTX(ctx))
+void distributedCompute(Handle<DTRes> *&res, Handle<DTArgs> *args, size_t num_args, const char *mlirCode, DCTX(ctx))
 {
     DistributedCompute<DTRes, DTArgs>::apply(res, args, num_args, mlirCode, ctx);
 }
@@ -57,21 +57,38 @@ void distributedCompute(Handle_v2<DTRes> *&res, Handle_v2<DTArgs> *args, size_t 
 template<class DTRes>
 struct DistributedCompute<DTRes, Structure>
 {
-    static void apply(Handle_v2<DTRes> *&res,
-                      Handle_v2<Structure> *args,
+    static void apply(Handle<DTRes> *&res,
+                      Handle<Structure> *args,
                       size_t num_args,
                       const char *mlirCode,
                       DCTX(ctx))
     {
+        if(res == nullptr) {
+            auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+            // assert(envVar && "Environment variable has to be set");
+            std::string workersStr(envVar);            
+            std::string delimiter(",");
+
+            size_t pos;
+            std::vector<std::string> workers;
+            while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+                workers.push_back(workersStr.substr(0, pos));
+                workersStr.erase(0, pos + delimiter.size());
+            }
+            workers.push_back(workersStr);
+            res = DataObjectFactory::create<Handle<DTRes>>(workers);
+        }
+
         struct StoredInfo {
             std::string addr;
-            DistributedData *data;
+            DistributedIndex *ix;
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         auto map = args->getMap();
+        DistributedIndex *ix = new DistributedIndex(0, 0);
         for (auto &pair : map){
             auto addr = pair.first;
-            auto dataVector = pair.second;
+            auto dataVector = pair.second.distributedDataArray;
             distributed::Task task;
             
             // Pass all the nessecary arguments for the pipeline
@@ -79,10 +96,12 @@ struct DistributedCompute<DTRes, Structure>
                 *task.add_inputs()->mutable_stored() = data.getData();
             }
             task.set_mlir_code(mlirCode);
+            StoredInfo storedInfo ({addr, ix});
 
-            StoredInfo storedInfo ({addr, new DistributedData(dataVector[0])});
-
-            // TODO for now resuing channels seems to slow down things... 
+            // TODO the next DistributedIndex must be decided based on combines (probably...)
+            // For now, assume rows combining and set DistrIdx accordingly
+            ix = new DistributedIndex(ix->getRow() + 1, ix->getCol());
+            // TODO for now resuing channels seems to slow things down... 
             // It is faster if we generate channel for each call and let gRPC handle resources internally
             // We might need to change this in the future and re-use channels ( data.getChannel() )
             caller.asyncComputeCall(addr, storedInfo, task);
@@ -91,13 +110,12 @@ struct DistributedCompute<DTRes, Structure>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto addr = response.storedInfo.addr;
-            auto storedData = response.storedInfo.data;
+            auto ix = response.storedInfo.ix;
             
             auto computeResult = response.result;
             // Recieve all outputs and store it to Handle_v2
             for (size_t i = 0; i < computeResult.outputs_size(); i++){
-                // TODO DistributedData needs to be updated. No need to hold address (check Handle.h)
-                DistributedData data(computeResult.outputs(i).stored(), storedData->getAddress(), storedData->getChannel());
+                DistributedData data(*ix, computeResult.outputs(i).stored());
                 res->insertData(addr, data);
             }
         }

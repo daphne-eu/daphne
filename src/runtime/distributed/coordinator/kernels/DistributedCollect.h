@@ -37,7 +37,7 @@
 template<class DTres, class DTarg>
 struct DistributedCollect
 {
-    static void apply(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *handle, DCTX(ctx)) = delete;
+    static void apply(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,7 +45,7 @@ struct DistributedCollect
 // ****************************************************************************
 
 template<class DTres, class DTarg>
-void distributedCollect(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *handle, DCTX(ctx))
+void distributedCollect(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, DCTX(ctx))
 {
     DistributedCollect<DTres, DTarg>::apply(res, resIdx, handle, ctx);
 }
@@ -57,25 +57,24 @@ void distributedCollect(DTres *&res, size_t resIdx, const Handle_v2<DTarg> *hand
 template<>
 struct DistributedCollect<DenseMatrix<double>, Structure>
 {
-    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle_v2<Structure> *handle, DCTX(ctx))
+    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle<Structure> *handle, DCTX(ctx))
     {
         struct StoredInfo{
             DistributedIndex *ix;
-            std::string workerAddr;
-            std::shared_ptr<grpc::Channel> channel;
         };
         DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
         assert (res != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
 
         for (auto &pair : handle->getMap()) {
-            auto ix = pair.first;
+            auto address = pair.first;
             // Collect specified result index
-            auto data = pair.second[resIdx];
+            auto data = pair.second.distributedDataArray[resIdx];
 
-            // TODO this is uneccesary
-            StoredInfo storedInfo ({new DistributedIndex(0, 0)});
-            caller.asyncTransferCall(data.getAddress(), storedInfo, data.getData());
+            StoredInfo storedInfo;
+            storedInfo.ix = new DistributedIndex(data.getDistributedIndex());
+
+            caller.asyncTransferCall(address, storedInfo, data.getData());
         }
         // Get num workers
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
