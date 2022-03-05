@@ -1077,6 +1077,11 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
     let results = (outs); // no results
 }
 
+def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
+    let arguments = (ins UI64:$arg, Size:$size)
+    let results = (outs Matrix:$res)
+}
+
 // ----------------------------------------------------------------------------
 // Low-level
 // ----------------------------------------------------------------------------
