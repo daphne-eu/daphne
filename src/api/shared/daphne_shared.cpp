@@ -61,10 +61,10 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
 }
 
 extern "C" int
-doMain()
+doMain(char* script_path)
 {
     int argc = 2;
-    char * argv[] = {"daphne", "example.daphne"};
+    char * argv[] = {"daphne", path};
     
     // ************************************************************************
     // Parse command line arguments
