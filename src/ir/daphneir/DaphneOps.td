@@ -1078,8 +1078,8 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 }
 
 def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
-    let arguments = (ins UI64:$arg, Size:$size)
-    let results = (outs Matrix:$res)
+    let arguments = (ins UI64:$arg, Size:$size);
+    let results = (outs Matrix:$res);
 }
 
 // ----------------------------------------------------------------------------
