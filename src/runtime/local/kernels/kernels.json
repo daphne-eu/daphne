@@ -1159,21 +1159,22 @@
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "uint8_t"]]
+            [["DenseMatrix", "uint8_t"]],
+            ["Frame"]
         ]
-    },
+    },    
     {
         "kernelTemplate": {
             "header": "ReceiveFromNumpy.h",
             "opName": "receiveFromNumpy",
-            "returnType": "void",
+            "returnType": "void",            
             "templateParams": [
                 {
                     "name": "DTRes",
                     "isDataType": true
                 },
                 {
-                    "name": "VTArg",
+                    "name": "VT",
                     "isDataType": false
                 }
             ],
@@ -1183,20 +1184,20 @@
                     "name": "res"
                 },
                 {
-                    "type": "VTArg *",
+                    "type": "VT",
                     "name": "arg"
                 },
                 {
-                    "type": "int ",
+                    "type": "size_t",
                     "name": "size"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "uint8_t"]]
+            [["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "float"], "float"],
+            [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "uint8_t"], "uint8_t"]
         ]
     },
     {
