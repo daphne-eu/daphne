@@ -22,8 +22,7 @@ import os
 from typing import List, Dict, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
-import numpy as np
-import pandas as pd
+import ctypes
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -72,10 +71,9 @@ class DaphneDSLScript:
     def execute(self):
         
         os.chdir(PROTOTYPE_PATH)
-        temp_out_file = open("tmpdaphne.daphne", "w")
-        temp_out_file.writelines(self.daphnedsl_script)
-        temp_out_file.close()
-        os.system("build/bin/daphne tmpdaphne.daphne")
+        libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
+        res = libDaphneShared.doMain(ctypes.c_char_p(b"tmpdaphne.daphne"))
+        print("res: {}".format(res))
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """depth first search to create code from DAG

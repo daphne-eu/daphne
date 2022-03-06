@@ -50,7 +50,7 @@ class Matrix(OperationNode):
                   named_input_vars: Dict[str, str]) -> str:
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
         
-        if self._is_numpy():
+        if self._is_numpy() and self.operation == "readMatrix":
             
             with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
                 np.savetxt(f, self._np_array, delimiter=",")
@@ -59,8 +59,9 @@ class Matrix(OperationNode):
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
                 f.write(str(np.shape(self._np_array)[0])+","+str(np.shape(self._np_array)[1])+","+"1"+","+self.getDType(self._np_array.dtype))
                 f.close()
+        
         return code_line
-
+    
     def getDType(self, d_type):
         if d_type == np.dtype('f4'):
             return "f32"

@@ -38,18 +38,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, typename VT>
-struct ReceiveFromNumpy {
-    static void apply(DTRes *& res, VT arg, size_t size, DCTX(ctx)) = delete;
+template<class DTRes>
+struct ReceiveFromNumpyDouble {
+    static void apply(DTRes *& res, int64_t arg, int64_t size, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, typename VT>
-void receiveFromNumpy(DTRes *& res, VT arg, size_t size, DCTX(ctx)) {
-    ReceiveFromNumpy<DTRes, VT>::apply(res, arg, size, ctx);
+template<class DTRes>
+void receiveFromNumpyDouble(DTRes *& res, int64_t arg, int64_t size, DCTX(ctx)) {
+    ReceiveFromNumpyDouble<DTRes>::apply(res, arg, size, ctx);
 }
 
 // ****************************************************************************
@@ -60,11 +60,11 @@ void receiveFromNumpy(DTRes *& res, VT arg, size_t size, DCTX(ctx)) {
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ReceiveFromNumpy<DenseMatrix<VT>, VT> {
-    static void apply(DenseMatrix<VT> *& res, VT arg, size_t size, DCTX(ctx)) {
-    
-        res = DataObjectFactory::create<DenseMatrix<VT>>(size, size, arg);
+template<>
+struct ReceiveFromNumpyDouble<DenseMatrix<double>> {
+    static void apply(DenseMatrix<double> *& res, int64_t arg, int64_t size, DCTX(ctx)) {
+        printf("%ld\n",(double*)arg);
+        res = DataObjectFactory::create<DenseMatrix<double>>(size, size, (double*)arg);
     }
 };
 

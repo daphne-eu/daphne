@@ -21,6 +21,7 @@
 
 __all__ = ["DaphneContext"]
 
+import ctypes
 from api.python.operator.nodes.frame import Frame
 import pandas as pd
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH
@@ -45,6 +46,17 @@ class DaphneContext(object):
         unnamed_params.extend(args)
         named_params = []
         return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+    
+    def from_numpy_ctypes(self, mat: np.array) -> Matrix:
+        """Generate DAGNode representing matrix with data given by a numpy array.
+        :param mat: the numpy array
+        :param args: unnamed parameters
+        :param kwargs: named parameters
+        :return: A Matrix
+        """
+        
+        unnamed_params = [mat.ctypes.data_as(ctypes.c_void_p), ctypes.c_size_t(mat.shape[0]).value]
+        return Matrix(self, 'receiveFromNumpy', unnamed_params, local_data=mat)
 
     def from_pandas(self, df: pd.DataFrame,
             *args: Sequence[VALID_INPUT_TYPES],
