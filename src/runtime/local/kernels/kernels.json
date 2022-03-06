@@ -1166,16 +1166,12 @@
     {
         "kernelTemplate": {
             "header": "ReceiveFromNumpy.h",
-            "opName": "receiveFromNumpy",
+            "opName": "receiveFromNumpyDouble",
             "returnType": "void",            
             "templateParams": [
                 {
                     "name": "DTRes",
                     "isDataType": true
-                },
-                {
-                    "name": "VT",
-                    "isDataType": false
                 }
             ],
             "runtimeParams": [
@@ -1184,20 +1180,17 @@
                     "name": "res"
                 },
                 {
-                    "type": "VT",
+                    "type": "int64_t",
                     "name": "arg"
                 },
                 {
-                    "type": "size_t",
+                    "type": "int64_t",
                     "name": "size"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "float"], "float"],
-            [["DenseMatrix", "int64_t"], "int64_t"],
-            [["DenseMatrix", "uint8_t"], "uint8_t"]
+            [["DenseMatrix", "double"]]
         ]
     },
     {
