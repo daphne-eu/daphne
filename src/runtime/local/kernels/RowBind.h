@@ -21,6 +21,9 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/ValueTypeUtils.h>
+
+#include <stdexcept>
 
 #include <cassert>
 #include <cstddef>
@@ -39,11 +42,6 @@ struct RowBind {
 // Convenience function
 // ****************************************************************************
 
-// template<class DTRes, class DTUp, class DTLow>
-// void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) {
-//     RowBind<DTRes, DTUp, DTLow>::apply(res, ups, lows, ctx);
-// }
-
 template<class DTRes, class DTUp, class DTLow>
 void rowBind(DTRes *& res, const DTUp * ups, const DTLow * lows, DCTX(ctx)) {
     RowBind<DTRes, DTUp, DTLow>::apply(res, ups, lows, ctx);
@@ -61,7 +59,8 @@ template<typename VT>
 struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * ups, const DenseMatrix<VT> * lows, DCTX(ctx)) {
         const size_t numCols = ups->getNumCols();
-        assert((numCols == lows->getNumCols()) && "ups and lows must have the same number of columns");
+        if(numCols != lows->getNumCols())
+            throw std::runtime_error("ups and lows must have the same number of columns");
         
         const size_t numRowsUps = ups->getNumRows();
         const size_t numRowsLows = lows->getNumRows();
@@ -76,7 +75,9 @@ struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
         const VT * valuesLows = lows->getValues();
         VT * valuesRes = res->getValues();
         
-        memcpy(valuesRes             , valuesUps, numColsUps * numRowsUps * sizeof(VT));
+        // TODO Take rowSkip into account. If ups/lows/res are views into
+        // column segments of larger data objects, we must proceed row-by-row.
+        memcpy(valuesRes, valuesUps, numColsUps * numRowsUps * sizeof(VT));
         memcpy(valuesRes + numRowsUps * numColsUps, valuesLows, numColsLows * numRowsLows * sizeof(VT));
         
     }
@@ -88,16 +89,31 @@ struct RowBind<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
 
 template<>
 struct RowBind<Frame, Frame, Frame> {
-    static void apply(Frame *& res, const Frame * ups, const Frame * lows, const  DCTX(ctx)) {
-        res = DataObjectFactory::create<Frame>(ups->getNumRows()+lows->getNumRows(), ups->getNumCols(), ups->getSchema(), ups->getLabels(), 0);
-        for(size_t i=0; i< ups->getNumCols(); i++){
+    static void apply(Frame *& res, const Frame * ups, const Frame * lows, const DCTX(ctx)) {
+        const size_t numCols = ups->getNumCols();
+        const ValueTypeCode* schema = ups->getSchema();
+        
+        if(numCols != lows->getNumCols())
+            throw std::runtime_error("ups and lows must have the same number of columns");
+        for(size_t i = 0; i < numCols; i++) {
+            if(schema[i] != lows->getSchema()[i])
+                throw std::runtime_error("ups and lows must have the same schema");
+            if(ups->getLabels()[i] != lows->getLabels()[i])
+                throw std::runtime_error("ups and lows must have the same column names");
+        }
+        
+        res = DataObjectFactory::create<Frame>(
+                ups->getNumRows() + lows->getNumRows(), numCols,
+                schema, ups->getLabels(), false
+        );
+        for(size_t i = 0; i < numCols; i++){
+            const void * colUps = ups->getColumnRaw(i);
+            const void * colLows = lows->getColumnRaw(i);
+            uint8_t * colRes = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
             
-            const double * colUps = ups->getColumn<double>(i)->getValues();
-            const double * colLows = lows->getColumn<double>(i)->getValues();
-            double * colRes = res->getColumn<double>(i)->getValues();
-            
-            memcpy(colRes , colUps, ups->getNumRows() * sizeof(double));
-            memcpy(colRes +  ups->getNumRows(), colLows, ups->getNumRows() * sizeof(double));
+            const size_t elemSize = ValueTypeUtils::sizeOf(schema[i]);
+            memcpy(colRes, colUps, ups->getNumRows() * elemSize);
+            memcpy(colRes + ups->getNumRows() * elemSize, colLows, lows->getNumRows() * elemSize);
         }
     }
 };
