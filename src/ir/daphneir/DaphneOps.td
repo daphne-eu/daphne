@@ -539,6 +539,7 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
 ]>;
+
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
     NumRowsFromSumOfAllArgs, NumColsFromAllArgs
 ]>;
