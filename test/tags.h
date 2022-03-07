@@ -39,6 +39,6 @@
 #define TAG_SQL "[sql]"
 #define TAG_SYNTAX "[syntax]"
 #define TAG_VECTORIZED "[vectorized]"
-
+#define TAG_DAPHNELIB "[daphnelib]"
 
 #endif //TEST_TAGS_H

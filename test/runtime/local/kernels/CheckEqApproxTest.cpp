@@ -117,3 +117,30 @@ TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, views on matrices", TAG_KERNELS, (Den
     
     DataObjectFactory::destroy(orig1, orig2);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("CheckEqApprox, frames", TAG_KERNELS, (DenseMatrix), (float, double)) {
+    using VTArg = typename TestType::VT;
+
+    const size_t numRows = 4;
+
+    auto c0 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3)});
+    auto c1 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(4.4), VTArg(5.5), VTArg(6.6), VTArg(7.7)});
+    auto c2 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(8.8), VTArg(9.9), VTArg(1.0), VTArg(2.0)});
+    auto c3 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(8.801), VTArg(9.901), VTArg(1.001), VTArg(2.001)});
+   
+    std::vector<Structure *> cols1 = {c0, c1, c2};
+    std::vector<Structure *> cols2 = {c0, c1, c3};
+    auto frame1 = DataObjectFactory::create<Frame>(cols1, nullptr);
+    auto frame2 = DataObjectFactory::create<Frame>(cols2, nullptr);
+    
+    CHECK(checkEqApprox(frame1, frame1, 0.00001, nullptr));
+    CHECK(checkEqApprox(frame1, frame2, 0.01, nullptr));
+    CHECK_FALSE(checkEqApprox(frame1, frame2, 0.000000001, nullptr));
+
+    DataObjectFactory::destroy(frame1);
+    DataObjectFactory::destroy(frame2);
+    DataObjectFactory::destroy(c0);
+    DataObjectFactory::destroy(c1);
+    DataObjectFactory::destroy(c2);
+    DataObjectFactory::destroy(c3);
+}

@@ -1,0 +1,5 @@
+*.pyc
+*.pyo
+tmp/
+*.py[cod]
+*$py.class
