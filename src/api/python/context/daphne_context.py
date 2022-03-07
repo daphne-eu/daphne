@@ -54,9 +54,8 @@ class DaphneContext(object):
         :param kwargs: named parameters
         :return: A Matrix
         """
-        
-        unnamed_params = [mat.ctypes.data_as(ctypes.c_void_p), ctypes.c_size_t(mat.shape[0]).value]
-        return Matrix(self, 'receiveFromNumpy', unnamed_params, local_data=mat)
+        mat1 = mat.ctypes.data_as(np.ctypeslib.ndpointer()).value
+        return Matrix(self, 'receiveFromNumpyDouble', [mat1, mat.shape[0]], local_data=mat)
 
     def from_pandas(self, df: pd.DataFrame,
             *args: Sequence[VALID_INPUT_TYPES],
