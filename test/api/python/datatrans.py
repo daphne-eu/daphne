@@ -33,5 +33,5 @@ m1.shape = (dim, dim)
 daphne_context = DaphneContext()
 
 
-result = (daphne_context.from_numpy_ctypes(m1)).print().compute()
+result = (daphne_context.from_numpy(m1)).print().compute()
 print(round(m1.sum(),2))
