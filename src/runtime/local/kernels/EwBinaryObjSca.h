@@ -24,7 +24,6 @@
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
-#include <runtime/local/kernels/CastObj.h>
 
 
 #include <cassert>
@@ -41,19 +40,12 @@ struct EwBinaryObjSca {
 };
 
 // ****************************************************************************
-// Convenience functions
+// Convenience function
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, typename VTRhs>
 void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
     EwBinaryObjSca<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
-}
-
-template<typename VT>
-void ewBinaryFrameColSca(BinaryOpCode opCode, Frame *& res, const Frame * lhs, VT rhs, size_t c, DCTX(ctx)) {
-    auto * col_res = res->getColumn<VT>(c);
-    auto * col_lhs = lhs->getColumn<VT>(c);
-    ewBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>(opCode, col_res, col_lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -115,6 +107,13 @@ struct EwBinaryObjSca<Matrix<VT>, Matrix<VT>, VT> {
 // ----------------------------------------------------------------------------
 // Frame <- Frame, scalar
 // ----------------------------------------------------------------------------
+
+template<typename VT>
+void ewBinaryFrameColSca(BinaryOpCode opCode, Frame *& res, const Frame * lhs, VT rhs, size_t c, DCTX(ctx)) {
+    auto * col_res = res->getColumn<VT>(c);
+    auto * col_lhs = lhs->getColumn<VT>(c);
+    ewBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>(opCode, col_res, col_lhs, rhs, ctx);
+}
 
 template<typename VT>
 struct EwBinaryObjSca<Frame, Frame, VT> {
