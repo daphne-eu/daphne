@@ -24,6 +24,8 @@
 #include <runtime/local/datastructures/Handle.h>
 #include <runtime/local/io/MMFile.h>
 #include <vector>
+#include <algorithm>
+#include <queue>
 
 typedef char MM_typecode[4];
 
@@ -71,15 +73,42 @@ template <typename VT> struct ReadMM<DenseMatrix<VT>> {
 template <typename VT> struct ReadMM<CSRMatrix<VT>> {
   static void apply(CSRMatrix<VT> *&res, const char *filename){
     MMFile<VT> mmfile(filename);
+
+    using entry_t = typename MMFile<VT>::Entry;
+    std::priority_queue<entry_t, std::vector<entry_t>, std::greater<>>
+      entry_queue;
+
+    for(auto &entry : mmfile) entry_queue.emplace(entry);
+
     if(res == nullptr)
       res = DataObjectFactory::create<CSRMatrix<VT>>(
         mmfile.numberRows(),
         mmfile.numberCols(),
-        mmfile.entryCount() != mmfile.numberCols() * mmfile.numberRows()
+        entry_queue.size(),
+        false
       );
-    // VT *valuesRes = res->getValues();
-    // for (auto &entry : mmfile)
-    //   valuesRes[entry.row * mmfile.numberCols() + entry.col] = entry.val;
+
+    auto *rowOffsets = res->getRowOffsets();
+    rowOffsets[0] = 0;
+    auto *colIdxs = res->getColIdxs();
+    auto *values = res->getValues();
+    size_t currValIdx = 0;
+    size_t rowIdx = 0;
+    while(!entry_queue.empty()){
+      auto& entry = entry_queue.top();
+      while(rowIdx < entry.row) {
+          rowOffsets[rowIdx + 1] = currValIdx;
+          rowIdx++;
+      }
+      values[currValIdx] = entry.val;
+      colIdxs[currValIdx] = entry.col;
+      currValIdx++;
+      entry_queue.pop();
+    }
+    while(rowIdx < mmfile.numberRows()) {
+        rowOffsets[rowIdx + 1] = currValIdx;
+        rowIdx++;
+    }
     return;
   }
 };

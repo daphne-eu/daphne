@@ -290,6 +290,9 @@ public:
         friend bool operator!=(const Entry& a, const Entry& b){
           return !(a==b);
         }
+        friend bool operator>(const Entry& a, const Entry& b){
+          return (a.row > b.row || (a.row == b.row && a.col > b.col));
+        }
     };
 
     class MMIterator {
