@@ -40,7 +40,7 @@
 
 template<class DTRes>
 struct ReceiveFromNumpyDouble {
-    static void apply(DTRes *& res, int64_t arg, int64_t size, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res,  int64_t upper, int64_t lower, int64_t size, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -48,8 +48,8 @@ struct ReceiveFromNumpyDouble {
 // ****************************************************************************
 
 template<class DTRes>
-void receiveFromNumpyDouble(DTRes *& res, int64_t arg, int64_t size, DCTX(ctx)) {
-    ReceiveFromNumpyDouble<DTRes>::apply(res, arg, size, ctx);
+void receiveFromNumpyDouble(DTRes *& res,  int64_t upper, int64_t lower, int64_t size, DCTX(ctx)) {
+    ReceiveFromNumpyDouble<DTRes>::apply(res, upper, lower, size, ctx);
 }
 
 // ****************************************************************************
@@ -62,9 +62,9 @@ void receiveFromNumpyDouble(DTRes *& res, int64_t arg, int64_t size, DCTX(ctx)) 
 
 template<>
 struct ReceiveFromNumpyDouble<DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *& res, intptr_t arg, int64_t size, DCTX(ctx)) {
-        printf("%ld", arg);
-        res = DataObjectFactory::create<DenseMatrix<double>>(size, size, (double* )arg);
+    static void apply(DenseMatrix<double> *& res, int64_t upper, int64_t lower, int64_t size, DCTX(ctx)) {
+        
+        res = DataObjectFactory::create<DenseMatrix<double>>(size, size, (double* )((upper<<32)|lower));
         res -> print(std::cout);
     }
 };
