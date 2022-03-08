@@ -51,7 +51,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Softmax.cpp
             ${PREFIX}/ColBind.cu
             ${PREFIX}/EwBinaryMat.cu
-            ${PREFIX}/EwBinaryMatSca.cu
+            ${PREFIX}/EwBinaryObjSca.cu
             ${PREFIX}/ExtractCol.cu
             ${PREFIX}/Gemv.cpp
             ${PREFIX}/MatMul.cpp

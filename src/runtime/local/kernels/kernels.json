@@ -177,7 +177,9 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], "Frame"],
-            [["DenseMatrix", "int64_t"], "Frame"]
+            [["DenseMatrix", "int64_t"], "Frame"],
+            ["Frame", ["DenseMatrix", "double"]],
+            ["Frame", ["DenseMatrix", "int64_t"]]
         ]
     },
     {
@@ -489,8 +491,8 @@
     },
     {
         "kernelTemplate": {
-            "header": "EwBinaryMatSca.h",
-            "opName": "ewBinaryMatSca",
+            "header": "EwBinaryObjSca.h",
+            "opName": "ewBinaryObjSca",
             "returnType": "void",
             "templateParams": [
                 {
@@ -531,7 +533,10 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"],
+                    ["Frame", "Frame", "float"],
+                    ["Frame", "Frame", "double"],
+                    ["Frame", "Frame", "int64_t"]
                 ],
                 "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             }
