@@ -1000,10 +1000,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
     if(func == "receiveFromNumpyDouble")
     {
-        checkNumArgsExact(func, numArgs, 2);
-        mlir::Value arg = args[0];
-        mlir::Value size = args[1];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyDoubleOp>(loc,utils.matrixOf(builder.getF64Type()), arg, size));
+        checkNumArgsExact(func, numArgs, 3);
+        mlir::Value upper = args[0];
+        mlir::Value lower = args[1];
+        
+        mlir::Value size = args[2];
+        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyDoubleOp>(loc,utils.matrixOf(builder.getF64Type()), upper, lower, size));
     }
     // --------------------------------------------------------------------
     // Low-level

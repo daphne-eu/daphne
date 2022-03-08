@@ -1181,7 +1181,11 @@
                 },
                 {
                     "type": "int64_t",
-                    "name": "arg"
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
                 },
                 {
                     "type": "int64_t",

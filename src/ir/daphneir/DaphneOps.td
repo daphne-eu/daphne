@@ -1078,7 +1078,7 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
 }
 
 def Daphne_ReceiveFromNumpyDoubleOp: Daphne_Op<"receiveFromNumpyDouble">{
-    let arguments = (ins IntScalar:$arg, IntScalar:$size);
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
     let results = (outs Matrix:$res);
 }
 
