@@ -53,7 +53,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceRow", TAG_KERNELS, DenseMatrix, (double, int64_
     DataObjectFactory::destroy(res);
 }
 
-TEST_CASE("SliceRow - Frame", TAG_KERNELS) {
+TEMPLATE_TEST_CASE("SliceRow", TAG_KERNELS, (Frame)) {
     using VT = double;
 
     auto c0 = genGivenVals<DenseMatrix<VT>>(4, {0.0, 1.1, 2.2, 3.3});

@@ -55,7 +55,7 @@ TEMPLATE_PRODUCT_TEST_CASE("SliceCol", TAG_KERNELS, DenseMatrix, (double, int64_
     DataObjectFactory::destroy(res);
 }
 
-TEST_CASE("SliceCol - Frame", TAG_KERNELS) {
+TEMPLATE_TEST_CASE("SliceCol", TAG_KERNELS, (Frame)) {
     using VT = double;
 
     auto c0 = genGivenVals<DenseMatrix<VT>>(4, {0.0, 1.1, 2.2, 3.3});
@@ -72,6 +72,8 @@ TEST_CASE("SliceCol - Frame", TAG_KERNELS) {
     sliceCol(res, arg, 1, 3, nullptr);
     CHECK(*res == *exp);
 
+    delete[] labels1;
+    delete[] labels2;
     DataObjectFactory::destroy(arg);
     DataObjectFactory::destroy(exp);
     DataObjectFactory::destroy(res);

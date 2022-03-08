@@ -65,7 +65,41 @@ public:
      */
     virtual void print(std::ostream & os) const = 0;
 
-    virtual Structure* slice(size_t rl, size_t ru) const = 0;
+    /**
+     * @brief Extracts a row range out of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param rl Row range lower bound (inclusive).
+     * @param ru Row range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* sliceRow(size_t rl, size_t ru) const = 0;
+
+    /**
+     * @brief Extracts a column range out of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param cl Column range lower bound (inclusive).
+     * @param cu Column range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* sliceCol(size_t cl, size_t cu) const = 0;
+    
+    /**
+     * @brief Extracts a rectangular sub-structure (row and column range) out
+     * of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param rl Row range lower bound (inclusive).
+     * @param ru Row range upper bound (exclusive).
+     * @param cl Column range lower bound (inclusive).
+     * @param cu Column range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

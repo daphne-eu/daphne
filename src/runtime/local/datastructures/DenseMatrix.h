@@ -235,15 +235,15 @@ public:
         }
     }
 
-    DenseMatrix<ValueType>* slice(size_t rl, size_t ru) const override {
+    DenseMatrix<ValueType>* sliceRow(size_t rl, size_t ru) const override {
         return slice(rl, ru, 0, numCols);
     }
 
-    DenseMatrix<ValueType>* sliceCol(size_t cl, size_t cu) const {
+    DenseMatrix<ValueType>* sliceCol(size_t cl, size_t cu) const override {
         return slice(0, numRows, cl, cu);
     }
 
-    DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) const {
+    DenseMatrix<ValueType>* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
         return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru, cl, cu);
     }
 
