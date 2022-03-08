@@ -91,28 +91,6 @@ public:
         }
         Handle<Structure> *resHandle = DataObjectFactory::create<Handle<Structure>>(workers);
           
-        //TODO This is hardcoded for now, will be deleted
-        std::string code (
-        // "   func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>) -> (!daphne.Matrix<?x?xf64>) {\n "
-        // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // "     %2 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n "
-        // "     %3 = \"daphne.ewAdd\"(%2, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n "
-        // "     \"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n "
-        // "   }\n "
-        // );
-        // This seems to work better for now... TODO fix generated mlir code
-        "func @dist(%arg0: !daphne.Matrix<?x?xf64>, %arg1: !daphne.Matrix<?x?xf64>, %arg2: !daphne.Matrix<?x?xf64>, %arg3: !daphne.Matrix<?x?xf64>, %arg4: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
-        // // "     %0 = \"daphne.numRows\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-        // // "     %1 = \"daphne.numCols\"(%arg0) : (!daphne.Matrix<?x?xf64>) -> index\n "
-            "   %0 = \"daphne.ewMul\"(%arg0, %arg1) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-            "   %1 = \"daphne.ewAdd\"(%0, %arg2) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-            "   %2 = \"daphne.ewMul\"(%1, %arg3) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-            "   %3 = \"daphne.ewMul\"(%2, %arg4) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
-            "\"daphne.return\"(%3) : (!daphne.Matrix<?x?xf64>) -> ()\n"
-            "}"
-        );
-        mlirCode = code.c_str();
         
         // TODO numInputs is not needed anymore, we need to update distributedCompute primitive/kernel
         distributedCompute(resHandle, handle, numInputs, mlirCode, _ctx);
