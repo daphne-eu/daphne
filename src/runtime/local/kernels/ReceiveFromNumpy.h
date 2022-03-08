@@ -63,9 +63,8 @@ void receiveFromNumpyDouble(DTRes *& res,  int64_t upper, int64_t lower, int64_t
 template<>
 struct ReceiveFromNumpyDouble<DenseMatrix<double>> {
     static void apply(DenseMatrix<double> *& res, int64_t upper, int64_t lower, int64_t size, DCTX(ctx)) {
-        
+        printf("Received address:%ld\n", ((upper<<32)|lower));
         res = DataObjectFactory::create<DenseMatrix<double>>(size, size, (double* )((upper<<32)|lower));
-        res -> print(std::cout);
     }
 };
 
