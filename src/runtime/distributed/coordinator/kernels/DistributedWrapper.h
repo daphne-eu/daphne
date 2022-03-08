@@ -80,6 +80,7 @@ public:
         // Distribute and broadcast inputs        
         // We create Handle object here and we pass it to each primitive.
         // Each primitive (i.e. distribute/broadcast) populates this handle with data information for each worker
+        // TODO store this information inside the matrix object
         Handle<Structure> *handle = DataObjectFactory::create<Handle<Structure>>(workers);    
         for (auto i = 0u; i < numInputs; ++i) {            
             if (isBroadcast(splits[i], inputs[i])){
@@ -91,19 +92,13 @@ public:
         }
         Handle<Structure> *resHandle = DataObjectFactory::create<Handle<Structure>>(workers);
           
-        
-        // TODO numInputs is not needed anymore, we need to update distributedCompute primitive/kernel
-        distributedCompute(resHandle, handle, numInputs, mlirCode, _ctx);
+        distributedCompute(resHandle, handle, mlirCode, combines, numOutputs, _ctx);
 
         // Collect
-        // TODO check *combines for aggregations and use corresponding distributed primitives
+        // TODO probably check combines won't be needed in the future, this information will be stored inside the matrix datatype
         for (size_t o = 0; o < numOutputs; o++){
-            if (combines[o] == VectorCombine::ROWS){
-                distributedCollect(*res[o], o, resHandle, _ctx);
-            }
-            else {
-                assert ("we only support rows collect at the moment");
-            }
+            assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
+            distributedCollect(*res[o], o, resHandle, combines[o], _ctx);           
         }
         
         

@@ -30,6 +30,8 @@
 #include <cassert>
 #include <cstddef>
 
+using mlir::daphne::VectorCombine;
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -37,7 +39,7 @@
 template<class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(Handle<DTRes> *&res, Handle<DTArgs> **args, size_t num_args, const char *mlirCode, DCTX(ctx)) = delete;
+    static void apply(Handle<DTRes> *&res, Handle<DTArgs> **args, const char *mlirCode, VectorCombine *combineVector, size_t numOutputs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,9 +47,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DTRes, class DTArgs>
-void distributedCompute(Handle<DTRes> *&res, Handle<DTArgs> *args, size_t num_args, const char *mlirCode, DCTX(ctx))
+void distributedCompute(Handle<DTRes> *&res, Handle<DTArgs> *args, const char *mlirCode, VectorCombine *combineVector, size_t numOutputs, DCTX(ctx))
 {
-    DistributedCompute<DTRes, DTArgs>::apply(res, args, num_args, mlirCode, ctx);
+    DistributedCompute<DTRes, DTArgs>::apply(res, args, mlirCode, combineVector, numOutputs, ctx);
 }
 
 // ****************************************************************************
@@ -58,9 +60,10 @@ template<class DTRes>
 struct DistributedCompute<DTRes, Structure>
 {
     static void apply(Handle<DTRes> *&res,
-                      Handle<Structure> *args,
-                      size_t num_args,
+                      Handle<Structure> *args,                      
                       const char *mlirCode,
+                      VectorCombine *combineType,
+                      size_t numOutputs,
                       DCTX(ctx))
     {
         if(res == nullptr) {
@@ -85,7 +88,9 @@ struct DistributedCompute<DTRes, Structure>
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
         auto map = args->getMap();
-        DistributedIndex *ix = new DistributedIndex(0, 0);
+        DistributedIndex *ix[numOutputs];
+        for (auto i = 0; i <numOutputs; i++)
+            ix[i] = new DistributedIndex(0, 0);
         for (auto &pair : map){
             auto addr = pair.first;
             auto dataVector = pair.second.distributedDataArray;
@@ -96,11 +101,15 @@ struct DistributedCompute<DTRes, Structure>
                 *task.add_inputs()->mutable_stored() = data.getData();
             }
             task.set_mlir_code(mlirCode);
-            StoredInfo storedInfo ({addr, ix});
-
-            // TODO the next DistributedIndex must be decided based on combines (probably...)
-            // For now, assume rows combining and set DistrIdx accordingly
-            ix = new DistributedIndex(ix->getRow() + 1, ix->getCol());
+            StoredInfo storedInfo ({addr, nullptr});
+            
+            for (auto i = 0; i < numOutputs; i++){
+                storedInfo.ix = new DistributedIndex(*ix[i]);
+                if (combineType[i] == VectorCombine::ROWS)
+                    ix[i] = new DistributedIndex(ix[i]->getRow() + 1, ix[i]->getCol());            
+                if (combineType[i] == VectorCombine::COLS)
+                    ix[i] = new DistributedIndex(ix[i]->getRow(), ix[i]->getCol() + 1);                
+            }
             // TODO for now resuing channels seems to slow things down... 
             // It is faster if we generate channel for each call and let gRPC handle resources internally
             // We might need to change this in the future and re-use channels ( data.getChannel() )

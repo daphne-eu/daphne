@@ -30,6 +30,8 @@
 #include <cassert>
 #include <cstddef>
 
+using mlir::daphne::VectorCombine;
+
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -37,7 +39,7 @@
 template<class DTres, class DTarg>
 struct DistributedCollect
 {
-    static void apply(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, DCTX(ctx)) = delete;
+    static void apply(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, VectorCombine combineType, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,9 +47,9 @@ struct DistributedCollect
 // ****************************************************************************
 
 template<class DTres, class DTarg>
-void distributedCollect(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, DCTX(ctx))
+void distributedCollect(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, VectorCombine combineType, DCTX(ctx))
 {
-    DistributedCollect<DTres, DTarg>::apply(res, resIdx, handle, ctx);
+    DistributedCollect<DTres, DTarg>::apply(res, resIdx, handle, combineType, ctx);
 }
 
 // ****************************************************************************
@@ -57,7 +59,7 @@ void distributedCollect(DTres *&res, size_t resIdx, const Handle<DTarg> *handle,
 template<>
 struct DistributedCollect<DenseMatrix<double>, Structure>
 {
-    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle<Structure> *handle, DCTX(ctx))
+    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle<Structure> *handle, VectorCombine combineType, DCTX(ctx))
     {
         struct StoredInfo{
             DistributedIndex *ix;
@@ -90,18 +92,37 @@ struct DistributedCollect<DenseMatrix<double>, Structure>
         }
         workersSize++;
         // Get Results
-        auto k = res->getNumRows() / workersSize;
-        auto m = res->getNumRows() % workersSize;        
+        size_t k, m;
+        if (combineType == VectorCombine::ROWS) {
+            k = res->getNumRows() / workersSize;
+            m = res->getNumRows() % workersSize;
+        }
+        else if (combineType == VectorCombine::COLS){
+            k = res->getNumCols() / workersSize;
+            m = res->getNumCols() % workersSize;
+        }
+        else
+            assert(!"Only Rows/Cols combineType supported atm");
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
-            ProtoDataConverter::convertFromProto(matProto,
-                res,
-                ix->getRow() * k + std::min(ix->getRow(), m),
-                (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
-                0,
-                res->getNumCols());
+            if (combineType == VectorCombine::ROWS) {
+                ProtoDataConverter::convertFromProto(matProto,
+                    res,
+                    ix->getRow() * k + std::min(ix->getRow(), m),
+                    (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
+                    0,
+                    res->getNumCols());
+            }
+            else if (combineType == VectorCombine::COLS) {
+                ProtoDataConverter::convertFromProto(matProto,
+                    res,
+                    0,
+                    res->getNumRows(),
+                    ix->getCol() * k + std::min(ix->getCol(), m),
+                    (ix->getCol() + 1) * k + std::min((ix->getCol() + 1), m));
+            }
         }      
     }
 };
