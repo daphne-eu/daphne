@@ -90,7 +90,7 @@ protected:
                 linputs.push_back(_data._inputs[i]);
             }
             else if (VectorSplit::ROWS == _data._splits[i]) {
-                linputs.push_back(_data._inputs[i]->slice(rowStart, rowEnd));
+                linputs.push_back(_data._inputs[i]->sliceRow(rowStart, rowEnd));
             }
             else {
                 llvm_unreachable("Not all vector splits handled");

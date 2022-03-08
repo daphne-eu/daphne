@@ -134,10 +134,10 @@ template<typename VT>
         for (size_t i = 0; i < numOutputs; ++i) {
             res_cpp[i] = new DenseMatrix<VT> *;
             if(combines[i] == mlir::daphne::VectorCombine::ROWS) {
-                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->slice(device_task_len, len);
+                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->sliceRow(device_task_len, len);
             }
             else if(combines[i] == mlir::daphne::VectorCombine::COLS) {
-                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->slice(0, outRows[i], device_task_len, len);
+                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->sliceCol(device_task_len, len);
             }
             else {
                 (*res_cpp[i]) = (*res[i]);

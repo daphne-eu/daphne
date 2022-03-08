@@ -73,7 +73,7 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
             case VectorCombine::ROWS: {
                 rowStart -= _data._offset;
                 rowEnd -= _data._offset;
-                auto slice = result->slice(rowStart, rowEnd);
+                auto slice = result->sliceRow(rowStart, rowEnd);
                 for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
                     for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
                         slice->set(i, j, localResults[o]->get(i, j));
@@ -83,7 +83,7 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
                 break;
             }
             case VectorCombine::COLS: {
-                auto slice = result->slice(0, _data._outRows[o], rowStart-_data._offset, rowEnd-_data._offset);
+                auto slice = result->sliceCol(rowStart-_data._offset, rowEnd-_data._offset);
                 for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
                     for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
                         slice->set(i, j, localResults[o]->get(i, j));
