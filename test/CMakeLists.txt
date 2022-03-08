@@ -82,6 +82,8 @@ set(TEST_SOURCES
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp
         runtime/local/kernels/SetColLabelsPrefixTest.cpp
+        runtime/local/kernels/SliceColTest.cpp
+        runtime/local/kernels/SliceRowTest.cpp
         runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/TransposeTest.cpp

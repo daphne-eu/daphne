@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_SLICEROW_H
-#define SRC_RUNTIME_LOCAL_KERNELS_SLICEROW_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H
+#define SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -34,7 +34,7 @@
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-struct SliceRow {
+struct SliceCol {
     static void apply(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) = delete;
 };
 
@@ -43,8 +43,8 @@ struct SliceRow {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void sliceRow(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-    SliceRow<DTRes, DTArg>::apply(res, arg, lowerIncl, upperExcl, ctx);
+void sliceCol(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
+    SliceCol<DTRes, DTArg>::apply(res, arg, lowerIncl, upperExcl, ctx);
 }
 
 // ****************************************************************************
@@ -56,9 +56,9 @@ void sliceRow(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExc
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct SliceRow<DenseMatrix<VT>, DenseMatrix<VT>> {
+struct SliceCol<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = arg->sliceRow(lowerIncl, upperExcl);
+        res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
 
@@ -66,9 +66,9 @@ struct SliceRow<DenseMatrix<VT>, DenseMatrix<VT>> {
 // Frame <- Frame
 // ----------------------------------------------------------------------------
 
-template <> struct SliceRow<Frame, Frame> {
+template <> struct SliceCol<Frame, Frame> {
     static void apply(Frame *& res, const Frame * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = arg->sliceRow(lowerIncl, upperExcl);
+        res = arg->sliceCol(lowerIncl, upperExcl);
     }        
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SLICEROW_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_SLICECOL_H
