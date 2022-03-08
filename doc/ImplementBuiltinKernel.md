@@ -174,7 +174,7 @@ For concrete examples, please have a look at existing kernel implementations in 
 For instance, the following kernels represent some interesting cases:
 - [ewBinarySca](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinarySca.h) works only on scalars.
 - [ewBinaryMat](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinaryMat.h) works only on matrices.
-- [ewBinaryMatSca](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinaryMatSca.h) combines matrix and scalar inputs.
+- [ewBinaryObjSca](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.
 - [matMul](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/MatMul.h) delegates to an external library (OpenBLAS).
 
 ### Test Cases
