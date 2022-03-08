@@ -54,7 +54,7 @@ class DaphneContext(object):
         :param kwargs: named parameters
         :return: A Matrix
         """
-        mat1 = mat.ctypes.data_as(np.ctypeslib.ndpointer()).value
+        mat1 = str(mat.ctypes.data_as(np.ctypeslib.ndpointer()).value)
         return Matrix(self, 'receiveFromNumpyDouble', [mat1, mat.shape[0]], local_data=mat)
 
     def from_pandas(self, df: pd.DataFrame,

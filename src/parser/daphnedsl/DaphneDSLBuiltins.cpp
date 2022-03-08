@@ -998,7 +998,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value filename = args[1];
         return builder.create<WriteOp>(loc, arg, filename);
     }
-    if(func == "receiveFromNumpy")
+    if(func == "receiveFromNumpyDouble")
     {
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value arg = args[0];

@@ -71,10 +71,11 @@ class DaphneDSLScript:
     def execute(self):
         
         os.chdir(PROTOTYPE_PATH)
+
+        libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
-        libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
         res = libDaphneShared.doMain(ctypes.c_char_p(b"tmpdaphne.daphne"))
         print("res: {}".format(res))
 
