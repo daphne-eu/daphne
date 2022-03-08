@@ -20,6 +20,7 @@
 #include <iterator>
 #include <cstddef>
 #include <cstring>
+#include <functional>
 
 #define MM_MAX_LINE_LENGTH 1025
 #define MatrixMarketBanner "%%MatrixMarket"
@@ -256,8 +257,11 @@ public:
     MMFile(const char *filename){
         f = openFile(filename);
         mm_read_banner(f, &typecode);
-        if (mm_is_coordinate(typecode))
+        if (mm_is_coordinate(typecode)){
             mm_read_mtx_crd_size(f, &rows, &cols, &nnz);
+            if(mm_is_skew(typecode))
+              nnz *= 2;
+        }
         else{
             mm_read_mtx_array_size(f, &rows, &cols);
             nnz = rows*cols;
@@ -270,8 +274,8 @@ public:
     size_t numberCols() { return cols; }
     /* entryCount is the number of entries in the file
        and not exactly the same as number of non-zeroes.
-       When the file is coordinate + (skew-)symmetric,
-       nnz/2 <= entryCount <= nnz.
+       When the file is coordinate + symmetric,
+       entryCount <= nnz <= 2 * entryCount.
     */
     size_t entryCount() { return nnz; }
 
@@ -297,9 +301,10 @@ public:
     private:
         pointer m_ptr = (pointer)malloc(sizeof(Entry)*2), next = m_ptr+1;
         bool do_next = false;
-        MMFile<VT> file;
+        MMFile<VT> &file;
         char *line;
         size_t r = 0, c = 0;
+        std::function<void()> progress = [&]() mutable { r = 0; c++; };
         VT cur;
         MMIterator() {}
         void readEntry(){
@@ -332,16 +337,16 @@ public:
             *next = {c, r, -cur};
             do_next = true;
           }
-          //TODO: Handle traversal of symmetric and skew storage
-          //For when matrix is in array format
-          if(++r >= file.rows) {
-            r = 0; c++;
-            //assert(c < cols && "Number of entries is greater than matrix size");
-          }
+          if(++r >= file.rows) progress();
         }
     public:
         MMIterator(MMFile<VT>& f, bool read = true) : file(f) {
           if(mm_is_pattern(file.typecode)) cur = true;
+          if(mm_is_symmetric(file.typecode)) progress = [&]() mutable { r = ++c; };
+          else if (mm_is_skew(file.typecode)) {
+            r = 1;
+            progress = [&]() mutable { r = ++c+1; };
+          }
           if(read) readEntry();
         }
         ~MMIterator() { free((void*)std::min(m_ptr, next)); }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2022 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/io/mmio.h>
+#include <runtime/local/io/ReadMM.h>
 
 #include <tags.h>
 
@@ -128,9 +128,11 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK", TAG_KERNELS, (DenseMatrix), (double)) {
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++)
+  for(int r = 0; r<numRows; r++) {
+    CHECK(m->get(r,r) == 0);
     for(int c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
+  }
 
   DataObjectFactory::destroy(m);
 }
@@ -158,6 +160,52 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) 
         CHECK(m->get(c,r) == 0);
       else
         CHECK(m->get(c,r) != 0);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 4;
+  size_t numCols = 4;
+
+  char filename[] = "./test/runtime/local/io/aik.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(1, 0) == 1);
+
+  for(int r = 0; r<numRows; r++) {
+    CHECK(m->get(r,r) == 0);
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->get(r,c) == -m->get(c,r));
+  }
+
+  DataObjectFactory::destroy(m);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 3;
+  size_t numCols = 3;
+
+  char filename[] = "./test/runtime/local/io/ais.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(1, 1) == 4);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
 }

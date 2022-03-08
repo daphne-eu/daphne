@@ -22,7 +22,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Handle.h>
-#include <runtime/local/io/MMIterator.h>
+#include <runtime/local/io/MMFile.h>
 #include <vector>
 
 typedef char MM_typecode[4];
@@ -67,4 +67,21 @@ template <typename VT> struct ReadMM<DenseMatrix<VT>> {
     return;
   }
 };
+
+template <typename VT> struct ReadMM<CSRMatrix<VT>> {
+  static void apply(CSRMatrix<VT> *&res, const char *filename){
+    MMFile<VT> mmfile(filename);
+    if(res == nullptr)
+      res = DataObjectFactory::create<CSRMatrix<VT>>(
+        mmfile.numberRows(),
+        mmfile.numberCols(),
+        mmfile.entryCount() != mmfile.numberCols() * mmfile.numberRows()
+      );
+    // VT *valuesRes = res->getValues();
+    // for (auto &entry : mmfile)
+    //   valuesRes[entry.row * mmfile.numberCols() + entry.col] = entry.val;
+    return;
+  }
+};
+
 #endif // MM_IO_H
