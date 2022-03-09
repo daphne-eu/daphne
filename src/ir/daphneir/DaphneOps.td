@@ -1242,6 +1242,9 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         OpBuilder<(ins "uint64_t":$value), [{
             build($_builder, $_state, $_builder.getIntegerAttr($_builder.getIntegerType(64, false), value));
         }]>,
+        OpBuilder<(ins "bool":$value), [{
+            build($_builder, $_state, $_builder.getIntegerAttr($_builder.getI1Type(), value));
+        }]>,
         //OpBuilder<(ins "int":$value), [{
         //    build($_builder, $_state, $_builder.getI32IntegerAttr(value));
         //}]>,
