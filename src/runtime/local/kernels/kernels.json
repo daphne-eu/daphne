@@ -1194,6 +1194,244 @@
     },
     {
         "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyF32",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyI8",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "int8_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyI32",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "int32_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyI64",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyUI8",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "uint8_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyUI32",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "uint32_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "ReceiveFromNumpy.h",
+            "opName": "receiveFromNumpyUI64",
+            "returnType": "void",            
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "upper"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "lower"
+                },
+                {
+                    "type": "int64_t",
+                    "name": "size"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "uint64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Replace.h",
             "opName": "replace",
             "returnType": "void",

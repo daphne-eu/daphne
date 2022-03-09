@@ -57,8 +57,25 @@ class DaphneContext(object):
         address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=np.double, ndim=1, flags='C_CONTIGUOUS')).value
         upper = (address & 0xFFFFFFFF00000000)>>32;
         lower = (address & 0xFFFFFFFF)
-        print("Address in python:"+str(address))
-        return Matrix(self, 'receiveFromNumpyDouble', [upper, lower, mat.shape[0]], local_data=mat)
+        d_type = mat.dtype
+        if d_type == np.double or d_type == np.float64:          
+            return Matrix(self, 'receiveFromNumpyDouble', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.float32:
+            return Matrix(self, 'receiveFromNumpyF32', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.int8:
+            return Matrix(self, 'receiveFromNumpyI8', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.int32:
+            return Matrix(self, 'receiveFromNumpyI32', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.int64:
+            return Matrix(self, 'receiveFromNumpyI64', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.uint8:
+            return Matrix(self, 'receiveFromNumpyUI8', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.uint32:
+            return Matrix(self, 'receiveFromNumpyUI32', [upper, lower, mat.shape[0]], local_data=mat)
+        elif d_type == np.uint64:
+            return Matrix(self, 'receiveFromNumpyUI64', [upper, lower, mat.shape[0]], local_data=mat)
+        else:
+            print("Error")
 
     def from_pandas(self, df: pd.DataFrame,
             *args: Sequence[VALID_INPUT_TYPES],
