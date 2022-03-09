@@ -1081,7 +1081,36 @@ def Daphne_ReceiveFromNumpyDoubleOp: Daphne_Op<"receiveFromNumpyDouble">{
     let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
     let results = (outs Matrix:$res);
 }
+def Daphne_ReceiveFromNumpyF32Op: Daphne_Op<"receiveFromNumpyF32">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
+def Daphne_ReceiveFromNumpyI8Op: Daphne_Op<"receiveFromNumpyI8">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
 
+def Daphne_ReceiveFromNumpyI32Op: Daphne_Op<"receiveFromNumpyI32">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
+def Daphne_ReceiveFromNumpyI64Op: Daphne_Op<"receiveFromNumpyI64">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
+def Daphne_ReceiveFromNumpyUI8Op: Daphne_Op<"receiveFromNumpyUI8">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
+
+def Daphne_ReceiveFromNumpyUI32Op: Daphne_Op<"receiveFromNumpyUI32">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
+def Daphne_ReceiveFromNumpyUI64Op: Daphne_Op<"receiveFromNumpyUI64">{
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let results = (outs Matrix:$res);
+}
 // ----------------------------------------------------------------------------
 // Low-level
 // ----------------------------------------------------------------------------
