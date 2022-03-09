@@ -36,7 +36,7 @@
 #define VALUE_TYPES_SPECIAL_CASE double 
 
 template<class DT>
-void checkReplace(DT* outputMatrix,  const DT* inputMatrix,typename DT::VT pattern, typename DT::VT replacement,  DT* expected){
+void checkReplace(DT*& outputMatrix,  const DT* inputMatrix,typename DT::VT pattern, typename DT::VT replacement,  DT* expected){
     replace<DT, DT, typename DT::VT>(outputMatrix, inputMatrix, pattern, replacement, nullptr);
     CHECK(*outputMatrix == *expected);
 }

@@ -37,10 +37,11 @@ void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batch
         accumulateOutputs(localResults, localAddRes, r, r2);
         
         // cleanup
-        for (auto &localResult : localResults) {
-            DataObjectFactory::destroy(localResult);
-            localResult = nullptr;
-        }
+        for (auto &localResult : localResults)
+            if(localResult) {
+                DataObjectFactory::destroy(localResult);
+                localResult = nullptr;
+            }
         this->cleanupFuncInputs(std::move(linputs));
     }
     
