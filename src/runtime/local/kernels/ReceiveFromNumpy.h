@@ -60,11 +60,17 @@ void receiveFromNumpyDouble(DTRes *& res,  int64_t upper, int64_t lower, int64_t
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
+struct NoOpDeleter {
+    void operator()(double* p) {
+        // don't delete p because the memory comes from numpy
+    }
+};
+
 template<>
 struct ReceiveFromNumpyDouble<DenseMatrix<double>> {
     static void apply(DenseMatrix<double> *& res, int64_t upper, int64_t lower, int64_t size, DCTX(ctx)) {
         printf("Received address:%ld\n", ((upper<<32)|lower));
-        res = DataObjectFactory::create<DenseMatrix<double>>(size, size, (double* )((upper<<32)|lower));
+        res = DataObjectFactory::create<DenseMatrix<double>>(size, size, std::shared_ptr<double[]>((double*)((upper<<32)|lower), NoOpDeleter()));
     }
 };
 
