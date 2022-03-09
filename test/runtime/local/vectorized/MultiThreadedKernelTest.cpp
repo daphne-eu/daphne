@@ -62,6 +62,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());
 
     DT **outputs[] = {&r2};
+    bool isScalar[] = {false, false};
     Structure *inputs[] = {m1, m2};
     int64_t outRows[] = {1234};
     int64_t outCols[] = {10};
@@ -71,7 +72,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
             DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
-    wrapper->executeSingleQueue(funcs, outputs, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
+    wrapper->executeSingleQueue(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
@@ -97,6 +98,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
 
     auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());    DT **outputs[] = {&r2};
 
+    bool isScalar[] = {false, false};
     Structure *inputs[] = {m1, m2};
     int64_t outRows[] = {1234};
     int64_t outCols[] = {10};
@@ -106,7 +108,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
             DCTX(ctx))>(reinterpret_cast<void*>(&funMul<DT>))));
-    wrapper->executeSingleQueue(funcs, outputs, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
+    wrapper->executeSingleQueue(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 

@@ -47,6 +47,7 @@ public:
 template<class DT>
 struct CompiledPipelineTaskData {
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> _funcs;
+    const bool* _isScalar;
     Structure **_inputs;
     const size_t _numInputs;
     const size_t _numOutputs;

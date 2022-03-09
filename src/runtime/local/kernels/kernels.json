@@ -1822,6 +1822,10 @@
                     "name": "res"
                 },
                 {
+                    "type": "bool *",
+                    "name": "isScalar"
+                },
+                {
                     "type": "Structure **",
                     "name": "inputs"
                 },
@@ -1884,6 +1888,10 @@
                 {
                     "type": "DTRes *&",
                     "name": "res2"
+                },
+                {
+                    "type": "bool *",
+                    "name": "isScalar"
                 },
                 {
                     "type": "Structure **",

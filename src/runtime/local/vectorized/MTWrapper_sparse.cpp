@@ -19,7 +19,7 @@
 
 template<typename VT>
 void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
-        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, Structure **inputs, size_t numInputs, size_t numOutputs,
+        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
         const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx),
         bool verbose) {
 //     TODO: reduce code duplication
@@ -50,7 +50,7 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs,
+        q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
                 inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                 outCols, 0, ctx}, dataSink));
         startChunk = endChunk;
@@ -63,7 +63,7 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
 
 template<typename VT>
 [[maybe_unused]] void MTWrapper<CSRMatrix<VT>>::executeQueuePerDeviceType(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
-        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, Structure **inputs, size_t numInputs, size_t numOutputs,
+        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
         int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     throw std::runtime_error("sparse multi queue vect exec not implemented");
 }

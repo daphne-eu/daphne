@@ -22,7 +22,7 @@
 
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
+        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
         Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
@@ -59,7 +59,7 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
+        q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                 inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                 outCols, 0, ctx}, resLock, res));
         startChunk = endChunk;
@@ -71,7 +71,7 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
 
 template<typename VT>
 [[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
+        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
         Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     size_t device_task_len = 0ul;
@@ -116,7 +116,7 @@ template<typename VT>
 
     for (uint32_t k = 0; k < gpu_task_len; k += blksize) {
         q_cuda->enqueueTask(new CompiledPipelineTaskCUDA<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
-                funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, k, std::min(k + blksize, len),
+                funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, k, std::min(k + blksize, len),
                 outRows, outCols, 0, ctx}, resLock, res_cuda));
     }
     q_cuda->closeInput();
@@ -151,7 +151,7 @@ template<typename VT>
         while (lp.hasNextChunk()) {
             endChunk += lp.getNextChunk();
             q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
-                    funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
+                    funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
                     outRows, outCols, offset, ctx}, resLock, res_cpp));
             startChunk = endChunk;
         }
