@@ -87,7 +87,7 @@ namespace
         }
 
         /**
-         * @brief The value of type `DaphneContext` to insert as the first
+         * @brief The value of type `DaphneContext` to insert as the last
          * argument to all kernel calls.
          */
         Value dctx;
@@ -286,20 +286,7 @@ void RewriteToCallKernelOpPass::runOnFunction()
     });
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.
-    mlir::Value dctx = nullptr;
-    auto ops = func.body().front().getOps<daphne::CreateDaphneContextOp>();
-    for(auto op : ops) {
-        if(!dctx)
-            dctx = op.getResult();
-        else
-            throw std::runtime_error(
-                    "function body block contains more than one CreateDaphneContextOp"
-            );
-    }
-    if(!dctx)
-        throw std::runtime_error(
-                "function body block contains no CreateDaphneContextOp"
-        );
+    mlir::Value dctx = CompilerUtils::getDaphneContext(func);
     func->walk([&](daphne::VectorizedPipelineOp vpo)
     {
       vpo.ctxMutable().assign(dctx);

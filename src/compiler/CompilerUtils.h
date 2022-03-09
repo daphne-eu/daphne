@@ -99,4 +99,30 @@ namespace CompilerUtils {
     [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
         return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
     }
+    
+    /**
+     * @brief Returns the DAPHNE context used in the given function.
+     * 
+     * Throws if there is not exactly one DAPHNE context.
+     * 
+     * @param func
+     * @return 
+     */
+    [[maybe_unused]] mlir::Value static getDaphneContext(mlir::FuncOp & func) {
+        mlir::Value dctx = nullptr;
+        auto ops = func.body().front().getOps<mlir::daphne::CreateDaphneContextOp>();
+        for(auto op : ops) {
+            if(!dctx)
+                dctx = op.getResult();
+            else
+                throw std::runtime_error(
+                        "function body block contains more than one CreateDaphneContextOp"
+                );
+        }
+        if(!dctx)
+            throw std::runtime_error(
+                    "function body block contains no CreateDaphneContextOp"
+            );
+        return dctx;
+    }
 }
