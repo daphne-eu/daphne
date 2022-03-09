@@ -465,9 +465,9 @@ public:
                 auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
                 rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
             }
-            rewriter.create<ReturnOp>(loc);
-            // erase leads to problems, while remove doesn't. Inspect this.
-            oldReturn->remove();
+            // Replace the old ReturnOp with operands by a new ReturnOp without
+            // operands.
+            rewriter.replaceOpWithNewOp<ReturnOp>(oldReturn);
         }
 
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
@@ -530,9 +530,9 @@ public:
                     auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
                     rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
                 }
-                rewriter.create<ReturnOp>(loc);
-                // erase leads to problems, while remove doesn't. Inspect this.
-                oldReturn->remove();
+                // Replace the old ReturnOp with operands by a new ReturnOp without
+                // operands.
+                rewriter.replaceOpWithNewOp<ReturnOp>(oldReturn);
             }
 
             auto fnPtr2 = rewriter.create<LLVM::AddressOfOp>(loc, fOp2);
