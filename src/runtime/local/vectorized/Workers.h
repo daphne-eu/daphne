@@ -82,6 +82,7 @@ public:
         CPU_SET(_threadID, &cpuset);
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
         int target_deque = 0;
+        std::vector<Task*> tmp;
 
         if( _queueMode == 0 ) {
             target_deque = 0;
@@ -124,14 +125,19 @@ public:
             }
         } else if( queueMode == 2 ) {
             while(target_deque != _threadID) {
-                t = _q[target_deque]->dequeueTask();
-                if( isEOF(t) ) {
-                    target_deque = (target_deque+1)%_numDeques;
-                } else {
-                t->execute(_fid, _batchSize);
-                delete t;
+                if(_q[target_deque]->dequeueBatch(tmp, _numQueues) > 0) {
+                    _q[_threadID]->enqueueBatch(tmp);
                 }
+                tmp.clear();
+                t = _q[_threadID]->dequeueTask();
+                while( !isEOF(t) ) {
+                    t->execute(_fid, _batchSize);
+                    delete t;
+                    t = _q[_threadID]->dequeueTask();
+                }
+                target_deque = (target_deque+1)%_numDeques;
             }
+            delete t;
         }
 
         if( _verbose )

@@ -29,6 +29,8 @@ class TaskQueue {
 public:
     virtual ~TaskQueue() = default;
 
+    virtual int dequeueBatch(std::vector<Task*> &tmp, int _numQueues) = 0;
+    virtual void enqueueBatch(std::vector<Task*> &tmp) = 0;
     virtual void enqueueTask(Task* t) = 0;
     virtual void enqueueTaskOnTarget(Task* t, int i) = 0;
     virtual Task* dequeueTask() = 0;
@@ -38,7 +40,7 @@ public:
 
 class BlockingTaskQueue : public TaskQueue {
 private:
-    std::list<Task*> _data;
+    std::deque<Task*> _data;
     std::mutex _qmutex;
     std::condition_variable _cv;
     EOFTask _eof; //end marker
@@ -63,6 +65,30 @@ public:
             _cv.wait(ul);
         _data.push_back(t);
         _cv.notify_one();
+    }
+
+    int dequeueBatch(std::vector<Task*> &tmp, int _numQueues) override {
+        std::unique_lock<std::mutex> ul(_qmutex);
+        //int printsize;
+        //printsize = _data.size();
+        //if(printsize > 0) {
+        //std::cout << "size is " << printsize << std::endl;
+        int amountToSteal = _data.size()/_numQueues;
+        if(amountToSteal < 100) { return 0; }
+        //std::cout << "Amount is " << amountToSteal << std::endl;
+        tmp.insert(tmp.end(), std::make_move_iterator(_data.begin() + _data.size() - amountToSteal), std::make_move_iterator(_data.end()));
+        _data.erase(_data.begin() + _data.size() - amountToSteal, _data.end());
+        _cv.notify_one();
+        return amountToSteal;
+        //}
+        //return 0;
+    }
+
+    void enqueueBatch(std::vector<Task*> &tmp) override {
+        std::unique_lock<std::mutex> ul(_qmutex);
+        _data.insert(_data.end(), std::make_move_iterator(tmp.begin()), std::make_move_iterator(tmp.end()));
+        _cv.notify_one();
+        tmp.erase(tmp.begin(), tmp.end());
     }
 
     void enqueueTask(Task* t) override {
