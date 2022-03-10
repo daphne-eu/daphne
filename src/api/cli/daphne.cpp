@@ -18,6 +18,7 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
+#include "../../parser/config/ConfigParser.h"
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -113,6 +114,11 @@ main(int argc, char** argv)
             ),
             CommaSeparated
     );
+    opt<string> configFile(
+        "config", cat(daphneOptions),
+        desc("Specify a JSON file that contains the Daphne configuration."),
+        value_desc("filename")
+    );
 
     // Positional arguments.
     opt<string> inputFile(Positional, desc("script"), Required);
@@ -137,8 +143,16 @@ main(int argc, char** argv)
     // ************************************************************************
     
     // Initialize user configuration.
-    
     DaphneUserConfig user_config{};
+    try {
+        if (ConfigParser::fileExists(configFile)) {
+            ConfigParser::readUserConfig(configFile, user_config);
+        }
+    }
+    catch(std::exception & e) {
+        std::cerr << "Reading user config error: " << e.what() << std::endl;
+        return StatusCode::EXECUTION_ERROR;
+    }
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
