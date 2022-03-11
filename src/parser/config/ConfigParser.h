@@ -19,7 +19,7 @@
 #define SRC_PARSER_CONFIG_CONFIGPARSER_H
 
 #include "../../../thirdparty/nlohmannjson/json.hpp"
-#include "../../api/cli/DaphneUserConfig.h"
+#include <api/cli/DaphneUserConfig.h>
 #include <string>
 
 class ConfigParser {

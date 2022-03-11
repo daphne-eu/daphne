@@ -20,6 +20,7 @@ set(LIBS
         MLIRDaphne
         DaphneDSLParser
         DaphneIrExecutor
+        DaphneConfigParser
 )
 
 # These dependencies are linked at runtime

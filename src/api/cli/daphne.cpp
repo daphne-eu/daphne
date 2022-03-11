@@ -17,8 +17,8 @@
 #include <api/cli/StatusCode.h>
 #include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
-#include "compiler/execution/DaphneIrExecutor.h"
-#include "../../parser/config/ConfigParser.h"
+#include <compiler/execution/DaphneIrExecutor.h>
+#include <parser/config/ConfigParser.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
