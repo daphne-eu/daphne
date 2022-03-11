@@ -26,9 +26,9 @@ import numpy as np
 from api.python.context.daphne_context import DaphneContext
 
 dim = 5
-m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
+m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.int64)
 
-m2 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
+m2 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.int64)
 m1.shape = (dim, dim)
 m2.shape = (dim, dim)
 

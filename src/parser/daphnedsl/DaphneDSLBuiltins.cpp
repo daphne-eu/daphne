@@ -119,7 +119,38 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
     else
         throw std::runtime_error("second argument of aggregation must be a constant");
 }
-
+template<class ReceiveFromNumpyOp>
+mlir::Value DaphneDSLBuiltins::createReceiveFromNumpyOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value> &args)
+{
+        checkNumArgsExact(func, args.size(), 4);
+        mlir::Value upper = args[0];
+        mlir::Value lower = args[1];
+        mlir::Value size = args[2];
+        mlir::Value valueType = args[3];
+        if(auto valueType = args[3].getDefiningOp<mlir::daphne::ConstantOp>()) {
+            llvm::APInt valueTypeCode = valueType.value().dyn_cast<mlir::IntegerAttr>().getValue();
+            if(valueTypeCode == (int)ValueTypeCode::F32)
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getF32Type()), upper, lower, size));         
+            else if(valueTypeCode == (int)ValueTypeCode::F64)
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getF64Type()), upper, lower, size));
+            else if(valueTypeCode == (int)ValueTypeCode::SI8)
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(8, true)), upper, lower, size));
+            else if(valueTypeCode == (int)ValueTypeCode::SI32)
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(32, true)), upper, lower, size));
+            else if(valueTypeCode == (int)ValueTypeCode::SI64)
+                 return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(64, true)), upper, lower, size));
+            else if(valueTypeCode == (int)ValueTypeCode::UI8)
+                 return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(8, false)), upper, lower, size));
+            else if(valueTypeCode == (int)ValueTypeCode::UI32)    
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(32, false)), upper, lower, size));
+            else if(valueTypeCode == (int)ValueTypeCode::UI64)
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(64, false)), upper, lower, size));
+            else
+                throw std::runtime_error("invalid valuetype");       
+        }
+    else
+                throw std::runtime_error("invalid valuetype");   
+}
 template<class GrpAggOp>
 mlir::Value DaphneDSLBuiltins::createGrpAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 3);
@@ -998,82 +1029,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value filename = args[1];
         return builder.create<WriteOp>(loc, arg, filename);
     }
-    if(func == "receiveFromNumpyDouble")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyDoubleOp>(loc,utils.matrixOf(builder.getF64Type()), upper, lower, size));
-    }
-    if(func == "receiveFromNumpyF32")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyF32Op>(loc,utils.matrixOf(builder.getF32Type()), upper, lower, size));
-    }
-    if(func == "receiveFromNumpyI8")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyI8Op>(loc,utils.matrixOf(builder.getIntegerType(8, true)), upper, lower, size));
-    }
 
-    if(func == "receiveFromNumpyI32")
+    if(func == "receiveFromNumpy")
     {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyI32Op>(loc,utils.matrixOf(builder.getIntegerType(32, true)), upper, lower, size));
+        return createReceiveFromNumpyOp<ReceiveFromNumpyOp>(loc, func, args);
     }
-
-    if(func == "receiveFromNumpyI64")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyI64Op>(loc,utils.matrixOf(builder.getIntegerType(64, true)), upper, lower, size));
-    }
-    if(func == "receiveFromNumpyUI8")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyUI8Op>(loc,utils.matrixOf(builder.getIntegerType(8, false)), upper, lower, size));
-    }
-
-    if(func == "receiveFromNumpyUI32")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyUI32Op>(loc,utils.matrixOf(builder.getIntegerType(32, false)), upper, lower, size));
-    }
-
-    if(func == "receiveFromNumpyUI64")
-    {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value upper = args[0];
-        mlir::Value lower = args[1];
-        
-        mlir::Value size = args[2];
-        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyUI64Op>(loc,utils.matrixOf(builder.getIntegerType(64, false)), upper, lower, size));
-    }
+   
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------
