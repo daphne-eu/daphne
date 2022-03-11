@@ -30,3 +30,13 @@ PYTHON_PATH = os.path.abspath(os.path.dirname(os.path.dirname(__file__)))
 TMP_PATH = os.path.join(PYTHON_PATH, "tmp")
 
 PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))
+
+#Values need to be updated accordingly to the valuetypecodes in ValueTypeCode.h, as this is 1/1 copy 
+SI8 = 0
+SI32 = 1
+SI64 = 2
+UI8 = 3
+UI32 = 4
+UI64 = 5
+F32 = 6
+F64 = 7

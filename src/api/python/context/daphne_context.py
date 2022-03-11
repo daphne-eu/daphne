@@ -24,7 +24,7 @@ __all__ = ["DaphneContext"]
 import ctypes
 from api.python.operator.nodes.frame import Frame
 import pandas as pd
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH
+from api.python.utils.consts import F32, F64, SI32, SI64, SI8, UI32, UI64, UI8, VALID_INPUT_TYPES, TMP_PATH
 import numpy as np
 from api.python.operator.nodes.matrix import Matrix
 from typing import Sequence, Dict, Union
@@ -59,23 +59,25 @@ class DaphneContext(object):
         lower = (address & 0xFFFFFFFF)
         d_type = mat.dtype
         if d_type == np.double or d_type == np.float64:          
-            return Matrix(self, 'receiveFromNumpyDouble', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = F64
         elif d_type == np.float32:
-            return Matrix(self, 'receiveFromNumpyF32', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = F32
         elif d_type == np.int8:
-            return Matrix(self, 'receiveFromNumpyI8', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = SI8
         elif d_type == np.int32:
-            return Matrix(self, 'receiveFromNumpyI32', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = SI32
         elif d_type == np.int64:
-            return Matrix(self, 'receiveFromNumpyI64', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = SI64
         elif d_type == np.uint8:
-            return Matrix(self, 'receiveFromNumpyUI8', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = UI8
         elif d_type == np.uint32:
-            return Matrix(self, 'receiveFromNumpyUI32', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = UI32
         elif d_type == np.uint64:
-            return Matrix(self, 'receiveFromNumpyUI64', [upper, lower, mat.shape[0]], local_data=mat)
+            vtc = UI64
         else:
             print("Error")
+        
+        return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], vtc], local_data=mat)
 
     def from_pandas(self, df: pd.DataFrame,
             *args: Sequence[VALID_INPUT_TYPES],

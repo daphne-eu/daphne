@@ -74,7 +74,10 @@ class DaphneDSLBuiltins {
     
     template<class RowAggOp, class ColAggOp>
     mlir::Value createRowOrColAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
-    
+
+    template<class ReceiveFromNumpyOp>
+    mlir::Value createReceiveFromNumpyOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
+
     template<class GrpAggOp>
     mlir::Value createGrpAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
     
