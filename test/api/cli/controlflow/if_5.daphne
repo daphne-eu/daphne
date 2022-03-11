@@ -1,4 +1,4 @@
-// Assign new value in then-branch, same shape.
+// Assign new value in then-branch, retain old value in else-branch, take then-branch, same shape.
 X = fill(10, 2, 3);
 if(true)
     X = X + 1;

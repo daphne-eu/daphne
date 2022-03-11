@@ -42,7 +42,10 @@ void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batch
                 DataObjectFactory::destroy(localResult);
                 localResult = nullptr;
             }
-        this->cleanupFuncInputs(std::move(linputs));
+        
+        // Note that a pipeline manages the reference counters of its inputs
+        // internally. Thus, we do not need to care about freeing the inputs
+        // here.
     }
     
     for(size_t o = 0; o < _data._numOutputs; ++o) {
@@ -148,7 +151,10 @@ void CompiledPipelineTask<CSRMatrix<VT>>::execute(uint32_t fid, uint32_t batchSi
 
         // cleanup
         lres = nullptr;
-        this->cleanupFuncInputs(std::move(linputs));
+        
+        // Note that a pipeline manages the reference counters of its inputs
+        // internally. Thus, we do not need to care about freeing the inputs
+        // here.
     }
     _resultSink.add(localSink.consume(), _data._rl);
 }

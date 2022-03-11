@@ -76,9 +76,12 @@ main(int argc, char** argv)
             "vec", cat(daphneOptions),
             desc("Enable vectorized execution engine")
     );
-    opt<bool> noFree(
-            "no-free", cat(daphneOptions),
-            desc("Don't insert FreeOp")
+    opt<bool> noObjRefMgnt(
+            "no-obj-ref-mgnt", cat(daphneOptions),
+            desc(
+                    "Switch off garbage collection by not managing data "
+                    "objects' reference counters"
+            )
     );
     opt<bool> selectMatrixRepr(
             "select-matrix-repr", cat(daphneOptions),
@@ -142,7 +145,7 @@ main(int argc, char** argv)
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
-    user_config.use_freeOps = !noFree;
+    user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.explain_kernels = explainKernels;
     user_config.libdir = libDir;
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");

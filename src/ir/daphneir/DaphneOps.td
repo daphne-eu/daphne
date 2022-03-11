@@ -1209,8 +1209,17 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
     let results = (outs); // no results
 }
 
-def Daphne_FreeOp : Daphne_Op<"free"> {
-    let arguments = (ins AnyTypeOf<[MatrixOrFrame, Handle]>:$arg);
+def Daphne_IncRefOp : Daphne_Op<"incRef"> {
+    let summary = "Increases the reference counter of the underlying runtime data object.";
+
+    let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
+def Daphne_DecRefOp : Daphne_Op<"decRef"> {
+    let summary = "Decreases the reference counter of the underlying runtime data object and frees it if the reference counter becomes zero.";
+
+    let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs); // no results
 }
 

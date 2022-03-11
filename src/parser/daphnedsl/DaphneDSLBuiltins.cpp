@@ -1072,20 +1072,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
 
     // ********************************************************************
-    // Low-level auxiliary operations
-    // ********************************************************************
-
-    // TODO Remove this, we have InsertFreeOpPass now, which automatically
-    // inserts FreeOp where needed. For now, we leave this way open for legacy
-    // support.
-    if(func == "free") { // deprecated
-        checkNumArgsExact(func, numArgs, 1);
-        return builder.create<FreeOp>(
-                loc, args[0]
-        );
-    }
-
-    // ********************************************************************
 
     throw std::runtime_error("unknown built-in function: '" + func + "'");
 }

@@ -137,7 +137,9 @@ namespace
                 llvm::isa<daphne::DistributedComputeOp>(op) ||
                 llvm::isa<daphne::NumCellsOp>(op) ||
                 llvm::isa<daphne::NumColsOp>(op) ||
-                llvm::isa<daphne::NumRowsOp>(op);
+                llvm::isa<daphne::NumRowsOp>(op) ||
+                llvm::isa<daphne::IncRefOp>(op) ||
+                llvm::isa<daphne::DecRefOp>(op);
             
             // Append names of result types to the kernel name.
             Operation::result_type_range resultTypes = op->getResultTypes();

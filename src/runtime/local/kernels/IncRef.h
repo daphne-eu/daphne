@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_FREEOBJ_H
-#define SRC_RUNTIME_LOCAL_KERNELS_FREEOBJ_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_INCREF_H
+#define SRC_RUNTIME_LOCAL_KERNELS_INCREF_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/Structure.h>
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTArg>
-void freeObj(const DTArg * arg, DCTX(ctx)) {
-    DataObjectFactory::destroy(arg);
+void incRef(const Structure * arg, DCTX(ctx)) {
+    arg->increaseRefCounter();
 }
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_FREEOBJ_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_INCREF_H

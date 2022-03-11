@@ -31,8 +31,8 @@ def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
     let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
 }
 
-def InsertFreeOp : FunctionPass<"insert-freeop"> {
-    let constructor = "mlir::daphne::createInsertFreeOpPass()";
+def ManageObjRefs : FunctionPass<"manage-obj-refs"> {
+    let constructor = "mlir::daphne::createManageObjRefsPass()";
 }
 
 def PrintIR : FunctionPass<"print-ir"> {
