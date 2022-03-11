@@ -19,7 +19,8 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
-#include "../../parser/config/ConfigParser.h"
+#include <compiler/execution/DaphneIrExecutor.h>
+#include <parser/config/ConfigParser.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
