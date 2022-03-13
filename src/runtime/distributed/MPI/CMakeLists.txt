@@ -13,16 +13,16 @@
 # limitations under the License.
 
 set(GCC_COVERAGE_COMPILE_FLAGS "-Wall -ansi -pedantic")
-SET(GCC_COVERAGE_COMPILE_FLAGS "-lstdc++")
+set(GCC_COVERAGE_COMPILE_FLAGS "-lstdc++")
 find_package(MPI REQUIRED)
 
 # add this line only when you are using openmpi which has a different c++ bindings
 #add_definitions(-DOMPI_SKIP_MPICXX)
 
-add_executable(mainMPI mainMPI.cpp)
-target_link_libraries(mainMPI PRIVATE MPI_C)
+set(LIBS DataStructures MPI_C MLIRDaphne)
 
-include_directories(SYSTEM ${MPI_INCLUDE_PATH})
+add_executable(mainMPI mainMPI.cpp)
+target_link_libraries(mainMPI PRIVATE ${LIBS})
 
 
 

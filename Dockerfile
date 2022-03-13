@@ -25,4 +25,7 @@ RUN cd /sources/cmake-3.20.2/ && ./bootstrap && make && make install
 RUN apt-get install -y unzip
 RUN apt-get -y update
 RUN apt-get install -y  gfortran
+RUN apt-get install -y mpich
+RUN apt-get install -y gdb
+RUN apt-get install -y xterm
 CMD echo "Done"
