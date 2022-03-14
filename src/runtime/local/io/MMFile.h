@@ -28,6 +28,7 @@
 
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 
 typedef char MM_typecode[4];
 
@@ -278,6 +279,10 @@ public:
        entryCount <= nnz <= 2 * entryCount.
     */
     size_t entryCount() { return nnz; }
+    ValueTypeCode elementType() {
+      if (mm_is_integer(typecode)) return ValueTypeCode::SI64;
+      else return ValueTypeCode::F64;
+    }
 
     struct Entry {
         size_t row, col;

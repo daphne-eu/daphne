@@ -391,3 +391,189 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
 
   DataObjectFactory::destroy(m);
 }
+
+TEST_CASE("ReadMM CIG (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 9;
+  size_t numCols = 9;
+
+  char filename[] = "./test/runtime/local/io/cig.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<int64_t>(0)->get(0, 0) == 1);
+  CHECK(m->getColumn<int64_t>(0)->get(2, 0) == 0);
+  CHECK(m->getColumn<int64_t>(4)->get(3, 0) == 9);
+  CHECK(m->getColumn<int64_t>(4)->get(7, 0) == 4);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM AIG (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 4;
+  size_t numCols = 3;
+
+  char filename[] = "./test/runtime/local/io/aig.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<int64_t>(0)->get(0, 0) == 1);
+  CHECK(m->getColumn<int64_t>(0)->get(1, 0) == 2);
+  CHECK(m->getColumn<int64_t>(1)->get(0, 0) == 5);
+  CHECK(m->getColumn<int64_t>(2)->get(3, 0) == 12);
+  CHECK(m->getColumn<int64_t>(1)->get(2, 0) == 7);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM CRG (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 497;
+  size_t numCols = 507;
+
+  char filename[] = "./test/runtime/local/io/crg.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<double>(0)->get(5, 0) == 0.25599762);
+  CHECK(m->getColumn<double>(0)->get(6, 0) == 0.13827993);
+  CHECK(m->getColumn<double>(4)->get(200, 0) == 0.20001954);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM CRS (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 66;
+  size_t numCols = 66;
+
+  char filename[] = "./test/runtime/local/io/crs.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<double>(29)->get(36, 0) == 926.188986068);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->getColumn<double>(c)->get(r,0)
+        ==  m->getColumn<double>(r)->get(c,0));
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 66;
+  size_t numCols = 66;
+
+  char filename[] = "./test/runtime/local/io/crk.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<double>(36)->get(29, 0) == -926.188986068);
+
+  for(int r = 0; r<numRows; r++) {
+    CHECK(m->getColumn<double>(r)->get(r,0) == 0);
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->getColumn<double>(c)->get(r,0)
+        == -m->getColumn<double>(r)->get(c,0));
+  }
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 24;
+  size_t numCols = 24;
+
+  char filename[] = "./test/runtime/local/io/cps.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<double>(0)->get( 0, 0) != 0);
+  CHECK(m->getColumn<double>(0)->get( 1, 0) == 0);
+  CHECK(m->getColumn<double>(15)->get(3, 0) != 0);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = r+1; c<numCols; c++)
+      if(m->getColumn<double>(c)->get(r,0) == 0)
+        CHECK(m->getColumn<double>(r)->get(c,0) == 0);
+      else
+        CHECK(m->getColumn<double>(r)->get(c,0) != 0);
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 4;
+  size_t numCols = 4;
+
+  char filename[] = "./test/runtime/local/io/aik.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<int64_t>(0)->get(1, 0) == 1);
+
+  for(int r = 0; r<numRows; r++) {
+    CHECK(m->getColumn<int64_t>(r)->get(r,0) == 0);
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->getColumn<int64_t>(c)->get(r,0)
+        == -m->getColumn<int64_t>(r)->get(c,0));
+  }
+
+  DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("ReadMM AIS (Frame)", TAG_KERNELS) {
+  using DT = Frame;
+  DT *m = nullptr;
+
+  size_t numRows = 3;
+  size_t numCols = 3;
+
+  char filename[] = "./test/runtime/local/io/ais.mtx";
+  readMM(m, filename);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->getColumn<int64_t>(1)->get(1, 0) == 4);
+
+  for(int r = 0; r<numRows; r++)
+    for(int c = r+1; c<numCols; c++)
+      CHECK(m->getColumn<int64_t>(c)->get(r,0)
+        ==  m->getColumn<int64_t>(r)->get(c,0));
+
+  DataObjectFactory::destroy(m);
+}

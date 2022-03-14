@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Handle.h>
+#include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/io/MMFile.h>
 #include <vector>
 #include <algorithm>
@@ -66,7 +67,6 @@ template <typename VT> struct ReadMM<DenseMatrix<VT>> {
     VT *valuesRes = res->getValues();
     for (auto &entry : mmfile)
       valuesRes[entry.row * mmfile.numberCols() + entry.col] = entry.val;
-    return;
   }
 };
 
@@ -109,7 +109,33 @@ template <typename VT> struct ReadMM<CSRMatrix<VT>> {
         rowOffsets[rowIdx + 1] = currValIdx;
         rowIdx++;
     }
-    return;
+  }
+};
+
+template <> struct ReadMM<Frame> {
+  static void apply(Frame *&res, const char *filename){
+    MMFile<double> mmfile(filename);
+
+    if(res == nullptr){
+      ValueTypeCode *types = new ValueTypeCode[mmfile.numberCols()];
+      for(int i = 0; i<mmfile.numberCols(); i++)
+        types[i] = mmfile.elementType();
+
+      res = DataObjectFactory::create<Frame>(
+        mmfile.numberRows(),
+        mmfile.numberCols(),
+        types, nullptr,
+        mmfile.entryCount() != mmfile.numberCols() * mmfile.numberRows()
+      );
+    }
+    uint8_t ** rawFrame = new uint8_t*[mmfile.numberCols()];
+    for(int i = 0; i<mmfile.numberCols(); i++)
+      rawFrame[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
+    for(auto& entry : mmfile)
+      if (mmfile.elementType() == ValueTypeCode::SI64)
+        reinterpret_cast<int64_t *>(rawFrame[entry.col])[entry.row] = (int64_t)entry.val;
+      else
+        reinterpret_cast<double *>(rawFrame[entry.col])[entry.row] = entry.val;
   }
 };
 
