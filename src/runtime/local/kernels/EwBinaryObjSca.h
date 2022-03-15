@@ -62,8 +62,15 @@ struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         
-        if(res == nullptr)
+        if(res == nullptr) {
+            if(opCode == BinaryOpCode::ADD && rhs == 0) {
+                // TODO In case of (res != nullptr), we could at least copy
+                // from lhs to res, instead of doing the calculation.
+                res = const_cast<DenseMatrix<VT> *>(lhs);
+                return;
+            }
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        }
         
         const VT * valuesLhs = lhs->getValues();
         VT * valuesRes = res->getValues();

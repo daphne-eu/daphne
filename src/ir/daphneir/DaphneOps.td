@@ -1199,6 +1199,10 @@ def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOper
 // Low-level auxiliary operations
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// Support for variadic kernels
+// ----------------------------------------------------------------------------
+
 def Daphne_CreateVariadicPackOp : Daphne_Op<"createVariadicPack"> {
     let arguments = (ins IndexAttr:$numElements);
     let results = (outs VariadicPack:$res);
@@ -1208,6 +1212,10 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
     let arguments = (ins VariadicPack:$pack, AnyType:$item, IndexAttr:$pos);
     let results = (outs); // no results
 }
+
+// ----------------------------------------------------------------------------
+// Management of data objects' reference counters
+// ----------------------------------------------------------------------------
 
 def Daphne_IncRefOp : Daphne_Op<"incRef"> {
     let summary = "Increases the reference counter of the underlying runtime data object.";
@@ -1220,6 +1228,13 @@ def Daphne_DecRefOp : Daphne_Op<"decRef"> {
     let summary = "Decreases the reference counter of the underlying runtime data object and frees it if the reference counter becomes zero.";
 
     let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
+def Daphne_IncRefKernelResOp : Daphne_Op<"incRefKernelRes", [AttrSizedOperandSegments]> {
+    let summary = "Increases the reference counter of each data object in `$kernelRess` which is also contained in `$kernelArgs`.";
+
+    let arguments = (ins Variadic<MatrixOrFrame>:$kernelRess, Variadic<MatrixOrFrame>:$kernelArgs);
     let results = (outs); // no results
 }
 

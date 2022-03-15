@@ -1972,6 +1972,35 @@
     },
     {
         "kernelTemplate": {
+            "header": "IncRefKernelRes.h",
+            "opName": "incRefKernelRes",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "const Structure **",
+                    "name": "kernelRess"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numKernelRess"
+                },
+                {
+                    "type": "const Structure **",
+                    "name": "kernelArgs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numKernelArgs"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "SliceRow.h",
             "opName": "sliceRow",
             "returnType": "void",

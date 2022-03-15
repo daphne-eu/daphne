@@ -134,9 +134,18 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
 
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(!userConfig_.use_obj_ref_mgnt));
         if(userConfig_.explain_kernels)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
+        
+        if(userConfig_.use_obj_ref_mgnt) {
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createManageObjRefsKernelResPass());
+            if(userConfig_.explain_obj_ref_mgnt_kernel_res)
+                pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references of kernel results"));
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(true));
+            if(userConfig_.explain_obj_ref_mgnt_kernel_res)
+                pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references of kernel results + kernel lowering"));
+        }
 
         pm.addPass(mlir::createLowerToCFGPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));

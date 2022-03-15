@@ -40,7 +40,11 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
-            if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
+            if(llvm::isa<
+                    daphne::CreateFrameOp,
+                    daphne::SetColLabelsOp,
+                    daphne::IncRefKernelResOp
+            >(op))
                 return 2;
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
@@ -79,6 +83,15 @@ namespace
                     idxAndLen.first,
                     idxAndLen.second,
                     isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::IncRefKernelResOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
                 );
             }
             throw std::runtime_error(
@@ -139,6 +152,7 @@ namespace
                 llvm::isa<daphne::NumColsOp>(op) ||
                 llvm::isa<daphne::NumRowsOp>(op) ||
                 llvm::isa<daphne::IncRefOp>(op) ||
+                llvm::isa<daphne::IncRefKernelResOp>(op) ||
                 llvm::isa<daphne::DecRefOp>(op);
             
             // Append names of result types to the kernel name.
@@ -254,10 +268,24 @@ namespace
         }
     };
 
-    struct RewriteToCallKernelOpPass
+    class RewriteToCallKernelOpPass
     : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
     {
-        RewriteToCallKernelOpPass() = default;
+        /**
+         * @brief Whether to lower `CreateDaphneContextOp` to `CallKernelOp`
+         * (`true`) or not (`false`).
+         * 
+         * Since this pass depends on a `CreateDaphneContextOp`, it should not
+         * be lowerered if this pass will run again later.
+         */
+        const bool lowerCreateDaphneContextOp;
+        
+    public:
+        RewriteToCallKernelOpPass(bool lowerCreateDaphneContextOp)
+        : lowerCreateDaphneContextOp(lowerCreateDaphneContextOp) {
+            //
+        };
+        
         void runOnFunction() final;
     };
 }
@@ -283,6 +311,8 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::VectorizedPipelineOp,
             daphne::GenericCallOp
     >();
+    if(!lowerCreateDaphneContextOp)
+        target.addLegalOp<daphne::CreateDaphneContextOp>();
     target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
         return op.isTrivialCast() || op.isMatrixPropertyCast();
     });
@@ -301,7 +331,7 @@ void RewriteToCallKernelOpPass::runOnFunction()
 
 }
 
-std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass()
+std::unique_ptr<Pass> daphne::createRewriteToCallKernelOpPass(bool lowerCreateDaphneContextOp)
 {
-    return std::make_unique<RewriteToCallKernelOpPass>();
+    return std::make_unique<RewriteToCallKernelOpPass>(lowerCreateDaphneContextOp);
 }
