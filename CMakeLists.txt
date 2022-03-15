@@ -91,6 +91,17 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
 endif()
 
+option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
+if(USE_ARROW)
+    find_package(Arrow CONFIG REQUIRED)
+    find_package(Parquet CONFIG REQUIRED
+        PATHS /usr/local/lib/cmake/arrow
+        NO_DEFAULT_PATH
+    )
+    link_libraries(arrow_shared parquet_shared)
+    message(STATUS "Arrow/Parquet enabled")
+endif()
+
 # *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************

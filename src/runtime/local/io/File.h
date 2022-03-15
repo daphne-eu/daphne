@@ -26,6 +26,15 @@ struct File {
   unsigned long read;
 };
 
+inline struct File *openMemFile(FILE *ident){
+  struct File *f = (struct File *)malloc(sizeof(struct File));
+
+  f->identifier = ident;
+  f->pos = 0;
+
+  return f;
+}
+
 inline struct File *openFile(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
 
