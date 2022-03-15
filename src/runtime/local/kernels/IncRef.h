@@ -18,7 +18,6 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_INCREF_H
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Structure.h>
 
 // ****************************************************************************
