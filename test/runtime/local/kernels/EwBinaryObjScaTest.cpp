@@ -41,7 +41,11 @@ void checkEwBinaryMatSca(BinaryOpCode opCode, const DT * lhs, typename DT::VT rh
     DT * res = nullptr;
     ewBinaryObjSca<DT, DT, typename DT::VT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
-    DataObjectFactory::destroy(res);
+    // TODO We should not need to take this into account, too complicated.
+    // ewBinaryObjSca<DenseMatrix> may return its input, so we need to avoid
+    // destroying it twice.
+    if(res != lhs)
+        DataObjectFactory::destroy(res);
 }
 
 template<class DT, typename VT>
