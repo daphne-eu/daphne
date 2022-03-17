@@ -31,8 +31,11 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
-    int queueMode = 1;
+    int queueMode = 0;
     int _numDeques;
+    if(const char* env_m = std::getenv("DAPHNE_QUEUE_MODE"))
+        queueMode = std::stoi(env_m);
+
     if( queueMode == 0 ) {
         _numDeques = 1;
     } else if( queueMode == 1 ) {
@@ -65,7 +68,7 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     //std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(qvector, batchSize8M, verbose, _numDeques, queueMode);
+    this->initCPPWorkers2(qvector, batchSize8M, verbose, _numDeques, queueMode);
 #ifdef USE_CUDA
     if(this->_numCUDAThreads) {
         this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
@@ -84,18 +87,19 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    //uint64_t currentItr = 0;
+    uint64_t currentItr = 0;
     uint64_t target;
     auto chunkParam = 1;
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        target = int(((float(startChunk))/(len+1))*_numDeques);
+        //target = int(((float(startChunk))/(len+1))*_numDeques);
+        target = currentItr%_numDeques;
         q[target]->enqueueTaskOnTarget(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
                 inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                 outCols, 0, ctx}, resLock, res), target);
         startChunk = endChunk;
-        //currentItr++;
+        currentItr++;
     }
     //std::cout << "len is " << len << std::endl;
     //std::cout << "Total Itr: " << currentItr << std::endl;
@@ -189,7 +193,7 @@ template<typename VT>
             std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
             q_cpp.push_back(std::move(tmp));
             q_cppvector.push_back(q_cpp[i].get());
-            this->initCPPWorkers(q_cppvector, batchSize8M, verbose, _numDeques, queueMode);
+            this->initCPPWorkers2(q_cppvector, batchSize8M, verbose, _numDeques, queueMode);
         }
             res_cpp = new DenseMatrix<VT> **[numOutputs];
             auto offset = device_task_len;

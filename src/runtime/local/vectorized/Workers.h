@@ -110,9 +110,9 @@ public:
         }
 
         // Reached the end of own queue, now attempting to steal from other queues
-        if( _numDeques > 1 ) {
+        if( _numQueues > 1 ) {
         target_deque = (target_deque+1)%_numQueues;
-        if(queueMode == 1) {
+        if( _queueMode == 1) {
             while(target_deque != _numaID) {
                 t = _q[target_deque]->dequeueTask();
                 if( isEOF(t) ) {
@@ -123,7 +123,7 @@ public:
                     }
                 }
             }
-        } else if( queueMode == 2 ) {
+        } else if( _queueMode == 2 ) {
             while(target_deque != _threadID) {
                 if(_q[target_deque]->dequeueBatch(tmp, _numQueues) > 0) {
                     _q[_threadID]->enqueueBatch(tmp);
@@ -135,7 +135,7 @@ public:
                     delete t;
                     t = _q[_threadID]->dequeueTask();
                 }
-                target_deque = (target_deque+1)%_numDeques;
+                target_deque = (target_deque+1)%_numQueues;
             }
             delete t;
         }
