@@ -15,6 +15,7 @@
  */
 
 #pragma once
+#ifdef USE_ARROW
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -103,4 +104,4 @@ template <> struct ReadParquet<Frame> {
     readCsv<Frame>(res, file, numRows, numCols, ',', schema);
   }
 };
-
+#endif
