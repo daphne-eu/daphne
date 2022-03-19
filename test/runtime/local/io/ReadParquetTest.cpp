@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#ifdef USE_ARROW
+
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/ReadParquet.h>
 
@@ -54,3 +56,4 @@ TEST_CASE("ReadParquet", TAG_KERNELS) {
 
   DataObjectFactory::destroy(m);
 }
+#endif

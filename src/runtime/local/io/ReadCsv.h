@@ -43,13 +43,13 @@
 // ****************************************************************************
 
 template <class DTRes> struct ReadCsv {
-  static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
+  static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
                     char delim) = delete;
 
-  static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
+  static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
                     ssize_t numNonZeros, bool sorted = true) = delete;
 
-  static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
+  static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
                     char delim, ValueTypeCode *schema) = delete;
 };
 
@@ -58,21 +58,21 @@ template <class DTRes> struct ReadCsv {
 // ****************************************************************************
 
 template <class DTRes>
-void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
              char delim) {
-  ReadCsv<DTRes>::apply(res, file, numRows, numCols, delim);
+  ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim);
 }
 
 template <class DTRes>
-void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
              char delim, ValueTypeCode *schema) {
-  ReadCsv<DTRes>::apply(res, file, numRows, numCols, delim, schema);
+  ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema);
 }
 
 template <class DTRes>
-void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
+void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
              char delim, ssize_t numNonZeros, bool sorted = true) {
-    ReadCsv<DTRes>::apply(res, file, numRows, numCols, delim, numNonZeros, sorted);
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted);
 }
 
 // ****************************************************************************
@@ -84,11 +84,11 @@ void readCsv(DTRes *&res, File *file, size_t numRows, size_t numCols,
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
-  static void apply(DenseMatrix<VT> *&res, struct File *file, size_t numRows,
+  static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows,
                     size_t numCols, char delim) {
-    assert(file != nullptr && "File required");
     assert(numRows > 0 && "numRows must be > 0");
     assert(numCols > 0 && "numCols must be > 0");
+    struct File *file = openFile(filename);
 
     if (res == nullptr) {
       res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
@@ -123,6 +123,7 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
         }
       }
     }
+    closeFile(file);
   }
 };
 
@@ -131,10 +132,11 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
 // ----------------------------------------------------------------------------
 
 template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, struct File *file, size_t numRows,
+    static void apply(CSRMatrix<VT> *&res, const char *filename, size_t numRows,
                       size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true) {
         assert(numNonZeros != -1
             && "Currently reading of sparse matrices requires a number of non zeros to be defined");
+        struct File *file = openFile(filename);
 
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(
@@ -149,15 +151,16 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
             // this internally sorts, so it might be worth considering just directly sorting the dense matrix
             // Read file of COO format
             DenseMatrix<uint64_t> *rowColumnPairs = nullptr;
-            readCsv(rowColumnPairs, file, static_cast<size_t>(numNonZeros), 2, delim);
+            readCsv(rowColumnPairs, filename, static_cast<size_t>(numNonZeros), 2, delim);
             readCOOUnsorted(res, rowColumnPairs, numRows, numCols, static_cast<size_t>(numNonZeros));
             DataObjectFactory::destroy(rowColumnPairs);
         }
+        closeFile(file);
     }
 
 private:
     static void readCOOSorted(CSRMatrix<VT> *&res,
-                              File *file,
+			      struct File *file,
                               size_t numRows,
             [[maybe_unused]] size_t numCols,
                               size_t numNonZeros,
@@ -239,10 +242,11 @@ private:
 // ----------------------------------------------------------------------------
 
 template <> struct ReadCsv<Frame> {
-  static void apply(Frame *&res, struct File *file, size_t numRows,
+  static void apply(Frame *&res, const char *filename, size_t numRows,
                     size_t numCols, char delim, ValueTypeCode *schema) {
     assert(numRows > 0 && "numRows must be > 0");
     assert(numCols > 0 && "numCols must be > 0");
+    struct File *file = openFile(filename);
 
     if (res == nullptr) {
       res = DataObjectFactory::create<Frame>(numRows, numCols, schema, nullptr, false);
@@ -325,7 +329,7 @@ template <> struct ReadCsv<Frame> {
       }
       col = 0;
     }
-    
+    closeFile(file);
     delete[] rawCols;
     delete[] colTypes;
   }
@@ -337,9 +341,9 @@ template <> struct ReadCsv<Frame> {
 // ----------------------------------------------------------------------------
 
 template <class DT> struct ReadCsv<Handle<DT>> {
-  static void apply(Handle<DT> *&res, struct File *file, 
+  static void apply(Handle<DT> *&res, const char *filename, 
                       size_t numRows, size_t numCols, char delim) {
-    assert(file != nullptr && "File required");
+    struct File *file = openFile(filename);
 
     typename Handle<DT>::HandleMap map;
     // DistributedCaller obj for channel creation
@@ -426,5 +430,6 @@ template <class DT> struct ReadCsv<Handle<DT>> {
       map.insert({ix, data});
     }
     res = new Handle<DT>(map, numRows, numCols);
+    closeFile(file);
   }
 };
