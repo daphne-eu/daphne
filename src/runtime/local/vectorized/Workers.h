@@ -14,28 +14,59 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_WORKERS_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_WORKERS_H
+#pragma once
+
+#include <thread>
 
 class Worker {
+protected:
+    std::unique_ptr<std::thread> t;
+
+    // Worker only used as derived class, which starts the thread after the class has been constructed (order matters).
+    Worker() : t() {}
 public:
-    virtual ~Worker() = default;
+    // Worker is move only due to std::thread. Therefore, we delete the copy constructor and the assignment operator.
+    Worker(const Worker&) = delete;
+    Worker& operator=(const Worker&) = delete;
+
+    // move constructor
+    Worker(Worker&& obj)  noexcept : t(std::move(obj.t)) {}
+
+    // move assignment operator
+    Worker& operator=(Worker&& obj)  noexcept {
+        if(t->joinable())
+            t->join();
+        t = std::move(obj.t);
+        return *this;
+    }
+
+    virtual ~Worker() {
+        if(t->joinable())
+            t->join();
+    };
+
+    void join() {
+        t->join();
+    }
     virtual void run() = 0;
-    bool isEOF(Task* t) {
+    static bool isEOF(Task* t) {
         return dynamic_cast<EOFTask*>(t);
     }
 };
 
 class WorkerCPU : public Worker {
-private:
     TaskQueue* _q;
     bool _verbose;
-
+    uint32_t _fid;
+    uint32_t _batchSize;
 public:
-    WorkerCPU(TaskQueue* tq, bool verbose) {
-        _q = tq;
-        _verbose = verbose;
+    // this constructor is to be used in practice
+    WorkerCPU(TaskQueue* tq, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100) : Worker(), _q(tq),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize) {
+        // at last, start the thread
+        t = std::make_unique<std::thread>(&WorkerCPU::run, this);
     }
+    
     ~WorkerCPU() override = default;
 
     void run() override {
@@ -45,7 +76,7 @@ public:
             //execute self-contained task
             if( _verbose )
                 std::cerr << "WorkerCPU: executing task." << std::endl;
-            t->execute();
+            t->execute(_fid, _batchSize);
             delete t;
             //get next tasks (blocking)
             t = _q->dequeueTask();
@@ -55,9 +86,7 @@ public:
     }
 };
 
-//entry point for std:thread
-void runWorker(Worker* worker) {
-    worker->run();
-}
-
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_WORKERS_H
+////entry point for std:thread
+//static void runWorker(Worker* worker) {
+//    worker->run();
+//}

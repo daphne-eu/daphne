@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include <cassert>
 #include <cstddef>
@@ -59,12 +59,11 @@ template<typename VT>
 struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<int64_t> * sel, DCTX(ctx)) {
         assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
-        
-        const size_t numColsArg = arg->getNumCols();
+
         const size_t numColsRes = sel->getNumRows();
         const size_t * colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
         for(size_t i = 0; i < numColsRes; i++) {
-            assert((colIdxs[i] < numColsArg) && "column index out of bounds");
+            assert((colIdxs[i] < arg->getNumCols()) && "column index out of bounds");
         }
         
         const size_t numRows = arg->getNumRows();
@@ -98,5 +97,3 @@ struct ExtractCol<Frame, Frame, char> {
         res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_EXTRACTCOLMAT_H

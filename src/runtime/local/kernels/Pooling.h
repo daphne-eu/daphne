@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_POOLING_H
-#define DAPHNE_PROTOTYPE_POOLING_H
-
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
@@ -71,5 +68,3 @@ namespace Pooling {
                           const size_t pad_w, DCTX(dctx));
     };
 }
-
-#endif //DAPHNE_PROTOTYPE_POOLING_H

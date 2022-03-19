@@ -37,21 +37,23 @@ protected:
     };
 
 public:
-    virtual ~Structure()
-    {
-        // nothing to do
-    };
+    virtual ~Structure() = default;
 
-    size_t getNumRows() const
+    [[nodiscard]] size_t getNumRows() const
     {
         return numRows;
     }
 
-    size_t getNumCols() const
+    [[nodiscard]] size_t getNumCols() const
     {
         return numCols;
     }
-    
+
+    [[nodiscard]] size_t getNumItems() const
+    {
+        return numRows * numCols;
+    }
+
     /**
      * @brief Prints a human-readable representation of this data object to the
      * given stream.
@@ -63,7 +65,41 @@ public:
      */
     virtual void print(std::ostream & os) const = 0;
 
-    virtual Structure* slice(size_t rl, size_t ru) = 0;
+    /**
+     * @brief Extracts a row range out of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param rl Row range lower bound (inclusive).
+     * @param ru Row range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* sliceRow(size_t rl, size_t ru) const = 0;
+
+    /**
+     * @brief Extracts a column range out of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param cl Column range lower bound (inclusive).
+     * @param cu Column range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* sliceCol(size_t cl, size_t cu) const = 0;
+    
+    /**
+     * @brief Extracts a rectangular sub-structure (row and column range) out
+     * of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param rl Row range lower bound (inclusive).
+     * @param ru Row range upper bound (exclusive).
+     * @param cl Column range lower bound (inclusive).
+     * @param cu Column range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

@@ -50,11 +50,14 @@ void InsertDaphneContextPass::runOnFunction()
     // Insert a CreateDaphneContextOp as the first operation in the block.
     builder.create<daphne::CreateDaphneContextOp>(
             loc,
-            daphne::DaphneContextType::get(&getContext())
+            daphne::DaphneContextType::get(&getContext()),
+            builder.create<daphne::ConstantOp>(
+                    loc, reinterpret_cast<uint64_t>(&user_config)
+            )
     );
 #ifdef USE_CUDA
     if(user_config.use_cuda) {
-        builder.create<daphne::InitCUDAContextOp>(loc);
+        builder.create<daphne::CreateCUDAContextOp>(loc);
     }
 #endif
 

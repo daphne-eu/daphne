@@ -1,0 +1,6 @@
+V0=readMatrix("src/api/python/tmp/V0.csv");
+V1=readMatrix("src/api/python/tmp/V1.csv");
+print(sum(V0@V1));
+print(sum(V0<V1));
+print(sum(V0>V1));
+print(sum(V0==V1));

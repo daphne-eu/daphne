@@ -35,7 +35,7 @@
 
 template<class DTRes, class DTArg>
 struct SliceRow {
-    static void apply(DTRes *& res, const DTArg * arg, size_t rowLowerIncl, size_t rowUpperExcl, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -43,8 +43,8 @@ struct SliceRow {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void sliceRow(DTRes *& res, const DTArg * arg, size_t rowLowerIncl, size_t rowUpperExcl, DCTX(ctx)) {
-    SliceRow<DTRes, DTArg>::apply(res, arg, rowLowerIncl, rowUpperExcl, ctx);
+void sliceRow(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
+    SliceRow<DTRes, DTArg>::apply(res, arg, lowerIncl, upperExcl, ctx);
 }
 
 // ****************************************************************************
@@ -57,8 +57,18 @@ void sliceRow(DTRes *& res, const DTArg * arg, size_t rowLowerIncl, size_t rowUp
 
 template<typename VT>
 struct SliceRow<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t rowLowerIncl, size_t rowUpperExcl, DCTX(ctx)) {
-        res = const_cast<DenseMatrix<VT> *>(arg)->slice(rowLowerIncl, rowUpperExcl);
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
+        res = arg->sliceRow(lowerIncl, upperExcl);
+    }        
+};
+
+// ----------------------------------------------------------------------------
+// Frame <- Frame
+// ----------------------------------------------------------------------------
+
+template <> struct SliceRow<Frame, Frame> {
+    static void apply(Frame *& res, const Frame * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
+        res = arg->sliceRow(lowerIncl, upperExcl);
     }        
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICEROW_H

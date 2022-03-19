@@ -18,12 +18,19 @@
 #define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
 
 #pragma once
+
+#include <api/cli/DaphneUserConfig.h>
+
 #include <vector>
 #include <iostream>
 #include <memory>
+
+#include "IContext.h"
+
 #ifdef USE_CUDA
     #include "CUDAContext.h"
 #endif
+
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
 // required.
@@ -44,21 +51,28 @@ struct DaphneContext {
     // creating an individual struct/class for them and adding a single member
     // of that type here, in order to separate concerns and allow a  high-level
     // overview of the context information.
-#ifdef USE_CUDA
+
+
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
-#endif
-    DaphneContext() = default;
-    
-    ~DaphneContext() {
-#ifdef USE_CUDA
-#ifndef NDEBUG
-        std::cout << "destructing DaphneContext" << std::endl;
-#endif
-    for (auto& ctx : cuda_contexts) {
-        ctx->destroy();
+
+    /**
+     * @brief The user configuration (including information passed via CLI
+     * arguments etc.).
+     *
+     * Modifying the configuration is intensionally allowed, since it enables
+     * changing the configuration at run-time via DaphneDSL.
+     */
+    DaphneUserConfig& config;
+
+    explicit DaphneContext(DaphneUserConfig& config) : config(config) {
+        //
     }
-    cuda_contexts.clear();
-#endif
+
+    ~DaphneContext() {
+        for (auto& ctx : cuda_contexts) {
+            ctx->destroy();
+        }
+        cuda_contexts.clear();
     }
 
 #ifdef USE_CUDA
@@ -67,6 +81,10 @@ struct DaphneContext {
         return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
     }
 #endif
+
+    [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
+    
+    [[maybe_unused]] [[nodiscard]] DaphneUserConfig getUserConfig() const { return config; }
 };
 
 #endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

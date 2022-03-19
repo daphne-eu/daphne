@@ -15,16 +15,16 @@
  */
 
 
-#include <runtime/local/kernels/CUDA_InitContext.h>
+#include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 
 #include <tags.h>
 
 #include <catch.hpp>
 
-TEST_CASE("initCUDAContext", TAG_KERNELS) {
-    auto dctx = new DaphneContext();
-    initCUDAContext(dctx);
+TEST_CASE("CreateCUDAContext", TAG_KERNELS) {
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
+    CUDA::createCUDAContext(dctx.get());
     auto p = dctx->getCUDAContext(0)->getDeviceProperties();
     CHECK(p);
-    delete dctx;
 }

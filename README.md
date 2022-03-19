@@ -18,7 +18,7 @@ limitations under the License.
 
 ### Overview
 
-"The DAPHNE project aims to define and build an open and extensible system infrastructure for integrated data analysis pipelines, including data management and processing, high-performance computing (HPC), and machine learning (ML) training and scoring." (more information on https://daphne-eu.github.io)
+"The DAPHNE project aims to define and build an open and extensible system infrastructure for integrated data analysis pipelines, including data management and processing, high-performance computing (HPC), and machine learning (ML) training and scoring." (more information on https://daphne-eu.eu/)
 
 In this repository, we develop the reference implementation of the whole DAPHNE system with all its components including, but not limited to *DaphneDSL*, *DaphneLib*, *DaphneIR*, the *Daphne Compiler*, and the *Daphne Run-time*.
 The system will be built up and extended gradually in the course of the project.

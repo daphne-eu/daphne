@@ -36,7 +36,11 @@ set(TEST_SOURCES
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
+        
+        api/python/DaphneLibTest.cpp
+        
         runtime/distributed/worker/WorkerTest.cpp
+        
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
@@ -58,11 +62,9 @@ set(TEST_SOURCES
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
-
         runtime/local/kernels/DNNPoolingTest.cpp
-
         runtime/local/kernels/EwBinaryMatTest.cpp
-        runtime/local/kernels/EwBinaryMatScaTest.cpp
+        runtime/local/kernels/EwBinaryObjScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
@@ -77,10 +79,13 @@ set(TEST_SOURCES
         runtime/local/kernels/ReadTest.cpp
         runtime/local/kernels/ReplaceTest.cpp
         runtime/local/kernels/ReverseTest.cpp
+        runtime/local/kernels/RowBindTest.cpp
         runtime/local/kernels/SampleTest.cpp
         runtime/local/kernels/SeqTest.cpp
         runtime/local/kernels/SetColLabelsTest.cpp
         runtime/local/kernels/SetColLabelsPrefixTest.cpp
+        runtime/local/kernels/SliceColTest.cpp
+        runtime/local/kernels/SliceRowTest.cpp
         runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/SyrkTest.cpp
         runtime/local/kernels/TransposeTest.cpp
@@ -89,10 +94,9 @@ set(TEST_SOURCES
         runtime/local/kernels/CheckEqApproxTest.cpp
 )
 
-
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND TEST_SOURCES
-            runtime/local/kernels/CUDA_MatMulTest.cpp
+            runtime/local/kernels/CUDA/MatMulTest.cpp
             runtime/local/kernels/CUDA_ContextTest.cpp
             runtime/local/kernels/DNNActivationTest.cpp
             runtime/local/kernels/DNNAffineTest.cpp
@@ -104,7 +108,7 @@ endif()
 add_executable(run_tests
     ${TEST_SOURCES}
 )
-add_dependencies(run_tests daphnec DistributedWorker)
+add_dependencies(run_tests daphne DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})
