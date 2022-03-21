@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
@@ -36,20 +35,20 @@ using mlir::daphne::VectorCombine;
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTres, class DTarg>
+template<class DT>
 struct DistributedCollect
 {
-    static void apply(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, VectorCombine combineType, DCTX(ctx)) = delete;
+    static void apply(DT *&mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTres, class DTarg>
-void distributedCollect(DTres *&res, size_t resIdx, const Handle<DTarg> *handle, VectorCombine combineType, DCTX(ctx))
+template<class DT>
+void distributedCollect(DT *&mat, DCTX(ctx))
 {
-    DistributedCollect<DTres, DTarg>::apply(res, resIdx, handle, combineType, ctx);
+    DistributedCollect<DT>::apply(mat, ctx);
 }
 
 // ****************************************************************************
@@ -57,21 +56,25 @@ void distributedCollect(DTres *&res, size_t resIdx, const Handle<DTarg> *handle,
 // ****************************************************************************
 
 template<>
-struct DistributedCollect<DenseMatrix<double>, Structure>
+struct DistributedCollect<DenseMatrix<double>>
 {
-    static void apply(DenseMatrix<double> *&res, size_t resIdx, const Handle<Structure> *handle, VectorCombine combineType, DCTX(ctx))
+    static void apply(DenseMatrix<double> *&mat, DCTX(ctx))
     {
         struct StoredInfo{
             DistributedIndex *ix;
         };
         DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
-        assert (res != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
+        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
 
-        for (auto &pair : handle->getMap()) {
+        auto dataPlacement = mat->dataPlacement;
+        assert (dataPlacement.isPlacedOnWorkers && "in order to collect matrix must be placed on workers");
+
+        auto dataMap = dataPlacement.getMap();
+        for (auto &pair : dataMap) {
             auto address = pair.first;
             // Collect specified result index
-            auto data = pair.second.distributedDataArray[resIdx];
+            auto data = pair.second;
 
             StoredInfo storedInfo;
             storedInfo.ix = new DistributedIndex(data.getDistributedIndex());
@@ -92,14 +95,15 @@ struct DistributedCollect<DenseMatrix<double>, Structure>
         }
         workersSize++;
         // Get Results
-        size_t k, m;
+        auto combineType = mat->dataPlacement.combineType;
+        size_t k = 0, m = 0;
         if (combineType == VectorCombine::ROWS) {
-            k = res->getNumRows() / workersSize;
-            m = res->getNumRows() % workersSize;
+            k = mat->getNumRows() / workersSize;
+            m = mat->getNumRows() % workersSize;
         }
         else if (combineType == VectorCombine::COLS){
-            k = res->getNumCols() / workersSize;
-            m = res->getNumCols() % workersSize;
+            k = mat->getNumCols() / workersSize;
+            m = mat->getNumCols() % workersSize;
         }
         else
             assert(!"Only Rows/Cols combineType supported atm");
@@ -109,20 +113,21 @@ struct DistributedCollect<DenseMatrix<double>, Structure>
             auto matProto = response.result;
             if (combineType == VectorCombine::ROWS) {
                 ProtoDataConverter::convertFromProto(matProto,
-                    res,
+                    mat,
                     ix->getRow() * k + std::min(ix->getRow(), m),
                     (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
                     0,
-                    res->getNumCols());
+                    mat->getNumCols());
             }
             else if (combineType == VectorCombine::COLS) {
                 ProtoDataConverter::convertFromProto(matProto,
-                    res,
+                    mat,
                     0,
-                    res->getNumRows(),
+                    mat->getNumRows(),
                     ix->getCol() * k + std::min(ix->getCol(), m),
                     (ix->getCol() + 1) * k + std::min((ix->getCol() + 1), m));
             }
+            mat->dataPlacement.isPlacedOnWorkers = false;
         }      
     }
 };

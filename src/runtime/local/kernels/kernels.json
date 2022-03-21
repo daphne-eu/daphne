@@ -2542,11 +2542,11 @@
                     "name": "numOutputs"
                 },
                 {
-                    "type": "size_t *",
+                    "type": "int64_t *",
                     "name": "outRows"
                 },
                 {
-                    "type": "size_t *",
+                    "type": "int64_t *",
                     "name": "outCols"
                 },
                 {
@@ -2605,11 +2605,11 @@
                     "name": "numOutputs"
                 },
                 {
-                    "type": "size_t *",
+                    "type": "int64_t *",
                     "name": "outRows"
                 },
                 {
-                    "type": "size_t *",
+                    "type": "int64_t *",
                     "name": "outCols"
                 },
                 {

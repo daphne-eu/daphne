@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
@@ -33,30 +32,30 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
+template<class DT>
 struct Broadcast
 {
-    static void apply(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx)) = delete;
+    static void apply(DT *mat, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArg>
-void broadcast(Handle<DTRes> *&res, const DTArg *mat, DCTX(ctx))
+template<class DT>
+void broadcast(DT *mat, DCTX(ctx))
 {
-    Broadcast<DTRes, DTArg>::apply(res, mat, ctx);
+    Broadcast<DT>::apply(mat, ctx);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template<class DTRes>
-struct Broadcast<DTRes, DenseMatrix<double>>
+template<>
+struct Broadcast<const DenseMatrix<double>>
 {
-    static void apply(Handle<DTRes> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
+    static void apply(const DenseMatrix<double> *mat, DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -71,7 +70,7 @@ struct Broadcast<DTRes, DenseMatrix<double>>
         }
         workers.push_back(workersStr);
 
-        // auto blockSize = DistributedData::BLOCK_SIZE;
+        assert(mat != nullptr);
 
         struct StoredInfo {
             std::string workerAddr;
@@ -90,6 +89,7 @@ struct Broadcast<DTRes, DenseMatrix<double>>
         
         }
         // get results
+        DataPlacement::DistributedMap dataMap;
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();            
             auto workerAddr = response.storedInfo.workerAddr;            
@@ -97,9 +97,11 @@ struct Broadcast<DTRes, DenseMatrix<double>>
             auto storedData = response.result;
 
             DistributedData data(storedData);
-            res->insertData(workerAddr, data);
+            dataMap[workerAddr] = data;
         }
-        // res = new Handle<DTRes>(map, mat->getNumRows(), mat->getNumCols());
+        DataPlacement dataPlacement(dataMap);
+        dataPlacement.isPlacedOnWorkers = true;
+        mat->dataPlacement = dataPlacement;        
     }
 };
 

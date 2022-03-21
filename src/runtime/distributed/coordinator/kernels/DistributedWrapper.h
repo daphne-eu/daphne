@@ -50,8 +50,8 @@ public:
                  const Structure **inputs,
                  size_t numInputs,
                  size_t numOutputs,
-                 size_t *outRows,
-                 size_t *outCols,
+                 int64_t *outRows,
+                 int64_t *outCols,
                  VectorSplit *splits,
                  VectorCombine *combines)                 
     {        
@@ -78,27 +78,26 @@ public:
         }
         
         // Distribute and broadcast inputs        
-        // We create Handle object here and we pass it to each primitive.
-        // Each primitive (i.e. distribute/broadcast) populates this handle with data information for each worker
-        // TODO store this information inside the matrix object
-        Handle<Structure> *handle = DataObjectFactory::create<Handle<Structure>>(workers);    
-        for (auto i = 0u; i < numInputs; ++i) {            
+        // Each primitive sends information to workers and changes the Structures' metadata information (DataPlacement)        
+        for (auto i = 0u; i < numInputs; ++i) {
+            // if already placed on workers, skip
+            if (inputs[i]->dataPlacement.isPlacedOnWorkers == true)
+                continue;
+
             if (isBroadcast(splits[i], inputs[i])){
-                broadcast(handle, (const DenseMatrix<VT>*)inputs[i], _ctx);   
+                broadcast((const DenseMatrix<VT>*)inputs[i], _ctx);
             }
             else {
-                distribute(handle, (const DenseMatrix<VT>*)inputs[i], _ctx);
+                distribute((const DenseMatrix<VT>*)inputs[i], _ctx);
             }
         }
-        Handle<Structure> *resHandle = DataObjectFactory::create<Handle<Structure>>(workers);
           
-        distributedCompute(resHandle, handle, mlirCode, combines, numOutputs, _ctx);
+        distributedCompute(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
 
         // Collect
-        // TODO probably check combines won't be needed in the future, this information will be stored inside the matrix datatype
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect(*res[o], o, resHandle, combines[o], _ctx);           
+            distributedCollect(*res[o], _ctx);           
         }
         
         

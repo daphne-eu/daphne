@@ -296,8 +296,8 @@ namespace
                 << "__Structure_variadic" // inputs
                 << "__size_t" // numOutputs
                 << "__size_t" // numInputs
-                << "__size_t" // outRows
-                << "__size_t" // outCols
+                << "__int64_t" // outRows
+                << "__int64_t" // outCols
                 << "__int64_t" // splits
                 << "__int64_t" // combines
                 << "__char"; // irCode

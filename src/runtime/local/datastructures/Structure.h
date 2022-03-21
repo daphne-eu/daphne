@@ -23,6 +23,7 @@
 
 #include <cstddef>
 
+#include "DataPlacement.h"
 /**
  * @brief The base class of all data structure implementations.
  */
@@ -130,6 +131,12 @@ public:
      * @return 
      */
     virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
+    
+    /**
+     * @brief Field containing metadata information regarding the structure (.i.e. if it is distributed, where, if placed on gpu, etc.)
+     * 
+     */
+    mutable DataPlacement dataPlacement;    
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

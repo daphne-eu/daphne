@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
@@ -39,7 +38,7 @@ using mlir::daphne::VectorCombine;
 template<class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(Handle<DTRes> *&res, Handle<DTArgs> **args, const char *mlirCode, VectorCombine *combineVector, size_t numOutputs, DCTX(ctx)) = delete;
+    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *combineVector, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -47,9 +46,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<class DTRes, class DTArgs>
-void distributedCompute(Handle<DTRes> *&res, Handle<DTArgs> *args, const char *mlirCode, VectorCombine *combineVector, size_t numOutputs, DCTX(ctx))
+void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *combineVector, DCTX(ctx))
 {
-    DistributedCompute<DTRes, DTArgs>::apply(res, args, mlirCode, combineVector, numOutputs, ctx);
+    DistributedCompute<DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, combineVector, ctx);
 }
 
 // ****************************************************************************
@@ -57,57 +56,60 @@ void distributedCompute(Handle<DTRes> *&res, Handle<DTArgs> *args, const char *m
 // ****************************************************************************
 
 template<class DTRes>
-struct DistributedCompute<DTRes, Structure>
+struct DistributedCompute<DTRes, const Structure>
 {
-    static void apply(Handle<DTRes> *&res,
-                      Handle<Structure> *args,                      
-                      const char *mlirCode,
-                      VectorCombine *combineType,
+    static void apply(DTRes **&res,
                       size_t numOutputs,
+                      const Structure **args,
+                      size_t numInputs,
+                      const char *mlirCode,
+                      VectorCombine *combineVector,
                       DCTX(ctx))
     {
-        if(res == nullptr) {
-            auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-            // assert(envVar && "Environment variable has to be set");
-            std::string workersStr(envVar);            
-            std::string delimiter(",");
+        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+        assert(envVar && "Environment variable has to be set");
+        std::string workersStr(envVar);
+        std::string delimiter(",");
 
-            size_t pos;
-            std::vector<std::string> workers;
-            while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-                workers.push_back(workersStr.substr(0, pos));
-                workersStr.erase(0, pos + delimiter.size());
-            }
-            workers.push_back(workersStr);
-            res = DataObjectFactory::create<Handle<DTRes>>(workers);
+        size_t pos;
+        std::vector<std::string> workers;
+        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+            workers.push_back(workersStr.substr(0, pos));
+            workersStr.erase(0, pos + delimiter.size());
         }
+        workers.push_back(workersStr);
+        
+        // For now assume that DistributedWrapper (who calls this kernel) has already allocated memory for results
+        assert("result must be allocated from distributed wrapper" && res != nullptr);
 
         struct StoredInfo {
             std::string addr;
             DistributedIndex *ix;
         };
         DistributedCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
-        auto map = args->getMap();
+        
+        // Initialize Distributed index array, needed for results
         DistributedIndex *ix[numOutputs];
-        for (auto i = 0; i <numOutputs; i++)
+        for (size_t i = 0; i <numOutputs; i++)
             ix[i] = new DistributedIndex(0, 0);
-        for (auto &pair : map){
-            auto addr = pair.first;
-            auto dataVector = pair.second.distributedDataArray;
+        
+        // Iterate over workers
+        for (auto addr : workers) {                        
             distributed::Task task;
             
             // Pass all the nessecary arguments for the pipeline
-            for (auto data : dataVector){
-                *task.add_inputs()->mutable_stored() = data.getData();
+            for (size_t i = 0; i < numInputs; i++) {
+                auto map =  args[i]->dataPlacement.getMap();
+                *task.add_inputs()->mutable_stored() = map[addr].getData();
             }
             task.set_mlir_code(mlirCode);
             StoredInfo storedInfo ({addr, nullptr});
             
-            for (auto i = 0; i < numOutputs; i++){
+            for (size_t i = 0; i < numOutputs; i++){
                 storedInfo.ix = new DistributedIndex(*ix[i]);
-                if (combineType[i] == VectorCombine::ROWS)
+                if (combineVector[i] == VectorCombine::ROWS)
                     ix[i] = new DistributedIndex(ix[i]->getRow() + 1, ix[i]->getCol());            
-                if (combineType[i] == VectorCombine::COLS)
+                if (combineVector[i] == VectorCombine::COLS)
                     ix[i] = new DistributedIndex(ix[i]->getRow(), ix[i]->getCol() + 1);                
             }
             // TODO for now resuing channels seems to slow things down... 
@@ -115,6 +117,8 @@ struct DistributedCompute<DTRes, Structure>
             // We might need to change this in the future and re-use channels ( data.getChannel() )
             caller.asyncComputeCall(addr, storedInfo, task);
         }
+
+        DataPlacement::DistributedMap dataMap[numOutputs];
         // Get Results
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
@@ -123,12 +127,17 @@ struct DistributedCompute<DTRes, Structure>
             
             auto computeResult = response.result;
             // Recieve all outputs and store it to Handle_v2
-            for (size_t i = 0; i < computeResult.outputs_size(); i++){
-                DistributedData data(*ix, computeResult.outputs(i).stored());
-                res->insertData(addr, data);
+            for (int i = 0; i < computeResult.outputs_size(); i++){
+                DistributedData data(*ix, computeResult.outputs(i).stored());                
+                dataMap[i][addr] = data;
             }
         }
-        // res = new Handle<DTRes>(resMap, resultRows, resultColumns);        
+        for (size_t o = 0; o < numOutputs; o++){
+            DataPlacement dataPlacement(dataMap[o]);
+            dataPlacement.isPlacedOnWorkers = true;
+            dataPlacement.combineType = combineVector[o];
+            (*res[o])->dataPlacement = dataPlacement;
+        }
     }
 };
 
