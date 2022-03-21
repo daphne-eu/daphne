@@ -16,6 +16,8 @@
 
 #include "MTWrapper.h"
 #include <runtime/local/vectorized/Tasks.h>
+#include <dirent.h>
+#include <string>
 #ifdef USE_CUDA
 #include <runtime/local/vectorized/TasksCUDA.h>
 #endif
@@ -31,7 +33,34 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
-    int queueMode = 0;
+    //Collect info about numa domains
+
+    struct dirent *dirEntry;
+    struct dirent *nodeEntry;
+    std::vector<int> numaDomains;
+    DIR *dirp = opendir("/sys/devices/system/node/");
+
+    if (dirp == NULL) {
+        std::cout << "Problem opening dir" << std::endl;
+    }
+
+while ((dirEntry = readdir(dirp)) != NULL) {
+    std::string current(dirEntry->d_name);
+    if(current.substr(0,4) == "node") {
+        DIR *nodeDir = opendir(("/sys/devices/system/node/node" + current.substr(4) + "/").c_str());
+        while((nodeEntry = readdir(nodeDir)) != NULL) {
+            std::string curCPU(nodeEntry->d_name);
+            if(curCPU.substr(0,3) == "cpu" && curCPU.length() < 6) {
+                //std::cout << curCPU.substr(3) << "," << current.substr(4) << std::endl;
+                numaDomains.push_back(stoi(current.substr(4)));
+            }
+        }
+        closedir(nodeDir);
+    }
+}
+    closedir(dirp);
+//std::cout << "Size is " << numaDomains.size() << " and entry 17 is " << numaDomains[17] << std::endl;
+    int queueMode = 2;
     int _numDeques;
     if(const char* env_m = std::getenv("DAPHNE_QUEUE_MODE"))
         queueMode = std::stoi(env_m);
@@ -68,7 +97,7 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     //std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers2(qvector, batchSize8M, verbose, _numDeques, queueMode);
+    this->initCPPWorkers2(qvector, numaDomains, batchSize8M, verbose, _numDeques, queueMode);
 #ifdef USE_CUDA
     if(this->_numCUDAThreads) {
         this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
@@ -193,7 +222,8 @@ template<typename VT>
             std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
             q_cpp.push_back(std::move(tmp));
             q_cppvector.push_back(q_cpp[i].get());
-            this->initCPPWorkers2(q_cppvector, batchSize8M, verbose, _numDeques, queueMode);
+std::vector<int> numaDomains;
+            this->initCPPWorkers2(q_cppvector, numaDomains, batchSize8M, verbose, _numDeques, queueMode);
         }
             res_cpp = new DenseMatrix<VT> **[numOutputs];
             auto offset = device_task_len;

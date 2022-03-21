@@ -59,6 +59,7 @@ public:
 class WorkerCPU : public Worker {
     //TaskQueue* _q[64];
     std::vector<TaskQueue*> _q;
+    std::vector<int> _numaDomains;
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
@@ -68,7 +69,7 @@ class WorkerCPU : public Worker {
     int _queueMode;
 public:
     // this constructor is to be used in practice
-    WorkerCPU(std::vector<TaskQueue*> deques, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0) : Worker(), _q(deques),
+    WorkerCPU(std::vector<TaskQueue*> deques, std::vector<int> numaDomains, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0) : Worker(), _q(deques), _numaDomains(numaDomains),
             _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPU::run, this);
@@ -82,8 +83,8 @@ public:
         CPU_SET(_threadID, &cpuset);
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
         int target_deque = 0;
-        std::vector<Task*> tmp;
-
+        int currentDomain = _numaDomains[_threadID];
+        //std::vector<Task*> tmp;
         if( _queueMode == 0 ) {
             target_deque = 0;
         } else if( _queueMode == 1) {
@@ -108,9 +109,7 @@ public:
             //get next tasks (blocking)
             t = _q[target_deque]->dequeueTask();
         }
-
         // Reached the end of own queue, now attempting to steal from other queues
-        if( _numQueues > 1 ) {
         target_deque = (target_deque+1)%_numQueues;
         if( _queueMode == 1) {
             while(target_deque != _numaID) {
@@ -122,7 +121,47 @@ public:
                     delete t;
                     }
                 }
+        } else if( _queueMode == 2 ) {
+            // Steal from same NUMA domain
+            while(target_deque != _threadID) {
+                if( _numaDomains[target_deque] != currentDomain ) {
+                    target_deque = (target_deque+1)%_numQueues;
+                } else {
+                    t = _q[target_deque]->dequeueTask();
+                    if( isEOF(t) ) {
+                        target_deque = (target_deque+1)%_numQueues;
+                    } else {
+                        t->execute(_fid, _batchSize);
+                    delete t;
+                    }
+                }
             }
+//std::cout << "Now stealing from other domain" << std::endl;
+target_deque = (target_deque+1)%_numQueues;
+            // Steal from other NUMA domains
+            while(target_deque != _threadID) {
+                t = _q[target_deque]->dequeueTask();
+                if( isEOF(t) ) {
+                    target_deque = (target_deque+1)%_numQueues;
+                } else {
+                t->execute(_fid, _batchSize);
+                delete t;
+                }
+            }
+            // No more tasks anywhere, done.
+
+        }
+/*
+        if( _queueMode == 1) {
+            while(target_deque != _numaID) {
+                t = _q[target_deque]->dequeueTask();
+                if( isEOF(t) ) {
+                    target_deque = (target_deque+1)%_numQueues;
+                } else {
+                    t->execute(_fid, _batchSize);
+                    delete t;
+                    }
+                }
         } else if( _queueMode == 2 ) {
             while(target_deque != _threadID) {
                 if(_q[target_deque]->dequeueBatch(tmp, _numQueues) > 0) {
@@ -139,6 +178,7 @@ public:
             }
             delete t;
         }
+*/
 
         if( _verbose )
             std::cerr << "WorkerCPU: received EOF on all queues, finalized." << std::endl;

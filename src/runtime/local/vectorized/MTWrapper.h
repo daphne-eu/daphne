@@ -64,14 +64,14 @@ protected:
     }
 
 
-    void initCPPWorkers2(std::vector<TaskQueue*> &qvector, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0) {
+    void initCPPWorkers2(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0) {
         cpp_workers.resize(_numCPPThreads);
         if (numQueues == 0) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
         }
         int i = 0;
         for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPU>(qvector, verbose, 0, batchSize, i, numQueues, queueMode);
+            w = std::make_unique<WorkerCPU>(qvector, numaDomains, verbose, 0, batchSize, i, numQueues, queueMode);
             i++;
         }
     }

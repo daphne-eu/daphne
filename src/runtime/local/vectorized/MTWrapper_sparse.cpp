@@ -57,7 +57,8 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers2(qvector, batchSize8M, verbose, _numDeques, queueMode);
+std::vector<int> numaDomains;
+    this->initCPPWorkers2(qvector, numaDomains, batchSize8M, verbose, _numDeques, queueMode);
 
     assert(numOutputs == 1 && "TODO");
     assert(*(res[0]) == nullptr && "TODO");
