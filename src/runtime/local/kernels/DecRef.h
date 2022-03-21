@@ -14,26 +14,19 @@
  * limitations under the License.
  */
 
-#include <api/cli/Utils.h>
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_DECREF_H
+#define SRC_RUNTIME_LOCAL_KERNELS_DECREF_H
 
-#include <tags.h>
+#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/Structure.h>
 
-#include <catch.hpp>
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
 
-#include <sstream>
-#include <string>
+void decRef(const Structure * arg, DCTX(ctx)) {
+    DataObjectFactory::destroy(arg);
+}
 
-const std::string dirPath = "test/api/cli/controlflow/";
-
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_CONTROLFLOW) { \
-        for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                compareDaphneToRefSimple(dirPath, name, i); \
-            } \
-        } \
-    }
-
-MAKE_TEST_CASE("if", 8)
-MAKE_TEST_CASE("for", 23)
-MAKE_TEST_CASE("while", 16)
+#endif //SRC_RUNTIME_LOCAL_KERNELS_DECREF_H

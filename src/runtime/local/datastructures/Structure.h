@@ -17,7 +17,9 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
 
-#include <iostream>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+
+#include <mutex>
 
 #include <cstddef>
 
@@ -26,18 +28,46 @@
  */
 class Structure
 {
+private:
+    mutable size_t refCounter;
+    mutable std::mutex refCounterMutex;
+    
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
+    
 protected:
     size_t numRows;
     size_t numCols;
 
     Structure(size_t numRows, size_t numCols) :
-            numRows(numRows), numCols(numCols)
+            refCounter(1), numRows(numRows), numCols(numCols)
     {
         // nothing to do
     };
 
 public:
     virtual ~Structure() = default;
+    
+    size_t getRefCounter() const {
+        return refCounter;
+    }
+    
+    /**
+     * @brief Increases the reference counter of this data object.
+     * 
+     * The access is protected by a mutex, such that multiple threads may call
+     * this method concurrently.
+     */
+    void increaseRefCounter() const {
+        refCounterMutex.lock();
+        refCounter++;
+        refCounterMutex.unlock();
+    }
+    
+    // Note that there is no method for decreasing the reference counter here.
+    // Instead, use DataObjectFactory::destroy(). It is important that the
+    // reference counter becoming zero triggers the deletion of the data
+    // object. Thus, we cannot handle it here.
 
     [[nodiscard]] size_t getNumRows() const
     {

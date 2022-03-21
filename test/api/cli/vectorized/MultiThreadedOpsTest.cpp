@@ -29,19 +29,15 @@ auto dirPath = "test/api/cli/vectorized/"sv;
 // TODO: check if `vectorizedPipeline` is used and compare vectorization with no vectorization instead of file
 #define MAKE_TEST_CASE(name, suffix, param) \
     TEST_CASE(std::string(name)+std::string(suffix), TAG_OPERATIONS) { \
-        DYNAMIC_SECTION((name) << ".daphne") { \
-              std::string prefix(dirPath);\
-              prefix += (name);\
-            compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param)); \
-        } \
+        std::string prefix(dirPath);\
+        prefix += (name);\
+        compareDaphneToRef(prefix + ".txt", prefix + ".daphne", (param)); \
     }
 #define MAKE_TEST_CASE_SPARSE(name) \
     TEST_CASE(name, TAG_OPERATIONS) { \
-        DYNAMIC_SECTION((name) << ".daphne") { \
-              std::string prefix(dirPath);\
-              prefix += (name);\
-              compareDaphneToRef(prefix+".txt", prefix+".daphne", "--select-matrix-representations", "--vec"); \
-        } \
+        std::string prefix(dirPath);\
+        prefix += (name);\
+        compareDaphneToRef(prefix+".txt", prefix+".daphne", "--select-matrix-representations", "--vec"); \
     }
 
 MAKE_TEST_CASE("runMatMult", "", "--vec")

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/EwBinaryMat.h>
 #include <runtime/local/vectorized/VectorizedDataSink.h>
@@ -89,6 +90,15 @@ protected:
         for(auto i = 0u ; i < _data._numInputs ; i++) {
             if (isBroadcast(_data._splits[i], _data._inputs[i])) {
                 linputs.push_back(_data._inputs[i]);
+                // We need to increase the reference counter, since the
+                // pipeline manages the reference counter itself.
+                // This might be a scalar disguised as a Structure*.
+                if(!_data._isScalar[i])
+                    // Note that increaseRefCounter() synchronizes the access
+                    // via a std::mutex. If that turns out to slow down things,
+                    // creating a shallow copy of the input would be an
+                    // alternative.
+                    _data._inputs[i]->increaseRefCounter();
             }
             else if (VectorSplit::ROWS == _data._splits[i]) {
                 linputs.push_back(_data._inputs[i]->sliceRow(rowStart, rowEnd));
@@ -98,15 +108,6 @@ protected:
             }
         }
         return linputs;
-    }
-
-    void cleanupFuncInputs(std::vector<Structure *> &&linputs) {
-        for(auto i = 0u ; i < _data._numInputs ; i++) {
-            if(_data._inputs[i] != linputs[i]) {
-                // slice copy was created
-                DataObjectFactory::destroy(linputs[i]);
-            }
-        }
     }
 };
 

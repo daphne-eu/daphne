@@ -29,7 +29,7 @@ struct DaphneUserConfig {
 
     bool use_cuda = false;
     bool use_vectorized_exec = false;
-    bool use_freeOps = true;
+    bool use_obj_ref_mgnt = true;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
 
@@ -40,7 +40,7 @@ struct DaphneUserConfig {
     bool explain_property_inference = false;
     bool explain_sql = false;
     bool explain_vectorized = false;
-    bool explain_freeOps = false;
+    bool explain_obj_ref_mgnt = false;
 
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
