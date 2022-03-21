@@ -81,6 +81,8 @@ public:
         // Each primitive sends information to workers and changes the Structures' metadata information (DataPlacement)        
         for (auto i = 0u; i < numInputs; ++i) {
             // if already placed on workers, skip
+            // TODO maybe this is not enough. We might also need to check if data resides in the specific way we need to.
+            // (i.e. rows/cols splitted accordingly). 
             if (inputs[i]->dataPlacement.isPlacedOnWorkers == true)
                 continue;
 
