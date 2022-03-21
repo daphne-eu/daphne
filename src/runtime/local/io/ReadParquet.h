@@ -68,13 +68,7 @@ void readParquet(DTRes *&res, const char *filename, size_t numRows, size_t numCo
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-// ----------------------------------------------------------------------------
-// Frame
-// ----------------------------------------------------------------------------
-
-template <> struct ReadParquet<Frame> {
-  static void apply(Frame *&res, const char *filename, size_t numRows,
-                    size_t numCols, ValueTypeCode *schema) {
+struct File *arrowToCsv(const char *filename){
     arrow::Status st;
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     arrow::fs::LocalFileSystem file_system;
@@ -100,6 +94,18 @@ template <> struct ReadParquet<Frame> {
     FILE *buf = fmemopen(ccsv, csv.size(), "r");
     struct File *file = openMemFile(buf);
     getLine(file); // Parquet has headers, readCsv does not expect that.
+
+    return file;
+}
+
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
+
+template <> struct ReadParquet<Frame> {
+  static void apply(Frame *&res, const char *filename, size_t numRows,
+                    size_t numCols, ValueTypeCode *schema) {
+    struct File *file = arrowToCsv(filename);
 
     readCsv<Frame>(res, file, numRows, numCols, ',', schema);
   }
