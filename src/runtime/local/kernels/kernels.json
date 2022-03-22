@@ -223,6 +223,7 @@
             ["size_t", "double"],
             ["size_t", "int64_t"],
             ["size_t", "uint32_t"],
+            ["size_t", "uint64_t"],
             ["size_t", "size_t"],
             ["size_t", "bool"],
             ["bool", "double"],
@@ -2046,7 +2047,50 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame"]
+        ]
+    },
+    
+    {
+        "kernelTemplate": {
+            "header": "SliceCol.h",
+            "opName": "sliceCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "lowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "upperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame"]
         ]
     },
     {

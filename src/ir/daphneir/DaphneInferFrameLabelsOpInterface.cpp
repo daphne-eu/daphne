@@ -104,11 +104,6 @@ void daphne::ExtractColOp::inferFrameLabels() {
         Value res = getResult();
         res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
     }
-    else
-        throw std::runtime_error(
-                "currently ExtractColOp can only infer its output labels for "
-                "frame inputs and a single column name"
-        );
 }
 
 void daphne::ExtractRowOp::inferFrameLabels() {

@@ -1,0 +1,3 @@
+// Right indexing on scalars is not allowed.
+x = 123;
+print(x[0, 0]);
