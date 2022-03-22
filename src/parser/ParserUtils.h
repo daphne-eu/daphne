@@ -148,6 +148,18 @@ public:
         return castIf(builder.getIntegerType(64, false), v);
     }
 
+    mlir::Value castSI8If(mlir::Value v) {
+        return castIf(builder.getIntegerType(8, true), v);
+    }
+
+    mlir::Value castSI32If(mlir::Value v) {
+        return castIf(builder.getIntegerType(32, true), v);
+    }
+
+    mlir::Value castSI64If(mlir::Value v) {
+        return castIf(builder.getIntegerType(64, true), v);
+    }
+
     // ************************************************************************
     // Type parsing
     // ************************************************************************
