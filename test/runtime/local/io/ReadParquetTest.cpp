@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-#ifdef USE_ARROW
+// #ifdef USE_ARROW
 
 #include <runtime/local/datastructures/Frame.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/io/ReadParquet.h>
 
 #include <tags.h>
@@ -29,7 +31,7 @@
 #include <cstdint>
 #include <limits>
 
-TEST_CASE("ReadParquet", TAG_KERNELS) {
+TEST_CASE("ReadParquet, Frame", TAG_KERNELS) {
   ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
   Frame *m = NULL;
 
@@ -56,4 +58,32 @@ TEST_CASE("ReadParquet", TAG_KERNELS) {
 
   DataObjectFactory::destroy(m);
 }
-#endif
+
+TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_KERNELS, (DenseMatrix), (double)) {
+  using DT = TestType;
+  DT *m = nullptr;
+
+  size_t numRows = 2;
+  size_t numCols = 4;
+
+  char filename[] = "./test/runtime/local/io/ReadParquet1.parquet";
+
+  readParquet(m, filename, numRows, numCols);
+
+  REQUIRE(m->getNumRows() == numRows);
+  REQUIRE(m->getNumCols() == numCols);
+
+  CHECK(m->get(0, 0) == -0.1);
+  CHECK(m->get(0, 1) == -0.2);
+  CHECK(m->get(0, 2) == 0.1);
+  CHECK(m->get(0, 3) == 0.2);
+
+  CHECK(m->get(1, 0) == 3.14);
+  CHECK(m->get(1, 1) == 5.41);
+  CHECK(m->get(1, 2) == 6.22216);
+  CHECK(m->get(1, 3) == 5);
+
+  DataObjectFactory::destroy(m);
+}
+
+// #endif
