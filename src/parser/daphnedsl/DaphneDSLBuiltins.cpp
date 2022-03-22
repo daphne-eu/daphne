@@ -122,29 +122,30 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
 template<class ReceiveFromNumpyOp>
 mlir::Value DaphneDSLBuiltins::createReceiveFromNumpyOp(mlir::Location loc, const std::string& func, const std::vector<mlir::Value> &args)
 {
-        checkNumArgsExact(func, args.size(), 4);
+        checkNumArgsExact(func, args.size(), 5);
         mlir::Value upper = args[0];
         mlir::Value lower = args[1];
-        mlir::Value size = args[2];
-        mlir::Value valueType = args[3];
-        if(auto valueType = args[3].getDefiningOp<mlir::daphne::ConstantOp>()) {
+        mlir::Value rows = args[2];
+        mlir::Value cols = args[3];
+        mlir::Value valueType = args[4];
+        if(auto valueType = args[4].getDefiningOp<mlir::daphne::ConstantOp>()) {
             llvm::APInt valueTypeCode = valueType.value().dyn_cast<mlir::IntegerAttr>().getValue();
             if(valueTypeCode == (int)ValueTypeCode::F32)
-                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getF32Type()), upper, lower, size));         
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getF32Type()), upper, lower, rows,cols));         
             else if(valueTypeCode == (int)ValueTypeCode::F64)
-                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getF64Type()), upper, lower, size));
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getF64Type()), upper, lower,  rows,cols));
             else if(valueTypeCode == (int)ValueTypeCode::SI8)
-                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(8, true)), upper, lower, size));
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(8, true)), upper, lower,  rows,cols));
             else if(valueTypeCode == (int)ValueTypeCode::SI32)
-                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(32, true)), upper, lower, size));
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(32, true)), upper, lower,  rows,cols));
             else if(valueTypeCode == (int)ValueTypeCode::SI64)
-                 return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(64, true)), upper, lower, size));
+                 return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(64, true)), upper, lower,  rows,cols));
             else if(valueTypeCode == (int)ValueTypeCode::UI8)
-                 return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(8, false)), upper, lower, size));
+                 return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(8, false)), upper, lower,  rows,cols));
             else if(valueTypeCode == (int)ValueTypeCode::UI32)    
-                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(32, false)), upper, lower, size));
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(32, false)), upper, lower,  rows,cols));
             else if(valueTypeCode == (int)ValueTypeCode::UI64)
-                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(64, false)), upper, lower, size));
+                return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(loc,utils.matrixOf(builder.getIntegerType(64, false)), upper, lower,  rows,cols));
             else
                 throw std::runtime_error("invalid valuetype");       
         }
@@ -1034,7 +1035,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     {
         return createReceiveFromNumpyOp<ReceiveFromNumpyOp>(loc, func, args);
     }
-   
+    
+    if(func == "saveDaphneLibResult")
+    {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value arg = args[0];
+        return builder.create<SaveDaphneLibResultOp>(loc, arg);
+    }
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------

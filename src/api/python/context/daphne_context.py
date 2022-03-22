@@ -77,7 +77,7 @@ class DaphneContext(object):
         else:
             print("Error")
         
-        return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], vtc], local_data=mat)
+        return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0],mat.shape[1], vtc], local_data=mat)
 
     def from_pandas(self, df: pd.DataFrame,
             *args: Sequence[VALID_INPUT_TYPES],

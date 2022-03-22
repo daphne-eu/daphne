@@ -38,7 +38,7 @@ print(m2)
 daphne_context = DaphneContext()
 
 
-result = (daphne_context.from_numpy_ctypes(m1)+daphne_context.from_numpy_ctypes(m2)).print().compute()
+result = (daphne_context.from_numpy_ctypes(m1)+daphne_context.from_numpy_ctypes(m2)).compute()
 print(round(m1.sum(),2))
 
 print(m1+m2)

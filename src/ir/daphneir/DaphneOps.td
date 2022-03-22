@@ -1077,8 +1077,12 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
     let results = (outs); // no results
 }
 
+def Daphne_SaveDaphneLibResultOp : Daphne_Op<"saveDaphneLibResult"> {
+    let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
 def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
-    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$size);
+    let arguments = (ins IntScalar:$upper, IntScalar:$lower, IntScalar:$rows, IntScalar:$cols);
     let results = (outs Matrix:$res);
 }
 // ----------------------------------------------------------------------------

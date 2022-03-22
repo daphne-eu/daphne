@@ -14,45 +14,32 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
-#define SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_SAVEDAPHNELIBRESULT_H
+#define SRC_RUNTIME_LOCAL_KERNELS_SAVEDAPHNELIBRESULT_H
 
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-
-#include <algorithm>
-#include <random>
-#include <set>
-#include <type_traits>
-
-#include <cassert>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <chrono>
-
+#include <runtime/local/io/FileMetaData.h>
+#include "runtime/local/io/DaphneLibResult.h"
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes>
-struct ReceiveFromNumpy {
-    static void apply(DTRes *& res,  int64_t upper, int64_t lower, int64_t rows, int64_t cols, DCTX(ctx)) = delete;
+template<class DTArg>
+struct SaveDaphneLibResult {
+    static void apply(const DTArg * arg, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void receiveFromNumpy(DTRes *& res,  int64_t upper, int64_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
-    ReceiveFromNumpy<DTRes>::apply(res, upper, lower, rows, cols, ctx);
+template<class DTArg>
+void saveDaphneLibResult(const DTArg * arg, DCTX(ctx)) {
+    SaveDaphneLibResult<DTArg>::apply(arg, ctx);
 }
-
-
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -62,25 +49,16 @@ void receiveFromNumpy(DTRes *& res,  int64_t upper, int64_t lower, int64_t rows,
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-struct NoOpDeleter {
-    void operator()(double* p) {
-        // don't delete p because the memory comes from numpy
-    }
-    void operator()(float* p){}
-    void operator()(int32_t* p){}
-    void operator()(int8_t* p){}
-    void operator()(int64_t* p){}
-    void operator()(uint64_t* p){}
-    void operator()(uint32_t* p){}
-    void operator()(uint8_t* p){}
-};
-
 template<typename VT>
-struct ReceiveFromNumpy<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, int64_t upper, int64_t lower, int64_t rows, int64_t cols, DCTX(ctx)) {
-        res = DataObjectFactory::create<DenseMatrix<VT>>(rows, cols, std::shared_ptr<VT[]>((VT*)((upper<<32)|lower), NoOpDeleter()));
+struct SaveDaphneLibResult<DenseMatrix<VT>> {
+    static void apply(const DenseMatrix<VT> * arg,  DCTX(ctx)) {
+      arg->increaseRefCounter();
+      daphne_lib_res.address = (void*)arg->getValues();
+      daphne_lib_res.cols = arg->getNumCols();
+      daphne_lib_res.rows = arg->getNumRows();
+      daphne_lib_res.vtc = (int)ValueTypeUtils::codeFor<VT>;
     }
 };
 
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_RECEIVEFROMNUMPY_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_SAVEDAPHNELIBRESULT_H

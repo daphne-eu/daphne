@@ -18,10 +18,11 @@
 # under the License.
 #
 # -------------------------------------------------------------
+import ctypes
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
-from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
+from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES, DaphneLibResult
 from api.python.utils.helpers import create_params_string
 import numpy as np
 import pandas as pd
@@ -64,7 +65,7 @@ class OperationNode(DAGNode):
             self._script = DaphneDSLScript(self.daphne_context)
             result = self._script.build_code(self)
             self._script.execute()
-            self._script.clear(self)
+            #self._script.clear(self)
             if self._output_type == OutputType.FRAME:
                 df = pd.read_csv(result)
                 f = open(result+".meta")
@@ -72,8 +73,12 @@ class OperationNode(DAGNode):
                 df.columns=fmd[1+2+int(fmd[1]):]
                 result = df
             if self._output_type == OutputType.MATRIX:  
-                result = np.genfromtxt(result, delimiter=',')
-                
+                #result = np.genfromtxt(result, delimiter=',')
+                libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
+                libDaphneShared.getResult.restype = DaphneLibResult
+                daphneLibResult = libDaphneShared.getResult()
+                result = np.ctypeslib.as_array(daphneLibResult.address, shape=[daphneLibResult.rows,daphneLibResult.cols]) 
+                result = result.astype("float64")
             if result is None:
                 return
             return result

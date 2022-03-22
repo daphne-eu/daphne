@@ -20,6 +20,7 @@
 # -------------------------------------------------------------
 from typing import Union
 import os
+import ctypes 
 
 VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
 BINARY_OPERATIONS = ['+', '-', '/', '*', '<', '<=', '>', '>=', '==', '!=', '@']
@@ -40,3 +41,8 @@ UI32 = 4
 UI64 = 5
 F32 = 6
 F64 = 7
+
+#Python represantation of the struct DaphneLibResult
+class DaphneLibResult(ctypes.Structure):
+    _fields_ = [("address", ctypes.c_void_p), ("rows", ctypes.c_int64), ("cols", ctypes.c_int64), ("vtc", ctypes.c_int)]
+    

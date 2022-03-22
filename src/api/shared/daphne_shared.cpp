@@ -24,7 +24,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/Support/CommandLine.h"
-
+#include "runtime/local/io/DaphneLibResult.h"
 #ifdef USE_CUDA
     #include <runtime/local/kernels/CUDA/HostUtils.h>
 #endif
@@ -60,6 +60,11 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
     }
 }
 
+extern"C" struct DaphneLibResult getResult()
+{
+    return daphne_lib_res;
+}
+
 extern "C" int
 doMain(char* script_path)
 {
@@ -79,17 +84,19 @@ doMain(char* script_path)
             "vec", cat(daphneOptions),
             desc("Enable vectorized execution engine")
     );
-    opt<bool> noFree(
-            "no-free", cat(daphneOptions),
-            desc("Don't insert FreeOp")
+    opt<bool> noObjRefMgnt(
+            "no-obj-ref-mgnt", cat(daphneOptions),
+            desc(
+                    "Switch off garbage collection by not managing data "
+                    "objects' reference counters"
+            )
     );
     opt<bool> selectMatrixRepr(
             "select-matrix-repr", cat(daphneOptions),
             desc(
                     "Automatically choose physical matrix representations "
                     "(e.g., dense/sparse)"
-            )
-    );
+            ));
     alias selectMatrixReprAlias( // to still support the longer old form
             "select-matrix-representations", aliasopt(selectMatrixRepr),
             desc("Alias for --select-matrix-repr")
@@ -145,7 +152,7 @@ doMain(char* script_path)
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
-    user_config.use_freeOps = !noFree;
+    user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.explain_kernels = explainKernels;
     user_config.libdir = libDir;
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");

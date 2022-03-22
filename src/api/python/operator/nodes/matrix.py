@@ -142,19 +142,15 @@ class Matrix(OperationNode):
     def __matmul__(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, '@', [self, other])
 
+
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
         :param axis: can be 0 or 1 to do either row or column sums
         :return: `Matrix` representing operation
         """
-        if axis == 0:
-            return Matrix(self.daphne_context,'colSums', [self])
-        elif axis == 1:
-            return Matrix(self.daphne_context,'rowSums', [self])
-        elif axis is None:
+        if axis is None:
             return Scalar(self.daphne_context,'sum', [self])
-        raise ValueError(
-            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+        return Matrix(self.daphne_context,'sum', [self, axis])
         
     def sqrt(self) -> 'OperationNode':
         """Calculate sqrt of matrix.
@@ -162,6 +158,14 @@ class Matrix(OperationNode):
         """
         return Matrix(self.daphne_context,'sqrt', [self])
     
+    def aggMin(self, axis: int = None) -> 'OperationNode':
+        
+        return Matrix(self.daphne_context, 'aggMin', [self, axis])
+    
+    def t(self) -> 'OperationNode':
+      
+        return Matrix(self.daphne_context, 't', [self])
+        
     def max(self, other: 'Matrix') -> 'Matrix':
         """Calculate elementwise max of two matrices.
         :param other: another matrix
