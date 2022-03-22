@@ -133,7 +133,12 @@ DATA_TYPE:
     ('matrix') ;
 
 VALUE_TYPE:
-    ('f64' | 'f32' | 'si64' | 'si32' | 'si8' | 'ui64' | 'ui32' | 'ui8') ;
+    (
+        'f64' | 'f32' |
+        'si64' | 'si32' | 'si8' |
+        'ui64' | 'ui32' | 'ui8' |
+        'str'
+    ) ;
 
 INT_LITERAL:
     ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;

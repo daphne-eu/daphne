@@ -221,7 +221,9 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth, CUDASupport]>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative, EwSparseIfEither]>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [CUDASupport]>;

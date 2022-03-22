@@ -235,7 +235,9 @@
             ["uint32_t", "size_t"],
             ["uint32_t", "float"],
             ["uint8_t", "int64_t"],
-            ["bool", "bool"]
+            ["bool", "bool"],
+            ["const char *", "double"],
+            ["const char *", "int64_t"]
         ]
     },
     {

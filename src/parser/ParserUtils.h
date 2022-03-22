@@ -61,6 +61,11 @@ public:
     const mlir::Type seedType;
     
     /**
+     * @brief The `mlir::Type` denoted by `StrScalar` in DaphneIR.
+     */
+    const mlir::Type strType;
+    
+    /**
      * @brief A DaphneIR `Matrix` with value type DaphneIR `Size`.
      */
     mlir::Type matrixOfSizeType;
@@ -99,6 +104,7 @@ public:
             sizeType(builder.getIndexType()),
             boolType(builder.getI1Type()),
             seedType(builder.getIntegerType(64, true)),
+            strType(mlir::daphne::StringType::get(builder.getContext())),
             matrixOfSizeType(static_cast<mlir::Type>(mlir::daphne::MatrixType::get(builder.getContext(), sizeType))),
             unknownType(mlir::daphne::UnknownType::get(builder.getContext()))
     {
@@ -134,6 +140,10 @@ public:
     
     mlir::Value castSeedIf(mlir::Value v) {
         return castIf(seedType, v);
+    }
+    
+    mlir::Value castStrIf(mlir::Value v) {
+        return castIf(strType, v);
     }
 
     mlir::Value castUI8If(mlir::Value v) {
@@ -173,6 +183,7 @@ public:
         if(name == "ui64") return builder.getIntegerType(64, false);
         if(name == "ui32") return builder.getIntegerType(32, false);
         if(name == "ui8") return builder.getIntegerType(8, false);
+        if(name == "str") return strType;
         throw std::runtime_error("unsupported value type: " + name);
     }
 
