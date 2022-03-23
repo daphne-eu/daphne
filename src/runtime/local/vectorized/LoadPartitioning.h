@@ -53,6 +53,47 @@ private:
         return actual_step+1;
     }
 public:
+    static int schemeFactory(string method){
+        if(strncasecmp(method, "STATIC", BYTES_TO_COMPARE)){
+            return STATIC;
+        }
+        else if(strncasecmp(method, "SS", BYTES_TO_COMPARE)){
+            return SS;
+        }
+        else if(strncasecmp(method, "GSS", BYTES_TO_COMPARE)){
+            return GSS;
+        }
+        else if(strncasecmp(method, "TSS", BYTES_TO_COMPARE)){
+            return TSS;
+        }
+        else if(strncasecmp(method, "FAC2", BYTES_TO_COMPARE)){
+            return FAC2;
+        } 
+        else if(strncasecmp(method, "TFSS", BYTES_TO_COMPARE)){
+            return TFSS;
+        } 
+        else if(strncasecmp(method, "FISS", BYTES_TO_COMPARE)){
+            return FISS;
+        } 
+        else if(strncasecmp(method, "VISS", BYTES_TO_COMPARE)){
+            return VISS;
+        } 
+        else if(strncasecmp(method, "PLS", BYTES_TO_COMPARE)){
+            return PISS;
+        } 
+        else if(strncasecmp(method, "MSTATIC", BYTES_TO_COMPARE)){
+            return MSTATIC;
+        } 
+        else if(strncasecmp(method, "MFSC", BYTES_TO_COMPARE)){
+            return MFSC;
+        } 
+        else if(strncasecmp(method, "PSS", BYTES_TO_COMPARE)){
+            return PSS;
+        } 
+        else{
+            return STATIC;
+        } 
+    }
     LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autochunk){
         
         if(const char* env_m = std::getenv("DAPHNE_TASK_PARTITION")){
