@@ -41,7 +41,10 @@ struct DaphneUserConfig {
     bool explain_sql = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
-
+    std::string taskPartitioningScheme = "STATIC";
+    int numberOfThreads = -1;
+    int minimumTaskSize = 1;
+    
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure
 

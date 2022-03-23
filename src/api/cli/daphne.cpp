@@ -72,10 +72,34 @@ main(int argc, char** argv)
     OptionCategory daphneOptions("DAPHNE Options");
 
     // Options.
+    //  **************************
+    //  Scheduling knobs
+    // *********************************
+    opt<string> taskPartitioningScheme( 
+                "task-partitioning", cat(daphneOptions),
+                desc(
+                    "Define the task paritioning scheme. The default is STATIC., but it can be SS, FSC, GSS, FAC2, ...etc."
+                )
+    );
+    opt<int> numberOfThreads(
+                "num-threads", cat(daphneOptions),
+                desc(
+                    "Define the number of the CPU threads used by the vectorized execution engine. "
+                    "The default is equal to the number of physcial cores on the target node that executes the code"
+                )   
+    );
+    opt<int> minimumTaskSize(
+                "grain-size", cat(daphneOptions),
+                desc(
+                    "Define the minimum grain size of a task. "
+                    "The defualt is 1"
+                )   
+    );
     opt<bool> useVectorizedPipelines(
             "vec", cat(daphneOptions),
             desc("Enable vectorized execution engine")
     );
+    // *******************
     opt<bool> noObjRefMgnt(
             "no-obj-ref-mgnt", cat(daphneOptions),
             desc(
@@ -149,7 +173,9 @@ main(int argc, char** argv)
     user_config.explain_kernels = explainKernels;
     user_config.libdir = libDir;
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
-    
+    user_config.taskPartitioningScheme = taskPartitioningScheme;
+    user_config.numberOfThreads = numberOfThreads; 
+    user_config.minimumTaskSize = minimumTaskSize; 
     if(cuda) {
         int device_count = 0;
 #ifdef USE_CUDA

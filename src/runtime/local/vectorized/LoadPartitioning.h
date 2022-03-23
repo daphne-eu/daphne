@@ -53,41 +53,44 @@ private:
         return actual_step+1;
     }
 public:
-    static int schemeFactory(string method){
-        if(strncasecmp(method, "STATIC", BYTES_TO_COMPARE)){
+    static int schemeFactory(std::string input){
+    
+        const char * method=input.c_str();
+        int tokenLeng= input.length();
+        if( tokenLeng == 6 && strncasecmp(method, "STATIC", tokenLeng )){
             return STATIC;
         }
-        else if(strncasecmp(method, "SS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 2 &&strncasecmp(method, "SS", tokenLeng)){
             return SS;
         }
-        else if(strncasecmp(method, "GSS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 3 && strncasecmp(method, "GSS", tokenLeng)){
             return GSS;
         }
-        else if(strncasecmp(method, "TSS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 3 && strncasecmp(method, "TSS", tokenLeng)){
             return TSS;
         }
-        else if(strncasecmp(method, "FAC2", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 4 && strncasecmp(method, "FAC2", tokenLeng)){
             return FAC2;
         } 
-        else if(strncasecmp(method, "TFSS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 4 && strncasecmp(method, "TFSS", tokenLeng)){
             return TFSS;
         } 
-        else if(strncasecmp(method, "FISS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 4 && strncasecmp(method, "FISS", tokenLeng)){
             return FISS;
         } 
-        else if(strncasecmp(method, "VISS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 4 && strncasecmp(method, "VISS", tokenLeng)){
             return VISS;
         } 
-        else if(strncasecmp(method, "PLS", BYTES_TO_COMPARE)){
-            return PISS;
+        else if(tokenLeng == 3 && strncasecmp(method, "PLS", tokenLeng)){
+            return PLS;
         } 
-        else if(strncasecmp(method, "MSTATIC", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 7 && strncasecmp(method, "MSTATIC", tokenLeng)){
             return MSTATIC;
         } 
-        else if(strncasecmp(method, "MFSC", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 4 &&strncasecmp(method, "MFSC", tokenLeng)){
             return MFSC;
         } 
-        else if(strncasecmp(method, "PSS", BYTES_TO_COMPARE)){
+        else if(tokenLeng == 3 &&strncasecmp(method, "PSS", tokenLeng)){
             return PSS;
         } 
         else{
