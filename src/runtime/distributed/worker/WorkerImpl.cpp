@@ -131,6 +131,19 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         request->inputs(),
         outputs,
         inputs);
+    
+    // Increase the reference counters of all inputs to the `dist` function.
+    // (But only consider data objects, not scalars.)
+    // This is necessary to avoid them from being destroyed within the
+    // function. Note that this increasing is in-line with the treatment of
+    // local function calls, where we also increase the inputs' reference
+    // counters before the call, for the same reason. See ManageObjsRefsPass
+    // for details.
+    for(size_t i = 0; i < inputs.size(); i++)
+        // TODO Use CompilerUtils::isObjType() once this branch has been rebased.
+        // if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
+        if(distFuncTy.getInput(i).isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+            reinterpret_cast<Structure*>(inputs[i])->increaseRefCounter();
 
     // Execution
     // TODO Before we run the passes, we should insert information on shape
