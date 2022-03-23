@@ -25,7 +25,6 @@
 
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>
-#include <runtime/local/io/ReadCsvFile.h>
 
 #include <util/preprocessor_defs.h>
 
@@ -43,15 +42,14 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes> struct ReadCsv {
-  static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
-                    char delim) = delete;
+template <class DTRes> struct ReadDaphne {
+  static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols) = delete;
 
   static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
                     ssize_t numNonZeros, bool sorted = true) = delete;
 
   static void apply(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
-                    char delim, ValueTypeCode *schema) = delete;
+                    ValueTypeCode *schema) = delete;
 };
 
 // ****************************************************************************
@@ -59,21 +57,21 @@ template <class DTRes> struct ReadCsv {
 // ****************************************************************************
 
 template <class DTRes>
-void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
-             char delim) {
-  ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim);
+void readDaphne(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
+             ) {
+  ReadDaphne<DTRes>::apply(res, filename, numRows, numCols);
 }
 
 template <class DTRes>
 void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
-             char delim, ValueTypeCode *schema) {
-  ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, schema);
+             ValueTypeCode *schema) {
+  ReadCsv<DTRes>::apply(res, filename, numRows, numCols, schema);
 }
 
 template <class DTRes>
 void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
-             char delim, ssize_t numNonZeros, bool sorted = true) {
-    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, delim, numNonZeros, sorted);
+             ssize_t numNonZeros, bool sorted = true) {
+    ReadCsv<DTRes>::apply(res, filename, numRows, numCols, numNonZeros, sorted);
 }
 
 // ****************************************************************************
@@ -84,11 +82,11 @@ void readCsv(DTRes *&res, const char *filename, size_t numRows, size_t numCols,
 // DenseMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
+template <typename VT> struct ReadDpahne<DenseMatrix<VT>> {
   static void apply(DenseMatrix<VT> *&res, const char *filename, size_t numRows,
-                    size_t numCols, char delim) {
+                    size_t numCols) {
     struct File *file = openFile(filename);
-    readCsvFile(res, file, numRows, numCols, delim);
+    readDaphneFile(res, file, numRows, numCols);
     closeFile(file);
   }
 };
@@ -97,11 +95,11 @@ template <typename VT> struct ReadCsv<DenseMatrix<VT>> {
 // CSRMatrix
 // ----------------------------------------------------------------------------
 
-template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
+template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *&res, const char *filename, size_t numRows,
-                      size_t numCols, char delim, ssize_t numNonZeros, bool sorted = true) {
+                      size_t numCols, ssize_t numNonZeros, bool sorted = true) {
         struct File *file = openFile(filename);
-        readCsvFile(res, file, numRows, numCols, delim, numNonZeros, sorted);
+        readDaphneFile(res, file, numRows, numCols, numNonZeros, sorted);
         closeFile(file);
     }
 };
@@ -111,11 +109,11 @@ template <typename VT> struct ReadCsv<CSRMatrix<VT>> {
 // Frame
 // ----------------------------------------------------------------------------
 
-template <> struct ReadCsv<Frame> {
+template <> struct ReadDpahne<Frame> {
   static void apply(Frame *&res, const char *filename, size_t numRows,
-                    size_t numCols, char delim, ValueTypeCode *schema) {
+                    size_t numCols, ValueTypeCode *schema) {
     struct File *file = openFile(filename);
-    readCsvFile(res, file, numRows, numCols, delim, schema);
+    readDaphneFile(res, file, numRows, numCols, schema);
     closeFile(file);
   }
 };
@@ -125,11 +123,11 @@ template <> struct ReadCsv<Frame> {
 // Handle
 // ----------------------------------------------------------------------------
 
-template <class DT> struct ReadCsv<Handle<DT>> {
+template <class DT> struct ReadDaphne<Handle<DT>> {
   static void apply(Handle<DT> *&res, const char *filename, 
-                      size_t numRows, size_t numCols, char delim) {
+                      size_t numRows, size_t numCols) {
     struct File *file = openFile(filename);
-    readCsvFile(res, file, numRows, numCols, delim);
+    readDaphneFile(res, file, numRows, numCols, delim);
     closeFile(file);
   }
 };
