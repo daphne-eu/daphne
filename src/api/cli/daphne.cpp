@@ -161,10 +161,12 @@ main(int argc, char** argv)
             ),
             CommaSeparated
     );
+    const std::string configFileInitValue = "-";
     opt<string> configFile(
         "config", cat(daphneOptions),
         desc("Specify a JSON file that contains the Daphne configuration."),
-        value_desc("filename")
+        value_desc("filename"),
+        llvm::cl::init(configFileInitValue)
     );
 
     // Positional arguments ---------------------------------------------------
@@ -196,13 +198,13 @@ main(int argc, char** argv)
     // Initialize user configuration.
     DaphneUserConfig user_config{};
     try {
-        if (ConfigParser::fileExists(configFile)) {
+        if (configFile != configFileInitValue && ConfigParser::fileExists(configFile)) {
             ConfigParser::readUserConfig(configFile, user_config);
         }
     }
     catch(std::exception & e) {
         std::cerr << "Reading user config error: " << e.what() << std::endl;
-        return StatusCode::EXECUTION_ERROR;
+        return StatusCode::PARSER_ERROR;
     }
     
 //    user_config.debug_llvm = true;

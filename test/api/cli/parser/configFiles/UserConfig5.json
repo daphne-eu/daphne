@@ -1,0 +1,20 @@
+{
+    "unknown_key": true,
+    "use_Cuda": false,
+    "use_vectorized_exec": false,
+    "use_freeOps": true,
+    "cuda_fuse_any": false,
+    "vectorized_single_queue": false,
+    "debug_llvm": false,
+    "explain_kernels": false,
+    "explain_llvm": false,
+    "explain_parsing": false,
+    "explain_property_inference": false,
+    "explain_sql": false,
+    "explain_vectorized": false,
+    "explain_freeOps": false,
+    "library_paths": [
+        "my\\path",
+        "my\\second\\path"
+    ]
+}
