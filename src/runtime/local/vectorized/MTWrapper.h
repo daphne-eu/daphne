@@ -112,6 +112,9 @@ public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
         numThreads == 0 ? _numThreads = std::thread::hardware_concurrency() : _numThreads = numThreads;
         //if(const char* env_m = std::getenv("DAPHNE_THREADS"))
+        //std::cout<<"method "<< ctx->config.taskPartitioningScheme << std::endl;
+        //std::cout<<"numthread "<< ctx->config.numberOfThreads << std::endl;
+        //std::cout<<"grainSize "<< ctx->config.minimumTaskSize << std::endl;
         if(ctx->config.numberOfThreads>0){
                 _numThreads = ctx->config.numberOfThreads;
         }
