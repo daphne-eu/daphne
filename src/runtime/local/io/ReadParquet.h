@@ -15,7 +15,7 @@
  */
 
 #pragma once
-//#ifdef USE_ARROW
+#ifdef USE_ARROW
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -151,4 +151,4 @@ template <typename VT> struct ReadParquet<DenseMatrix<VT>> {
     }
 };
 
-// #endif
+#endif

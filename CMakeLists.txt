@@ -107,6 +107,7 @@ if(USE_ARROW)
         NO_DEFAULT_PATH
     )
     link_libraries(arrow_shared parquet_shared)
+    add_definitions(-DUSE_ARROW)
     message(STATUS "Arrow/Parquet enabled")
 endif()
 
