@@ -116,7 +116,8 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 		 f.read(vt, size of memblock);
 
 		 res = DataObjectFactory::create<DenseMatrix<VT>>(bb.numrows, bb.numcols, memblock, false);
-		 return;
+
+		 goto exit;
 
 	    // CSR Matrix
 	    } else if (bb.bt == DF_body_t::sparse) {
@@ -144,7 +145,7 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 			    }
 		    }
 
-		    return;
+		goto exit;
 
             // COO Matrix
 	    } else if (bb.bt == DF_body_t::ultra_sparse) {
@@ -168,7 +169,7 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 
 				res->set(i, 1, val);	
 			}
-			return;
+			goto exit;
 		   } else {
 			   // TODO: check numcols is greater than 1
 			for (int n = 0; n < nzb; n++) {
@@ -183,11 +184,13 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 
 				res->set(i, j, val);	
 			}
-			return;
+			goto exit;
 		   }
 
-		    return;
 	    }
+exit:
+	    f.close();
+	    return;
     }
 };
 
