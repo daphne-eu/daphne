@@ -22,6 +22,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
+#include <runtime/local/io/DaphneFile.h>
 #include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
@@ -31,35 +32,10 @@
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <iostream>
 #include <limits>
-#include <stdlib>
+#include <stdlib.h>
 
-
-// ****************************************************************************
-// Struct for Daphne binary file format 
-// ****************************************************************************
-
-struct DF_header {
-	uint8_t version;
-	uint8_t dt;
-	uint64_t nbrows;
-	uint64_t nbcols;
-};
-
-enum DF_data_t {reserved = 0; DenseMatrix = 1; CSMatrix = 2; Frame = 3};
-// Value types defined in /runtime/local/datastructures/ValueTypeCode.h
-struct DF_body {
-	uint64_t rx; // row index
-	uint64_t cx; // column index
-};
-
-struct DF_body_block {
-	uint32_t nbrows;
-	uint32_t nbcols;
-	uint8_t bt;
-};
-
-enum DF_body_t {empty = 0; dense = 1; sparse = 2; ultra-sparse = 3};
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -67,6 +43,7 @@ enum DF_body_t {empty = 0; dense = 1; sparse = 2; ultra-sparse = 3};
 
 template <class DTRes> struct ReadDaphne {
   static void apply(DTRes *&res, const char *filename) = delete;
+};
 
 // ****************************************************************************
 // Convenience function
@@ -84,62 +61,101 @@ void readDaphne(DTRes *&res, const char *filename) {
 template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
   static void apply(DenseMatrix<VT> *&res, const char *filename) {
 
-    ifstream f;
-    f.open(filename);
+    std::ifstream f;
+    f.open(filename, std::ios::in|std::ios::binary);
     // TODO: check f.good()
 
     // read header
     DF_header h;
-    f.read(h, sizeof(DF_header));
+    f.read((char *)&h, sizeof(h));
 
-    if (h.dt == DF_data_t::DenseMatrix || h.dt == DF_data_t::CSRMatrix) {
-	    uint8_t vt;
-	    f.read(vt, size of vt);
+    if (h.dt == DF_data_t::DenseMatrix_t) {
+	    ValueTypeCode vt;
+	    f.read((char *)&vt, sizeof(vt));
 
 	    DF_body b;
-	    f.read(b, sizeof(DF_body));
+	    f.read((char *)&b, sizeof(b));
 	    // b is ignored for now - assumed to be 0,0
 	    //TODO: consider multiple blocks
 
 	    DF_body_block bb;
-	    f.read(bf,sizeof(DF_body_header));
-	    if (bb.bb == DF_body_t::empty) {
+	    f.read((char *)&bb,sizeof(bb));
+	    // empty Matrix
+	    if (bb.bt == DF_body_t::empty) {
 		res = DataObjectFactory::create<DenseMatrix<VT>>(0, 0, false);
-		return;
+		goto exit;
 
 	    // Dense Matrix
 	    } else if (bb.bt == DF_body_t::dense) {
-		 uint8_t vt;
-		 f.read(vt, size of vt);
+		 f.read((char *)&vt, sizeof(vt));
 
-		 std::shared_ptr<VT[]> memblock = new VT[bb.numrows*bb.numcols];
-		 f.read(vt, size of memblock);
+		 VT* memblock = (VT*) malloc(bb.nbrows*bb.nbcols*sizeof(VT));
+		 f.read((char *)memblock, bb.nbrows*bb.nbcols*sizeof(VT));
 
-		 res = DataObjectFactory::create<DenseMatrix<VT>>(bb.numrows, bb.numcols, memblock, false);
+		 std::shared_ptr<VT[]> data;
+		 data.reset(memblock);
+
+		 res = DataObjectFactory::create<DenseMatrix<VT>>((size_t)bb.nbrows, 
+								  (size_t)bb.nbcols, data);
 
 		 goto exit;
+	    }
+exit:
+	    f.close();
+	    return;
+    }
+  }
+};
 
+/*
+template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
+  static void apply(CSRMatrix<VT> *&res, const char *filename) {
+
+    std::ifstream f;
+    f.open(filename, std::ios::in|std::ios::binary);
+    // TODO: check f.good()
+
+    // read header
+    DF_header h;
+    f.read((char *)&h, sizeof(h));
+
+
+    if (h.dt == DF_data_t::CSRMatrix_t) {
+	    uint8_t vt;
+	    f.read((char *)&vt, sizeof(vt));
+
+	    DF_body b;
+	    f.read((char *)&b, sizeof(b));
+	    // b is ignored for now - assumed to be 0,0
+	    //TODO: consider multiple blocks
+
+	    DF_body_block bb;
+	    f.read((char *)&bb,sizeof(bb));
+	    // empty Matrix
+	    if (bb.bt == DF_body_t::empty) {
+		res = DataObjectFactory::create<CSRMatrix<VT>>(0, 0, false);
+		goto exit;
 	    // CSR Matrix
 	    } else if (bb.bt == DF_body_t::sparse) {
 		    uint8_t vt;
-		    f.read(vt, size of vt);
+		    f.read((char *)&vt, sizeof(vt));
 
 		    uint64_t nzb;
-		    f.read(nzb, size of nzb);
+		    f.read((char *)&nzb, sizeof(nzb));
 
 		    res = DataObjectFactory::create<CSRMatrix<VT>>(
-				bb.numrows, bb.numcols, nzb, false);
+				bb.nbrows, bb.nbcols, nzb, false);
 
 		    for (int i = 0; i < bb.nbrows; i++) {
 			    uint64_t nzr;
-			    f.read(nzr, size of nzr);
+			    f.read((char *)&nzr, sizeof(nzr));
 
-			    for (n = 0; n < nzr; n++) {
+			    for (int n = 0; n < nzr; n++) {
 				  uint32_t j;
-				  f.read(j, size of j);
+				  f.read((char *)&j, sizeof(j));
 
 				  VT val;
-				  f.read(val, size of val);
+				  f.read((char *)&val, sizeof(val));
 
 				  res->set(i, j, val);
 			    }
@@ -150,47 +166,49 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
             // COO Matrix
 	    } else if (bb.bt == DF_body_t::ultra_sparse) {
 		    uint8_t vt;
-		    f.read(vt, size of vt);
+		    f.read((char *)&vt, sizeof(vt));
 
 		    uint64_t nzb;
-		    f.read(nzb, size of nzb);
+		    f.read((char *)&nzb, sizeof(nzb));
 
 		    res = DataObjectFactory::create<CSRMatrix<VT>>(
-				bb.numrows, bb.numcols, nzb, false);
+				bb.nbrows, bb.nbcols, nzb, false);
 
 		   // Single column case
-		   if (bb.numcols == 1) {
+		   if (bb.nbcols == 1) {
 			for (int n = 0; n < nzb; n++) {
 				uint32_t i;
-				f.read(i, size of i);
+				f.read((char *)&i, sizeof(i));
 
 				VT val;
-				f.read(val, size of val);
+				f.read((char *)&val, sizeof(val));
 
-				res->set(i, 1, val);	
+				res->set(i, 1, val);
 			}
 			goto exit;
 		   } else {
 			   // TODO: check numcols is greater than 1
 			for (int n = 0; n < nzb; n++) {
 				uint32_t i;
-				f.read(i, size of i);
+				f.read((char *)&i, sizeof(i));
 
 				uint32_t j;
-				f.read(j, size of j);
+				f.read((char *)&j, sizeof(j));
 
 				VT val;
-				f.read(val, size of val);
+				f.read((char *)&val, sizeof(val));
 
-				res->set(i, j, val);	
+				res->set(i, j, val);
 			}
 			goto exit;
 		   }
 
 	    }
+	    //TODO: frames
 exit:
 	    f.close();
 	    return;
     }
+  }
 };
-
+*/
