@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2022 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -226,47 +226,6 @@ class ThetaJoin<Frame, Frame, Frame> {
     };
 
     
-
-//    template< template < typename ...> typename TExec, typename ... TArgs>
-//    struct DeduceValueType {
-//        template< typename ... TPar >
-//        static void apply(ValueTypeCode vtc, TPar ... args) {
-//            switch (vtc) {
-//                case ValueTypeCode::SI8:
-//                    TExec<TArgs..., int8_t>::apply(args...);
-//                    return;
-//                case ValueTypeCode::SI32:
-//                    TExec<TArgs..., int32_t>::apply(args...);
-//                    return;
-//                case ValueTypeCode::SI64:
-//                    TExec<TArgs..., int64_t>::apply(args...);
-//                    return;
-//                case ValueTypeCode::UI8:
-//                    TExec<TArgs..., uint8_t>::apply(args...);
-//                    return;
-//                case ValueTypeCode::UI32:
-//                    TExec<TArgs..., uint32_t>::apply(args...);
-//                    return;
-//                case ValueTypeCode::UI64:
-//                    TExec<TArgs..., uint64_t>::apply(args...);
-//                    return;
-//                case ValueTypeCode::F32:
-//                    TExec<TArgs..., float>::apply(args...);
-//                    return;
-//                case ValueTypeCode::F64:
-//                    TExec<TArgs..., double>::apply(args...);
-//                    return;
-//                default:
-//                    throw std::runtime_error(
-//                      "deduceType: Unknown value type '" + std::to_string(static_cast<uint64_t>(vtc)) + "' found."
-//                    );
-//            }
-//        }
-//    };
-    
-//    template < template < template < typename ... > typename, typename ... > typename TExec, template < typename... > typename TSubExec, typename ... TArgs>
-//    struct DeduceValueType <TExec<TSubExec, TArgs ...>, TArgs...> {};
-    
     template< typename VTCol >
     struct WriteColumn {
         static void apply(Frame *& out, const Container& container, uint64_t inColIdx, uint64_t outColIdx,
@@ -276,7 +235,6 @@ class ThetaJoin<Frame, Frame, Frame> {
             }
             const Frame * in = isLhs ? container.lhs : container.rhs;
             
-//            VTCol const * inData = in->template getColumn<VTCol>(inColIdx)->getValues();
             auto * inData = reinterpret_cast<VTCol const *>(in->getColumnRaw(inColIdx));
             auto * outData = reinterpret_cast<VTCol *>(out->getColumnRaw(outColIdx));
             
@@ -285,137 +243,6 @@ class ThetaJoin<Frame, Frame, Frame> {
             }
         }
     };
-    
-//    template< typename VTLhs, typename VTRhs >
-//    static bool compare(
-//      /// Container, containing Frames
-//      Container& state,
-//      /// current loop pointer
-//      size_t lhsIndex, size_t rhsIndex,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        Equation& eq = state.equations.at(depth);
-//        VTLhs const * lhsData = state.lhs->template getColumn<VTLhs>(eq.lhsColumnIndex)->getValues();
-//        VTRhs const * rhsData = state.rhs->template getColumn<VTRhs>(eq.rhsColumnIndex)->getValues();
-//        bool result;
-//        switch( eq.cmp ){
-//            case Equal:
-//                result = lhsData[lhsIndex] == rhsData[rhsIndex];
-//                cout << lhsData[lhsIndex] << " == " << rhsData[rhsIndex] << " is " << result << endl;
-//                return result;
-//            case LessThan:
-//                result = lhsData[lhsIndex] < rhsData[rhsIndex];
-//                cout << lhsData[lhsIndex] << " < " << rhsData[rhsIndex] << " is " << result << endl;
-//                return result;
-//            case LessEqual:
-//                result = lhsData[lhsIndex] <= rhsData[rhsIndex];
-//                cout << lhsData[lhsIndex] << " <= " << rhsData[rhsIndex] << " is " << result << endl;
-//                return result;
-//            case GreaterThan:
-//                result = lhsData[lhsIndex] > rhsData[rhsIndex];
-//                cout << lhsData[lhsIndex] << " > " << rhsData[rhsIndex] << " is " << result << endl;
-//                return result;
-//            case GreaterEqual:
-//                result = lhsData[lhsIndex] >= rhsData[rhsIndex];
-//                cout << lhsData[lhsIndex] << " >= " << rhsData[rhsIndex] << " is " << result << endl;
-//                return result;
-//            case NotEqual:
-//                result = lhsData[lhsIndex] != rhsData[rhsIndex];
-//                cout << lhsData[lhsIndex] << " <> " << rhsData[rhsIndex] << " is " << result << endl;
-//                return result;
-//        }
-//        return true;
-//    }
-//
-//    template<typename VTLhs>
-//    static bool compareRhs(
-//      /// Container, containing Frames
-//      Container& state,
-//      /// current loop pointer
-//      size_t lhsIndex, size_t rhsIndex,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        /// determine correct value type of the right hand side
-//        switch ( state.rhsSchema[state.equations.at(depth).rhsColumnIndex] ){
-//            case ValueTypeCode::SI8:
-//                return compare<VTLhs, int8_t  >(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::SI32:
-//                return compare<VTLhs, int32_t >(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::SI64:
-//                return compare<VTLhs, int64_t >(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::UI8:
-//                return compare<VTLhs, uint8_t >(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::UI32:
-//                return compare<VTLhs, uint32_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::UI64:
-//                return compare<VTLhs, uint64_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::F32:
-//                return compare<VTLhs, float   >(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::F64:
-//                return compare<VTLhs, double  >(state, lhsIndex, rhsIndex, depth);
-//            default:
-//                throw std::runtime_error("compareRhs: Unknown value type '" + std::to_string((uint64_t)state.rhsSchema[depth]) + "' found.");
-//      }
-//    }
-//
-//    static bool compareLhs(
-//      /// Container, containing Frames
-//      Container& state,
-//      /// current loop pointer
-//      size_t lhsIndex, size_t rhsIndex,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        /// determine correct value type of the left hand side
-//        switch ( state.lhsSchema[state.equations.at(depth).lhsColumnIndex] ){
-//            case ValueTypeCode::SI8:
-//                return compareRhs<int8_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::SI32:
-//                return compareRhs<int32_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::SI64:
-//                return compareRhs<int64_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::UI8:
-//                return compareRhs<uint8_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::UI32:
-//                return compareRhs<uint32_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::UI64:
-//                return compareRhs<uint64_t>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::F32:
-//                return compareRhs<float>(state, lhsIndex, rhsIndex, depth);
-//            case ValueTypeCode::F64:
-//                return compareRhs<double>(state, lhsIndex, rhsIndex, depth);
-//            default:
-//                throw std::runtime_error("compareLhs: Unknown value type '" + std::to_string((uint64_t)state.rhsSchema[depth]) + "' found.");
-//        }
-//    }
-//
-//
-//    static bool traverse(
-//      /// Container, containing Frames
-//      Container& state,
-//      /// current loop pointer
-//      size_t lhsIndex, size_t rhsIndex,
-//      /// traverse depth
-//      size_t depth = 0UL
-//    )
-//    {
-//        /// compare both sides
-//        bool hit = compareLhs(state, lhsIndex, rhsIndex, depth);
-//        /// if single condition not met, whole condition is false (conjunction)
-//        if(!hit){
-//            return false;
-//        }
-//        /// hit == true // check if this was the last condition to check
-//        if((depth+1) >= state.equations.size()){
-//            return true;
-//        } else {
-//            /// go to next condition
-//            return traverse(state, lhsIndex, rhsIndex, depth+1);
-//        }
-//    }
-    
     
     
     /**
@@ -519,175 +346,23 @@ class ThetaJoin<Frame, Frame, Frame> {
         }
     };
     
-//    template<typename VTLhs, typename VTRhs>
-//    static void traverseColumnWiseCore(
-//      /// Container, containing Frames
-//      Container& state,
-//      ResultContainer *& positions,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        Equation& eq = state.equations.at(depth);
-////        VTLhs const * lhsData = state.lhs->template getColumn<VTLhs>(eq.lhsColumnIndex)->getValues();
-////        VTRhs const * rhsData = state.rhs->template getColumn<VTRhs>(eq.rhsColumnIndex)->getValues();
-//        VTLhs const * lhsData = reinterpret_cast<VTLhs const*>(state.lhs->getColumnRaw(eq.lhsColumnIndex));
-//        VTRhs const * rhsData = reinterpret_cast<VTRhs const*>(state.rhs->getColumnRaw(eq.rhsColumnIndex));
-//
-//        size_t lhsRowCount = state.lhs->getNumRows();
-//        size_t rhsRowCount = state.rhs->getNumRows();
-//
-//        if(!positions) {
-//            positions = new ResultContainer(lhsRowCount * rhsRowCount);
-//        }
-//
-//        if(depth == 0){
-//            /// run over whole column
-//            for(size_t outerLoop = 0; outerLoop < lhsRowCount; ++outerLoop){
-//                for(size_t innerLoop = 0; innerLoop < rhsRowCount; ++innerLoop){
-//                    if(compare2<VTLhs, VTRhs>(lhsData[outerLoop], rhsData[innerLoop], eq.cmp)){
-////                        std::cout << "true";
-//                        positions->addPosPair(outerLoop, innerLoop);
-//                    } else {
-////                        std::cout << "false";
-//                    }
-////                    std::cout << std::endl;
-//                }
-//            }
-//        } else {
-//            /// only process pre-filtered rows
-//            for(uint64_t i = 0; i < positions->size; ++i){
-//                auto [lhsPos, rhsPos] = positions->readNext();
-//                if(compare2<VTLhs, VTRhs>(lhsData[lhsPos], rhsData[rhsPos], eq.cmp)){
-//                    positions->addPosPair(lhsPos, rhsPos);
-//                }
-//            }
-//        }
-////        std::cout << "Positions:\n" << *positions->positions << std::endl;
-//        positions->finalize();
-//    }
-//
-//    template<typename VTLhs>
-//    static void traverseColumnWiseRhs(
-//      /// Container, containing Frames
-//      Container& state,
-//      ResultContainer *& positions,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        /// determine correct value type of the right hand side
-//        switch ( state.rhsSchema[state.equations.at(depth).rhsColumnIndex] ){
-//            case ValueTypeCode::SI8:
-//                traverseColumnWiseCore<VTLhs, int8_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::SI32:
-//                traverseColumnWiseCore<VTLhs, int32_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::SI64:
-//                traverseColumnWiseCore<VTLhs, int64_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::UI8:
-//                traverseColumnWiseCore<VTLhs, uint8_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::UI32:
-//                traverseColumnWiseCore<VTLhs, uint32_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::UI64:
-//                traverseColumnWiseCore<VTLhs, uint64_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::F32:
-//                traverseColumnWiseCore<VTLhs, float>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::F64:
-//                traverseColumnWiseCore<VTLhs, double>(state, positions, depth);
-//                break;
-//            default:
-//                throw std::runtime_error("compareRhs: Unknown value type '" + std::to_string((uint64_t)state.rhsSchema[depth]) + "' found.");
-//      }
-//    }
-//
-//    static void traverseColumnWiseLhs(
-//      /// Container, containing Frames
-//      Container& state,
-//      ResultContainer *& positions,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        /// determine correct value type of the left hand side
-//        switch ( state.lhsSchema[state.equations.at(depth).lhsColumnIndex] ){
-//            case ValueTypeCode::SI8:
-//                traverseColumnWiseRhs<int8_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::SI32:
-//                traverseColumnWiseRhs<int32_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::SI64:
-//                traverseColumnWiseRhs<int64_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::UI8:
-//                traverseColumnWiseRhs<uint8_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::UI32:
-//                traverseColumnWiseRhs<uint32_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::UI64:
-//                traverseColumnWiseRhs<uint64_t>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::F32:
-//                traverseColumnWiseRhs<float>(state, positions, depth);
-//                break;
-//            case ValueTypeCode::F64:
-//                traverseColumnWiseRhs<double>(state, positions, depth);
-//                break;
-//            default:
-//                throw std::runtime_error("compareLhs: Unknown value type '" + std::to_string((uint64_t)state.rhsSchema[depth]) + "' found.");
-//        }
-//    }
-//
-//    static void traverseColumnWise(
-//      /// Container, containing Frames
-//      Container& state,
-//      ResultContainer *& positions,
-//      /// traverse depth
-//      size_t depth)
-//    {
-//        traverseColumnWiseLhs(state, positions, depth);
-//    }
-    
   public:
     static void apply(Frame*& res, const Frame* lhs, const Frame* rhs, const char** lhsOn, size_t numLhsOn,
                       const char** rhsOn, size_t numRhsOn, CompareOperation* cmp, size_t numCmp) {
         /// @todo get rid of redundant parameters ??
         assert((numLhsOn == numRhsOn and numRhsOn == numCmp) && "incorrect amount of compare values");
         
-//        size_t lhsRows = lhs->getNumRows();
-//        size_t rhsRows = rhs->getNumRows();
         size_t lhsCols = lhs->getNumCols();
         size_t rhsCols = rhs->getNumCols();
-//        auto lhsSchema = lhs->getSchema();
-//        auto rhsSchema = rhs->getSchema();
-//        auto lhsLabels = lhs->getLabels();
-//        auto rhsLabels = rhs->getLabels();
-        
         
         /// convenience container holding all relevant data for traversing over both relations
         Container container(lhs, rhs, lhsOn, rhsOn, cmp, numCmp);
         
-//        auto resSchema = new ValueTypeCode[lhsCols + rhsCols];
-//        auto resLabels = new std::string[lhsCols + rhsCols];
-//        for(uint64_t i = 0; i < lhsCols; ++i){
-//            resSchema[i] = lhsSchema[i];
-//            resLabels[i] = lhsLabels[i];
-//        }
-//        for(uint64_t i = 0; i < rhsCols; ++i){
-//            resSchema[i + lhsCols] = rhsSchema[i];
-//            resLabels[i + lhsCols] = rhsLabels[i];
-//        }
-        
+        /// container to store result position pairs
         ResultContainer * resultPositions = nullptr;
     
-        
+        /// iterate over equations
         for(size_t i = 0; i < numCmp; ++i){
-//            traverseColumnWise(container, resultPositions, i);
             DeduceValueTypeAndExecute<CompareColumnPair>::apply(
               /// lhs value type
                 container.getVTLhs(i),
@@ -714,10 +389,5 @@ class ThetaJoin<Frame, Frame, Frame> {
         delete resultPositions;
     }
 };
-
-
-
-
-
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
