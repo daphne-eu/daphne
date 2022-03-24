@@ -61,9 +61,7 @@ struct Read<DenseMatrix<VT>> {
                     fmd.numRows, fmd.numCols, false
             );
         
-        File * file = openFile(filename);
-        readCsv(res, file, fmd.numRows, fmd.numCols, ',');
-        closeFile(file);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
     }
 };
 
@@ -83,10 +81,8 @@ struct Read<CSRMatrix<VT>> {
             res = DataObjectFactory::create<CSRMatrix<VT>>(
                 fmd.numRows, fmd.numCols, fmd.numNonZeros, false
             );
-        File * file = openFile(filename);
         // FIXME: ensure file is sorted, or set `sorted` argument correctly
-        readCsv(res, file, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
-        closeFile(file);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', fmd.numNonZeros, true);
     }
 };
 
@@ -119,9 +115,7 @@ struct Read<Frame> {
                     fmd.numRows, fmd.numCols, schema, labels, false
             );
         
-        File * file = openFile(filename);
-        readCsv(res, file, fmd.numRows, fmd.numCols, ',', schema);
-        closeFile(file);
+        readCsv(res, filename, fmd.numRows, fmd.numCols, ',', schema);
         
         if(fmd.isSingleValueType)
             delete[] schema;

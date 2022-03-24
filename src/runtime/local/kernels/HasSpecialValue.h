@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_HASSPECIALVALUE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_HASSPECIALVALUE_H
+
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <cmath>
@@ -53,8 +53,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>
         auto numCols = arg->getNumCols();
 
         if(std::isnan(testVal)) {
-            for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+            for(auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
+                for(auto colIdx = 0ul; colIdx < numCols; colIdx++) {
                     auto val = arg->get(rowIdx, colIdx);
                     if (std::isnan(val)) {
                         return true;
@@ -62,8 +62,8 @@ template <typename VT, typename TestType> struct HasSpecialValue<DenseMatrix<VT>
                 }
             }
         } else {
-            for(auto rowIdx = 0; rowIdx < numRows; rowIdx++) {
-                for(auto colIdx = 0; colIdx < numCols; colIdx++) {
+            for(auto rowIdx = 0ul; rowIdx < numRows; rowIdx++) {
+                for(auto colIdx = 0ul; colIdx < numCols; colIdx++) {
                     auto val = arg->get(rowIdx, colIdx);
                     if (val == testVal) {
                         return true;
@@ -108,5 +108,3 @@ template <typename VT, typename TestType> struct HasSpecialValue<CSRMatrix<VT>, 
         return false;
     }
 };
-
-#endif

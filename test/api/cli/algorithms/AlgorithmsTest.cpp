@@ -31,7 +31,7 @@ const std::string dirPath = "test/api/cli/algorithms/";
 TEST_CASE("components", TAG_ALGORITHMS) {
     checkDaphneStatusCode(
         StatusCode::SUCCESS, dirPath + "components.daphne",
-        "--args", "n=100", "e=1000"
+        "--args", "n=100,e=1000"
     );
 }
 
@@ -40,20 +40,20 @@ TEST_CASE("componentsSparse", TAG_ALGORITHMS) {
     //  random kernels have the same values for same seed
     checkDaphneStatusCode(
         StatusCode::SUCCESS, dirPath + "components.daphne",
-        "--select-matrix-representations", "--args", "n=100", "e=100"
+        "--select-matrix-representations", "--args", "n=100,e=100"
     );
 }
 
 TEST_CASE("kmeans", TAG_ALGORITHMS) {
     checkDaphneStatusCode(
             StatusCode::SUCCESS, dirPath + "kmeans.daphne",
-            "--args", "r=100", "c=5", "f=20", "i=10"
+            "--args", "r=100,c=5,f=20,i=10"
     );
 }
 
 TEST_CASE("lm", TAG_ALGORITHMS) {
     checkDaphneStatusCode(
             StatusCode::SUCCESS, dirPath + "lm.daphne",
-            "--args", "r=100", "c=20"
+            "--args", "r=100,c=20"
     );
 }

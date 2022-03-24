@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_VECTORIZEDPIPELINE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_VECTORIZEDPIPELINE_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -35,32 +34,27 @@ using mlir::daphne::VectorCombine;
 
 template<class DTRes>
 struct VectorizedPipeline {
-    static void apply(DTRes *&resIn,
-                      Structure **inputs,
-                      size_t numInputs,
-                      size_t numOutputs,
-                      int64_t *outRows,
-                      int64_t *outCols,
-                      int64_t *splits,
-                      int64_t *combines,
-                      void *fun,
-                      DCTX(ctx)) {
-        auto wrapper = std::make_unique<MTWrapper<DTRes>>();
-        auto function =
-            std::function<void(DTRes ***, Structure **)>(
-                reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+    static void apply(DTRes *&resIn, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
+            int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)) {
         assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
+
+        auto wrapper = std::make_unique<MTWrapper<DTRes>>(0, numFuncs, ctx);
+
+        std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
+        for (auto i = 0ul; i < numFuncs; ++i) {
+            funcs.emplace_back(std::function<void(DTRes ***, Structure **, DCTX(ctx))>(
+                    reinterpret_cast<void (*)(DTRes ***, Structure **, DCTX(ctx))>(reinterpret_cast<void*>(fun[i]))));
+        }
+
         DTRes **res[] = {&resIn};
-        wrapper->execute(function,
-            res,
-            inputs,
-            numInputs,
-            numOutputs,
-            outRows,
-            outCols,
-            reinterpret_cast<VectorSplit *>(splits),
-            reinterpret_cast<VectorCombine *>(combines),
-            false);
+        if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
+            wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                    reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+        }
+        else {
+            wrapper->executeQueuePerDeviceType(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                    reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+        }
     }
 };
 
@@ -69,62 +63,36 @@ struct VectorizedPipeline {
 // ****************************************************************************
 
 template<class DTRes>
-void vectorizedPipeline(DTRes *&res,
-                        Structure **inputs,
-                        size_t numInputs,
-                        size_t numOutputs,
-                        int64_t *outRows,
-                        int64_t *outCols,
-                        int64_t *splits,
-                        int64_t *combines,
-                        void *fun,
-                        DCTX(ctx))
-{
-    VectorizedPipeline<DTRes>::apply(res,
-        inputs,
-        numInputs,
-        numOutputs,
-        outRows,
-        outCols,
-        splits,
-        combines,
-        fun,
-        ctx);
+void vectorizedPipeline(DTRes *&res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
+        int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)) {
+    VectorizedPipeline<DTRes>::apply(res, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, numFuncs,
+        fun, ctx);
 }
 
 // TODO: use variable args
 template<class DTRes>
-void vectorizedPipeline(DTRes *&res1,
-                        DTRes *&res2,
-                        Structure **inputs,
-                        size_t numInputs,
-                        size_t numOutputs,
-                        int64_t *outRows,
-                        int64_t *outCols,
-                        int64_t *splits,
-                        int64_t *combines,
-                        void *fun,
-                        DCTX(ctx)) {
-    auto wrapper = std::make_unique<MTWrapper<DTRes>>();
-    auto function =
-        std::function<void(DTRes ***, Structure **)>(
-            reinterpret_cast<void (*)(DTRes ***, Structure **)>(fun));
+void vectorizedPipeline(DTRes *&res1, DTRes *&res2, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
+        int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)){
     assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
-    DTRes **res[] = {&res1, &res2};
-    wrapper->execute(function,
-        res,
-        inputs,
-        numInputs,
-        numOutputs,
-        outRows,
-        outCols,
-        reinterpret_cast<VectorSplit *>(splits),
-        reinterpret_cast<VectorCombine *>(combines),
-        false);
+
+    auto wrapper = std::make_unique<MTWrapper<DTRes>>(0, numFuncs, ctx);
+
+    std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
+    for (auto i = 0ul; i < numFuncs; ++i) {
+        funcs.emplace_back(std::function<void(DTRes ***, Structure **, DCTX(ctx))>(reinterpret_cast<void (*)(DTRes ***,
+                Structure **, DCTX(ctx))>(reinterpret_cast<void*>(fun[i]))));
+    }
+
+//    DTRes **res[] = {&res1, &res2};
+    DTRes*** res = new DTRes**[2];
+    res[0] = &res1;
+    res[1] = &res2;
+    if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
+        wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+    }
+    else {
+        wrapper->executeQueuePerDeviceType(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+    }
 }
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_VECTORIZEDPIPELINE_H

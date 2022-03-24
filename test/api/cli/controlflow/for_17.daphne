@@ -1,4 +1,4 @@
-// Update variable in loop, same shape.
+// Update variable in loop (>1 iterations), same shape.
 X = fill(10, 2, 3);
 for(i in 1:5)
     X = X + 1;

@@ -14,6 +14,14 @@
 
 cmake_minimum_required(VERSION 3.17)
 
+# use gcc 8 because CUDA broke on my Ubuntu 21.10
+if (UNIX)
+#    set(CMAKE_CUDA_HOST_COMPILER g++-8 CACHE INTERNAL "" FORCE)
+    #    set(CMAKE_CUDA_HOST_COMPILER clang++ CACHE INTERNAL "" FORCE)
+    set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc CACHE INTERNAL "" FORCE)
+    #    set(CMAKE_CXX_COMPILER g++ CACHE INTERNAL "" FORCE)
+endif()
+
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
@@ -24,7 +32,7 @@ set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
 # silence a warning about DEPFILE path transformations (used in LLVM)
 cmake_policy(SET CMP0116 OLD)
 
@@ -89,6 +97,18 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
+endif()
+
+option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
+if(USE_ARROW)
+    find_package(Arrow CONFIG REQUIRED)
+    find_package(Parquet CONFIG REQUIRED
+        PATHS /usr/local/lib/cmake/arrow
+        NO_DEFAULT_PATH
+    )
+    link_libraries(arrow_shared parquet_shared)
+    add_definitions(-DUSE_ARROW)
+    message(STATUS "Arrow/Parquet enabled")
 endif()
 
 # *****************************************************************************

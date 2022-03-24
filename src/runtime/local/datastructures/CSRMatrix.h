@@ -313,6 +313,14 @@ public:
         fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
     }
     
+    void printValue(std::ostream & os, ValueType val) const {
+      switch (ValueTypeUtils::codeFor<ValueType>) {
+        case ValueTypeCode::SI8 : os << static_cast<int32_t>(val); break;
+        case ValueTypeCode::UI8 : os << static_cast<uint32_t>(val); break;
+        default : os << val; break;
+      }
+    }
+
     void print(std::ostream & os) const override {
         os << "CSRMatrix(" << numRows << 'x' << numCols << ", "
                 << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
@@ -327,7 +335,7 @@ public:
             for(size_t i = 0; i < rowNumNonZeros; i++)
                 oneRow[rowColIdxs[i]] = rowValues[i];
             for(size_t c = 0; c < numCols; c++) {
-                os << oneRow[c];
+                printValue(os, oneRow[c]);
                 if (c < numCols - 1)
                     os << ' ';
             }
@@ -363,8 +371,20 @@ public:
         os << std::endl;
     }
 
-    CSRMatrix* slice(size_t rl, size_t ru) override {
+    CSRMatrix* sliceRow(size_t rl, size_t ru) const override {
         return DataObjectFactory::create<CSRMatrix>(this, rl, ru);
+    }
+
+    CSRMatrix* sliceCol(size_t cl, size_t cu) const override {
+        throw std::runtime_error("CSRMatrix does not support sliceCol yet");
+    }
+
+    CSRMatrix* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+        throw std::runtime_error("CSRMatrix does not support slice yet");
+    }
+
+    size_t bufferSize() {
+        return this->getNumItems() * sizeof(ValueType);
     }
 };
 

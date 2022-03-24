@@ -29,7 +29,7 @@
 #define VALUE_TYPES_FRAC float, double
 
 template<class DT>
-void checkSeq(DT * res, typename DT::VT start, typename DT::VT end, typename DT::VT inc, DT * expectedMatrix) {
+void checkSeq(DT *& res, typename DT::VT start, typename DT::VT end, typename DT::VT inc, DT * expectedMatrix) {
     seq<DT>(res, start, end, inc, nullptr);
     CHECK(*res == *expectedMatrix);
 }

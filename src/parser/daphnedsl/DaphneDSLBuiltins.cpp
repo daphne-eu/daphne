@@ -990,8 +990,14 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, resType, filename
         ));
     }
-    // TODO write
-
+    if(func == "writeFrame" || func == "writeMatrix" || func == "write") {
+        // Note that the type of arg already indicates if it is a frame or a
+        // matrix.
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value arg = args[0];
+        mlir::Value filename = args[1];
+        return builder.create<WriteOp>(loc, arg, filename);
+    }
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------
@@ -1063,20 +1069,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         return static_cast<mlir::Value>(builder.create<NowOp>(
                 loc, builder.getIntegerType(64, true)
         ));
-    }
-
-    // ********************************************************************
-    // Low-level auxiliary operations
-    // ********************************************************************
-
-    // TODO Remove this, we have InsertFreeOpPass now, which automatically
-    // inserts FreeOp where needed. For now, we leave this way open for legacy
-    // support.
-    if(func == "free") { // deprecated
-        checkNumArgsExact(func, numArgs, 1);
-        return builder.create<FreeOp>(
-                loc, args[0]
-        );
     }
 
     // ********************************************************************

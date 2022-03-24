@@ -26,12 +26,32 @@ struct File {
   unsigned long read;
 };
 
+inline struct File *openMemFile(FILE *ident){
+  struct File *f = (struct File *)malloc(sizeof(struct File));
+
+  f->identifier = ident;
+  f->pos = 0;
+
+  return f;
+}
+
 inline struct File *openFile(const char *filename) {
   struct File *f = (struct File *)malloc(sizeof(struct File));
 
   f->identifier = fopen(filename, "r");
   f->pos = 0;
 
+  if (f->identifier == NULL)
+    return NULL;
+  return f;
+}
+
+inline struct File *openFileForWrite(const char *filename) {
+  struct File *f = (struct File *)malloc(sizeof(struct File));
+
+  f->identifier = fopen(filename, "w+");
+  f->pos = 0;
+  
   if (f->identifier == NULL)
     return NULL;
   return f;

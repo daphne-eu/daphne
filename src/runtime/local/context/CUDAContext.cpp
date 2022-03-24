@@ -23,6 +23,8 @@ void CUDAContext::destroy() {
     CHECK_CUBLAS(cublasDestroy(cublas_handle));
     CHECK_CUSPARSE(cusparseDestroy(cusparse_handle));
     CHECK_CUDNN(cudnnDestroy(cudnn_handle));
+    CHECK_CUSOLVER(cusolverDnDestroy(cusolver_handle));
+    CHECK_CUDART(cudaStreamDestroy(cusolver_stream));
     CHECK_CUDNN(cudnnDestroyPoolingDescriptor(pooling_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(src_tensor_desc));
     CHECK_CUDNN(cudnnDestroyTensorDescriptor(dst_tensor_desc));
@@ -42,9 +44,13 @@ void CUDAContext::init() {
 
     size_t available; size_t total;
     cudaMemGetInfo(&available, &total);
-#ifndef NDBEBUG
-    std::cout << "Using CUDA device " << device_id << ": " << device_properties.name << std::endl;
-    std::cout << "available mem: " << available << " total mem: " << total << std::endl;
+    // ToDo: make this a user config item
+    float mem_usage = 0.9f;
+    mem_budget = total * mem_usage;
+#ifndef NDEBUG
+    std::cout << "Using CUDA device " << device_id << ": " << device_properties.name  << "\nAvailable mem: "
+            << available << " Total mem: " << total << " using " << mem_usage * 100 << "% thereof -> " << mem_budget
+            << std::endl;
 #endif
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
@@ -56,6 +62,10 @@ void CUDAContext::init() {
     CHECK_CUDNN(cudnnCreateActivationDescriptor(&activation_desc));
     CHECK_CUDNN(cudnnCreateConvolutionDescriptor(&conv_desc));
     CHECK_CUDNN(cudnnCreateFilterDescriptor(&filter_desc));
+    CHECK_CUSOLVER(cusolverDnCreate(&cusolver_handle));
+
+    CHECK_CUDART(cudaStreamCreateWithFlags(&cusolver_stream, cudaStreamNonBlocking));
+    CHECK_CUSOLVER(cusolverDnSetStream(cusolver_handle, cusolver_stream));
 
     getCUDNNWorkspace(64 * 1024 * 1024);
 
