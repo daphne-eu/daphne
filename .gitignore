@@ -1,3 +1,4 @@
 build/
 thirdparty/*
 !thirdparty/llvm-project/
+.vscode/**
