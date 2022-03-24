@@ -118,7 +118,28 @@ while ((dirEntry = readdir(dirp)) != NULL) {
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
     uint64_t target;
+    uint64_t oneChunk = ((len/_numDeques)/_numDeques)*_numDeques;
+    int remainder = len - (oneChunk*_numDeques);
+
     auto chunkParam = 1;
+
+    std::vector<LoadPartitioning> lps;
+    lps.emplace_back(STATIC, oneChunk+remainder, chunkParam, this->_numThreads, false);
+    for(int i=1; i<_numDeques; i++) {
+        lps.emplace_back(STATIC, oneChunk, chunkParam, this->_numThreads, false);
+    }
+    startChunk = 0;
+    for(uint64_t i=0; i<_numDeques; i++) {
+        while(lps[i].hasNextChunk()) {
+            endChunk += lps[i].getNextChunk();
+            qvector[i]->enqueueTaskOnTarget(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
+                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                outCols, 0, ctx}, resLock, res), i);
+            startChunk = endChunk;
+        }
+        qvector[i]->closeInput();
+    }
+/*
     LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
@@ -136,7 +157,7 @@ while ((dirEntry = readdir(dirp)) != NULL) {
     for(int i=0; i<_numDeques; i++) {
         q[i]->closeInput();
     }
-
+*/
     this->joinAll();
 }
 
