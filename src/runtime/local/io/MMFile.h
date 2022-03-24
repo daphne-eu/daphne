@@ -144,7 +144,7 @@ int mm_read_banner(File *f, MM_typecode *matcode){
 
   mm_clear_typecode(matcode);  
   line = getLine(f);
-  if (f->read == EOF) 
+  if ((ssize_t)f->read == EOF) 
     return MM_PREMATURE_EOF;
 
   if (sscanf(line, "%s %s %s %s %s", banner, mtx, crd, data_type, 
@@ -218,7 +218,6 @@ int mm_read_banner(File *f, MM_typecode *matcode){
 
 int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
 {
-  char* line;
   int num_items_read;
 
   /* set return null parameter values, in case we exit with errors */
@@ -226,7 +225,7 @@ int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
   do
   {
     num_items_read = sscanf(getLine(f), "%lu %lu %lu", M, N, nz);
-    if (f->read == EOF) return MM_PREMATURE_EOF;
+    if ((ssize_t)f->read == EOF) return MM_PREMATURE_EOF;
   } while (num_items_read != 3);
 
   return 0;
@@ -234,14 +233,13 @@ int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
 
 int mm_read_mtx_array_size(File *f, size_t *M, size_t *N)
 {
-    char *line;
     int num_items_read;
     /* set return null parameter values, in case we exit with errors */
     *M = *N = 0;
     do
     { 
       num_items_read = sscanf(getLine(f), "%lu %lu", M, N);
-      if (f->read == EOF) return MM_PREMATURE_EOF;
+      if ((ssize_t)f->read == EOF) return MM_PREMATURE_EOF;
     } while (num_items_read != 2);
 
     return 0;
@@ -318,7 +316,7 @@ public:
         void readEntry(){
           //TODO: Handle arbitrary blank lines
           line = getLine(file.f);
-          if(file.f->read == -1){
+          if((ssize_t)file.f->read == -1){
             terminate();
             return;
           }
