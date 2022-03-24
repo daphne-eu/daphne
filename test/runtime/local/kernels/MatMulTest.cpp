@@ -16,6 +16,7 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/MatMul.h>
 
@@ -32,6 +33,16 @@ void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp) {
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
+
+template<class SparseDT, class DenseDT>
+void checkMatMulSparse(const SparseDT * lhs, const SparseDT * rhs, const DenseDT * exp) {
+    DenseDT * res = nullptr;
+    matMul<DenseDT, SparseDT, SparseDT>(res, lhs, rhs, nullptr);
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
+}
+
+
 
 TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
@@ -109,4 +120,46 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
     checkMatMul(v5, v2, v6);
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
+}
+
+
+TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (CSRMatrix), (float)) {
+    using DT = TestType;
+    
+    auto m0 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            1, 2, 3, 1, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 3, 1, 0, 2,
+    });
+    auto m3 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 2, 0, 2, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    
+
+
+    checkMatMulSparse(m0, m0, m0);
+    checkMatMulSparse(m1, m1, m2);
+    checkMatMulSparse(m3, m1, m0);
+    
+   
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(m3);
 }

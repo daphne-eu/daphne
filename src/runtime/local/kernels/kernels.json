@@ -844,7 +844,8 @@
                 "name":  ["CUDA", "CPP"],
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["CSRMatrix", "float"], ["CSRMatrix", "float"]]
                 ]
             }
         ]
