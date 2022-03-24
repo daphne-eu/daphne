@@ -118,7 +118,7 @@ template <> struct ReadMM<Frame> {
 
     if(res == nullptr){
       ValueTypeCode *types = new ValueTypeCode[mmfile.numberCols()];
-      for(int i = 0; i<mmfile.numberCols(); i++)
+      for(size_t i = 0; i<mmfile.numberCols(); i++)
         types[i] = mmfile.elementType();
 
       res = DataObjectFactory::create<Frame>(
@@ -129,7 +129,7 @@ template <> struct ReadMM<Frame> {
       );
     }
     uint8_t ** rawFrame = new uint8_t*[mmfile.numberCols()];
-    for(int i = 0; i<mmfile.numberCols(); i++)
+    for(size_t i = 0; i<mmfile.numberCols(); i++)
       rawFrame[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
     for(auto& entry : mmfile)
       if (mmfile.elementType() == ValueTypeCode::SI64)

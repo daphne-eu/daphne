@@ -106,8 +106,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS", TAG_KERNELS, (DenseMatrix), (double)) {
 
   CHECK(m->get(36, 29) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -128,9 +128,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK", TAG_KERNELS, (DenseMatrix), (double)) {
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -154,8 +154,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   CHECK(m->get( 1, 0) == 0);
   CHECK(m->get(3, 15) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->get(r,c) == 0)
         CHECK(m->get(c,r) == 0);
       else
@@ -179,9 +179,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK", TAG_KERNELS, (DenseMatrix), (int32_t)) 
 
   CHECK(m->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -203,8 +203,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS", TAG_KERNELS, (DenseMatrix), (int32_t)) 
 
   CHECK(m->get(1, 1) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -288,8 +288,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS (CSR)", TAG_KERNELS, (CSRMatrix), (double
 
   CHECK(m->get(36, 29) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -310,9 +310,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK (CSR)", TAG_KERNELS, (CSRMatrix), (double
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -336,8 +336,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
   CHECK(m->get( 1, 0) == 0);
   CHECK(m->get(3, 15) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->get(r,c) == 0)
         CHECK(m->get(c,r) == 0);
       else
@@ -361,9 +361,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
 
   CHECK(m->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -385,8 +385,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
 
   CHECK(m->get(1, 1) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -470,8 +470,8 @@ TEST_CASE("ReadMM CRS (Frame)", TAG_KERNELS) {
 
   CHECK(m->getColumn<double>(29)->get(36, 0) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<double>(c)->get(r,0)
         ==  m->getColumn<double>(r)->get(c,0));
 
@@ -493,9 +493,9 @@ TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
 
   CHECK(m->getColumn<double>(36)->get(29, 0) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->getColumn<double>(r)->get(r,0) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<double>(c)->get(r,0)
         == -m->getColumn<double>(r)->get(c,0));
   }
@@ -520,8 +520,8 @@ TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
   CHECK(m->getColumn<double>(0)->get( 1, 0) == 0);
   CHECK(m->getColumn<double>(15)->get(3, 0) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->getColumn<double>(c)->get(r,0) == 0)
         CHECK(m->getColumn<double>(r)->get(c,0) == 0);
       else
@@ -545,9 +545,9 @@ TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
 
   CHECK(m->getColumn<int64_t>(0)->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->getColumn<int64_t>(r)->get(r,0) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<int64_t>(c)->get(r,0)
         == -m->getColumn<int64_t>(r)->get(c,0));
   }
@@ -570,8 +570,8 @@ TEST_CASE("ReadMM AIS (Frame)", TAG_KERNELS) {
 
   CHECK(m->getColumn<int64_t>(1)->get(1, 0) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<int64_t>(c)->get(r,0)
         ==  m->getColumn<int64_t>(r)->get(c,0));
 
