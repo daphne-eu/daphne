@@ -14,14 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDACONTEXT_H
-#define DAPHNE_PROTOTYPE_CUDACONTEXT_H
-
 #pragma once
 
 //#include <api/cli/DaphneUserConfig.h>
 #include "IContext.h"
-#include <runtime/local/kernels/CUDA_HostUtils.h>
+#include <runtime/local/kernels/CUDA/HostUtils.h>
 //#include <cublasLt.h>
 
 #include <cassert>
@@ -30,6 +27,7 @@
 
 class CUDAContext : public IContext {
     int device_id = -1;
+    size_t mem_budget = 0;
 
     cudaDeviceProp device_properties{};
 
@@ -39,6 +37,9 @@ class CUDAContext : public IContext {
 
     // cuDNN API
     cudnnHandle_t cudnn_handle{};
+
+    cusolverDnHandle_t cusolver_handle{};
+    cudaStream_t cusolver_stream{};
 
     // preallocate 64MB
     size_t cudnn_workspace_size{};
@@ -67,6 +68,8 @@ public:
 //    [[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
     [[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
     [[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
+    [[nodiscard]] cusolverDnHandle_t getCUSOLVERHandle() const { return cusolver_handle; }
+    cudaStream_t getCuSolverStream() { return cusolver_stream; }
 
     template<class T>
     [[nodiscard]] cudnnDataType_t getCUDNNDataType() const;
@@ -75,6 +78,8 @@ public:
     [[nodiscard]] cudaDataType getCUSparseDataType() const;
 
     void* getCUDNNWorkspace(size_t size);
+
+    size_t getMemBudget() { return mem_budget; }
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
@@ -90,5 +95,3 @@ public:
 private:
     void init();
 };
-
-#endif //DAPHNE_PROTOTYPE_CUDACONTEXT_H

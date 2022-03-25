@@ -27,6 +27,7 @@
 #define TAG_DATASTRUCTURES "[datastructures]"
 #define TAG_DISTRIBUTED "[distributed]"
 #define TAG_FUNCTIONS "[functions]"
+#define TAG_INDEXING "[indexing]"
 #define TAG_INFERENCE "[inference]"
 #define TAG_IO "[io]"
 #define TAG_KERNELS "[kernels]"
@@ -39,6 +40,6 @@
 #define TAG_SQL "[sql]"
 #define TAG_SYNTAX "[syntax]"
 #define TAG_VECTORIZED "[vectorized]"
-
+#define TAG_DAPHNELIB "[daphnelib]"
 
 #endif //TEST_TAGS_H

@@ -1,0 +1,58 @@
+input
+X
+DenseMatrix(4x4, int64_t)
+0 1 2 3
+4 5 6 7
+8 9 10 11
+12 13 14 15
+
+single position
+X[1, ]
+DenseMatrix(1x4, int64_t)
+4 5 6 7
+X[1.0, ]
+DenseMatrix(1x4, int64_t)
+4 5 6 7
+X[1.3, ]
+DenseMatrix(1x4, int64_t)
+4 5 6 7
+X[1.7, ]
+DenseMatrix(1x4, int64_t)
+4 5 6 7
+X[, 1]
+DenseMatrix(4x1, int64_t)
+1
+5
+9
+13
+X[, 1.0]
+DenseMatrix(4x1, int64_t)
+1
+5
+9
+13
+X[, 1.3]
+DenseMatrix(4x1, int64_t)
+1
+5
+9
+13
+X[, 1.7]
+DenseMatrix(4x1, int64_t)
+1
+5
+9
+13
+
+range of positions
+X[1:3.7, ]
+DenseMatrix(2x4, int64_t)
+4 5 6 7
+8 9 10 11
+X[, 1:3.7]
+DenseMatrix(4x2, int64_t)
+1 2
+5 6
+9 10
+13 14
+

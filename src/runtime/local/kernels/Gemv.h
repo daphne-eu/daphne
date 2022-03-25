@@ -85,8 +85,8 @@ struct Gemv<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
 
         cblas_sgemv(CblasRowMajor,
             CblasTrans,
-            numCols,
             numRows,
+            numCols,
             1.0,
             mat->getValues(),
             mat->getRowSkip(),

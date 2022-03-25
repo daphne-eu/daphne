@@ -29,12 +29,12 @@
 #define VALUE_TYPES  int32_t, double  
 
 template<class DT>
-void checkDiagVector(const DT * arg, DenseMatrix<typename DT::VT> *res, DenseMatrix<typename DT::VT> * expectedMatrix) {    
+void checkDiagVector(const DT * arg, DenseMatrix<typename DT::VT> *& res, DenseMatrix<typename DT::VT> * expectedMatrix) {
     diagVector<DT>(res, arg, nullptr);
     CHECK(*res == *expectedMatrix);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
+TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){ // NOLINT(cert-err58-cpp)
 
     using DT = TestType;
     auto inputMatrix = genGivenVals<DT>(3, {
@@ -42,18 +42,14 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-normal", TAG_KERNELS, (DATA_TYPES), (VALU
         0,2,0,
         0,0,1,
     });
-    DenseMatrix<typename DT::VT> * expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {
-        3,
-        2,
-        1,
-    });
+    auto* expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {3, 2, 1});
     checkDiagVector(inputMatrix, expectedMatrix, expectedMatrix);
     DataObjectFactory::destroy(expectedMatrix);
     DataObjectFactory::destroy(inputMatrix);
 }
 
 
-TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
+TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){ // NOLINT(cert-err58-cpp)
 
     using DT = TestType;
     auto inputMatrix = genGivenVals<DT>(3, {
@@ -61,11 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES
         0,0,0,
         0,0,1,
     });
-    DenseMatrix<typename DT::VT> * expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {
-        1,
-        0,
-        1,
-    });
+    auto* expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {1, 0, 1});
     DenseMatrix<typename DT::VT> * res=nullptr;
     checkDiagVector(inputMatrix, res, expectedMatrix);
     DataObjectFactory::destroy(expectedMatrix);
@@ -74,7 +66,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-mixed-diagonal", TAG_KERNELS, (DATA_TYPES
 }
 
 
-TEMPLATE_PRODUCT_TEST_CASE("DiagVector-null", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){
+TEMPLATE_PRODUCT_TEST_CASE("DiagVector-null", TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)){ // NOLINT(cert-err58-cpp)
 
     using DT = TestType;
     auto inputMatrix = genGivenVals<DT>(3, {
@@ -82,11 +74,7 @@ TEMPLATE_PRODUCT_TEST_CASE("DiagVector-null", TAG_KERNELS, (DATA_TYPES), (VALUE_
         0,2,0,
         0,0,1,
     });
-    DenseMatrix<typename DT::VT> * expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {
-        3,
-        2,
-        1,
-    });
+    auto* expectedMatrix = genGivenVals<DenseMatrix<typename DT::VT>>(3, {3, 2, 1});
     DenseMatrix<typename DT::VT> * res=nullptr;
     checkDiagVector(inputMatrix, res, expectedMatrix);
     DataObjectFactory::destroy(expectedMatrix);

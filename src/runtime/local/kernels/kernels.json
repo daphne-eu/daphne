@@ -60,13 +60,28 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
-        ],
-        "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+                ],
+                "opCodes": ["SUM", "MIN", "MAX"]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+                ],
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
+            }
+        ]
     },
     {
         "kernelTemplate": {
@@ -162,7 +177,9 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], "Frame"],
-            [["DenseMatrix", "int64_t"], "Frame"]
+            [["DenseMatrix", "int64_t"], "Frame"],
+            ["Frame", ["DenseMatrix", "double"]],
+            ["Frame", ["DenseMatrix", "int64_t"]]
         ]
     },
     {
@@ -206,6 +223,7 @@
             ["size_t", "double"],
             ["size_t", "int64_t"],
             ["size_t", "uint32_t"],
+            ["size_t", "uint64_t"],
             ["size_t", "size_t"],
             ["size_t", "bool"],
             ["bool", "double"],
@@ -217,7 +235,9 @@
             ["uint32_t", "size_t"],
             ["uint32_t", "float"],
             ["uint8_t", "int64_t"],
-            ["bool", "bool"]
+            ["bool", "bool"],
+            ["const char *", "double"],
+            ["const char *", "int64_t"]
         ]
     },
     {
@@ -254,10 +274,19 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            ["Frame", "Frame", "Frame"]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]]
+            },
+            {
+                "name" : ["CPP"],
+                "instantiations": [
+                    ["Frame", "Frame", "Frame"]]
+            }
         ]
     },
     {
@@ -295,12 +324,31 @@
                 {
                     "type": "DaphneContext *&",
                     "name": "res"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "configPtr"
                 }
             ]
         },
         "instantiations": [
             []
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CreateCUDAContext.h",
+            "opName": "createCUDAContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [[]]
+
+            }]
     },
     {
         "kernelTemplate": {
@@ -375,6 +423,7 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
     },
@@ -416,19 +465,37 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
-            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
-        ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+                ],
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            },
+            {
+                "name":  ["example_for_commented_or_unimplemented"],
+                "instantiations": [
+                    [["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint32_t"]]
+                ],
+                "opCodes": ["BIT_AND", "BIT_OR"]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
+                ],
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            }
+        ]
     },
     {
         "kernelTemplate": {
-            "header": "EwBinaryMatSca.h",
-            "opName": "ewBinaryMatSca",
+            "header": "EwBinaryObjSca.h",
+            "opName": "ewBinaryObjSca",
             "returnType": "void",
             "templateParams": [
                 {
@@ -463,11 +530,20 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
-        ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"],
+                    ["Frame", "Frame", "float"],
+                    ["Frame", "Frame", "double"],
+                    ["Frame", "Frame", "int64_t"]
+                ],
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            }
+        ]
     },
     {
         "kernelTemplate": {
@@ -546,11 +622,18 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            ["Frame", "Frame", "char"]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [["Frame", "Frame", "char"]]
+            }
         ]
     },
     {
@@ -792,9 +875,14 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
         ]
     },
     {
@@ -1083,6 +1171,35 @@
     },
     {
         "kernelTemplate": {
+            "header": "Write.h",
+            "opName": "write",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "filename"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "Replace.h",
             "opName": "replace",
             "returnType": "void",
@@ -1122,6 +1239,45 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Reshape.h",
+            "opName": "reshape",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numRows"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numCols"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
     },
     {
@@ -1247,12 +1403,20 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["CSRMatrix", "double"], ["CSRMatrix", "double"]],
-            [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]]
+            }
         ]
     },
     {
@@ -1445,9 +1609,13 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]]
+            }
         ]
     },
     {
@@ -1476,9 +1644,12 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [[["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                                   [["DenseMatrix", "double"], ["DenseMatrix", "double"]]]
+            }
         ]
     },
     {
@@ -1515,9 +1686,13 @@
                 }
             ]
         },
-        "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]]]
+            }
         ]
     },
     {
@@ -1722,6 +1897,10 @@
                     "name": "res"
                 },
                 {
+                    "type": "bool *",
+                    "name": "isScalar"
+                },
+                {
                     "type": "Structure **",
                     "name": "inputs"
                 },
@@ -1750,13 +1929,18 @@
                     "name": "combines"
                 },
                 {
-                    "type": "void *",
+                    "type": "size_t",
+                    "name": "numFuncs"
+                },
+                {
+                    "type": "void **",
                     "name": "fun"
                 }
             ]
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]],
             [["CSRMatrix", "double"]]
         ]
     },
@@ -1781,6 +1965,10 @@
                     "name": "res2"
                 },
                 {
+                    "type": "bool *",
+                    "name": "isScalar"
+                },
+                {
                     "type": "Structure **",
                     "name": "inputs"
                 },
@@ -1809,55 +1997,52 @@
                     "name": "combines"
                 },
                 {
-                    "type": "void *",
+                    "type": "size_t",
+                    "name": "numFuncs"
+                },
+                {
+                    "type": "void **",
                     "name": "fun"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]]
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"]]
         ]
     },
     {
         "kernelTemplate": {
-            "header": "FreeObj.h",
-            "opName": "freeObj",
+            "header": "IncRef.h",
+            "opName": "incRef",
             "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTArg",
-                    "isDataType": true
-                }
-            ],
+            "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "const DTArg *",
+                    "type": "const Structure *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"]],
-            [["DenseMatrix", "int8_t"]],
-            [["DenseMatrix", "int32_t"]],
-            [["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "uint8_t"]],
-            [["DenseMatrix", "uint32_t"]],
-            [["DenseMatrix", "uint64_t"]],
-            [["DenseMatrix", "size_t"]],
-            [["CSRMatrix", "double"]],
-            [["CSRMatrix", "float"]],
-            [["CSRMatrix", "int8_t"]],
-            [["CSRMatrix", "int32_t"]],
-            [["CSRMatrix", "int64_t"]],
-            [["CSRMatrix", "uint8_t"]],
-            [["CSRMatrix", "uint32_t"]],
-            [["CSRMatrix", "uint64_t"]],
-            [["CSRMatrix", "size_t"]],
-            ["Frame"],
-            [["Handle", "DenseMatrix", "double"]],
-            [["Handle", "CSRMatrix", "double"]]
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DecRef.h",
+            "opName": "decRef",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "const Structure *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            []
         ]
     },
     {
@@ -1886,18 +2071,61 @@
                 },
                 {
                     "type": "size_t",
-                    "name": "rowLowerIncl"
+                    "name": "lowerIncl"
                 },
                 {
                     "type": "size_t",
-                    "name": "rowUpperExcl"
+                    "name": "upperExcl"
                 }
             ]
         },
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame"]
+        ]
+    },
+    
+    {
+        "kernelTemplate": {
+            "header": "SliceCol.h",
+            "opName": "sliceCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "lowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "upperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame"]
         ]
     },
     {
@@ -1943,8 +2171,9 @@
     {
         "kernelTemplate": {
             "header": "Pooling.h",
-            "opName": "PoolForward",
+            "opName": "Pooling::Forward",
             "returnType": "void",
+            "opCodeAsTemplateParam": 1,
             "templateParams": [
                 {
                     "name": "DTRes",
@@ -1957,7 +2186,7 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "PoolOpCode",
+                    "type": "PoolingOpCode",
                     "name": "opcode"
                 },
                 {
@@ -1982,11 +2211,56 @@
                 { "type": "size_t", "name": "pad_w"}
             ]
         },
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ],
+                "opCodes": ["AVG", "MAX"]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "RowBind.h",
+            "opName": "rowBind",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTUp",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLow",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTUp *",
+                    "name": "up"
+                },
+                {
+                    "type": "const DTLow *",
+                    "name": "low"
+                }
+            ]
+        },
         "instantiations": [
-            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
-        ],
-        "opCodes": ["AVG", "MAX"]
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame", "Frame"]
+        ]
     },
     {
         "kernelTemplate": {
@@ -2019,5 +2293,320 @@
         "instantiations": [
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "float"]]
 	]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Activation.h",
+            "opName": "Activation::Forward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "ActivationOpCode",
+                    "name": "opcode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA", "CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ],
+                "opCodes": ["ReLU"]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Affine.h",
+            "opName": "Affine::Forward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "weights"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "bias"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "BatchNorm.h",
+            "opName": "BatchNorm::Forward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "gamma"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "beta"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "ema_mean"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "ema_var"
+                },
+                {
+                    "type": "typename DTArg::VT",
+                    "name": "eps"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Convolution.h",
+            "opName": "Convolution::Forward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_h"
+                },
+                {
+                    "type": "size_t&",
+                    "name": "res_w"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "filter"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "bias"
+                },
+                {
+                    "type": "size_t",
+                    "name": "batch_size"
+                },
+                {
+                    "type": "size_t",
+                    "name": "num_channels"
+                },
+                {
+                    "type": "size_t",
+                    "name": "img_h"
+                },
+                {
+                    "type": "size_t",
+                    "name": "img_w"
+                },
+                {
+                    "type": "size_t",
+                    "name": "filter_h"
+                },
+                {
+                    "type": "size_t",
+                    "name": "filter_w"
+                },
+                {
+                    "type": "size_t",
+                    "name": "stride_h"
+                },
+                {
+                    "type": "size_t",
+                    "name": "stride_w"
+                },
+                {
+                    "type": "size_t",
+                    "name": "pad_h"
+                },
+                {
+                    "type": "size_t",
+                    "name": "pad_w"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Softmax.h",
+            "opName": "Softmax::Forward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "data"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "BiasAdd.h",
+            "opName": "BiasAdd::Forward",
+            "returnType": "void",
+            "opCodeAsTemplateParam": 1,
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "input"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "bias"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            }
+        ]
     }
 ]

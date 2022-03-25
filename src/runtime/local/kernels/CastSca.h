@@ -19,19 +19,55 @@
 
 #include <runtime/local/context/DaphneContext.h>
 
+#include <cstring>
+
+#include <string>
+
 // ****************************************************************************
-// Convenience function
+// Struct for partial template specialization
 // ****************************************************************************
 
 /**
- * @brief Performs a static cast of the given value to another type.
+ * @brief Casts the given scalar to another type.
  * 
  * @param arg The value to cast.
  * @return The casted value.
  */
 template<typename VTRes, typename VTArg>
+struct CastSca {
+    static VTRes apply(VTArg arg, DCTX(ctx)) {
+        // Default implementation.
+        return static_cast<VTRes>(arg);
+    }
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<typename VTRes, typename VTArg>
 VTRes castSca(VTArg arg, DCTX(ctx)) {
-    return static_cast<VTRes>(arg);
+    return CastSca<VTRes, VTArg>::apply(arg, ctx);
 }
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// string <- any type
+// ----------------------------------------------------------------------------
+
+template<typename VTArg>
+struct CastSca<const char *, VTArg> {
+    static const char * apply(VTArg arg, DCTX(ctx)) {
+        std::string str = std::to_string(arg).c_str();
+        const size_t len = str.length();
+        char * res = new char[len + 1]();
+        strncpy(res, str.c_str(), len);
+        res[len] = 0;
+        return res;
+    }
+};
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CASTSCA_H

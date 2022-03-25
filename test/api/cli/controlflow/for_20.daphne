@@ -1,0 +1,5 @@
+// Setting variable in loop (>1 iterations), same shape.
+X = fill(10, 2, 3);
+for(i in 1:5)
+    X = fill(5, 2, 3);
+print(sum(X));

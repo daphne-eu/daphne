@@ -1,7 +1,5 @@
-// Assign new value in then/else branches, same shape.
+// Assign new value in then-branch, retain old value in else-branch, take else-branch, same shape.
 X = fill(10, 2, 3);
-if(true)
+if(false)
     X = X + 1;
-else
-    X = fill(20, 2, 3);
 print(sum(X));

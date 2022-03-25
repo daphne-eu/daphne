@@ -31,28 +31,12 @@ def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
     let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
 }
 
-//def InsertDaphneContext : FunctionPass<"insert-daphne-context"> {
-//    let constructor = "mlir::daphne::createInsertDaphneContextPass()";
-//}
-
-def InsertFreeOp : FunctionPass<"insert-freeop"> {
-    let constructor = "mlir::daphne::createInsertFreeOpPass()";
-}
-
-def LowerToLLVM : FunctionPass<"lower-to-llvm"> {
-    let constructor = "mlir::daphne::createLowerToLLVMPass()";
+def ManageObjRefs : FunctionPass<"manage-obj-refs"> {
+    let constructor = "mlir::daphne::createManageObjRefsPass()";
 }
 
 def PrintIR : FunctionPass<"print-ir"> {
     let constructor = "mlir::daphne::createPrintIRPass()";
-}
-
-//def RewriteToCallKernelOp : FunctionPass<"rewrite-to-callkernelop"> {
-//    let constructor = "mlir::daphne::createRewriteToCallKernelOpPass()";
-//}
-
-def VectorizeComputations : FunctionPass<"vectorize-computations"> {
-    let constructor = "mlir::daphne::createVectorizeComputationsPass()";
 }
 
 def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {

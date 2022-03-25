@@ -17,10 +17,8 @@
 
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
-
 #include "antlr4-runtime.h"
 
-#include <set>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -28,7 +26,6 @@
 #include <algorithm>
 
 #include <cstdint>
-#include <cstdlib>
 #include <regex>
 
 // ****************************************************************************
@@ -61,18 +58,15 @@ void toggleBit(int64_t& flag, int64_t position){
 // ****************************************************************************
 
 template<typename T>
-T fetch(std::unordered_map <std::string, T> x, std::string name){
+T fetch(std::unordered_map <std::string, T> x, const std::string& name) {
     auto search = x.find(name);
-    if(search != x.end()){
-        return search->second;
-    }
-    return NULL;
+    return search != x.end() ? search->second : nullptr;
 }
 
 template<>
 std::string fetch<std::string>(
     std::unordered_map <std::string, std::string> x,
-    std::string name
+    const std::string& name
 )
 {
     auto search = x.find(name);
@@ -82,13 +76,13 @@ std::string fetch<std::string>(
     return "";
 }
 
-void SQLVisitor::registerAlias(std::string name, mlir::Value arg){
+void SQLVisitor::registerAlias(const std::string& name, mlir::Value arg){
     alias[name] = arg;
 }
 
 std::string SQLVisitor::setFramePrefix(
-    std::string framename,
-    std::string prefix,
+    const std::string& framename,
+    const std::string& prefix,
     bool necessary = true,
     bool ignore = false
 )
@@ -121,9 +115,9 @@ std::string SQLVisitor::setFramePrefix(
     return newPrefix;
 }
 
-mlir::Value SQLVisitor::fetchAlias(std::string name){
-    mlir::Value res = fetch<mlir::Value>(alias, name);
-    if(res != NULL){
+[[maybe_unused]] mlir::Value SQLVisitor::fetchAlias(const std::string& name){
+    auto res = fetch<mlir::Value>(alias, name);
+    if(res != nullptr){
         return res;
     }
     std::stringstream x;
@@ -131,14 +125,14 @@ mlir::Value SQLVisitor::fetchAlias(std::string name){
     throw std::runtime_error(x.str());
 }
 
-mlir::Value SQLVisitor::fetchMLIR(std::string name){
+mlir::Value SQLVisitor::fetchMLIR(const std::string& name){
     mlir::Value res;
     res = fetch<mlir::Value>(alias, name);
-    if(res != NULL){
+    if(res != nullptr){
         return res;
     }
     res = fetch<mlir::Value>(view, name);
-    if(res != NULL){
+    if(res != nullptr){
         return res;
     }
     std::stringstream x;
@@ -146,15 +140,12 @@ mlir::Value SQLVisitor::fetchMLIR(std::string name){
     throw std::runtime_error(x.str());
 }
 
-std::string SQLVisitor::fetchPrefix(std::string name){
-    std::string prefix = fetch<std::string>(framePrefix, name);
-    if(!prefix.empty()){
-        return prefix;
-    }
-    return "";
+std::string SQLVisitor::fetchPrefix(const std::string& name){
+    auto prefix = fetch<std::string>(framePrefix, name);
+    return prefix.empty() ? "" : prefix;
 }
 
-bool SQLVisitor::hasMLIR(std::string name){
+bool SQLVisitor::hasMLIR(const std::string& name){
     auto searchview = view.find(name);
     auto searchalias = alias.find(name);
     return (searchview != view.end() || searchalias != alias.end());
@@ -414,7 +405,7 @@ antlrcpp::Any SQLVisitor::visitSelect(
     //Runs over the projections and seeks columns and adds them to a Frame,
     //which is the result of this function
     res = utils.valueOrError(visit(ctx->selectExpr(0)));
-    for(auto i = 1; i < ctx->selectExpr().size(); i++){
+    for(auto i = 1ul; i < ctx->selectExpr().size(); i++){
         mlir::Value add;
         try{
             add = utils.valueOrError(visit(ctx->selectExpr(i)));
@@ -1011,7 +1002,7 @@ antlrcpp::Any SQLVisitor::visitStringIdent(
 
     std::string getSTR;
     std::string columnSTR = ctx->var->getText();
-    std::string frameSTR = "";
+    std::string frameSTR;
 
     if(ctx->frame){
         if(!hasMLIR(ctx->frame->getText())){
@@ -1020,12 +1011,16 @@ antlrcpp::Any SQLVisitor::visitStringIdent(
                 + " use before declaration during selection"
             );
         }
-        std::string framePrefix = fetchPrefix(ctx->frame->getText());
-        if(!framePrefix.empty()){
-            frameSTR = framePrefix + ".";
+        std::string framePrefix_ = fetchPrefix(ctx->frame->getText());
+        if(!framePrefix_.empty()){
+            frameSTR = framePrefix_ + ".";
+        }else{
+            frameSTR = "";
         }
+        getSTR = frameSTR+columnSTR;
+    }else{
+        getSTR = columnSTR;
     }
-    getSTR = frameSTR+columnSTR;
     return createStringConstant(getSTR);
 }
 
@@ -1035,16 +1030,18 @@ antlrcpp::Any SQLVisitor::visitLiteral(
 )
 {
     mlir::Location loc = utils.getLoc(ctx->start);
-    if(auto lit = ctx->INT_LITERAL()){
-        int64_t val = atol(lit->getText().c_str());
+    if(auto lit = ctx->INT_LITERAL()) {
+        // ToDo: converted from atol to stol for safety -> check perf
+        int64_t val = std::stol(lit->getText());
         return static_cast<mlir::Value>(
             builder.create<mlir::daphne::ConstantOp>(
                     loc, val
             )
         );
     }
-    if(auto lit = ctx->FLOAT_LITERAL()){
-        double val = atof(lit->getText().c_str());
+    if(auto lit = ctx->FLOAT_LITERAL()) {
+        // ToDo: converted from atof to std::stod for safety -> check perf
+        double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(
             builder.create<mlir::daphne::ConstantOp>(
                 loc,

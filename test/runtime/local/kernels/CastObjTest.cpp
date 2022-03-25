@@ -93,3 +93,91 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, frame to matrix, multi-column", TAG_KERNELS
     DataObjectFactory::destroy(c2Fnd);
     DataObjectFactory::destroy(res);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, single-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    const size_t numRows = 4;
+    auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows,{VTArg(0.0), VTArg(1.1), VTArg(2.2), VTArg(3.3),});    
+    std::vector<Structure *> cols = {arg};
+    auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
+
+    Frame * res = nullptr;
+    castObj<Frame, DTArg>(res, arg, nullptr);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(exp);
+    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame, multi-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    const size_t numRows = 4;
+    auto arg = genGivenVals<DenseMatrix<VTArg>>(numRows, {
+        VTArg(0.0), VTArg(1.1), VTArg(2.2),
+        VTArg(3.3), VTArg(4.4), VTArg(5.5),
+        VTArg(6.6), VTArg(7.7), VTArg(8.8),
+        VTArg(9.9), VTArg(1.0), VTArg(2.0)
+        });
+    
+    auto c0 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(0.0), VTArg(3.3), VTArg(6.6), VTArg(9.9)});
+    auto c1 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(1.1), VTArg(4.4), VTArg(7.7), VTArg(1.0)});
+    auto c2 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(2.2), VTArg(5.5), VTArg(8.8), VTArg(2.0)});
+    std::vector<Structure *> cols = {c0, c1, c2};
+    auto exp = DataObjectFactory::create<Frame>(cols, nullptr);
+    
+    Frame * res = nullptr;
+    castObj<Frame, DTArg>(res, arg, nullptr);
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(exp);
+    DataObjectFactory::destroy(arg);
+    DataObjectFactory::destroy(res);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame and back, multi-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DT = TestType;
+    
+    auto m0 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DT>(4, {
+            2, 3, 1, 1, 2, 4,
+            1, 2, 1, 3, 1, 4,
+            1, 1, 1, 1, 1, 1,
+            1, 1, 1, 1, 1, 1,
+    });
+
+    Frame * f0 = nullptr;
+    castObj<Frame, DT>(f0, m0, nullptr);
+    Frame * f1 = nullptr;
+    castObj<Frame, DT>(f1, m1, nullptr);
+    Frame * f2 = nullptr;
+    castObj<Frame, DT>(f2, m2, nullptr);
+    DT* res0 = nullptr;
+    castObj<DT, Frame>(res0, f0, nullptr);
+    DT* res1 = nullptr;
+    castObj<DT, Frame>(res1, f1, nullptr);
+    DT* res2 = nullptr;
+    castObj<DT, Frame>(res2, f2, nullptr);
+    CHECK(*m0 == *res0);
+    CHECK(*m1 == *res1);
+    CHECK(*m2 == *res2);
+
+    DataObjectFactory::destroy(m0, f0, res0);
+    DataObjectFactory::destroy(m1, f1, res1);
+    DataObjectFactory::destroy(m2, f2, res2);
+}

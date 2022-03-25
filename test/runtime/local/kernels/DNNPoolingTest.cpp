@@ -20,8 +20,8 @@
 
 #ifdef USE_CUDA
     #include <api/cli/DaphneUserConfig.h>
-    #include <runtime/local/kernels/CUDA_Pooling.h>
-    #include <runtime/local/kernels/CUDA_InitContext.h>
+    #include <runtime/local/kernels/CUDA/Pooling.h>
+    #include "runtime/local/kernels/CUDA/CreateCUDAContext.h"
 #else
     #include <runtime/local/kernels/Pooling.h>
 #endif
@@ -51,20 +51,22 @@ void check(const DT* in, const DT* exp, DaphneContext* dctx) {
     size_t out_h;
     size_t out_w;
 #ifdef USE_CUDA
-    Pooling::Forward_CUDA<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
+    CUDA::Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #else
     Pooling::Forward<OP, DT, DT>::apply(res, out_h, out_w, in, in->getNumRows(), 3, 5, 5, 2, 2, 1, 1, 0, 0, dctx);
 #endif
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
 #ifdef USE_CUDA
-    initCUDAContext(dctx);
+    CUDA::createCUDAContext(dctx.get());
 #endif
+
 
     // two rgb "images" of 5x5 pixels
     auto inputs = genInput<DT>();
@@ -78,20 +80,19 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
                     145, 146, 147
     });
 
-    check<Pooling::AVG>(inputs, out_f2x2_s1x1_p0x0, dctx);
+    check<Pooling::AVG>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
-
-    delete dctx;
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    auto dctx = new DaphneContext();
+    DaphneUserConfig user_config{};
+    auto dctx = std::make_unique<DaphneContext>(user_config);
 #ifdef USE_CUDA
-    initCUDAContext(dctx);
+    CUDA::createCUDAContext(dctx.get());
 #endif
 
     // two rgb "images" of 5x5 pixels
@@ -106,10 +107,8 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, doubl
                     148, 149, 150
     });
 
-    check<Pooling::MAX>(inputs, out_f2x2_s1x1_p0x0, dctx);
+    check<Pooling::MAX>(inputs, out_f2x2_s1x1_p0x0, dctx.get());
 
     DataObjectFactory::destroy(inputs);
     DataObjectFactory::destroy(out_f2x2_s1x1_p0x0);
-
-    delete dctx;
 }

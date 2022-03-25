@@ -80,7 +80,7 @@ expr:
     | func=IDENTIFIER '(' (expr (',' expr)*)? ')' # callExpr
     | KW_AS ('.' DATA_TYPE)? ('.' VALUE_TYPE)? '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
-    | obj=expr '[' (rows=expr)? ',' (cols=expr)? ']' # rightIdxExtractExpr
+    | obj=expr '[' (rows=range)? ',' (cols=range)? ']' # rightIdxExtractExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
     | lhs=expr op='%' rhs=expr # modExpr
@@ -90,6 +90,9 @@ expr:
     | lhs=expr op='&&' rhs=expr # conjExpr
     | lhs=expr op='||' rhs=expr # disjExpr
     ;
+
+range:
+    pos=expr | ( (posLowerIncl=expr)? ':' (posUpperExcl=expr)? ) ;
 
 literal:
     INT_LITERAL
@@ -130,7 +133,12 @@ DATA_TYPE:
     ('matrix') ;
 
 VALUE_TYPE:
-    ('f64' | 'f32' | 'si64' | 'si32' | 'si8' | 'ui64' | 'ui32' | 'ui8') ;
+    (
+        'f64' | 'f32' |
+        'si64' | 'si32' | 'si8' |
+        'ui64' | 'ui32' | 'ui8' |
+        'str'
+    ) ;
 
 INT_LITERAL:
     ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;

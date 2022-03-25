@@ -16,10 +16,19 @@ limitations under the License.
 
 # Documentation
 
+- [Getting Started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md)
+
+## User Documentation
+
+- Command-line interface API: see `build/bin/daphne --help`
+
+## Developer Documentation
+
 ### How-tos and Guidelines
 
-- [Getting Started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md)
 - [Implementing a Built-in Kernel](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ImplementBuiltinKernel.md)
+- [Binary Data Format](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/BinaryFormat.md)
+- [Prototype Configuration: Getting Information from the User](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/Config.md)
 
 ### Source Code Documentation
 

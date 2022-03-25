@@ -1,0 +1,90 @@
+// Right indexing using different scalar types to specify rows/cols.
+
+// ****************************************************************************
+// Input matrix
+// ****************************************************************************
+
+X = reshape(seq(0, 15, 1), 4, 4);
+print("input");
+print("X");
+print(X); // to check if the input is as expected
+print("");
+
+// ****************************************************************************
+// Single position
+// ****************************************************************************
+
+print("single position");
+
+// Only rows.
+print("X[1, ]");
+print( X[1, ]);
+print("X[1.0, ]");
+print( X[1.0, ]);
+print("X[1.3, ]");
+print( X[1.3, ]);
+print("X[1.7, ]");
+print( X[1.7, ]);
+
+// Only cols.
+print("X[, 1]");
+print( X[, 1]);
+print("X[, 1.0]");
+print( X[, 1.0]);
+print("X[, 1.3]");
+print( X[, 1.3]);
+print("X[, 1.7]");
+print( X[, 1.7]);
+
+print("");
+
+// ****************************************************************************
+// Range of positions
+// ****************************************************************************
+
+print("range of positions");
+
+// Only rows.
+print("X[1:3.7, ]");
+print( X[1.3:3, ]);
+
+// Only cols.
+print("X[, 1:3.7]");
+print( X[, 1.3:3]);
+
+print("");
+
+// ****************************************************************************
+// Column-matrix of positions
+// ****************************************************************************
+
+// TODO This does not work yet. Right indexing should automatically insert a
+// cast to ensure that the value type is int64_t.
+/*
+print("column-matrix of positions");
+
+idsSI64 = seq(1, 3, 1);
+idsF64a = seq(1.0, 3.0, 1.0);
+idsF64b = seq(1.3, 3.3, 1.0);
+idsF64c = seq(1.7, 3.7, 1.0);
+
+// Only rows.
+print("X[idsSI64, ]");
+print(X[idsSI64, ]);
+print("X[idsF64a, ]");
+print(X[idsF64a, ]);
+print("X[idsF64b, ]");
+print(X[idsF64b, ]);
+print("X[idsF64c, ]");
+print(X[idsF64c, ]);
+
+// Only cols.
+print("X[, idsSI64]");
+print(X[, idsSI64]);
+print("X[, idsF64a]");
+print(X[, idsF64a]);
+print("X[, idsF64b]");
+print(X[, idsF64b]);
+print("X[, idsF64c]");
+print(X[, idsF64c]);
+*/

@@ -371,8 +371,20 @@ public:
         os << std::endl;
     }
 
-    CSRMatrix* slice(size_t rl, size_t ru) override {
+    CSRMatrix* sliceRow(size_t rl, size_t ru) const override {
         return DataObjectFactory::create<CSRMatrix>(this, rl, ru);
+    }
+
+    CSRMatrix* sliceCol(size_t cl, size_t cu) const override {
+        throw std::runtime_error("CSRMatrix does not support sliceCol yet");
+    }
+
+    CSRMatrix* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+        throw std::runtime_error("CSRMatrix does not support slice yet");
+    }
+
+    size_t bufferSize() {
+        return this->getNumItems() * sizeof(ValueType);
     }
 };
 

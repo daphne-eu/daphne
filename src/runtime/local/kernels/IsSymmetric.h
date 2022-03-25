@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
-#define SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <cstddef>
@@ -51,8 +50,6 @@ template <typename VT> struct IsSymmetric<DenseMatrix<VT>> {
     static bool apply(const DenseMatrix<VT> *arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-
-        const VT* values = arg->getValues();
 
         if (numRows != numCols) {
             throw std::runtime_error("Provided matrix is not square.");
@@ -94,8 +91,6 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
             return true;
         }
 
-        const size_t* rowOffsets = arg->getRowOffsets();
-
         std::vector<size_t> positions(numRows, -1); // indexes of the column index array.
 
         for (size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
@@ -114,7 +109,7 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 positions[rowIdx] = idx;
                 VT valA = rowA[idx];
 
-                // B references the transposed element to compare for symmetrie.
+                // B references the transposed element to compare for symmetry.
                 const VT* rowB = arg->getValues(colIdxA);
                 const size_t* colIdxsB = arg->getColIdxs(colIdxA);
                 const size_t numNonZerosB = arg->getNumNonZeros(colIdxA);
@@ -122,7 +117,7 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
                 positions[colIdxA]++; // colIdxA is rowIdxB
                 const size_t posB = positions[colIdxA];
 
-                if (numNonZerosB <= posB) { // Does next expected element exist?
+                if (numNonZerosB <= posB) { // Does the next expected element exist?
                     return false;
                 }
 
@@ -137,12 +132,10 @@ template <typename VT> struct IsSymmetric<CSRMatrix<VT>> {
 
             const size_t rowLastPos = positions[rowIdx];
 
-            if (rowLastPos == -1 && numNonZerosA != 0) { // Not all elements of this row were iterated over, not sym!
+            if (rowLastPos == static_cast<size_t>(-1) && numNonZerosA != 0) { // Not all elements of this row were iterated over, not sym!
                 return false;
             }
         }
         return true;
     }
 };
-
-#endif // SRC_RUNTIME_LOCAL_KERNELS_ISSYMMETRIC_H

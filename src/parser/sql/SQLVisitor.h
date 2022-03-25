@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_SQL_SQLVISITOR_H
-#define SRC_PARSER_SQL_SQLVISITOR_H
+#pragma once
 
 #include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
@@ -30,6 +29,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <utility>
 
 class SQLVisitor : public SQLGrammarVisitor {
 
@@ -76,12 +76,12 @@ class SQLVisitor : public SQLGrammarVisitor {
      *
      * TODO: extend if more aggregation functions get implemented.
      */
-    mlir::Attribute getEnum(const std::string & func);
+    mlir::Attribute getEnum(const std::string& func);
 
     /**
      * @brief returns result of stringifyGroupEnum for the given func.
      */
-    std::string getEnumLabelExt(const std::string & func);
+    std::string getEnumLabelExt(const std::string& func);
 
 
 //Data Structures and access functions
@@ -95,34 +95,34 @@ class SQLVisitor : public SQLGrammarVisitor {
     /**
      * @brief adds a mlir Value under the string into the alias map for later lookup.
      */
-    void registerAlias(std::string framename, mlir::Value arg);
+    void registerAlias(const std::string& framename, mlir::Value arg);
 
     /**
      * @brief first looks up the Alias map and if the item is not found it looks
      * into the View map.
      */
-    mlir::Value fetchMLIR(std::string framename);
+    mlir::Value fetchMLIR(const std::string& framename);
 
     /**
      * @brief look up in Alias map
      */
-    mlir::Value fetchAlias(std::string framename);
+    [[maybe_unused]] mlir::Value fetchAlias(const std::string& framename);
 
     /**
      * @brief looks up if the string specifies a mlir Value in the Alias or View Map
      */
-    bool hasMLIR(std::string name);
+    bool hasMLIR(const std::string& name);
 
     /**
      * @brief checks if a given prefix already given to annother framename otherwise
      * registers the prefix for this framename
      */
-    std::string setFramePrefix(std::string framename, std::string prefix, bool necessary, bool ignore);
+    std::string setFramePrefix(const std::string& framename, const std::string& prefix, bool necessary, bool ignore);
 
     /**
      * @brief looks up the prefix for a given framename
      */
-    std::string fetchPrefix(std::string framename);
+    std::string fetchPrefix(const std::string& framename);
 
     //TODO: Recognize Literals and somehow handle them for the group expr.
 //GROUP Information
@@ -137,14 +137,14 @@ class SQLVisitor : public SQLGrammarVisitor {
     int64_t sqlFlag = 0;
 
 public:
-    SQLVisitor(mlir::OpBuilder & builder) : builder(builder), utils(builder) {
+    [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder & builder) : utils(builder), builder(builder) {
     };
 
     SQLVisitor(
         mlir::OpBuilder & builder,
         std::unordered_map <std::string, mlir::Value> view_arg
-    ) : builder(builder), utils(builder) {
-        view = view_arg;
+    ) : utils(builder), builder(builder) {
+        view = std::move(view_arg);
     };
 
 //script
@@ -216,5 +216,3 @@ public:
 //literal
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };
-
-#endif //SRC_PARSER_SQL_SQLVISITOR_H

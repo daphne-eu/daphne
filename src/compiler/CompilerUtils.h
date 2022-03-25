@@ -14,8 +14,7 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_COMPILER_COMPILERUTILS_H
-#define SRC_COMPILER_COMPILERUTILS_H
+#pragma once
 
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/io/FileMetaData.h>
@@ -25,7 +24,7 @@
 #include <stdexcept>
 #include <string>
 
-struct CompilerUtils {
+namespace CompilerUtils {
     // TODO Copied here from FrameLabelInference, have it just once.
     static std::string getConstantString2(mlir::Value v) {
         if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
@@ -35,12 +34,12 @@ struct CompilerUtils {
                 "the given value must be a constant of string type"
         );
     }
-    
-    static FileMetaData getFileMetaData(mlir::Value filename) {
+
+    [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename) {
         return FileMetaData::ofFile(getConstantString2(filename));
     }
 
-    static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
+    [[maybe_unused]] static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -96,6 +95,43 @@ struct CompilerUtils {
             "no C++ type name known for the given MLIR type"
         );
     }
-};
 
-#endif //SRC_COMPILER_COMPILERUTILS_H
+    [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
+        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
+    }
+    
+    /**
+     * @brief Returns the DAPHNE context used in the given function.
+     * 
+     * Throws if there is not exactly one DAPHNE context.
+     * 
+     * @param func
+     * @return 
+     */
+    [[maybe_unused]] mlir::Value static getDaphneContext(mlir::FuncOp & func) {
+        mlir::Value dctx = nullptr;
+        auto ops = func.body().front().getOps<mlir::daphne::CreateDaphneContextOp>();
+        for(auto op : ops) {
+            if(!dctx)
+                dctx = op.getResult();
+            else
+                throw std::runtime_error(
+                        "function body block contains more than one CreateDaphneContextOp"
+                );
+        }
+        if(!dctx)
+            throw std::runtime_error(
+                    "function body block contains no CreateDaphneContextOp"
+            );
+        return dctx;
+    }
+    
+    [[maybe_unused]] static bool isObjType(mlir::Type t) {
+        return t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+    }
+    
+    [[maybe_unused]] static bool hasObjType(mlir::Value v) {
+        return isObjType(v.getType());
+    }
+
+}

@@ -14,7 +14,6 @@
  *  limitations under the License.
  */
 
-#include <parser/daphnedsl/DaphneDSLParser.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include "DaphneIrExecutor.h"
@@ -27,25 +26,20 @@
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/MLIRContext.h"
-#include "mlir/IR/Verifier.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Transforms/Passes.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 
-#include <exception>
-#include <iostream>
 #include <memory>
 #include <utility>
 
 DaphneIrExecutor::DaphneIrExecutor(bool distributed,
-                                   bool vectorized,
                                    bool selectMatrixRepresentations,
-                                   bool insertFreeOp,
                                    DaphneUserConfig cfg)
-    : distributed_(distributed), vectorized_(vectorized), selectMatrixRepresentations_(selectMatrixRepresentations),
-      insertFreeOp_(insertFreeOp), userConfig_(std::move(cfg)) {
+    : distributed_(distributed), selectMatrixRepresentations_(selectMatrixRepresentations),
+    userConfig_(std::move(cfg)) {
     context_.getOrLoadDialect<mlir::daphne::DaphneDialect>();
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
@@ -66,11 +60,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 
     if (module) {
         // This flag is really useful to figure out why the lowering failed
-        //llvm::DebugFlag = true;
+        llvm::DebugFlag = userConfig_.debug_llvm;
         {
             mlir::PassManager pm(&context_);
             pm.enableVerifier(false);
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
+            if(userConfig_.explain_parsing)
+                pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
             pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
             if(failed(pm.run(module))) {
@@ -83,7 +78,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::createCanonicalizerPass());
         //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
+        if(userConfig_.explain_sql)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
 
         // TODO There is a cyclic dependency between (shape) inference and
         // constant folding (included in canonicalization), at the moment we
@@ -102,7 +98,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representation"));
         }
-        if(distributed_) {
+
+        if(userConfig_.explain_property_inference)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
+
+        if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
             pm.addPass(mlir::createCSEPass());
@@ -112,25 +112,36 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
-        if(vectorized_) {
-            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+
+        if(userConfig_.use_vectorized_exec) {
             // TODO: add inference here if we have rewrites that could apply to vectorized pipelines due to smaller sizes
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createVectorizeComputationsPass());
+            pm.addPass(mlir::createCanonicalizerPass());
         }
-        pm.addPass(mlir::createCanonicalizerPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization"));
-        if(insertFreeOp_) {
-            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
-        }
+        if(userConfig_.explain_vectorized)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
+
+#ifdef USE_CUDA
+        if(userConfig_.use_cuda)
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
+#endif
+
+        if(userConfig_.use_obj_ref_mgnt)
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createManageObjRefsPass());
+        if(userConfig_.explain_obj_ref_mgnt)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
+
         pm.addPass(mlir::createCSEPass());
-        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass(userConfig_));
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
+        if(userConfig_.explain_kernels)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
 
         pm.addPass(mlir::createLowerToCFGPass());
-        pm.addPass(mlir::daphne::createLowerToLLVMPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
+        pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+        if(userConfig_.explain_llvm)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
 
         if (failed(pm.run(module))) {
             module->dump();
@@ -158,8 +169,8 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         }
 
 #ifdef USE_CUDA
-        if(user_config_.use_cuda) {
-            if(user_config_.libdir.empty()) {
+        if(userConfig_.use_cuda) {
+            if(userConfig_.libdir.empty()) {
                 sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
             }
         }

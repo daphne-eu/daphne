@@ -17,6 +17,8 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DATAOBJECTFACTORY_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DATAOBJECTFACTORY_H
 
+#include <stdexcept>
+
 struct DataObjectFactory {
     
     /**
@@ -39,12 +41,30 @@ struct DataObjectFactory {
      * @brief The central function for destroying data objects of any data type
      * (matrices, frames).
      * 
+     * Decreases the reference counter of the given data object. If the
+     * reference counter becomes zero, the data object is destroyed.
+     * 
+     * The access is protected by a mutex, such that multiple threads may call
+     * this method concurrently.
+     * 
      * @param obj The data object to destroy.
      */
     template<class DataType>
     static void destroy(const DataType *obj)
     {
-        delete obj;
+        if(!obj)
+            throw std::runtime_error(
+                    "DataObjectFactory::destroy() must not be called with nullptr"
+            );
+        
+        obj->refCounterMutex.lock();
+        obj->refCounter--;
+        if(obj->refCounter == 0) {
+            obj->refCounterMutex.unlock();
+            delete obj;
+        }
+        else
+            obj->refCounterMutex.unlock();
     }
 
     // TODO Simplify many places in the code (especially test cases) by using

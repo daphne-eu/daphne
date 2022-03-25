@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -43,7 +42,7 @@ struct EwBinaryMat {
 
 template<class DTRes, class DTLhs, class DTRhs>
 void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
-    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    	EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -61,7 +60,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
         
@@ -81,7 +80,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesRes += res->getRowSkip();
             }
         }
-        else if(numRowsRhs == 1 && numColsLhs == numColsRhs) {
+        else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
             // matrix op row-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)
@@ -90,7 +89,7 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 valuesRes += res->getRowSkip();
             }
         }
-        else if(numRowsLhs == numRowsRhs && numColsRhs == 1) {
+        else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
             // matrix op col-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++)
@@ -107,6 +106,8 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                     "width/height of the other"
             );
         }
+//        auto end = std::chrono::high_resolution_clock::now();
+//        std::cout << "EwBinaryMat time=" << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
     }
 };
 
@@ -122,7 +123,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
         assert((numCols == rhs->getNumCols()) && "lhs and rhs must have the same dimensions");
         
-        size_t maxNnz = 0;
+        size_t maxNnz;
         switch(opCode) {
             case BinaryOpCode::ADD: // merge
                 maxNnz = lhs->getNumNonZeros() + rhs->getNumNonZeros();
@@ -264,7 +265,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         assert((numRows == rhs->getNumRows() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
         assert((numCols == rhs->getNumCols() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
 
-        size_t maxNnz = 0;
+        size_t maxNnz;
         switch(opCode) {
         case BinaryOpCode::MUL: // intersect
             maxNnz = lhs->getNumNonZeros();
@@ -344,5 +345,3 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->finishAppend();
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_EWBINARYMAT_H
