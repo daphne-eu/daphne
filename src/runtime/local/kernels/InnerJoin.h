@@ -15,6 +15,10 @@
 #include <cstddef>
 #include <cstdint>
 
+// ****************************************************************************
+// Helper functions
+// ****************************************************************************
+
 template<typename VTCol>
 void innerJoinSetValue(
     DenseMatrix<VTCol> * res,
@@ -95,6 +99,10 @@ bool innerJoinProbeIf(
     return false;
 }
 
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
 void innerJoin(
     // results
     Frame *& res,
@@ -104,12 +112,12 @@ void innerJoin(
     const char * lhsOn, const char * rhsOn,
     // context
     DCTX(ctx)
-) {;
+) {
     // Find out the value types of the columns to process.
     ValueTypeCode vtcLhsOn = lhs->getColumnType(lhsOn);
     ValueTypeCode vtcRhsOn = rhs->getColumnType(rhsOn);
 
-// eventuel check if res already allocated.
+    // Perhaps check if res already allocated.
     const size_t numRowRhs = rhs->getNumRows();
     const size_t numRowLhs = lhs->getNumRows();
     const size_t totalRows = numRowRhs * numRowLhs;

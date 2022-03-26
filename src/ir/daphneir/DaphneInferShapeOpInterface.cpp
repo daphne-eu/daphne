@@ -215,7 +215,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
-    const size_t numRows = frame().getType().dyn_cast<daphne::FrameType>().getNumRows();
+    const size_t numRows = -1;
     const size_t numCols = inferNumColsFromArgs(keyCol()) + inferNumColsFromArgs(aggCol());
     return {{numRows, numCols}};
 }

@@ -931,11 +931,15 @@ def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
 // Grouping
 // ----------------------------------------------------------------------------
 
-// def Daphne_GroupOp : Daphne_Op<"group"> {
-//     // TODO Maybe colIdxs should be an attribute.
-//     let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
-//     let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
-// }
+def Daphne_GroupAggCount : I32EnumAttrCase<"COUNT", 1>;
+def Daphne_GroupAggSum : I32EnumAttrCase<"SUM", 2>;
+def Daphne_GroupAggMin : I32EnumAttrCase<"MIN", 3>;
+def Daphne_GroupAggMax : I32EnumAttrCase<"MAX", 4>;
+def Daphne_GroupAggAvg : I32EnumAttrCase<"AVG", 5>;
+
+def Daphne_GroupAggEnum : I32EnumAttr<"GroupEnum", "", [Daphne_GroupAggCount, Daphne_GroupAggSum, Daphne_GroupAggMin, Daphne_GroupAggMax, Daphne_GroupAggAvg]>{
+    let cppNamespace = "::mlir::daphne";
+}
 
 def Daphne_GroupOp : Daphne_Op<"group", [
     AttrSizedOperandSegments,
@@ -1281,10 +1285,6 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         OpBuilder<(ins "std::string":$value), [{
             build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(value));
         }]>,
-//        OpBuilder<(ins "mlir::daphne::GroupEnum":$value), [{
-//            auto typeAttr = StringAttr::get($_builder.getContext(), stringifyEnum(value));
-//            build($_builder, $_state, mlir::daphne::StringType::get($_builder.getContext()), $_builder.getStringAttr(typeAttr));
-//        }]>,
     ];
 
     let hasFolder = 1;

@@ -24,8 +24,6 @@ namespace mlir::daphne {
 #include <ir/daphneir/DaphneInferTypesOpInterface.cpp.inc>
 }
 
-#include <iostream>
-
 using namespace mlir;
 
 // ****************************************************************************

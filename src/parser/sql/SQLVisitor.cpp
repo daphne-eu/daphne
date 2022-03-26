@@ -302,7 +302,6 @@ mlir::Value SQLVisitor::extractMatrixFromFrame(
 }
 
 mlir::Attribute SQLVisitor::getEnum(const std::string & func){
-    mlir::Location loc = builder.getUnknownLoc();
     if(func == "count"){
         return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::COUNT));
     }
@@ -347,7 +346,6 @@ antlrcpp::Any SQLVisitor::visitSql(
 )
 {
     mlir::Value res = utils.valueOrError(visit(ctx->query()));
-    mlir::Location loc = utils.getLoc(ctx->start);
     return res;
 }
 
@@ -395,7 +393,7 @@ antlrcpp::Any SQLVisitor::visitSelect(
         setBit(sqlFlag, (int64_t)SQLBit::group, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
         visit(ctx->groupByClause());
-        for(auto i = 0; i < ctx->selectExpr().size(); i++){
+        for(size_t i = 0; i < ctx->selectExpr().size(); i++){
             visit(ctx->selectExpr(i));
         }
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
@@ -463,8 +461,6 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(
     SQLGrammarParser::SelectExprContext * ctx
 )
 {
-    mlir::Location loc = utils.getLoc(ctx->start);
-
     mlir::Value matrix;
     antlrcpp::Any vExpr = visit(ctx->var);
 
@@ -495,7 +491,7 @@ antlrcpp::Any SQLVisitor::visitTableExpr(
     //We set the current frame as the result of the fromExpr
     currentFrame = utils.valueOrError(visit(ctx->fromExpr()));
     //And join other frames to the currentFrame.
-    for(auto i = 0; i < ctx->joinExpr().size(); i++){
+    for(size_t i = 0; i < ctx->joinExpr().size(); i++){
         currentFrame = utils.valueOrError(visit(ctx->joinExpr(i)));
     }
     return currentFrame;
@@ -633,7 +629,7 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(
     mlir::Location loc = utils.getLoc(ctx->start);
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
-        for(auto i = 0; i < ctx->selectIdent().size(); i++){
+        for(size_t i = 0; i < ctx->selectIdent().size(); i++){
             groupName.push_back(utils.valueOrError(visit(ctx->selectIdent(i))));
             grouped[ctx->selectIdent(i)->getText()] = 1;
         }
@@ -644,7 +640,7 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(
     }else{
         mlir::Type vt = utils.unknownType;
         std::vector<mlir::Type> colTypes;
-        for(int i = 0; i < groupName.size() + columnName.size(); i++){
+        for(size_t i = 0; i < groupName.size() + columnName.size(); i++){
             colTypes.push_back(vt);
         }
         mlir::Type resType = mlir::daphne::FrameType::get(
@@ -716,8 +712,6 @@ antlrcpp::Any SQLVisitor::visitLiteralExpr(
 antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     SQLGrammarParser::IdentifierExprContext * ctx)
 {
-    mlir::Location loc = utils.getLoc(ctx->start);
-
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
         && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
         && grouped[ctx->selectIdent()->getText()] == 0) //AND the label is not in group expr
@@ -753,7 +747,6 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //Codegeneration = true:
     //  The function looks up the unique name again and extracts a matrix from
     //  the currentFrame. This Matrix is the result of this function.
-    mlir::Location loc = utils.getLoc(ctx->start);
     std::string newColumnName = "group_" + ctx->var->getText();
 
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
@@ -998,8 +991,6 @@ antlrcpp::Any SQLVisitor::visitStringIdent(
     SQLGrammarParser::StringIdentContext * ctx
 )
 {
-    mlir::Location loc = utils.getLoc(ctx->start);
-
     std::string getSTR;
     std::string columnSTR = ctx->var->getText();
     std::string frameSTR;

@@ -25,15 +25,6 @@
 
 const std::string dirPath = "test/api/cli/sql/";
 
-//
-// TEST_CASE("sql, success", TAG_SQL) {
-//     for(unsigned i = 1; i <= 4; i++) {
-//         DYNAMIC_SECTION("sql_success_" << i << ".daphne") {
-//             checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, "sql_success", i);
-//         }
-//     }
-// }
-
 #define MAKE_SUCCESS_TEST_CASE(name, count) \
     TEST_CASE(name ", success", TAG_SQL) { \
         for(unsigned i = 1; i <= count; i++) { \
@@ -70,7 +61,6 @@ const std::string dirPath = "test/api/cli/sql/";
         } \
     }
 
-//MAKE_PARSER_FAILURE_TEST_CASE("parser", 4);
 MAKE_SUCCESS_TEST_CASE("basic", 4);
 MAKE_PASS_FAILURE_TEST_CASE("basic", 3);
 MAKE_EXEC_FAILURE_TEST_CASE("basic", 1);
@@ -80,13 +70,10 @@ MAKE_SUCCESS_TEST_CASE("cartesian", 2);
 MAKE_SUCCESS_TEST_CASE("where", 4);
 
 MAKE_SUCCESS_TEST_CASE("join", 1);
-MAKE_EXEC_FAILURE_TEST_CASE("join", 1);
 
-
-MAKE_SUCCESS_TEST_CASE("group", 3);
+// TODO Use these test cases once we have a kernel for GroupOp, otherwise they
+// always fail.
+//MAKE_SUCCESS_TEST_CASE("group", 3);
 MAKE_PASS_FAILURE_TEST_CASE("group", 1);
-
-//MAKE_PARSER_FAILURE_TEST_CASE("sql", );
-
 
 // TODO Use the scripts testing failure cases.

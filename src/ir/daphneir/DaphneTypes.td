@@ -42,17 +42,6 @@ def Unknown : Daphne_Type<"Unknown"> {
 // Data types
 // ****************************************************************************
 
-def Daphne_GroupAggCount : I32EnumAttrCase<"COUNT", 1>;
-def Daphne_GroupAggSum : I32EnumAttrCase<"SUM", 2>;
-def Daphne_GroupAggMin : I32EnumAttrCase<"MIN", 3>;
-def Daphne_GroupAggMax : I32EnumAttrCase<"MAX", 4>;
-def Daphne_GroupAggAvg : I32EnumAttrCase<"AVG", 5>;
-
-def Daphne_GroupAggEnum : I32EnumAttr<"GroupEnum", "", [Daphne_GroupAggCount, Daphne_GroupAggSum, Daphne_GroupAggMin, Daphne_GroupAggMax, Daphne_GroupAggAvg]>{
-    let cppNamespace = "::mlir::daphne";
-}
-
-
 // A matrix type.
 def Matrix : Daphne_Type<"Matrix"> {
     let summary = "matrix";

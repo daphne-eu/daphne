@@ -160,17 +160,6 @@ fragment LETTER: [a-zA-Z];
 fragment DIGIT: [0-9];
 fragment NON_ZERO_DIGIT: [1-9];
 
-COLON : ':' ;
-COMMA : ',' ;
-SEMICOLON : ';' ;
-
-LPAREN : '(' ;
-RPAREN : ')' ;
-LSQUARE : '[' ;
-RSQUARE : ']' ;
-LCURLY : '{';
-RCURLY : '}';
-
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
