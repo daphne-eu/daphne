@@ -53,50 +53,6 @@ private:
         return actual_step+1;
     }
 public:
-    static int schemeFactory(std::string input){
-    
-        const char * method=input.c_str();
-        int tokenLeng= input.length();
-        if( tokenLeng == 6 && strncasecmp(method, "STATIC", tokenLeng )){
-            return STATIC;
-        }
-        else if(tokenLeng == 2 &&strncasecmp(method, "SS", tokenLeng)){
-            return SS;
-        }
-        else if(tokenLeng == 3 && strncasecmp(method, "GSS", tokenLeng)){
-            return GSS;
-        }
-        else if(tokenLeng == 3 && strncasecmp(method, "TSS", tokenLeng)){
-            return TSS;
-        }
-        else if(tokenLeng == 4 && strncasecmp(method, "FAC2", tokenLeng)){
-            return FAC2;
-        } 
-        else if(tokenLeng == 4 && strncasecmp(method, "TFSS", tokenLeng)){
-            return TFSS;
-        } 
-        else if(tokenLeng == 4 && strncasecmp(method, "FISS", tokenLeng)){
-            return FISS;
-        } 
-        else if(tokenLeng == 4 && strncasecmp(method, "VISS", tokenLeng)){
-            return VISS;
-        } 
-        else if(tokenLeng == 3 && strncasecmp(method, "PLS", tokenLeng)){
-            return PLS;
-        } 
-        else if(tokenLeng == 7 && strncasecmp(method, "MSTATIC", tokenLeng)){
-            return MSTATIC;
-        } 
-        else if(tokenLeng == 4 &&strncasecmp(method, "MFSC", tokenLeng)){
-            return MFSC;
-        } 
-        else if(tokenLeng == 3 &&strncasecmp(method, "PSS", tokenLeng)){
-            return PSS;
-        } 
-        else{
-            return STATIC;
-        } 
-    }
     LoadPartitioning(int method, uint64_t tasks, uint64_t chunk, uint32_t workers, bool autochunk){
         
         if(const char* env_m = std::getenv("DAPHNE_TASK_PARTITION")){

@@ -46,7 +46,7 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    int method=LoadPartitioning::schemeFactory(ctx->config.taskPartitioningScheme);
+    int method=ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if(chunkParam<=0)
         chunkParam=1;

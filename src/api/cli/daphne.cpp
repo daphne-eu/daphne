@@ -24,6 +24,7 @@
 #include "mlir/IR/BuiltinOps.h"
 #include "mlir/Pass/PassManager.h"
 #include "llvm/Support/CommandLine.h"
+#include "runtime/local/vectorized/LoadPartitioning.h"
 
 #ifdef USE_CUDA
     #include <runtime/local/kernels/CUDA/HostUtils.h>
@@ -75,12 +76,30 @@ main(int argc, char** argv)
     //  **************************
     //  Scheduling knobs
     // *********************************
-    opt<string> taskPartitioningScheme( 
+    /*opt<string> taskPartitioningScheme( 
                 "task-partitioning", cat(daphneOptions),
                 desc(
-                    "Define the task paritioning scheme. The default is STATIC., but it can be SS, FSC, GSS, FAC2, ...etc."
+                    "Define the task paritioning scheme. The default is STATIC."
                 )
-    );
+    );*/
+
+    opt<SelfSchedulingScheme> taskPartitioningScheme(cat(daphneOptions), desc("Choose task partitioning scheme:"),
+    values(
+        clEnumVal(STATIC , "Static default selection"),
+        clEnumVal(SS, "Self-scheduling"),
+        clEnumVal(GSS, "Guided self-scheduling"),
+        clEnumVal(TSS, "Trapezoid self-scheduling"),
+        clEnumVal(FAC2, "Factoring self-scheduling"),
+        clEnumVal(TFSS, "Trapezoid Factoring self-scheduling"),
+        clEnumVal(FISS, "Fixed-increase self-scheduling"),
+        clEnumVal(VISS, "Variable-increase self-scheduling"),
+        clEnumVal(PLS, "Performance loop-based self-scheduling"),
+        clEnumVal(MSTATIC, "Modified version of Static, i.e. instead of n/p, it uses  n/(4*p) where n is number of tasks and p is number of threads"),
+        clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
+        clEnumVal(PSS, "Probabilistic self-scheduling")
+        )
+    );    
+
     opt<int> numberOfThreads(
                 "num-threads", cat(daphneOptions),
                 desc(
@@ -166,7 +185,6 @@ main(int argc, char** argv)
     // Initialize user configuration.
     
     DaphneUserConfig user_config{};
-    
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;

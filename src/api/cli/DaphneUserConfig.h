@@ -21,6 +21,7 @@
 #include <string>
 #include <memory>
 #include <vector>
+#include "runtime/local/vectorized/LoadPartitioning.h"
 
 /*
  * Container to pass around user configuration
@@ -41,7 +42,7 @@ struct DaphneUserConfig {
     bool explain_sql = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
-    std::string taskPartitioningScheme = "STATIC";
+    int taskPartitioningScheme = STATIC;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     
