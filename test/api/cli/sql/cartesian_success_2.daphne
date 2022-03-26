@@ -1,0 +1,20 @@
+c1 = fill(123, 5, 1);
+c2 = seq(100.5, 140.5, 10.0);
+c3 = seq(-4, 4, 2);
+c4 = fill(123, 5, 1);
+c5 = seq(10.5, 14.5, 1.0);
+c6 = seq(-4, 4, 2);
+
+f1 = frame(c1, c2, "a", "b");
+f2 = frame(c3, "c");
+f3 = frame(c4, c5, "a", "b");
+f4 = frame(c6, "d");
+
+registerView("w", f1);
+registerView("x", f2);
+registerView("y", f3);
+registerView("z", f4);
+
+s = sql("SELECT w.a, x.c, y.a, z.d FROM w, x, y, z;");
+
+print(s);

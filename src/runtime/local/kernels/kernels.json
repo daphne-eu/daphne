@@ -809,6 +809,39 @@
         ]
     },
     {
+    	"kernelTemplate": {
+    		"header": "InnerJoin.h",
+    		"opName": "innerJoin",
+    		"returnType": "void",
+    		"templateParams": [],
+    		"runtimeParams": [
+    			{
+    				"type": "Frame *&",
+    				"name": "res"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "lhs"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "rhs"
+    			},
+    			{
+    				"type": "const char *",
+    				"name": "lhsOn"
+    			},
+    			{
+    				"type": "const char *",
+    				"name": "rhsOn"
+    			}
+    		]
+    	},
+    	"instantiations": [
+    		[]
+    	]
+    },
+    {
         "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
@@ -1062,7 +1095,7 @@
                 {
                     "type": "bool",
                     "name": "withReplacement"
-                },                
+                },
                 {
                     "type": "int64_t",
                     "name": "seed"
@@ -2577,4 +2610,3 @@
         ]
     }
 ]
-
