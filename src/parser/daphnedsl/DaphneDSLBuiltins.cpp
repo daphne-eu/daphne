@@ -838,8 +838,16 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]
         ));
     }
-    if(func == "innerJoin")
-        return createJoinOp<InnerJoinOp>(loc, func, args);
+    if(func == "innerJoin"){
+        checkNumArgsExact(func, numArgs, 4);
+        std::vector<mlir::Type> colTypes;
+        for(int i = 0; i < 2; i++)
+            for(mlir::Type t : args[i].getType().dyn_cast<FrameType>().getColumnTypes())
+                colTypes.push_back(t);
+        return static_cast<mlir::Value>(builder.create<InnerJoinOp>(
+                loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1], args[2], args[3]
+        ));
+    }
     if(func == "fullOuterJoin")
         return createJoinOp<FullOuterJoinOp>(loc, func, args);
     if(func == "leftOuterJoin")
