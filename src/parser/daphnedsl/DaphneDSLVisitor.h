@@ -82,9 +82,19 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     mlir::FuncOp createUserDefinedFuncOp(const mlir::Location &loc,
                                          const mlir::FunctionType &funcType,
                                          const std::string &functionName);
+    
+    void handleAssignmentPart(
+        const std::string & var,
+        DaphneDSLGrammarParser::IndexingContext * idxCtx,
+        ScopedSymbolTable & symbolTable,
+        mlir::Value val
+    );
 
     template<class ExtractAxOp, class SliceAxOp, class NumAxOp>
     mlir::Value applyRightIndexing(mlir::Location loc, mlir::Value arg, antlrcpp::Any ax, bool allowLabel);
+    
+    template<class InsertAxOp, class NumAxOp>
+    mlir::Value applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax, bool allowLabel);
 
 public:
     DaphneDSLVisitor(
@@ -152,6 +162,8 @@ public:
     antlrcpp::Any visitConjExpr(DaphneDSLGrammarParser::ConjExprContext * ctx) override;
     
     antlrcpp::Any visitDisjExpr(DaphneDSLGrammarParser::DisjExprContext * ctx) override;
+    
+    antlrcpp::Any visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) override;
     
     antlrcpp::Any visitRange(DaphneDSLGrammarParser::RangeContext * ctx) override;
 

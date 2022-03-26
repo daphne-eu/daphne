@@ -1,0 +1,7 @@
+// Copy-on-write semantics for left indexing.
+
+X = reshape(seq(0, 8, 1), 3, 3);
+Y = X[1:, ];
+X[1, ] = reshape(seq(100, 102, 1), 1, 3); // must not affect Y
+print(X);
+print(Y);

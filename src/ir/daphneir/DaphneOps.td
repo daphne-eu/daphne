@@ -492,16 +492,16 @@ def Daphne_SliceColOp : Daphne_Op<"sliceCol"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_InsertOp : Daphne_Op<"insert"> {
-    let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
-    // TODO Not providing a new SSA value will be problematic for inferences.
-    let results = (outs); // no results
-}
+// TODO Create combined InsertOp (see #238).
 
 def Daphne_InsertRowOp : Daphne_Op<"insertRow"> {
-    let arguments = (ins Matrix:$target, Matrix:$source, Size:$rowLowerIncl, Size:$rowUpperExcl);
-    // TODO Not providing a new SSA value will be problematic for inferences.
-    let results = (outs); // no results
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$rowLowerIncl, Size:$rowUpperExcl);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_InsertColOp : Daphne_Op<"insertCol"> {
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$colLowerIncl, Size:$colUpperExcl);
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // ****************************************************************************

@@ -579,30 +579,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // TODO Add built-in functions for those.
 
     // ********************************************************************
-    // Left and right indexing
-    // ********************************************************************
-
-    if(func == "sliceRow") {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value arg = args[0];
-        mlir::Value rowLowerIncl = utils.castSizeIf(args[1]);
-        mlir::Value rowUpperExcl = utils.castSizeIf(args[2]);
-        return static_cast<mlir::Value>(builder.create<SliceRowOp>(
-                loc, arg.getType(), arg, rowLowerIncl, rowUpperExcl
-        ));
-    }
-    if(func == "insertRow") {
-        checkNumArgsExact(func, numArgs, 4);
-        mlir::Value dst = args[0];
-        mlir::Value src = args[1];
-        mlir::Value rowLowerIncl = utils.castSizeIf(args[2]);
-        mlir::Value rowUpperExcl = utils.castSizeIf(args[3]);
-        return builder.create<InsertRowOp>(
-                loc, dst, src, rowLowerIncl, rowUpperExcl
-        );
-    }
-
-    // ********************************************************************
     // Reorganization
     // ********************************************************************
 
