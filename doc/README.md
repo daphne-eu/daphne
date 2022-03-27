@@ -29,6 +29,7 @@ limitations under the License.
 - [Implementing a Built-in Kernel](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ImplementBuiltinKernel.md)
 - [Binary Data Format](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/BinaryFormat.md)
 - [Prototype Configuration: Getting Information from the User](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/Config.md)
+- [Extending DAPHNE with more scheduling knobs](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ExtendingSchedulingKnobs.md)
 
 ### Source Code Documentation
 
