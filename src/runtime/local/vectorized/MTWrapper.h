@@ -110,10 +110,12 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        numThreads == 0 ? _numThreads = std::thread::hardware_concurrency() : _numThreads = numThreads;
-        if(const char* env_m = std::getenv("DAPHNE_THREADS"))
-            _numThreads = std::stoi(env_m);
-
+        if(ctx->config.numberOfThreads > 0){
+            _numThreads = ctx->config.numberOfThreads;
+        }
+        else{
+            _numThreads = std::thread::hardware_concurrency();
+        }
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
         _numCPPThreads = _numThreads;

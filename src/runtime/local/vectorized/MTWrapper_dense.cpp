@@ -55,8 +55,11 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    auto chunkParam = 1;
-    LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
+    int method=ctx->config.taskPartitioningScheme;
+    int chunkParam = ctx->config.minimumTaskSize;
+    if(chunkParam<=0)
+        chunkParam=1;
+    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
         q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
@@ -146,8 +149,11 @@ template<typename VT>
 
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
-        auto chunkParam = 1;
-        LoadPartitioning lp(STATIC, cpu_task_len, chunkParam, this->_numCPPThreads, false);
+        int method=ctx->config.taskPartitioningScheme;
+        int chunkParam = ctx->config.minimumTaskSize;
+        if(chunkParam<=0)
+            chunkParam=1;
+        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
         while (lp.hasNextChunk()) {
             endChunk += lp.getNextChunk();
             q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{

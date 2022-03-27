@@ -45,6 +45,45 @@ void funMul(DT*** outputs, Structure** inputs, DCTX(ctx)) {
         ctx);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)){
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    DaphneUserConfig user_config{};
+    user_config.taskPartitioningScheme = GSS;
+    user_config.minimumTaskSize = 50;
+    auto ctx = std::make_unique<DaphneContext>(user_config);
+    
+    DT *m1 = nullptr, *m2 = nullptr;
+    randMatrix<DT, VT>(m1, 1234, 10, 0.0, 1.0, 1.0, 7, nullptr);
+    randMatrix<DT, VT>(m2, 1234, 10, 0.0, 1.0, 1.0, 3, nullptr);
+
+    DT *r1 = nullptr, *r2 = nullptr;
+    ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
+
+    auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());
+
+    DT **outputs[] = {&r2};
+    bool isScalar[] = {false, false};
+    Structure *inputs[] = {m1, m2};
+    int64_t outRows[] = {1234};
+    int64_t outCols[] = {10};
+    VectorSplit splits[] = {VectorSplit::ROWS, VectorSplit::ROWS};
+    VectorCombine combines[] = {VectorCombine::ROWS};
+
+    std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
+    funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **, 
+            DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
+    wrapper->executeSingleQueue(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
+
+    CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
+
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+    DataObjectFactory::destroy(r1);
+    DataObjectFactory::destroy(r2);
+}
+
 TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
     using VT = typename DT::VT;
