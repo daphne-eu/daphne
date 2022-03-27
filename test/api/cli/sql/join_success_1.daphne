@@ -1,0 +1,14 @@
+c1 = seq(0, 10, 1);
+c2 = rand(11, 1, 0, 100, 1, -1);
+c3 = seq(0, 7, 3);
+c4 = rand(3, 1, 100, 200, 1, -1);
+
+f1 = frame(c1, c2, "a", "b");
+f2 = frame(c3, c4, "d", "c");
+
+registerView("x", f1);
+registerView("y", f2);
+
+k = sql("SELECT x.a, y.d, x.b, y.c FROM x JOIN y ON x.a = y.d;");
+
+print(k);

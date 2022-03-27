@@ -1,0 +1,267 @@
+// Many ways of left indexing on matrices using positions.
+
+// Considered way of specifying row/col:
+// - empty (leave blank)
+// - scalar (0, in-between, last)
+// - :
+// - l: (0, in-between, last)
+// - :u (0, in-between, last)
+// - l:u (same, +1, whole range)
+
+// ****************************************************************************
+// Input matrix
+// ****************************************************************************
+
+X = reshape(seq(0, 59, 1), 10, 6);
+print("input");
+print("X");
+print(X); // to check if the input is as expected
+print("");
+
+// ****************************************************************************
+// Neither row nor col
+// ****************************************************************************
+
+print("neither row nor col");
+
+print("X00_01[, ]");
+X00_01 = X;
+X00_01[, ] = reshape(seq(100, 159, 1), 10, 6);
+print(X00_01);
+
+print("");
+
+// ****************************************************************************
+// Only row
+// ****************************************************************************
+
+print("only row");
+
+print("Xr0_01[0, ]");
+Xr0_01 = X;
+Xr0_01[0, ] = reshape(seq(100, 105, 1), 1, 6);
+print(Xr0_01);
+
+print("Xr0_02[4, ]");
+Xr0_02 = X;
+Xr0_02[4, ] = reshape(seq(100, 105, 1), 1, 6);
+print(Xr0_02);
+
+print("Xr0_03[9, ]");
+Xr0_03 = X;
+Xr0_03[9, ] = reshape(seq(100, 105, 1), 1, 6);
+print(Xr0_03);
+
+print("Xr0_04[:, ]");
+Xr0_04 = X;
+Xr0_04[:, ] = reshape(seq(100, 159, 1), 10, 6);
+print(Xr0_04);
+
+print("Xr0_05[0:, ]");
+Xr0_05 = X;
+Xr0_05[0:, ] = reshape(seq(100, 159, 1), 10, 6);
+print(Xr0_05);
+
+print("Xr0_06[4:, ]");
+Xr0_06 = X;
+Xr0_06[4:, ] = reshape(seq(100, 135, 1), 6, 6);
+print(Xr0_06);
+
+print("Xr0_07[9:, ]");
+Xr0_07 = X;
+Xr0_07[9:, ] = reshape(seq(100, 105, 1), 1, 6);
+print(Xr0_07);
+
+print("Xr0_08[:0, ]");
+Xr0_08 = X;
+Xr0_08[:0, ] = fill(0, 0, 6);
+print(Xr0_08);
+
+print("Xr0_09[:4, ]");
+Xr0_09 = X;
+Xr0_09[:4, ] = reshape(seq(100, 123, 1), 4, 6);
+print(Xr0_09);
+
+print("Xr0_10[:9, ]");
+Xr0_10 = X;
+Xr0_10[:9, ] = reshape(seq(100, 153, 1), 9, 6);
+print(Xr0_10);
+
+print("Xr0_11[4:4, ]");
+Xr0_11 = X;
+Xr0_11[4:4, ] = fill(0, 0, 6);
+print(Xr0_11);
+
+print("Xr0_12[4:5, ]");
+Xr0_12 = X;
+Xr0_12[4:5, ] = reshape(seq(100, 105, 1), 1, 6);
+print(Xr0_12);
+
+print("Xr0_13[0:9, ]");
+Xr0_13 = X;
+Xr0_13[0:9, ] = reshape(seq(100, 153, 1), 9, 6);
+print(Xr0_13);
+
+print("");
+
+// ****************************************************************************
+// Only col
+// ****************************************************************************
+
+print("only col");
+
+print("X0c_01[, 0]");
+X0c_01 = X;
+X0c_01[, 0] = reshape(seq(100, 109, 1), 10, 1);
+print(X0c_01);
+
+print("X0c_02[, 2]");
+X0c_02 = X;
+X0c_02[, 2] = reshape(seq(100, 109, 1), 10, 1);
+print(X0c_02);
+
+print("X0c_03[, 5]");
+X0c_03 = X;
+X0c_03[, 5] = reshape(seq(100, 109, 1), 10, 1);
+print(X0c_03);
+
+print("X0c_04[, :]");
+X0c_04 = X;
+X0c_04[, :] = reshape(seq(100, 159, 1), 10, 6);
+print(X0c_04);
+
+print("X0c_05[, 0:]");
+X0c_05 = X;
+X0c_05[, 0:] = reshape(seq(100, 159, 1), 10, 6);
+print(X0c_05);
+
+print("X0c_06[, 2:]");
+X0c_06 = X;
+X0c_06[, 2:] = reshape(seq(100, 139, 1), 10, 4);
+print(X0c_06);
+
+print("X0c_07[, 5:]");
+X0c_07 = X;
+X0c_07[, 5:] = reshape(seq(100, 109, 1), 10, 1);
+print(X0c_07);
+
+print("X0c_08[, :0]");
+X0c_08 = X;
+X0c_08[, :0] = fill(0, 10, 0);
+print(X0c_08);
+
+print("X0c_09[, :2]");
+X0c_09 = X;
+X0c_09[, :2] = reshape(seq(100, 119, 1), 10, 2);
+print(X0c_09);
+
+print("X0c_10[, :5]");
+X0c_10 = X;
+X0c_10[, :5] = reshape(seq(100, 149, 1), 10, 5);
+print(X0c_10);
+
+print("X0c_11[, 2:2]");
+X0c_11 = X;
+X0c_11[, 2:2] = fill(0, 10, 0);
+print(X0c_11);
+
+print("X0c_12[, 2:3]");
+X0c_12 = X;
+X0c_12[, 2:3] = reshape(seq(100, 109, 1), 10, 1);
+print(X0c_12);
+
+print("X0c_13[, 0:5]");
+X0c_13 = X;
+X0c_13[, 0:5] = reshape(seq(100, 149, 1), 10, 5);
+print(X0c_13);
+
+print("");
+
+// ****************************************************************************
+// Row and col - corresponding variants
+// ****************************************************************************
+
+print("row and col - corresponding variants");
+
+print("Xrc_01[0, 0]");
+Xrc_01 = X;
+Xrc_01[0, 0] = fill(100, 1, 1);
+print(Xrc_01);
+
+print("Xrc_02[4, 2]");
+Xrc_02 = X;
+Xrc_02[4, 2] = fill(100, 1, 1);
+print(Xrc_02);
+
+print("Xrc_03[9, 5]");
+Xrc_03 = X;
+Xrc_03[9, 5] = fill(100, 1, 1);
+print(Xrc_03);
+
+print("Xrc_04[:, :]");
+Xrc_04 = X;
+Xrc_04[:, :] = reshape(seq(100, 159, 1), 10, 6);
+print(Xrc_04);
+
+print("Xrc_05[0:, 0:]");
+Xrc_05 = X;
+Xrc_05[0:, 0:] = reshape(seq(100, 159, 1), 10, 6);
+print(Xrc_05);
+
+print("Xrc_06[4:, 2:]");
+Xrc_06 = X;
+Xrc_06[4:, 2:] = reshape(seq(100, 123, 1), 6, 4);
+print(Xrc_06);
+
+print("Xrc_07[9:, 5:]");
+Xrc_07 = X;
+Xrc_07[9:, 5:] = fill(100, 1, 1);
+print(Xrc_07);
+
+print("Xrc_08[:0, :0]");
+Xrc_08 = X;
+Xrc_08[:0, :0] = fill(0, 0, 0);
+print(Xrc_08);
+
+print("Xrc_09[:4, :2]");
+Xrc_09 = X;
+Xrc_09[:4, :2] = reshape(seq(100, 107, 1), 4, 2);
+print(Xrc_09);
+
+print("Xrc_10[:9, :5]");
+Xrc_10 = X;
+Xrc_10[:9, :5] = reshape(seq(100, 144, 1), 9, 5);
+print(Xrc_10);
+
+print("Xrc_11[4:4, 2:2]");
+Xrc_11 = X;
+Xrc_11[4:4, 2:2] = fill(0, 0, 0);
+print(Xrc_11);
+
+print("Xrc_12[4:5, 2:3]");
+Xrc_12 = X;
+Xrc_12[4:5, 2:3] = fill(100, 1, 1);
+print(Xrc_12);
+
+print("Xrc_13[0:9, 0:5]");
+Xrc_13 = X;
+Xrc_13[0:9, 0:5] = reshape(seq(100, 144, 1), 9, 5);
+print(Xrc_13);
+
+print("");
+
+// ****************************************************************************
+// Row and col - some mixed variants
+// ****************************************************************************
+
+print("row and col - some mixed variants");
+
+print("Xrc_14[4, 2:3]");
+Xrc_14 = X;
+Xrc_14[4, 2:3] = fill(100, 1, 1);
+print(Xrc_14);
+
+print("Xrc_15[4:5, 2]");
+Xrc_15 = X;
+Xrc_15[4:5, 2] = fill(100, 1, 1);
+print(Xrc_15);

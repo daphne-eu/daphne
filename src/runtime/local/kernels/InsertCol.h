@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
-#define SRC_RUNTIME_LOCAL_KERNELS_INSERTROW_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_INSERTCOL_H
+#define SRC_RUNTIME_LOCAL_KERNELS_INSERTCOL_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -31,12 +31,12 @@
 // ****************************************************************************
 
 template<class DTArg, class DTIns>
-struct InsertRow {
+struct InsertCol {
     static void apply(
-        DTArg *& res,
-        const DTArg * arg, const DTIns * ins,
-        size_t rowLowerIncl, size_t rowUpperExcl,
-        DCTX(ctx)
+            DTArg *& res,
+            const DTArg * arg, const DTIns * ins,
+            size_t colLowerIncl, size_t colUpperExcl,
+            DCTX(ctx)
     ) = delete;
 };
 
@@ -45,13 +45,13 @@ struct InsertRow {
 // ****************************************************************************
 
 template<class DTArg, class DTIns>
-void insertRow(
+void insertCol(
         DTArg *& res,
         const DTArg * arg, const DTIns * ins,
-        size_t rowLowerIncl, size_t rowUpperExcl,
+        size_t colLowerIncl, size_t colUpperExcl,
         DCTX(ctx)
 ) {
-    InsertRow<DTArg, DTIns>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
+    InsertCol<DTArg, DTIns>::apply(res, arg, ins, colLowerIncl, colUpperExcl, ctx);
 }
 
 // ****************************************************************************
@@ -63,11 +63,11 @@ void insertRow(
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
+struct InsertCol<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(
             DenseMatrix<VT> *& res,
             const DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
-            size_t rowLowerIncl, size_t rowUpperExcl,
+            size_t colLowerIncl, size_t colUpperExcl,
             DCTX(ctx)
     ) {
         const size_t numRowsArg = arg->getNumRows();
@@ -75,14 +75,14 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         const size_t numRowsIns = ins->getNumRows();
         const size_t numColsIns = ins->getNumCols();
         
-        if(numRowsIns != rowUpperExcl - rowLowerIncl)
+        if(numRowsIns != numRowsArg)
             throw std::runtime_error(
-                    "insertRow: the number of addressed rows in arg and "
-                    "the number of rows in ins must match"
+                    "insertCol: the number of rows in arg and ins must match"
             );
-        if(numColsIns != numColsArg)
+        if(numColsIns != colUpperExcl - colLowerIncl)
             throw std::runtime_error(
-                    "insertRow: the number of columns in arg and ins must match"
+                    "insertCol: the number of addressed columns in arg and §"
+                    "the number of columns in ins must match"
             );
         
         if(res == nullptr)
@@ -96,21 +96,13 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         const size_t rowSkipIns = ins->getRowSkip();
         
         // TODO Can be simplified/more efficient in certain cases.
-        for(size_t r = 0; r < rowLowerIncl; r++) {
-            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+        for(size_t r = 0; r < numRowsArg; r++) {
+            memcpy(valuesRes, valuesArg, colLowerIncl * sizeof(VT));
+            memcpy(valuesRes + colLowerIncl, valuesIns, numColsIns * sizeof(VT));
+            memcpy(valuesRes + colUpperExcl, valuesArg + colUpperExcl, (numColsArg - colUpperExcl) * sizeof(VT));
             valuesRes += rowSkipRes;
             valuesArg += rowSkipArg;
-        }
-        for(size_t r = rowLowerIncl; r < rowUpperExcl; r++) {
-            memcpy(valuesRes, valuesIns, numColsArg * sizeof(VT));
-            valuesRes += rowSkipRes;
             valuesIns += rowSkipIns;
-        }
-        valuesArg += rowSkipArg * numRowsIns; // skip rows in arg
-        for(size_t r = rowUpperExcl; r < numRowsArg; r++) {
-            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
-            valuesRes += rowSkipRes;
-            valuesArg += rowSkipArg;
         }
     }
 };

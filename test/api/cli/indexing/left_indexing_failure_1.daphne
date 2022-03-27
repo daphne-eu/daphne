@@ -1,0 +1,3 @@
+// Left indexing on uninitialized variables is not allowed.
+X[0, 0] = fill(123, 1, 1);
+print(X);

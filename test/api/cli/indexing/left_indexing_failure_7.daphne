@@ -1,0 +1,4 @@
+// Inserting data of mismatching shape is not allowed.
+X = fill(123, 4, 3);
+X[1, ] = fill(123, 2, 2);
+print(X);

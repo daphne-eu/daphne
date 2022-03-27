@@ -1,0 +1,4 @@
+// No specification of where to insert is not allowed.
+X = fill(123, 4, 3);
+X[] = fill(456, 1, 3);
+print(X);

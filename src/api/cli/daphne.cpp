@@ -181,14 +181,15 @@ main(int argc, char** argv)
             argc, argv,
             "The DAPHNE Prototype.\n\nThis program compiles and executes a DaphneDSL script.\n"
     );
-    
+
     // ************************************************************************
     // Process parsed arguments
     // ************************************************************************
-    
+
     // Initialize user configuration.
-    
+
     DaphneUserConfig user_config{};
+    
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
@@ -198,6 +199,7 @@ main(int argc, char** argv)
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.numberOfThreads = numberOfThreads; 
     user_config.minimumTaskSize = minimumTaskSize; 
+
     if(cuda) {
         int device_count = 0;
 #ifdef USE_CUDA
@@ -224,7 +226,7 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
+
     // ************************************************************************
     // Compile and execute script
     // ************************************************************************
@@ -252,18 +254,30 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
+
     // Further process the module, including optimization and lowering passes.
-    if (!executor.runPasses(moduleOp)) {
+    try{
+        if (!executor.runPasses(moduleOp)) {
+            return StatusCode::PASS_ERROR;
+        }
+    }
+    catch(std::exception & e){
+        std::cerr << "Pass error: " << e.what() << std::endl;
         return StatusCode::PASS_ERROR;
     }
 
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
-    auto engine = executor.createExecutionEngine(moduleOp);
-    auto error = engine->invoke("main");
-    if (error) {
-        llvm::errs() << "JIT-Engine invocation failed: " << error;
+    try{
+        auto engine = executor.createExecutionEngine(moduleOp);
+        auto error = engine->invoke("main");
+        if (error) {
+            llvm::errs() << "JIT-Engine invocation failed: " << error;
+            return StatusCode::EXECUTION_ERROR;
+        }
+    }
+    catch(std::exception & e){
+        std::cerr << "Execution error: " << e.what() << std::endl;
         return StatusCode::EXECUTION_ERROR;
     }
 

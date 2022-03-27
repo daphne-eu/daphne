@@ -48,7 +48,7 @@ exprStatement:
     expr ';' ;
 
 assignStatement:
-    IDENTIFIER ( ',' IDENTIFIER )* '=' expr ';' ;
+    IDENTIFIER indexing? ( ',' IDENTIFIER indexing? )* '=' expr ';' ;
 
 ifStatement:
     KW_IF '(' cond=expr ')' thenStmt=statement (KW_ELSE elseStmt=statement)? ;
@@ -80,7 +80,7 @@ expr:
     | func=IDENTIFIER '(' (expr (',' expr)*)? ')' # callExpr
     | KW_AS ('.' DATA_TYPE)? ('.' VALUE_TYPE)? '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
-    | obj=expr '[' (rows=range)? ',' (cols=range)? ']' # rightIdxExtractExpr
+    | obj=expr idx=indexing # rightIdxExtractExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
     | lhs=expr op='%' rhs=expr # modExpr
@@ -90,6 +90,9 @@ expr:
     | lhs=expr op='&&' rhs=expr # conjExpr
     | lhs=expr op='||' rhs=expr # disjExpr
     ;
+
+indexing:
+    '[' (rows=range)? ',' (cols=range)? ']' ;
 
 range:
     pos=expr | ( (posLowerIncl=expr)? ':' (posUpperExcl=expr)? ) ;
