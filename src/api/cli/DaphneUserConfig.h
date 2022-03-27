@@ -17,11 +17,12 @@
 
 #pragma once
 
+#include <runtime/local/vectorized/LoadPartitioning.h>
+
 #include <vector>
 #include <string>
 #include <memory>
 #include <vector>
-#include "runtime/local/vectorized/LoadPartitioning.h"
 
 /*
  * Container to pass around user configuration
@@ -42,7 +43,7 @@ struct DaphneUserConfig {
     bool explain_sql = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
-    int taskPartitioningScheme = STATIC;
+    SelfSchedulingScheme taskPartitioningScheme = STATIC;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     

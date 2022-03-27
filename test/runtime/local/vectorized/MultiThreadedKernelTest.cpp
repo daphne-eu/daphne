@@ -50,8 +50,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     using VT = typename DT::VT;
 
     DaphneUserConfig user_config{};
-    user_config.taskPartitioningScheme="GSS";
-    user_config.minimumTaskSize=50;
+    user_config.taskPartitioningScheme = GSS;
+    user_config.minimumTaskSize = 50;
     auto ctx = std::make_unique<DaphneContext>(user_config);
     
     DT *m1 = nullptr, *m2 = nullptr;
