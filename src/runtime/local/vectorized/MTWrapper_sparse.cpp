@@ -46,8 +46,11 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
-    auto chunkParam = 1;
-    LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
+    int method=ctx->config.taskPartitioningScheme;
+    int chunkParam = ctx->config.minimumTaskSize;
+    if(chunkParam<=0)
+        chunkParam=1;
+    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
         q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
