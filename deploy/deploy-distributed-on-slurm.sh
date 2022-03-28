@@ -281,7 +281,7 @@ function DeployEverythingOnce {
 
 function printHelp {
     echo "Start the DAPHNE distributed deployment on remote machines using SLURM."
-    echo "Usage: $0 [-h|--help] [-i] [--user] [-l|--login] [--deploy] [--pathToBuild] [-r| --run] [-n ] [-p] [-s| --status] [--kill] [ -D | --daphneScript] [ -S ]"
+    echo "Usage: $0 [-h|--help] [-i] [--user] [-l|--login] [--deploy] [--pathToBuild] [-r| --run] [-n ] [-p] [-s| --status] [--kill] [ -D | --daphneScript] [ -S | --run-one-request]"
     echo ""
     echo "The default connection to the target platform (HPC) login node is through OpenSSH, configured by default in ~/.ssh (see: man ssh_config)."
     echo ""
@@ -309,7 +309,7 @@ function printHelp {
     echo "  -s, --status            Get distributed workers' status."
     echo "  --kill                  Kill all distributed workers."
     echo "  -D DAPHNE_SCRIPT        Filename of the daphne script to run (e.g. execute.daphne)."
-    echo "  -S                      Run one request on the deployed platform (process one DAPHNE_SCRIPT script)."
+    echo "  -S, --run-one-request   Run one request on the deployed platform (process one DAPHNE_SCRIPT script)."
     echo ""
     echo "Example:"
     echo "$0 -l HPC --user hpc -i ~/.ssh/hpc.pub --deploy         Deploys over OpenSSH at login node HPC using user hpc and key hpc.pub to the target."
@@ -350,7 +350,7 @@ while (( "$#" )); do
             exit 1
         fi        
         ;;
-    --login)
+    -l|--login)
         if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
             SSH_LOGIN_NODE_HOSTNAME=$2
             shift 2
@@ -360,11 +360,11 @@ while (( "$#" )); do
             exit 1
         fi        
         ;;
-    -r| --run)
+    -r|--run)
         START_WORKERS_FLAG=TRUE
         shift 1
         ;;
-    -R| --runOnSLURM)
+    -R|--runOnSLURM)
         START_WORKERS_SLURM_FLAG=TRUE
         shift 1
         ;;        
@@ -416,6 +416,10 @@ while (( "$#" )); do
             exit 1
         fi
         ;;
+    -S|--run-one-request)
+        RUN_ONE_REQUEST_FLAG=TRUE
+        shift 1
+        ;;
     --kill)
         KILL_WORKERS_FLAG=TRUE
         shift 1
@@ -461,6 +465,11 @@ fi
 
 if [[ -n $WORKERS_STATUS_FLAG ]]; then
     WorkersStatus
+    exit 0
+fi
+
+if [[ -n $RUN_ONE_REQUEST_FLAG ]]; then
+    RunOneRequest
     exit 0
 fi
 
