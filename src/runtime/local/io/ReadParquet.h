@@ -82,7 +82,7 @@ void readParquet(DTRes *&res, const char *filename, size_t numRows, size_t numCo
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-struct File *arrowToCsv(const char *filename){
+inline struct File *arrowToCsv(const char *filename){
     arrow::Status st;
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     arrow::fs::LocalFileSystem file_system;
