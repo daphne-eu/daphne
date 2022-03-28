@@ -34,19 +34,19 @@ Newer versions should work as well, older versions might work as well.
 
 ##### Software
 
-| tool/lib | version known to work (*) | comment |
-| ----------- | ----------- | ----------- |
-| clang | 10.0.0 | |
-| cmake | 3.17 | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
-| git | 2.25.1 | |
-| lld | 10.0.0 | |
-| ninja | 1.10.0 | |
-| pkg-config | 0.29.1 | |
-| python3 | 3.8.5 | |
-| numpy | 1.19.5 | |
-| java (e.g. openjdk) | 11 (1.7 should be fine) | |
-| gfortran | 9.3.0 | |
-| uuid-dev |  | |
+| tool/lib            | version known to work (*) | comment                                                                                                                                      |
+|---------------------| ----------- |----------------------------------------------------------------------------------------------------------------------------------------------|
+| clang               | 10.0.0 |                                                                                                                                              |
+| cmake               | 3.17 | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3.      |
+| git                 | 2.25.1 |                                                                                                                                              |
+| lld                 | 10.0.0 |                                                                                                                                              |
+| ninja               | 1.10.0 |                                                                                                                                              |
+| pkg-config          | 0.29.1 |                                                                                                                                              |
+| python3             | 3.8.5 |                                                                                                                                              |
+| numpy               | 1.19.5 |                                                                                                                                              |
+| java (e.g. openjdk) | 11 (1.7 should be fine) |                                                                                                                                              |
+| gfortran            | 9.3.0 |                                                                                                                                              |
+| uuid-dev            |  |                                                                                                                                              |
 
 ##### Hardware
 
@@ -92,6 +92,9 @@ If the build fails in between (e.g., due to missing packages), multiple build di
 ```bash
 ./build.sh --clean
 ```
+
+See [this page](/doc/development/BuildingDaphne) for more information.
+
 
 ### Running the Tests
 
