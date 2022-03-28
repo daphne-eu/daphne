@@ -178,7 +178,7 @@ DaphneDSL currently supports the following binary operators:
 | `^` | exponentiation |
 | `%` | modulo |
 | `*`, `/` | multiplication, division |
-| `+`, `-` | addition, subtraction |
+| `+`, `-` | addition/string concatenation, subtraction |
 | `==`, `!=`, `<`, `<=`, `>`, `>=` | comparison |
 | `&&` | logical AND |
 | `\|\|` | logical OR (lowest precedence) |
@@ -215,6 +215,105 @@ Parantheses can be used to manually control operator precedence.
 ```
 
 ##### Indexing
+
+(Right) indexing enables the extraction of a part of the rows and/or columns of a data object (matrix/frame) into a new data object.
+The result is always a data object of the same type as the input (even *1 x 1* results need to be casted to scalars explicitly).
+
+The rows and columns to extract can be specified independently in any of the following ways:
+
+**Omit indexing**
+
+Omiting the specification of rows/columns means extracting all rows/columns.
+
+*Examples*
+```
+X[, ] # same as X (all rows and columns)
+```
+
+**Indexing by position**
+
+This is supported for addressing rows and columns in matrices and frames.
+
+- *Single row/column position:*
+  Extracts only the specified row/column.
+
+  *Examples*
+  ```
+  X[2, 3] # extracts the cell in row 2, column 3 as a 1 x 1 matrix
+  ```
+
+- *Row/column range:*
+  Extracts all rows/columns between a lower bound (inclusive) and an upper bound (exclusive).
+  The lower and upper bounds can be omited independently of each other.
+  In that case, they are replaced by zero and the number of rows/columns, respectively.
+  
+  *Examples*
+  ```
+  X[2:5, 3] # extracts rows 2, 3, 4 of column 3
+  X[2, 3:]  # extracts row 2 of all columns from column 3 onwards
+  X[:5, 3]  # extracts rows 0, 1, 2, 3, 4 of column 3
+  X[:, 3]   # extracts all rows of column 3
+  ```
+
+- *Arbitrary sequence of row/column positions:*
+  Expects a sequence of row/column positions *as a column (n x 1) matrix*.
+  There are no restrictions on these positions, except that they must be in bounds.
+  In particular, they do *not* need to be contiguous, sorted, or unique.
+
+  *Examples*
+  ```
+  pos1 = seq(5, 1, -2); # [5, 3, 1]
+  X[pos1, ]             # extracts rows 5, 3, 1 of all columns
+
+  pos2 = fill(2, 3, 1); # [2, 2, 2]
+  X[, pos2]             # extracts column 2 three times
+  ```
+
+A few remarks on positions:
+- Counting starts at zero.
+  For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions from 0, 1, and 2.
+- They must be non-negative.
+- They can be provided as integers or floating-point numbers (the latter are rounded down to integers).
+- They can be given as literals or as any expression evaluating to a suitable value.
+
+*Examples*
+```
+X[1.2, ]              # same as X[1, ]
+X[1.9, ]              # same as X[1, ]
+X[i, (j + 2*sum(Y)):] # expressions
+```
+
+**Indexing by label**
+
+So far, this is only supported for addressing columns of frames.
+
+- *Single column label:*
+  Extracts only the column with the given label.
+
+  *Examples*
+  ```
+  X[, "revenue"]        # extracts the column labeled "revenue"
+  X[100:200, "revenue"] # extracts rows 100 through 199 of the column labeled "revenue"
+  ```
+
+**Indexing by bit vector (filtering)**
+
+So far, this is only supported for addressing rows of frames.
+
+In contrast to indexing with positions and labels, indexing by bit vector specifies for each row whether to retain it or not.
+It expects a column (*n x 1*) matrix with as many rows as the input data object.
+"Bit" vector is meant in a conceptual sense, the actual value type can be any integer or floating-point type, but all entries must be either zero or one.
+- If the *i*-th entry of the bit vector is zero, the *i*-th row of the input is skipped
+- If the *i*-th entry of the bit vector is one, the *i*-th row of the input is retained
+
+*Examples*
+```
+bv = seq(1, 5, 1) <= 3; # [1, 1, 1, 0, 0]
+X[[bv, ]]               # extracts rows 0, 1, 2
+```
+
+Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
+Furthermore, the specification of columns must be omited here.
 
 ##### Casts
 
