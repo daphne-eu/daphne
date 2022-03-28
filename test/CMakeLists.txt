@@ -50,6 +50,8 @@ set(TEST_SOURCES
         runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
 	runtime/local/io/ReadParquetTest.cpp
+	runtime/local/io/ReadMMTest.cpp
+	runtime/local/io/WriteDaphneTest.cpp
 	runtime/local/io/ReadDaphneTest.cpp
 
         runtime/local/kernels/AggAllTest.cpp
