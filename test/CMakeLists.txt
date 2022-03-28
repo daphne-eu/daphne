@@ -74,6 +74,7 @@ set(TEST_SOURCES
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MatMulTest.cpp
+        runtime/local/kernels/OrderTest.cpp
         runtime/local/kernels/QuantizeTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp
