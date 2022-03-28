@@ -100,14 +100,13 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 
 		 goto exit;
 	    }
-exit:
-	    f.close();
-	    return;
     }
+exit:
+   f.close();
+   return;
   }
 };
 
-/*
 template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
   static void apply(CSRMatrix<VT> *&res, const char *filename) {
 
@@ -118,7 +117,6 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
     // read header
     DF_header h;
     f.read((char *)&h, sizeof(h));
-
 
     if (h.dt == DF_data_t::CSRMatrix_t) {
 	    uint8_t vt;
@@ -133,7 +131,7 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
 	    f.read((char *)&bb,sizeof(bb));
 	    // empty Matrix
 	    if (bb.bt == DF_body_t::empty) {
-		res = DataObjectFactory::create<CSRMatrix<VT>>(0, 0, false);
+		res = DataObjectFactory::create<CSRMatrix<VT>>(0, 0, 0, false);
 		goto exit;
 	    // CSR Matrix
 	    } else if (bb.bt == DF_body_t::sparse) {
@@ -144,14 +142,14 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
 		    f.read((char *)&nzb, sizeof(nzb));
 
 		    res = DataObjectFactory::create<CSRMatrix<VT>>(
-				bb.nbrows, bb.nbcols, nzb, false);
+				bb.nbrows, bb.nbcols, nzb, true);
 
-		    for (int i = 0; i < bb.nbrows; i++) {
+		    for (size_t i = 0; i < bb.nbrows; i++) {
 			    uint64_t nzr;
 			    f.read((char *)&nzr, sizeof(nzr));
 
 			    for (int n = 0; n < nzr; n++) {
-				  uint32_t j;
+				  size_t j;
 				  f.read((char *)&j, sizeof(j));
 
 				  VT val;
@@ -211,4 +209,3 @@ exit:
     }
   }
 };
-*/
