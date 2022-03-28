@@ -16,31 +16,84 @@
 
 # This is an extract from distributed execution deployment scripts, from the
 # experimental branch deploy-Vega, to support deployment with SLURM.
+# This script allows the user to deploy DAPHNE through SLURM, including:
+# 1 - compilation of the Singularity image,
+# 2 - compilation of the daphne main and worker codes within the Singularity image
+# 3 - packaging compiled daphne codes
+# 4 - packaging compiled daphne codes with user payload as a payload package
+# 5 - uploading the payload package to an HPC platform
+# 6 - obtaining the list of PEERS from SLURM
+# 7 - executing daphne main and worker binaries on SLURM PEERS
+# 8 - collection of logs from daphne execution
+# 9 - cleanup of workers and payload deployment
+# The difference of this script from deploy-distributed-on-slurm.sh is that
+# while packaging and executing on a target HPC platform, it is tailored to
+# the communication required with SLURM and the target HPC platform.
+#
+# Specific description of functionality differences with deploy-distributed-on-slurm.sh:
+#
+# - the build of the daphne main and worker node executables is executed
+#   through a Singularity container that is built on the utilized HPC,
+#   while the function "deploy" in deployDistriuted.sh sends and builds
+#   executables on each node, which might cause overwrite if the workers use same
+#   mounted user storage (e.g. distributed storage attached as home directory)
+#
+# - the list of PEERS is not defined by the user but obtained from SLURM
+#   (in deployDistriuted.sh, the user supplies PEERS as an argument)
+#
+# - the support for single request deployment, run, and cleanup is provided
+#
 
-#******************************************************************************
-# SSH Configurations
-#******************************************************************************
-identity_file=
-USERNAME=
-sshPort=22
 
-#******************************************************************************
+
+#*****************************************************************************
+# SSH Configurations to access the HPC platform
+#*****************************************************************************
+
+SSH_LOGIN_NODE_HOSTNAME=
+SSH_SSH_IDENTITY_FILE=
+SSH_USERNAME=$USER
+SSH_PORT=22
+
+
+#*****************************************************************************
+# DAPHNE deployment default parameters
+#*****************************************************************************
+
+NUMCORES=128
+DAPHNE_SCRIPT=execute.daphne
+
+#*****************************************************************************
 # Parameterization of the HPC platform specifics (optional)
-#******************************************************************************
-PORT=50000
+#*****************************************************************************
+
+PORTRANGE_BEGIN=50000
 PATH_TO_DEPLOY_BUILD=~/DaphneDistributedWorker
-# the "PEERS" variable is taken from SLURM below
+PEERS= # the "PEERS" variable is obtained using SLURM below
 
 
-#******************************************************************************
+#*****************************************************************************
 #           DO (not) EDIT BELOW THIS LINE
-#******************************************************************************
+#*****************************************************************************
 
-SSH_COMMAND="ssh ${identity_file:+-i $identity_file} ${sshPort:+-p $sshPort}"
-SCP_COMMAND="scp ${identity_file:+-i $identity_file} ${sshPort:+-P $sshPort}"
+SSH_COMMAND="ssh ${SSH_IDENTITY_FILE:+-i $SSH_IDENTITY_FILE} ${SSH_PORT:+-p $SSH_PORT}"
+SCP_COMMAND="scp ${SSH_IDENTITY_FILE:+-i $SSH_IDENTITY_FILE} ${SSH_PORT:+-P $SSH_PORT}"
 
 # Stop immediately if any command fails.
 set -e
+
+
+# ****************************************************************************
+# Builds the image for a Singularity container, then transfers it to the 
+# target platform.
+# ****************************************************************************
+
+function buildAndTransferSingularityContainerImage {
+    ./deploy/build-daphne-singularity-image.sh
+
+    $SCP_COMMAND daphne.sif $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME:$PATH_TO_DEPLOY_BUILD
+}
+
 
 # ****************************************************************************
 # Builds daphne code and puts it in a time-stamped build directory. 
@@ -48,225 +101,372 @@ set -e
 # created from the DAPHNE Docker image.
 # The daphne and DistributedWorker are both built.
 # ****************************************************************************
-function buildWithSingularityContainer () {
+
+function buildWithSingularityContainer {
     time singularity exec daphne.sif ./build.sh
     time singularity exec daphne.sif ./build.sh --target DistributedWorker
     TIME_BUILT=$(date  +%F-%T)
     mv build build_${TIME_BUILT}
 }
 
+
 # ****************************************************************************
-# Packaging of files to be sent to a remote machine:
+# Packaging of files (payload) to be sent to a remote machine:
 # - daphne built (build/) and 
-# - user code (.daphne scripts).
+# - user code (all *.daphne scripts in the current working directory).
 # The step of packaging using same compilation (build_*) is hence reusable.
 # ****************************************************************************
-function packageDaphneDistributedWorker () {
+
+function packageBuiltDaphnePayload {
     echo "Packaging latest files for DaphneDistributedWorker deployment..."
     (
     tar cvzf build.tgz build/
-    tar cvzf daphne-worker.tgz build.tgz execute.daphne deploy-distributed-on-slurm.sh
+    tar cvzf daphne-worker.tgz build.tgz *.daphne deploy-distributed-on-slurm.sh
     ) | awk '{printf("\r%-100s      ", substr($0, -1, 100));}'
 }
 
+
 # ****************************************************************************
-# Deploys: copies the package, extracts it, executes, and cleans up the deployment.
+# Deploys: copies the package to the target platform using SCP and extracts it.
 # The target deployment platform (HPC) is configured in SSH/SCP Configuration.
 # All distributed workers are expected to be able to access an extracted package.
-# For transfer, scp is used, since rsync is already used for "daphne.sif".
+# For transfer, scp is used, since rsync might already be used for "daphne.sif".
 # ****************************************************************************
-function deployPackageToTargetPlatform () {
-    $SCP_COMMAND daphne-worker.tgz $USERNAME@$HOSTNAME:$PATH_TO_DEPLOY_BUILD
 
-    $SSH_COMMAND <<EOF
+function deployPackageToTargetPlatform {
+    $SCP_COMMAND daphne-worker.tgz $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME:$PATH_TO_DEPLOY_BUILD
+
+    $SSH_COMMAND $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME <<EOF
 cd $PATH_TO_DEPLOY_BUILD
 tar xvf daphne-worker.tgz
-./deploy-distributed-on-slurm.sh process
+exit
+EOF
+}
+
+
+#*****************************************************************************
+# Remotely start workers on remote machines (calls -R, recursively on login node for SLURM and containers).
+# This script itself is expected to be present at the target platform,
+# packaged with packageBuiltDaphnePayload and transferred with deployPackageToTargetPlatform.
+#*****************************************************************************
+
+function RemotelyStartWorkers {
+    $SSH_COMMAND $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME <<EOF
+cd $PATH_TO_DEPLOY_BUILD
+./deploy-distributed-on-slurm.sh -R
+exit
+EOF
+}
+
+
+#*****************************************************************************
+# Start workers on remote machines through SLURM using Singularity containers.
+# This can be called from RemotelyStartWorkers.
+#*****************************************************************************
+
+function StartWorkersInContainersOnSLURM {
+    mkdir -p logs
+    rm logs/* 2>/dev/null # clean workerlist and other content
+
+    srun -J DAPHNEworkers --time=119 --mem-per-cpu=10G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES \
+        bash -c 'singularity exec daphne.sif \
+                    build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) \
+                         > logs/OUTPUT.$(hostname):$(( 50000 + SLURM_LOCALID )) \
+                        2>&1 \
+                        & echo \$! > logs/PID.$(hostname):$(( 50000 + SLURM_LOCALID ))' &
+}
+
+
+#*****************************************************************************
+# Get worker's status
+#*****************************************************************************
+
+function WorkersStatus {
+    PEERS=$(cd logs; echo OUTPUT.* | sed -e 's/OUTPUT.//g' -e 's/ /,/g')
+    echo "PEERS list: $PEERS"
+    
+    [ $(cd logs; ls -1 OUTPUT.* 2>/dev/null | wc -l) -ge $NUMCORES ] && echo All up.
+    
+    echo -e "\nInfo about the daphnec build/ dir is:"
+    cat $PATH_TO_DEPLOY_BUILD/build/git_source_status_info
+}
+
+#*****************************************************************************
+# Waits for all workers to be run through SLURM.
+#*****************************************************************************
+
+function waitAllWorkersUp {
+    until [ $(cd logs; ls -1 OUTPUT.* 2>/dev/null | wc -l) -ge $NUMCORES ]
+    do
+            echo -n .
+            sleep 1
+    done
+    
+    echo -e "\nSuccessfully spawned N new distributed worker daemons (see queue below), N=" $NUMCORES
+    squeue -u $(whoami) # print the generated worker list
+}
+    
+#*****************************************************************************
+# Run one request (.daphne script) on an already deployed distributed platform.
+#*****************************************************************************
+
+function RunOneRequest {
+      time srun --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 \
+        singularity exec daphne.sif bash -c \
+            'DISTRIBUTED_WORKERS='${WORKERS}" $PATH_TO_DEPLOY_BUILD"'/build/bin/daphne '$DAPHNE_SCRIPT
+}
+
+
+#*****************************************************************************
+# Kill workers
+#*****************************************************************************
+
+function KillWorkersOnSLURM {
+    scancel -n DAPHNEworkers
+}
+
+
+#*****************************************************************************
+# Run one request (.daphne script) on an already deployed distributed platform.
+#*****************************************************************************
+
+function DeploymentClean {
+    $SSH_COMMAND $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME <<EOF
 rm -rf $PATH_TO_DEPLOY_BUILD
 exit
 EOF
 }
 
+
 # ****************************************************************************
-# Runs distributed workers using SLURM and then tears them down after the
-# execution of the workload finishes.
+# A more general deploy function, envoking all necessary steps to deploy a 
+# working DAPHNE deployment workers set: builds with Singularity, packages,
+# copies the package, executes, and cleans a deployment at the HPC platform.
 # ****************************************************************************
-#TODO: this function needs some more cleaning and splitting of the code
-function runDaphneBuildOnSlurmWorkersAndTearDown () {    
-    echo ""
-    echo Parameters of the "deploy-distributed-on-slurm.sh" script: $*
 
-    ########################
-    #export DEMO_USE_CUDA="-p gpu"
-    [ -z "$NUMCORES" ] && export NUMCORES=10 # change this to parameterize the number of distributed workers
-    [ -z "$DAPHNEparam_components_N" ] && export DAPHNEparam_components_N=6000
-    [ -z "$DAPHNEparam_components_e" ] && export DAPHNEparam_components_e=30
-    ########################
+function DeployEverythingOnce {
+    buildAndTransferSingularityContainerImage
+    
+    buildWithSingularityContainer
+    
+    packageBuiltDaphnePayload
+    
+    deployPackageToTargetPlatform
+    
+    RemotelyStartWorkers
+    
+    waitAllWorkersUp
+    
+    WorkersStatus
 
-    echo -e "\nNUMCORES=$NUMCORES, DAPHNEparam_components_N=$DAPHNEparam_components_N, DAPHNEparam_components_e=$DAPHNEparam_components_e"
-
-    echo "These files will be unpacked:"
-    echo "--------------------------------------"
-    tar xof build.tgz 2>&1 | xargs # unpack the workload
-    echo "--------------------------------------"
-    echo ""
-
-    echo -e "\nInfo about the daphnec build/ dir is:"
-    cat build/git_source_status_info
-
-    echo -e "\nSpawning N new distributed worker daemons, N=" $NUMCORES
-    set +x
-    mkdir -p WORKERS/; rm WORKERS/* 2>/dev/null # clean workerlist
-
-    #20GB works fine. lowered to 10GB, hopefully also works. Try lowering even to 5GB at next success.
-    set -x
-    srun -J Dworkers --time=119 --mem-per-cpu=10G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES bash -c 'singularity exec ../daphne.sif build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) > WORKERS/WORKERS.$(hostname):$(( 50000 + SLURM_LOCALID )) 2>&1' &
-    set +x
-
-    #until [ $(cat WORKERS.* | grep "Started Distributed Worker on " | wc -l) -ge $NUMCORES ]
-    date  +"Time is: "%F+%T
-    echo -en "\nWaiting for workers to become available ..."
-    set +x
-    until [ $(cd WORKERS; ls -1 WORKERS.* 2>/dev/null | wc -l) -ge $NUMCORES ]
-    do
-            echo -n .
-            sleep 1
-    done
-    #export WORKERS=$(cat WORKERS.* | awk '{print $NR}' | sed -e 's/Started Distributed Worker on `//g' -e 's/`$//g' | xargs -d\,)
-    date  +"Time is: "%F+%T
-
-    export Run_Algorithm_name=components-42-time.daphne
-    [ -z "$3" ] || export Run_Algorithm_name=$3
-    echo -e "\nThis is the demo $Run_Algorithm_name executable that will be run:"
-    echo -e "--------------------------------------"
-    cat ${Run_Algorithm_name}
-    echo -e "\n--------------------------------------"
-    echo ""
-
-    echo -e "\nSuccessfully spawned N new distributed worker daemons (see queue below), N=" $NUMCORES
-    squeue -u $(whoami) # print the generated worker list
-
-    echo -e "\n...starting the use of workers after 5 seconds..."
-    sleep 5
-    date  +"Time is: "%F+%T
-
-
-    set -x
-    #----------------------------- BEGIN --components_read
-    [ "$1" == "--components_read" ] && (
-    # ALL WORKERS
-    set +x
-    export WORKERS=$(cd WORKERS; echo WORKERS* | sed -e 's/WORKERS.//g' -e 's/ /,/g')
-    set -x
-    squeue -u $(whoami)
-
-    echo "Mapping datasets..."
-    export DISTRIBUTED_WORKERS=$WORKERS
-    export COO_to_CSS_scale_factor=1
-    [ -z "$2" ] || export COO_to_CSS_scale_factor=$2 
-    export Run_Algorithm_name=components_read.daphne
-    [ -z "$3" ] || export Run_Algorithm_name=$3
-    SCRATCHfs_dir=/exa5/scratch/user/$(whoami)/
-
-    (echo "The estimated memory usage (thanks, according to model by Patrick Damme) for this run overhead is: "
-    w=$NUMCORES sf=$COO_to_CSS_scale_factor G="57*(2^20)" v=403394 ; bc <<< "scale=2; $sf * (2 * $G/$w  + $v*8 + $v*32/$w) / (2^30)"; echo GB ) | xargs
-
-    if [[ "$4" == "--cached-datasets" ]]; then
-            # re-use the handles template and insert the new worker names
-            echo "REUSING cached datasets."
-            #mv datasets not-used-datasets
-            rm -rf datasets
-            ln -s /exa5/scratch/user/ales.zamuda/${NUMCORES}/datasets .
-            echo $DISTRIBUTED_WORKERS | sed -e 's/,/\n/g' | paste '-' datasets/handles-template | sed -e 's@\t.*,datasets@,datasets@g' > datasets/Amazon0601_handles.csv
-            echo "Handles (head 5, tail 5):"
-            cat datasets/Amazon0601_handles.csv | head -n 10
-            cat datasets/Amazon0601_handles.csv | tail -n 10
-    else
-            echo "Generating partitioned dataset"
-            set +x; rm datasets/Amazon0601* 2>/dev/null; 
-
-    #	mv datasets ${SCRATCHfs_dir}/
-    #	ln -s ${SCRATCHfs_dir}/datasets/ .
-
-            date  +"Time is: "%F+%T
-            set -x
-            time srun --time=119 --mem-per-cpu=20G --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../d2.sif python3 ./COO_to_CSV-distributed.py datasets/amazon0601.txt 403394 $NUMCORES $COO_to_CSS_scale_factor datasets/Amazon0601 COOFormat
-            set +x
-            cat datasets/Amazon0601_handles.csv
-    fi
-
-    date  +"Time is: "%F+%T
-
-    echo -e "\nReady to run this demo executable in a sequence using all distributed workers ..."
-
-    for DEMO_SEQUENCE in {1..5}; do
-            echo -e "\n" Running the demo sequence no. $DEMO_SEQUENCE ...
-
-            ####
-            #### RUNNING WORKLOAD ....
-            ####
-            #printing short beginning and ending of the output:
-                    #echo "... only the mixed components:"
-                    #cat | grep "DenseMatrix(" | awk '{for (i=1; i<=NF; i++) if ($i-i+2) printf("%s ", $i-i+2); print"";}'
-            set -x
-            time srun --time=119 --mem-per-cpu=300G --partition largemem ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 \
-                    singularity exec ../daphne.sif bash \
-                            -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphne '${Run_Algorithm_name}' f=\"datasets/Amazon0601_handles.csv\" --select-matrix-representations' | 
-                    awk '{a[NR]=$0} END {printf("%s seconds for compute %s %s", a[2]/1000000000, a[1], a[2]); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}' | 
-                    ( cat | grep "DenseMatrix(" | awk '{for (i=1; i<=(NF>15?15:NF); i++) printf($i" "); if (NF>15) {printf(" ... ");for (i=(NF-15)>0?NF-25:1; i<=NF; i++) printf($i" "); print""}}') 
-            set +x
-    done
-
-    if [[ "$4" == "--cached-datasets" ]]; then
-            echo "Not changing the cache."
-    else
-            echo "Archiving the cache. (not.)"
-    #	mv ${SCRATCHfs_dir}/datasets ../cache/datasets-$NUMCORES-$COO_to_CSS_scale_factor #preserve the dataset
-            #set +x; rm -rf ${SCRATCHfs_dir}/datasets/ 2>/dev/null; set -x
-    fi
-
-    # TEARING DOWN
-    echo -e "\n\nTearing down distributed worker daemons ..."
-    scancel -n Dworkers
-    )
-    [ "$1" == "--components_read" ] && exit
-    #----------------------------- END
-
-
-    # ONE WORKER
-    set +x
-    export WORKERS=$(cd WORKERS; echo WORKERS* | sed -e 's/WORKERS.//g' -e 's/ /,/g' | sed -e 's/,.*$//g')
-    set -x
-    for DEMO_SEQUENCE in {1..5}; do
-            echo -e "\n" Using ONLY ONE DISTRIBUTED WORKER $WORKERS: running the demo sequence no. $DEMO_SEQUENCE ...
-
-            time srun --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../daphne.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphne components-42-time.daphne n='${DAPHNEparam_components_N}' e='${DAPHNEparam_components_e} | awk '{a[NR]=$0} END {print((a[2]-a[1])/1000000000, "seconds for compute WITH ONLY ONE DISTRIBUTED WORKER"); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
-            sleep 1
-    done
-
-
-    # ALL WORKERS
-    set +x
-    export WORKERS=$(cd WORKERS; echo WORKERS* | sed -e 's/WORKERS.//g' -e 's/ /,/g')
-    set -x
-    squeue -u ales.zamuda
-
-    echo -e "\nReady to run this demo executable in a sequence using all distributed workers ..."
-
-    for DEMO_SEQUENCE in {1..5}; do
-            echo -e "\n" Running the demo sequence no. $DEMO_SEQUENCE ...
-
-            time srun --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 singularity exec ../daphne.sif bash -c 'DISTRIBUTED_WORKERS='${WORKERS}' build/bin/daphne components-42-time.daphne n='${DAPHNEparam_components_N}' e='${DAPHNEparam_components_e} | awk '{a[NR]=$0} END {print((a[2]-a[1])/1000000000, "seconds for compute"); for (i=3; i<=NR; i++)printf(" %s",a[i]);print;}'
-    done
-
-
-    # TEARING DOWN
-    echo -e "\n\nTearing down distributed worker daemons ..."
-    scancel -n Dworkers
-
-
-    wait
-    exit
+    RunOneRequest
+    
+    KillWorkersOnSLURM
+    
+    DeploymentClean
 }
 
-# TODO: add usage and help description for the above functions
+
+#*****************************************************************************
+#*****************************************************************************
+# General functions below as in deployDistributed.sh, tailored for this script:
+# printHelp, parsePeers, parseArguments.
+#*****************************************************************************
+#*****************************************************************************
+
+
+#*****************************************************************************
+# Help message
+#*****************************************************************************
+
+function printHelp {
+    echo "Start the DAPHNE distributed deployment on remote machines using SLURM."
+    echo "Usage: $0 [-h|--help] [-i] [--user] [-l|--login] [--deploy] [--pathToBuild] [-r| --run] [-n ] [-p] [-s| --status] [--kill] [ -D | --daphneScript] [ -S ]"
+    echo ""
+    echo "The default connection to the target platform (HPC) login node is through OpenSSH, configured by default in ~/.ssh (see: man ssh_config)."
+    echo ""
+    echo "The default ports for worker peers begin at 50000 (PORTRANGE_BEGIN) and the list of PEERS is generated as:"
+    echo "PEERS = ( WORKER1_IP:PORTRANGE_BEGIN, WORKER1_IP:PORTRANGE_BEGIN+1, ..., WORKER2_IP:PORTRANGE_BEGIN, WORKER2_IP:PORTRANGE_BEGIN+1, ... )"
+    echo ""
+    echo "Logs can be found at [pathToBuild]/logs."
+    echo ""
+    echo "--deploy:"
+    echo "This includes downloading and building all required third-party "
+    echo "material (if necessary), for building the DistributedWorker."
+    echo "You should only invoke it from the prototype's root directory."
+    echo ""
+    echo "Optional arguments:"
+    echo "  -h, --help              Print this help message and exit."
+    echo "  -i SSH_IDENTITY_FILE    Specify OpenSSH identity file (default: default ssh private key)."
+    echo "  --user SSH_USERNAME     Specify OpenSSH username (default: \$USER)."
+    echo "  --login SSH_LOGIN_NODE_HOSTNAME     Specify OpenSSH login name hostname."
+    echo "  --deploy                Compress and deploy build folder to remote machines."
+    echo "  --pathToBuild           A path to deploy or where the build is already deployed (default ~/DaphneDistributedWorker can be specified in the script)."
+    echo "  -r, --run               Run workers on remote machines through login node."
+    echo "  -R, --runOnSLURM        Run workers on current login node through SLURM."
+    echo "  -n, --numcores          Specify number of workers (cores) to use to deploy DAPHNE workers."
+    echo "  -p, --port              Specify DAPHNE deployed port range begin (default 50000)."
+    echo "  -s, --status            Get distributed workers' status."
+    echo "  --kill                  Kill all distributed workers."
+    echo "  -D DAPHNE_SCRIPT        Filename of the daphne script to run (e.g. execute.daphne)."
+    echo "  -S                      Run one request on the deployed platform (process one DAPHNE_SCRIPT script)."
+    echo ""
+    echo "Example:"
+    echo "$0 -l HPC --user hpc -i ~/.ssh/hpc.pub --deploy         Deploys over OpenSSH at login node HPC using user hpc and key hpc.pub to the target."
+    echo "$0 -l HPC -r -n 1024 -D example-time.daphne -S          Runs one request (script called example-time.daphne) on the deployment using 1024 cores, using login node HPC and default OpenSSH configuration."
+    echo "$0 -l HPC -S                                            Executes one request to a running deployed platform, using login node HPC and default OpenSSH configuration and the default script filename execute.daphne."
+}
+
+
+#*****************************************************************************
+# Parse arguments
+#*****************************************************************************
+
+PARAMS=""
+while (( "$#" )); do
+  case "$1" in
+    -h|--help)
+        printHelp
+        shift 1
+        exit 0
+        ;;
+    -i)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SSH_IDENTITY_FILE=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi        
+        ;;
+    --user)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SSH_USERNAME=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi        
+        ;;
+    --login)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SSH_LOGIN_NODE_HOSTNAME=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi        
+        ;;
+    -r| --run)
+        START_WORKERS_FLAG=TRUE
+        shift 1
+        ;;
+    -R| --runOnSLURM)
+        START_WORKERS_SLURM_FLAG=TRUE
+        shift 1
+        ;;        
+    -n|--numcores)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            NUMCORES=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi
+        ;;
+    -p|--port)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            PORTRANGE_BEGIN=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi
+        ;;
+    --deploy)
+        DEPLOY_FLAG=TRUE
+        shift 1
+        ;;
+    --pathToBuild)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            PATH_TO_BUILD=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi
+        ;;
+    -s| --status)
+        WORKERS_STATUS_FLAG=TRUE
+        shift 1
+        ;;
+    -D|--daphneScript)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            DAPHNE_SCRIPT=$2
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            printHelp
+            exit 1
+        fi
+        ;;
+    --kill)
+        KILL_WORKERS_FLAG=TRUE
+        shift 1
+        ;;
+    -*|--*=) # unsupported flags
+        echo "Error: Unsupported flag $1" >&2
+        exit 1
+        ;;
+    *) # preserve positional arguments
+        PARAMS="$PARAMS $1"
+        shift
+        ;;
+  esac
+done
+
+# set positional arguments in their proper place
+eval set -- "$PARAMS"
+
+if [[ ! -n $PATH_TO_DEPLOY_BUILD ]]; then
+    echo "You must specifcy where the build is located."
+    exit 1
+fi
+
+if [[ ! -n $SSH_USERNAME ]]; then
+    echo "Please configure the client OpenSSH username (inside the script)."
+    exit 1
+fi
+
+if [[ -n $DEPLOY_FLAG ]]; then   
+    DeployEverythingOnce
+    exit 0
+fi
+
+if [[ -n $START_WORKERS_FLAG ]]; then
+    RemotelyStartWorkers
+    exit 0
+fi
+
+if [[ -n $START_WORKERS_SLURM_FLAG ]]; then
+    StartWorkersInContainersOnSLURM
+    exit 0
+fi
+
+if [[ -n $WORKERS_STATUS_FLAG ]]; then
+    WorkersStatus
+    exit 0
+fi
+
+if [[ -n $KILL_WORKERS_FLAG ]]; then
+    KillWorkersOnSLURM
+    exit 0
+fi
+
+printHelp
