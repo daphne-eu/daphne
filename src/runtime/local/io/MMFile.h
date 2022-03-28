@@ -53,7 +53,7 @@ char *mm_typecode_to_str(MM_typecode matcode);
 #define mm_is_skew(typecode)	((typecode)[3]=='K')
 #define mm_is_hermitian(typecode)((typecode)[3]=='H')
 
-int mm_is_valid(MM_typecode matcode)
+inline int mm_is_valid(MM_typecode matcode)
 {
   if (!mm_is_matrix(matcode)) return 0;
   if (mm_is_dense(matcode) && mm_is_pattern(matcode)) return 0;
@@ -132,7 +132,7 @@ int mm_is_valid(MM_typecode matcode)
 #define MM_SKEW_STR		"skew-symmetric"
 #define MM_PATTERN_STR  "pattern"
 
-int mm_read_banner(File *f, MM_typecode *matcode){
+inline int mm_read_banner(File *f, MM_typecode *matcode){
   char *line;
   char banner[MM_MAX_TOKEN_LENGTH];
   char mtx[MM_MAX_TOKEN_LENGTH]; 
@@ -216,7 +216,7 @@ int mm_read_banner(File *f, MM_typecode *matcode){
   return 0;
 }
 
-int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
+inline int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
 {
   int num_items_read;
 
@@ -231,7 +231,7 @@ int mm_read_mtx_crd_size(File *f, size_t *M, size_t *N, size_t *nz )
   return 0;
 }
 
-int mm_read_mtx_array_size(File *f, size_t *M, size_t *N)
+inline int mm_read_mtx_array_size(File *f, size_t *M, size_t *N)
 {
     int num_items_read;
     /* set return null parameter values, in case we exit with errors */
