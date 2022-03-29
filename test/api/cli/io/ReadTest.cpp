@@ -26,7 +26,7 @@
 const std::string dirPath = "test/api/cli/io/";
 
 TEST_CASE("readSparse", TAG_IO) {
-    auto arg = "filename=\"" + dirPath + "readSparse.coo\"";
+    auto arg = "filename=\"" + dirPath + "readSparse.csv\"";
     compareDaphneToRef(dirPath + "readSparse.txt",
         dirPath + "readSparse.daphne",
         "--select-matrix-representations",
