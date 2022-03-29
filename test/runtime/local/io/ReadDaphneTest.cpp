@@ -108,8 +108,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS", TAG_KERNELS, (DenseMatrix), (double
 
   CHECK(m->get(36, 29) == 926.188986068);
 
-  for(auto r = 0; r<numRows; r++)
-    for(auto c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -130,9 +130,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK", TAG_KERNELS, (DenseMatrix), (double
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -156,8 +156,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32_
   CHECK(m->get( 1, 0) == 0);
   CHECK(m->get(3, 15) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->get(r,c) == 0)
         CHECK(m->get(c,r) == 0);
       else
@@ -181,9 +181,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK", TAG_KERNELS, (DenseMatrix), (int32_
 
   CHECK(m->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -205,8 +205,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS", TAG_KERNELS, (DenseMatrix), (int32_
 
   CHECK(m->get(1, 1) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -290,8 +290,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_KERNELS, (CSRMatrix), (do
 
   CHECK(m->get(36, 29) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -312,9 +312,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_KERNELS, (CSRMatrix), (do
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -338,8 +338,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (in
   CHECK(m->get( 1, 0) == 0);
   CHECK(m->get(3, 15) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->get(r,c) == 0)
         CHECK(m->get(c,r) == 0);
       else
@@ -363,9 +363,9 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_KERNELS, (CSRMatrix), (in
 
   CHECK(m->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -387,8 +387,8 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (in
 
   CHECK(m->get(1, 1) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
