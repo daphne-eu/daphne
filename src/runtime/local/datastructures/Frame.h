@@ -391,6 +391,27 @@ public:
             colIdxs[i] = c;
         return DataObjectFactory::create<Frame>(this, rl, ru, cu-cl, colIdxs);
     }
+    void convertToProto(distributed::Matrix *matProto) const override {
+        convertToProto(matProto, 0, numRows, 0, numCols);
+    }
+    void convertToProto(distributed::Matrix *matProto,
+                        size_t rowBegin,
+                        size_t rowEnd,
+                        size_t colBegin,
+                        size_t colEnd) const override {
+        assert("Serialization of Frames is not implemented yet");
+    }
+
+    void convertFromProto(const distributed::Matrix &matProto) override {
+        convertFromProto(matProto, 0, numRows, 0, numCols);
+    }
+    void convertFromProto(const distributed::Matrix &matProto,
+                        size_t rowBegin,
+                        size_t rowEnd,
+                        size_t colBegin,
+                        size_t colEnd) override {
+        assert("Serialization of Frames is not implemented yet");
+    }
 };
 
 std::ostream & operator<<(std::ostream & os, const Frame & obj);

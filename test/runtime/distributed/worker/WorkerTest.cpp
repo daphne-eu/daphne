@@ -18,7 +18,6 @@
 #include "runtime/distributed/proto/worker.pb.h"
 #include "runtime/distributed/proto/worker.grpc.pb.h"
 #include "runtime/distributed/worker/WorkerImpl.h"
-#include "runtime/distributed/worker/ProtoDataConverter.h"
 #include "runtime/local/kernels/EwBinaryMat.h"
 #include "runtime/local/kernels/CheckEq.h"
 
@@ -162,7 +161,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
             readCsv(matOrig, file, rows, cols, delim);
 
             auto *received = DataObjectFactory::create<DT>(mat.num_rows(), mat.num_cols(), false);
-            ProtoDataConverter<DT>::convertFromProto(mat, received);
+            received->convertFromProto(mat);
 
             DT *matOrigTimes2 = nullptr;
             EwBinaryMat<DT, DT, DT>::apply(BinaryOpCode::ADD,

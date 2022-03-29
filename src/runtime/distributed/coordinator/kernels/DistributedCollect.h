@@ -24,8 +24,6 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
-#include <runtime/distributed/worker/ProtoDataConverter.h>
-
 #include <cassert>
 #include <cstddef>
 
@@ -92,21 +90,20 @@ struct DistributedCollect
             auto ix = response.storedInfo.ix;
             auto matProto = response.result;
             if (combineType == VectorCombine::ROWS) {
-                ProtoDataConverter<DT>::convertFromProto(matProto,
-                    mat,
+                mat->convertFromProto(matProto,                    
                     ix->getRow() * k + std::min(ix->getRow(), m),
                     (ix->getRow() + 1) * k + std::min((ix->getRow() + 1), m),
                     0,
                     mat->getNumCols());
             }
             else if (combineType == VectorCombine::COLS) {
-                ProtoDataConverter<DT>::convertFromProto(matProto,
-                    mat,
+                mat->convertFromProto(matProto,                    
                     0,
                     mat->getNumRows(),
                     ix->getCol() * k + std::min(ix->getCol(), m),
                     (ix->getCol() + 1) * k + std::min((ix->getCol() + 1), m));
             }
+
             mat->dataPlacement.isPlacedOnWorkers = false;
         }      
     };

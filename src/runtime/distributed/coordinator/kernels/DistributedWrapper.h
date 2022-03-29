@@ -80,19 +80,15 @@ public:
         for (auto i = 0u; i < numInputs; ++i) {
             // if already placed on workers, skip
             // TODO maybe this is not enough. We might also need to check if data resides in the specific way we need to.
-            // (i.e. rows/cols splitted accordingly). 
+            // (i.e. rows/cols splitted accordingly). If it does then we can skip.
             if (inputs[i]->dataPlacement.isPlacedOnWorkers == true)
                 continue;
 
             if (isBroadcast(splits[i], inputs[i])){
-                // TODO for now we assume inputs and outputs are of the same type but this might be not true.
-                // Broadcast needs to receive a specific type (not Structure).
-                // Broadcast internally uses  protobufs (see more at ProtoDataConverter) and we need
-                // to specify Dense/CSR<double/int>.
-                broadcast((DT*)inputs[i], _ctx);
+                broadcast(inputs[i], _ctx);
             }
             else {
-                distribute((DT*)inputs[i], _ctx);
+                distribute(inputs[i], _ctx);
             }
         }
           

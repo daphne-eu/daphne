@@ -29,7 +29,6 @@
 
 #include "WorkerImpl.h"
 
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -121,7 +120,7 @@ grpc::Status WorkerImpl::StoreType(::grpc::ServerContext *context,
                          ::distributed::StoredData *response)
 {
     DT *mat = CreateMatrix<DT>(request);
-    ProtoDataConverter<DT>::convertFromProto(*request, mat);
+    mat->convertFromProto(*request);
 
     auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
     localData_[identification] = mat;
@@ -315,7 +314,7 @@ grpc::Status WorkerImpl::TransferType(::grpc::ServerContext *context,
 {
     Matrix<typename DT::VT> *mat = readOrGetMatrix<DT>(request->filename(), request->num_rows(), request->num_cols());
     auto matDense = dynamic_cast<DT *>(mat);    
-    ProtoDataConverter<DT>::convertToProto(matDense, response);
+    mat->convertToProto(response);
     return ::grpc::Status::OK;
 }
 

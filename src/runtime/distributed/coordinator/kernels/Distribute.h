@@ -23,7 +23,6 @@
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCaller.h>
 
 #include <cassert>
@@ -56,6 +55,7 @@ struct Distribute
         struct StoredInfo {
             DistributedIndex *ix ;
             std::string workerAddr;
+            distributed::StoredData_Type dataType;
         };        
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
 
@@ -68,13 +68,30 @@ struct Distribute
 
             auto k = mat->getNumRows() / workers.size();
             auto m = mat->getNumRows() % workers.size();
-            ProtoDataConverter<DT>::convertToProto(mat,
-                &protoMat,
-                (workerIx * k) + std::min(workerIx, m),
-                (workerIx + 1) * k + std::min(workerIx + 1, m),
-                0,
-                mat->getNumCols());
-                        
+
+            mat->convertToProto(&protoMat,
+                                (workerIx * k) + std::min(workerIx, m),
+                                (workerIx + 1) * k + std::min(workerIx + 1, m),
+                                0,
+                                mat->getNumCols());
+            
+            // Determine type from result serialized
+            // TODO maybe we can get this from the convertToProto function above
+            distributed::StoredData_Type type;
+            switch (protoMat.matrix_case()){
+                case distributed::Matrix::MatrixCase::kDenseMatrix:
+                    if (protoMat.dense_matrix().cells_case() == distributed::DenseMatrix::CellsCase::kCellsI64)
+                        type = distributed::StoredData_Type::StoredData_Type_DenseMatrix_i64;
+                    else 
+                        type = distributed::StoredData_Type::StoredData_Type_DenseMatrix_f64;
+                    break;
+                case distributed::Matrix::MatrixCase::kCsrMatrix:
+                    if (protoMat.csr_matrix().values_case() == distributed::CSRMatrix::ValuesCase::kValuesI64)
+                        type = distributed::StoredData_Type::StoredData_Type_CSRMatrix_i64;
+                    else 
+                        type = distributed::StoredData_Type::StoredData_Type_CSRMatrix_f64;
+                    break;
+            }
             StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr});
             caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
             
@@ -89,14 +106,8 @@ struct Distribute
             auto workerAddr = response.storedInfo.workerAddr;
 
             auto storedData = response.result;
-            if (std::is_same<DT, DenseMatrix<double>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);            
-            if (std::is_same<DT, DenseMatrix<int64_t>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
-            if (std::is_same<DT, CSRMatrix<double>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64);
-            if (std::is_same<DT, CSRMatrix<int64_t>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64);
+            
+            storedData.set_type(response.storedInfo.dataType);
             DistributedData data(*ix, storedData);
             dataMap[workerAddr] = data;
         }

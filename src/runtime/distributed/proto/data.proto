@@ -44,7 +44,7 @@ message DenseMatrix {
 
 message CSRMatrix {
   
-  CellsI64 rowIdx = 1;
+  CellsI64 row_offsets = 1;
   CellsI64 colIdx = 2;
   oneof values {
     CellsF64 values_f64 = 3;

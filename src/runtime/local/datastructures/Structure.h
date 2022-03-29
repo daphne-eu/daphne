@@ -137,6 +137,29 @@ public:
      * 
      */
     mutable DataPlacement dataPlacement;    
+    
+    /**
+     * @brief Serialize object to protobuf 
+     *  
+     * @param protobuf matrix     
+     */
+    virtual void convertToProto(distributed::Matrix *matProto) const = 0;
+    virtual void convertToProto(distributed::Matrix *matProto,
+                                size_t rowBegin,
+                                size_t rowEnd,
+                                size_t colBegin,
+                                size_t colEnd) const = 0;
+    /**
+     * @brief Serialize object to protobuf 
+     *  
+     * @param protobuf matrix
+     */                            
+    virtual void convertFromProto(const distributed::Matrix &matProto) = 0;
+    virtual void convertFromProto(const distributed::Matrix &matProto,
+                                size_t rowBegin,
+                                size_t rowEnd,
+                                size_t colBegin,
+                                size_t colEnd) = 0;
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

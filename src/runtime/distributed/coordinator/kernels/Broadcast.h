@@ -23,7 +23,6 @@
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 
 #include <cassert>
 #include <cstddef>
@@ -59,8 +58,26 @@ struct Broadcast
         
 
         distributed::Matrix protoMat;
-        ProtoDataConverter<DT>::convertToProto(mat, &protoMat);
+        mat->convertToProto(&protoMat);
         
+        // Determine type from result serialized
+        // TODO maybe we can get this from the convertToProto function above
+        distributed::StoredData_Type dataType;
+        switch (protoMat.matrix_case()){
+            case distributed::Matrix::MatrixCase::kDenseMatrix:
+                if (protoMat.dense_matrix().cells_case() == distributed::DenseMatrix::CellsCase::kCellsI64)
+                    dataType = distributed::StoredData_Type::StoredData_Type_DenseMatrix_i64;
+                else 
+                    dataType = distributed::StoredData_Type::StoredData_Type_DenseMatrix_f64;
+                break;
+            case distributed::Matrix::MatrixCase::kCsrMatrix:
+                if (protoMat.csr_matrix().values_case() == distributed::CSRMatrix::ValuesCase::kValuesI64)
+                    dataType = distributed::StoredData_Type::StoredData_Type_CSRMatrix_i64;
+                else 
+                    dataType = distributed::StoredData_Type::StoredData_Type_CSRMatrix_f64;
+                break;
+        }
+
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
 
@@ -75,14 +92,7 @@ struct Broadcast
             auto workerAddr = response.storedInfo.workerAddr;            
 
             auto storedData = response.result;
-            if (std::is_same<DT, DenseMatrix<double>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);            
-            if (std::is_same<DT, DenseMatrix<int64_t>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
-            if (std::is_same<DT, CSRMatrix<double>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64);
-            if (std::is_same<DT, CSRMatrix<int64_t>>::value)
-                storedData.set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64);
+            storedData.set_type(dataType);
             
             DistributedData data(storedData);
             dataMap[workerAddr] = data;

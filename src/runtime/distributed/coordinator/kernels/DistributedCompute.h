@@ -23,8 +23,6 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
-#include <runtime/distributed/worker/ProtoDataConverter.h>
-
 #include <cassert>
 #include <cstddef>
 
@@ -125,7 +123,7 @@ struct DistributedCompute<DTRes, const Structure>
             auto ix = response.storedInfo.ix;
             
             auto computeResult = response.result;
-            // Recieve all outputs and store it to Handle_v2
+
             for (int i = 0; i < computeResult.outputs_size(); i++){
                 DistributedData data(*ix, computeResult.outputs(i).stored());                
                 dataMap[i][addr] = data;
