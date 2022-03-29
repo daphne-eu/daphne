@@ -38,12 +38,6 @@ char *mm_typecode_to_str(MM_typecode matcode);
 
 template <class DTRes> struct ReadMM {
   static void apply(DTRes *&res, const char *filename) = delete;
-
-//   static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
-//                     ssize_t numNonZeros, bool sorted = true) = delete;
-
-//   static void apply(DTRes *&res, File *file, size_t numRows, size_t numCols,
-//                     char delim, ValueTypeCode *schema) = delete;
 };
 
 // ****************************************************************************
