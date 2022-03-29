@@ -17,9 +17,6 @@
 #ifndef DAPHNE_PROTOTYPE_SRC_UTIL_DEDUCETYPE_H
 #define DAPHNE_PROTOTYPE_SRC_UTIL_DEDUCETYPE_H
 
-#include <util/debug/typestr.h>
-#include <util/debug/type_traits.h>
-
 
 template<typename T>
 struct is_ValueTypeCode : std::false_type {};
