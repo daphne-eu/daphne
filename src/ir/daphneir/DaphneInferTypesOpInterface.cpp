@@ -253,6 +253,21 @@ void daphne::InnerJoinOp::inferTypes() {
     }
 }
 
+void daphne::ThetaJoinOp::inferTypes() {
+    daphne::FrameType ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
+    daphne::FrameType ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
+    if(ftLhs && ftRhs) {
+        std::vector<Type> newColumnTypes;
+        for(Type t : ftLhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        for(Type t : ftRhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        getResult().setType(
+                daphne::FrameType::get(getContext(), newColumnTypes)
+        );
+    }
+}
+
 void daphne::GroupOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);

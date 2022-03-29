@@ -17,6 +17,10 @@
 #ifndef DAPHNE_PROTOTYPE_SRC_UTIL_DEDUCETYPE_H
 #define DAPHNE_PROTOTYPE_SRC_UTIL_DEDUCETYPE_H
 
+#include <type_traits>
+#include <utility>
+#include <runtime/local/datastructures/ValueTypeCode.h>
+
 
 template<typename T>
 struct is_ValueTypeCode : std::false_type {};
@@ -33,8 +37,25 @@ struct is_ValueTypeCode<const ValueTypeCode&> : std::true_type {};
 template<typename T>
 inline constexpr bool is_ValueTypeCode_v = is_ValueTypeCode<T>::value;
 
-
-template < template < typename ... > typename, typename ... >
+/**
+ * @brief Helper class to handle ValueTypeCode to C++ data type mapping.
+ *
+ * This class is designed to ease the handling of types of frames.
+ * As first template parameter, it takes a templated class with an static <u>apply</u> function, which is later called
+ * with the deduced data types.
+ *
+ * \n\n<b>Usage:</b>\n
+ *
+ * DeduceValueTypeAndExecute<Kernel>::apply(ValueTypeCode::SI32, 42);
+ *  ==> calls Kernel<int32_t>::apply(42)
+ *
+ *  DeduceValueTypeAndExecute<Kernel, FooBar>::apply(ValueTypeCode::SI32, 42);
+ *  ==> calls Kernel<FooBar, int32_t>::apply(42)
+ *
+ * @tparam TExec Templated class with static apply function.
+ * @tparam TList
+ */
+template < template < typename ... > typename TExec, typename ... TList >
 class DeduceValueTypeAndExecute;
 
 template < uint64_t depth, template <typename ... > typename TExec, typename...TList>
@@ -92,11 +113,23 @@ class DeduceValueType_Helper {
 
 template < template < typename ... > typename TExec, typename ... TList >
 class DeduceValueTypeAndExecute {
+    /**
+     * Count how many types in TArgs are of type ValueTypeCode
+     * @tparam TArgs Types to test and count
+     */
     template<typename...TArgs>
-    struct count_vtc{
+    struct count_vtc {
+        /// Count of ValueTypeCodes in TArgs
         static const uint64_t count = 0 + ( ... + (is_ValueTypeCode_v<TArgs> ? 1 : 0));
     };
   public:
+    /**
+     * @brief Calls the executable after deducing the value types.
+     *
+     * The ValueTypeCodes to deduce have to be clustered as the first arguments.
+     * @tparam Tvtc
+     * @param vtc
+     */
     template <typename...Tvtc>
     static void apply(Tvtc&& ... vtc){
         DeduceValueType_Helper<count_vtc<Tvtc...>::count, TExec, TList...>::apply(std::forward<Tvtc>(vtc)...);

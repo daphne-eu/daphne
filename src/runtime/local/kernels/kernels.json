@@ -842,6 +842,55 @@
     	]
     },
     {
+    	"kernelTemplate": {
+    		"header": "ThetaJoin.h",
+    		"opName": "thetaJoin",
+    		"returnType": "void",
+    		"templateParams": [],
+    		"runtimeParams": [
+    			{
+    				"type": "Frame *&",
+    				"name": "res"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "lhs"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "rhs"
+    			},
+    			{
+    				"type": "const char **",
+    				"name": "lhsOn"
+    			},
+    			{
+    				"type": "size_t",
+    				"name": "numLhsOn"
+    			},
+    			{
+    				"type": "const char **",
+    				"name": "rhsOn"
+    			},
+    			{
+    				"type": "size_t",
+    				"name": "numRhsOn"
+    			},
+    			{
+    				"type": "CompareOperation *",
+    				"name": "cmp"
+    			},
+    			{
+    				"type": "size_t",
+    				"name": "numCmp"
+    			}
+    		]
+    	},
+    	"instantiations": [
+    		[]
+    	]
+    },
+    {
         "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
