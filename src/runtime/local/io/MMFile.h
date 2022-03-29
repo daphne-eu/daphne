@@ -356,7 +356,8 @@ public:
           if(read) readEntry();
         }
         ~MMIterator() { free((void*)std::min(m_ptr, next)); }
-
+        // TODO: In the case of the input matrix being exactly (2^64-1) x (2^64-1),
+        // the lower right element will incorrectly not be read
         void terminate() { *m_ptr = { -1ul, -1ul, cur}; }
         reference operator*() const { return *m_ptr; }
         pointer operator->() { return m_ptr; }
