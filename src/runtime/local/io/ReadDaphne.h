@@ -148,7 +148,7 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
 			    uint64_t nzr;
 			    f.read((char *)&nzr, sizeof(nzr));
 
-			    for (int n = 0; n < nzr; n++) {
+			    for (uint64_t n = 0; n < nzr; n++) {
 				  size_t j;
 				  f.read((char *)&j, sizeof(j));
 
@@ -174,7 +174,7 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
 
 		   // Single column case
 		   if (bb.nbcols == 1) {
-			for (int n = 0; n < nzb; n++) {
+			for (uint64_t n = 0; n < nzb; n++) {
 				uint32_t i;
 				f.read((char *)&i, sizeof(i));
 
@@ -186,7 +186,7 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
 			goto exit;
 		   } else {
 			   // TODO: check numcols is greater than 1
-			for (int n = 0; n < nzb; n++) {
+			for (uint64_t n = 0; n < nzb; n++) {
 				uint32_t i;
 				f.read((char *)&i, sizeof(i));
 
