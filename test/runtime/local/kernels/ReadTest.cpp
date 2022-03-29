@@ -35,7 +35,6 @@ TEMPLATE_PRODUCT_TEST_CASE("Read CSV", TAG_KERNELS, (DenseMatrix), (double)) {
     size_t numCols = 4;
 
     char filename[] = "./test/runtime/local/io/ReadCsv1.csv";
-    char delim = ',';
 
     read(m, filename,nullptr);
 
@@ -57,9 +56,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Read CSV", TAG_KERNELS, (DenseMatrix), (double)) {
 
 TEMPLATE_PRODUCT_TEST_CASE("Read MM", TAG_KERNELS, (DenseMatrix), (uint32_t)) {
   using DT = TestType;
-  using VT = typename DT::VT;
-    
-  
+
   DT * m= nullptr;
   size_t numRows = 9;
   size_t numCols = 9;

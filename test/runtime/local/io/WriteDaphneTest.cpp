@@ -32,13 +32,11 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_KERNELS, (DenseMatrix), (int32
   using DT = TestType;
   DT *m = nullptr;
 
-  size_t numRows = 9;
-  size_t numCols = 9;
-
   char filename[] = "./test/runtime/local/io/cig.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/cig.dbdf");
+  char fn[] = "./test/runtime/local/io/cig.dbdf";
+  writeDaphne(m, fn);
 
   CHECK(m->get(0, 0) == 1);
   CHECK(m->get(2, 0) == 0);
@@ -58,7 +56,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG", TAG_KERNELS, (DenseMatrix), (int32
   char filename[] = "./test/runtime/local/io/aig.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/aig.dbdf");
+  char fn [] = "./test/runtime/local/io/aig.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -82,7 +81,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG", TAG_KERNELS, (DenseMatrix), (doubl
   char filename[] = "./test/runtime/local/io/crg.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/crg.dbdf");
+  char fn [] = "./test/runtime/local/io/crg.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -104,15 +104,16 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS", TAG_KERNELS, (DenseMatrix), (doubl
   char filename[] = "./test/runtime/local/io/crs.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/crs.dbdf");
+  char fn [] = "./test/runtime/local/io/crs.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(36, 29) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -128,16 +129,17 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK", TAG_KERNELS, (DenseMatrix), (doubl
   char filename[] = "./test/runtime/local/io/crk.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/crk.dbdf");
+  char fn [] = "./test/runtime/local/io/crk.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -154,7 +156,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32
   char filename[] = "./test/runtime/local/io/cps.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/cps.dbdf");
+  char fn [] = "./test/runtime/local/io/cps.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -163,8 +166,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32
   CHECK(m->get( 1, 0) == 0);
   CHECK(m->get(3, 15) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->get(r,c) == 0)
         CHECK(m->get(c,r) == 0);
       else
@@ -183,16 +186,17 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_KERNELS, (DenseMatrix), (int32
   char filename[] = "./test/runtime/local/io/aik.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/aik.dbdf");
+  char fn [] = "./test/runtime/local/io/aik.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -209,15 +213,16 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_KERNELS, (DenseMatrix), (int32
   char filename[] = "./test/runtime/local/io/ais.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/ais.dbdf");
+  char fn [] = "./test/runtime/local/io/ais.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(1, 1) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -233,7 +238,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_KERNELS, (CSRMatrix), (i
   char filename[] = "./test/runtime/local/io/cig.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/cig-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/cig-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -256,7 +262,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_KERNELS, (CSRMatrix), (i
   char filename[] = "./test/runtime/local/io/aig.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/aig-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/aig-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -280,7 +287,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_KERNELS, (CSRMatrix), (d
   char filename[] = "./test/runtime/local/io/crg.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/crg-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/crg-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -302,15 +310,16 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_KERNELS, (CSRMatrix), (d
   char filename[] = "./test/runtime/local/io/crs.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/crs-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/crs-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(36, 29) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
@@ -326,16 +335,17 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_KERNELS, (CSRMatrix), (d
   char filename[] = "./test/runtime/local/io/crk.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/crk-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/crk-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(29, 36) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -352,7 +362,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (i
   char filename[] = "./test/runtime/local/io/cps.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/cps-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/cps-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -361,8 +372,8 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (i
   CHECK(m->get( 1, 0) == 0);
   CHECK(m->get(3, 15) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->get(r,c) == 0)
         CHECK(m->get(c,r) == 0);
       else
@@ -381,16 +392,17 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_KERNELS, (CSRMatrix), (i
   char filename[] = "./test/runtime/local/io/aik.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/aik-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/aik-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->get(r,r) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == -m->get(c,r));
   }
 
@@ -407,21 +419,22 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (i
   char filename[] = "./test/runtime/local/io/ais.mtx";
   readMM(m, filename);
 
-  writeDaphne(m, "./test/runtime/local/io/ais-csr.dbdf");
+  char fn [] = "./test/runtime/local/io/ais-csr.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->get(1, 1) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->get(r,c) == m->get(c,r));
 
   DataObjectFactory::destroy(m);
 }
-/*
-TEST_CASE("ReadMM CIG (Frame)", TAG_KERNELS) {
+
+TEST_CASE("WriteDaphne CIG (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -430,6 +443,9 @@ TEST_CASE("ReadMM CIG (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/cig.mtx";
   readMM(m, filename);
+
+  char fn [] = "./test/runtime/local/io/cig-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -442,7 +458,7 @@ TEST_CASE("ReadMM CIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM AIG (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne AIG (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -451,6 +467,8 @@ TEST_CASE("ReadMM AIG (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/aig.mtx";
   readMM(m, filename);
+//  char fn [] = "./test/runtime/local/io/aig-f.dbdf";
+//  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -464,7 +482,7 @@ TEST_CASE("ReadMM AIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CRG (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CRG (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -473,6 +491,8 @@ TEST_CASE("ReadMM CRG (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/crg.mtx";
   readMM(m, filename);
+  char fn [] = "./test/runtime/local/io/crg-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -484,7 +504,7 @@ TEST_CASE("ReadMM CRG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CRS (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CRS (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -493,21 +513,23 @@ TEST_CASE("ReadMM CRS (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/crs.mtx";
   readMM(m, filename);
+  char fn [] = "./test/runtime/local/io/crs-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->getColumn<double>(29)->get(36, 0) == 926.188986068);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<double>(c)->get(r,0)
         ==  m->getColumn<double>(r)->get(c,0));
 
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CRK (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -516,15 +538,17 @@ TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/crk.mtx";
   readMM(m, filename);
+  char fn [] = "./test/runtime/local/io/crk-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->getColumn<double>(36)->get(29, 0) == -926.188986068);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->getColumn<double>(r)->get(r,0) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<double>(c)->get(r,0)
         == -m->getColumn<double>(r)->get(c,0));
   }
@@ -532,7 +556,7 @@ TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CPS (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -541,6 +565,8 @@ TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/cps.mtx";
   readMM(m, filename);
+  char fn [] = "./test/runtime/local/io/cps-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -549,8 +575,8 @@ TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
   CHECK(m->getColumn<double>(0)->get( 1, 0) == 0);
   CHECK(m->getColumn<double>(15)->get(3, 0) != 0);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       if(m->getColumn<double>(c)->get(r,0) == 0)
         CHECK(m->getColumn<double>(r)->get(c,0) == 0);
       else
@@ -559,7 +585,7 @@ TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne AIK (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -568,15 +594,17 @@ TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/aik.mtx";
   readMM(m, filename);
+  char fn [] = "./test/runtime/local/io/aik-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->getColumn<int64_t>(0)->get(1, 0) == 1);
 
-  for(int r = 0; r<numRows; r++) {
+  for(size_t r = 0; r<numRows; r++) {
     CHECK(m->getColumn<int64_t>(r)->get(r,0) == 0);
-    for(int c = r+1; c<numCols; c++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<int64_t>(c)->get(r,0)
         == -m->getColumn<int64_t>(r)->get(c,0));
   }
@@ -584,7 +612,7 @@ TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM AIS (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne AIS (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -593,17 +621,18 @@ TEST_CASE("ReadMM AIS (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/ais.mtx";
   readMM(m, filename);
+  char fn [] = "./test/runtime/local/io/ais-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
 
   CHECK(m->getColumn<int64_t>(1)->get(1, 0) == 4);
 
-  for(int r = 0; r<numRows; r++)
-    for(int c = r+1; c<numCols; c++)
+  for(size_t r = 0; r<numRows; r++)
+    for(size_t c = r+1; c<numCols; c++)
       CHECK(m->getColumn<int64_t>(c)->get(r,0)
         ==  m->getColumn<int64_t>(r)->get(c,0));
 
   DataObjectFactory::destroy(m);
 }
-*/

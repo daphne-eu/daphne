@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+#ifndef READDAPHNE_H
+#define READDAPHNE_H
 #pragma once
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
@@ -34,6 +36,7 @@
 #include <fstream>
 #include <iostream>
 #include <limits>
+#include <vector>
 #include <stdlib.h>
 
 
@@ -210,7 +213,6 @@ exit:
   }
 };
 
-
 template <> struct ReadDaphne<Frame> {
   static void apply(Frame *&res, const char *filename){
 
@@ -224,7 +226,7 @@ template <> struct ReadDaphne<Frame> {
 
     if (h.dt == DF_data_t::Frame_t) {
 	    // read rest of the header
-	    ValueTypeCode *schema = new ValueTypeCode[h.nbcols];
+	    ValueTypeCode * schema = new ValueTypeCode[h.nbcols];
 	    for (uint64_t c = 0; c < h.nbcols; c++) {
 		f.read((char *)&(schema[c]), sizeof(ValueTypeCode));
 	    }
@@ -236,23 +238,71 @@ template <> struct ReadDaphne<Frame> {
 		f.read((char *) &(labels[c]), len);
 	    }
 
-	    res = DataObjectFactory::create<Frame>(
-		h.nbrows, h.nbcols, schema,  
-		types, true);
-
 	    DF_body b;
 	    f.read((char *)&b, sizeof(b));
 	    // b is ignored for now - assumed to be 0,0
 	    //TODO: consider multiple blocks
 	    // Assuming a dense block representation
 	    // TODO: Consider alternative representations for frames
-	    for (uint64_t r = 0; c < h.nbrows; r++) {
-		for (uint64_t c = 0; c < h.nbcols; c++) {
-			char * val = new(char[ValueTypeUtils::sizeOf(schema[c])]);
-			f.read((char *)val, ValueTypeUtils::sizeOf(schema[c]));
-			(res->columns[c][r]).reset(val);
-		}
+
+	    if (res == nullptr) {
+		res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols, schema, nullptr, false);
 	    }
+
+	    uint8_t ** rawCols = new uint8_t * [h.nbcols];
+            for(size_t i = 0; i < h.nbcols; i++) {
+                rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
+            }
+
+	    for (size_t r=0; r < h.nbrows; r++) {
+		for (size_t c=0; c < h.nbcols; c++) { 
+			switch (schema[c]) {
+			case ValueTypeCode::SI8:
+				int8_t val_si8;
+				f.read((char *) &val_si8, sizeof(val_si8));
+				reinterpret_cast<int8_t *>(rawCols[c])[r] = val_si8;
+				break;
+			case ValueTypeCode::SI32:
+			        int32_t val_si32;
+				f.read((char *) &val_si32, sizeof(val_si32));
+			        reinterpret_cast<int32_t *>(rawCols[c])[r] = val_si32;
+			        break;
+                        case ValueTypeCode::SI64:
+                                int64_t val_si64;
+				f.read((char *) &val_si64, sizeof(val_si64));
+                                reinterpret_cast<int64_t *>(rawCols[c])[r] = val_si64;
+                                break;
+                        case ValueTypeCode::UI8:
+				uint8_t val_ui8;
+				f.read((char *) &val_ui8, sizeof(val_ui8));
+				reinterpret_cast<uint8_t *>(rawCols[c])[r] = val_ui8;
+				break;
+                        case ValueTypeCode::UI32:
+	                       uint32_t val_ui32;
+			       f.read((char *) &val_ui32, sizeof(val_ui32));
+			       reinterpret_cast<uint32_t *>(rawCols[c])[r] = val_ui32;
+			       break;
+                        case ValueTypeCode::UI64:
+				uint64_t val_ui64;
+			        f.read((char *) &val_ui64, sizeof(val_ui64));
+				reinterpret_cast<uint64_t *>(rawCols[c])[r] = val_ui64;
+				break;
+                        case ValueTypeCode::F32:
+				float val_f32;
+			        f.read((char *) &val_f32, sizeof(val_f32));
+				reinterpret_cast<float *>(rawCols[c])[r] = val_f32;
+				break;
+                        case ValueTypeCode::F64:
+	                        double val_f64;
+			        f.read((char *) &val_f64, sizeof(val_f64));
+			        reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
+				break;
+			}
+		}
+        }
+
+	delete[] rawCols;
+	delete[] schema;
     }
     f.close();
     return;
