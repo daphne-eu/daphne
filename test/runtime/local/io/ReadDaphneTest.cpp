@@ -393,7 +393,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (in
 
   DataObjectFactory::destroy(m);
 }
-/*
+
 TEST_CASE("ReadDaphne CIG (Frame)", TAG_KERNELS) {
   using DT = Frame;
   DT *m = nullptr;
@@ -563,7 +563,6 @@ TEST_CASE("ReadDaphne AIS (Frame)", TAG_KERNELS) {
 
   size_t numRows = 3;
   size_t numCols = 3;
-
   char filename[] = "./test/runtime/local/io/ais.dbdf";
   readDaphne(m, filename);
 
@@ -579,4 +578,3 @@ TEST_CASE("ReadDaphne AIS (Frame)", TAG_KERNELS) {
 
   DataObjectFactory::destroy(m);
 }
-*/

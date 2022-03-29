@@ -209,3 +209,54 @@ exit:
     }
   }
 };
+
+
+template <> struct ReadDaphne<Frame> {
+  static void apply(Frame *&res, const char *filename){
+
+    std::ifstream f;
+    f.open(filename, std::ios::in|std::ios::binary);
+    // TODO: check f.good()
+
+    // read commong part of the header
+    DF_header h;
+    f.read((char *)&h, sizeof(h));
+
+    if (h.dt == DF_data_t::Frame_t) {
+	    // read rest of the header
+	    ValueTypeCode *schema = new ValueTypeCode[h.nbcols];
+	    for (uint64_t c = 0; c < h.nbcols; c++) {
+		f.read((char *)&(schema[c]), sizeof(ValueTypeCode));
+	    }
+
+	    std::string *labels = new std::string[h.nbcols];
+	    for (uint64_t c = 0; c < h.nbcols; c++) {
+		uint16_t len;
+		f.read((char *) &len, sizeof(len));
+		f.read((char *) &(labels[c]), len);
+	    }
+
+	    res = DataObjectFactory::create<Frame>(
+		h.nbrows, h.nbcols, schema,  
+		types, true);
+
+	    DF_body b;
+	    f.read((char *)&b, sizeof(b));
+	    // b is ignored for now - assumed to be 0,0
+	    //TODO: consider multiple blocks
+	    // Assuming a dense block representation
+	    // TODO: Consider alternative representations for frames
+	    for (uint64_t r = 0; c < h.nbrows; r++) {
+		for (uint64_t c = 0; c < h.nbcols; c++) {
+			char * val = new(char[ValueTypeUtils::sizeOf(schema[c])]);
+			f.read((char *)val, ValueTypeUtils::sizeOf(schema[c]));
+			(res->columns[c][r]).reset(val);
+		}
+	    }
+    }
+    f.close();
+    return;
+  }
+};
+
+#endif
