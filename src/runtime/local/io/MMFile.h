@@ -339,8 +339,8 @@ public:
             do_next = true;
           }
           else if (mm_is_skew(file.typecode)) {
-            // M[i][j] = -M[j][i]
-            *next = {c, r, -cur};
+            // M[i][j] = -M[j][i] (cast to comply when VT is unsigned)
+            *next = {c, r, (VT)-cur};
             do_next = true;
           }
           if(++r >= file.rows) progress();
