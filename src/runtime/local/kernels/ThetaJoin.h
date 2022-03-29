@@ -18,7 +18,11 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
 #define SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
 
+#include <runtime/local/datastructures/Frame.h>
 #include <util/DeduceType.h>
+
+#include <cassert>
+#include <cstddef>
 
 enum CompareOperation {
     Equal,
@@ -364,13 +368,13 @@ class ThetaJoin<Frame, Frame, Frame> {
         /// iterate over equations
         for(size_t i = 0; i < numCmp; ++i){
             DeduceValueTypeAndExecute<CompareColumnPair>::apply(
-              /// lhs value type
+                /// lhs value type
                 container.getVTLhs(i),
-              /// rhs value type
+                /// rhs value type
                 container.getVTRhs(i),
-              /// parameter of TraverseColumnWise
-              container, resultPositions, i
-              );
+                /// parameter of TraverseColumnWise
+                container, resultPositions, i
+            );
         }
         
         /// write result

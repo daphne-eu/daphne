@@ -32,7 +32,7 @@
 
 
 /// Test query Select * From R, S Where R.a = S.a
-TEST_CASE("[ThetaJoin] Test the equal (==) operation", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test the equal (==) operation", TAG_KERNELS) {
     /// Data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10,  { 0, 11, 20, 33, 44, 55, 60, 77, 88, 99});
@@ -105,7 +105,7 @@ TEST_CASE("[ThetaJoin] Test the equal (==) operation", TAG_KERNELS) {
 
 
 /// Test query Select * From R, S Where R.a < S.a
-TEST_CASE("[ThetaJoin] Test the LessThan (<) operation", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test the LessThan (<) operation", TAG_KERNELS) {
     /// data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10, {0, 11, 20, 33, 44, 55, 60, 77, 88, 99});
@@ -176,7 +176,7 @@ TEST_CASE("[ThetaJoin] Test the LessThan (<) operation", TAG_KERNELS) {
 }
 
 /// Test query Select * From R, S Where R.a <= S.a
-TEST_CASE("[ThetaJoin] Test the LessThan (<=) operation", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test the LessEqual (<=) operation", TAG_KERNELS) {
     /// data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10, {0, 11, 20, 33, 44, 55, 60, 77, 88, 99});
@@ -247,7 +247,7 @@ TEST_CASE("[ThetaJoin] Test the LessThan (<=) operation", TAG_KERNELS) {
 }
 
 /// Test query Select * From R, S Where R.a > S.a
-TEST_CASE("[ThetaJoin] Test the LessThan (>) operation", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test the GreaterThan (>) operation", TAG_KERNELS) {
     /// data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10, {0, 11, 20, 33, 44, 55, 60, 77, 88, 99});
@@ -318,7 +318,7 @@ TEST_CASE("[ThetaJoin] Test the LessThan (>) operation", TAG_KERNELS) {
 }
 
 /// Test query Select * From R, S Where R.a >( S.a
-TEST_CASE("[ThetaJoin] Test the LessThan (>=) operation", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test the GreaterEqual (>=) operation", TAG_KERNELS) {
     /// data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10, {0, 11, 20, 33, 44, 55, 60, 77, 88, 99});
@@ -389,7 +389,7 @@ TEST_CASE("[ThetaJoin] Test the LessThan (>=) operation", TAG_KERNELS) {
 }
 
 /// Test query Select * From R, S Where R.a != S.a
-TEST_CASE("[ThetaJoin] Test the LessThan (!=) operation", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test the NonEqual (!=) operation", TAG_KERNELS) {
     /// data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10, {0, 11, 20, 33, 44, 55, 60, 77, 88, 99});
@@ -460,7 +460,7 @@ TEST_CASE("[ThetaJoin] Test the LessThan (!=) operation", TAG_KERNELS) {
 }
 
 /// Test query Select * From R, S Where R.idx = S.idx And R.a != S.a And R.b >= S.c
-TEST_CASE("[ThetaJoin] Test multiple conditions", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test multiple conditions", TAG_KERNELS) {
     /// data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {   0,   1,   2,   3,   4,   5,   6,   7,   8,   9});
     auto lhs_col1 = genGivenVals<DenseMatrix<int64_t>>(10,  {   0,   0,   0,   0,   0,   0,  40,   0,   0,  10});
@@ -547,7 +547,7 @@ TEST_CASE("[ThetaJoin] Test multiple conditions", TAG_KERNELS) {
 
 
 /// Test query Select * From R, S Where R.X = S.Y with X, Y in [ui8, ui32, ui64, si8, si32, si64, f32, f64]
-TEST_CASE("[ThetaJoin] Test unequal data types", TAG_KERNELS) {
+TEST_CASE("ThetaJoin: Test unequal value types", TAG_KERNELS) {
     /// data generation
     auto ui8  = genGivenVals<DenseMatrix<uint8_t >>(10, {   0,   1,   2,   3,   4,   5,   6,   7,   8,   9});
     auto ui32 = genGivenVals<DenseMatrix<uint32_t>>(10, {   0,   1,   2,   3,   4,   5,   6,   7,   8,   9});
@@ -580,7 +580,6 @@ TEST_CASE("[ThetaJoin] Test unequal data types", TAG_KERNELS) {
     uint64_t equations = 1;
     
     std::function<void(const std::string&, const std::string)> test = [&] (const std::string& lhsCol, const std::string& rhsCol){
-        std::cout << "Test " << lhsCol << " == " << rhsCol << std::endl;
         auto lhsQLabels = new const char*[10]{lhsCol.c_str()};
         auto rhsQLabels = new const char*[10]{rhsCol.c_str()};
         auto cmps = new CompareOperation[10]{CompareOperation::Equal};
