@@ -33,7 +33,7 @@ using namespace mlir;
 // General utility fuctions
 // ****************************************************************************
 
-// TODO This could become a general utility (generalize for different types, 
+// TODO This could become a general utility (generalize for different types,
 // also useful in the parser and other compiler passes).
 std::string getConstantString(Value v) {
     if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
@@ -65,7 +65,7 @@ void inferFrameLabels_ExtractOrFilterRowOp(ExtractOrFilterRowOp * op) {
 void daphne::ColBindOp::inferFrameLabels() {
     auto ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
     auto ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
-    
+
     if(!ftLhs || !ftRhs)
         throw std::runtime_error(
                 "currently ColBindOp can only infer its output labels if both "
@@ -76,13 +76,13 @@ void daphne::ColBindOp::inferFrameLabels() {
                 "currenly ColBindOp can only infer its output labels if the "
                 "labels of both input frames are known"
         );
-    
+
     auto labelsRes = new std::vector<std::string>();
     for(auto l : *(ftLhs.getLabels()))
         labelsRes->push_back(l);
     for(auto l : *(ftRhs.getLabels()))
         labelsRes->push_back(l);
-    
+
     Value res = getResult();
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(labelsRes));
 }
@@ -104,11 +104,6 @@ void daphne::ExtractColOp::inferFrameLabels() {
         Value res = getResult();
         res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
     }
-    else
-        throw std::runtime_error(
-                "currently ExtractColOp can only infer its output labels for "
-                "frame inputs and a single column name"
-        );
 }
 
 void daphne::ExtractRowOp::inferFrameLabels() {
@@ -132,6 +127,63 @@ void daphne::SemiJoinOp::inferFrameLabels() {
     newLabels->push_back(getConstantString(lhsOn()));
     Value res = getResult(0);
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::CartesianOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    auto ft1 = lhs().getType().dyn_cast<daphne::FrameType>();
+    auto ft2 = rhs().getType().dyn_cast<daphne::FrameType>();
+    std::vector<std::string> * labelsStr1 = ft1.getLabels();
+    std::vector<std::string> * labelsStr2 = ft2.getLabels();
+
+    if(labelsStr1)
+        for(auto labelStr : *labelsStr1)
+            newLabels->push_back(labelStr);
+    if(labelsStr2)
+        for(auto labelStr : *labelsStr2)
+            newLabels->push_back(labelStr);
+
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::InnerJoinOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    auto ft1 = lhs().getType().dyn_cast<daphne::FrameType>();
+    auto ft2 = rhs().getType().dyn_cast<daphne::FrameType>();
+    std::vector<std::string> * labelsStr1 = ft1.getLabels();
+    std::vector<std::string> * labelsStr2 = ft2.getLabels();
+
+    if(labelsStr1)
+        for(auto labelStr : *labelsStr1)
+            newLabels->push_back(labelStr);
+    if(labelsStr2)
+        for(auto labelStr : *labelsStr2)
+            newLabels->push_back(labelStr);
+
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
+}
+
+void daphne::GroupOp::inferFrameLabels() {
+    auto newLabels = new std::vector<std::string>();
+    std::vector<std::string> aggColLabels;
+    std::vector<std::string> aggFuncNames;
+
+    for(Value t: keyCol()){ //Adopting keyCol Labels
+        newLabels->push_back(getConstantString(t));
+    }
+
+    for(Value t: aggCol()){
+        aggColLabels.push_back(getConstantString(t));
+    }
+    for(Attribute t: aggFuncs()){
+        GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
+        aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
+    }
+    for(size_t i = 0; i < aggFuncNames.size() && i < aggColLabels.size(); i++){
+        newLabels->push_back(aggColLabels.at(i) + "_" + aggFuncNames.at(i));
+    }
+
+    getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::SetColLabelsOp::inferFrameLabels() {

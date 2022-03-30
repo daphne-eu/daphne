@@ -125,4 +125,13 @@ namespace CompilerUtils {
             );
         return dctx;
     }
+    
+    [[maybe_unused]] static bool isObjType(mlir::Type t) {
+        return t.isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>();
+    }
+    
+    [[maybe_unused]] static bool hasObjType(mlir::Value v) {
+        return isObjType(v.getType());
+    }
+
 }

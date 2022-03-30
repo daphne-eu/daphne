@@ -221,7 +221,7 @@ void daphne::GroupJoinOp::inferTypes() {
     daphne::FrameType rhsFt = rhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
     Type rhsAggType = getFrameColumnTypeByLabel(rhsFt, rhsAgg());
-    
+
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
     getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType, rhsAggType}));
@@ -231,11 +231,65 @@ void daphne::GroupJoinOp::inferTypes() {
 void daphne::SemiJoinOp::inferTypes() {
     daphne::FrameType lhsFt = lhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
-    
+
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
     getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType}));
     getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
+}
+
+void daphne::InnerJoinOp::inferTypes() {
+    daphne::FrameType ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
+    daphne::FrameType ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
+    if(ftLhs && ftRhs) {
+        std::vector<Type> newColumnTypes;
+        for(Type t : ftLhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        for(Type t : ftRhs.getColumnTypes())
+            newColumnTypes.push_back(t);
+        getResult().setType(
+                daphne::FrameType::get(getContext(), newColumnTypes)
+        );
+    }
+}
+
+void daphne::GroupOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+
+    daphne::FrameType arg = frame().getType().dyn_cast<daphne::FrameType>();
+
+    std::vector<Type> newColumnTypes;
+    std::vector<Value> aggColValues;
+    std::vector<std::string> aggFuncNames;
+
+    for(Value t : keyCol()){
+        //Key Types getting adopted for the new Frame
+        newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
+    }
+
+    // Values get collected in a easier to use Datastructure
+    for(Value t : aggCol()){
+        aggColValues.push_back(t);
+    }
+    // Function names get collected in a easier to use Datastructure
+    for(Attribute t: aggFuncs()){
+        GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
+        aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
+    }
+    //New Types get computed
+    for(size_t i = 0; i < aggFuncNames.size() && i < aggColValues.size(); i++){
+        std::string groupAggFunction = aggFuncNames.at(i);
+        if(groupAggFunction == "COUNT"){
+            newColumnTypes.push_back(builder.getIntegerType(64, true));
+        }else if(groupAggFunction == "AVG"){
+            newColumnTypes.push_back(builder.getF64Type());
+        }else{ //DEFAULT OPTION (The Type of the named column)
+            Value t = aggColValues.at(i);
+            newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
+        }
+    }
+    getResult().setType(daphne::FrameType::get(ctx, newColumnTypes));
 }
 
 void daphne::SetColLabelsOp::inferTypes() {

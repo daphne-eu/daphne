@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/kernels/Cartesian.h>
 #include <runtime/local/kernels/CheckEq.h>
-#include <runtime/local/kernels/GroupJoin.h>
 #include <runtime/local/kernels/Seq.h>
 
 #include <tags.h>

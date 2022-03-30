@@ -223,6 +223,7 @@
             ["size_t", "double"],
             ["size_t", "int64_t"],
             ["size_t", "uint32_t"],
+            ["size_t", "uint64_t"],
             ["size_t", "size_t"],
             ["size_t", "bool"],
             ["bool", "double"],
@@ -234,7 +235,9 @@
             ["uint32_t", "size_t"],
             ["uint32_t", "float"],
             ["uint8_t", "int64_t"],
-            ["bool", "bool"]
+            ["bool", "bool"],
+            ["const char *", "double"],
+            ["const char *", "int64_t"]
         ]
     },
     {
@@ -806,6 +809,39 @@
         ]
     },
     {
+    	"kernelTemplate": {
+    		"header": "InnerJoin.h",
+    		"opName": "innerJoin",
+    		"returnType": "void",
+    		"templateParams": [],
+    		"runtimeParams": [
+    			{
+    				"type": "Frame *&",
+    				"name": "res"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "lhs"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "rhs"
+    			},
+    			{
+    				"type": "const char *",
+    				"name": "lhsOn"
+    			},
+    			{
+    				"type": "const char *",
+    				"name": "rhsOn"
+    			}
+    		]
+    	},
+    	"instantiations": [
+    		[]
+    	]
+    },
+    {
         "kernelTemplate": {
             "header": "MatMul.h",
             "opName": "matMul",
@@ -1059,7 +1095,7 @@
                 {
                     "type": "bool",
                     "name": "withReplacement"
-                },                
+                },
                 {
                     "type": "int64_t",
                     "name": "seed"
@@ -2046,7 +2082,50 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame"]
+        ]
+    },
+    
+    {
+        "kernelTemplate": {
+            "header": "SliceCol.h",
+            "opName": "sliceCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "lowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "upperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            ["Frame", "Frame"]
         ]
     },
     {
@@ -2056,22 +2135,26 @@
             "returnType": "void",
             "templateParams": [
                 {
-                    "name": "DTDst",
+                    "name": "DTArg",
                     "isDataType": true
                 },
                 {
-                    "name": "DTSrc",
+                    "name": "DTIns",
                     "isDataType": true
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "const DTDst *",
-                    "name": "dst"
+                    "type": "DTArg *&",
+                    "name": "res"
                 },
                 {
-                    "type": "const DTSrc *",
-                    "name": "src"
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DTIns *",
+                    "name": "ins"
                 },
                 {
                     "type": "size_t",
@@ -2080,6 +2163,50 @@
                 {
                     "type": "size_t",
                     "name": "rowUpperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "InsertCol.h",
+            "opName": "insertCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTIns",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTArg *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DTIns *",
+                    "name": "ins"
+                },
+                {
+                    "type": "size_t",
+                    "name": "colLowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "colUpperExcl"
                 }
             ]
         },
@@ -2531,4 +2658,3 @@
         ]
     }
 ]
-

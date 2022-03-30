@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <parser/ScopedSymbolTable.h>
@@ -39,14 +40,197 @@
 // Utilities
 // ****************************************************************************
 
-void handleAssignmentPart(
+void DaphneDSLVisitor::handleAssignmentPart(
         const std::string & var,
+        DaphneDSLGrammarParser::IndexingContext * idxCtx,
         ScopedSymbolTable & symbolTable,
         mlir::Value val
 ) {
     if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
         throw std::runtime_error("trying to assign read-only variable " + var);
-    symbolTable.put(var, ScopedSymbolTable::SymbolInfo(val, false));
+    
+    if(idxCtx) { // left indexing `var[idxCtx] = val;`
+        if(!symbolTable.has(var))
+            throw std::runtime_error(
+                    "cannot use left indexing on variable " + var +
+                    " before a value has been assigned to it"
+            );
+        mlir::Value obj = symbolTable.get(var).value;
+        
+        auto indexing = visit(idxCtx).as<std::pair<
+                std::pair<bool, antlrcpp::Any>,
+                std::pair<bool, antlrcpp::Any>
+        >>();
+        auto rows = indexing.first;
+        auto cols = indexing.second;
+
+        // TODO Use location of rows/cols in utils.getLoc(...) for better
+        // error messages.
+        if(rows.first && cols.first) {
+            // TODO Use a combined InsertOp (row+col) (see #238).
+            mlir::Value rowSeg = applyRightIndexing<
+                    mlir::daphne::ExtractRowOp, mlir::daphne::SliceRowOp, mlir::daphne::NumRowsOp
+            >(utils.getLoc(idxCtx->start), obj, rows.second, false);
+            rowSeg = applyLeftIndexing<
+                    mlir::daphne::InsertColOp,
+                    mlir::daphne::NumColsOp
+            >(utils.getLoc(idxCtx->start), rowSeg, val, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
+            obj = applyLeftIndexing<
+                    mlir::daphne::InsertRowOp,
+                    mlir::daphne::NumRowsOp
+            >(utils.getLoc(idxCtx->start), obj, rowSeg, rows.second, false);
+        }
+        else if(rows.first) // rows specified
+            obj = applyLeftIndexing<
+                    mlir::daphne::InsertRowOp,
+                    mlir::daphne::NumRowsOp
+            >(utils.getLoc(idxCtx->start), obj, val, rows.second, false);
+        else if(cols.first) // cols specified
+            obj = applyLeftIndexing<
+                    mlir::daphne::InsertColOp,
+                    mlir::daphne::NumColsOp
+            >(utils.getLoc(idxCtx->start), obj, val, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
+        else
+            obj = val;
+        
+        symbolTable.put(var, ScopedSymbolTable::SymbolInfo(obj, false));
+    }
+    else // no left indexing `var = val;`
+        symbolTable.put(var, ScopedSymbolTable::SymbolInfo(val, false));
+}
+
+template<class ExtractAxOp, class SliceAxOp, class NumAxOp>
+mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value arg, antlrcpp::Any ax, bool allowLabel) {
+    mlir::Type argType = arg.getType();
+    mlir::Type resType;
+    if(argType.isa<mlir::daphne::MatrixType>())
+        // Right indexing on a matrix retains the value type.
+        resType = argType;
+    else if(argType.isa<mlir::daphne::FrameType>())
+        // Right indexing on a frame may change the list of column value types
+        // (schema).
+        // TODO The following is invalid when extracting multiple columns, but
+        // we should better handle that during type inference.
+        resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
+    else
+        throw std::runtime_error("right indexing is only allowed on matrices and frames");
+        
+    if(ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
+        mlir::Value axVal = ax.as<mlir::Value>();
+        if(CompilerUtils::hasObjType(axVal)) // data object
+            return static_cast<mlir::Value>(
+                    builder.create<ExtractAxOp>(loc, argType, arg, axVal)
+            );
+        else if(axVal.getType().isa<mlir::daphne::StringType>()) { // string
+            if(allowLabel)
+                return static_cast<mlir::Value>(
+                        builder.create<ExtractAxOp>(loc, argType, arg, axVal)
+                );
+            else
+                throw std::runtime_error(
+                        "cannot use right indexing with label in this case"
+                );
+        }
+        else // scalar
+            return static_cast<mlir::Value>(
+                    builder.create<SliceAxOp>(
+                            loc, argType, arg,
+                            utils.castSizeIf(axVal),
+                            utils.castSizeIf(
+                                    builder.create<mlir::daphne::EwAddOp>(
+                                            loc, builder.getIntegerType(64, false),
+                                            utils.castSI64If(axVal),
+                                            builder.create<mlir::daphne::ConstantOp>(
+                                                    loc, static_cast<int64_t>(1)
+                                            )
+                                    )
+                            )
+                    )
+            );
+    }
+    else if(ax.is<std::pair<mlir::Value, mlir::Value>>()) { // indexing with a range (':')
+        auto axPair = ax.as<std::pair<mlir::Value, mlir::Value>>();
+        auto axLowerIncl = axPair.first;
+        auto axUpperExcl = axPair.second;
+        
+        // Use defaults if lower or upper bound not specified.
+        if(axLowerIncl == nullptr)
+            axLowerIncl = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<int64_t>(0));
+        if(axUpperExcl == nullptr)
+            axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
+        
+        return static_cast<mlir::Value>(
+                builder.create<SliceAxOp>(
+                        loc, argType, arg,
+                        utils.castSizeIf(axLowerIncl),
+                        utils.castSizeIf(axUpperExcl)
+                )
+        );
+    }
+    else
+        throw std::runtime_error("unsupported type for right indexing");
+}
+
+template<class InsertAxOp, class NumAxOp>
+mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax, bool allowLabel) {
+    mlir::Type argType = arg.getType();
+        
+    if(ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
+        mlir::Value axVal = ax.as<mlir::Value>();
+        if(CompilerUtils::hasObjType(axVal)) // data object
+            throw std::runtime_error(
+                    "left indexing with positions as a data object is not supported (yet)"
+            );
+        else if(axVal.getType().isa<mlir::daphne::StringType>()) { // string
+            if(allowLabel)
+                // TODO Support this (#239).
+                throw std::runtime_error("left indexing by label is not supported yet");
+//                return static_cast<mlir::Value>(
+//                        builder.create<InsertAxOp>(loc, argType, arg, ins, axVal)
+//                );
+            else
+                throw std::runtime_error(
+                        "cannot use left indexing with label in this case"
+                );
+        }
+        else // scalar
+            return static_cast<mlir::Value>(
+                    builder.create<InsertAxOp>(
+                            loc, argType, arg, ins,
+                            utils.castSizeIf(axVal),
+                            utils.castSizeIf(
+                                    builder.create<mlir::daphne::EwAddOp>(
+                                            loc, builder.getIntegerType(64, false),
+                                            utils.castSI64If(axVal),
+                                            builder.create<mlir::daphne::ConstantOp>(
+                                                    loc, static_cast<int64_t>(1)
+                                            )
+                                    )
+                            )
+                    )
+            );
+    }
+    else if(ax.is<std::pair<mlir::Value, mlir::Value>>()) { // indexing with a range (':')
+        auto axPair = ax.as<std::pair<mlir::Value, mlir::Value>>();
+        auto axLowerIncl = axPair.first;
+        auto axUpperExcl = axPair.second;
+        
+        // Use defaults if lower or upper bound not specified.
+        if(axLowerIncl == nullptr)
+            axLowerIncl = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<int64_t>(0));
+        if(axUpperExcl == nullptr)
+            axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
+        
+        return static_cast<mlir::Value>(
+                builder.create<InsertAxOp>(
+                        loc, argType, arg, ins,
+                        utils.castSizeIf(axLowerIncl),
+                        utils.castSizeIf(axUpperExcl)
+                )
+        );
+    }
+    else
+        throw std::runtime_error("unsupported type for left indexing");
 }
 
 // ****************************************************************************
@@ -84,6 +268,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
             );
         handleAssignmentPart(
                 ctx->IDENTIFIER(0)->getText(),
+                ctx->indexing(0),
                 symbolTable,
                 utils.valueOrError(rhsAny)
         );
@@ -97,7 +282,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
             if(rhsAsRR.size() == numVars) {
                 for(size_t i = 0; i < numVars; i++)
                     handleAssignmentPart(
-                            ctx->IDENTIFIER(i)->getText(), symbolTable, rhsAsRR[i]
+                            ctx->IDENTIFIER(i)->getText(), ctx->indexing(i), symbolTable, rhsAsRR[i]
                     );
                 return nullptr;
             }
@@ -544,7 +729,6 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
     ));
 }
 
-// TODO Reduce the code duplication with visitRightIdxExtractExpr.
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
     mlir::Type objType = obj.getType();
@@ -568,50 +752,39 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::
     );
 }
 
-// TODO Reduce the code duplication with visitRightIdxFilterExpr.
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
-    mlir::Type objType = obj.getType();
-    if(ctx->rows && ctx->cols)
-        throw std::runtime_error(
-                "currently right indexing supports either rows or columns, "
-                "but not both at the same time"
-        );
-    if(ctx->rows) {
-        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractRowOp>(
-                utils.getLoc(ctx->rows->start), objType, obj, rows
-        ));
-    }
-    if(ctx->cols) {
-        mlir::Value cols = utils.valueOrError(visit(ctx->cols));
-        mlir::Type colsType = cols.getType();
-        // TODO Consider all supported value types.
-        if(colsType.isInteger(64) || colsType.isF64()) {
-            cols = utils.castSizeIf(cols);
-            colsType = cols.getType();
-        }
-        mlir::Type resType;
-        if(objType.isa<mlir::daphne::MatrixType>())
-            // Data type and value type remain the same.
-            resType = objType;
-        else if(objType.isa<mlir::daphne::FrameType>())
-            // Data type remains the same, but the value type of the result's
-            // single column is currently unknown.
-            // TODO If the column is selected by position, we could know its
-            // type already here.
-            resType = mlir::daphne::FrameType::get(
-                    builder.getContext(), {utils.unknownType}
-            );
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::ExtractColOp>(
-            utils.getLoc(ctx->cols->start), resType, obj, cols
-        ));
-    }
-    // TODO Actually, this would be okay, but we should think about whether
-    // it should be a no-op or a copy.
-    throw std::runtime_error(
-            "right indexing requires the specification of rows and/or columns"
-    );
+    
+    auto indexing = visit(ctx->idx).as<std::pair<
+            std::pair<bool, antlrcpp::Any>,
+            std::pair<bool, antlrcpp::Any>
+    >>();
+    auto rows = indexing.first;
+    auto cols = indexing.second;
+    
+    // TODO Use location of rows/cols in utils.getLoc(...) for better
+    // error messages.
+    if(rows.first) // rows specified
+        obj = applyRightIndexing<
+                mlir::daphne::ExtractRowOp,
+                mlir::daphne::SliceRowOp,
+                mlir::daphne::NumRowsOp
+        >(utils.getLoc(ctx->idx->start), obj, rows.second, false);
+    if(cols.first) // cols specified
+        obj = applyRightIndexing<
+                mlir::daphne::ExtractColOp,
+                mlir::daphne::SliceColOp,
+                mlir::daphne::NumColsOp
+        >(utils.getLoc(ctx->idx->start), obj, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
+    
+    // Note: If rows and cols are specified, we create two extraction steps.
+    // This can be inefficient, but it is simpler for now.
+    // TODO Create a combined ExtractOp/SliceOp.
+    
+    // Note: If neither rows nor cols are specified, we simply return the
+    // object.
+    
+    return obj;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulExprContext * ctx) {
@@ -671,6 +844,12 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
     
     if(op == "+")
+        // Note that we use '+' for both addition (EwAddOp) and concatenation
+        // (ConcatOp). The choice is made based on the types of the operands
+        // (if one operand is a string, we choose ConcatOp). However, the types
+        // might not be known at this point in time. Thus, we always create an
+        // EwAddOp here. Note that EwAddOp has a canonicalize method rewriting
+        // it to ConcatOp if necessary.
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
@@ -722,6 +901,29 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
     
     throw std::runtime_error("unexpected op symbol");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {
+    auto rows = ctx->rows
+            ? visit(ctx->rows).as<std::pair<bool, antlrcpp::Any>>()
+            : std::make_pair(false, antlrcpp::Any(nullptr));
+    auto cols = ctx->cols
+            ? visit(ctx->cols).as<std::pair<bool, antlrcpp::Any>>()
+            : std::make_pair(false, antlrcpp::Any(nullptr));
+    return std::make_pair(rows, cols);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitRange(DaphneDSLGrammarParser::RangeContext * ctx) {
+    if(ctx->pos)
+        return std::make_pair(true, antlrcpp::Any(utils.valueOrError(visit(ctx->pos))));
+    else {
+        mlir::Value posLowerIncl = ctx->posLowerIncl ? utils.valueOrError(visit(ctx->posLowerIncl)) : nullptr;
+        mlir::Value posUpperExcl = ctx->posUpperExcl ? utils.valueOrError(visit(ctx->posUpperExcl)) : nullptr;
+        return std::make_pair(
+                posLowerIncl != nullptr || posUpperExcl != nullptr,
+                antlrcpp::Any(std::make_pair(posLowerIncl, posUpperExcl))
+        );
+    }
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) {
@@ -1040,7 +1242,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     auto funcBlock = new mlir::Block();
     for(auto it : llvm::zip(funcArgNames, funcArgTypes)) {
         auto blockArg = funcBlock->addArgument(std::get<1>(it));
-        handleAssignmentPart(std::get<0>(it), symbolTable, blockArg);
+        handleAssignmentPart(std::get<0>(it), nullptr, symbolTable, blockArg);
     }
 
     mlir::Type returnType;

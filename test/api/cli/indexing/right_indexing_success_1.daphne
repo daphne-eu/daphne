@@ -1,0 +1,166 @@
+// Many ways of right indexing on matrices using positions.
+
+// Considered way of specifying row/col:
+// - empty (leave blank)
+// - scalar (0, in-between, last)
+// - :
+// - l: (0, in-between, last)
+// - :u (0, in-between, last)
+// - l:u (same, +1, whole range)
+// - column matrix (empty, non-contiguous positions)
+
+// ****************************************************************************
+// Input matrix
+// ****************************************************************************
+
+X = reshape(seq(0, 59, 1), 10, 6);
+print("input");
+print("X");
+print(X); // to check if the input is as expected
+print("");
+
+// ****************************************************************************
+// Position column matrices
+// ****************************************************************************
+
+emptyIds = fill(0, 0, 1); // []
+rowIds = seq(0, 2, 1) * 3 + 1; // t([1, 4, 7])
+colIds = seq(0, 1, 1) * 2;     // t([0, 2])
+
+// ****************************************************************************
+// Neither row nor col
+// ****************************************************************************
+
+print("neither row nor col");
+print("X[, ]");
+print(X[, ]);
+print("");
+
+// ****************************************************************************
+// Only row
+// ****************************************************************************
+
+print("only row");
+print("X[0, ]");
+print(X[0, ]);
+print("X[4, ]");
+print(X[4, ]);
+print("X[9, ]");
+print(X[9, ]);
+print("X[:, ]");
+print(X[:, ]);
+print("X[0:, ]");
+print(X[0:, ]);
+print("X[4:, ]");
+print(X[4:, ]);
+print("X[9:, ]");
+print(X[9:, ]);
+print("X[:0, ]");
+print(X[:0, ]);
+print("X[:4, ]");
+print(X[:4, ]);
+print("X[:9, ]");
+print(X[:9, ]);
+print("X[4:4, ]");
+print(X[4:4, ]);
+print("X[4:5, ]");
+print(X[4:5, ]);
+print("X[0:9, ]");
+print(X[0:9, ]);
+print("X[emptyIds, ]");
+print(X[emptyIds, ]);
+print("X[rowIds, ]");
+print(X[rowIds, ]);
+print("");
+
+// ****************************************************************************
+// Only col
+// ****************************************************************************
+
+print("only col");
+print("X[, 0]");
+print(X[, 0]);
+print("X[, 2]");
+print(X[, 2]);
+print("X[, 5]");
+print(X[, 5]);
+print("X[, :]");
+print(X[, :]);
+print("X[, 0:]");
+print(X[, 0:]);
+print("X[, 2:]");
+print(X[, 2:]);
+print("X[, 5:]");
+print(X[, 5:]);
+print("X[, :0]");
+print(X[, :0]);
+print("X[, :2]");
+print(X[, :2]);
+print("X[, :5]");
+print(X[, :5]);
+print("X[, 2:2]");
+print(X[, 2:2]);
+print("X[, 2:3]");
+print(X[, 2:3]);
+print("X[, 0:5]");
+print(X[, 0:5]);
+print("X[, emptyIds]");
+print(X[, emptyIds]);
+print("X[, colIds]");
+print(X[, colIds]);
+print("");
+
+// ****************************************************************************
+// Row and col - corresponding variants
+// ****************************************************************************
+
+print("row and col - corresponding variants");
+print("X[0, 0]");
+print(X[0, 0]);
+print("X[4, 2]");
+print(X[4, 2]);
+print("X[9, 5]");
+print(X[9, 5]);
+print("X[:, :]");
+print(X[:, :]);
+print("X[0:, 0:]");
+print(X[0:, 0:]);
+print("X[4:, 2:]");
+print(X[4:, 2:]);
+print("X[9:, 5:]");
+print(X[9:, 5:]);
+print("X[:0, :0]");
+print(X[:0, :0]);
+print("X[:4, :2]");
+print(X[:4, :2]);
+print("X[:9, :5]");
+print(X[:9, :5]);
+print("X[4:4, 2:2]");
+print(X[4:4, 2:2]);
+print("X[4:5, 2:3]");
+print(X[4:5, 2:3]);
+print("X[0:9, 0:5]");
+print(X[0:9, 0:5]);
+print("X[emptyIds, emptyIds]");
+print(X[emptyIds, emptyIds]);
+print("X[rowIds, colIds]");
+print(X[rowIds, colIds]);
+print("");
+
+// ****************************************************************************
+// Row and col - some mixed variants
+// ****************************************************************************
+
+print("row and col - some mixed variants");
+print("X[4, 2:3]");
+print(X[4, 2:3]);
+print("X[4, colIds]");
+print(X[4, colIds]);
+print("X[4:5, 2]");
+print(X[4:5, 2]);
+print("X[4:5, colIds]");
+print(X[4:5, colIds]);
+print("X[rowIds, 2]");
+print(X[rowIds, 2]);
+print("X[rowIds, 2:3]");
+print(X[rowIds, 2:3]);
