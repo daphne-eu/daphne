@@ -1,3 +1,4 @@
+
 #!/usr/bin/python
 
 # -------------------------------------------------------------
@@ -21,19 +22,26 @@
 #
 # -------------------------------------------------------------
 
-
-import numpy as np
+import time
 from api.python.context.daphne_context import DaphneContext
-
-dim = 5
-m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
-m1.shape = (dim, dim)
+import sys 
 
 
+r=10000
+c=10000
+f=20
+i=1
 daphne_context = DaphneContext()
+X = daphne_context.rand(r, f, 0.0, 1.0, 1, -1)
+C = daphne_context.rand(c, f, 0.0, 1.0, 1, -1)
+t = time.time_ns()
+for j in range(0,i):
+    D = (X @ C.t()) * -2.0 + (C * C).sum(0).t() 
+    minD = D.aggMin(0)
+    P = D <= minD
+    P = P / P.sum(0)
+    P_denom = P.sum(1)
+    C = (P.t() @ X) / P_denom.t()
 
-
-result = (daphne_context.from_numpy(m1)).print().compute()
-
-
-print(round(m1.sum(),2))
+C.compute()
+print(time.time_ns()-t)

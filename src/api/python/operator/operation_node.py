@@ -22,7 +22,7 @@ import ctypes
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
-from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES, DaphneLibResult
+from api.python.utils.consts import BINARY_OPERATIONS, F32, F64, SI32, SI64, SI8, UI32, UI64, UI8, VALID_INPUT_TYPES, DaphneLibResult, libDaphneShared
 from api.python.utils.helpers import create_params_string
 import numpy as np
 import pandas as pd
@@ -74,15 +74,17 @@ class OperationNode(DAGNode):
                 result = df
             if self._output_type == OutputType.MATRIX:  
                 #result = np.genfromtxt(result, delimiter=',')
-                libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
+               # libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
                 libDaphneShared.getResult.restype = DaphneLibResult
                 daphneLibResult = libDaphneShared.getResult()
-                result = np.ctypeslib.as_array(daphneLibResult.address, shape=[daphneLibResult.rows,daphneLibResult.cols]) 
+                result = np.ctypeslib.as_array(daphneLibResult.address)#, shape=[daphneLibResult.rows,daphneLibResult.cols]) 
+                
                 result = result.astype("float64")
             if result is None:
                 return
             return result
-    
+
+
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
         if self._brackets:
             return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}]'
@@ -96,3 +98,22 @@ class OperationNode(DAGNode):
             return f'{self.operation}({inputs_comma_sep});'
         else:
             return f'{var_name}={self.operation}({inputs_comma_sep});'
+
+
+    def getType(self, vtc):
+        if vtc == F64:
+            return "float64"
+        elif vtc == F32:
+            return "float32"
+        elif vtc == SI32:
+            return "int32"
+        elif vtc == SI8:
+            return "int8"
+        elif vtc == SI64:
+            return "int64"
+        elif vtc == UI32:
+            return "uint32"
+        elif vtc == UI8:
+            return "uint8"
+        elif vtc == UI64:
+            return "uint64"

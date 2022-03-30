@@ -22,18 +22,16 @@
 # -------------------------------------------------------------
 
 
+import sys
 import numpy as np
+import time
 from api.python.context.daphne_context import DaphneContext
 
-dim = 5
+
+dim = int(sys.argv[1])
 m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.double)
 m1.shape = (dim, dim)
-
-
 daphne_context = DaphneContext()
-
-
-result = (daphne_context.from_numpy(m1)).print().compute()
-
-
-print(round(m1.sum(),2))
+t = time.time_ns()
+(daphne_context.from_numpy(m1)).sum().print().compute()
+print(time.time_ns()-t)

@@ -68,6 +68,9 @@ extern"C" struct DaphneLibResult getResult()
 extern "C" int
 doMain(char* script_path)
 {
+    daphne_lib_res.vtc = 4;
+    daphne_lib_res.cols = 3;
+    daphne_lib_res.rows = 5;
     int argc = 2;
     char * argv[] = {"daphne", script_path};
     
@@ -216,7 +219,7 @@ doMain(char* script_path)
     if (!executor.runPasses(moduleOp)) {
         return StatusCode::PASS_ERROR;
     }
-
+    
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
     auto engine = executor.createExecutionEngine(moduleOp);

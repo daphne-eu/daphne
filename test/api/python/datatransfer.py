@@ -26,9 +26,9 @@ import numpy as np
 from api.python.context.daphne_context import DaphneContext
 
 dim = 5
-m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.int64)
+m1 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.float64)
 
-m2 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.int64)
+m2 = np.array(np.random.randint(100, size=dim*dim)+1.01, dtype=np.float64)
 m1.shape = (dim, dim)
 m2.shape = (dim, dim)
 
@@ -39,6 +39,8 @@ daphne_context = DaphneContext()
 
 
 result = (daphne_context.from_numpy_ctypes(m1)+daphne_context.from_numpy_ctypes(m2)).compute()
-print(round(m1.sum(),2))
+print(result)
 
-print(m1+m2)
+#print(round(m1.sum(),2))
+
+#print(m1+m2)

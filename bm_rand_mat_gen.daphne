@@ -1,0 +1,7 @@
+msec_factor = as.f32(0.000001);
+
+V0=rand(5,5,1,5,0.5,123);
+t_start = now();
+print(sum(V0));
+t_end = now();
+print("Time input read:  ",0);print(as.f32((t_end - t_start)) * msec_factor,0);print(" ms");

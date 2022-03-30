@@ -1,0 +1,31 @@
+msec_factor = as.f32(0.000001);
+
+// K-means clustering.
+r=10000;
+c=10000;
+f=20;
+i=1;
+// Arguments:
+// - r ... number of records
+// - c ... number of centroids
+// - f ... number of features
+// - i ... number of iterations
+
+// Data generation.
+X = rand(r, f, 0.0, 1.0, 1, -1);
+C = rand(c, f, 0.0, 1.0, 1, -1);
+t_start = now();
+// K-means clustering (decisive part).
+for(i in 1:i) {
+    D = (X @ t(C)) * -2.0 + t(sum(C ^ 2.0, 0));
+    minD = aggMin(D, 0);
+    P = D <= minD;
+    P = P / sum(P, 0);
+    P_denom = sum(P, 1);
+    C = (t(P) @ X) / t(P_denom);
+}
+
+// Result output.
+//print(C);
+t_end = now();
+print("Time input read:  ",0);print(as.f32((t_end - t_start)) * msec_factor,0);print(" ms");

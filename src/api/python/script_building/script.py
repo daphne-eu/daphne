@@ -21,7 +21,7 @@
 import os
 from typing import List, Dict, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
+from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH, libDaphneShared
 import ctypes
 
 if TYPE_CHECKING:
@@ -74,7 +74,6 @@ class DaphneDSLScript:
         
         os.chdir(PROTOTYPE_PATH)
 
-        libDaphneShared = ctypes.CDLL("build/src/api/shared/libDaphneShared.so")
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
@@ -139,7 +138,6 @@ class DaphneDSLScript:
         self.inputs[var_name] = input_var
 
     def _dfs_clear_dag_nodes(self, dag_node:VALID_INPUT_TYPES)->str:
-
         if not isinstance(dag_node, DAGNode):
             return
         dag_node._daphnedsl_name = ""
@@ -150,7 +148,6 @@ class DaphneDSLScript:
                 self._dfs_clear_dag_nodes(n)
         if dag_node._source_node is not None:
             self._dfs_clear_dag_nodes(dag_node._source_node)
-
 
     def _next_unique_var(self)->str:
         var_id = self._variable_counter

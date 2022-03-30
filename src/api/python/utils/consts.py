@@ -32,6 +32,9 @@ TMP_PATH = os.path.join(PYTHON_PATH, "tmp")
 
 PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))
 
+libDaphneShared = ctypes.CDLL(PROTOTYPE_PATH+"/build/src/api/shared/libDaphneShared.so")
+       
+
 #Values need to be updated accordingly to the valuetypecodes in ValueTypeCode.h, as this is 1/1 copy 
 SI8 = 0
 SI32 = 1
