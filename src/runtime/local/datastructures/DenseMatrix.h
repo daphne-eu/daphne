@@ -235,6 +235,7 @@ public:
         }
     }
 
+
     DenseMatrix<ValueType>* sliceRow(size_t rl, size_t ru) const override {
         return slice(rl, ru, 0, numCols);
     }

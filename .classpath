@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="src" path="thirdparty/grpc/examples/android/helloworld/app/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/src/android/test/interop/app/src/androidTest/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/src/android/test/interop/app/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/benchmarks/java/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/conformance"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/examples"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/java/compatibility_tests/v2.5.0/tests/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/java/core/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/java/core/src/test/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/java/lite/src/test/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/java/util/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/java/util/src/test/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protobuf/ruby/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protoc-gen-validate/java/pgv-java-grpc/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protoc-gen-validate/java/pgv-java-grpc/src/test/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protoc-gen-validate/java/pgv-java-stub/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protoc-gen-validate/java/pgv-java-stub/src/test/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protoc-gen-validate/java/pgv-java-validation/src/main/java"/>
+	<classpathentry kind="src" path="thirdparty/grpc/third_party/protoc-gen-validate/java/pgv-java-validation/src/test/java"/>
+	<classpathentry kind="lib" path="thirdparty/antlr/antlr-4.9.2-complete.jar"/>
+	<classpathentry kind="lib" path="thirdparty/grpc/examples/android/helloworld/gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry kind="lib" path="thirdparty/grpc/src/android/test/interop/gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry kind="lib" path="thirdparty/grpc/third_party/opencensus-proto/gradle/wrapper/gradle-wrapper.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>

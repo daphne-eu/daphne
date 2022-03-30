@@ -124,47 +124,32 @@ struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 
 
 
-
-        // const VT * valuesLhs = lhs->getValues();
-        // const VT * valuesRhs = rhs->getValues();
-        // const size_t * colIdLhs = lhs->getColIdxs();
-        // const size_t * colIdRhs = rhs->getColIdxs();
-        // const size_t * rowOffsetsLhs = lhs->getRowOffsets();
-        // const size_t * rowOffsetsRhs = rhs->getRowOffsets();
-
-
-
-        // const size_t * colsbuffer = new size_t[lhs->getNumRows()] ;//buffer to store the columnIds during execution - max size =lhs->getNumRows()
-        // const size_t * valsbuffer = new size_t[lhs->getNumRows()] ;//buffer to store the Values during execution - max size =lhs->getNumRows()
-        // const size_t * rowsbuffer = new size_t[rhs->getNumCols()]; //buffer to store the rowIds during execution - max size =rhs->getNumCols()
-
-
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false);
 
 
-
-        std::cout<<"this is";
-                std::cout<<"\n\n\n\n\n\n\nn\n\n\n\n\n";
-
-        std::cout <<nr1<<"|";
 
 
          for(size_t r = 0; r < nr1; r++) {   // iterate rows of left array
              size_t NonZeros=lhs->getNumNonZeros(r);
              if (NonZeros){
                  const size_t * colIdxsRowLhs = lhs->getColIdxs(r);   // array with all non Zeros columns on Left Matrix
+                 
+
+
+
                  for(size_t c=0; c<nc2; c++){     // iterate columns of second array
                      VT result=0;     
                      for(size_t clhs=0; clhs<NonZeros; clhs++){
                          size_t nonZeroColId=colIdxsRowLhs[clhs];   // iterate non zero elemens
-                         VT lelement=lhs->get(r,clhs);
-                         VT relement=rhs->get(clhs,c);
+                         VT lelement=lhs->get(r,nonZeroColId);
+                         VT relement=rhs->get(nonZeroColId,c);
                          result+=lelement*relement;
 
                      }
-                     res->set(r,c,result);
 
+                     
+                     res->set(r,c,result);
                  }
              }
              else {
@@ -176,5 +161,10 @@ struct MatMul<DenseMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                 }
              }
 
+             res->print(std::cout);
+
             }
+
+
+        
 };
