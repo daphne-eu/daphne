@@ -290,6 +290,7 @@ cmake -G Ninja .. \
     -DCMAKE_PREFIX_PATH="$grpcInstDir"
 # optional cmake flags (to be added to the command above):
 # -DUSE_CUDA=ON
+# -DUSE_ARROW=ON
 # -DCMAKE_BUILD_TYPE=Debug
 
 cmake --build . --target $target
