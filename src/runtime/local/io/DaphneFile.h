@@ -14,22 +14,32 @@
  * limitations under the License.
  */
 
-#include <api/cli/Utils.h>
+#ifndef SRC_RUNTIME_LOCAL_IO_DAPHNEFILE_H
+#define SRC_RUNTIME_LOCAL_IO_DAPHNEFILE_H
 
-#include <tags.h>
+#include <cstdint>
 
-#include <catch.hpp>
 
-#include <sstream>
-#include <string>
+struct DF_header {
+	uint8_t version;
+	uint8_t dt;
+	uint64_t nbrows;
+	uint64_t nbcols;
+};
 
-const std::string dirPath = "test/api/cli/io/";
+enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3};
 
-TEST_CASE("readSparse", TAG_IO) {
-    auto arg = "filename=\"" + dirPath + "readSparse.csv\"";
-    compareDaphneToRef(dirPath + "readSparse.txt",
-        dirPath + "readSparse.daphne",
-        "--select-matrix-representations",
-        "--args",
-        arg.c_str());
-}
+struct DF_body {
+	uint64_t rx; // row index
+	uint64_t cx; // column index
+};
+
+struct DF_body_block {
+	uint32_t nbrows;
+	uint32_t nbcols;
+	uint8_t bt;
+};
+
+enum DF_body_t {empty = 0, dense = 1, sparse = 2, ultra_sparse = 3};
+
+#endif
