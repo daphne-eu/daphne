@@ -22,9 +22,9 @@
 
 struct DF_header {
 	uint8_t version;
+	uint8_t dt;
 	uint64_t nbrows;
 	uint64_t nbcols;
-	uint8_t dt;
 };
 
 enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3};
