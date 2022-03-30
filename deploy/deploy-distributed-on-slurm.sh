@@ -106,8 +106,8 @@ function BuildAndTransferSingularityContainerImage {
 # ****************************************************************************
 
 function BuildWithSingularityContainer {
-    time singularity exec daphne.sif ./build.sh
-    time singularity exec daphne.sif ./build.sh --target DistributedWorker
+    time singularity $SINGULARITY_ARG exec daphne.sif ./build.sh
+    time singularity $SINGULARITY_ARG exec daphne.sif ./build.sh --target DistributedWorker
     TIME_BUILT=$(date  +%F-%T)
     mv build build_${TIME_BUILT}
 }
@@ -171,8 +171,8 @@ function StartWorkersInContainersOnSLURM {
     mkdir -p logs
     rm logs/* 2>/dev/null # clean workerlist and other content
 
-    srun -J DAPHNEworkers --time=119 --mem-per-cpu=10G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2 -n $NUMCORES \
-        bash -c 'singularity exec daphne.sif \
+    srun -J DAPHNEworkers $SRUN_ARG -n $NUMCORES \
+        bash -c 'singularity '$SINGULARITY_ARG' exec daphne.sif \
                     build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) \
                          > logs/OUTPUT.$(hostname):$(( 50000 + SLURM_LOCALID )) \
                         2>&1 \
@@ -190,7 +190,7 @@ function WorkersStatus {
     
     [ $(cd logs; ls -1 OUTPUT.* 2>/dev/null | wc -l) -ge $NUMCORES ] && echo All up.
     
-    echo -e "\nInfo about the daphnec build/ dir is:"
+    echo -e "\nInfo about the DAPHNE build/ dir is:"
     cat $PATH_TO_DEPLOY_BUILD/build/git_source_status_info
 }
 
@@ -225,8 +225,8 @@ function KillWorkersOnSLURM {
 #*****************************************************************************
 
 function RunOneRequest {
-      time srun --time=30 ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1 \
-        singularity exec daphne.sif bash -c \
+      time srun $SRUN_ARG \
+        singularity $SINGULARITY_ARG exec daphne.sif bash -c \
             'DISTRIBUTED_WORKERS='${WORKERS}" \
             $PATH_TO_DEPLOY_BUILD"'/build/bin/daphne '"$ARGS_CS""$DAPHNE_SCRIPT_AND_PARAMS"
 }
@@ -300,6 +300,10 @@ function PrintHelp {
     echo "  -n, --numcores          Specify number of workers (cores) to use to deploy DAPHNE workers (default: 128)."
     echo "  -p, --port              Specify DAPHNE deployed port range begin (default: 50000)."
     echo "  --args ARGS_CS          Specify arguments of a DAPHNE SCRIPT in a comma-separated format."
+    echo "  -S, --ssh-arg S         Specify additional arguments S for ssh client (default command: $SSH_COMMAND)."
+    echo "  -C, --scp-arg C         Specify additional arguments C for scp client (default command: $SCP_COMMAND)."
+    echo "  -R, --srun-arg R        Specify additional arguments R for srun client."
+    echo "  -G, --singularity-arg G Specify additional arguments G for singularity client."
     echo ""
     echo "These are the commands that can be executed:"
     echo "  singularity             Compile the Singularity SIF image for DAPHNE (and transfer it to the target platform)."
@@ -334,6 +338,8 @@ function PrintHelp {
     echo "  $0 -l HPC -n 1024 run example-time.daphne               Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration."
     echo "  $0 -l HPC run                                           Executes one request to a running deployed platform, using login node HPC, default OpenSSH configuration, and DAPHNE script input from standard input."
     echo "  $0 deploy                                               Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans."
+# TODO: e.g. example hpc workers - SRUN_ARG= "--time=119 --mem-per-cpu=10G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2"
+# TODO: e.g. example hpc run -     SRUN_ARG= "--time=30                    ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1"
 }
 
 
@@ -419,6 +425,46 @@ while (( "$#" )); do
             exit 1
         fi
         ;;
+    -S|--ssh-arg)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SSH_ARG="$2"
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            PrintHelp
+            exit 1
+        fi
+        ;;        
+    -C|--scp-arg)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SCP_ARG="$2"
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            PrintHelp
+            exit 1
+        fi
+        ;;        
+    -R|--srun-arg)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SRUN_ARG="$2"
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            PrintHelp
+            exit 1
+        fi
+        ;;        
+    -G|--singularity-arg)
+        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+            SINGULARITY_ARG="$2"
+            shift 2
+        else
+            echo "Error: Argument for $1 is missing" >&2
+            PrintHelp
+            exit 1
+        fi
+        ;;        
     -*|--*=) # unsupported flags
         echo "Error: Unsupported flag $1" >&2
         exit 1
@@ -508,8 +554,8 @@ if [[ ! -n $SSH_IDENTITY_FILE ]]; then
 fi
 
 # reevaluate the commands
-SSH_COMMAND="ssh ${SSH_IDENTITY_FILE:+-i $SSH_IDENTITY_FILE} ${SSH_PORT:+-p $SSH_PORT}"
-SCP_COMMAND="scp ${SSH_IDENTITY_FILE:+-i $SSH_IDENTITY_FILE} ${SSH_PORT:+-P $SSH_PORT}"
+SSH_COMMAND="ssh ${SSH_IDENTITY_FILE:+-i $SSH_IDENTITY_FILE} ${SSH_PORT:+-p $SSH_PORT} $SSH_ARG"
+SCP_COMMAND="scp ${SSH_IDENTITY_FILE:+-i $SSH_IDENTITY_FILE} ${SSH_PORT:+-P $SSH_PORT} $SCP_ARG"
 
 if [[ -n $PARAMS ]]; then
     DAPHNE_SCRIPT_AND_PARAMS="$PARAMS"
