@@ -25,6 +25,7 @@ enum class BinaryOpCode {
     DIV, // division
     POW, // to the power of
     MOD, // modulus
+    LOG, // logarithm
     // Comparisons.
     EQ,  // equal
     NEQ, // not equal
