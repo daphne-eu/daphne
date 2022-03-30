@@ -71,7 +71,7 @@ DAPHNE_SCRIPT_AND_PARAMS=/dev/stdin
 #*****************************************************************************
 
 PORTRANGE_BEGIN=50000
-PATH_TO_DEPLOY_BUILD=~/DaphneDistributedWorker
+PATH_TO_DEPLOY_BUILD=./DaphneDistributedWorker
 PEERS= # the "PEERS" variable is obtained using SLURM below
 
 
@@ -124,6 +124,8 @@ function PackageBuiltDaphnePayload {
     echo "Packaging latest files for DaphneDistributedWorker deployment..."
     (
     tar cvzf build.tgz build/
+    cp $0 deploy-distributed-on-slurm.sh
+    chmod 755 deploy-distributed-on-slurm.sh
     tar cvzf daphne-package.tgz build.tgz *.daphne deploy-distributed-on-slurm.sh
     ) | awk '{printf("\r%-100s      ", substr($0, -1, 100));}'
 }
@@ -137,6 +139,8 @@ function PackageBuiltDaphnePayload {
 # ****************************************************************************
 
 function TransferPackageToTargetPlatform {
+    $SSH_COMMAND $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME mkdir -p $PATH_TO_DEPLOY_BUILD
+
     $SCP_COMMAND daphne-package.tgz $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME:$PATH_TO_DEPLOY_BUILD
 
     $SSH_COMMAND $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME <<EOF
@@ -154,9 +158,24 @@ EOF
 #*****************************************************************************
 
 function RemotelyStartWorkers {
+    # forward the parameters to remote invocation
+    PARAMS_REMOTE="$PARAMS"
+    if [[ -n "$SRUN_ARG" ]]; then   
+        PARAMS_REMOTE="-R=\"$SRUN_ARG\" $PARAMS_REMOTE"
+    fi
+    if [[ -n "$SINGULARITY_ARG" ]]; then   
+        PARAMS_REMOTE="-G=\"$SINGULARITY_ARG\" $PARAMS_REMOTE"
+    fi
+    if [[ -n "$NUMCORES" ]]; then   
+        PARAMS_REMOTE="-n $NUMCORES $PARAMS_REMOTE"
+    fi
+    if [[ -n "$PORTRANGE_BEGIN" ]]; then   
+        PARAMS_REMOTE="-p $PORTRANGE_BEGIN $PARAMS_REMOTE"
+    fi
+    
     $SSH_COMMAND $SSH_USERNAME@$SSH_LOGIN_NODE_HOSTNAME <<EOF
 cd $PATH_TO_DEPLOY_BUILD
-./deploy-distributed-on-slurm.sh workers
+./deploy-distributed-on-slurm.sh workers -d . $PARAMS_REMOTE
 exit
 EOF
 }
@@ -169,14 +188,14 @@ EOF
 
 function StartWorkersInContainersOnSLURM {
     mkdir -p logs
-    rm logs/* 2>/dev/null # clean workerlist and other content
+    rm -f logs/* 2>/dev/null # clean workerlist and other content
 
     srun -J DAPHNEworkers $SRUN_ARG -n $NUMCORES \
         bash -c 'singularity '$SINGULARITY_ARG' exec daphne.sif \
                     build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) \
                          > logs/OUTPUT.$(hostname):$(( 50000 + SLURM_LOCALID )) \
                         2>&1 \
-                        & echo \$! > logs/PID.$(hostname):$(( 50000 + SLURM_LOCALID ))' &
+                        & echo $! > logs/PID.$(hostname):$(( 50000 + SLURM_LOCALID ))' &
 }
 
 
@@ -185,13 +204,13 @@ function StartWorkersInContainersOnSLURM {
 #*****************************************************************************
 
 function WorkersStatus {
-    PEERS=$(cd logs; echo OUTPUT.* | sed -e 's/OUTPUT.//g' -e 's/ /,/g')
-    echo "PEERS list: $PEERS"
+    WORKERS=$(cd logs; echo OUTPUT.* | sed -e 's/OUTPUT.//g' -e 's/ /,/g')
+    echo "WORKERS list: $WORKERS"
     
     [ $(cd logs; ls -1 OUTPUT.* 2>/dev/null | wc -l) -ge $NUMCORES ] && echo All up.
     
     echo -e "\nInfo about the DAPHNE build/ dir is:"
-    cat $PATH_TO_DEPLOY_BUILD/build/git_source_status_info
+    cat build/git_source_status_info
 }
 
 
@@ -225,10 +244,10 @@ function KillWorkersOnSLURM {
 #*****************************************************************************
 
 function RunOneRequest {
-      time srun $SRUN_ARG \
+    WORKERS=$(cd logs; echo OUTPUT.* | sed -e 's/OUTPUT.//g' -e 's/ /,/g')
+    time srun $SRUN_ARG \
         singularity $SINGULARITY_ARG exec daphne.sif bash -c \
-            'DISTRIBUTED_WORKERS='${WORKERS}" \
-            $PATH_TO_DEPLOY_BUILD"'/build/bin/daphne '"$ARGS_CS""$DAPHNE_SCRIPT_AND_PARAMS"
+            "DISTRIBUTED_WORKERS=${WORKERS} build/bin/daphne $ARGS_CS $DAPHNE_SCRIPT_AND_PARAMS"
 }
 
 
@@ -251,6 +270,7 @@ EOF
 # ****************************************************************************
 
 function DeployEverythingHere {
+    # building locally or at target, but supporting transfer over OpenSSH
     BuildAndTransferSingularityContainerImage
     
     BuildWithSingularityContainer
@@ -258,8 +278,13 @@ function DeployEverythingHere {
     PackageBuiltDaphnePayload
     
     TransferPackageToTargetPlatform
+
+    # starting remotely at the platform 
     
     RemotelyStartWorkers
+    
+    
+    # for evocation of the command at target site below here:
   
     WaitAllWorkersUp
     
@@ -268,6 +293,8 @@ function DeployEverythingHere {
     RunOneRequest
     
     KillWorkersOnSLURM
+    
+    # cleanup using OpenSSH
     
     DeploymentClean
 }
@@ -300,10 +327,10 @@ function PrintHelp {
     echo "  -n, --numcores          Specify number of workers (cores) to use to deploy DAPHNE workers (default: 128)."
     echo "  -p, --port              Specify DAPHNE deployed port range begin (default: 50000)."
     echo "  --args ARGS_CS          Specify arguments of a DAPHNE SCRIPT in a comma-separated format."
-    echo "  -S, --ssh-arg S         Specify additional arguments S for ssh client (default command: $SSH_COMMAND)."
-    echo "  -C, --scp-arg C         Specify additional arguments C for scp client (default command: $SCP_COMMAND)."
-    echo "  -R, --srun-arg R        Specify additional arguments R for srun client."
-    echo "  -G, --singularity-arg G Specify additional arguments G for singularity client."
+    echo "  -S, --ssh-arg=S         Specify additional arguments S for ssh client (default command: $SSH_COMMAND)."
+    echo "  -C, --scp-arg=C         Specify additional arguments C for scp client (default command: $SCP_COMMAND)."
+    echo "  -R, --srun-arg=R        Specify additional arguments R for srun client."
+    echo "  -G, --singularity-arg=G Specify additional arguments G for singularity client."
     echo ""
     echo "These are the commands that can be executed:"
     echo "  singularity             Compile the Singularity SIF image for DAPHNE (and transfer it to the target platform)."
@@ -337,9 +364,9 @@ function PrintHelp {
     echo "  $0 -l HPC start                                         Using login node HPC, accesses the target platform and starts workers on remote machines."
     echo "  $0 -l HPC -n 1024 run example-time.daphne               Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration."
     echo "  $0 run                                                  Executes one request (DAPHNE script input from standard input) at a running deployed platform, using default singularity/srun configurations."
-    echo "  $0 deploy                                               Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans."
-    echo "  $0 workers -R \"--time=120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2\"  Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory)."
-    echo "  $0 run -R \"--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node1= --cpus-per-task=1\"  Executes a request with custom srun arguments (30 minutes single-core)."
+    echo "  $0 deploy -n 10                                         Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans."
+    echo "  $0 workers -R=\"-t 120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2\"  Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory)."
+    echo "  $0 run -R=\"--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node1= --cpus-per-task=1\"  Executes a request with custom srun arguments (30 minutes single-core)."
 }
 
 
@@ -387,7 +414,7 @@ while (( "$#" )); do
         ;;
     -d|--pathToBuild)
         if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-            PATH_TO_BUILD=$2
+            PATH_TO_DEPLOY_BUILD=$2
             shift 2
         else
             echo "Error: Argument for $1 is missing" >&2
@@ -425,45 +452,21 @@ while (( "$#" )); do
             exit 1
         fi
         ;;
-    -S|--ssh-arg)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-            SSH_ARG="$2"
-            shift 2
-        else
-            echo "Error: Argument for $1 is missing" >&2
-            PrintHelp
-            exit 1
-        fi
+    -S=-*|--ssh-arg=-)
+        SSH_ARG="${1:3}"
+        shift 1
         ;;        
-    -C|--scp-arg)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-            SCP_ARG="$2"
-            shift 2
-        else
-            echo "Error: Argument for $1 is missing" >&2
-            PrintHelp
-            exit 1
-        fi
+    -C=-*|--scp-arg=-)
+        SCP_ARG="${1:3}"
+        shift 1
         ;;        
-    -R|--srun-arg)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-            SRUN_ARG="$2"
-            shift 2
-        else
-            echo "Error: Argument for $1 is missing" >&2
-            PrintHelp
-            exit 1
-        fi
+    -R=-*|--srun-arg=-)
+        SRUN_ARG="${1:3}"
+        shift 1
         ;;        
-    -G|--singularity-arg)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
-            SINGULARITY_ARG="$2"
-            shift 2
-        else
-            echo "Error: Argument for $1 is missing" >&2
-            PrintHelp
-            exit 1
-        fi
+    -G=-*|--singularity-arg=-)
+        SINGULARITY_ARG="${1:3}"
+        shift 1
         ;;        
     -*|--*=) # unsupported flags
         echo "Error: Unsupported flag $1" >&2
