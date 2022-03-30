@@ -336,10 +336,10 @@ function PrintHelp {
     echo "  $0 --login HPC --user hpc -i ~/.ssh/hpc.pub transfer    Transfers a package to the target platform through OpenSSH, using login node HPC, user hpc, and identify key hpc.pub."
     echo "  $0 -l HPC start                                         Using login node HPC, accesses the target platform and starts workers on remote machines."
     echo "  $0 -l HPC -n 1024 run example-time.daphne               Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration."
-    echo "  $0 -l HPC run                                           Executes one request to a running deployed platform, using login node HPC, default OpenSSH configuration, and DAPHNE script input from standard input."
+    echo "  $0 run                                                  Executes one request (DAPHNE script input from standard input) at a running deployed platform, using default singularity/srun configurations."
     echo "  $0 deploy                                               Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans."
-# TODO: e.g. example hpc workers - SRUN_ARG= "--time=119 --mem-per-cpu=10G ${DEMO_USE_CUDA} --cpu-bind=cores --cpus-per-task=2"
-# TODO: e.g. example hpc run -     SRUN_ARG= "--time=30                    ${DEMO_USE_CUDA} --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1"
+    echo "  $0 workers -R \"--time=120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2\"  Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory)."
+    echo "  $0 run -R \"--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node1= --cpus-per-task=1\"  Executes a request with custom srun arguments (30 minutes single-core)."
 }
 
 
