@@ -71,6 +71,8 @@ public:
         for(size_t i = 0; i < numOutputs; ++i) {
             if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
+                // TODO we know result is only DenseMatrix<double> for now,
+                // but in the future this will change to support other DataTypes
                 *(res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
             }
         }

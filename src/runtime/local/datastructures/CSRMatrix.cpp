@@ -107,19 +107,27 @@ void CSRMatrix<ValueType>::convertFromProto (const distributed::Matrix &matProto
     auto valuesProto = getCells(&matProto);    
     auto colIdxsProto = csrMatProto.colidx().cells();
     auto rowOffsetsProto = csrMatProto.row_offsets().cells();
-    size_t protoIndexing = 0;
+    
+    assert (rowBegin < rowEnd && "rowBegin must be lower than rowEnd");
+    if (rowBegin == 0)
+        rowOffsets.get()[0] = 0;
+    // Else rowOffset[rowBegin] is already set.
+
+    size_t protoValColIdx = 0;
+    size_t protoRow = 0;
     for (size_t r = rowBegin; r < rowEnd; r++) {
-        rowOffsets.get()[r] = rowOffsetsProto[r];
-        size_t rowNumNonZeros = rowOffsetsProto[r + 1] - rowOffsetsProto[r];
+        size_t rowNumNonZeros = rowOffsetsProto[protoRow + 1] - rowOffsetsProto[protoRow];
+        protoRow++;
+        rowOffsets.get()[r + 1] = rowOffsets.get()[r] + rowNumNonZeros;
+
         size_t * rowColIdxs = getColIdxs(r);
         ValueType *rowValues = getValues(r);
         for (size_t i = 0; i < rowNumNonZeros; i++) {
-            rowValues[i] = valuesProto[protoIndexing];
-            rowColIdxs[i] = colIdxsProto[protoIndexing];
-            protoIndexing++;
+            rowValues[i] = valuesProto[protoValColIdx];
+            rowColIdxs[i] = colIdxsProto[protoValColIdx];
+            protoValColIdx++;
         }
     }
-    rowOffsets.get()[rowEnd] = rowOffsetsProto[rowEnd];        
 }
 // explicitly instantiate to satisfy linker
 template class CSRMatrix<double>;
