@@ -22,7 +22,7 @@
 #include <string>
 
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
-                            PLS, MSTATIC, MFSC, PSS};
+                            PLS, MSTATIC, MFSC, PSS, INVALID=-1};
 class LoadPartitioning {
 
 private:

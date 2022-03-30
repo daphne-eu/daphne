@@ -38,8 +38,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
-    if (keyExists(jf, DaphneConfigJsonParams::USE_FREE_OPS))
-        config.use_freeOps = jf.at(DaphneConfigJsonParams::USE_FREE_OPS).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_OBJ_REF_MGNT))
+        config.use_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::USE_OBJ_REF_MGNT).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))
@@ -58,8 +58,18 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_sql = jf.at(DaphneConfigJsonParams::EXPLAIN_SQL).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_VECTORIZED))
         config.explain_vectorized = jf.at(DaphneConfigJsonParams::EXPLAIN_VECTORIZED).get<bool>();
-    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_FREE_OPS))
-        config.explain_freeOps = jf.at(DaphneConfigJsonParams::EXPLAIN_FREE_OPS).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT))
+        config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
+        config.taskPartitioningScheme = jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
+        if (config.taskPartitioningScheme == SelfSchedulingScheme::INVALID) {
+            throw std::invalid_argument("Invalid value for enum \"SelfSchedulingScheme\"" + config.taskPartitioningScheme);
+        }
+    }
+    if (keyExists(jf, DaphneConfigJsonParams::NUMBER_OF_THREADS))
+        config.numberOfThreads = jf.at(DaphneConfigJsonParams::NUMBER_OF_THREADS).get<int>();
+    if (keyExists(jf, DaphneConfigJsonParams::MINIMUM_TASK_SIZE))
+        config.minimumTaskSize = jf.at(DaphneConfigJsonParams::MINIMUM_TASK_SIZE).get<int>();
 #ifdef USE_CUDA
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_DEVICES))
         config.cuda_devices = jf.at(DaphneConfigJsonParams::CUDA_DEVICES).get<std::vector<int>>();

@@ -19,8 +19,26 @@
 #define SRC_PARSER_CONFIG_CONFIGPARSER_H
 
 #include "../../../thirdparty/nlohmannjson/json.hpp"
+#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <api/cli/DaphneUserConfig.h>
 #include <string>
+
+// must be in the same namespace as the enum SelfSchedulingScheme
+NLOHMANN_JSON_SERIALIZE_ENUM(SelfSchedulingScheme, {
+    {INVALID, nullptr},
+    {STATIC, "STATIC"},
+    {SS, "SS"},
+    {GSS, "GSS"},
+    {TSS, "TSS"},
+    {FAC2, "FAC2"},
+    {TFSS, "TFSS"},
+    {FISS, "FISS"},
+    {VISS, "VISS"},
+    {PLS, "PLS"},
+    {MSTATIC, "MSTATIC"},
+    {MFSC, "MFSC"},
+    {PSS, "PSS"}
+})
 
 class ConfigParser {
 public:

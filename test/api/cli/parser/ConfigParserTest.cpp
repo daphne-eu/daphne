@@ -87,3 +87,27 @@ TEST_CASE("The unknown value of param in the config file", TAG_PARSER)
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
 }
+
+TEST_CASE("An adequate enum value set in the config file", TAG_PARSER)
+{
+    const std::string configFile = dirPath + "UserConfig7.json";
+    DaphneUserConfig userConfig{};
+    REQUIRE(ConfigParser::fileExists(configFile));
+    REQUIRE_NOTHROW(ConfigParser::readUserConfig(configFile, userConfig));
+}
+
+TEST_CASE("An unknown enum value set in the config file", TAG_PARSER)
+{
+    const std::string configFile = dirPath + "UserConfig8.json";
+    DaphneUserConfig userConfig{};
+    REQUIRE(ConfigParser::fileExists(configFile));
+    REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
+}
+
+TEST_CASE("Integer set as enum value instead of the name of the enum value in string format in the config file", TAG_PARSER)
+{
+    const std::string configFile = dirPath + "UserConfig9.json";
+    DaphneUserConfig userConfig{};
+    REQUIRE(ConfigParser::fileExists(configFile));
+    REQUIRE_THROWS(ConfigParser::readUserConfig(configFile, userConfig));
+}

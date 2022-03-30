@@ -25,7 +25,7 @@
 struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
-    inline static const std::string USE_FREE_OPS = "use_freeOps";
+    inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -36,7 +36,10 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
-    inline static const std::string EXPLAIN_FREE_OPS = "explain_freeOps";
+    inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
+    inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
+    inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
+    inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
 
     inline static const std::string CUDA_DEVICES = "cuda_devices";
 
@@ -46,7 +49,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA,
             USE_VECTORIZED_EXEC,
-            USE_FREE_OPS,
+            USE_OBJ_REF_MGNT,
             CUDA_FUSE_ANY,
             VECTORIZED_SINGLE_QUEUE,
             DEBUG_LLVM,
@@ -56,7 +59,10 @@ struct DaphneConfigJsonParams {
             EXPLAIN_PROPERTY_INFERENCE,
             EXPLAIN_SQL,
             EXPLAIN_VECTORIZED,
-            EXPLAIN_FREE_OPS,
+            EXPLAIN_OBJ_REF_MGNT,
+            TASK_PARTITIONING_SCHEME,
+            NUMBER_OF_THREADS,
+            MINIMUM_TASK_SIZE,
             CUDA_DEVICES,
             LIB_DIR,
             LIBRARY_PATHS

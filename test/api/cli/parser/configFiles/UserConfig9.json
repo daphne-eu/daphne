@@ -12,7 +12,7 @@
     "explain_sql": false,
     "explain_vectorized": false,
     "explain_obj_ref_mgnt": false,
-    "taskPartitioningScheme": "GSS",
+    "taskPartitioningScheme": 0,
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
     "library_paths": [
