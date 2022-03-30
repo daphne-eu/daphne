@@ -287,8 +287,7 @@ cmake -G Ninja .. \
     -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
     -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName \
     -DOPENBLAS_INST_DIR=$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
-    -DCMAKE_PREFIX_PATH="$grpcInstDir" \
-    -DUSE_ARROW=ON
+    -DCMAKE_PREFIX_PATH="$grpcInstDir"
 # optional cmake flags (to be added to the command above):
 # -DUSE_CUDA=ON
 # -DUSE_ARROW=ON
