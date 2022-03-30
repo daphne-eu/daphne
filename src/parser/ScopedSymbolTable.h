@@ -161,7 +161,7 @@ public:
     void put(std::string sym, mlir::Value val) {
         auto it = scopes.back().find(sym);
         if(it == scopes.back().end())
-            throw std::runtime_error("trying to update the value of an unknown symbol");
+            throw std::runtime_error("trying to update the value of an unknown symbol: " + sym );
         it->second.value = val;
     }
     

@@ -25,8 +25,10 @@ enum class UnaryOpCode {
     SQRT,
     EXP,
     // Rounding.
+    ABS,
     FLOOR,
     CEIL,
+    ROUND,
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H
