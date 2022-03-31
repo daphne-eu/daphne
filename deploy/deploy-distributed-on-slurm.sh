@@ -127,7 +127,7 @@ function PackageBuiltDaphnePayload {
     cp $0 deploy-distributed-on-slurm.sh
     chmod 755 deploy-distributed-on-slurm.sh
     tar cvzf daphne-package.tgz build.tgz *.daphne deploy-distributed-on-slurm.sh
-    ) | awk '{printf("\r%-100s      ", substr($0, -1, 100));}'
+    ) | awk '{printf("\r%-100s      ", substr($0, -1, 100));}END{print "";}'
 }
 
 
@@ -366,7 +366,7 @@ function PrintHelp {
     echo "  $0 run                                                  Executes one request (DAPHNE script input from standard input) at a running deployed platform, using default singularity/srun configurations."
     echo "  $0 deploy -n 10                                         Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans."
     echo "  $0 workers -R=\"-t 120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2\"  Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory)."
-    echo "  $0 run -R=\"--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node1= --cpus-per-task=1\"  Executes a request with custom srun arguments (30 minutes single-core)."
+    echo "  $0 run -R=\"--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1\"  Executes a request with custom srun arguments (30 minutes single-core)."
 }
 
 
