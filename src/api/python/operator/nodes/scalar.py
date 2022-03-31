@@ -121,4 +121,7 @@ class Scalar(OperationNode):
         return Scalar(self.daphne_context, '!=', [other, self])
     
     def sqrt(self) -> 'Scalar':
-        return Scalar(self.daphne_context,'sqrt',[self])
+        return Scalar(self.daphne_context,'sqrt',[self])    
+    
+    def print(self):
+        return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)

@@ -23,6 +23,7 @@ from typing import List, Dict, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
 import numpy as np
+import pandas as pd
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -47,7 +48,11 @@ class DaphneDSLScript:
             self.out_var_name.append(baseOutVarString)
             if(dag_root.output_type == OutputType.MATRIX):
                 self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return str(TMP_PATH+"/" + baseOutVarString+ ".csv")
+                return TMP_PATH+"/" + baseOutVarString+ ".csv"
+            elif(dag_root.output_type == OutputType.FRAME):
+                self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
+                
+                return TMP_PATH+"/" + baseOutVarString+ ".csv"
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
