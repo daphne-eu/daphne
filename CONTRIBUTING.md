@@ -26,8 +26,8 @@ All open/ongoing/completed **work is tracked as issues** here on GitLab.
 These could be anything from precisely defined small tasks to requests for complex components.
 In any case, we will try to keep the book-keeping effort at a low level; at the same time, we should make each other aware of what everyone is working on.
 
-If you would like to contribute and are **looking for a task** to work on, browse the [list of issues](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues).
-If you are new to the prototype, you might want to watch out for the label ["good first issue"](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues?label_name%5B%5D=good+first+issue).
+If you would like to contribute and are **looking for a task** to work on, browse the [list of issues](https://github.com/daphne-eu/daphne/issues).
+If you are new to the prototype, you might want to watch out for the label ["good first issue"](https://github.com/daphne-eu/daphne/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 Once you have selected an issue to work on, please assign yourself or leave a comment.
 It should be explicit who is working on which issue to avoid duplicate work by different people.
 
@@ -42,7 +42,7 @@ Please note that you can create as many branches and merge requests as you want,
 
 - *Cloning the repository.*
 
-  `git clone --recursive https://gitlab.know-center.tugraz.at/daphne/prototype.git`, as described in [Getting Started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md).
+  `git clone --recursive https://github.com/daphne-eu/daphne.git`, as described in [Getting Started](https://github.com/daphne-eu/daphne/blob/master/doc/GettingStarted.md).
 
 - *Working on your own branch.*
   

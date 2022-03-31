@@ -59,7 +59,7 @@ The LLVM monorepo is included in this repository as a submodule.
 Thus, clone this repository as follows to also clone the submodule:
 
 ```bash
-git clone --recursive https://gitlab.know-center.tugraz.at/daphne/prototype.git
+git clone --recursive https://github.com/daphne-eu/daphne.git
 ```
 
 Upstream changes to this repository might contain changes to the submodule (we might have upgraded to a newer version of MLIR/LLVM).
@@ -157,6 +157,6 @@ On the top-level, there are the following directories:
 ### What Next?
 
 You might want to have a look at
-- the [documentation](https://gitlab.know-center.tugraz.at/daphne/prototype/-/tree/master/doc)
-- the [contribution guidelines](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/CONTRIBUTING.md)
-- the [open issues](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues)
+- the [documentation](https://github.com/daphne-eu/daphne/tree/master/doc)
+- the [contribution guidelines](https://github.com/daphne-eu/daphne/blob/master/CONTRIBUTING.md)
+- the [open issues](https://github.com/daphne-eu/daphne/issues)
