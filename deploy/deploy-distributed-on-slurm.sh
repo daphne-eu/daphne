@@ -444,7 +444,7 @@ while (( "$#" )); do
         fi
         ;;
     --args)
-        if [ -n "$2" ] && [ ${2:0:1} != "-" ]; then
+        if [ -n "$2" ]; then
             ARGS_CS="--args $2 "
             shift 2
         else
