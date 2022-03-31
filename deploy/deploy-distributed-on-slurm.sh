@@ -367,6 +367,7 @@ function PrintHelp {
     echo "  $0 deploy -n 10                                         Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans."
     echo "  $0 workers -R=\"-t 120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2\"  Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory)."
     echo "  $0 run -R=\"--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1\"  Executes a request with custom srun arguments (30 minutes single-core)."
+    echo "  cat example.daphne | $0 run                             Example request job from a pipe."
 }
 
 
