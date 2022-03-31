@@ -19,7 +19,7 @@ limitations under the License.
 ### Background
 
 (Almost) every DaphneIR operation will be backed by a kernel (= physical operator) at run-time.
-Extensibility w.r.t. kernels is one on the core goals of the DAPHNE Prototype.
+Extensibility w.r.t. kernels is one on the core goals of the DAPHNE system.
 It shall be easy for a user to add a custom kernel.
 However, the system will offer a full set of built-in kernels so that all DaphneIR operations can be used out-of-the-box.
 
@@ -166,7 +166,7 @@ Of course, that depends on what the kernel is supposed to do, but there some rec
   The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
   However, in the end it is always a trade-off between performance and code complexity.
   For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
-  Nevertheless, since the DAPHNE Prototype should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.
+  Nevertheless, since the DAPHNE system should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.
 
 ### Concrete Examples
 

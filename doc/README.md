@@ -28,7 +28,7 @@ limitations under the License.
 
 - [Implementing a Built-in Kernel](https://github.com/daphne-eu/daphne/blob/master/doc/ImplementBuiltinKernel.md)
 - [Binary Data Format](https://github.com/daphne-eu/daphne/blob/master/doc/BinaryFormat.md)
-- [Prototype Configuration: Getting Information from the User](https://github.com/daphne-eu/daphne/blob/master/doc/Config.md)
+- [DAPHNE Configuration: Getting Information from the User](https://github.com/daphne-eu/daphne/blob/master/doc/Config.md)
 - [Extending DAPHNE with more scheduling knobs](https://github.com/daphne-eu/daphne/blob/master/doc/ExtendingSchedulingKnobs.md)
 
 ### Source Code Documentation
