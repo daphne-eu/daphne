@@ -24,9 +24,19 @@ import "data.proto";
 
 service Worker {
   rpc Store (Matrix) returns (StoredData) {}
+  rpc Broadcast (BroadcastedData) returns (BroadcastedStored) {}
   rpc Compute (Task) returns (ComputeResult) {}
   rpc Transfer (StoredData) returns (Matrix) {}
   rpc FreeMem (StoredData) returns (Empty) {}
+}
+
+message BroadcastedData {
+  Matrix matrix = 1;  
+  repeated string addresses = 2;
+}
+
+message BroadcastedStored {
+  repeated StoredData stored = 1;
 }
 
 message WorkData {
