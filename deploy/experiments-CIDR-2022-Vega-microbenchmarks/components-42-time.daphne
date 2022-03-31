@@ -1,0 +1,39 @@
+// Connected components.
+
+// Arguments:
+// - n ... number of vertices
+// - e ... number of edges (approx)
+
+n = as.f64($n);
+e = as.f64($e);
+
+// Generation of a random undirected graph.
+// Using seed: 42.
+UT = upperTri(rand(n, n, 1.0, 1.0, 2.0 * e / n ^ 2.0, 42), false, false);
+G = UT + t(UT);
+
+// Initialization.
+maxi = 1000;
+c = seq(1.0, n, 1.0); // init w/ vertex IDs
+diff = inf;
+iter = 1;
+
+// Begin timing
+timePreWhile = now();
+
+// Iterative computation of connected components (decisive part).
+while(as.si64(diff > 0.0) && iter <= maxi) {
+    u = max(aggMax(G * t(c), 0), c);
+    diff = sum(u != c);
+    c = u;
+    iter = iter + 1;
+}
+
+// Report on timing
+timePostWhile = now();
+print(timePreWhile);
+print(timePostWhile);
+
+
+// Result output.
+print(c);
