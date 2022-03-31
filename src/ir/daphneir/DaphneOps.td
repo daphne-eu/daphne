@@ -857,7 +857,12 @@ def Daphne_ThetaJoinOp : Daphne_Op<"thetaJoin", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>
 ]> {
-    let arguments = (ins Frame:$lhs, Frame:$rhs, Variadic<StrScalar>:$lhsOn, Variadic<StrScalar>:$rhsOn);
+    let arguments = (
+        ins Frame:$lhs,
+        Frame:$rhs,
+        Variadic<StrScalar>:$lhsOn,
+        Variadic<StrScalar>:$rhsOn,
+        TypedArrayAttrBase<Daphne_CompareEnum, "enum">:$cmp);
     let results = (outs Frame:$res);
 }
 

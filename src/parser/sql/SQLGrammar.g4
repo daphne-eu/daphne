@@ -37,6 +37,7 @@ select:
     SQL_FROM tableExpr
     whereClause?
     groupByClause?
+    //orderByClause?
     ;
 
 subquery:
@@ -57,7 +58,10 @@ fromExpr:
     ;
 
 joinExpr:
-    SQL_INNER? SQL_JOIN var=tableReference SQL_ON rhs=selectIdent '=' lhs=selectIdent #innerJoin
+    SQL_INNER? SQL_JOIN var=tableReference
+        SQL_ON rhs=selectIdent op=CMP_OP lhs=selectIdent
+        (SQL_AND selectIdent (CMP_OP)? selectIdent)*
+        #innerJoin
     ;
 
 whereClause:
@@ -70,6 +74,9 @@ groupByClause:
 havingClause:
     SQL_HAVING cond=generalExpr;
 
+//orderByClause:
+//    SQL_ORDER SQL_BY selectIdent (SQL_ASC|SQL_DESC)? (',' selectIdent (SQL_ASC|SQL_DESC)?)*
+
 generalExpr:
     literal # literalExpr
     | selectIdent # identifierExpr
@@ -77,7 +84,7 @@ generalExpr:
     | '(' generalExpr ')' # paranthesesExpr
     | lhs=generalExpr op=('*'|'/') rhs=generalExpr # mulExpr
     | lhs=generalExpr op=('+'|'-') rhs=generalExpr # addExpr
-    | lhs=generalExpr op=('='|'<>'|'<='|'>='|'<'|'>') rhs=generalExpr # cmpExpr
+    | lhs=generalExpr op=CMP_OP rhs=generalExpr # cmpExpr
     | lhs=generalExpr SQL_AND rhs=generalExpr # andExpr
     | lhs=generalExpr SQL_OR rhs=generalExpr # orExpr
     ;
@@ -162,6 +169,9 @@ fragment NON_ZERO_DIGIT: [1-9];
 
 IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
+
+CMP_OP:
+    ('='|'<>'|'<='|'>='|'<'|'>');
 
 INT_LITERAL:
     '-'? DIGIT+;

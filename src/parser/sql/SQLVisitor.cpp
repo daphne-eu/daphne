@@ -301,7 +301,7 @@ mlir::Value SQLVisitor::extractMatrixFromFrame(
     ));
 }
 
-mlir::Attribute SQLVisitor::getEnum(const std::string & func){
+mlir::Attribute SQLVisitor::getGroupEnum(const std::string & func){
     if(func == "count"){
         return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::COUNT));
     }
@@ -323,8 +323,52 @@ mlir::Attribute SQLVisitor::getEnum(const std::string & func){
     return nullptr;
 }
 
+mlir::Attribute SQLVisitor::getCompareEnum(const std::string & op){
+    if(op == "="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::Equal)
+        );
+    }
+    if(op == "<"){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::LessThan)
+        );
+    }
+    if(op == "<="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::LessEqual)
+        );
+    }
+    if(op == ">"){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::GreaterThan)
+        );
+    }
+    if(op == ">="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::GreaterEqual)
+        );
+    }
+    if(op == "<>"){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::NotEqual)
+        );
+    }
+    std::stringstream x;
+    x << "Error: " << op << " does not name a compare operation\n";
+    throw std::runtime_error(x.str());
+    return nullptr;
+}
+
+
 std::string SQLVisitor::getEnumLabelExt(const std::string &func){
-    return mlir::daphne::stringifyGroupEnum(getEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue()).str();
+    return mlir::daphne::stringifyGroupEnum(getGroupEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue()).str();
 }
 
 // ****************************************************************************
@@ -560,12 +604,8 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(
     //This behavior could be changed here.
     //TODO: Make the position independent
     mlir::Location loc = utils.getLoc(ctx->start);
-
     mlir::Value tojoin = utils.valueOrError(visit(ctx->var));
-    //rhs is join
-    //lhs is currentFrame
-    mlir::Value rhsName = utils.valueOrError(visit(ctx->rhs));
-    mlir::Value lhsName = utils.valueOrError(visit(ctx->lhs));
+
 
     std::vector<mlir::Type> colTypes;
     for(mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
@@ -574,15 +614,51 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(
         colTypes.push_back(t);
     mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
 
+//ctx->CMP_OP(0)->getText()
+    if(ctx->op->getText() == "=" && ctx->selectIdent().size() == 2){
+        //rhs is join
+        //lhs is currentFrame
+        mlir::Value rhsName = utils.valueOrError(visit(ctx->rhs));
+        mlir::Value lhsName = utils.valueOrError(visit(ctx->lhs));
+
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::InnerJoinOp>(
+                loc,
+                t,
+                currentFrame,
+                tojoin,
+                rhsName,
+                lhsName
+            ));
+    }
+
+    std::vector<mlir::Value> rhsNames;
+    std::vector<mlir::Value> lhsNames;
+    std::vector<mlir::Attribute> ops;
+
+    for(auto i = 0ul; i < ctx->selectIdent().size()/2; i++){
+        mlir::Value lhsName = utils.valueOrError(visit(ctx->selectIdent(i*2)));
+        mlir::Value rhsName = utils.valueOrError(visit(ctx->selectIdent(i*2 + 1)));
+        mlir::Attribute op = getCompareEnum(ctx->CMP_OP(i)->getText());
+
+        lhsNames.push_back(lhsName);
+        rhsNames.push_back(rhsName);
+        ops.push_back(op);
+
+    }
+
     return static_cast<mlir::Value>(
-        builder.create<mlir::daphne::InnerJoinOp>(
+        builder.create<mlir::daphne::ThetaJoinOp>(
             loc,
             t,
             currentFrame,
             tojoin,
-            rhsName,
-            lhsName
-        ));
+            lhsNames,
+            rhsNames,
+            builder.getArrayAttr(ops)
+        )
+    );
+
 }
 
 
@@ -759,7 +835,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //create Column pre Group for in group Aggregation
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         columnName.push_back(createStringConstant(newColumnName));
-        functionName.push_back(getEnum(ctx->func->getText()));
+        functionName.push_back(getGroupEnum(ctx->func->getText()));
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
