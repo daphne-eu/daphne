@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
+#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
+#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Handle.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/ProtoDataConverter.h>
-#include <runtime/local/kernels/DistributedCaller.h>
+#include <runtime/distributed/coordinator/kernels/DistributedCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -37,28 +35,7 @@
 template<class DT>
 struct Distribute
 {
-    static void apply(Handle<DT> *&res, const DT *mat, DCTX(ctx)) = delete;
-};
-
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DT>
-void distribute(Handle<DT> *&res, const DT *mat, DCTX(ctx))
-{
-    Distribute<DT>::apply(res, mat, ctx);
-}
-
-// ****************************************************************************
-// (Partial) template specializations for different data/value types
-// ****************************************************************************
-
-template<>
-struct Distribute<DenseMatrix<double>>
-{
-    static void apply(Handle<DenseMatrix<double>> *&res, const DenseMatrix<double> *mat, DCTX(ctx))
-    {
+    static void apply(DT *mat, DCTX(ctx)) {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
         std::string workersStr(envVar);
@@ -71,17 +48,17 @@ struct Distribute<DenseMatrix<double>>
             workersStr.erase(0, pos + delimiter.size());
         }
         workers.push_back(workersStr);
+    
+        assert(mat != nullptr);
 
-        // auto blockSize = DistributedData::BLOCK_SIZE;
 
         struct StoredInfo {
             DistributedIndex *ix ;
             std::string workerAddr;
-            std::shared_ptr<grpc::Channel> channel;
+            distributed::StoredData_Type dataType;
         };        
         DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
 
-        Handle<DenseMatrix<double>>::HandleMap map;
 
         auto r = 0ul;
         for (auto workerIx = 0ul; workerIx < workers.size() && r < mat->getNumRows(); workerIx++) {            
@@ -91,34 +68,64 @@ struct Distribute<DenseMatrix<double>>
 
             auto k = mat->getNumRows() / workers.size();
             auto m = mat->getNumRows() % workers.size();
-            ProtoDataConverter::convertToProto(mat,
-                &protoMat,
-                (workerIx * k) + std::min(workerIx, m),
-                (workerIx + 1) * k + std::min(workerIx + 1, m),
-                0,
-                mat->getNumCols());
-                        
-            auto channel = caller.GetOrCreateChannel(workerAddr);
-            StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr, channel});
+
+            mat->convertToProto(&protoMat,
+                                (workerIx * k) + std::min(workerIx, m),
+                                (workerIx + 1) * k + std::min(workerIx + 1, m),
+                                0,
+                                mat->getNumCols());
+            
+            // Determine type from result serialized
+            // TODO maybe we can get this from the convertToProto function above
+            distributed::StoredData_Type type;
+            switch (protoMat.matrix_case()){
+                case distributed::Matrix::MatrixCase::kDenseMatrix:
+                    if (protoMat.dense_matrix().cells_case() == distributed::DenseMatrix::CellsCase::kCellsI64)
+                        type = distributed::StoredData_Type::StoredData_Type_DenseMatrix_i64;
+                    else 
+                        type = distributed::StoredData_Type::StoredData_Type_DenseMatrix_f64;
+                    break;
+                case distributed::Matrix::MatrixCase::kCsrMatrix:
+                    if (protoMat.csr_matrix().values_case() == distributed::CSRMatrix::ValuesCase::kValuesI64)
+                        type = distributed::StoredData_Type::StoredData_Type_CSRMatrix_i64;
+                    else 
+                        type = distributed::StoredData_Type::StoredData_Type_CSRMatrix_f64;
+                    break;
+            }
+            StoredInfo storedInfo ({new DistributedIndex(workerIx, 0), workerAddr});
             caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
             
             // keep track of proccessed rows
             r = (workerIx + 1) * k + std::min(workerIx + 1, m);
         }
         // get results
+        DataPlacement::DistributedMap dataMap;
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto ix = response.storedInfo.ix;
             auto workerAddr = response.storedInfo.workerAddr;
-            auto channel = response.storedInfo.channel;
 
             auto storedData = response.result;
-
-            DistributedData data(storedData, workerAddr, channel);
-            map.insert({*ix, data});
+            
+            storedData.set_type(response.storedInfo.dataType);
+            DistributedData data(*ix, storedData);
+            dataMap[workerAddr] = data;
         }
-        res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
+        DataPlacement dataPlacement(dataMap);
+        dataPlacement.isPlacedOnWorkers = true;
+        mat->dataPlacement = dataPlacement;         
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTE_H
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<class DT>
+void distribute(DT *mat, DCTX(ctx))
+{
+    Distribute<DT>::apply(mat, ctx);
+}
+
+
+#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H

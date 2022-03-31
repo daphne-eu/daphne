@@ -29,7 +29,6 @@
 
 #include "WorkerImpl.h"
 
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -83,8 +82,45 @@ grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
                                const ::distributed::Matrix *request,
                                ::distributed::StoredData *response)
 {
-    auto *mat = DataObjectFactory::create<DenseMatrix<double>>(request->num_rows(), request->num_cols(), false);
-    ProtoDataConverter::convertFromProto(*request, mat);
+    switch (request->matrix_case()){
+    case distributed::Matrix::MatrixCase::kDenseMatrix:
+        switch (request->dense_matrix().cells_case())
+        {
+        case distributed::DenseMatrix::CellsCase::kCellsI64:
+            return StoreType<DenseMatrix<int64_t>>(context, request, response);
+            break;
+        case distributed::DenseMatrix::CellsCase::kCellsF64:
+            return StoreType<DenseMatrix<double>>(context, request, response);
+            break;    
+        default:
+            break;
+        }
+        break;
+    case distributed::Matrix::MatrixCase::kCsrMatrix:
+        switch (request->csr_matrix().values_case())
+        {
+        case distributed::CSRMatrix::ValuesCase::kValuesI64:
+            return StoreType<CSRMatrix<int64_t>>(context, request, response);
+            break;
+        case distributed::CSRMatrix::ValuesCase::kValuesF64:
+            return StoreType<CSRMatrix<double>>(context, request, response);
+            break;
+        }
+        
+    default:
+        // error message
+        break;
+    };
+    return grpc::Status::CANCELLED;
+}
+
+template<class DT>
+grpc::Status WorkerImpl::StoreType(::grpc::ServerContext *context,
+                         const ::distributed::Matrix *request,
+                         ::distributed::StoredData *response)
+{
+    DT *mat = CreateMatrix<DT>(request);
+    mat->convertFromProto(*request);
 
     auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
     localData_[identification] = mat;
@@ -95,12 +131,31 @@ grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
     return ::grpc::Status::OK;
 }
 
+template<>
+DenseMatrix<double>* WorkerImpl::CreateMatrix<DenseMatrix<double>>(const ::distributed::Matrix *mat) {
+    return DataObjectFactory::create<DenseMatrix<double>>(mat->num_rows(), mat->num_cols(), false);
+}
+template<>
+DenseMatrix<int64_t>* WorkerImpl::CreateMatrix<DenseMatrix<int64_t>>(const ::distributed::Matrix *mat) {
+    return DataObjectFactory::create<DenseMatrix<int64_t>>(mat->num_rows(), mat->num_cols(), false);
+}
+template<>
+CSRMatrix<double>* WorkerImpl::CreateMatrix<CSRMatrix<double>>(const ::distributed::Matrix *mat) {
+    return DataObjectFactory::create<CSRMatrix<double>>(mat->num_rows(), mat->num_cols(), mat->csr_matrix().values_f64().cells_size(), true);
+}
+template<>
+CSRMatrix<int64_t>* WorkerImpl::CreateMatrix<CSRMatrix<int64_t>>(const ::distributed::Matrix *mat) {
+    return DataObjectFactory::create<CSRMatrix<int64_t>>(mat->num_rows(), mat->num_cols(), mat->csr_matrix().values_i64().cells_size(), true);
+}
+
+
 grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
                                  const ::distributed::Task *request,
                                  ::distributed::ComputeResult *response)
 {
     // ToDo: user config
-    DaphneUserConfig cfg{false};
+    DaphneUserConfig cfg;
+    cfg.use_vectorized_exec = true;
     // TODO Decide if vectorized pipelines should be used on this worker.
     // TODO Decide if selectMatrixReprs should be used on this worker.
     // TODO Once we hand over longer pipelines to the workers, we might not
@@ -130,6 +185,19 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         request->inputs(),
         outputs,
         inputs);
+    
+    // Increase the reference counters of all inputs to the `dist` function.
+    // (But only consider data objects, not scalars.)
+    // This is necessary to avoid them from being destroyed within the
+    // function. Note that this increasing is in-line with the treatment of
+    // local function calls, where we also increase the inputs' reference
+    // counters before the call, for the same reason. See ManageObjsRefsPass
+    // for details.
+    for(size_t i = 0; i < inputs.size(); i++)
+        // TODO Use CompilerUtils::isObjType() once this branch has been rebased.
+        // if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
+        if(distFuncTy.getInput(i).isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+            reinterpret_cast<Structure*>(inputs[i])->increaseRefCounter();
 
     // Execution
     // TODO Before we run the passes, we should insert information on shape
@@ -172,11 +240,25 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         distributed::WorkData workData;
         switch (dataCase) {
         case distributed::WorkData::kStored: {
-            auto mat = static_cast<DenseMatrix<double> *>(output);
-
+            auto matTy = type.dyn_cast<mlir::daphne::MatrixType>();
+            if(matTy.getElementType().isa<mlir::Float64Type>()){
+                auto mat = static_cast<Matrix<double> *>(output);
+                workData.mutable_stored()->set_num_rows(mat->getNumRows());
+                workData.mutable_stored()->set_num_cols(mat->getNumCols());
+                if (matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse)
+                    workData.mutable_stored()->set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64);
+                else
+                    workData.mutable_stored()->set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64);
+            } else {
+                auto mat = static_cast<Matrix<int64_t> *>(output);
+                workData.mutable_stored()->set_num_rows(mat->getNumRows());
+                workData.mutable_stored()->set_num_cols(mat->getNumCols());
+                if (matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse)
+                    workData.mutable_stored()->set_type(distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64);
+                else
+                    workData.mutable_stored()->set_type(distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64);
+            }
             workData.mutable_stored()->set_filename(identification);
-            workData.mutable_stored()->set_num_rows(mat->getNumRows());
-            workData.mutable_stored()->set_num_cols(mat->getNumCols());
             break;
         }
         default: assert(false);
@@ -204,10 +286,35 @@ grpc::Status WorkerImpl::Transfer(::grpc::ServerContext *context,
                                   const ::distributed::StoredData *request,
                                   ::distributed::Matrix *response)
 {
-    Matrix<double> *mat = readOrGetMatrix(request->filename(), request->num_rows(), request->num_cols(), false);
-    auto matDense = dynamic_cast<DenseMatrix<double> *>(mat);
-    assert(matDense && "Transfer is only implemented for DenseMatrix");
-    ProtoDataConverter::convertToProto(matDense, response);
+    switch (request->type())
+    {
+    case distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64:
+        return TransferType<DenseMatrix<double>>(context, request, response);
+        break;
+    case distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64:
+        return TransferType<DenseMatrix<int64_t>>(context, request, response);
+        break;
+    case distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64:
+        return TransferType<CSRMatrix<double>>(context, request, response);
+        break;
+    case distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64:
+        return TransferType<CSRMatrix<int64_t>>(context, request, response);
+        break;
+    default:
+        // error handling
+        break;
+    }
+    return grpc::Status::CANCELLED;
+}
+
+template<class DT>
+grpc::Status WorkerImpl::TransferType(::grpc::ServerContext *context,
+                          const ::distributed::StoredData *request,
+                         ::distributed::Matrix *response)
+{
+    Matrix<typename DT::VT> *mat = readOrGetMatrix<DT>(request->filename(), request->num_rows(), request->num_cols());
+    auto matDense = dynamic_cast<DT *>(mat);    
+    mat->convertToProto(response);
     return ::grpc::Status::OK;
 }
 
@@ -246,10 +353,21 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const distributed::Work
     case distributed::WorkData::kStored: {
         const auto &stored = workInput.stored();
         // TODO: all types
-        auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();
-        assert(matTy && matTy.getElementType().isa<mlir::Float64Type>() && "We only support double matrices for now!");
-        bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;
-        return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols(), isSparse);
+        auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();        
+        bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;        
+        if (matTy.getElementType().isa<mlir::Float64Type>()) {
+            if (isSparse)
+                return readOrGetMatrix<CSRMatrix<double>>(stored.filename(), stored.num_rows(), stored.num_cols());
+            else
+                return readOrGetMatrix<DenseMatrix<double>>(stored.filename(), stored.num_rows(), stored.num_cols());
+        }
+        else {
+            if (isSparse)
+                return readOrGetMatrix<CSRMatrix<int64_t>>(stored.filename(), stored.num_rows(), stored.num_cols());
+            else
+                return readOrGetMatrix<DenseMatrix<int64_t>>(stored.filename(), stored.num_rows(), stored.num_cols());
+        }
+        break;
     }
     default:
 //        assert(false && "We only support stored data for now");
@@ -257,27 +375,30 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const distributed::Work
     }
 }
 
-Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse)
+template<class DT>
+Matrix<typename DT::VT> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols)
 {
     auto data_it = localData_.find(filename);
     if (data_it != localData_.end()) {
         // Data already cached
-        return static_cast<Matrix<double> *>(data_it->second);
+        return static_cast<Matrix<typename DT::VT> *>(data_it->second);
     }
     else {
         // Data not yet loaded -> load from file
-        Matrix<double> * m = nullptr;
-        if(isSparse) {
-            CSRMatrix<double> *m2 = nullptr;
-            read<CSRMatrix<double>>(m2, filename.c_str(), nullptr);
+        Matrix<typename DT::VT> * m = nullptr;
+        // TODO do we need to check for sparsity here? Why Dense and CSR use different read method?
+        //if(isSparse) {
+        if (std::is_same<DT, CSRMatrix<double>>() || std::is_same<DT, CSRMatrix<int64_t>>()) {
+            CSRMatrix<typename DT::VT> *m2 = nullptr;
+            read<CSRMatrix<typename DT::VT>>(m2, filename.c_str(), nullptr);
             m = m2;
         }
         else {
-            DenseMatrix<double> *m2 = nullptr;
+            DenseMatrix<typename DT::VT> *m2 = nullptr;
             struct File *file = openFile(filename.c_str());
             char delim = ',';
             // TODO use read
-            readCsv<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
+            readCsv<DenseMatrix<typename DT::VT>>(m2, file, numRows, numCols, delim);
             closeFile(file);
             m = m2;
         }
@@ -292,14 +413,35 @@ grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
                                const ::distributed::StoredData *request,
                                ::distributed::Empty *emptyMessg)
 {
+    switch (request->type())
+    {
+    case distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64:
+    case distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64:
+        return FreeMemType<int64_t>(context, request, emptyMessg);
+        break;
+    case distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64:
+    case distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64:
+        return FreeMemType<double>(context, request, emptyMessg);
+        break;
+    default:
+        break;
+    }
+    return grpc::Status::CANCELLED;
+}
+
+template<typename VT>
+grpc::Status WorkerImpl::FreeMemType(::grpc::ServerContext *context,
+                               const ::distributed::StoredData *request,
+                               ::distributed::Empty *emptyMessg)
+{
     auto filename = request->filename();
     auto data_it = localData_.find(filename);
 
     if (data_it != localData_.end()) {
-        auto * mat = reinterpret_cast<Matrix<double> *>(data_it->second);
-        if(auto m = dynamic_cast<DenseMatrix<double> *>(mat))
+        auto * mat = reinterpret_cast<Matrix<VT> *>(data_it->second);
+        if(auto m = dynamic_cast<DenseMatrix<VT> *>(mat))
             DataObjectFactory::destroy(m);
-        else if(auto m = dynamic_cast<CSRMatrix<double> *>(mat))
+        else if(auto m = dynamic_cast<CSRMatrix<VT> *>(mat))
             DataObjectFactory::destroy(m);
         localData_.erase(filename);
     }

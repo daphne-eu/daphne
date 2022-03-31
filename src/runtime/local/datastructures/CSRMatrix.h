@@ -386,6 +386,22 @@ public:
     size_t bufferSize() {
         return this->getNumItems() * sizeof(ValueType);
     }
+
+    google::protobuf::RepeatedField<ValueType> *getMutableCells(distributed::Matrix *matProto) const;
+    void convertToProto(distributed::Matrix *matProto) const override;
+    void convertToProto(distributed::Matrix *matProto,
+                        size_t rowBegin,
+                        size_t rowEnd,
+                        size_t colBegin,
+                        size_t colEnd) const override;
+
+    const google::protobuf::RepeatedField<ValueType> getCells(const distributed::Matrix *matProto);
+    void convertFromProto (const distributed::Matrix &matProto) override;
+    void convertFromProto (const distributed::Matrix &matProto,
+                            size_t rowBegin,
+                            size_t rowEnd,
+                            size_t colBegin,
+                            size_t colEnd) override;
 };
 
 template <typename ValueType>

@@ -102,6 +102,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_property_inference)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
 
+#if 0
         if (distributed_) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
@@ -112,6 +113,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
+#endif
 
         if(userConfig_.use_vectorized_exec) {
             // TODO: add inference here if we have rewrites that could apply to vectorized pipelines due to smaller sizes
@@ -120,6 +122,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
         if(userConfig_.explain_vectorized)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+        
+        if (distributed_)
+            pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
 
