@@ -134,7 +134,7 @@ obj = Nf * log(as.f64(K + 1), 10.0);  ### obj = - sum (Y * LT) + sum (log (rowSu
 
 Grad = t(X) @ (P[, 0:K] - Y[, 0:K]);
 if (icpt == 2)
-    Grad = diagMatrix(scale_X) @ Grad + shift_X @ Grad[D, ];
+    Grad = diagMatrix(scale_X) @ Grad + shift_X @ Grad[D - 1, ];
 
 Grad = Grad + lambda * B;
 norm_Grad = sqrt (sum (Grad ^ 2.0));
@@ -146,11 +146,12 @@ if (maxii == 0)
 iter = 1;
 
 # boolean for convergence check
-converge = as.si64(norm_Grad < tol); # TODO || (iter > maxi);
-if(verbose) #TODO string concat not commutative
-    print ("-- Initially:  Objective = " + obj + ",  Gradient Norm = " + norm_Grad + ",  Trust Delta = " + delta);
+converge = as.si64(norm_Grad < tol) || (iter > maxi);
+if(verbose) { #TODO string concat not commutative
+    print ("-- Initially:  Objective = ",0,0); print(obj + ",  Gradient Norm = " + norm_Grad + ",  Trust Delta = " + delta);
+}
 
-while (iter < maxi) #TODO !converge
+while ( converge != 1 ) #TODO !converge
 {
     # SOLVE TRUST REGION SUB-PROBLEM
     S = fill(0.0, D, K);
@@ -159,16 +160,16 @@ while (iter < maxi) #TODO !converge
     delta2 = delta ^ 2.0;
     inneriter = 1;
     norm_R2 = sum (R ^ 2.0);
-    ninnerconverge = as.si64(sqrt (norm_R2) > psi * norm_Grad);
+    innerconverge = as.si64(sqrt (norm_R2) <= psi * norm_Grad);
     is_trust_boundary_reached = 0;
 
     P_1K = P [, 0:K];
-    while( ninnerconverge ) #TODO !innerconverge support
+    while( innerconverge != 1 ) #TODO !innerconverge support
     {
         ssX_V = V;
         if (icpt == 2) {
             ssX_V = diagMatrix(scale_X) @ V;
-            ssX_V[D, ] = ssX_V[D, ] + t(shift_X) @ V;
+            ssX_V[D - 1, ] = ssX_V[D - 1, ] + t(shift_X) @ V;
         }
 
         Q = P_1K * (X @ ssX_V);
@@ -182,8 +183,8 @@ while (iter < maxi) #TODO !converge
         Snew = S + V * alpha;
         norm_Snew2 = sum(Snew ^ 2.0);
 
-        R = R; S = S; V = V; # TODO remove forward refs
-        ninnerconverge = ninnerconverge; norm_R2 = norm_R2;
+        R = R; S = S; # TODO remove forward refs
+        innerconverge = innerconverge; norm_R2 = norm_R2;
         is_trust_boundary_reached =  is_trust_boundary_reached;
 
         if (norm_Snew2 <= delta2) {
@@ -192,7 +193,7 @@ while (iter < maxi) #TODO !converge
             old_norm_R2 = norm_R2; 
             norm_R2 = sum (R ^ 2.0);
             V = R +  V * (norm_R2 / old_norm_R2);
-            ninnerconverge = as.si64(sqrt (norm_R2) > psi * norm_Grad);
+            innerconverge = as.si64(sqrt (norm_R2) <= psi * norm_Grad);
         } 
         else {
             is_trust_boundary_reached = 1;
@@ -205,11 +206,11 @@ while (iter < maxi) #TODO !converge
                 alpha = (delta2 - s2) / (sv + rad);
             S = S + V * alpha;
             R = R - HV * alpha;
-            ninnerconverge = 0;
+            innerconverge = 1;
         }
 
         inneriter = inneriter + 1;
-        ninnerconverge = ninnerconverge && (inneriter <= maxii);
+        innerconverge = innerconverge || (inneriter > maxii);
     }
 
     # END TRUST REGION SUB-PROBLEM
@@ -220,7 +221,7 @@ while (iter < maxi) #TODO !converge
     ssX_B_new = B_new;
     if (icpt == 2) {
         ssX_B_new = diagMatrix(scale_X) @ B_new;
-        ssX_B_new [D, ] = ssX_B_new [D, ] + t(shift_X) @ B_new;
+        ssX_B_new [D - 1, ] = ssX_B_new [D - 1, ] + t(shift_X) @ B_new;
     } 
     
     LT = cbind ((X @ ssX_B_new), fill(0.0, N, 1));
@@ -237,17 +238,14 @@ while (iter < maxi) #TODO !converge
     is_rho_accepted = (rho > eta0);
     snorm = sqrt(sum(S ^ 2.0));
 
-    delta = delta; #TODO live variable analysis
     if (iter == 1) 
       delta = min(delta, snorm);
 
     alpha2 = obj_new - obj - gs;
     alpha = max(sigma1, -0.5 * gs / alpha2);
-    if(alpha2 <= 0.0) #TODO ifelse
+    if(alpha2 <= 0.0)
         alpha = sigma3;
 
-/* 
-    delta = delta; # TODO live variable analysis (nested)
     if (rho < eta0)
         delta = min (max (alpha, sigma1) * snorm, sigma2 * delta);
     else if (rho < eta1)
@@ -256,38 +254,39 @@ while (iter < maxi) #TODO !converge
         delta = max (sigma1 * delta, min(alpha * snorm, sigma3 * delta));
     else
         delta = max (delta, min(alpha * snorm, sigma3 * delta));
-*/
 
     if(verbose) {
-        if (is_trust_boundary_reached == 1)
-            print("-- Outer Iteration " + iter + ": Had "
+        if (is_trust_boundary_reached == 1) {
+            print("-- Outer Iteration ",0,0); print(iter + ": Had "
                 + (inneriter - 1) + " CG iterations, trust bound REACHED");
-        else
-            print ("-- Outer Iteration " + iter + ": Had " + (inneriter - 1) + " CG iterations");
-        print("   -- Obj.Reduction:  Actual = " + actred + ",  Predicted = " + qk + 
+        } else {
+            print ("-- Outer Iteration ",0,0); print(iter + ": Had " + (inneriter - 1) + " CG iterations");
+        }
+        print("   -- Obj.Reduction:  Actual = ",0,0); print(actred + ",  Predicted = " + qk + 
               "  (A/P: " + (round (10000.0 * rho) / 10000.0) + "),  Trust Delta = " + delta);
     }
 
     B = B; Grad = Grad; P = P; # TODO avoid forward ref
-    norm_Grad = norm_Grad; obj = obj;
+    norm_Grad = norm_Grad; 
     if (is_rho_accepted) {
         B = B_new;
         P = P_new;
         Grad = t(X) @ (P[, 0:K] - Y[, 0:K]);
         if (icpt == 2)
-            Grad = diagMatrix(scale_X) @ Grad + shift_X @ Grad [D, ];
+            Grad = diagMatrix(scale_X) @ Grad + shift_X @ Grad [D - 1, ];
 
         Grad = Grad + lambda * B;
         norm_Grad = sqrt (sum(Grad ^ 2.0));
         obj = obj_new;
       
-        if(verbose)
-            print("   -- New Objective = " + obj + ",  Beta Change Norm = "
+        if(verbose) {
+            print("   -- New Objective = ",0,0); print(obj + ",  Beta Change Norm = "
                 + snorm + ",  Gradient Norm = " + norm_Grad);
+        }
     }
 
     iter = iter + 1;
-    converge = (as.si64(norm_Grad < (tol * norm_Grad_initial)) || as.si64(iter > maxi) ||
+    converge = (as.si64(norm_Grad < (tol * norm_Grad_initial)) || iter > maxi ||
       (as.si64(is_trust_boundary_reached == 0) && as.si64(abs (actred) < (abs (obj) + abs (obj_new)) * 10.0^(-14.0))));
     if (as.si64(verbose) && converge) 
         print ("Termination / Convergence condition satisfied.");
@@ -296,7 +295,7 @@ while (iter < maxi) #TODO !converge
 betas = B;
 if (icpt == 2) {
     betas = diagMatrix(scale_X) @ B;
-    betas[D,] = betas[D,] + t(shift_X) @ B;
+    betas[D - 1,] = betas[D - 1,] + t(shift_X) @ B;
 }
 
 writeMatrix(betas, $B);

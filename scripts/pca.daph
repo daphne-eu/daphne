@@ -86,6 +86,5 @@ Xout = X @ evec_dominant;
 Mout = evec_dominant;
 
 # Write out results
-# TODO segmentation fault on write
 writeMatrix(Xout, $Xout);
 writeMatrix(Xout, $Mout);
