@@ -25,12 +25,12 @@ The system will be built up and extended gradually in the course of the project.
 
 ### Getting Started
 
-- Find information on [getting started](https://github.com/daphne-eu/daphne/blob/master/doc/GettingStarted.md) in the documentation.
+- Find information on [getting started](doc/GettingStarted.md) in the documentation.
 
 ### Getting Involved
 
-- Read our [contribution guidelines](https://github.com/daphne-eu/daphne/blob/master/CONTRIBUTING.md).
+- Read our [contribution guidelines](CONTRIBUTING.md).
 
-- Have a look at the [documentation](https://github.com/daphne-eu/daphne/tree/master/doc).
+- Have a look at the [documentation](doc).
 
 - [Browse open issues](https://github.com/daphne-eu/daphne/issues) (e.g. ["good first issues"](https://github.com/daphne-eu/daphne/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)) or [create a new issue](https://github.com/daphne-eu/daphne/issues/new).

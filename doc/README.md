@@ -16,7 +16,7 @@ limitations under the License.
 
 # Documentation
 
-- [Getting Started](https://github.com/daphne-eu/daphne/blob/master/doc/GettingStarted.md)
+- [Getting Started](doc/GettingStarted.md)
 
 ## User Documentation
 
@@ -26,10 +26,10 @@ limitations under the License.
 
 ### How-tos and Guidelines
 
-- [Implementing a Built-in Kernel](https://github.com/daphne-eu/daphne/blob/master/doc/ImplementBuiltinKernel.md)
-- [Binary Data Format](https://github.com/daphne-eu/daphne/blob/master/doc/BinaryFormat.md)
-- [DAPHNE Configuration: Getting Information from the User](https://github.com/daphne-eu/daphne/blob/master/doc/Config.md)
-- [Extending DAPHNE with more scheduling knobs](https://github.com/daphne-eu/daphne/blob/master/doc/ExtendingSchedulingKnobs.md)
+- [Implementing a Built-in Kernel](doc/ImplementBuiltinKernel.md)
+- [Binary Data Format](doc/BinaryFormat.md)
+- [DAPHNE Configuration: Getting Information from the User](doc/Config.md)
+- [Extending DAPHNE with more scheduling knobs](doc/ExtendingSchedulingKnobs.md)
 
 ### Source Code Documentation
 
