@@ -170,14 +170,14 @@ Of course, that depends on what the kernel is supposed to do, but there some rec
 
 ### Concrete Examples
 
-For concrete examples, please have a look at existing kernel implementations in [src/runtime/local/kernels](src/runtime/local/kernels).
+For concrete examples, please have a look at existing kernel implementations in [src/runtime/local/kernels](/src/runtime/local/kernels).
 For instance, the following kernels represent some interesting cases:
-- [ewBinarySca](src/runtime/local/kernels/EwBinarySca.h) works only on scalars.
-- [ewBinaryMat](src/runtime/local/kernels/EwBinaryMat.h) works only on matrices.
-- [ewBinaryObjSca](src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.
-- [matMul](src/runtime/local/kernels/MatMul.h) delegates to an external library (OpenBLAS).
+- [ewBinarySca](/src/runtime/local/kernels/EwBinarySca.h) works only on scalars.
+- [ewBinaryMat](/src/runtime/local/kernels/EwBinaryMat.h) works only on matrices.
+- [ewBinaryObjSca](/src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.
+- [matMul](/src/runtime/local/kernels/MatMul.h) delegates to an external library (OpenBLAS).
 
 ### Test Cases
 
 Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
-Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](src/runtime/local/kernels) (surely, these could still be improved).
+Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](/src/runtime/local/kernels) (surely, these could still be improved).

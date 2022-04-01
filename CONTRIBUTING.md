@@ -42,7 +42,7 @@ Please note that you can create as many branches and merge requests as you want,
 
 - *Cloning the repository.*
 
-  `git clone --recursive https://github.com/daphne-eu/daphne.git`, as described in [Getting Started](doc/GettingStarted.md).
+  `git clone --recursive https://github.com/daphne-eu/daphne.git`, as described in [Getting Started](/doc/GettingStarted.md).
 
 - *Working on your own branch.*
   

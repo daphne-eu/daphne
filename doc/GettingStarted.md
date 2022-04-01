@@ -157,6 +157,6 @@ On the top-level, there are the following directories:
 ### What Next?
 
 You might want to have a look at
-- the [documentation](doc)
-- the [contribution guidelines](CONTRIBUTING.md)
+- the [documentation](/doc)
+- the [contribution guidelines](/CONTRIBUTING.md)
 - the [open issues](https://github.com/daphne-eu/daphne/issues)

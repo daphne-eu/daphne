@@ -16,7 +16,7 @@ limitations under the License.
 
 # Documentation
 
-- [Getting Started](doc/GettingStarted.md)
+- [Getting Started](/doc/GettingStarted.md)
 
 ## User Documentation
 
@@ -26,10 +26,10 @@ limitations under the License.
 
 ### How-tos and Guidelines
 
-- [Implementing a Built-in Kernel](doc/ImplementBuiltinKernel.md)
-- [Binary Data Format](doc/BinaryFormat.md)
-- [DAPHNE Configuration: Getting Information from the User](doc/Config.md)
-- [Extending DAPHNE with more scheduling knobs](doc/ExtendingSchedulingKnobs.md)
+- [Implementing a Built-in Kernel](/doc/ImplementBuiltinKernel.md)
+- [Binary Data Format](/doc/BinaryFormat.md)
+- [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
+- [Extending DAPHNE with more scheduling knobs](/doc/ExtendingSchedulingKnobs.md)
 
 ### Source Code Documentation
 
