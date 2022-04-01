@@ -180,4 +180,4 @@ For instance, the following kernels represent some interesting cases:
 ### Test Cases
 
 Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
-Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](/src/runtime/local/kernels) (surely, these could still be improved).
+Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](/test/runtime/local/kernels) (surely, these could still be improved).
