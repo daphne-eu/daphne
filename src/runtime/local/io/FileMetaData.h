@@ -29,121 +29,178 @@
 
 /**
  * @brief Very simple representation of basic file meta data.
- * 
+ *
  * Currently tailored to frames.
  */
-struct FileMetaData {
+struct FileMetaData
+{
     const size_t numRows;
     const size_t numCols;
     bool isSingleValueType;
     std::vector<ValueTypeCode> schema;
     std::vector<std::string> labels;
     const ssize_t numNonZeros;
-    
+
     FileMetaData(
-            size_t numRows,
-            size_t numCols,
-            bool isSingleValueType,
-            std::vector<ValueTypeCode> schema,
-            std::vector<std::string> labels,
-            ssize_t numNonZeros = -1
-    ) :
-            numRows(numRows), numCols(numCols),
-            isSingleValueType(isSingleValueType), schema(schema),
-            labels(labels), numNonZeros(numNonZeros)
+        size_t numRows,
+        size_t numCols,
+        bool isSingleValueType,
+        std::vector<ValueTypeCode> schema,
+        std::vector<std::string> labels,
+        ssize_t numNonZeros = -1) : numRows(numRows), numCols(numCols),
+                                    isSingleValueType(isSingleValueType), schema(schema),
+                                    labels(labels), numNonZeros(numNonZeros)
     {
         //
     }
-    
+
     static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode vtc)
     {
         std::string vtc_;
-             if(vtc == ValueTypeCode::F64)  vtc_ = "f64";
-        else if(vtc == ValueTypeCode::F32)  vtc_ = "f32";
-        else if(vtc == ValueTypeCode::SI64) vtc_ = "si64";
-        else if(vtc == ValueTypeCode::SI32) vtc_ = "si32";
-        else if(vtc == ValueTypeCode::SI8)  vtc_ = "si8";
-        else if(vtc == ValueTypeCode::UI64) vtc_ = "ui64";
-        else if(vtc == ValueTypeCode::UI32) vtc_ = "ui32";
-        else if(vtc == ValueTypeCode::UI8)  vtc_ = "ui8";
-        else throw std::runtime_error("unknown value type code");
+        if (vtc == ValueTypeCode::F64)
+            vtc_ = "f64";
+        else if (vtc == ValueTypeCode::F32)
+            vtc_ = "f32";
+        else if (vtc == ValueTypeCode::SI64)
+            vtc_ = "si64";
+        else if (vtc == ValueTypeCode::SI32)
+            vtc_ = "si32";
+        else if (vtc == ValueTypeCode::SI8)
+            vtc_ = "si8";
+        else if (vtc == ValueTypeCode::UI64)
+            vtc_ = "ui64";
+        else if (vtc == ValueTypeCode::UI32)
+            vtc_ = "ui32";
+        else if (vtc == ValueTypeCode::UI8)
+            vtc_ = "ui8";
+        else
+            throw std::runtime_error("unknown value type code");
         std::ofstream ofs(filename + ".meta", std::ios::out);
         if (!ofs.good())
             throw std::runtime_error(
-                    "could not open file '" + filename +
-                    "' for writing meta data"
-            );
-        if(ofs.is_open())
+                "could not open file '" + filename +
+                "' for writing meta data");
+        if (ofs.is_open())
             ofs << numRows << "," << numCols << "," << isSingleValueType << "," << vtc_;
     }
-    
+    static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, const ValueTypeCode *schema, const std::string * labels)
+    {
+        std::string vtc_;
+        std::ofstream ofs(filename + ".meta", std::ios::out);
+        if (!ofs.good())
+            throw std::runtime_error(
+                "could not open file '" + filename +
+                "' for writing meta data");
+        if (ofs.is_open())
+        {
+            ofs << numRows << "," << numCols << "," << isSingleValueType;
+            for (size_t i = 0; i < numCols; i++)
+            {
+                if (schema[i] == ValueTypeCode::F64)
+                    ofs << ",f64";
+                else if (schema[i] == ValueTypeCode::F32)
+                    ofs << ",f32";
+                else if (schema[i] == ValueTypeCode::SI64)
+                    ofs << ",si64";
+                else if (schema[i] == ValueTypeCode::SI32)
+                    ofs << ",si32";
+                else if (schema[i] == ValueTypeCode::SI8)
+                    ofs << ",si8";
+                else if (schema[i] == ValueTypeCode::UI64)
+                    ofs << ",ui64";
+                else if (schema[i] == ValueTypeCode::UI32)
+                    ofs << ",ui32";
+                else if (schema[i] == ValueTypeCode::UI8)
+                    ofs << ",ui8";
+                else
+                    throw std::runtime_error("unknown value type code");
+            }
+            for(size_t i = 0; i < numCols; i++)
+            {
+                ofs <<","<<labels[i];
+            }
+        }
+    }
     /**
      * @brief Retrieves the file meta data for the specified file.
-     * 
+     *
      * @param filename The name of the file for which to retrieve the meta
      * data. Note that the extension ".meta" is appended to this filename to
      * determine the name of the meta data file.
      * @return The meta data of the specified file.
      */
-    static FileMetaData ofFile(const std::string filename) {
+    static FileMetaData ofFile(const std::string filename)
+    {
         std::ifstream ifs(filename + ".meta", std::ios::in);
         if (!ifs.good())
             throw std::runtime_error(
-                    "could not open file '" + filename +
-                    "' for reading meta data"
-            );
+                "could not open file '" + filename +
+                "' for reading meta data");
 
         const size_t bufSize = 1024;
         char buf[bufSize];
 
         ifs.getline(buf, bufSize, ',');
         const size_t numRows = atoll(buf);
-        
+
         ifs.getline(buf, bufSize, ',');
         const size_t numCols = atoll(buf);
-        
+
         ifs.getline(buf, bufSize, ',');
         const bool isSingleValueType = atoi(buf);
 
         std::vector<ValueTypeCode> schema;
         const size_t expectedNumColTypes = isSingleValueType ? 1 : numCols;
-        for(size_t i = 0; i < expectedNumColTypes; i++) {
+        for (size_t i = 0; i < expectedNumColTypes; i++)
+        {
             ifs.getline(buf, bufSize, ',');
             ValueTypeCode vtc;
-                 if(!strncmp(buf, "f64" , bufSize)) vtc = ValueTypeCode::F64;
-            else if(!strncmp(buf, "f32" , bufSize)) vtc = ValueTypeCode::F32;
-            else if(!strncmp(buf, "si64", bufSize)) vtc = ValueTypeCode::SI64;
-            else if(!strncmp(buf, "si32", bufSize)) vtc = ValueTypeCode::SI32;
-            else if(!strncmp(buf, "si8" , bufSize)) vtc = ValueTypeCode::SI8;
-            else if(!strncmp(buf, "ui64", bufSize)) vtc = ValueTypeCode::UI64;
-            else if(!strncmp(buf, "ui32", bufSize)) vtc = ValueTypeCode::UI32;
-            else if(!strncmp(buf, "ui8" , bufSize)) vtc = ValueTypeCode::UI8;
+            if (!strncmp(buf, "f64", bufSize))
+                vtc = ValueTypeCode::F64;
+            else if (!strncmp(buf, "f32", bufSize))
+                vtc = ValueTypeCode::F32;
+            else if (!strncmp(buf, "si64", bufSize))
+                vtc = ValueTypeCode::SI64;
+            else if (!strncmp(buf, "si32", bufSize))
+                vtc = ValueTypeCode::SI32;
+            else if (!strncmp(buf, "si8", bufSize))
+                vtc = ValueTypeCode::SI8;
+            else if (!strncmp(buf, "ui64", bufSize))
+                vtc = ValueTypeCode::UI64;
+            else if (!strncmp(buf, "ui32", bufSize))
+                vtc = ValueTypeCode::UI32;
+            else if (!strncmp(buf, "ui8", bufSize))
+                vtc = ValueTypeCode::UI8;
             else
                 throw std::runtime_error(
-                        std::string("unknown value type: ") + buf
-                );
+                    std::string("unknown value type: ") + buf);
             schema.push_back(vtc);
         }
-        
+
         std::vector<std::string> labels;
 
         // TODO: number of non zeros should not require labels to be set (improve meta format)
         ssize_t numNonZeros = -1;
         // Labels are optional.
-        if(!ifs.eof()) {
+        if (!ifs.eof())
+        {
             ifs.getline(buf, bufSize, ',');
             std::string optLine(buf);
             size_t i = 0;
-            if(optLine.find("nnz=") == 0) {
+            if (optLine.find("nnz=") == 0)
+            {
                 numNonZeros = std::stoll(optLine.substr(std::strlen("nnz=")));
             }
-            else {
+            else
+            {
                 // If we have not reached the end of the stream yet.
                 labels.emplace_back(buf);
                 i++;
             }
-            if(!ifs.eof()) {
-                for(; i < numCols ; i++) {
+            if (!ifs.eof())
+            {
+                for (; i < numCols; i++)
+                {
                     ifs.getline(buf, bufSize, ',');
                     labels.emplace_back(buf);
                 }
@@ -155,4 +212,4 @@ struct FileMetaData {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_IO_FILEMETADATA_H
+#endif // SRC_RUNTIME_LOCAL_IO_FILEMETADATA_H
