@@ -90,10 +90,13 @@ set(TEST_SOURCES
         runtime/local/kernels/SliceRowTest.cpp
         runtime/local/kernels/SolveTest.cpp
         runtime/local/kernels/SyrkTest.cpp
+        runtime/local/kernels/ThetaJoinTest.cpp
         runtime/local/kernels/TransposeTest.cpp
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+
+#        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -127,3 +130,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 target_link_libraries(run_tests PRIVATE ${LIBS})
+
+add_executable(theta_join_test run_tests.cpp runtime/local/kernels/ThetaJoinTest.cpp)
+add_dependencies(theta_join_test daphne DistributedWorker)
+target_link_libraries(theta_join_test PRIVATE ${LIBS})
+target_compile_options(theta_join_test PUBLIC -g -O0)

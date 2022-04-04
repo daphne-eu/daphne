@@ -19,7 +19,7 @@ limitations under the License.
 ### Background
 
 (Almost) every DaphneIR operation will be backed by a kernel (= physical operator) at run-time.
-Extensibility w.r.t. kernels is one on the core goals of the DAPHNE Prototype.
+Extensibility w.r.t. kernels is one on the core goals of the DAPHNE system.
 It shall be easy for a user to add a custom kernel.
 However, the system will offer a full set of built-in kernels so that all DaphneIR operations can be used out-of-the-box.
 
@@ -166,18 +166,18 @@ Of course, that depends on what the kernel is supposed to do, but there some rec
   The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
   However, in the end it is always a trade-off between performance and code complexity.
   For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
-  Nevertheless, since the DAPHNE Prototype should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.
+  Nevertheless, since the DAPHNE system should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.
 
 ### Concrete Examples
 
-For concrete examples, please have a look at existing kernel implementations in [src/runtime/local/kernels](https://gitlab.know-center.tugraz.at/daphne/prototype/-/tree/master/src/runtime/local/kernels).
+For concrete examples, please have a look at existing kernel implementations in [src/runtime/local/kernels](/src/runtime/local/kernels).
 For instance, the following kernels represent some interesting cases:
-- [ewBinarySca](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinarySca.h) works only on scalars.
-- [ewBinaryMat](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinaryMat.h) works only on matrices.
-- [ewBinaryObjSca](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.
-- [matMul](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/src/runtime/local/kernels/MatMul.h) delegates to an external library (OpenBLAS).
+- [ewBinarySca](/src/runtime/local/kernels/EwBinarySca.h) works only on scalars.
+- [ewBinaryMat](/src/runtime/local/kernels/EwBinaryMat.h) works only on matrices.
+- [ewBinaryObjSca](/src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.
+- [matMul](/src/runtime/local/kernels/MatMul.h) delegates to an external library (OpenBLAS).
 
 ### Test Cases
 
 Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
-Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](https://gitlab.know-center.tugraz.at/daphne/prototype/-/tree/master/test/runtime/local/kernels) (surely, these could still be improved).
+Please have a look at test cases for existing kernel implementations in [test/runtime/local/kernels](/test/runtime/local/kernels) (surely, these could still be improved).

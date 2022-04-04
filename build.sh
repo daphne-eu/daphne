@@ -278,11 +278,16 @@ if ! is_dependency_installed "antlr_v${antlrVersion}"; then
     if [ ! -f "$antlrCppRuntimeZipName" ]; then
       daphne_msg "Download Antlr v${antlrVersion} Runtime"
       rm -rf "${antlrCppRuntimeDirName}"
+      mkdir --parents "${thirdpartyPath}/${antlrCppRuntimeDirName}"
       wget https://www.antlr.org/download/$antlrCppRuntimeZipName
       unzip "$antlrCppRuntimeZipName" -d "$antlrCppRuntimeDirName"
     fi
-    mkdir --parents "$antlrCppRuntimeDirName"
-    cd "${antlrCppRuntimeDirName}"
+
+    # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
+    # until we upgrade to antlr4-4.9.3+
+    sed -i 's#git://github.com#https://github.com#' runtime/CMakeLists.txt
+
+    cd "${thirdpartyPath}/${antlrCppRuntimeDirName}"
     rm -rf ./build
     mkdir -p build
     mkdir -p run
