@@ -17,6 +17,8 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
 # -------------------------------------------------------------
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 from api.python.script_building.dag import DAGNode, OutputType

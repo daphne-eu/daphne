@@ -1,0 +1,58 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
+#-------------------------------------------------------------
+
+# Implements Gaussian Nonnegative Matrix Factorization (GNMF)
+#
+# [Chao Liu, Hung-chih Yang, Jinliang Fan, Li-Wei He, Yi-Min Wang:
+# Distributed nonnegative matrix factorization for web-scale dyadic 
+# data analysis on mapreduce. WWW 2010: 681-690]
+
+rnk = $rank;
+eps = 10.0^-8.0;
+maxi = 20;
+
+# read sparse ratings matrix 
+# X = readMatrix($X); #TODO Matrix Market
+n = as.f64($n);
+e = as.f64($e);
+X = rand(2.0*n, n, 1.0, 1.0, 2.0*e/n^2.0, -1);
+
+# initialize factors W and H
+W = rand(nrow(X), rnk, -0.05, 0.05, 1.0, -1);
+H = rand(rnk, ncol(X), -0.05, 0.05, 1.0, -1);
+
+#TODO remove workaround for dt change DenseMatrix-Matrix
+H = H * ((t(W) @ X) / (((t(W) @ W) @ H)+eps));
+W = W * ((X @ t(H)) / ((W @ (H @ t(H)))+eps));
+
+# apply update rules for maxi iterations
+i = 0;
+while(i < maxi) {
+    H = H * ((t(W) @ X) / (((t(W) @ W) @ H)+eps));
+    W = W * ((X @ t(H)) / ((W @ (H @ t(H)))+eps));
+    i = i + 1;
+}
+
+# write factors W and H
+writeMatrix(W, $W);
+writeMatrix(H, $H);

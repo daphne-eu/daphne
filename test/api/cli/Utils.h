@@ -227,6 +227,32 @@ void checkDaphneStatusCodeSimple(StatusCode exp, const std::string & dirPath, co
 }
 
 /**
+ * @brief Checks whether executing the given DaphneDSL script with the command
+ * line interface of the DAPHNE Prototype fails.
+ * 
+ * This is the case when the return code is not `StatusCode::SUCCESS`.
+ * 
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * @param args The arguments to pass in addition to the script's path. Note
+ * that script arguments must be passed via the `--args` option for this
+ * utility function. Despite the variadic template, each element should be of
+ * type `char *`. The last one does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void checkDaphneFails(const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+
+    CHECK(status != StatusCode::SUCCESS);
+}
+
+template<typename... Args>
+void checkDaphneFailsSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    checkDaphneFails(dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
+}
+
+/**
  * @brief Compares the standard output of executing the given DaphneDSL script
  * with the command line interface of the DAPHNE Prototype to a reference text.
  * 

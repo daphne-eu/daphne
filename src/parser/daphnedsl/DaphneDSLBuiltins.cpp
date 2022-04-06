@@ -579,30 +579,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // TODO Add built-in functions for those.
 
     // ********************************************************************
-    // Left and right indexing
-    // ********************************************************************
-
-    if(func == "sliceRow") {
-        checkNumArgsExact(func, numArgs, 3);
-        mlir::Value arg = args[0];
-        mlir::Value rowLowerIncl = utils.castSizeIf(args[1]);
-        mlir::Value rowUpperExcl = utils.castSizeIf(args[2]);
-        return static_cast<mlir::Value>(builder.create<SliceRowOp>(
-                loc, arg.getType(), arg, rowLowerIncl, rowUpperExcl
-        ));
-    }
-    if(func == "insertRow") {
-        checkNumArgsExact(func, numArgs, 4);
-        mlir::Value dst = args[0];
-        mlir::Value src = args[1];
-        mlir::Value rowLowerIncl = utils.castSizeIf(args[2]);
-        mlir::Value rowUpperExcl = utils.castSizeIf(args[3]);
-        return builder.create<InsertRowOp>(
-                loc, dst, src, rowLowerIncl, rowUpperExcl
-        );
-    }
-
-    // ********************************************************************
     // Reorganization
     // ********************************************************************
 
@@ -665,6 +641,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ********************************************************************
     // Matrix decompositions & co
     // ********************************************************************
+
+    if( func == "eigen" ) {
+        checkNumArgsExact(func, numArgs, 1);
+        //TODO JIT-Engine invocation failed: Failed to materialize symbols
+        return builder.create<EigenOp>(loc,
+            args[0].getType(), args[0].getType(), args[0]).getResults();
+    }
 
     // TODO Add built-in functions for those.
 
@@ -838,8 +821,16 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1]
         ));
     }
-    if(func == "innerJoin")
-        return createJoinOp<InnerJoinOp>(loc, func, args);
+    if(func == "innerJoin"){
+        checkNumArgsExact(func, numArgs, 4);
+        std::vector<mlir::Type> colTypes;
+        for(int i = 0; i < 2; i++)
+            for(mlir::Type t : args[i].getType().dyn_cast<FrameType>().getColumnTypes())
+                colTypes.push_back(t);
+        return static_cast<mlir::Value>(builder.create<InnerJoinOp>(
+                loc, FrameType::get(builder.getContext(), colTypes), args[0], args[1], args[2], args[3]
+        ));
+    }
     if(func == "fullOuterJoin")
         return createJoinOp<FullOuterJoinOp>(loc, func, args);
     if(func == "leftOuterJoin")

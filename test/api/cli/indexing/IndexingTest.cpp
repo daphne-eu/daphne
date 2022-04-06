@@ -38,10 +38,14 @@ const std::string dirPath = "test/api/cli/indexing/";
     TEST_CASE(name ", failure", TAG_INDEXING) { \
         for(unsigned i = 1; i <= count; i++) { \
             DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name "_failure", i); \
+                checkDaphneFailsSimple(dirPath, name "_failure", i); \
             } \
         } \
     }
 
 MAKE_SUCCESS_TEST_CASE("right_indexing", 4)
 MAKE_FAILURE_TEST_CASE("right_indexing", 6)
+        
+// TODO Add a test case for multi-assignments (`X[...], Y[...] = ...`).
+MAKE_SUCCESS_TEST_CASE("left_indexing", 3)
+MAKE_FAILURE_TEST_CASE("left_indexing", 7)

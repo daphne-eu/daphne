@@ -18,6 +18,7 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
+#include <runtime/local/vectorized/LoadPartitioning.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -36,16 +37,10 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <vector>
 
 using namespace std;
 using namespace mlir;
 using namespace llvm::cl;
-
-void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
-     "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
-}
 
 void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<string, string>& scriptArgsFinal) {
     for(const std::string& pair : scriptArgsCli) {
@@ -67,15 +62,57 @@ main(int argc, char** argv)
     // Parse command line arguments
     // ************************************************************************
     
-    // Option categories.
+    // ------------------------------------------------------------------------
+    // Define options
+    // ------------------------------------------------------------------------
+    
+    // Option categories ------------------------------------------------------
+    
     // TODO We will probably subdivide the options into multiple groups later.
     OptionCategory daphneOptions("DAPHNE Options");
 
-    // Options.
+    // Options ----------------------------------------------------------------
+    
+    // Scheduling options
+
+    opt<SelfSchedulingScheme> taskPartitioningScheme(
+            cat(daphneOptions), desc("Choose task partitioning scheme:"),
+            values(
+                clEnumVal(STATIC , "Static (default)"),
+                clEnumVal(SS, "Self-scheduling"),
+                clEnumVal(GSS, "Guided self-scheduling"),
+                clEnumVal(TSS, "Trapezoid self-scheduling"),
+                clEnumVal(FAC2, "Factoring self-scheduling"),
+                clEnumVal(TFSS, "Trapezoid Factoring self-scheduling"),
+                clEnumVal(FISS, "Fixed-increase self-scheduling"),
+                clEnumVal(VISS, "Variable-increase self-scheduling"),
+                clEnumVal(PLS, "Performance loop-based self-scheduling"),
+                clEnumVal(MSTATIC, "Modified version of Static, i.e., instead of n/p, it uses n/(4*p) where n is number of tasks and p is number of threads"),
+                clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
+                clEnumVal(PSS, "Probabilistic self-scheduling")
+            )
+    );
+
+    opt<int> numberOfThreads(
+            "num-threads", cat(daphneOptions),
+            desc(
+                "Define the number of the CPU threads used by the vectorized execution engine "
+                "(default is equal to the number of physcial cores on the target node that executes the code)"
+            )
+    );
+    opt<int> minimumTaskSize(
+            "grain-size", cat(daphneOptions),
+            desc(
+                "Define the minimum grain size of a task (default is 1)"
+            )
+    );
     opt<bool> useVectorizedPipelines(
             "vec", cat(daphneOptions),
             desc("Enable vectorized execution engine")
     );
+    
+    // Other options
+    
     opt<bool> noObjRefMgnt(
             "no-obj-ref-mgnt", cat(daphneOptions),
             desc(
@@ -117,11 +154,15 @@ main(int argc, char** argv)
             CommaSeparated
     );
 
-    // Positional arguments.
+    // Positional arguments ---------------------------------------------------
+    
     opt<string> inputFile(Positional, desc("script"), Required);
     llvm::cl::list<string> scriptArgs2(ConsumeAfter, desc("[arguments]"));
 
-    // Parse arguments.
+    // ------------------------------------------------------------------------
+    // Parse arguments
+    // ------------------------------------------------------------------------
+    
     HideUnrelatedOptions(daphneOptions);
     extrahelp(
             "\nEXAMPLES:\n\n"
@@ -134,22 +175,25 @@ main(int argc, char** argv)
             argc, argv,
             "The DAPHNE Prototype.\n\nThis program compiles and executes a DaphneDSL script.\n"
     );
-    
+
     // ************************************************************************
     // Process parsed arguments
     // ************************************************************************
-    
+
     // Initialize user configuration.
-    
+
     DaphneUserConfig user_config{};
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.explain_kernels = explainKernels;
-    user_config.libdir = libDir;
+    user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
-    
+    user_config.taskPartitioningScheme = taskPartitioningScheme;
+    user_config.numberOfThreads = numberOfThreads;
+    user_config.minimumTaskSize = minimumTaskSize;
+
     if(cuda) {
         int device_count = 0;
 #ifdef USE_CUDA
@@ -176,7 +220,7 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
+
     // ************************************************************************
     // Compile and execute script
     // ************************************************************************
@@ -204,18 +248,30 @@ main(int argc, char** argv)
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
-    // Further process the module, including optimization and lowering passes.
-    if (!executor.runPasses(moduleOp)) {
+
+    // Further, process the module, including optimization and lowering passes.
+    try{
+        if (!executor.runPasses(moduleOp)) {
+            return StatusCode::PASS_ERROR;
+        }
+    }
+    catch(std::exception & e){
+        std::cerr << "Pass error: " << e.what() << std::endl;
         return StatusCode::PASS_ERROR;
     }
 
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
-    auto engine = executor.createExecutionEngine(moduleOp);
-    auto error = engine->invoke("main");
-    if (error) {
-        llvm::errs() << "JIT-Engine invocation failed: " << error;
+    try{
+        auto engine = executor.createExecutionEngine(moduleOp);
+        auto error = engine->invoke("main");
+        if (error) {
+            llvm::errs() << "JIT-Engine invocation failed: " << error;
+            return StatusCode::EXECUTION_ERROR;
+        }
+    }
+    catch(std::exception & e){
+        std::cerr << "Execution error: " << e.what() << std::endl;
         return StatusCode::EXECUTION_ERROR;
     }
 

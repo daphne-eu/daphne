@@ -17,6 +17,8 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
 # -------------------------------------------------------------
 from itertools import chain
 from typing import Dict, Iterable, Sequence

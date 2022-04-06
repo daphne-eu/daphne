@@ -28,33 +28,113 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 #include <utility>
 
 class SQLVisitor : public SQLGrammarVisitor {
 
     ParserUtils utils;
-
     mlir::OpBuilder builder;
-    mlir::Value currentFrame;
+    ScopedSymbolTable symbolTable;
 
-//  PREFIX SHOULD NOT CONTAIN THE DOT.
-    //framename, prefix
-    std::unordered_map <std::string, std::string> framePrefix;
-    //prefix, framename
-    std::unordered_map<std::string, std::string> reverseFramePrefix;
+//special Variables
+    mlir::Value currentFrame; //holds the complete Frame with all columns
 
-    std::unordered_map <std::string, mlir::Value> view;
-    std::unordered_map <std::string, mlir::Value> alias;
 
+//Helper Functions:
+
+    /**
+     * @brief creates a mlir-string-value from a c++ String
+     */
+    mlir::Value createStringConstant(std::string str);
+
+    /**
+     * @brief casts a single Attribute Value to a Matrix. Save for Matrix Input.
+     */
+    mlir::Value castToMatrixColumn(mlir::Value toCast);
+    mlir::Value castToIntMatrixColumn(mlir::Value toCast);
+    /**
+     * @brief Creates a Frame out of a Matrix Column and a name
+     */
+    mlir::Value matrixToFrame(
+        mlir::Value matrix, std::string newColumnName);
+
+    /**
+     * @brief creates ColBindOp to add the matirx to the currentFrame.
+     */
+    mlir::Value addMatrixToCurrentFrame(
+        mlir::Value matrix, std::string newColumnName);
+
+    /**
+     * @brief creates ExtractColOp and CastOp
+     */
+    mlir::Value extractMatrixFromFrame(
+        mlir::Value frame, mlir::Value colname);
+
+    /**
+     * @brief returns GroupEnumAttr for a given aggregation function
+     *
+     * TODO: extend if more aggregation functions get implemented.
+     */
+    mlir::Attribute getEnum(const std::string& func);
+
+    /**
+     * @brief returns result of stringifyGroupEnum for the given func.
+     */
+    std::string getEnumLabelExt(const std::string& func);
+
+
+//Data Structures and access functions
+    std::unordered_map <std::string, mlir::Value> view; //name, mlir::Value
+    std::unordered_map <std::string, mlir::Value> alias; //name, mlir::Value
+
+    std::unordered_map <std::string, std::string> framePrefix; //framename, prefix
+    std::unordered_map<std::string, std::string> reverseFramePrefix; //prefix, framename
+
+
+    /**
+     * @brief adds a mlir Value under the string into the alias map for later lookup.
+     */
     void registerAlias(const std::string& framename, mlir::Value arg);
-    std::string setFramePrefix(const std::string& framename, const std::string& prefix, bool necessary, bool ignore);
 
-    mlir::Value fetchMLIR(const std::string& framename);    //looks name up in alias and view
-    [[maybe_unused]] mlir::Value fetchAlias(const std::string& framename);   //looks name up only in alias
-    std::string fetchPrefix(const std::string& framename);
+    /**
+     * @brief first looks up the Alias map and if the item is not found it looks
+     * into the View map.
+     */
+    mlir::Value fetchMLIR(const std::string& framename);
+
+    /**
+     * @brief look up in Alias map
+     */
+    [[maybe_unused]] mlir::Value fetchAlias(const std::string& framename);
+
+    /**
+     * @brief looks up if the string specifies a mlir Value in the Alias or View Map
+     */
     bool hasMLIR(const std::string& name);
 
-    ScopedSymbolTable symbolTable;
+    /**
+     * @brief checks if a given prefix already given to annother framename otherwise
+     * registers the prefix for this framename
+     */
+    std::string setFramePrefix(const std::string& framename, const std::string& prefix, bool necessary, bool ignore);
+
+    /**
+     * @brief looks up the prefix for a given framename
+     */
+    std::string fetchPrefix(const std::string& framename);
+
+    //TODO: Recognize Literals and somehow handle them for the group expr.
+//GROUP Information
+    std::unordered_map <std::string, int8_t> grouped;
+    std::vector<mlir::Value> groupName;
+    std::vector<mlir::Value> columnName;
+    std::vector<mlir::Attribute> functionName;
+
+    //Flags
+    enum class SQLBit{group=0, codegen, agg, checkgroup};
+    //group has group clause, activated codegen, is a complex general Expression, is a complex Group Expression, has aggregation function.
+    int64_t sqlFlag = 0;
 
 public:
     [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder & builder) : utils(builder), builder(builder) {
@@ -67,27 +147,72 @@ public:
         view = std::move(view_arg);
     };
 
+//script
     antlrcpp::Any visitScript(SQLGrammarParser::ScriptContext * ctx) override;
 
+//sql
     antlrcpp::Any visitSql(SQLGrammarParser::SqlContext * ctx) override;
 
+//query
     antlrcpp::Any visitQuery(SQLGrammarParser::QueryContext * ctx) override;
 
+//select
     antlrcpp::Any visitSelect(SQLGrammarParser::SelectContext * ctx) override;
 
+//subquery
     antlrcpp::Any visitSubquery(SQLGrammarParser::SubqueryContext * ctx) override;
 
+//subqueryExpr
     antlrcpp::Any visitSubqueryExpr(SQLGrammarParser::SubqueryExprContext * ctx) override;
 
+//selectExpr
+    antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) override;
+
+//tableExpr
+    antlrcpp::Any visitTableExpr(SQLGrammarParser::TableExprContext * ctx) override;
+
+//fromExpr
     antlrcpp::Any visitTableIdentifierExpr(SQLGrammarParser::TableIdentifierExprContext *ctx) override;
 
     antlrcpp::Any visitCartesianExpr(SQLGrammarParser::CartesianExprContext * ctx) override;
 
-    antlrcpp::Any visitSelectExpr(SQLGrammarParser::SelectExprContext * ctx) override;
+//joinExpr
+    antlrcpp::Any visitInnerJoin(SQLGrammarParser::InnerJoinContext * ctx) override;
 
+//whereClause
+    antlrcpp::Any visitWhereClause(SQLGrammarParser::WhereClauseContext * ctx) override;
+
+//groupByClause
+    antlrcpp::Any visitGroupByClause(SQLGrammarParser::GroupByClauseContext * ctx) override;
+
+//havingClause
+    antlrcpp::Any visitHavingClause(SQLGrammarParser::HavingClauseContext * ctx) override;
+
+//generalExpr
+    antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
+
+    antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) override;
+
+    antlrcpp::Any visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext * ctx) override;
+
+    antlrcpp::Any visitParanthesesExpr(SQLGrammarParser::ParanthesesExprContext * ctx) override;
+
+    antlrcpp::Any visitMulExpr(SQLGrammarParser::MulExprContext * ctx) override;
+
+    antlrcpp::Any visitAddExpr(SQLGrammarParser::AddExprContext * ctx) override;
+
+    antlrcpp::Any visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) override;
+
+    antlrcpp::Any visitAndExpr(SQLGrammarParser::AndExprContext * ctx) override;
+
+    antlrcpp::Any visitOrExpr(SQLGrammarParser::OrExprContext * ctx) override;
+
+//tableReference
     antlrcpp::Any visitTableReference(SQLGrammarParser::TableReferenceContext * ctx) override;
 
+//selectIdent
     antlrcpp::Any visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) override;
 
+//literal
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };

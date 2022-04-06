@@ -16,7 +16,7 @@ limitations under the License.
 
 # Documentation
 
-- [Getting Started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md)
+- [Getting Started](/doc/GettingStarted.md)
 
 ## User Documentation
 
@@ -26,9 +26,10 @@ limitations under the License.
 
 ### How-tos and Guidelines
 
-- [Implementing a Built-in Kernel](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/ImplementBuiltinKernel.md)
-- [Binary Data Format](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/BinaryFormat.md)
-- [Prototype Configuration: Getting Information from the User](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/Config.md)
+- [Implementing a Built-in Kernel](/doc/ImplementBuiltinKernel.md)
+- [Binary Data Format](/doc/BinaryFormat.md)
+- [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
+- [Extending DAPHNE with more scheduling knobs](/doc/ExtendingSchedulingKnobs.md)
 
 ### Source Code Documentation
 

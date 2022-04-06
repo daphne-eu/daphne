@@ -473,7 +473,7 @@
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
                     [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             },
             {
                 "name":  ["example_for_commented_or_unimplemented"],
@@ -488,7 +488,7 @@
                     [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["DenseMatrix", "double"]],
                     [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             }
         ]
     },
@@ -536,12 +536,18 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+                ],
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [
                     ["Frame", "Frame", "float"],
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             }
         ]
     },
@@ -586,7 +592,7 @@
             ["uint64_t", "uint64_t", "uint64_t"],
             ["uint32_t", "uint32_t", "uint32_t"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
     },
     {
         "kernelTemplate": {
@@ -807,6 +813,39 @@
             ["int64_t"],
             ["size_t"]
         ]
+    },
+    {
+    	"kernelTemplate": {
+    		"header": "InnerJoin.h",
+    		"opName": "innerJoin",
+    		"returnType": "void",
+    		"templateParams": [],
+    		"runtimeParams": [
+    			{
+    				"type": "Frame *&",
+    				"name": "res"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "lhs"
+    			},
+    			{
+    				"type": "const Frame *",
+    				"name": "rhs"
+    			},
+    			{
+    				"type": "const char *",
+    				"name": "lhsOn"
+    			},
+    			{
+    				"type": "const char *",
+    				"name": "rhsOn"
+    			}
+    		]
+    	},
+    	"instantiations": [
+    		[]
+    	]
     },
     {
         "kernelTemplate": {
@@ -1062,7 +1101,7 @@
                 {
                     "type": "bool",
                     "name": "withReplacement"
-                },                
+                },
                 {
                     "type": "int64_t",
                     "name": "seed"
@@ -1420,7 +1459,7 @@
             [["DenseMatrix", "double"],["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"],["DenseMatrix", "int64_t"]]
         ],
-        "opCodes": ["SIGN", "SQRT", "FLOOR"]
+        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND"]
     },
     {
         "kernelTemplate": {
@@ -1453,7 +1492,7 @@
             ["float", "float"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN", "SQRT", "FLOOR", "CEIL"]
+        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND"]
     },
     {
         "kernelTemplate": {
@@ -2102,22 +2141,26 @@
             "returnType": "void",
             "templateParams": [
                 {
-                    "name": "DTDst",
+                    "name": "DTArg",
                     "isDataType": true
                 },
                 {
-                    "name": "DTSrc",
+                    "name": "DTIns",
                     "isDataType": true
                 }
             ],
             "runtimeParams": [
                 {
-                    "type": "const DTDst *",
-                    "name": "dst"
+                    "type": "DTArg *&",
+                    "name": "res"
                 },
                 {
-                    "type": "const DTSrc *",
-                    "name": "src"
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DTIns *",
+                    "name": "ins"
                 },
                 {
                     "type": "size_t",
@@ -2126,6 +2169,50 @@
                 {
                     "type": "size_t",
                     "name": "rowUpperExcl"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "InsertCol.h",
+            "opName": "insertCol",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTIns",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTArg *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const DTIns *",
+                    "name": "ins"
+                },
+                {
+                    "type": "size_t",
+                    "name": "colLowerIncl"
+                },
+                {
+                    "type": "size_t",
+                    "name": "colUpperExcl"
                 }
             ]
         },
@@ -2577,4 +2664,3 @@
         ]
     }
 ]
-

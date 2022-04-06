@@ -46,9 +46,8 @@
 # read and split data
 XY = readMatrix($XY);
 n0 = as.si64(ncol(XY));
-X = XY[, seq(0, n0 - 2, 1)];
-# TODO XY[, ncol(XY)]
-y = XY[, seq(n0 - 1,n0 - 1,1)];
+X = XY[, 0:(n0 - 2)];
+y = XY[, n0 - 1];
 
 intercept_status = $icpt; # 0
 regularization = $reg;    # 1e-7
@@ -62,7 +61,7 @@ zero_cell = fill(0.0, 1, 1);
 if( verbose ) {
     print("REGRESSION (direct solve):");
     print("-- Data X:     rows=",0,0); print(n,0,0);
-    print(", cols=",0,0); print(m,1,0);  
+    print(", cols=",0,0); print(m,1,0);
     print("-- Parameters: icpt=",0,0); print($icpt,0,0);
     print(", reg=",0,0); print($reg,0,0);
     print(", verbose=",0,0); print($verbose,1,0);

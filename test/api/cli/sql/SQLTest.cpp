@@ -25,12 +25,55 @@
 
 const std::string dirPath = "test/api/cli/sql/";
 
-TEST_CASE("basic, success", TAG_SQL) {
-    for(unsigned i = 1; i <= 2; i++) {
-        DYNAMIC_SECTION("basicsql_success_" << i << ".daphne") {
-            checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, "basicsql_success", i);
-        }
+#define MAKE_SUCCESS_TEST_CASE(name, count) \
+    TEST_CASE(name ", success", TAG_SQL) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_success_" << i << ".daphne") { \
+                checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, name "_success", i); \
+            } \
+        } \
     }
-}
+
+#define MAKE_PARSER_FAILURE_TEST_CASE(name, count) \
+    TEST_CASE(name ", parser failure", TAG_SQL) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_parser_failure_" << i << ".daphne") { \
+                checkDaphneStatusCodeSimple(StatusCode::PARSER_ERROR, dirPath, name "_parser_failure", i); \
+            } \
+        } \
+    }
+
+#define MAKE_PASS_FAILURE_TEST_CASE(name, count) \
+    TEST_CASE(name ", pass failure", TAG_SQL) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_pass_failure_" << i << ".daphne") { \
+                checkDaphneStatusCodeSimple(StatusCode::PASS_ERROR, dirPath, name "_pass_failure", i); \
+            } \
+        } \
+    }
+
+#define MAKE_EXEC_FAILURE_TEST_CASE(name, count) \
+    TEST_CASE(name ", execution failure", TAG_SQL) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_execution_failure_" << i << ".daphne") { \
+                checkDaphneStatusCodeSimple(StatusCode::EXECUTION_ERROR, dirPath, name "_execution_failure", i); \
+            } \
+        } \
+    }
+
+MAKE_SUCCESS_TEST_CASE("basic", 4);
+MAKE_PASS_FAILURE_TEST_CASE("basic", 3);
+MAKE_EXEC_FAILURE_TEST_CASE("basic", 1);
+
+MAKE_SUCCESS_TEST_CASE("cartesian", 2);
+
+MAKE_SUCCESS_TEST_CASE("where", 4);
+
+MAKE_SUCCESS_TEST_CASE("join", 1);
+
+// TODO Use these test cases once we have a kernel for GroupOp, otherwise they
+// always fail.
+//MAKE_SUCCESS_TEST_CASE("group", 3);
+MAKE_PASS_FAILURE_TEST_CASE("group", 1);
 
 // TODO Use the scripts testing failure cases.

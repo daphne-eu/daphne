@@ -1,0 +1,12 @@
+c1 = fill(123, 5, 1);
+c2 = seq(100.5, 140.5, 10.0);
+c3 = seq(-4, 4, 2);
+
+f1 = frame(c1, c2, "a", "b");
+f2 = frame(c3, "c");
+
+registerView("x", f1);
+registerView("y", f2);
+
+s = sql("SELECT x.b, y.c - 5 FROM x, y WHERE x.b > 15.0 * 5.0 - 4.2;");
+print(s);

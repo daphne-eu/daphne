@@ -16,11 +16,11 @@ limitations under the License.
 
 # Getting Started
 
-This document summarizes everything you need to know to get started with using or extending the prototype.
+This document summarizes everything you need to know to get started with using or extending the DAPHNE system.
 
 ### System Requirements
 
-Please ensure that your development system meets the following requirements before trying to build the prototype.
+Please ensure that your development system meets the following requirements before trying to build the system.
 
 **(*)**
 You can view the version numbers as an orientation rather than a strict requirement.
@@ -54,12 +54,12 @@ Newer versions should work as well, older versions might work as well.
 
 ### Obtaining the Source Code
 
-The prototype is based on MLIR, which is a part of the LLVM monorepo.
+The DAPHNE system is based on MLIR, which is a part of the LLVM monorepo.
 The LLVM monorepo is included in this repository as a submodule.
 Thus, clone this repository as follows to also clone the submodule:
 
 ```bash
-git clone --recursive https://gitlab.know-center.tugraz.at/daphne/prototype.git
+git clone --recursive https://github.com/daphne-eu/daphne.git
 ```
 
 Upstream changes to this repository might contain changes to the submodule (we might have upgraded to a newer version of MLIR/LLVM).
@@ -76,9 +76,9 @@ git pull && git submodule update --init --recursive
 ./pull.sh
 ```
 
-### Building the Prototype
+### Building the DAPHNE system
 
-Simply build the prototype using the build-script without any arguments:
+Simply build the system using the build-script without any arguments:
 
 ```bash
 ./build.sh
@@ -101,7 +101,7 @@ If the build fails in between (e.g., due to missing packages), multiple build di
 
 We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. You can use all [command line arguments](https://github.com/catchorg/Catch2/blob/devel/docs/command-line.md#top) of catch2 with `test.sh`.
 
-### Running the Prototype
+### Running the DAPHNE system
 
 Write a little DaphneDSL script or use `example.daphne`...
 
@@ -118,16 +118,16 @@ print(t(m));
 
 ... and execute it as follows: `build/bin/daphne example.daphne`.
 
-### Building and running with containers [Alternative path for building and running the prototype and the tests]
+### Building and running with containers [Alternative path for building and running the system and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
 - you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or higher are sufficient
 - you can use the provided docker file to create an image that contains all dependencies as follows:
 ```bash
-cd prototype
+cd daphne
 docker build -t <ImageTag> .
 #the image can be built from the dockerhub docker://ahmedeleliemy/test-workflow:latest as well
-docker run -v absolute_path_to_prototype/:absolute_path_to_prototype_in_the_container -it <ImageTag> bash
-[root@<some_container_ID>]cd absolute_path_to_prototype_in_the_container
+docker run -v absolute_path_to_daphne/:absolute_path_to_daphne_in_the_container -it <ImageTag> bash
+[root@<some_container_ID>]cd absolute_path_to_daphne_in_the_container
 [root@<some_container_ID>]./build.sh #or ./test.sh  
 ```
  - you can also use Singularity containers instead of docker as follows:
@@ -136,10 +136,10 @@ singularity build <ImageName.sif> docker://ahmedeleliemy/test-workflow
 #one can also use [Singularity python](https://singularityhub.github.io/singularity-cli/)
 #to convert the provided Dockerfile into Singularity recipe 
 singularity shell <ImageName.sif>
-Singularity> cd prototype
+Singularity> cd daphne
 Singularity> ./build.sh #or ./test.sh  
 ```
-- Because the container instance works on the same folder, if one already built the prototype outside the container, it is recommended to clean all build files to avoid conflicts.
+- Because the container instance works on the same folder, if one already built the system outside the container, it is recommended to clean all build files to avoid conflicts.
 - One may also do the commits from within the containers as normal.
 
 ### Exploring the Source Code
@@ -150,13 +150,13 @@ On the top-level, there are the following directories:
 
 - `build`: everything generated during build (executables, libraries, generated source code)
 - `doc`: documentation
-- `src`: the actual source code, subdivided into the individual components of the prototype
+- `src`: the actual source code, subdivided into the individual components of the system
 - `test`: test cases
 - `thirdparty`: required external software
 
 ### What Next?
 
 You might want to have a look at
-- the [documentation](https://gitlab.know-center.tugraz.at/daphne/prototype/-/tree/master/doc)
-- the [contribution guidelines](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/CONTRIBUTING.md)
-- the [open issues](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues)
+- the [documentation](/doc)
+- the [contribution guidelines](/CONTRIBUTING.md)
+- the [open issues](https://github.com/daphne-eu/daphne/issues)

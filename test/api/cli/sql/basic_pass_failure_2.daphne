@@ -3,6 +3,7 @@ c1 = fill(123, 5, 1);
 f = frame(c1, "c");
 
 registerView("x", f);
-s = sql("Sel c FROM x;");
+
+s = sql("SELECT x.c FROM unknown;");
 
 print(s);
