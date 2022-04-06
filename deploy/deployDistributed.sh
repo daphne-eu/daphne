@@ -172,7 +172,7 @@ function printHelp {
     echo "--deploy:"
     echo "This includes downloading and building all required third-party "
     echo "material (if necessary), for building the DistributedWorker."
-    echo "You should only invoke it from the prototype's root directory"
+    echo "You should only invoke it from DAPHNE's root directory"
     echo "(where this script resides)."    
     echo ""
     echo "Optional arguments:"

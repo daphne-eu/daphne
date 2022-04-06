@@ -14,8 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This is an extract from distributed execution deployment scripts, from the
-# experimental branch deploy-Vega, to support deployment with SLURM.
 # This script allows the user to deploy DAPHNE through SLURM, including:
 # 1 - compilation of the Singularity image,
 # 2 - compilation of the daphne main and worker codes within the Singularity image
