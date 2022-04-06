@@ -28,6 +28,7 @@
  * Container to pass around user configuration
  */
 struct DaphneUserConfig {
+    // Remember to update src/parser/config/UserConfig.json accordingly!
 
     bool use_cuda = false;
     bool use_vectorized_exec = false;

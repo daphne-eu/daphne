@@ -19,6 +19,7 @@ set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
+        api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
         api/cli/functions/FunctionsTest.cpp
@@ -31,7 +32,6 @@ set(TEST_SOURCES
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
-        api/cli/parser/ConfigParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/sql/SQLTest.cpp
@@ -40,6 +40,8 @@ set(TEST_SOURCES
         api/cli/Utils.cpp
     
         api/python/DaphneLibTest.cpp
+        
+        parser/config/ConfigParserTest.cpp
     
         runtime/distributed/worker/WorkerTest.cpp
     

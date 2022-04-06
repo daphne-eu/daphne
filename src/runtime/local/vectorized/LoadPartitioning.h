@@ -22,7 +22,8 @@
 #include <string>
 
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
-                            PLS, MSTATIC, MFSC, PSS, INVALID=-1};
+                            PLS, MSTATIC, MFSC, PSS,
+                            INVALID=-1 /* only for JSON enum conversion */};
 class LoadPartitioning {
 
 private:

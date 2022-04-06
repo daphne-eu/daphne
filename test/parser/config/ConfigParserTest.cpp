@@ -22,7 +22,7 @@
 
 #include <iostream>
 
-const std::string dirPath = "test/api/cli/parser/configFiles/";
+const std::string dirPath = "test/parser/config/configFiles/";
 
 TEST_CASE("Proper config file from src/api/cli directory")
 {

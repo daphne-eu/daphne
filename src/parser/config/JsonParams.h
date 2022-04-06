@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_CONFIG_DAPHNECONFIGJSONPARAMS_H
-#define SRC_PARSER_CONFIG_DAPHNECONFIGJSONPARAMS_H
+#ifndef SRC_PARSER_CONFIG_JSONPARAMS_H
+#define SRC_PARSER_CONFIG_JSONPARAMS_H
 
+#include <string>
 #include <unordered_map>
 
-/*
- * A Container that contains names of JSON parameters for user configuration.
+/**
+ * @brief A Container that contains names of JSON parameters for user
+ * configuration.
  */
 struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA = "use_cuda";

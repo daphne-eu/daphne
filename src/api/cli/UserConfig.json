@@ -12,11 +12,8 @@
     "explain_sql": false,
     "explain_vectorized": false,
     "explain_obj_ref_mgnt": false,
-    "taskPartitioningScheme": "GSS",
+    "taskPartitioningScheme": "STATIC",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
-    "library_paths": [
-        "my\\path",
-        "my\\second\\path"
-    ]
+    "library_paths": []
 }

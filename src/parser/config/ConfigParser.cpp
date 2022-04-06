@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
-#include "DaphneConfigJsonParams.h"
-#include "ConfigParser.h"
+#include <parser/config/ConfigParser.h>
+#include <parser/config/JsonParams.h>
+
 #include <iostream>
 #include <fstream>
 
