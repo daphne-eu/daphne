@@ -77,6 +77,7 @@ initPwd=$(pwd)
 thirdpartyPath=$initPwd/thirdparty
 llvmCommitFilePath=$thirdpartyPath/llvm-last-built-commit.txt
 
+# a hotfix, to solve issue #216 @todo investigate possible side effects
 installLibDir=lib
 
 #******************************************************************************
@@ -151,6 +152,9 @@ then
     mkdir --parents $antlrCppRuntimeDirName
     unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
     cd $antlrCppRuntimeDirName
+    # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
+    # until we upgrade to antlr4-4.9.3+
+    sed -i 's#git://github.com#https://github.com#' runtime/CMakeLists.txt
     rm -rf ./build
     mkdir -p build
     mkdir -p run

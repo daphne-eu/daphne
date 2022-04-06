@@ -106,7 +106,7 @@ template<typename VT>
     for (size_t i = 0; i < numOutputs; ++i) {
         res_cuda[i] = new DenseMatrix<VT>*;
         if(combines[i] == mlir::daphne::VectorCombine::ROWS) {
-            auto rc2 = static_cast<DenseMatrix<VT> *>((*res[i]))->slice(0, gpu_task_len);
+            auto rc2 = static_cast<DenseMatrix<VT> *>((*res[i]))->sliceRow(0, gpu_task_len);
             (*res_cuda[i]) = rc2;
         }
         else if(combines[i] == mlir::daphne::VectorCombine::COLS) {

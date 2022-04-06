@@ -39,16 +39,10 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <vector>
 
 using namespace std;
 using namespace mlir;
 using namespace llvm::cl;
-
-void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
-     "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
-}
 
 void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<string, string>& scriptArgsFinal) {
     for(const std::string& pair : scriptArgsCli) {
@@ -99,20 +93,20 @@ main(int argc, char** argv)
                 clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
                 clEnumVal(PSS, "Probabilistic self-scheduling")
             )
-    );    
+    );
 
     opt<int> numberOfThreads(
             "num-threads", cat(daphneOptions),
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
                 "(default is equal to the number of physcial cores on the target node that executes the code)"
-            )   
+            )
     );
     opt<int> minimumTaskSize(
             "grain-size", cat(daphneOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
-            )   
+            )
     );
     opt<bool> useVectorizedPipelines(
             "vec", cat(daphneOptions),
@@ -211,11 +205,11 @@ main(int argc, char** argv)
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.explain_kernels = explainKernels;
-    user_config.libdir = libDir;
+    user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
-    user_config.numberOfThreads = numberOfThreads; 
-    user_config.minimumTaskSize = minimumTaskSize; 
+    user_config.numberOfThreads = numberOfThreads;
+    user_config.minimumTaskSize = minimumTaskSize;
 
     if(cuda) {
         int device_count = 0;
@@ -272,7 +266,7 @@ main(int argc, char** argv)
         return StatusCode::PARSER_ERROR;
     }
 
-    // Further process the module, including optimization and lowering passes.
+    // Further, process the module, including optimization and lowering passes.
     try{
         if (!executor.runPasses(moduleOp)) {
             return StatusCode::PASS_ERROR;
