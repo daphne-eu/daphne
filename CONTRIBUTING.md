@@ -70,6 +70,7 @@ That is, please try your best to make a good-quality contribution and we will he
    Use `git push --set-upstream origin BRANCH_NAME` when you push the first time.
 5. If you work longer on your contribution, make sure to **get the most recent changes from the upstream** (original DAPHNE system repository) from time to time (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).
 6. Once you feel ready (for integration or for discussion/feedback), **create a pull request** on GitHub (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
+   Normally, you'll want to ask for integration into `base:main`, the repo's default branch.
    Please choose an expressive title and provide a short description of your changes.
    Feel free to mark your pull request "WIP: " or "Draft: " in the title.
    Note that you can add more commits to your pull request after you created it.
