@@ -77,6 +77,9 @@ initPwd=$(pwd)
 thirdpartyPath=$initPwd/thirdparty
 llvmCommitFilePath=$thirdpartyPath/llvm-last-built-commit.txt
 
+# a hotfix, to solve issue #216 @todo investigate possible side effects
+installLibDir=lib
+
 #******************************************************************************
 # Parse arguments
 #******************************************************************************
@@ -149,11 +152,14 @@ then
     mkdir --parents $antlrCppRuntimeDirName
     unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
     cd $antlrCppRuntimeDirName
+    # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
+    # until we upgrade to antlr4-4.9.3+
+    sed -i 's#git://github.com#https://github.com#' runtime/CMakeLists.txt
     rm -rf ./build
     mkdir -p build
     mkdir -p run
     cd build
-    cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local
+    cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR=$installLibDir
     cmake --build . --target install
 fi
 cd $pwdBeforeAntlr
@@ -287,7 +293,8 @@ cmake -G Ninja .. \
     -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
     -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName \
     -DOPENBLAS_INST_DIR=$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
-    -DCMAKE_PREFIX_PATH="$grpcInstDir"
+    -DCMAKE_PREFIX_PATH="$grpcInstDir" \
+    -DCMAKE_INSTALL_LIBDIR=$installLibDir
 # optional cmake flags (to be added to the command above):
 # -DUSE_CUDA=ON
 # -DUSE_ARROW=ON

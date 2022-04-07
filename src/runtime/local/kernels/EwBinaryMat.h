@@ -42,7 +42,7 @@ struct EwBinaryMat {
 
 template<class DTRes, class DTLhs, class DTRhs>
 void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
-    	EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -100,11 +100,9 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
             }
         }
         else {
-            assert(
-                    false && "lhs and rhs must either have the same dimensions, "
-                    "or one if them must be a row/column vector with the "
-                    "width/height of the other"
-            );
+            throw std::runtime_error("EwBinaryMat(Dense) - lhs and rhs must either "
+                "have the same dimensions, or one of them must be a row/column vector "
+                "with the width/height of the other");
         }
 //        auto end = std::chrono::high_resolution_clock::now();
 //        std::cout << "EwBinaryMat time=" << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
@@ -120,8 +118,8 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
-        assert((numCols == rhs->getNumCols()) && "lhs and rhs must have the same dimensions");
+        if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
+            throw std::runtime_error("EwBinaryMat(CSR) - lhs and rhs must have the same dimensions.");
         
         size_t maxNnz;
         switch(opCode) {
@@ -132,7 +130,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                 maxNnz = std::min(lhs->getNumNonZeros(), rhs->getNumNonZeros());
                 break;
             default:
-                throw std::runtime_error("unknown BinaryOpCode");
+                throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
         
         if(res == nullptr)
@@ -245,7 +243,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                 break;
             }
             default:
-                throw std::runtime_error("unknown BinaryOpCode");
+                throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
         
         // TODO Update number of non-zeros in result in the end.
@@ -262,8 +260,9 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
         // TODO: lhs broadcast
-        assert((numRows == rhs->getNumRows() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
-        assert((numCols == rhs->getNumCols() || rhs->getNumRows() == 1) && "lhs and rhs must have the same dimensions (or broadcast)");
+        if( (numRows != rhs->getNumRows() &&  rhs->getNumRows() != 1)
+            || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1 ) )
+            throw std::runtime_error("EwBinaryMat(CSR) - lhs and rhs must have the same dimensions (or broadcast)");
 
         size_t maxNnz;
         switch(opCode) {
@@ -271,7 +270,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
             maxNnz = lhs->getNumNonZeros();
             break;
         default:
-            throw std::runtime_error("unknown BinaryOpCode");
+            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
 
         if(res == nullptr)
@@ -313,7 +312,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
             break;
         }
         default:
-            throw std::runtime_error("unknown BinaryOpCode");
+            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
 
         // TODO Update number of non-zeros in result in the end.
@@ -329,8 +328,8 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
     static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        assert((numRows == rhs->getNumRows()) && "lhs and rhs must have the same dimensions");
-        assert((numCols == rhs->getNumCols()) && "lhs and rhs must have the same dimensions");
+        if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
+            throw std::runtime_error("EwBinaryMat - lhs and rhs must have the same dimensions.");
         
         // TODO Choose matrix implementation depending on expected number of non-zeros.
         if(res == nullptr)

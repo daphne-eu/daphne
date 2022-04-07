@@ -1,0 +1,301 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
+#-------------------------------------------------------------
+
+# Solves Multinomial Logistic Regression using Trust Region method.
+# (See: Trust Region Newton Method for Logistic Regression, Lin, Weng and Keerthi, JMLR 9 (2008) 627-650)
+# The largest label represents the baseline category; if label -1 or 0 is present, then it is
+# the baseline label (and it is converted to the largest label).
+
+# INPUT PARAMETERS:
+# --------------------------------------------------------------------------------------------
+# NAME      TYPE        DEFAULT   MEANING
+# --------------------------------------------------------------------------------------------
+# X         Matrix      ---       Location to read the matrix of feature vectors
+# Y         Matrix      ---       Location to read the matrix with category labels
+# icpt      Integer     0         Intercept presence, shifting and rescaling X columns: 0 = no intercept, no shifting, no rescaling; 1 = add intercept, but neither shift nor rescale X; 2 = add intercept, shift & rescale X columns to mean = 0, variance = 1
+# tol       Double      0.000001  tolerance ("epsilon")
+# reg       Double      0.0       regularization parameter (lambda = 1/C); intercept is not regularized
+# maxi      Integer     100       max. number of outer (Newton) iterations
+# maxii     Integer     0         max. number of inner (conjugate gradient) iterations, 0 = no max
+# verbose   Boolean     FALSE     flag specifying if logging information should be printed
+#
+# --------------------------------------------------------------------------------------------
+#
+# OUTPUT:
+# --------------------------------------------------------------------------------------------
+# NAME  TYPE    DEFAULT   MEANING
+# --------------------------------------------------------------------------------------------
+# betas  Double   regression betas as output for prediction
+# -------------------------------------------------------------------------------------------
+
+# read and split data
+XY = readMatrix($XY);
+n0 = as.si64(ncol(XY));
+X = XY[, 1:(n0 - 2)];
+Y = XY[, n0 - 1];
+
+eta0 = 0.0001;
+eta1 = 0.25;
+eta2 = 0.75;
+sigma1 = 0.25;
+sigma2 = 0.5;
+sigma3 = 4.0;
+psi = 0.1;
+
+N = nrow(X);
+Nf = as.f64(N);
+D = as.si64(ncol(X));
+
+icpt = 0; #TODO 2 
+tol = 0.000001;
+reg = 1.0;
+maxi = 100;
+maxii = 20;
+verbose = true;
+
+# Robustness for datasets with missing values (causing NaN gradients)
+numNaNs = sum(X!=X); # isNaN()
+if( numNaNs > 0.0 ) {
+    print("multiLogReg: matrix X contains "+numNaNs+" missing values, replacing with 0.");
+    X = replace(X, nan, 0.0);
+}
+
+# Introduce the intercept, shift and rescale the columns of X if needed
+if (icpt == 1 || icpt == 2) { # add the intercept column
+    X = cbind (X, fill(1.0, N, 1));
+    D = as.si64(ncol(X));
+}
+
+scale_lambda = fill(1.0, D, 1);
+#if(icpt == 1 || icpt == 2) #TODO
+#    scale_lambda[D - 1,] = fill(0.0, 1, 1);
+
+#if (icpt == 2)  # scale-&-shift X columns to mean 0, variance 1
+#{               # Important assumption: X [, D] = matrix (1, N, 1)
+#    avg_X_cols = t(colSums(X)) / N;
+#    var_X_cols = (t(colSums (X ^ 2)) - N * (avg_X_cols ^ 2)) / (N - 1);
+#    is_unsafe = var_X_cols <= 0;
+#    scale_X = 1.0 / sqrt (var_X_cols * (1 - is_unsafe) + is_unsafe);
+#    scale_X [D, 1] = 1;
+#    shift_X = - avg_X_cols * scale_X;
+#    shift_X [D, 1] = 0;
+#    rowSums_X_sq = (X ^ 2) %*% (scale_X ^ 2) + X %*% (2 * scale_X * shift_X) + sum (shift_X ^ 2);
+#}
+#else {
+    scale_X = fill(1.0, D, 1);
+    shift_X = fill(0.0, D, 1);
+    rowSums_X_sq = sum(X^2.0, 0);
+#}
+
+# Henceforth we replace "X" with "X %*% (SHIFT/SCALE TRANSFORM)" and rowSums(X ^ 2)
+# with "rowSums_X_sq" in order to preserve the sparsity of X under shift and scale.
+# The transform is then associatively applied to the other side of the expression,
+# and is rewritten via "scale_X" and "shift_X" as follows:
+# ssX_A  = (SHIFT/SCALE TRANSFORM) %*% A    --- is rewritten as:
+# ssX_A  = diag (scale_X) %*% A;
+# ssX_A [D, ] = ssX_A [D, ] + t(shift_X) %*% A;
+# tssX_A = t(SHIFT/SCALE TRANSFORM) %*% A   --- is rewritten as:
+# tssX_A = diag (scale_X) %*% A + shift_X %*% A [D, ];
+
+# Convert "Y" into indicator matrix:
+# Category labels "0", "-1" etc. are converted into the largest label
+Y = oneHot(max(Y, 0.0), fill(10,1,1)); # TODO max(Y)
+K = as.si64(ncol(Y)) - 1;  # The number of non-baseline categories
+
+lambda = (scale_lambda @ fill(1.0, 1, K)) * reg;
+delta = 0.5 * sqrt(as.f64(D)) / aggMax(sqrt(rowSums_X_sq));
+
+B = fill(0.0, D, K);                  ### LT = X %*% (SHIFT/SCALE TRANSFORM) %*% B;
+                                      ### LT = cbind (LT, matrix (0, rows = N, cols = 1));
+                                      ### LT = LT - rowMaxs (LT) %*% matrix (1, rows = 1, cols = K+1);
+P = fill(1.0, N, K+1);                ### exp_LT = exp (LT);
+P = P / as.f64(K + 1);                ### P =  exp_LT / (rowSums (exp_LT) %*% matrix (1, rows = 1, cols = K+1));
+obj = Nf * log(as.f64(K + 1), 10.0);  ### obj = - sum (Y * LT) + sum (log (rowSums (exp_LT))) + 0.5 * sum (lambda * (B_new ^ 2));
+
+Grad = t(X) @ (P[, 0:K] - Y[, 0:K]);
+if (icpt == 2)
+    Grad = diagMatrix(scale_X) @ Grad + shift_X @ Grad[D - 1, ];
+
+Grad = Grad + lambda * B;
+norm_Grad = sqrt (sum (Grad ^ 2.0));
+norm_Grad_initial = norm_Grad;
+
+if (maxii == 0) 
+    maxii = D * K;
+
+iter = 1;
+
+# boolean for convergence check
+converge = as.si64(norm_Grad < tol) || (iter > maxi);
+if(verbose) { #TODO string concat not commutative
+    print ("-- Initially:  Objective = ",0,0); print(obj + ",  Gradient Norm = " + norm_Grad + ",  Trust Delta = " + delta);
+}
+
+while ( converge != 1 ) #TODO !converge
+{
+    # SOLVE TRUST REGION SUB-PROBLEM
+    S = fill(0.0, D, K);
+    R = Grad * -1.0; #TODO -Grad / 0-Grad support
+    V = R;
+    delta2 = delta ^ 2.0;
+    inneriter = 1;
+    norm_R2 = sum (R ^ 2.0);
+    innerconverge = as.si64(sqrt (norm_R2) <= psi * norm_Grad);
+    is_trust_boundary_reached = 0;
+
+    P_1K = P [, 0:K];
+    while( innerconverge != 1 ) #TODO !innerconverge support
+    {
+        ssX_V = V;
+        if (icpt == 2) {
+            ssX_V = diagMatrix(scale_X) @ V;
+            ssX_V[D - 1, ] = ssX_V[D - 1, ] + t(shift_X) @ V;
+        }
+
+        Q = P_1K * (X @ ssX_V);
+        HV = t(X) @ (Q - P_1K * (sum(Q, 0) @ fill(1.0, 1, K)));
+
+        if (icpt == 2)
+            HV = diagMatrix(scale_X) @ HV + shift_X @ HV [D, ];
+
+        HV = HV + V * lambda;
+        alpha = norm_R2 / sum(V * HV);
+        Snew = S + V * alpha;
+        norm_Snew2 = sum(Snew ^ 2.0);
+
+        R = R; S = S; # TODO remove forward refs
+        innerconverge = innerconverge; norm_R2 = norm_R2;
+        is_trust_boundary_reached =  is_trust_boundary_reached;
+
+        if (norm_Snew2 <= delta2) {
+            S = Snew;
+            R = R - HV * alpha;
+            old_norm_R2 = norm_R2; 
+            norm_R2 = sum (R ^ 2.0);
+            V = R +  V * (norm_R2 / old_norm_R2);
+            innerconverge = as.si64(sqrt (norm_R2) <= psi * norm_Grad);
+        } 
+        else {
+            is_trust_boundary_reached = 1;
+            sv = sum (S * V);
+            v2 = sum (V ^ 2.0);
+            s2 = sum (S ^ 2.0);
+            rad = sqrt (sv ^ 2.0 + v2 * (delta2 - s2));
+            alpha = (rad - sv) / v2;
+            if (sv >= 0.0)
+                alpha = (delta2 - s2) / (sv + rad);
+            S = S + V * alpha;
+            R = R - HV * alpha;
+            innerconverge = 1;
+        }
+
+        inneriter = inneriter + 1;
+        innerconverge = innerconverge || (inneriter > maxii);
+    }
+
+    # END TRUST REGION SUB-PROBLEM
+    # compute rho, update B, obtain delta
+    gs = sum (S * Grad);
+    qk = -0.5 * (gs - sum(S * R));
+    B_new = B + S;
+    ssX_B_new = B_new;
+    if (icpt == 2) {
+        ssX_B_new = diagMatrix(scale_X) @ B_new;
+        ssX_B_new [D - 1, ] = ssX_B_new [D - 1, ] + t(shift_X) @ B_new;
+    } 
+    
+    LT = cbind ((X @ ssX_B_new), fill(0.0, N, 1));
+    LT = LT - aggMax(LT, 0) @ fill(1.0, 1, K+1);
+    exp_LT = exp (LT);
+    P_new  = exp_LT / (sum(exp_LT, 0) @ fill(1.0, 1, K+1));
+    obj_new = 0.0 - sum(Y * LT) + sum(log(sum(exp_LT, 0),10.0)) + 0.5 * sum(lambda * (B_new ^ 2.0));
+
+    # Consider updating LT in the inner loop
+    # Consider the big "obj" and "obj_new" rounding-off their small difference below:
+
+    actred = (obj - obj_new);
+    rho = actred / qk;
+    is_rho_accepted = (rho > eta0);
+    snorm = sqrt(sum(S ^ 2.0));
+
+    if (iter == 1) 
+      delta = min(delta, snorm);
+
+    alpha2 = obj_new - obj - gs;
+    alpha = max(sigma1, -0.5 * gs / alpha2);
+    if(alpha2 <= 0.0)
+        alpha = sigma3;
+
+    if (rho < eta0)
+        delta = min (max (alpha, sigma1) * snorm, sigma2 * delta);
+    else if (rho < eta1)
+        delta = max (sigma1 * delta, min(alpha * snorm, sigma2 * delta));
+    else if (rho < eta2)
+        delta = max (sigma1 * delta, min(alpha * snorm, sigma3 * delta));
+    else
+        delta = max (delta, min(alpha * snorm, sigma3 * delta));
+
+    if(verbose) {
+        if (is_trust_boundary_reached == 1) {
+            print("-- Outer Iteration ",0,0); print(iter + ": Had "
+                + (inneriter - 1) + " CG iterations, trust bound REACHED");
+        } else {
+            print ("-- Outer Iteration ",0,0); print(iter + ": Had " + (inneriter - 1) + " CG iterations");
+        }
+        print("   -- Obj.Reduction:  Actual = ",0,0); print(actred + ",  Predicted = " + qk + 
+              "  (A/P: " + (round (10000.0 * rho) / 10000.0) + "),  Trust Delta = " + delta);
+    }
+
+    B = B; Grad = Grad; P = P; # TODO avoid forward ref
+    norm_Grad = norm_Grad; 
+    if (is_rho_accepted) {
+        B = B_new;
+        P = P_new;
+        Grad = t(X) @ (P[, 0:K] - Y[, 0:K]);
+        if (icpt == 2)
+            Grad = diagMatrix(scale_X) @ Grad + shift_X @ Grad [D - 1, ];
+
+        Grad = Grad + lambda * B;
+        norm_Grad = sqrt (sum(Grad ^ 2.0));
+        obj = obj_new;
+      
+        if(verbose) {
+            print("   -- New Objective = ",0,0); print(obj + ",  Beta Change Norm = "
+                + snorm + ",  Gradient Norm = " + norm_Grad);
+        }
+    }
+
+    iter = iter + 1;
+    converge = (as.si64(norm_Grad < (tol * norm_Grad_initial)) || iter > maxi ||
+      (as.si64(is_trust_boundary_reached == 0) && as.si64(abs (actred) < (abs (obj) + abs (obj_new)) * 10.0^(-14.0))));
+    if (as.si64(verbose) && converge) 
+        print ("Termination / Convergence condition satisfied.");
+}
+
+betas = B;
+if (icpt == 2) {
+    betas = diagMatrix(scale_X) @ B;
+    betas[D - 1,] = betas[D - 1,] + t(shift_X) @ B;
+}
+
+writeMatrix(betas, $B);
