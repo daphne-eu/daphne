@@ -152,5 +152,31 @@ public:
         res = DataObjectFactory::create<Frame>(cols, nullptr);
     }
 };
+template<typename VTArgTo, typename VTArgFrom>
+class CastObj<DenseMatrix<VTArgTo>, DenseMatrix<VTArgFrom>> {
+
+public:
+    static void apply(DenseMatrix<VTArgTo> *& res, const DenseMatrix<VTArgFrom> * arg, DCTX(ctx)) {
+        // Dimensionality mismatch
+        if(res && ((res->getNumCols() != arg->getNumCols()) || (res->getNumRows() != arg->getNumRows())))
+            return;
+        
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArgTo>>(numRows, numCols, false);
+        
+        auto resVals = res->getValues();
+        auto argVals = arg->getValues();
+
+        // Since DenseMatrix implementation is backed by 
+        // a single dense array of values, we can simply 
+        // perform cast in one loop over that array.
+        for(size_t idx = 0; idx < numCols*numRows; idx++)
+            resVals[idx] = static_cast<VTArgTo>(argVals[idx]);
+    }
+};
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H

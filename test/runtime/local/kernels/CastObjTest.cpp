@@ -181,3 +181,125 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to frame and back, multi-column", TA
     DataObjectFactory::destroy(m1, f1, res1);
     DataObjectFactory::destroy(m2, f2, res2);
 }
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, multi-column", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    const size_t numRows = 2;
+
+    auto arg1 = genGivenVals<DenseMatrix<double>>(numRows, {3., 1., 4., 1., 5., 9.});
+    DTArg* res1 = nullptr;
+    auto check1 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.), VTArg(1.), VTArg(5.), VTArg(9.)});
+
+    auto arg2 = genGivenVals<DenseMatrix<int64_t>>(numRows, {3, 1, 4, 1, 5, 9});
+    DTArg* res2 = nullptr;
+    auto check2 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.), VTArg(1.), VTArg(5.), VTArg(9.)});
+
+    auto arg3 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4, 1, 5, 9}); 
+    DTArg* res3 = nullptr;
+    auto check3 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.), VTArg(1.), VTArg(5.), VTArg(9.)});
+
+    castObj<DenseMatrix<VTArg>, DenseMatrix<double>>(res1, arg1, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<int64_t>>(res2, arg2, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<uint32_t>>(res3, arg3, nullptr);
+
+
+    CHECK(*res1 == *check1);
+    CHECK(*res2 == *check2);
+    CHECK(*res3 == *check3);
+
+    DataObjectFactory::destroy(arg1,arg2,arg3);
+    DataObjectFactory::destroy(res1,res2,res3);
+    DataObjectFactory::destroy(check1,check2,check3);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, single dim", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+
+    // Single col
+    size_t numRows = 3;
+
+    auto arg1 = genGivenVals<DenseMatrix<double>>(numRows, {3., 1., 4.});
+    DTArg* res1 = nullptr;
+    auto check1 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    auto arg2 = genGivenVals<DenseMatrix<int64_t>>(numRows, {3, 1, 4});
+    DTArg* res2 = nullptr;
+    auto check2 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    auto arg3 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4});
+    DTArg* res3 = nullptr; 
+    auto check3 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    castObj<DenseMatrix<VTArg>, DenseMatrix<double>>(res1, arg1, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<int64_t>>(res2, arg2, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<uint32_t>>(res3, arg3, nullptr);
+
+    CHECK(*res1 == *check1);
+    CHECK(*res2 == *check2);
+    CHECK(*res3 == *check3);
+
+    // Single row
+    numRows = 1;
+
+    auto arg4 = genGivenVals<DenseMatrix<double>>(numRows, {3., 1., 4.});
+    DTArg* res4 = nullptr;
+    auto check4 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    auto arg5 = genGivenVals<DenseMatrix<int64_t>>(numRows, {3, 1, 4});
+    DTArg* res5 = nullptr;
+    auto check5 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    auto arg6 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4});
+    DTArg* res6 = nullptr;
+    auto check6 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    castObj<DenseMatrix<VTArg>, DenseMatrix<double>>(res4, arg4, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<int64_t>>(res5, arg5, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<uint32_t>>(res6, arg6, nullptr);
+
+    CHECK(*res4 == *check4);
+    CHECK(*res5 == *check5);
+    CHECK(*res6 == *check6);
+    DataObjectFactory::destroy(arg1,arg2,arg3, arg4,arg5,arg6);
+    DataObjectFactory::destroy(res1, res2, res3, res4, res5, res6);
+    DataObjectFactory::destroy(check1, check2, check3, check4, check5, check6);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DTArg = TestType;
+    using VTArg = typename DTArg::VT;
+
+    // Zero dim
+    size_t numRows = 0;
+    size_t numCols = 0;
+    auto arg1 =  DataObjectFactory::create<DenseMatrix<double>>(numRows, numCols, false);
+    DTArg* res1 = nullptr;
+    auto check1 = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numCols, false);
+
+    numCols = 1;
+    auto arg2 =  DataObjectFactory::create<DenseMatrix<int64_t>>(numRows, numCols, false);
+    DTArg* res2 = nullptr;
+    auto check2 = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numCols, false);
+
+    // Dim mismatch
+    numRows = 3;
+    auto arg3 = genGivenVals<DenseMatrix<uint32_t>>(numRows, {3, 1, 4});
+    DTArg* res3 = genGivenVals<DenseMatrix<VTArg>>(1, {VTArg(3.), VTArg(1.), VTArg(4.)});
+    auto check3 = genGivenVals<DenseMatrix<VTArg>>(numRows, {VTArg(3.), VTArg(1.), VTArg(4.)});
+
+    castObj<DenseMatrix<VTArg>, DenseMatrix<double>>(res1, arg1, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<int64_t>>(res2, arg2, nullptr);
+    castObj<DenseMatrix<VTArg>, DenseMatrix<uint32_t>>(res3, arg3, nullptr);
+
+    CHECK(*res1 == *check1);
+    CHECK(*res2 == *check2);
+    CHECK(!(*res3 == *check3));
+
+    DataObjectFactory::destroy(arg1, arg2, arg3);
+    DataObjectFactory::destroy(res1, res2, res3);
+    DataObjectFactory::destroy(check1, check2, check3);
+}
