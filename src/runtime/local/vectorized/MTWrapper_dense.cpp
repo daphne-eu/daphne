@@ -24,7 +24,7 @@
 
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
+        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
         Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
@@ -33,71 +33,124 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
-    //Collect info about numa domains
+    // create task queue (w/o size-based blocking)
+    std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
+
+    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
+    this->initCPPWorkers(q.get(), batchSize8M, verbose);
+
+#ifdef USE_CUDA
+    if(this->_numCUDAThreads) {
+        this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
+        this->cudaPrefetchInputs(inputs, numInputs, mem_required, splits);
+#ifndef NDEBUG
+        std::cout << "Required memory (ins/outs): " << mem_required << "\nRequired mem/row: " << row_mem << std::endl;
+        std::cout << "batchsizeCPU=" << batchSize8M << " batchsizeGPU=" << batchSize8M*4 << std::endl;
+#endif
+    }
+#endif
+
+    // lock for aggregation combine
+    // TODO: multiple locks per output
+    std::mutex resLock;
+
+    // create tasks and close input
+    uint64_t startChunk = 0;
+    uint64_t endChunk = 0;
+    int method=ctx->config.taskPartitioningScheme;
+    int chunkParam = ctx->config.minimumTaskSize;
+    if(chunkParam<=0)
+        chunkParam=1;
+    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
+    while (lp.hasNextChunk()) {
+        endChunk += lp.getNextChunk();
+        q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
+                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                outCols, 0, ctx}, resLock, res));
+        startChunk = endChunk;
+    }
+    q->closeInput();
+
+    this->joinAll();
+}
+
+template<typename VT>
+void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
+        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
+        Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
+        VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
+    auto inputProps = this->getInputProperties(inputs, numInputs, splits);
+    auto len = inputProps.first;
+    auto mem_required = inputProps.second;
+    mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
+    auto row_mem = mem_required / len;
+
+    // Collect info about numa domains, needed for prioritized victim selection
 
     struct dirent *dirEntry;
     struct dirent *nodeEntry;
+    int num_numa_doamins = 0;
     std::vector<int> numaDomains;
+    numaDomains.resize(40);
     DIR *dirp = opendir("/sys/devices/system/node/");
 
     if (dirp == NULL) {
         std::cout << "Problem opening dir" << std::endl;
-    }
-
-while ((dirEntry = readdir(dirp)) != NULL) {
-    std::string current(dirEntry->d_name);
-    if(current.substr(0,4) == "node") {
-        DIR *nodeDir = opendir(("/sys/devices/system/node/node" + current.substr(4) + "/").c_str());
-        while((nodeEntry = readdir(nodeDir)) != NULL) {
-            std::string curCPU(nodeEntry->d_name);
-            if(curCPU.substr(0,3) == "cpu" && curCPU.length() < 6) {
-                //std::cout << curCPU.substr(3) << "," << current.substr(4) << std::endl;
-                numaDomains.push_back(stoi(current.substr(4)));
+    } else {
+        while ((dirEntry = readdir(dirp)) != NULL) {
+            std::string current(dirEntry->d_name);
+            if(current.substr(0,4) == "node") {
+                num_numa_doamins++;
+                DIR *nodeDir = opendir(("/sys/devices/system/node/node" + current.substr(4) + "/").c_str());
+                while((nodeEntry = readdir(nodeDir)) != NULL) {
+                    std::string curCPU(nodeEntry->d_name);
+                    if(curCPU.substr(0,3) == "cpu" && curCPU.length() < 6) {
+                        //std::cout << curCPU.substr(3) << "," << current.substr(4) << std::endl;
+                        //numaDomains.push_back(stoi(current.substr(4)));
+                        numaDomains.at(stoi(curCPU.substr(3))) = stoi(current.substr(4));
+                    }
+                }
+                closedir(nodeDir);
             }
         }
-        closedir(nodeDir);
+        closedir(dirp);
     }
-}
-    closedir(dirp);
-//std::cout << "Size is " << numaDomains.size() << " and entry 17 is " << numaDomains[17] << std::endl;
-    int queueMode = 2;
-    int _numDeques;
-    if(const char* env_m = std::getenv("DAPHNE_QUEUE_MODE"))
-        queueMode = std::stoi(env_m);
-
-    if( queueMode == 0 ) {
-        _numDeques = 1;
-    } else if( queueMode == 1 ) {
-        std::string line;
-        std::ifstream possibleNodesFile("/sys/devices/system/node/possible");
-        std::getline(possibleNodesFile, line);
-        possibleNodesFile.close();
-        int split = line.find_first_of("-");
-        _numDeques = stoi(line.substr(split+1))-stoi(line.substr(0, split))+1;
-//std::cout << "Num Deques: " << _numDeques << std::endl;
-    } else if( queueMode == 2 ) {
-        _numDeques = this->_numThreads;
+    
+    int queueMode = 0;
+    int _numQueues = 1;
+    if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+        queueMode = 1;
+        _numQueues = num_numa_doamins;
+    } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
+        queueMode = 2;
+        _numQueues = this->_numThreads;
     }
-//std::cout << "_numDeques: " << _numDeques << std::endl;
-
-
-    // create task queue (w/o size-based blocking)
+    
     std::vector<std::unique_ptr<TaskQueue>> q;
     std::vector<TaskQueue*> qvector;
-    for(int i=0; i<_numDeques; i++) {
+    for(int i=0; i<_numQueues; i++) {
+        // Normally it would be done like this:
+        // q.emplace_back(new BlockingTaskQueue(len));
+        // However I'm getting an error so they are created with make_unique and get now.
+        
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
         CPU_SET(i, &cpuset);
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
         std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
-        //q.emplace_back(new BlockingTaskQueue(len));
         q.push_back(std::move(tmp));
         qvector.push_back(q[i].get());
     }
-    //std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers2(qvector, numaDomains, batchSize8M, verbose, _numDeques, queueMode);
+    if (queueMode == 1) {
+        this->initCPPWorkersPerGroup(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode);
+    } else if (queueMode == 2) {
+        this->initCPPWorkersPerCPU(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode);
+    } else {
+        std::cerr << "Error in queue group setup" << std::endl;
+    }
+
 #ifdef USE_CUDA
     if(this->_numCUDAThreads) {
         this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
@@ -117,53 +170,30 @@ while ((dirEntry = readdir(dirp)) != NULL) {
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
-    uint64_t target;
-    uint64_t oneChunk = ((len/_numDeques)/_numDeques)*_numDeques;
-    int remainder = len - (oneChunk*_numDeques);
-
-    auto chunkParam = 1;
-
-    std::vector<LoadPartitioning> lps;
-    lps.emplace_back(STATIC, oneChunk+remainder, chunkParam, this->_numThreads, false);
-    for(int i=1; i<_numDeques; i++) {
-        lps.emplace_back(STATIC, oneChunk, chunkParam, this->_numThreads, false);
-    }
-    startChunk = 0;
-    for(uint64_t i=0; i<_numDeques; i++) {
-        while(lps[i].hasNextChunk()) {
-            endChunk += lps[i].getNextChunk();
-            qvector[i]->enqueueTaskOnTarget(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
-                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                outCols, 0, ctx}, resLock, res), i);
-            startChunk = endChunk;
-        }
-        qvector[i]->closeInput();
-    }
-/*
-    LoadPartitioning lp(STATIC, len, chunkParam, this->_numThreads, false);
+    uint64_t target = 0;
+    int method=ctx->config.taskPartitioningScheme;
+    int chunkParam = ctx->config.minimumTaskSize;
+    if(chunkParam<=0)
+        chunkParam=1;
+    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
     while (lp.hasNextChunk()) {
         endChunk += lp.getNextChunk();
-        //target = int(((float(startChunk))/(len+1))*_numDeques);
-        target = currentItr%_numDeques;
-        q[target]->enqueueTaskOnTarget(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs,
+        target = currentItr % _numQueues;
+        qvector[target]->enqueueTaskOnTargetQueue(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                 inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                 outCols, 0, ctx}, resLock, res), target);
         startChunk = endChunk;
-        currentItr++;
     }
-    //std::cout << "len is " << len << std::endl;
-    //std::cout << "Total Itr: " << currentItr << std::endl;
-    //q[0]->closeInput();
-    for(int i=0; i<_numDeques; i++) {
-        q[i]->closeInput();
+    for(int i=0; i<_numQueues; i++) {
+        qvector[i]->closeInput();
     }
-*/
+
     this->joinAll();
 }
 
 template<typename VT>
 [[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
+        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
         Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     size_t device_task_len = 0ul;
@@ -176,22 +206,6 @@ template<typename VT>
     // lock for aggregation combine
     // TODO: multiple locks per output
     std::mutex resLock;
-
-    int queueMode = 1;
-    int _numDeques;
-    if( queueMode == 0 ) {
-        _numDeques = 1;
-    } else if( queueMode == 1 ) {
-        std::string line;
-        std::ifstream possibleNodesFile("/sys/devices/system/node/possible");
-        std::getline(possibleNodesFile, line);
-        possibleNodesFile.close();
-        int split = line.find_first_of("-");
-        _numDeques = stoi(line.substr(split+1))-stoi(line.substr(0, split))+1;
-//std::cout << "Num Deques: " << _numDeques << std::endl;
-    } else if( queueMode == 2 ) {
-        _numDeques = this->_numThreads;
-    }
 
 #ifdef USE_CUDA
     // ToDo: multi-device support :-P
@@ -211,7 +225,7 @@ template<typename VT>
     for (size_t i = 0; i < numOutputs; ++i) {
         res_cuda[i] = new DenseMatrix<VT>*;
         if(combines[i] == mlir::daphne::VectorCombine::ROWS) {
-            auto rc2 = static_cast<DenseMatrix<VT> *>((*res[i]))->slice(0, gpu_task_len);
+            auto rc2 = static_cast<DenseMatrix<VT> *>((*res[i]))->sliceRow(0, gpu_task_len);
             (*res_cuda[i]) = rc2;
         }
         else if(combines[i] == mlir::daphne::VectorCombine::COLS) {
@@ -224,7 +238,7 @@ template<typename VT>
 
     for (uint32_t k = 0; k < gpu_task_len; k += blksize) {
         q_cuda->enqueueTask(new CompiledPipelineTaskCUDA<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
-                funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, k, std::min(k + blksize, len),
+                funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, k, std::min(k + blksize, len),
                 outRows, outCols, 0, ctx}, resLock, res_cuda));
     }
     q_cuda->closeInput();
@@ -232,29 +246,20 @@ template<typename VT>
 
     auto cpu_task_len = len - device_task_len;
     DenseMatrix<VT> ***res_cpp{};
-    std::vector<std::unique_ptr<TaskQueue>> q_cpp;
-    std::vector<TaskQueue*> q_cppvector;
+    std::unique_ptr<TaskQueue> q_cpp;
     if(cpu_task_len > 0) {
-        for(uint32_t i=0; i<this->_numThreads; i++) {
-            cpu_set_t cpuset;
-            CPU_ZERO(&cpuset);
-            CPU_SET(i, &cpuset);
-            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
-            std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
-            q_cpp.push_back(std::move(tmp));
-            q_cppvector.push_back(q_cpp[i].get());
-std::vector<int> numaDomains;
-            this->initCPPWorkers2(q_cppvector, numaDomains, batchSize8M, verbose, _numDeques, queueMode);
-        }
-            res_cpp = new DenseMatrix<VT> **[numOutputs];
-            auto offset = device_task_len;
+        q_cpp = std::make_unique<BlockingTaskQueue>(cpu_task_len);
+        this->initCPPWorkers(q_cpp.get(), batchSize8M, verbose);
+        res_cpp = new DenseMatrix<VT> **[numOutputs];
+        auto offset = device_task_len;
+
         for (size_t i = 0; i < numOutputs; ++i) {
             res_cpp[i] = new DenseMatrix<VT> *;
             if(combines[i] == mlir::daphne::VectorCombine::ROWS) {
-                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->slice(device_task_len, len);
+                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->sliceRow(device_task_len, len);
             }
             else if(combines[i] == mlir::daphne::VectorCombine::COLS) {
-                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->slice(0, outRows[i], device_task_len, len);
+                (*res_cpp[i]) = static_cast<DenseMatrix<VT> *>((*res[i]))->sliceCol(device_task_len, len);
             }
             else {
                 (*res_cpp[i]) = (*res[i]);
@@ -263,22 +268,19 @@ std::vector<int> numaDomains;
 
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
-        uint64_t currentItr = 0;
-        uint64_t target;
-        auto chunkParam = 1;
-        LoadPartitioning lp(STATIC, cpu_task_len, chunkParam, this->_numCPPThreads, false);
+        int method=ctx->config.taskPartitioningScheme;
+        int chunkParam = ctx->config.minimumTaskSize;
+        if(chunkParam<=0)
+            chunkParam=1;
+        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
         while (lp.hasNextChunk()) {
             endChunk += lp.getNextChunk();
-            target = currentItr%_numDeques;
-            q_cpp[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
-                    funcs, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
+            q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
+                    funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
                     outRows, outCols, offset, ctx}, resLock, res_cpp));
             startChunk = endChunk;
-            currentItr++;
         }
-        for(int i=0; i<_numDeques; i++) {
-            q_cpp[i]->closeInput();
-        }
+        q_cpp->closeInput();
     }
     this->joinAll();
 

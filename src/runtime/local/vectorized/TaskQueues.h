@@ -21,7 +21,6 @@
 #include <mutex>
 #include <condition_variable>
 #include <runtime/local/vectorized/Tasks.h>
-#include <sched.h>
 
 const uint64_t DEFAULT_MAX_SIZE = 100000;
 
@@ -29,10 +28,8 @@ class TaskQueue {
 public:
     virtual ~TaskQueue() = default;
 
-    virtual int dequeueBatch(std::vector<Task*> &tmp, int _numQueues) = 0;
-    virtual void enqueueBatch(std::vector<Task*> &tmp) = 0;
     virtual void enqueueTask(Task* t) = 0;
-    virtual void enqueueTaskOnTarget(Task* t, int i) = 0;
+    virtual void enqueueTaskOnTargetQueue(Task* t, int targetCPU) = 0;
     virtual Task* dequeueTask() = 0;
     virtual uint64_t size() = 0;
     virtual void closeInput() = 0;
@@ -40,7 +37,7 @@ public:
 
 class BlockingTaskQueue : public TaskQueue {
 private:
-    std::deque<Task*> _data;
+    std::list<Task*> _data;
     std::mutex _qmutex;
     std::condition_variable _cv;
     EOFTask _eof; //end marker
@@ -55,42 +52,6 @@ public:
     }
     ~BlockingTaskQueue() override = default;
 
-    void enqueueTaskOnTarget(Task* t, int i) override {
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(i, &cpuset);
-        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
-        std::unique_lock<std::mutex> ul(_qmutex);
-        while( _data.size() + 1 > _capacity )
-            _cv.wait(ul);
-        _data.push_back(t);
-        _cv.notify_one();
-    }
-
-    int dequeueBatch(std::vector<Task*> &tmp, int _numQueues) override {
-        std::unique_lock<std::mutex> ul(_qmutex);
-        //int printsize;
-        //printsize = _data.size();
-        //if(printsize > 0) {
-        //std::cout << "size is " << printsize << std::endl;
-        int amountToSteal = _data.size()/_numQueues;
-        if(amountToSteal < 100) { return 0; }
-        //std::cout << "Amount is " << amountToSteal << std::endl;
-        tmp.insert(tmp.end(), std::make_move_iterator(_data.begin() + _data.size() - amountToSteal), std::make_move_iterator(_data.end()));
-        _data.erase(_data.begin() + _data.size() - amountToSteal, _data.end());
-        _cv.notify_one();
-        return amountToSteal;
-        //}
-        //return 0;
-    }
-
-    void enqueueBatch(std::vector<Task*> &tmp) override {
-        std::unique_lock<std::mutex> ul(_qmutex);
-        _data.insert(_data.end(), std::make_move_iterator(tmp.begin()), std::make_move_iterator(tmp.end()));
-        _cv.notify_one();
-        tmp.erase(tmp.begin(), tmp.end());
-    }
-
     void enqueueTask(Task* t) override {
         // lock mutex, released at end of scope
         std::unique_lock<std::mutex> ul(_qmutex);
@@ -100,6 +61,18 @@ public:
         // add task to end of list
         _data.push_back(t);
         // notify blocked dequeue operations
+        _cv.notify_one();
+    }
+
+    void enqueueTaskOnTargetQueue(Task* t, int targetCPU) override {
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(targetCPU, &cpuset);
+        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        std::unique_lock<std::mutex> ul(_qmutex);
+        while( _data.size() + 1 > _capacity )
+            _cv.wait(ul);
+        _data.push_back(t);
         _cv.notify_one();
     }
 

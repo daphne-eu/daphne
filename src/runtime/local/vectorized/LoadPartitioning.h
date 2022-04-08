@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <string>
 
+enum QueueTypeOption { CENTRALIZED=0, PERGROUP, PERCPU};
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
                             PLS, MSTATIC, MFSC, PSS};
 class LoadPartitioning {

@@ -57,21 +57,30 @@ protected:
 
     void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cpp_workers.resize(_numCPPThreads);
-        std::vector<TaskQueue*> qvector;
-        qvector.push_back(q);
         for(auto& w : cpp_workers)
-            w = std::make_unique<WorkerCPU>(qvector, verbose, 0, batchSize);
+            w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
     }
 
-
-    void initCPPWorkers2(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0) {
+    void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0) {
         cpp_workers.resize(_numCPPThreads);
         if (numQueues == 0) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
         }
         int i = 0;
         for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPU>(qvector, numaDomains, verbose, 0, batchSize, i, numQueues, queueMode);
+            w = std::make_unique<WorkerCPUPerCPU>(qvector, numaDomains, verbose, 0, batchSize, i, numQueues, queueMode);
+            i++;
+        }
+    }
+    
+    void initCPPWorkersPerGroup(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0) {
+        cpp_workers.resize(_numCPPThreads);
+        if (numQueues == 0) {
+            std::cout << "numQueues is 0, this should not happen." << std::endl;
+        }
+        int i = 0;
+        for(auto& w : cpp_workers) {
+            w = std::make_unique<WorkerCPUPerGroup>(qvector, numaDomains, verbose, 0, batchSize, i, numQueues, queueMode);
             i++;
         }
     }
@@ -159,6 +168,10 @@ public:
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
             VectorCombine* combines, DCTX(ctx), bool verbose);
 
+    void executeQueuePerCPU(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+            size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
+            VectorCombine* combines, DCTX(ctx), bool verbose);
+
     [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar,
             Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
@@ -176,6 +189,10 @@ public:
             MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
     void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
+                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+
+    void executeQueuePerCPU(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
                             size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 

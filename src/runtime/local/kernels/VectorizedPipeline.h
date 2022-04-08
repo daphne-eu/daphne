@@ -48,8 +48,13 @@ struct VectorizedPipeline {
 
         DTRes **res[] = {&resIn};
         if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
-            wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
-                    reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+            if(ctx->getUserConfig().queueSetupScheme == PERCPU || ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+                wrapper->executeQueuePerCPU(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                        reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+            } else {
+                wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                        reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+            }
         }
         else {
             wrapper->executeQueuePerDeviceType(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
@@ -88,8 +93,13 @@ void vectorizedPipeline(DTRes *&res1, DTRes *&res2, bool* isScalar, Structure **
     res[0] = &res1;
     res[1] = &res2;
     if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
-        wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
-                reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+        if(ctx->getUserConfig().queueSetupScheme == PERCPU || ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+            wrapper->executeQueuePerCPU(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                    reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+        } else {
+            wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                    reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+        }
     }
     else {
         wrapper->executeQueuePerDeviceType(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,

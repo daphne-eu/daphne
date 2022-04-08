@@ -44,6 +44,7 @@ struct DaphneUserConfig {
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
+    QueueTypeOption queueSetupScheme = CENTRALIZED;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     
