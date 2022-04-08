@@ -125,10 +125,12 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        numThreads == 0 ? _numThreads = std::thread::hardware_concurrency() : _numThreads = numThreads;
-        if(const char* env_m = std::getenv("DAPHNE_THREADS"))
-            _numThreads = std::stoi(env_m);
-
+        if(ctx->config.numberOfThreads > 0){
+            _numThreads = ctx->config.numberOfThreads;
+        }
+        else{
+            _numThreads = std::thread::hardware_concurrency();
+        }
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
         _numCPPThreads = _numThreads;
@@ -153,11 +155,11 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, Structure** inputs,
+    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
             VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar,
             Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
@@ -173,11 +175,11 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
+    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
                             size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, Structure** inputs,
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
                             size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 

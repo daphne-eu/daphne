@@ -988,6 +988,37 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
     }
 };
 
+/**
+ * @brief Turns an addition into a concatenation, if one of the inputs is a
+ * string.
+ * 
+ * This is important, since we use the '+'-operator for both addition and
+ * string concatenation in DaphneDSL, while the types of the operands might be
+ * known only after type inference.
+ * 
+ * @param op
+ * @param rewriter
+ * @return 
+ */
+mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(
+        mlir::daphne::EwAddOp op, PatternRewriter &rewriter
+) {
+    mlir::Value lhs = op.lhs();
+    mlir::Value rhs = op.rhs();
+    const bool lhsIsStr = lhs.getType().isa<mlir::daphne::StringType>();
+    const bool rhsIsStr = rhs.getType().isa<mlir::daphne::StringType>();
+    if(lhsIsStr || rhsIsStr) {
+        mlir::Type strTy = mlir::daphne::StringType::get(rewriter.getContext());
+        if(!lhsIsStr)
+            lhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, lhs);
+        if(!rhsIsStr)
+            rhs = rewriter.create<mlir::daphne::CastOp>(op.getLoc(), strTy, rhs);
+        rewriter.replaceOpWithNewOp<mlir::daphne::ConcatOp>(op, strTy, lhs, rhs);
+        return mlir::success();
+    }
+    return mlir::failure();
+}
+
 void mlir::daphne::DistributeOp::getCanonicalizationPatterns(
         RewritePatternSet &results, MLIRContext *context
 ) {

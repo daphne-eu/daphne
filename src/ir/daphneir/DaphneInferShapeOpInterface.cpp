@@ -215,8 +215,9 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
-    const size_t numRows = arg().getType().dyn_cast<daphne::MatrixType>().getNumRows();
-    return {{numRows, 1}, {-1, 1}};
+    const size_t numRows = -1;
+    const size_t numCols = inferNumColsFromArgs(keyCol()) + inferNumColsFromArgs(aggCol());
+    return {{numRows, numCols}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
@@ -227,7 +228,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************
-         
+
 /**
  * @brief Utility for trying a parametric trait for all values of the parameter
  * from 0 to some upper bound.
@@ -316,7 +317,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation* op) {
         // and has exactly one result, we utilize its shape inference traits,
         // or the inference interfaces for the number of rows and columns
         // (separately).
-        
+
         ssize_t numRows = -1;
         ssize_t numCols = -1;
 
@@ -367,12 +368,12 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::tryInferShape(Operation* op) {
             }
             // TODO Throw if lhs and rhs don't agree.
         }
-        
+
         if(auto inferNumRowsOp = llvm::dyn_cast<daphne::InferNumRows>(op))
             numRows = inferNumRowsOp.inferNumRows();
         if(auto inferNumColsOp = llvm::dyn_cast<daphne::InferNumCols>(op))
             numCols = inferNumColsOp.inferNumCols();
-    
+
         // Note that all our shape inference traits assume that the operation
         // has exactly one result (which is the case for most DaphneIR ops).
         return {{numRows, numCols}};

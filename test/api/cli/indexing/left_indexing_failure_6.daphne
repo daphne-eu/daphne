@@ -1,0 +1,4 @@
+// Left indexing on scalars is not allowed.
+x = 123;
+x[0, 0] = 456;
+print(x);

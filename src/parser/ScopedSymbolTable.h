@@ -159,10 +159,16 @@ public:
      * @param val The new SSA value to associate with the symbol.
      */
     void put(std::string sym, mlir::Value val) {
-        auto it = scopes.back().find(sym);
-        if(it == scopes.back().end())
-            throw std::runtime_error("trying to update the value of an unknown symbol");
-        it->second.value = val;
+        //update the symbol in the closest parent scope
+        for(int i = scopes.size() - 1; i >= 0; i--) {
+            auto it = scopes[i].find(sym);
+            if(it != scopes[i].end()) {
+                it->second.value = val;
+                return;
+            }
+        }
+        throw std::runtime_error(
+            "trying to update the value of an unknown symbol: " + sym );
     }
     
     /**

@@ -58,7 +58,17 @@ void sliceRow(DTRes *& res, const DTArg * arg, size_t lowerIncl, size_t upperExc
 template<typename VT>
 struct SliceRow<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
-        res = const_cast<DenseMatrix<VT> *>(arg)->slice(lowerIncl, upperExcl);
+        res = arg->sliceRow(lowerIncl, upperExcl);
+    }        
+};
+
+// ----------------------------------------------------------------------------
+// Frame <- Frame
+// ----------------------------------------------------------------------------
+
+template <> struct SliceRow<Frame, Frame> {
+    static void apply(Frame *& res, const Frame * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
+        res = arg->sliceRow(lowerIncl, upperExcl);
     }        
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_SLICEROW_H

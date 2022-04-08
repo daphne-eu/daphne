@@ -1,0 +1,3 @@
+// Specifying just one dimension (as range) (no comma) is not allowed.
+X = fill(123, 4, 3);
+print(X[0:1]);

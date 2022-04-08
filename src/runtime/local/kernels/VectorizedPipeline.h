@@ -34,7 +34,7 @@ using mlir::daphne::VectorCombine;
 
 template<class DTRes>
 struct VectorizedPipeline {
-    static void apply(DTRes *&resIn, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
+    static void apply(DTRes *&resIn, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
             int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)) {
         assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
 
@@ -48,11 +48,11 @@ struct VectorizedPipeline {
 
         DTRes **res[] = {&resIn};
         if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
-            wrapper->executeSingleQueue(funcs, res, inputs, numInputs, numOutputs, outRows, outCols,
+            wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
         else {
-            wrapper->executeQueuePerDeviceType(funcs, res, inputs, numInputs, numOutputs, outRows, outCols,
+            wrapper->executeQueuePerDeviceType(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
     }
@@ -63,15 +63,15 @@ struct VectorizedPipeline {
 // ****************************************************************************
 
 template<class DTRes>
-void vectorizedPipeline(DTRes *&res, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
+void vectorizedPipeline(DTRes *&res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
         int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)) {
-    VectorizedPipeline<DTRes>::apply(res, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, numFuncs,
+    VectorizedPipeline<DTRes>::apply(res, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, numFuncs,
         fun, ctx);
 }
 
 // TODO: use variable args
 template<class DTRes>
-void vectorizedPipeline(DTRes *&res1, DTRes *&res2, Structure **inputs, size_t numInputs, size_t numOutputs,
+void vectorizedPipeline(DTRes *&res1, DTRes *&res2, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
         int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)){
     assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
 
@@ -88,11 +88,11 @@ void vectorizedPipeline(DTRes *&res1, DTRes *&res2, Structure **inputs, size_t n
     res[0] = &res1;
     res[1] = &res2;
     if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
-        wrapper->executeSingleQueue(funcs, res, inputs, numInputs, numOutputs, outRows, outCols,
+        wrapper->executeSingleQueue(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                 reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
     }
     else {
-        wrapper->executeQueuePerDeviceType(funcs, res, inputs, numInputs, numOutputs, outRows, outCols,
+        wrapper->executeQueuePerDeviceType(funcs, res, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                 reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
     }
 }

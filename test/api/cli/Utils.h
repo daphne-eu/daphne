@@ -218,12 +218,38 @@ void checkDaphneStatusCode(StatusCode exp, const std::string & scriptFilePath, A
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
 
-    REQUIRE(status == exp);
+    CHECK(status == exp);
 }
 
 template<typename... Args>
 void checkDaphneStatusCodeSimple(StatusCode exp, const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     checkDaphneStatusCode(exp, dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
+}
+
+/**
+ * @brief Checks whether executing the given DaphneDSL script with the command
+ * line interface of the DAPHNE Prototype fails.
+ * 
+ * This is the case when the return code is not `StatusCode::SUCCESS`.
+ * 
+ * @param scriptFilePath The path to the DaphneDSL script file to execute.
+ * @param args The arguments to pass in addition to the script's path. Note
+ * that script arguments must be passed via the `--args` option for this
+ * utility function. Despite the variadic template, each element should be of
+ * type `char *`. The last one does *not* need to be a null pointer.
+ */
+template<typename... Args>
+void checkDaphneFails(const std::string & scriptFilePath, Args ... args) {
+    std::stringstream out;
+    std::stringstream err;
+    int status = runDaphne(out, err, args..., scriptFilePath.c_str());
+
+    CHECK(status != StatusCode::SUCCESS);
+}
+
+template<typename... Args>
+void checkDaphneFailsSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
+    checkDaphneFails(dirPath + name + '_' + std::to_string(idx) + ".daphne", args...);
 }
 
 /**
@@ -247,9 +273,13 @@ void compareDaphneToStr(const std::string & exp, const std::string & scriptFileP
     std::stringstream err;
     int status = runDaphne(out, err, args..., scriptFilePath.c_str());
 
-    REQUIRE(status == StatusCode::SUCCESS);
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == exp);
-    CHECK(err.str().empty());
+    CHECK(err.str() == "");
 }
 
 /**
@@ -294,11 +324,16 @@ void compareDaphneToDaphneLib(const std::string & pythonScriptFilePath, const st
     std::stringstream errDaphneLib;
     int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
     int statusDaphne = runDaphne(outDaphne, errDaphne, args..., daphneDSLScriptFilePath.c_str());
-    REQUIRE(statusDaphne == StatusCode::SUCCESS);
-    REQUIRE(statusDaphneLib == 0);
+    
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(statusDaphne == StatusCode::SUCCESS);
+    CHECK(statusDaphneLib == 0);
     CHECK(outDaphne.str() == outDaphneLib.str());
-    CHECK(errDaphne.str().empty());
-    CHECK(errDaphneLib.str().empty());
+    CHECK(errDaphne.str() == "");
+    CHECK(errDaphneLib.str() == "");
 }
 
 /**
@@ -325,13 +360,18 @@ void compareDaphneToDaphneLibScalar(const std::string & pythonScriptFilePath, co
     float epsilon = 0.1;
     int statusDaphneLib = runDaphneLib(outDaphneLib, errDaphneLib, pythonScriptFilePath.c_str(), args...);
     int statusDaphne = runDaphne(outDaphne, errDaphne, args..., daphneDSLScriptFilePath.c_str());
-    REQUIRE(statusDaphne == StatusCode::SUCCESS);
-    REQUIRE(statusDaphneLib == 0);
+    
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages. For err,
+    // don't check empty(), because then catch2 doesn't display the error
+    // output.
+    CHECK(statusDaphne == StatusCode::SUCCESS);
+    CHECK(statusDaphneLib == 0);
     while(std::getline(outDaphneLib, resultDaphneLib) && std::getline(outDaphne, resultDaphne)) {
         CHECK(std::stof(resultDaphneLib) - std::stof(resultDaphne) <= epsilon);
     }
-    CHECK(errDaphne.str().empty());
-    CHECK(errDaphneLib.str().empty());
+    CHECK(errDaphne.str() == "");
+    CHECK(errDaphneLib.str() == "");
 }
 
 template<typename... Args>
@@ -370,7 +410,9 @@ void compareDaphneToSelfRef(const std::string &expScriptFilePath, const std::str
     std::stringstream actErr;
     int actStatus = runDaphne(actOut, actErr, args..., actScriptFilePath.c_str());
 
-    REQUIRE(expStatus == actStatus);
+    // Just CHECK (don't REQUIRE) success, such that in case of a failure, the
+    // checks of out and err still run and provide useful messages.
+    CHECK(expStatus == actStatus);
     CHECK(expOut.str() == actOut.str());
     CHECK(expErr.str() == actErr.str());
 }

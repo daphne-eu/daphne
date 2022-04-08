@@ -1,0 +1,8 @@
+// Setting variable in loop (1 iteration), same shape.
+X = fill(12, 2, 3);
+i = 0;
+do {
+    X = fill(10, 2, 3);
+    i = i + 1;
+} while(i < 1);
+print(sum(X));

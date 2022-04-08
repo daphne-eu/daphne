@@ -128,10 +128,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
 #endif
 
-        if(userConfig_.use_freeOps)
-            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertFreeOpPass());
-        if(userConfig_.explain_freeOps)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after inserting FreeOp"));
+        if(userConfig_.use_obj_ref_mgnt)
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createManageObjRefsPass());
+        if(userConfig_.explain_obj_ref_mgnt)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
 
         pm.addPass(mlir::createCSEPass());
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());

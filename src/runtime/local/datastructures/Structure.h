@@ -17,7 +17,9 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
 
-#include <iostream>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+
+#include <mutex>
 
 #include <cstddef>
 
@@ -26,18 +28,46 @@
  */
 class Structure
 {
+private:
+    mutable size_t refCounter;
+    mutable std::mutex refCounterMutex;
+    
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
+    
 protected:
     size_t numRows;
     size_t numCols;
 
     Structure(size_t numRows, size_t numCols) :
-            numRows(numRows), numCols(numCols)
+            refCounter(1), numRows(numRows), numCols(numCols)
     {
         // nothing to do
     };
 
 public:
     virtual ~Structure() = default;
+    
+    size_t getRefCounter() const {
+        return refCounter;
+    }
+    
+    /**
+     * @brief Increases the reference counter of this data object.
+     * 
+     * The access is protected by a mutex, such that multiple threads may call
+     * this method concurrently.
+     */
+    void increaseRefCounter() const {
+        refCounterMutex.lock();
+        refCounter++;
+        refCounterMutex.unlock();
+    }
+    
+    // Note that there is no method for decreasing the reference counter here.
+    // Instead, use DataObjectFactory::destroy(). It is important that the
+    // reference counter becoming zero triggers the deletion of the data
+    // object. Thus, we cannot handle it here.
 
     [[nodiscard]] size_t getNumRows() const
     {
@@ -65,7 +95,41 @@ public:
      */
     virtual void print(std::ostream & os) const = 0;
 
-    virtual Structure* slice(size_t rl, size_t ru) = 0;
+    /**
+     * @brief Extracts a row range out of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param rl Row range lower bound (inclusive).
+     * @param ru Row range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* sliceRow(size_t rl, size_t ru) const = 0;
+
+    /**
+     * @brief Extracts a column range out of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param cl Column range lower bound (inclusive).
+     * @param cu Column range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* sliceCol(size_t cl, size_t cu) const = 0;
+    
+    /**
+     * @brief Extracts a rectangular sub-structure (row and column range) out
+     * of this structure.
+     * 
+     * Might be implemented as a zero-copy operation.
+     * 
+     * @param rl Row range lower bound (inclusive).
+     * @param ru Row range upper bound (exclusive).
+     * @param cl Column range lower bound (inclusive).
+     * @param cu Column range upper bound (exclusive).
+     * @return 
+     */
+    virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

@@ -1,0 +1,10 @@
+c1 = fill(123, 5, 1);
+c2 = seq(100.5, 140.5, 10.0);
+
+f1 = frame(c1, c2, "a", "b");
+
+registerView("x", f1);
+
+s = sql("SELECT x.a, x.b FROM x, x;");
+
+print(s);

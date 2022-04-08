@@ -221,7 +221,9 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]>;
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth, CUDASupport]>;
 def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative, EwSparseIfEither]>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [CUDASupport]>;
@@ -255,7 +257,7 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 def Daphne_ConcatOp : Daphne_Op<"concat"> {
     let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
     let results = (outs StrScalar:$res);
-    
+
     let hasFolder = 1;
 }
 
@@ -490,16 +492,16 @@ def Daphne_SliceColOp : Daphne_Op<"sliceCol"> {
     let results = (outs MatrixOrFrame:$res);
 }
 
-def Daphne_InsertOp : Daphne_Op<"insert"> {
-    let arguments = (ins MatrixOrFrame:$target, MatrixOrFrame:$source, Selection:$selectedRows, Selection:$selectedCols);
-    // TODO Not providing a new SSA value will be problematic for inferences.
-    let results = (outs); // no results
-}
+// TODO Create combined InsertOp (see #238).
 
 def Daphne_InsertRowOp : Daphne_Op<"insertRow"> {
-    let arguments = (ins Matrix:$target, Matrix:$source, Size:$rowLowerIncl, Size:$rowUpperExcl);
-    // TODO Not providing a new SSA value will be problematic for inferences.
-    let results = (outs); // no results
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$rowLowerIncl, Size:$rowUpperExcl);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_InsertColOp : Daphne_Op<"insertCol"> {
+    let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$colLowerIncl, Size:$colUpperExcl);
+    let results = (outs MatrixOrFrame:$res);
 }
 
 // ****************************************************************************
@@ -539,6 +541,7 @@ def Daphne_ColBindOp : Daphne_BindOp<"colBind", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromAllArgs, NumColsFromSumOfAllArgs, CUDASupport
 ]>;
+
 def Daphne_RowBindOp : Daphne_BindOp<"rowBind", [
     NumRowsFromSumOfAllArgs, NumColsFromAllArgs
 ]>;
@@ -809,6 +812,7 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // TODO Implement #row inference
 def Daphne_CartesianOp : Daphne_Op<"cartesian", [
     NumColsFromSumOfAllArgs,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferNumRowsOpInterface>
 ]> {
     let arguments = (ins Frame:$lhs, Frame:$rhs); //let arguments = (ins Variadic<Frame>:$args);
@@ -825,7 +829,13 @@ class Daphne_JoinOp<string name, list<OpTrait> traits = []>
     let results = (outs Frame:$res);
 }
 
-def Daphne_InnerJoinOp : Daphne_JoinOp<"innerJoin">;
+def Daphne_InnerJoinOp : Daphne_Op<"innerJoin", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+]> {
+    let arguments = (ins Frame:$lhs, Frame:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
+    let results = (outs Frame:$res);
+}
 def Daphne_FullOuterJoinOp : Daphne_JoinOp<"fullOuterJoin">;
 def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
@@ -921,12 +931,28 @@ def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
 // Grouping
 // ----------------------------------------------------------------------------
 
+def Daphne_GroupAggCount : I32EnumAttrCase<"COUNT", 1>;
+def Daphne_GroupAggSum : I32EnumAttrCase<"SUM", 2>;
+def Daphne_GroupAggMin : I32EnumAttrCase<"MIN", 3>;
+def Daphne_GroupAggMax : I32EnumAttrCase<"MAX", 4>;
+def Daphne_GroupAggAvg : I32EnumAttrCase<"AVG", 5>;
+
+def Daphne_GroupAggEnum : I32EnumAttr<"GroupEnum", "", [Daphne_GroupAggCount, Daphne_GroupAggSum, Daphne_GroupAggMin, Daphne_GroupAggMax, Daphne_GroupAggAvg]>{
+    let cppNamespace = "::mlir::daphne";
+}
+
 def Daphne_GroupOp : Daphne_Op<"group", [
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
-]> {
-    // TODO Maybe colIdxs should be an attribute.
-    let arguments = (ins Frame:$arg, Variadic<Size>:$colIdxs);
-    let results = (outs MatrixOf<[Size]>:$groupIds, MatrixOf<[Size]>:$reprIdxs);
+    AttrSizedOperandSegments,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>]>{
+    let arguments = (
+        ins Frame:$frame,
+        Variadic<StrScalar>:$keyCol,
+        Variadic<StrScalar>:$aggCol,
+        TypedArrayAttrBase<Daphne_GroupAggEnum, "enum">:$aggFuncs
+    );
+    let results = (outs Frame:$res);
 }
 
 // ****************************************************************************
@@ -1208,8 +1234,17 @@ def Daphne_StoreVariadicPackOp : Daphne_Op<"storeVariadicPack"> {
     let results = (outs); // no results
 }
 
-def Daphne_FreeOp : Daphne_Op<"free"> {
-    let arguments = (ins AnyTypeOf<[MatrixOrFrame, Handle]>:$arg);
+def Daphne_IncRefOp : Daphne_Op<"incRef"> {
+    let summary = "Increases the reference counter of the underlying runtime data object.";
+
+    let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
+def Daphne_DecRefOp : Daphne_Op<"decRef"> {
+    let summary = "Decreases the reference counter of the underlying runtime data object and frees it if the reference counter becomes zero.";
+
+    let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs); // no results
 }
 
@@ -1240,6 +1275,9 @@ def Daphne_ConstantOp : Daphne_Op<"constant", [ConstantLike, NoSideEffect]> {
         }]>,
         OpBuilder<(ins "uint64_t":$value), [{
             build($_builder, $_state, $_builder.getIntegerAttr($_builder.getIntegerType(64, false), value));
+        }]>,
+        OpBuilder<(ins "bool":$value), [{
+            build($_builder, $_state, $_builder.getIntegerAttr($_builder.getI1Type(), value));
         }]>,
         //OpBuilder<(ins "int":$value), [{
         //    build($_builder, $_state, $_builder.getI32IntegerAttr(value));

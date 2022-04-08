@@ -465,9 +465,9 @@ public:
                 auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
                 rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
             }
-            rewriter.create<ReturnOp>(loc);
-            // erase leads to problems, while remove doesn't. Inspect this.
-            oldReturn->remove();
+            // Replace the old ReturnOp with operands by a new ReturnOp without
+            // operands.
+            rewriter.replaceOpWithNewOp<ReturnOp>(oldReturn);
         }
 
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
@@ -530,9 +530,9 @@ public:
                     auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
                     rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
                 }
-                rewriter.create<ReturnOp>(loc);
-                // erase leads to problems, while remove doesn't. Inspect this.
-                oldReturn->remove();
+                // Replace the old ReturnOp with operands by a new ReturnOp without
+                // operands.
+                rewriter.replaceOpWithNewOp<ReturnOp>(oldReturn);
             }
 
             auto fnPtr2 = rewriter.create<LLVM::AddressOfOp>(loc, fOp2);
@@ -576,17 +576,39 @@ public:
             throw std::runtime_error("vectorizedPipelineOp without inputs not supported at the moment!");
         }
 
+        // Handle variadic operands isScalar and inputs (both share numInputs).
+        auto idxAttrNumInputs = rewriter.getIndexAttr(numDataOperands);
+        // For isScalar.
+        callee << "__bool";
+        auto vpScalar = rewriter.create<daphne::CreateVariadicPackOp>(loc,
+            daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()),
+            idxAttrNumInputs);
+        // For inputs and numInputs.
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
-
-        // Variadic operand.
         callee << "_variadic__size_t";
-        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(loc,
+        auto vpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc,
             daphne::VariadicPackType::get(rewriter.getContext(), operandType),
-            rewriter.getIndexAttr(numDataOperands));
+            idxAttrNumInputs);
+        // Populate the variadic packs for isScalar and inputs.
         for(size_t k = 0; k < numDataOperands; k++) {
-            rewriter.create<daphne::StoreVariadicPackOp>(loc, cvpOp, operands[k], rewriter.getIndexAttr(k));
+            auto idxAttrK = rewriter.getIndexAttr(k);
+            rewriter.create<daphne::StoreVariadicPackOp>(
+                    loc,
+                    vpScalar,
+                    rewriter.create<daphne::ConstantOp>(
+                            loc,
+                            // We assume this input to be a scalar if its type
+                            // has not been converted to a pointer type.
+                            !operands[k].getType().isa<LLVM::LLVMPointerType>()
+                    ),
+                    idxAttrK
+            );
+            rewriter.create<daphne::StoreVariadicPackOp>(
+                    loc, vpInputs, operands[k], idxAttrK
+            );
         }
-        newOperands.push_back(cvpOp);
+        newOperands.push_back(vpScalar);
+        newOperands.push_back(vpInputs);
         newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numDataOperands)));
 
         auto numOutputs = op.getNumResults();

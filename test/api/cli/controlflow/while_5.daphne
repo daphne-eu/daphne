@@ -1,4 +1,4 @@
-// Updating variable in loop, same shape.
+// Updating variable in loop (>1 iterations), same shape.
 X = fill(12, 2, 3);
 i = 0;
 while(i < 3) {

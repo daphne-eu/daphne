@@ -30,18 +30,28 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTDst, class DTSrc>
+template<class DTArg, class DTIns>
 struct InsertRow {
-    static void apply(const DTDst * dst, const DTSrc * src, size_t rowLowerIncl, size_t rowUpperExcl, DCTX(ctx)) = delete;
+    static void apply(
+        DTArg *& res,
+        const DTArg * arg, const DTIns * ins,
+        size_t rowLowerIncl, size_t rowUpperExcl,
+        DCTX(ctx)
+    ) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTDst, class DTSrc>
-void insertRow(const DTDst * dst, const DTSrc * src, size_t rowLowerIncl, size_t rowUpperExcl, DCTX(ctx)) {
-    InsertRow<DTDst, DTSrc>::apply(dst, src, rowLowerIncl, rowUpperExcl, ctx);
+template<class DTArg, class DTIns>
+void insertRow(
+        DTArg *& res,
+        const DTArg * arg, const DTIns * ins,
+        size_t rowLowerIncl, size_t rowUpperExcl,
+        DCTX(ctx)
+) {
+    InsertRow<DTArg, DTIns>::apply(res, arg, ins, rowLowerIncl, rowUpperExcl, ctx);
 }
 
 // ****************************************************************************
@@ -54,28 +64,54 @@ void insertRow(const DTDst * dst, const DTSrc * src, size_t rowLowerIncl, size_t
 
 template<typename VT>
 struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(const DenseMatrix<VT> * dst, const DenseMatrix<VT> * src, size_t rowLowerIncl, size_t rowUpperExcl, DCTX(ctx)) {
-        const size_t numRows = src->getNumRows();
-        const size_t numCols = src->getNumCols();
+    static void apply(
+            DenseMatrix<VT> *& res,
+            const DenseMatrix<VT> * arg, const DenseMatrix<VT> * ins,
+            size_t rowLowerIncl, size_t rowUpperExcl,
+            DCTX(ctx)
+    ) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numColsArg = arg->getNumCols();
+        const size_t numRowsIns = ins->getNumRows();
+        const size_t numColsIns = ins->getNumCols();
         
-        if(numRows != rowUpperExcl - rowLowerIncl)
-            throw std::runtime_error("insertRow: the number of rows in target and source must match");
-        if(numCols != dst->getNumCols())
-            throw std::runtime_error("insertRow: the number of cols in target and source must match");
+        if(numRowsIns != rowUpperExcl - rowLowerIncl)
+            throw std::runtime_error(
+                    "insertRow: the number of addressed rows in arg and "
+                    "the number of rows in ins must match"
+            );
+        if(numColsIns != numColsArg)
+            throw std::runtime_error(
+                    "insertRow: the number of columns in arg and ins must match"
+            );
         
-        VT * valuesDst = const_cast<VT *>(dst->getValues()) + numCols * rowLowerIncl;
-        const VT * valuesSrc = src->getValues();
-        const size_t rowSkipDst = dst->getRowSkip();
-        const size_t rowSkipSrc = src->getRowSkip();
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsArg, numColsArg, false);
         
-        if(rowSkipSrc == numCols && rowSkipDst == numCols)
-            memcpy(valuesDst, valuesSrc, numRows * numCols * sizeof(VT));
-        else
-            for(size_t r = 0; r < numRows; r++) {
-                memcpy(valuesDst, valuesSrc, numCols * sizeof(VT));
-                valuesDst += rowSkipDst;
-                valuesSrc += rowSkipSrc;
-            }
+        VT * valuesRes = res->getValues();
+        const VT * valuesArg = arg->getValues();
+        const VT * valuesIns = ins->getValues();
+        const size_t rowSkipRes = res->getRowSkip();
+        const size_t rowSkipArg = arg->getRowSkip();
+        const size_t rowSkipIns = ins->getRowSkip();
+        
+        // TODO Can be simplified/more efficient in certain cases.
+        for(size_t r = 0; r < rowLowerIncl; r++) {
+            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+            valuesRes += rowSkipRes;
+            valuesArg += rowSkipArg;
+        }
+        for(size_t r = rowLowerIncl; r < rowUpperExcl; r++) {
+            memcpy(valuesRes, valuesIns, numColsArg * sizeof(VT));
+            valuesRes += rowSkipRes;
+            valuesIns += rowSkipIns;
+        }
+        valuesArg += rowSkipArg * numRowsIns; // skip rows in arg
+        for(size_t r = rowUpperExcl; r < numRowsArg; r++) {
+            memcpy(valuesRes, valuesArg, numColsArg * sizeof(VT));
+            valuesRes += rowSkipRes;
+            valuesArg += rowSkipArg;
+        }
     }
 };
 

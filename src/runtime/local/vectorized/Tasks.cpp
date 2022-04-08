@@ -22,26 +22,29 @@ void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batch
     // local add aggregation to minimize locking
     std::vector<DenseMatrix<VT>*> localAddRes(_data._numOutputs);
     std::vector<DenseMatrix<VT>*> localResults(_data._numOutputs);
+    std::vector<DenseMatrix<VT>**> outputs;
+    for (auto &lres : localResults)
+        outputs.push_back(&lres);
     for(uint64_t r = _data._rl ; r < _data._ru ; r += batchSize) {
         //create zero-copy views of inputs/outputs
         uint64_t r2 = std::min(r + batchSize, _data._ru);
         
         auto linputs = this->createFuncInputs(r, r2);
-        std::vector<DenseMatrix<VT>**> outputs;
         
-        for (auto &lres : localResults) {
-            outputs.push_back(&lres);
-        }
         //execute function on given data binding (batch size)
         _data._funcs[fid](outputs.data(), linputs.data(), _data._ctx);
         accumulateOutputs(localResults, localAddRes, r, r2);
         
         // cleanup
-        for (auto &localResult : localResults) {
-            DataObjectFactory::destroy(localResult);
-            localResult = nullptr;
-        }
-        this->cleanupFuncInputs(std::move(linputs));
+        for (auto &localResult : localResults)
+            if(localResult) {
+                DataObjectFactory::destroy(localResult);
+                localResult = nullptr;
+            }
+        
+        // Note that a pipeline manages the reference counters of its inputs
+        // internally. Thus, we do not need to care about freeing the inputs
+        // here.
     }
     
     for(size_t o = 0; o < _data._numOutputs; ++o) {
@@ -78,7 +81,9 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
             case VectorCombine::ROWS: {
                 rowStart -= _data._offset;
                 rowEnd -= _data._offset;
-                auto slice = result->slice(rowStart, rowEnd);
+                auto slice = result->sliceRow(rowStart, rowEnd);
+                // TODO It's probably more efficient to memcpy than to get/set.
+                // But eventually, we don't want to copy at all.
                 for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
                     for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
                         slice->set(i, j, localResults[o]->get(i, j));
@@ -88,7 +93,9 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
                 break;
             }
             case VectorCombine::COLS: {
-                auto slice = result->slice(0, _data._outRows[o], rowStart-_data._offset, rowEnd-_data._offset);
+                auto slice = result->sliceCol(rowStart-_data._offset, rowEnd-_data._offset);
+                // TODO It's probably more efficient to memcpy than to get/set.
+                // But eventually, we don't want to copy at all.
                 for(auto i = 0u ; i < slice->getNumRows() ; ++i) {
                     for(auto j = 0u ; j < slice->getNumCols() ; ++j) {
                         slice->set(i, j, localResults[o]->get(i, j));
@@ -152,7 +159,10 @@ void CompiledPipelineTask<CSRMatrix<VT>>::execute(uint32_t fid, uint32_t batchSi
 
         // cleanup
         lres = nullptr;
-        this->cleanupFuncInputs(std::move(linputs));
+        
+        // Note that a pipeline manages the reference counters of its inputs
+        // internally. Thus, we do not need to care about freeing the inputs
+        // here.
     }
     _resultSink.add(localSink.consume(), _data._rl);
 }

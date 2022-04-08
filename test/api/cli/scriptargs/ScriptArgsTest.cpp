@@ -82,7 +82,9 @@ TEST_CASE("Ways of specifying script arguments", TAG_SCRIPTARGS) {
         );
     }
     
-    REQUIRE(status == StatusCode::SUCCESS);
+    // Don't REQUIRE, such that out and err are also printed in case of a test
+    // failure. Don't use empty() on err, such that err is printed on failure.
+    CHECK(status == StatusCode::SUCCESS);
     CHECK(out.str() == "1\n2\n3\n4\n");
-    CHECK(err.str().empty());
+    CHECK(err.str() == "");
 }

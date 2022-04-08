@@ -29,7 +29,7 @@
 #define VALUE_TYPES  int32_t, double  
 
 template<class DT>
-void checkDiagVector(const DT * arg, DenseMatrix<typename DT::VT> *res, DenseMatrix<typename DT::VT> * expectedMatrix) {    
+void checkDiagVector(const DT * arg, DenseMatrix<typename DT::VT> *& res, DenseMatrix<typename DT::VT> * expectedMatrix) {
     diagVector<DT>(res, arg, nullptr);
     CHECK(*res == *expectedMatrix);
 }

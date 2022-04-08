@@ -1,0 +1,3 @@
+// Access by column label is not allowed for matrices (maybe we add that later).
+X = fill(123, 4, 3);
+print(X[, "a"]);

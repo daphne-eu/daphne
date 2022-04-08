@@ -1,0 +1,9 @@
+c1 = fill(123, 5, 1);
+
+f = frame(c1, "c");
+
+registerView("x", f);
+
+s = sql("SELECT x.a FROM x;");
+
+print(s);
