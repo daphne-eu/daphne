@@ -97,3 +97,19 @@ struct ExtractCol<Frame, Frame, char> {
         res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
     }
 };
+
+template< typename VTSel >
+struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
+    static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+        assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
+
+        const size_t numColsRes = sel->getNumRows();
+        const size_t * colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
+        for(size_t i = 0; i < numColsRes; i++) {
+            assert((colIdxs[i] < arg->getNumCols()) && "column index out of bounds");
+        }
+        const size_t numRows = arg->getNumRows();
+
+        res = DataObjectFactory::create<Frame>(arg, 0, numRows, numColsRes, colIdxs);
+    }
+};
