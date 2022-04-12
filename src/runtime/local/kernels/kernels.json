@@ -1220,6 +1220,69 @@
     },
     {
         "kernelTemplate": {
+            "header": "Order.h",
+            "opName": "order",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "DTRes *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t *",
+                    "name": "colIdxs",
+                    "isVariadic": true
+                },
+                {
+                    "type": "size_t",
+                    "name": "numKeyCols"
+                },
+                {
+                    "type": "bool *",
+                    "name": "ascending",
+                    "isVariadic": true
+                },
+                {
+                    "type": "size_t",
+                    "name": "numAscendings"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "GetColIdx.h",
+            "opName": "getColIdx",
+            "returnType": "size_t",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "colName"
+                }
+            ]
+        },
+        "instantiations": [[]]
+    },
+    {
+        "kernelTemplate": {
             "header": "Write.h",
             "opName": "write",
             "returnType": "void",
@@ -2135,7 +2198,7 @@
             ["Frame", "Frame"]
         ]
     },
-    
+
     {
         "kernelTemplate": {
             "header": "SliceCol.h",

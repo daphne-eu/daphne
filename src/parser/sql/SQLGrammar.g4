@@ -37,7 +37,7 @@ select:
     SQL_FROM tableExpr
     whereClause?
     groupByClause?
-    //orderByClause?
+    orderByClause?
     ;
 
 subquery:
@@ -74,8 +74,12 @@ groupByClause:
 havingClause:
     SQL_HAVING cond=generalExpr;
 
-//orderByClause:
-//    SQL_ORDER SQL_BY selectIdent (SQL_ASC|SQL_DESC)? (',' selectIdent (SQL_ASC|SQL_DESC)?)*
+orderByClause:
+    SQL_ORDER SQL_BY selectIdent orderInformation
+    (',' selectIdent orderInformation)*;
+
+orderInformation:
+    (asc=SQL_ASC|desc=SQL_DESC)?;
 
 generalExpr:
     literal # literalExpr

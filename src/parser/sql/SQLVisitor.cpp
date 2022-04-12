@@ -273,6 +273,23 @@ mlir::Value SQLVisitor::addMatrixToCurrentFrame(
     }
 }
 
+mlir::Value SQLVisitor::getColIdx(
+    mlir::Value frame,
+    mlir::Value colName
+)
+{
+    mlir::Location loc = builder.getUnknownLoc();
+
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::GetColIdxOp>(
+            loc,
+            utils.sizeType,
+            frame,
+            colName
+        )
+    );
+}
+
 mlir::Value SQLVisitor::extractMatrixFromFrame(
     mlir::Value frame,
     mlir::Value colname
@@ -284,11 +301,16 @@ mlir::Value SQLVisitor::extractMatrixFromFrame(
     mlir::Type resTypeCol = mlir::daphne::FrameType::get(
             builder.getContext(), {vt}
     );
+
+    //TODO: Integration of Transformation of ColName to ColIdx Op.
+    //mlir::Value colIdx = getColIdx(frame, colname);
+
     mlir::Value col = static_cast<mlir::Value>(
         builder.create<mlir::daphne::ExtractColOp>(
             loc,
             resTypeCol,
             frame,
+            //colIdx
             colname
         )
     );
@@ -442,6 +464,10 @@ antlrcpp::Any SQLVisitor::visitSelect(
         }
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
         visit(ctx->groupByClause());
+    }
+
+    if(ctx->orderByClause()){
+        currentFrame = utils.valueOrError(visit(ctx->orderByClause()));
     }
 
     //Runs over the projections and seeks columns and adds them to a Frame,
@@ -767,6 +793,65 @@ antlrcpp::Any SQLVisitor::visitHavingClause(
     return v;
 }
 
+
+
+antlrcpp::Any SQLVisitor::visitOrderByClause(
+    SQLGrammarParser::OrderByClauseContext * ctx
+)
+{
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    std::vector<mlir::Value> columnIdxs;
+    std::vector<mlir::Value> asc;
+    for(auto i = 0ul; i < ctx->selectIdent().size(); i++){
+        mlir::Value boolean = utils.valueOrError(visit(ctx->orderInformation(i)));
+        mlir::Value columnName = utils.valueOrError(visit(ctx->selectIdent(i)));
+        //TODO: make a function that generates this Op for future use.
+        mlir::Value idx = getColIdx(currentFrame, columnName);
+        // static_cast<mlir::Value>(
+        //     builder.create<mlir::daphne::GetColIdxOp>(
+        //         loc,
+        //         utils.sizeType,
+        //         currentFrame,
+        //         columnName
+        //     )
+        // );
+        columnIdxs.push_back(utils.castSizeIf(idx));
+        asc.push_back(utils.castBoolIf(boolean));
+    }
+
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::OrderOp>(
+            loc,
+            currentFrame.getType().dyn_cast<mlir::daphne::FrameType>(),
+            currentFrame,
+            columnIdxs,
+            asc
+        )
+    );
+}
+
+antlrcpp::Any SQLVisitor::visitOrderInformation(
+    SQLGrammarParser::OrderInformationContext * ctx
+)
+{
+    mlir::Location loc = utils.getLoc(ctx->start);
+    //ASC is default
+    if(ctx->desc){
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                    loc,
+                    builder.getBoolAttr(false)
+            )
+        );
+    }
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getBoolAttr(true)
+        )
+    );
+}
 //generalExpr
 
 //For the following generalExpr:

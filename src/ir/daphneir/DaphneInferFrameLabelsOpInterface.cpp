@@ -146,6 +146,14 @@ void daphne::CartesianOp::inferFrameLabels() {
     getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
+void daphne::OrderOp::inferFrameLabels() {
+    Type t = arg().getType();
+    if(auto ft = t.dyn_cast<daphne::FrameType>()) {
+        Value res = getResult();
+        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(ft.getLabels()));
+    }
+}
+
 void daphne::InnerJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
     auto ft1 = lhs().getType().dyn_cast<daphne::FrameType>();

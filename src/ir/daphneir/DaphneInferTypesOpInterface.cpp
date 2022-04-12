@@ -307,6 +307,16 @@ void daphne::GroupOp::inferTypes() {
     getResult().setType(daphne::FrameType::get(ctx, newColumnTypes));
 }
 
+void daphne::OrderOp::inferTypes() {
+    Type srcType = arg().getType();
+    Type t;
+    if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
+        t = ft.withSameColumnTypes();
+    getResult().setType(t);
+}
+
 void daphne::SetColLabelsOp::inferTypes() {
     getResult().setType(
             arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()

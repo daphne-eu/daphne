@@ -35,7 +35,7 @@
 
 template<class DTRes>
 struct Order {
-    static void apply(DTRes *& res, const DTRes * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTRes * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, size_t numAscendings, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -43,7 +43,7 @@ struct Order {
 // ****************************************************************************
 
 template<class DTRes>
-void order(DTRes *& res, const DTRes * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, DCTX(ctx)) {
+void order(DTRes *& res, const DTRes * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, size_t numAscendings, DCTX(ctx)) {
     Order<DTRes>::apply(res, arg, colIdxs, numKeyCols, ascending, ctx);
 }
 
@@ -87,7 +87,7 @@ void columnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, std::vec
         std::stable_sort(indicies+group.first, indicies+group.second, compare);
 }
 
-// sorts IDs inside groups by the key column, reorder the column via a row extraction into a temporary 
+// sorts IDs inside groups by the key column, reorder the column via a row extraction into a temporary
 // DenseMatrix and then scan for groups of duplicates to be tie broken by another subsequent key column
 template<typename VTIdx, typename VT>
 void multiColumnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, std::vector<std::pair<VTIdx, VTIdx>> &groups, bool ascending, DCTX(ctx)){
@@ -96,9 +96,10 @@ void multiColumnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, std
     extractRow<DenseMatrix<VT>, DenseMatrix<VT>, VTIdx>(tmp, col, idx, ctx);
     columnGroupScan(groups, tmp, ctx);
     DataObjectFactory::destroy(tmp);
-} 
+}
 
-template <> struct Order<Frame> {
+template <>
+struct Order<Frame> {
     static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, DCTX(ctx)) {
         size_t numRows = arg->getNumRows();
         if (arg == nullptr || colIdxs == nullptr || numKeyCols == 0 || ascending == nullptr) {
@@ -111,7 +112,7 @@ template <> struct Order<Frame> {
         std::iota(indicies, indicies+numRows, 0);
         std::vector<std::pair<size_t, size_t>> groups;
         groups.push_back(std::make_pair(0, numRows));
-        
+
         if (numKeyCols > 1) {
             for (size_t i = 0; i < numKeyCols-1; i++) {
                 colIdx = colIdxs[i];
@@ -135,8 +136,8 @@ template <> struct Order<Frame> {
             case ValueTypeCode::F64: columnIDSort(idx, arg->getColumn<double>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::F32: columnIDSort(idx, arg->getColumn<float>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::SI64: columnIDSort(idx, arg->getColumn<int64_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
-            case ValueTypeCode::SI32: columnIDSort(idx, arg->getColumn<int32_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break; 
-            case ValueTypeCode::SI8 : columnIDSort(idx, arg->getColumn<int8_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break; 
+            case ValueTypeCode::SI32: columnIDSort(idx, arg->getColumn<int32_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
+            case ValueTypeCode::SI8 : columnIDSort(idx, arg->getColumn<int8_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::UI64: columnIDSort(idx, arg->getColumn<uint64_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::UI32: columnIDSort(idx, arg->getColumn<uint32_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::UI8 : columnIDSort(idx, arg->getColumn<uint8_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;

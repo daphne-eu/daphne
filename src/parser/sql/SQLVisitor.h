@@ -66,6 +66,12 @@ class SQLVisitor : public SQLGrammarVisitor {
         mlir::Value matrix, std::string newColumnName);
 
     /**
+    * @brief creates a GetColIdxOp for a specific colName of the frame.
+    */
+    mlir::Value getColIdx(
+        mlir::Value frame, mlir::Value colName);
+
+    /**
      * @brief creates ExtractColOp and CastOp
      */
     mlir::Value extractMatrixFromFrame(
@@ -192,6 +198,12 @@ public:
 
 //havingClause
     antlrcpp::Any visitHavingClause(SQLGrammarParser::HavingClauseContext * ctx) override;
+
+//orderByClause
+    antlrcpp::Any visitOrderByClause(SQLGrammarParser::OrderByClauseContext * ctx) override;
+
+//orderInformation
+    antlrcpp::Any visitOrderInformation(SQLGrammarParser::OrderInformationContext * ctx) override;
 
 //generalExpr
     antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;

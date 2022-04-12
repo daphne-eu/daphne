@@ -554,11 +554,17 @@ def Daphne_ReverseOp : Daphne_Op<"reverse", [
 }
 
 def Daphne_OrderOp : Daphne_Op<"order", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     SameVariadicOperandSize,
     ShapeFromArg
 ]> {
     // TODO Maybe colIdxs and ascs should be attributes.
-    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolAttr:$returnIdxs);
+    let arguments = (
+        ins MatrixOrFrame:$arg,
+        Variadic<Size>:$colIdxs,
+        Variadic<BoolScalar>:$ascs);
+//        BoolAttr:$returnIdxs); //Not implemented at the moment. TODO
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -1062,6 +1068,10 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
     let results = (outs Matrix:$res);
 }
 
+def Daphne_GetColIdxOp : Daphne_Op<"getColIdx">{
+    let arguments = (ins Frame:$frame, StrScalar:$columnName);
+    let results = (outs Size:$res);
+}
 // ****************************************************************************
 // Distributed Operations
 // ****************************************************************************
