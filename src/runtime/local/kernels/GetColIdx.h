@@ -1,5 +1,5 @@
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H
-#define SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_GETCOLIDX_H
+#define SRC_RUNTIME_LOCAL_KERNELS_GETCOLIDX_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
