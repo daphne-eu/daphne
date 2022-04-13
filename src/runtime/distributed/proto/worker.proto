@@ -29,6 +29,15 @@ service Worker {
   rpc FreeMem (StoredData) returns (Empty) {}
 }
 
+message Matrix {
+  oneof matrix {
+    DenseMatrix dense_Matrix = 1;
+    CSRMatrix csr_Matrix = 2;
+  }
+  uint64 num_rows = 3;
+  uint64 num_cols = 4;
+}
+
 message WorkData {
   oneof data {
     double f64 = 1;

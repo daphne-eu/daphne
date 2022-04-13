@@ -181,6 +181,87 @@ void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType>
     void DenseMatrix<ValueType>::alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src, size_t offset) { }
 #endif // USE_CUDA
 
+template<>
+google::protobuf::RepeatedField<int64_t> *DenseMatrix<int64_t>::getMutableCells(distributed::Matrix *matProto) const
+{
+    return matProto->mutable_dense_matrix()->mutable_cells_i64()->mutable_cells();
+}
+template<>
+google::protobuf::RepeatedField<double> *DenseMatrix<double>::getMutableCells(distributed::Matrix *matProto) const
+{
+    return matProto->mutable_dense_matrix()->mutable_cells_f64()->mutable_cells();
+}
+template<typename ValueType>
+google::protobuf::RepeatedField<ValueType> *DenseMatrix<ValueType>::getMutableCells(distributed::Matrix *matProto) const
+{
+    assert("not implemented yet for this type");
+}
+
+template<typename ValueType>
+void DenseMatrix<ValueType>::convertToProto(distributed::Matrix *matProto) const
+{
+    convertToProto(matProto, 0, numRows, 0, numCols);
+}
+
+template<typename ValueType>
+void DenseMatrix<ValueType>::convertToProto(distributed::Matrix *matProto,
+                                        size_t rowBegin,
+                                        size_t rowEnd,
+                                        size_t colBegin,
+                                        size_t colEnd) const
+{
+    auto denseMatProto = matProto->mutable_dense_matrix();
+    matProto->set_num_rows(rowEnd - rowBegin);
+    matProto->set_num_cols(colEnd - colBegin);
+
+    auto *cells = getMutableCells(matProto);
+    cells->Reserve((rowEnd - rowBegin) * (colEnd - colBegin));
+    for (size_t r = rowBegin; r < rowEnd; ++r) {
+        for (size_t c = colBegin; c < colEnd; ++c) {
+            cells->Add(get(r, c));
+        }
+    }
+}
+
+
+
+template<>
+const google::protobuf::RepeatedField<int64_t> DenseMatrix<int64_t>::getCells(const distributed::Matrix *matProto)
+{
+    return matProto->dense_matrix().cells_i64().cells();
+}
+template<>
+const google::protobuf::RepeatedField<double> DenseMatrix<double>::getCells(const distributed::Matrix *matProto)
+{
+    return matProto->dense_matrix().cells_f64().cells();
+}
+template<typename ValueType>
+const google::protobuf::RepeatedField<ValueType> DenseMatrix<ValueType>::getCells(const distributed::Matrix *matProto)
+{
+    assert ("TODO: implement for serialization for other types");
+}
+
+template<typename ValueType>
+void DenseMatrix<ValueType>::convertFromProto (const distributed::Matrix &matProto) 
+{
+    convertFromProto(matProto, 0, numRows, 0, numCols);
+}
+template<typename ValueType>
+void DenseMatrix<ValueType>::convertFromProto (const distributed::Matrix &matProto,
+                                            size_t rowBegin,
+                                            size_t rowEnd,
+                                            size_t colBegin,
+                                            size_t colEnd)
+{
+    auto denseMatProto = matProto.dense_matrix();
+    auto cells = getCells(&matProto);
+    for (size_t r = rowBegin; r < rowEnd; ++r) {
+        for (size_t c = colBegin; c < colEnd; ++c) {
+            auto val = cells.Get((r - rowBegin) * matProto.num_cols() + (c - colBegin));
+            this->set(r, c, val);
+        }
+    }
+}
 // explicitly instantiate to satisfy linker
 template class DenseMatrix<double>;
 template class DenseMatrix<float>;

@@ -78,16 +78,25 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         double sparsity = -1.0;
         MatrixRepresentation representation = MatrixRepresentation::Default; // default is dense
         mlir::Type elementType;
-        if (
-            parser.parseLess() ||
-            parser.parseOptionalQuestion() ||
-            // TODO Parse #rows if there was no '?'.
-            //parser.parseInteger<ssize_t>(numRows) ||
-            parser.parseXInDimensionList() ||
-            parser.parseOptionalQuestion() ||
-            // TODO Parse #cols if there was no '?'.
-            //parser.parseInteger<ssize_t>(numCols) ||
-            parser.parseXInDimensionList() ||
+        if (parser.parseLess()) {
+            return nullptr;
+        }
+        if (parser.parseOptionalQuestion()) {
+            // Parse #rows if there was no '?'.
+            if (parser.parseInteger<ssize_t>(numRows)) {
+                return nullptr;
+            }
+        }
+        if (parser.parseXInDimensionList()) {
+            return nullptr;
+        }
+        if (parser.parseOptionalQuestion()) {
+            // Parse #cols if there was no '?'.
+            if (parser.parseInteger<ssize_t>(numCols)) {
+                return nullptr;
+            }
+        }
+        if (parser.parseXInDimensionList() ||
             parser.parseType(elementType)
         ) {
             return nullptr;

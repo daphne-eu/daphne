@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDREAD_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDREAD_H
+#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDREAD_H
+#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDREAD_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/datastructures/Handle.h>
+#include <runtime/distributed/coordinator/datastructures/Handle.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
+#include <runtime/local/io/FileMetaData.h>
+
 #include <cassert>
 #include <cstddef>
 
@@ -42,4 +44,4 @@ void distributedRead(Handle<DT> *&res, const char * filename, DCTX(ctx))
 }
 
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_DISTRIBUTEDREAD_H
+#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDREAD_H

@@ -65,10 +65,45 @@ private:
                                                             google::protobuf::RepeatedPtrField<distributed::WorkData> workInputs,
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
-
-    Matrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
+    
+    template<class DT>
+    Matrix<typename DT::VT> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols);
     void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
     static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
+    
+    /**
+     * @brief Helper store function using templates in order to handle
+     * different types.
+     * 
+     * @tparam VT double/int etc.
+     */
+    template<class DT>
+    grpc::Status StoreType(::grpc::ServerContext *context,
+                         const ::distributed::Matrix *request,
+                         ::distributed::StoredData *response) ;
+    template<class DT>
+    DT* CreateMatrix(const ::distributed::Matrix *mat);
+
+    /**
+     * @brief Helper transfer function using templates in order to handle
+     * different types.
+     * 
+     * @tparam VT double/int etc.
+     */
+    template<class DT>
+    grpc::Status TransferType(::grpc::ServerContext *context,
+                          const ::distributed::StoredData *request,
+                         ::distributed::Matrix *response);
+                         /**
+     * @brief Helper FreeMem function using templates in order to handle
+     * different types.
+     * 
+     * @tparam VT double/int etc.
+     */
+    template<typename VT>
+    grpc::Status FreeMemType(::grpc::ServerContext *context,
+                         const ::distributed::StoredData *request,
+                         ::distributed::Empty *emptyMessage);
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H
