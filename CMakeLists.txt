@@ -100,6 +100,15 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 # *****************************************************************************
+# Related to MorphStore
+# *****************************************************************************
+
+
+set( MorphStoreRoot ${PROJECT_SOURCE_DIR}/thirdparty/MorphStore )
+include_directories(${MorphStoreRoot}/include)
+
+
+# *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
 

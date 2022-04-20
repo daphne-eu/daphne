@@ -1,3 +1,7 @@
 [submodule "thirdparty/llvm-project"]
 	path = thirdparty/llvm-project
 	url = https://github.com/llvm/llvm-project.git
+[submodule "thirdparty/MorphStore"]
+	path = thirdparty/MorphStore
+	url = https://github.com/MorphStore/Engine.git
+	branch = daphne
