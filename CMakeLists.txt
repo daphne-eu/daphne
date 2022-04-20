@@ -159,6 +159,15 @@ endif()
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # *****************************************************************************
+# Related to MorphStore
+# *****************************************************************************
+
+
+set( MorphStoreRoot ${PROJECT_SOURCE_DIR}/thirdparty/MorphStore )
+include_directories(${MorphStoreRoot}/include)
+
+
+# *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
 
