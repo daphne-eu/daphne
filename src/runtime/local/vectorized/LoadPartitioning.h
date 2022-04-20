@@ -45,7 +45,7 @@ private:
         int scheduled=0;
         int step=0;
         while (scheduled < tasks){
-            int actual_step=step/workers;
+            actual_step=step/workers;
             double chunk = pow(0.5,actual_step+1)*tasks/float(workers);
             scheduled+=ceil(chunk);
             step+=1;
@@ -139,7 +139,7 @@ public:
                 //TODO
                 break;
             }
-            case MFSC:{//modifed fixed self-scheduling (MFSC)
+            case MFSC:{//modifed fixed-size chunk self-scheduling (MFSC)
                 chunkSize=mfscChunk;
                 break;
             }
