@@ -18,7 +18,6 @@
 
 #include <thread>
 #include <sched.h>
-#include <fstream>
 
 class Worker {
 protected:
@@ -218,6 +217,8 @@ public:
         }
         
         // No more tasks on own queue, now switching to other queues
+        // Can be improved by assigning a "Foreman" for each socket
+        // responsible for task stealing
         
         targetQueue = (targetQueue+1)%_numQueues;
 

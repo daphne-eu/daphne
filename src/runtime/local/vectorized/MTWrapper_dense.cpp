@@ -85,13 +85,13 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
-    // Collect info about numa domains, needed for prioritized victim selection
+    // Collect info about numa domains, also needed for per-Core queues because of prioritized victim selection
 
     struct dirent *dirEntry;
     struct dirent *nodeEntry;
     int num_numa_doamins = 0;
     std::vector<int> numaDomains;
-    numaDomains.resize(40);
+    numaDomains.resize(256);
     DIR *dirp = opendir("/sys/devices/system/node/");
 
     if (dirp == NULL) {
@@ -105,8 +105,6 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
                 while((nodeEntry = readdir(nodeDir)) != NULL) {
                     std::string curCPU(nodeEntry->d_name);
                     if(curCPU.substr(0,3) == "cpu" && curCPU.length() < 6) {
-                        //std::cout << curCPU.substr(3) << "," << current.substr(4) << std::endl;
-                        //numaDomains.push_back(stoi(current.substr(4)));
                         numaDomains.at(stoi(curCPU.substr(3))) = stoi(current.substr(4));
                     }
                 }

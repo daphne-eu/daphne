@@ -106,13 +106,13 @@ main(int argc, char** argv)
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
                 "(default is equal to the number of physcial cores on the target node that executes the code)"
-            )   
+            )
     );
     opt<int> minimumTaskSize(
             "grain-size", cat(daphneOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
-            )   
+            )
     );
     opt<bool> useVectorizedPipelines(
             "vec", cat(daphneOptions),

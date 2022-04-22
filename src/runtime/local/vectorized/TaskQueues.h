@@ -65,6 +65,7 @@ public:
     }
 
     void enqueueTaskOnTargetQueue(Task* t, int targetCPU) override {
+        // Change CPU pinning before enqueue to utilize NUMA first-touch policy
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);
         CPU_SET(targetCPU, &cpuset);

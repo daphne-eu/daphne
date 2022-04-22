@@ -42,7 +42,6 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
 
     // lock for aggregation combine
     // TODO: multiple locks per output
-std::cout << "Sparsematrix\n";
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
@@ -89,7 +88,6 @@ void MTWrapper<CSRMatrix<VT>>::executeQueuePerCPU(std::vector<std::function<void
 
     // lock for aggregation combine
     // TODO: multiple locks per output
-std::cout << "Sparsematrix\n";
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
