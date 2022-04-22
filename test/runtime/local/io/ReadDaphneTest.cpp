@@ -29,7 +29,7 @@
 
 #include <runtime/local/io/ReadDaphne.h>
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -51,7 +51,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG", TAG_KERNELS, (DenseMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -73,7 +73,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG", TAG_KERNELS, (DenseMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -93,7 +93,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG", TAG_KERNELS, (DenseMatrix), (double
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -115,7 +115,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS", TAG_KERNELS, (DenseMatrix), (double
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -139,7 +139,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK", TAG_KERNELS, (DenseMatrix), (double
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -166,7 +166,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -190,7 +190,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK", TAG_KERNELS, (DenseMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -212,7 +212,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS", TAG_KERNELS, (DenseMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -233,7 +233,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CIG (CSR)", TAG_KERNELS, (CSRMatrix), (in
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -255,7 +255,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIG (CSR)", TAG_KERNELS, (CSRMatrix), (in
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -275,7 +275,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRG (CSR)", TAG_KERNELS, (CSRMatrix), (do
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -297,7 +297,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRS (CSR)", TAG_KERNELS, (CSRMatrix), (do
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -321,7 +321,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CRK (CSR)", TAG_KERNELS, (CSRMatrix), (do
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -348,7 +348,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (in
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -372,7 +372,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIK (CSR)", TAG_KERNELS, (CSRMatrix), (in
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -394,7 +394,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (in
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadDaphne CIG (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne CIG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -415,8 +415,7 @@ TEST_CASE("ReadDaphne CIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-/*
-TEST_CASE("ReadDaphne AIG (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne AIG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -437,8 +436,8 @@ TEST_CASE("ReadDaphne AIG (Frame)", TAG_KERNELS) {
 
   DataObjectFactory::destroy(m);
 }
-*/
-TEST_CASE("ReadDaphne CRG (Frame)", TAG_KERNELS) {
+
+TEST_CASE("ReadDaphne CRG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -458,7 +457,7 @@ TEST_CASE("ReadDaphne CRG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadDaphne CRS (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne CRS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -481,7 +480,7 @@ TEST_CASE("ReadDaphne CRS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadDaphne CRK (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne CRK (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -506,7 +505,7 @@ TEST_CASE("ReadDaphne CRK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadDaphne CPS (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne CPS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -533,7 +532,7 @@ TEST_CASE("ReadDaphne CPS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadDaphne AIK (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne AIK (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -558,7 +557,7 @@ TEST_CASE("ReadDaphne AIK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadDaphne AIS (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadDaphne AIS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 

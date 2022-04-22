@@ -137,7 +137,7 @@ class Frame : public Structure {
         }
         initLabels2Idxs();
     }
-
+    
     Frame(const Frame * lhs, const Frame * rhs) :
             Structure(lhs->getNumRows(), lhs->getNumCols() + rhs->getNumCols())
     {

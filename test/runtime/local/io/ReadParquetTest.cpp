@@ -31,7 +31,7 @@
 #include <cstdint>
 #include <limits>
 
-TEST_CASE("ReadParquet, Frame", TAG_KERNELS) {
+TEST_CASE("ReadParquet, Frame", TAG_IO) {
   ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
   Frame *m = NULL;
 
@@ -59,7 +59,7 @@ TEST_CASE("ReadParquet, Frame", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 

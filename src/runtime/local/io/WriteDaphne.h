@@ -191,13 +191,13 @@ struct WriteDaphne<Frame> {
 	const std::string *labels = arg->getLabels();
 
 	for (uint64_t c = 0; c < h.nbcols; c++) {
-		f.write((char *)&(schema[c]), sizeof(ValueTypeCode));
+		f.write((const char *)&(schema[c]), sizeof(ValueTypeCode));
 	}
 
 	for (uint64_t c = 0; c < h.nbcols; c++) {
 		uint16_t len = (labels[c]).length();
-		f.write((char *) &len, sizeof(len));
-		f.write((char *) &(labels[c]), len);
+		f.write((const char *) &len, sizeof(len));
+		f.write((const char *) &(labels[c]), len);
 	}
 
 	DF_body b;

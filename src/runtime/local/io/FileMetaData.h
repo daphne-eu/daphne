@@ -54,7 +54,7 @@ struct FileMetaData {
     {
         //
     }
-
+    
     static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode vtc)
     {
         std::string vtc_;

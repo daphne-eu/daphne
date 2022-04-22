@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <limits>
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -46,7 +46,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG", TAG_KERNELS, (DenseMatrix), (int32
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -71,7 +71,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG", TAG_KERNELS, (DenseMatrix), (int32
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -94,7 +94,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG", TAG_KERNELS, (DenseMatrix), (doubl
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -119,7 +119,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS", TAG_KERNELS, (DenseMatrix), (doubl
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -146,7 +146,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK", TAG_KERNELS, (DenseMatrix), (doubl
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -176,7 +176,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS", TAG_KERNELS, (DenseMatrix), (int32
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -203,7 +203,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK", TAG_KERNELS, (DenseMatrix), (int32
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -228,7 +228,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS", TAG_KERNELS, (DenseMatrix), (int32
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -252,7 +252,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CIG (CSR)", TAG_KERNELS, (CSRMatrix), (i
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -277,7 +277,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIG (CSR)", TAG_KERNELS, (CSRMatrix), (i
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -300,7 +300,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRG (CSR)", TAG_KERNELS, (CSRMatrix), (d
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -325,7 +325,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRS (CSR)", TAG_KERNELS, (CSRMatrix), (d
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -352,7 +352,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CRK (CSR)", TAG_KERNELS, (CSRMatrix), (d
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -382,7 +382,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne CPS (CSR)", TAG_KERNELS, (CSRMatrix), (i
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -409,7 +409,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIK (CSR)", TAG_KERNELS, (CSRMatrix), (i
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -434,7 +434,7 @@ TEMPLATE_PRODUCT_TEST_CASE("WriteDaphne AIS (CSR)", TAG_KERNELS, (CSRMatrix), (i
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne CIG (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CIG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -458,7 +458,7 @@ TEST_CASE("WriteDaphne CIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne AIG (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne AIG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -467,8 +467,8 @@ TEST_CASE("WriteDaphne AIG (Frame)", TAG_KERNELS) {
 
   char filename[] = "./test/runtime/local/io/aig.mtx";
   readMM(m, filename);
-//  char fn [] = "./test/runtime/local/io/aig-f.dbdf";
-//  writeDaphne(m, fn);
+  char fn [] = "./test/runtime/local/io/aig-f.dbdf";
+  writeDaphne(m, fn);
 
   REQUIRE(m->getNumRows() == numRows);
   REQUIRE(m->getNumCols() == numCols);
@@ -482,7 +482,7 @@ TEST_CASE("WriteDaphne AIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne CRG (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CRG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -504,7 +504,7 @@ TEST_CASE("WriteDaphne CRG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne CRS (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CRS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -529,7 +529,7 @@ TEST_CASE("WriteDaphne CRS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne CRK (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CRK (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -556,7 +556,7 @@ TEST_CASE("WriteDaphne CRK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne CPS (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne CPS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -585,7 +585,7 @@ TEST_CASE("WriteDaphne CPS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne AIK (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne AIK (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -612,7 +612,7 @@ TEST_CASE("WriteDaphne AIK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("WriteDaphne AIS (Frame)", TAG_KERNELS) {
+TEST_CASE("WriteDaphne AIS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 

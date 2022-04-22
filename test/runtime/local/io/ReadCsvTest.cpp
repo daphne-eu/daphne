@@ -29,7 +29,7 @@
 #include <cstdint>
 #include <limits>
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -57,7 +57,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_KERNELS, (DenseMatrix), (double)) {
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_KERNELS, (DenseMatrix), (uint8_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_IO, (DenseMatrix), (uint8_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -86,7 +86,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv", TAG_KERNELS, (DenseMatrix), (uint8_t)) {
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, col + row ignore", TAG_KERNELS,
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, col + row ignore", TAG_IO,
                            (DenseMatrix), (int8_t)) {
   using DT = TestType;
   DT *m = nullptr;
@@ -108,7 +108,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, col + row ignore", TAG_KERNELS,
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, INF and NAN parsing", TAG_KERNELS,
+TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, INF and NAN parsing", TAG_IO,
                            (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
@@ -137,7 +137,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadCsv, INF and NAN parsing", TAG_KERNELS,
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, frame of floats", TAG_KERNELS) {
+TEST_CASE("ReadCsv, frame of floats", TAG_IO) {
   ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
   Frame *m = NULL;
 
@@ -165,7 +165,7 @@ TEST_CASE("ReadCsv, frame of floats", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, frame of uint8s", TAG_KERNELS) {
+TEST_CASE("ReadCsv, frame of uint8s", TAG_IO) {
   ValueTypeCode schema[] = { ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8, ValueTypeCode::UI8 };
   Frame *m = NULL;
 
@@ -194,7 +194,7 @@ TEST_CASE("ReadCsv, frame of uint8s", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, col + row ignore", TAG_KERNELS) {
+TEST_CASE("ReadCsv, col + row ignore", TAG_IO) {
   ValueTypeCode schema[] = { ValueTypeCode::UI8, ValueTypeCode::UI8 };
   Frame *m = NULL;
 
@@ -215,7 +215,7 @@ TEST_CASE("ReadCsv, col + row ignore", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, INF and NAN parsing", TAG_KERNELS) {
+TEST_CASE("ReadCsv, INF and NAN parsing", TAG_IO) {
   ValueTypeCode schema[] = { ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64, ValueTypeCode::F64 };
   Frame *m = NULL;
 
@@ -243,7 +243,7 @@ TEST_CASE("ReadCsv, INF and NAN parsing", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadCsv, varying columns", TAG_KERNELS) {
+TEST_CASE("ReadCsv, varying columns", TAG_IO) {
   ValueTypeCode schema[] = { ValueTypeCode::SI8, ValueTypeCode::F32 };
   Frame *m = NULL;
 

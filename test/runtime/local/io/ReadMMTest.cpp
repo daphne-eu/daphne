@@ -28,7 +28,7 @@
 #include <cstdint>
 #include <limits>
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -49,7 +49,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -71,7 +71,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -91,7 +91,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG", TAG_KERNELS, (DenseMatrix), (double)) {
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -113,7 +113,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS", TAG_KERNELS, (DenseMatrix), (double)) {
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK", TAG_KERNELS, (DenseMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK", TAG_IO, (DenseMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -137,7 +137,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK", TAG_KERNELS, (DenseMatrix), (double)) {
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -164,7 +164,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -188,7 +188,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS", TAG_KERNELS, (DenseMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS", TAG_IO, (DenseMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -210,7 +210,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS", TAG_KERNELS, (DenseMatrix), (int32_t)) 
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -231,7 +231,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -253,7 +253,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIG (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -273,7 +273,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRG (CSR)", TAG_KERNELS, (CSRMatrix), (double
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -295,7 +295,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRS (CSR)", TAG_KERNELS, (CSRMatrix), (double
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK (CSR)", TAG_KERNELS, (CSRMatrix), (double)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK (CSR)", TAG_IO, (CSRMatrix), (double)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -319,7 +319,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CRK (CSR)", TAG_KERNELS, (CSRMatrix), (double
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -346,7 +346,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM CPS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -370,7 +370,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIK (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_t)) {
+TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS (CSR)", TAG_IO, (CSRMatrix), (int32_t)) {
   using DT = TestType;
   DT *m = nullptr;
 
@@ -392,7 +392,7 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadMM AIS (CSR)", TAG_KERNELS, (CSRMatrix), (int32_
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CIG (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM CIG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -413,7 +413,7 @@ TEST_CASE("ReadMM CIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM AIG (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM AIG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -435,7 +435,7 @@ TEST_CASE("ReadMM AIG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CRG (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM CRG (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -455,7 +455,7 @@ TEST_CASE("ReadMM CRG (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CRS (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM CRS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -478,7 +478,7 @@ TEST_CASE("ReadMM CRS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM CRK (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -503,7 +503,7 @@ TEST_CASE("ReadMM CRK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM CPS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -530,7 +530,7 @@ TEST_CASE("ReadMM CPS (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM AIK (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 
@@ -555,7 +555,7 @@ TEST_CASE("ReadMM AIK (Frame)", TAG_KERNELS) {
   DataObjectFactory::destroy(m);
 }
 
-TEST_CASE("ReadMM AIS (Frame)", TAG_KERNELS) {
+TEST_CASE("ReadMM AIS (Frame)", TAG_IO) {
   using DT = Frame;
   DT *m = nullptr;
 

@@ -80,7 +80,6 @@ struct Read<DenseMatrix<VT>> {
 
 	FileMetaData fmd = FileMetaData::ofFile(filename);
 	int extv = extValue(filename);
-	assert(extv != -1 && "File extension not supported");
 	switch(extv) {
 	case 0:
 		if(res == nullptr)
@@ -92,6 +91,7 @@ struct Read<DenseMatrix<VT>> {
 	case 1:
 		readMM(res, filename);
 		break;
+#ifdef USE_ARROW
 	case 2:
 		if(res == nullptr)
 			res = DataObjectFactory::create<DenseMatrix<VT>>(
@@ -99,8 +99,12 @@ struct Read<DenseMatrix<VT>> {
 			);
 		readParquet(res, filename, fmd.numRows, fmd.numCols);
 		break;
+#endif
 	case 3:
 		readDaphne(res, filename);
+                break;
+        default:
+            throw std::runtime_error("File extension not supported");
 	}
     }
 };
@@ -115,11 +119,10 @@ struct Read<CSRMatrix<VT>> {
 
 	FileMetaData fmd = FileMetaData::ofFile(filename);
 	int extv = extValue(filename);
-	assert(extv != -1 && "File extension not supported");
 	switch(extv) {
 	case 0:
-		assert(fmd.numNonZeros != -1
-			&& "Currently reading of sparse matrices requires a number of non zeros to be defined");
+		if(fmd.numNonZeros == -1)
+                    throw std::runtime_error("Currently reading of sparse matrices requires a number of non zeros to be defined");
 
 		if(res == nullptr)
 			res = DataObjectFactory::create<CSRMatrix<VT>>(
@@ -132,6 +135,7 @@ struct Read<CSRMatrix<VT>> {
 	case 1:
 		readMM(res, filename);
 		break;
+#ifdef USE_ARROW
 	case 2:
 		if(res == nullptr)
 			res = DataObjectFactory::create<CSRMatrix<VT>>(
@@ -139,8 +143,12 @@ struct Read<CSRMatrix<VT>> {
 			);
 		readParquet(res, filename,fmd.numRows, fmd.numCols,fmd.numNonZeros, false);
 		break;
+#endif
 	case 3:
 		readDaphne(res, filename);
+                break;
+        default:
+            throw std::runtime_error("File extension not supported");
 	}
     }
 };
