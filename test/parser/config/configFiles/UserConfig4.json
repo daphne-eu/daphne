@@ -1,0 +1,8 @@
+{
+    "use_vectorized_exec": false,
+    "cuda_fuse_any": false,
+    "vectorized_single_queue": false,
+    "explain_kernels": false,
+    "explain_llvm": false,
+    "explain_parsing": false
+}

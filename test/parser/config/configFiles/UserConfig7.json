@@ -1,0 +1,22 @@
+{
+    "use_cuda": false,
+    "use_vectorized_exec": false,
+    "use_obj_ref_mgnt": true,
+    "cuda_fuse_any": false,
+    "vectorized_single_queue": false,
+    "debug_llvm": false,
+    "explain_kernels": false,
+    "explain_llvm": false,
+    "explain_parsing": false,
+    "explain_property_inference": false,
+    "explain_sql": false,
+    "explain_vectorized": false,
+    "explain_obj_ref_mgnt": false,
+    "taskPartitioningScheme": "GSS",
+    "numberOfThreads": -1,
+    "minimumTaskSize": 1,
+    "library_paths": [
+        "my\\path",
+        "my\\second\\path"
+    ]
+}

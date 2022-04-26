@@ -1,6 +1,6 @@
 build/
 thirdparty/*
 !thirdparty/llvm-project/
-.vscode/**
+.vscode/
 __pycache__/
 tmpdaphne.daphne

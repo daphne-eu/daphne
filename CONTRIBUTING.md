@@ -49,6 +49,8 @@ Furthermore, everyone is invited to **create issues**, e.g., for *tasks* you wan
 This is also a good way to enable discussion on the topic.
 Note that there is a set of *labels* that can be attached to your issue to clarify what it is about and to make it more easy to find.
 
+Before you start working on an issue, please make sure to **get assigned to the issue**. New contributors need to *leave a comment* on the issue before they can get assigned. Collaborators can *assign themselves*.
+
 ## Contributing to the Source Code
 
 We appreciate that different contributors can have different levels of familiarity with the code base, and try to adapt to that accordingly.
@@ -62,22 +64,26 @@ That is, please try your best to make a good-quality contribution and we will he
 
 **The procedure is roughly as follows:**
 
-1. **Fork the repository** on GitHub and **clone your fork** (see [GitHub docs](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
+1. **Get assigned to the issue** to let others know you are going to work on it and to avoid duplicate work. Please leave a comment on the issue stating that you are going to work on it. After that, a collaborator will formally assign you.
+2. **Fork the repository** on GitHub and **clone your fork** (see [GitHub docs](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
    We recommend cloning by `git clone --recursive https://github.com/<USERNAME>/daphne.git` (note the `--recursive`), as specified in [Getting Started](/doc/GettingStarted.md).
+   
+   *You may skip this step and reuse your existing fork if you have contributed before. Simply update your fork with the recent changes from the original DAPHNE repository (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).*
 3. **Create your own local branch**: `git checkout -b BRANCH_NAME`.
    `BRANCH_NAME` should clearly indicate what the branch is about; the recommended pattern is `123-some-short-title` (where `123` is the issue number).
-3. **Add as many commits as you like** to your branch, and `git push` them to your fork.
+4. **Add as many commits as you like** to your branch, and `git push` them to your fork.
    Use `git push --set-upstream origin BRANCH_NAME` when you push the first time.
 5. If you work longer on your contribution, make sure to **get the most recent changes from the upstream** (original DAPHNE system repository) from time to time (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).
 6. Once you feel ready (for integration or for discussion/feedback), **create a pull request** on GitHub (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
+   Normally, you'll want to ask for integration into `base:main`, the repo's default branch.
    Please choose an expressive title and provide a short description of your changes.
    Feel free to mark your pull request "WIP: " or "Draft: " in the title.
    Note that you can add more commits to your pull request after you created it.
-6. You **receive feedback** on your proposed contribution.
+7. You **receive feedback** on your proposed contribution.
    You may be asked to apply certain changes, or we might apply straightforward adjustments ourselves before the integration.
-7. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
+8. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
 
-### Experienced DAPHNE Contributors
+### Experienced DAPHNE Contributors (Collaborators)
 
 We appreciate *continued commitment* to the DAPHNE system.
 Thus, **frequent contributors can become collaborators** on GitHub.
