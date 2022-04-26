@@ -19,6 +19,7 @@ set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
+        api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
         api/cli/functions/FunctionsTest.cpp
@@ -37,11 +38,13 @@ set(TEST_SOURCES
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/Utils.cpp
-        
+    
         api/python/DaphneLibTest.cpp
         
+        parser/config/ConfigParserTest.cpp
+    
         runtime/distributed/worker/WorkerTest.cpp
-        
+    
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
@@ -116,7 +119,7 @@ add_executable(run_tests
 add_dependencies(run_tests daphne DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})
+set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES} DaphneConfigParser)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(run_tests PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
