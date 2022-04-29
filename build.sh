@@ -41,6 +41,7 @@ function printHelp {
     echo "  --cleanAll        Remove all thirdparty library directories for a build from scratch"
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
+    echo "  --arrow           Compile DAPHNE with Arrow and Parquet support"
 }
 
 #******************************************************************************
@@ -376,6 +377,7 @@ par_acceptAll="0"
 unknown_options=""
 BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
+arrow="OFF"
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -407,6 +409,8 @@ while [[ $# -gt 0 ]]; do
         --debug)
             echo building DEBUG version
             export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
+        --arrow)
+            arrow="ON"
             ;;
         *)
             unknown_options="${unknown_options} ${key}"
@@ -679,7 +683,8 @@ daphne_msg "Build Daphne"
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
-  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
+  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/" \
+  -DUSE_ARROW=$arrow
 
 cmake --build "$daphneBuildDir" --target "$target"
 

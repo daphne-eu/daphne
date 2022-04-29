@@ -96,6 +96,35 @@ If the build fails in between (e.g., due to missing packages), multiple build di
 
 See [this page](/doc/development/BuildingDaphne) for more information.
 
+##### Arrow / Parquet
+
+If you want to use Arrow or Parquet functionality in DAPHNE, clone the newest version of arrow.
+
+```bash
+git clone https://github.com/apache/arrow.git
+cd arrow/cpp
+```
+
+Create a temporary build folder.
+
+```bash
+mkdir build-release
+cd build-release
+```
+
+Configure CMake.
+
+```bash
+cmake -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON ..
+make -j8       # if you have 8 CPU cores, otherwise adjust
+make install
+```
+
+Now build DAPHNE using Arrow and Parquet as dependency.
+
+```bash
+./build.sh --arrow
+```
 
 ### Running the Tests
 
