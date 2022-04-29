@@ -1,5 +1,5 @@
 /*
- * Copyrighq 2021 The DAPHNE Consortium
+ * Copyright 2021 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@
 
 
 /**
- * @brief Runs the extractCoöl-kernel with small input data and performs various
+ * @brief Runs the extractCol-kernel with small input data and performs various
  * checks.
  */
 TEMPLATE_TEST_CASE("ExtractCol - Frame", TAG_KERNELS, int64_t, size_t) { // NOLINT(cert-err58-cpp)
