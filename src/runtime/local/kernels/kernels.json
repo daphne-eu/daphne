@@ -638,7 +638,10 @@
             },
             {
                 "name":  ["CPP"],
-                "instantiations": [["Frame", "Frame", "char"]]
+                "instantiations": [
+                    ["Frame", "Frame", "char"],
+                    ["Frame", "Frame", ["DenseMatrix", "int64_t"]],
+                    ["Frame", "Frame", ["DenseMatrix", "size_t"]]]
             }
         ]
     },
