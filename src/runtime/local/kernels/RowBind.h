@@ -133,35 +133,40 @@ struct RowBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         auto upsRowOffsets = ups->getRowOffsets();
         auto lowsRowOffsets = lows->getRowOffsets();
         
+        const size_t upsNumNonZeros = ups->getNumNonZeros();
+        const size_t lowsNumNonZeros = lows->getNumNonZeros();
+        
         size_t numRowsRes = ups->getNumRows() + lows->getNumRows();
-        size_t numNonZerosRes = upsRowOffsets[ups->getNumRows()] - upsRowOffsets[0] + lowsRowOffsets[lows->getNumRows()] - lowsRowOffsets[0];
+        size_t numNonZerosRes = upsNumNonZeros + lowsNumNonZeros;
 
         if(!res)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRowsRes, ups->getNumCols(), numNonZerosRes, false);
 
+        auto resRowOffsets = res->getRowOffsets();
+        
         // Ups
         size_t startOffset = upsRowOffsets[0];
-        size_t offsetsSubsetLength = upsRowOffsets[ups->getNumRows()] - startOffset;
+        size_t offsetsSubsetLength = upsNumNonZeros;
 
         if(ups->isView())
             for(size_t rOffset = 0; rOffset < ups->getNumRows(); rOffset++)
-                res->getRowOffsets()[rOffset] = upsRowOffsets[rOffset] - startOffset;
+                resRowOffsets[rOffset] = upsRowOffsets[rOffset] - startOffset;
         else
-            memcpy(res->getRowOffsets(), ups->getRowOffsets(), ups->getNumRows() * sizeof(size_t));
+            memcpy(resRowOffsets, upsRowOffsets, ups->getNumRows() * sizeof(size_t));
         memcpy(res->getValues(), &ups->getValues()[startOffset], offsetsSubsetLength * sizeof(VT));
         memcpy(res->getColIdxs(), &ups->getColIdxs()[startOffset], offsetsSubsetLength * sizeof(size_t));
 
-        // Ups
-        size_t lowsTranslate = upsRowOffsets[ups->getNumRows()] - upsRowOffsets[0];
+        // Lows
+        size_t lowsTranslate = upsNumNonZeros;
         startOffset = lowsRowOffsets[0];
-        offsetsSubsetLength = lowsRowOffsets[lows->getNumRows()] - startOffset;
+        offsetsSubsetLength = lowsNumNonZeros;
 
         for(size_t rOffset = 0; rOffset < lows->getNumRows(); rOffset++)
-            res->getRowOffsets()[rOffset + ups->getNumRows()] = lowsRowOffsets[rOffset] - startOffset + lowsTranslate;
+            resRowOffsets[rOffset + ups->getNumRows()] = lowsRowOffsets[rOffset] - startOffset + lowsTranslate;
         memcpy(&res->getValues()[lowsTranslate], &lows->getValues()[startOffset], offsetsSubsetLength * sizeof(VT));
         memcpy(&res->getColIdxs()[lowsTranslate], &lows->getColIdxs()[startOffset], offsetsSubsetLength * sizeof(size_t));
 
-        res->getRowOffsets()[numRowsRes] = lowsTranslate + (lowsRowOffsets[lows->getNumRows()] - startOffset);
+        res->getRowOffsets()[numRowsRes] = lowsTranslate + lowsNumNonZeros;
     }
 };
 

@@ -215,7 +215,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RowBind", TAG_KERNELS, (CSRMatrix), (double, uint32_
         DataObjectFactory::destroy(res);
     }
 
-    SECTION("Normal on Subset") {
+    SECTION("Normal on view") {
         size_t lower_bound = 1;
         size_t upper_bound = 3;
         auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lower_bound, upper_bound);
@@ -237,7 +237,7 @@ TEMPLATE_PRODUCT_TEST_CASE("RowBind", TAG_KERNELS, (CSRMatrix), (double, uint32_
         DataObjectFactory::destroy(res);
     }
 
-    SECTION("Subset on subset") {
+    SECTION("View on view") {
         auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, 2, 4);
         auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(m0, 0, 2);
         auto exp  = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, true);
