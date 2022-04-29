@@ -95,7 +95,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     DIR *dirp = opendir("/sys/devices/system/node/");
 
     if (dirp == NULL) {
-        std::cout << "Problem opening dir" << std::endl;
+        std::cout << "Problem retrieving NUMA topology" << std::endl;
     } else {
         while ((dirEntry = readdir(dirp)) != NULL) {
             std::string current(dirEntry->d_name);
@@ -116,6 +116,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     
     int queueMode = 0;
     int _numQueues = 1;
+	int stealLogic = ctx->getUserConfig().victimSelection;
     if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
         queueMode = 1;
         _numQueues = num_numa_doamins;
@@ -142,9 +143,9 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
     if (queueMode == 1) {
-        this->initCPPWorkersPerGroup(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode);
+        this->initCPPWorkersPerGroup(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode, stealLogic);
     } else if (queueMode == 2) {
-        this->initCPPWorkersPerCPU(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode);
+        this->initCPPWorkersPerCPU(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode, stealLogic);
     } else {
         std::cerr << "Error in queue group setup" << std::endl;
     }

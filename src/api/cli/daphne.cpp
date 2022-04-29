@@ -100,6 +100,15 @@ main(int argc, char** argv)
                 clEnumVal(PERCPU, "One queue per CPU core")
             )
     );
+	opt<victimSelectionLogic> victimSelection(
+            cat(daphneOptions), desc("Choose work stealing victim selection logic:"),
+            values(
+                clEnumVal(SEQ, "Steal from next adjacent worker"),
+                clEnumVal(SEQPRI, "Steal from next adjacent worker, prioritize same NUMA domain"),
+                clEnumVal(RANDOM, "Steal from random worker"),
+				clEnumVal(RANDOMPRI, "Steal from random worker, prioritize same NUMA domain")
+            )
+    );
 
     opt<int> numberOfThreads(
             "num-threads", cat(daphneOptions),
@@ -200,6 +209,7 @@ main(int argc, char** argv)
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
+	user_config.victimSelection = victimSelection;
     user_config.numberOfThreads = numberOfThreads; 
     user_config.minimumTaskSize = minimumTaskSize; 
 

@@ -24,6 +24,8 @@
 enum QueueTypeOption { CENTRALIZED=0, PERGROUP, PERCPU};
 enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
                             PLS, MSTATIC, MFSC, PSS};
+enum victimSelectionLogic { SEQ=0, SEQPRI, RANDOM, RANDOMPRI};
+
 class LoadPartitioning {
 
 private:
