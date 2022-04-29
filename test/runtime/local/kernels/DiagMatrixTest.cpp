@@ -27,11 +27,12 @@
 #define TEST_NAME(opName) "DiagMatrix (" opName ")"
 #define VALUE_TYPES int32_t, float
 
-template<class DTRes, class DT>
-void checkDiagMatrix(const DT * arg, const DTRes * exp) {
+template<class DTRes, class DTArg>
+void checkDiagMatrix(const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
-    diagMatrix<DTRes, DT>(res, arg, nullptr);
+    diagMatrix<DTRes, DTArg>(res, arg, nullptr);
     CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("diag-dense"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) { // NOLINT(cert-err58-cpp)

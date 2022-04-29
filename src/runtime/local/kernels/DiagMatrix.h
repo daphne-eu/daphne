@@ -21,6 +21,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+#include <stdexcept>
+
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -82,7 +84,8 @@ struct DiagMatrix<DenseMatrix<VT>, DenseMatrix<VT>> {
 template<typename VT>
 struct DiagMatrix<CSRMatrix<VT>, DenseMatrix<VT>> {
     static void apply(CSRMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
-        assert((arg->getNumCols() == 1) && "parameter arg must be a column-matrix");
+        if(arg->getNumCols() != 1)
+            throw std::runtime_error("parameter arg must be a column-matrix");
 
         const size_t numRowsCols = arg->getNumRows();
         if(res==nullptr){
@@ -96,13 +99,16 @@ struct DiagMatrix<CSRMatrix<VT>, DenseMatrix<VT>> {
         size_t * colIdxsRes = res->getColIdxs();
         size_t * rowOffsetsRes = res->getRowOffsets();
 
-        for(size_t r = 0; r < numRowsCols; r++) {
-	    rowOffsetsRes[r] = r;
-	    valuesRes[r] = *valuesArg;
-	    colIdxsRes[r] = r;
+        rowOffsetsRes[0] = 0;
+
+        for(size_t r = 0, pos = 0; r < numRowsCols; r++) {
+            if (*valuesArg) {
+	        valuesRes[pos] = *valuesArg;
+	        colIdxsRes[pos++] = r;
+	    }
+	    rowOffsetsRes[r + 1] = pos;
             valuesArg += rowSkipArg;
         }
-	rowOffsetsRes[numRowsCols] = numRowsCols;
     }
 };
 
@@ -113,7 +119,8 @@ struct DiagMatrix<CSRMatrix<VT>, DenseMatrix<VT>> {
 template<typename VT>
 struct DiagMatrix<CSRMatrix<VT>, CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
-        assert((arg->getNumCols() == 1) && "parameter arg must be a column-matrix");
+        if(arg->getNumCols() != 1)
+            throw std::runtime_error("parameter arg must be a column-matrix");
 
         const size_t numRowsCols = arg->getNumRows();
         if(res==nullptr){
