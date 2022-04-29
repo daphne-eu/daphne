@@ -36,7 +36,7 @@ function printHelp {
     echo "  -h, --help        Print this help message and exit."
     echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
     echo "  --clean           Remove all temporary build directories for a fresh build"
-    echo "  --cleanALL        Remove all thirdparty library directories for a build from scratch"
+    echo "  --cleanAll        Remove all thirdparty library directories for a build from scratch"
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
 }
@@ -53,6 +53,7 @@ daphne_black_fg='\e[38;2;0;0;0m'
 daphne_black_bg='\e[48;2;0;0;0m'
 reset='\e[00m'
 fancy="1"
+animation="1"
 
 # Prints Info message with style ... Daphne style 8-)
 # Supports animation, e.g. 'daphne_msg -t 1000 Some Foo Bar Text' takes roughly 1 second (1000 milliseconds) to print the output
@@ -68,7 +69,9 @@ function daphne_msg() {
   ### time of animation
   timeFrame="0"
   if [ "$1" == "-t" ]; then
-    timeFrame="$2"
+    if [ "$animation" == "1" ]; then
+      timeFrame="$2"
+    fi
     shift; shift
   fi
   prefix="[DAPHNE]"
@@ -260,14 +263,15 @@ function clean() {
 
   echo
 
-  # prompt confirmation
-  read -p "Are you sure? (y/n) " answer
+  # prompt confirmation, if not set by --yes
+  if [ "$par_acceptAll" == "0" ]; then
+    read -p "Are you sure? (y/n) " answer
 
-  if [[ "$answer" != [yY] ]]; then
-    echo "Abort."
-    exit 0
+    if [[ "$answer" != [yY] ]]; then
+      echo "Abort."
+      exit 0
+    fi
   fi
-
 
   # Delete entire directories.
   for dir in "${__dirs[@]}"; do
@@ -377,6 +381,7 @@ target="daphne"
 par_printHelp="0"
 par_clean="0"
 par_acceptAll="0"
+unknown_options=""
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -402,12 +407,21 @@ while [[ $# -gt 0 ]]; do
             par_acceptAll="1"
             ;;
         *)
-            printf "Unknown option: '%s'\n\n" "$key"
-            printHelp
-            exit 1
+            unknown_options="${unknown_options} ${key}"
             ;;
     esac
 done
+
+# check if the bc (basic calculator) is available
+if ! command -v bc &> /dev/null; then
+  animation="0"
+fi
+
+if [ -n "$unknown_options" ]; then
+  printf "Unknown option(s): '%s'\n\n" "$unknown_options"
+  printHelp
+  exit 1
+fi
 
 if [ "$par_printHelp" -eq 1 ]; then
   printHelp
