@@ -20,6 +20,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
 #include <cassert>
@@ -90,6 +91,50 @@ template<>
 struct ColBind<Frame, Frame, Frame> {
     static void apply(Frame *& res, const Frame * lhs, const Frame * rhs, DCTX(ctx)) {
         res = DataObjectFactory::create<Frame>(lhs, rhs);
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix, CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct ColBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
+        if(lhs->getNumRows() != rhs->getNumRows())
+            throw std::runtime_error("lhs and rhs must have the same number of rows");
+
+        size_t numColsRes = lhs->getNumCols() + rhs->getNumCols();
+        size_t numNonZerosRes = lhs->getNumNonZeros() + rhs->getNumNonZeros();
+
+        if(!res)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(lhs->getNumRows(), numColsRes, numNonZerosRes, false);
+
+        auto resRowOffsets = res->getRowOffsets();
+        auto lhsRowOffsets = lhs->getRowOffsets();
+        auto rhsRowOffsets = rhs->getRowOffsets();
+
+        size_t rhsPrevEnd = 0;
+        size_t lhsStartOffset = lhsRowOffsets[0];
+        size_t rhsStartOffset = rhsRowOffsets[0];
+
+        for(size_t rowRes = 0; rowRes < res->getNumRows(); rowRes++){
+            size_t lhsOffset = rhsPrevEnd;
+            size_t lhsLength = lhsRowOffsets[rowRes + 1] - lhsRowOffsets[rowRes];
+            size_t rhsOffset = lhsOffset + lhsLength;
+            size_t rhsLength = rhsRowOffsets[rowRes + 1] - rhsRowOffsets[rowRes];
+            rhsPrevEnd = rhsOffset + rhsLength;
+
+            memcpy(&res->getValues()[lhsOffset], &lhs->getValues()[lhsRowOffsets[rowRes]], lhsLength * sizeof(VT));
+            memcpy(&res->getValues()[rhsOffset], &rhs->getValues()[rhsRowOffsets[rowRes]], rhsLength * sizeof(VT));
+
+            memcpy(&res->getColIdxs()[lhsOffset], &lhs->getColIdxs()[lhsRowOffsets[rowRes]], lhsLength * sizeof(size_t));
+            for(size_t colIdx = 0; colIdx < rhsLength; colIdx++)
+                res->getColIdxs()[rhsOffset + colIdx] = rhs->getColIdxs()[rhsRowOffsets[rowRes] + colIdx] + lhs->getNumCols();
+
+            resRowOffsets[rowRes] = lhsRowOffsets[rowRes] - lhsStartOffset + rhsRowOffsets[rowRes] - rhsStartOffset;
+        }
+        resRowOffsets[res->getNumRows()] = numNonZerosRes;
     }
 };
 
