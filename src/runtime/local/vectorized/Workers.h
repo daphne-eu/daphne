@@ -90,19 +90,19 @@ public:
 
 class WorkerCPUPerCPU : public Worker {
     std::vector<TaskQueue*> _q;
-    std::vector<int> _numaDomains;
+    std::vector<int> _physical_ids;
+    std::vector<int> _unique_threads;
     std::array<bool, 256> eofWorkers;
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
     int _threadID;
-    int _numaID;
     int _numQueues;
     int _queueMode;
     int _stealLogic;
 public:
     // this constructor is to be used in practice
-    WorkerCPUPerCPU(std::vector<TaskQueue*> deques, std::vector<int> numaDomains, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0) : Worker(), _q(deques), _numaDomains(numaDomains),
+    WorkerCPUPerCPU(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
             _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPUPerCPU::run, this);
@@ -118,7 +118,7 @@ public:
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
         
         int targetQueue = _threadID;
-        int currentDomain = _numaDomains[_threadID];
+        int currentDomain = _physical_ids[_threadID];
         
         Task* t = _q[targetQueue]->dequeueTask();
 
@@ -152,7 +152,7 @@ public:
             targetQueue = (targetQueue+1)%_numQueues;
 
             while (targetQueue != _threadID) {
-                if ( _numaDomains[targetQueue] == currentDomain ){
+                if ( _physical_ids[targetQueue] == currentDomain ){
                     t = _q[targetQueue]->dequeueTask();
                     if( isEOF(t) ) {
                         targetQueue = (targetQueue+1)%_numQueues;
@@ -170,7 +170,7 @@ public:
             targetQueue = (targetQueue+1)%_numQueues;
             
             while (targetQueue != _threadID) {
-                if ( _numaDomains[targetQueue] != currentDomain ){
+                if ( _physical_ids[targetQueue] != currentDomain ){
                     t = _q[targetQueue]->dequeueTask();
                     if( isEOF(t) ) {
                         targetQueue = (targetQueue+1)%_numQueues;
@@ -206,14 +206,14 @@ public:
             eofWorkers.fill(false);
             
             for( int i=0; i<_numQueues; i++ ) {
-                if( _numaDomains[i] == currentDomain ) {
+                if( _physical_ids[i] == currentDomain ) {
                     queuesThisDomain++;
                 }
             }
             
             while( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain ) {
                 targetQueue = rand() % _numQueues;
-                if( _numaDomains[targetQueue] == currentDomain ) {
+                if( _physical_ids[targetQueue] == currentDomain ) {
                     if( eofWorkers[targetQueue] == false ) {
                         t = _q[targetQueue]->dequeueTask();
                         if( isEOF(t) ) {
@@ -252,19 +252,19 @@ public:
 
 class WorkerCPUPerGroup : public Worker {
     std::vector<TaskQueue*> _q;
-    std::vector<int> _numaDomains;
+    std::vector<int> _physical_ids;
+    std::vector<int> _unique_threads;
     std::array<bool, 256> eofWorkers;
     bool _verbose;
     uint32_t _fid;
     uint32_t _batchSize;
     int _threadID;
-    int _numaID;
     int _numQueues;
     int _queueMode;
     int _stealLogic;
 public:
     // this constructor is to be used in practice
-    WorkerCPUPerGroup(std::vector<TaskQueue*> deques, std::vector<int> numaDomains, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0) : Worker(), _q(deques), _numaDomains(numaDomains),
+    WorkerCPUPerGroup(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
             _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPUPerGroup::run, this);
@@ -277,7 +277,7 @@ public:
         CPU_ZERO(&cpuset);
         CPU_SET(_threadID, &cpuset);
         sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
-        int currentDomain = _numaDomains[_threadID];
+        int currentDomain = _physical_ids[_threadID];
         int targetQueue = currentDomain;
         
         Task* t = _q[targetQueue]->dequeueTask();

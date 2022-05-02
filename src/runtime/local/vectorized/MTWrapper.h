@@ -36,6 +36,9 @@ class MTWrapperBase {
 protected:
     std::vector<std::unique_ptr<Worker>> cuda_workers;
     std::vector<std::unique_ptr<Worker>> cpp_workers;
+    std::vector<int> topology_physical_ids;
+    std::vector<int> topology_unique_threads;
+    char* _cpuinfo_path = "/users/stud/g/giger0001/cpuinfo_node_001.txt";
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
@@ -54,6 +57,61 @@ protected:
         }
         return std::make_pair(len, mem_required);
     }
+    
+    int _parse_buffer( char *buffer, char *keyword, char **valptr ) {
+        char *ptr;
+        if (strncmp(buffer, keyword, strlen(keyword)))
+            return false;
+
+        ptr = strstr(buffer, ":");
+        if (ptr != NULL)
+            ptr++;
+        *valptr = ptr;
+        return true;
+    }
+
+    int _parse_line( char *buffer, char *keyword, uint32_t *val ) {
+        char *valptr;
+        if (_parse_buffer(buffer, keyword, &valptr)) {
+            *val = strtoul(valptr, (char **)NULL, 10);
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+    void get_topology(std::vector<int> &physical_ids, std::vector<int> &unique_threads) {
+        // Placeholder solution based on SchedMD/slurm/blob/master/src/slurmd/common/xcpuinfo.c
+        FILE *cpu_info_file;
+        char buffer[128];
+        std::vector<int> hardware_threads;
+        std::vector<int> core_ids;
+        cpu_info_file = fopen(_cpuinfo_path, "r");
+        if (cpu_info_file == NULL) {
+            std::cout << "Error opening file." << std::endl;
+        }
+        int index = 0;
+        while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
+            uint32_t value;
+            if( _parse_line(buffer, "processor", &value) ) {
+                hardware_threads.push_back(value);
+            } else if( _parse_line(buffer, "physical id", &value) ) {
+                physical_ids.push_back(value);
+            } else if( _parse_line(buffer, "core id", &value) ) {
+                int found = 0;
+                for (int i=0; i<index; i++) {
+                        if (core_ids[i] == value && physical_ids[i] == physical_ids[index]) {
+                                found++;
+                        }
+                }
+                core_ids.push_back(value);
+                if( found == 0 ) {
+                    unique_threads.push_back(hardware_threads[index]);
+                }
+                index++;
+            }
+        }
+    }
 
     void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cpp_workers.resize(_numCPPThreads);
@@ -63,12 +121,15 @@ protected:
 
     void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0) {
         cpp_workers.resize(_numCPPThreads);
-        if (numQueues == 0) {
+        if( numQueues == 0 ) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
         }
+        get_topology(topology_physical_ids, topology_unique_threads);
+        if( _numCPPThreads < topology_unique_threads.size() )
+            topology_unique_threads.resize(_numCPPThreads);
         int i = 0;
-        for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPUPerCPU>(qvector, numaDomains, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic);
+        for( auto& w : cpp_workers ) {
+            w = std::make_unique<WorkerCPUPerCPU>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic);
             i++;
         }
     }
@@ -78,9 +139,12 @@ protected:
         if (numQueues == 0) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
         }
+        get_topology(topology_physical_ids, topology_unique_threads);
+        if( _numCPPThreads < topology_unique_threads.size() )
+            topology_unique_threads.resize(_numCPPThreads);
         int i = 0;
         for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPUPerGroup>(qvector, numaDomains, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic);
+            w = std::make_unique<WorkerCPUPerGroup>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic);
             i++;
         }
     }
