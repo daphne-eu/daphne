@@ -16,7 +16,9 @@
 
 # Stop immediately if any command fails.
 set -e
+
 build_ts_begin=$(date +%s%N)
+
 #******************************************************************************
 # Help message
 #******************************************************************************
@@ -54,7 +56,7 @@ daphne_black_bg='\e[48;2;0;0;0m'
 reset='\e[00m'
 fancy="1"
 
-# Prints Info message with style ... Daphne style 8-)
+# Prints info message with style ... Daphne style 8-)
 # Supports animation, e.g. 'daphne_msg -t 1000 Some Foo Bar Text' takes roughly 1 second (1000 milliseconds) to print the output
 function daphne_msg() {
   local message date dotSize dots textSize columnWidth _begin_ _end_ time timeFrame inc
@@ -84,7 +86,7 @@ function daphne_msg() {
 
   message="${message}${dots}"
 
-  # no fancy output (if disabled or not standard output, e.g. piped into file)3
+  # no fancy output (if disabled or not standard output, e.g. piped into file)
   if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
     printf "%s%s%s\n" "${prefix}" "${message}" "${date}"
     return 0
@@ -248,7 +250,7 @@ function clean() {
     shift
   fi
 
-  echo -e "${daphne_red_fg}WARNING.${reset} This will delete following..."
+  echo -e "${daphne_red_fg}WARNING.${reset} This will delete the following..."
   echo "Directories:"
   for dir in "${__dirs[@]}"; do
     echo " > $dir"
@@ -295,15 +297,15 @@ function cleanBuildDirs() {
   echo "-- Cleanup of build directories in ${projectRoot} ..."
 
   local dirs=("build" \
-    "thirdparty/llvm-project/build" \
-    "thirdparty/antlr/build" \
-    "thirdparty/OpenBLAS/installed" \
-    "thirdparty/grpc/cmake/build")
+    "${thirdpartyPath}/llvm-project/build" \
+    "${thirdpartyPath}/antlr/build" \
+    "${thirdpartyPath}/OpenBLAS/installed" \
+    "${thirdpartyPath}/grpc/cmake/build")
   local files=(\
-    "thirdparty/antlr_v"*".install.success" \
-    "thirdparty/grpc_v"*".install.success" \
-    "thirdparty/openBlas_v"*".install.success" \
-    "thirdparty/llvm_v"*".install.success" \
+    "${thirdpartyPath}/antlr_v"*".install.success" \
+    "${thirdpartyPath}/grpc_v"*".install.success" \
+    "${thirdpartyPath}/openBlas_v"*".install.success" \
+    "${thirdpartyPath}/llvm_v"*".install.success" \
     "${llvmCommitFilePath}")
   clean dirs files
 }
@@ -314,20 +316,20 @@ function cleanAll() {
 
   local dirs=("build" \
     # only delete build directory from llvm
-    "thirdparty/llvm-project/build" \
-    "thirdparty/antlr" \
-    "thirdparty/OpenBLAS" \
-    "thirdparty/catch2" \
-    "thirdparty/grpc")
+    "${thirdpartyPath}/llvm-project/build" \
+    "${thirdpartyPath}/antlr" \
+    "${thirdpartyPath}/OpenBLAS" \
+    "${thirdpartyPath}/catch2" \
+    "${thirdpartyPath}/grpc")
   local files=(\
-    "thirdparty/antlr_v"*".install.success" \
-    "thirdparty/antlr_v"*".download.success" \
-    "thirdparty/catch2_v"*".install.success" \
-    "thirdparty/grpc_v"*".install.success" \
-    "thirdparty/grpc_v"*".download.success" \
-    "thirdparty/openBlas_v"*".install.success" \
-    "thirdparty/openBlas_v"*".download.success" \
-    "thirdparty/llvm_v"*".install.success" \
+    "${thirdpartyPath}/antlr_v"*".install.success" \
+    "${thirdpartyPath}/antlr_v"*".download.success" \
+    "${thirdpartyPath}/catch2_v"*".install.success" \
+    "${thirdpartyPath}/grpc_v"*".install.success" \
+    "${thirdpartyPath}/grpc_v"*".download.success" \
+    "${thirdpartyPath}/openBlas_v"*".install.success" \
+    "${thirdpartyPath}/openBlas_v"*".download.success" \
+    "${thirdpartyPath}/llvm_v"*".install.success" \
     "${llvmCommitFilePath}")
 
   clean dirs files
@@ -473,7 +475,7 @@ if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
 fi
 # build antlr4 C++ run-time
 if ! is_dependency_installed "antlr_v${antlrVersion}"; then
-  # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
+  # GitHub disabled the unauthenticated git:// protocol, patch antlr4 to use https://
   # until we upgrade to antlr4-4.9.3+
   sed -i 's#git://github.com#https://github.com#' "${antlrRuntimeDir}/runtime/CMakeLists.txt"
 
@@ -482,18 +484,17 @@ if ! is_dependency_installed "antlr_v${antlrVersion}"; then
   mkdir -p build
   mkdir -p run
   cd build
-  # if building of antlr fails, because its unable to clone utfcpp, it is probably due to using prohibited protocol by github
-  # to solve this change the used url of github by following command:
+  # If building of antlr fails, because its unable to clone utfcpp, it is probably due to using prohibited protocol by GitHub.
+  # To solve this change the used url of github by the following command:
   # $ git config --global url."https://github.com/".insteadOf git://github.com/
 
   daphne_msg "Build Antlr v${antlrVersion}"
-  cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR="$installLibDir"
+  cmake .. -G Ninja -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR="$installLibDir"
   cmake --build . --target install
   dependency_install_success "antlr_v${antlrVersion}"
 else
   daphne_msg "No need to build Antlr4 again."
 fi
-
 
 
 #------------------------------------------------------------------------------
@@ -610,7 +611,7 @@ fi
 
 llvmName="llvm-project"
 llvmCommit="llvmCommit-local-none"
-if [ -e .git ] # Note: .git in the submodule is not a directory.
+if [ -e "${projectRoot}/.git" ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit="$(git log -1 --format=%H)"
 fi
