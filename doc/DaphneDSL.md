@@ -66,12 +66,12 @@ Variables must have been assigned to before they are used in an expression.
 
 DaphneDSL differentiates *data types* and *value types*.
 
-Currently, DaphneDSL supports the following *abstract* data types:
-- *matrix*: homogeneous value type
-- *frame*: a table with columns of potentially different value types
+Currently, DaphneDSL supports the following *abstract* **data types**:
+- *matrix*: homogeneous value type for all cells
+- *frame*: a table with columns of potentially different value types // individual value type for each column
 - *scalar*: a single value
 
-The currently supported value types are:
+The currently supported **value types** are:
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
 - booleans `bool` and strings `str` *(currently only for scalars)*
@@ -101,32 +101,14 @@ Literals represent hard-coded values and can be of different types:
 
 **Integer literals** are specified in decimal notation and have the type `si64`.
 
-*Examples*
-```
-0
-123
--456
-```
+*Examples*: `0`, `123`, `-456`
 
 **Floating-point literals** are specified in decimal notation and have the type `f64`.
 Furthermore, the following literals stand for special floating-point values: `nan`, `inf`, `-inf`.
 
-*Examples*
-```
-0.0
-123.0
--456.78
-inf
-nan
-```
+*Examples*: `0.0`, `123.0`, `-456.78`, `inf`, `nan`
 
 **Boolean literals** can be `false` and `true`.
-
-*Examples*
-```
-false
-true
-```
 
 **String literals** are enclosed in quotation marks `"`.
 Special characters must be escaped using a backslash:
@@ -166,7 +148,7 @@ $x
 
 #### Complex Expressions
 
-DaphneDSL offeres several ways to build more complex expressions.
+DaphneDSL offers several ways to build more complex expressions.
 
 ##### Operators
 
@@ -183,7 +165,7 @@ DaphneDSL currently supports the following binary operators:
 | `&&` | logical AND |
 | `\|\|` | logical OR (lowest precedence) |
 
-*We plan to add more operators here, including unary operators.*
+*We plan to add more operators, including unary operators.*
 
 *Matrix multiplication (`@`):*
 The inputs must be matrices of compatible shapes, and the output is always a matrix.
@@ -252,7 +234,7 @@ This is supported for addressing rows and columns in matrices and frames.
   X[2:5, 3] # extracts rows 2, 3, 4 of column 3
   X[2, 3:]  # extracts row 2 of all columns from column 3 onwards
   X[:5, 3]  # extracts rows 0, 1, 2, 3, 4 of column 3
-  X[:, 3]   # extracts all rows of column 3
+  X[:, 3]   # extracts all rows of column 3, same as X[, 3]
   ```
 
 - *Arbitrary sequence of row/column positions:*
@@ -263,7 +245,7 @@ This is supported for addressing rows and columns in matrices and frames.
   *Examples*
   ```
   pos1 = seq(5, 1, -2); # [5, 3, 1]
-  X[pos1, ]             # extracts rows 5, 3, 1 of all columns
+  X[pos1, ]             # extracts rows 5, 3, and 1
 
   pos2 = fill(2, 3, 1); # [2, 2, 2]
   X[, pos2]             # extracts column 2 three times
@@ -271,7 +253,7 @@ This is supported for addressing rows and columns in matrices and frames.
 
 A few remarks on positions:
 - Counting starts at zero.
-  For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions from 0, 1, and 2.
+  For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions 0, 1, and 2.
 - They must be non-negative.
 - They can be provided as integers or floating-point numbers (the latter are rounded down to integers).
 - They can be given as literals or as any expression evaluating to a suitable value.
@@ -317,15 +299,127 @@ Furthermore, the specification of columns must be omited here.
 
 ##### Casts
 
+Values can be casted to a particular type explicitly.
+Currently, it is possible to cast:
+- between scalars of different types
+- between matrices of different value types
+- from matrix to frame
+- from frame to matrix
+
+*Examples*
+```
+as.f32(x)        # casts x to f32 scalar
+as.ui8(x)        # casts x to ui8 scalar
+as.matrix.f32(x) # casts x to matrix with value type f32
+as.matrix(x)     # casts x to matrix with value type infered from x
+as.frame(x)      # casts x to frame
+```
+
+TODO: We should have a scalar data type for casts (with specified or infered value type).
+
+TODO: Elaborate on casts between scalars and data objects, once we support that.
+
 ##### Function calls
+
+Function calls can address *built-in* functions as well as *user-defined* functions, but the syntax is the same in both cases:
+The name of the function followed by a comma-separated list of positional parameters in parantheses.
+
+TODO: Create separate reference of all built-in functions and DaphneDSL standard lib functions and link them here.
+
+TODO: Elaborate on types of given vs expected args.
+
+*Examples*
+```
+print("hello");
+t(myMatrix);
+seq(0, 10, 2);
+```
 
 ### Statements
 
-#### Assignment
+At the highest level, a DaphneDSL script is a sequence of statements.
+Statements comprise assignments, various forms of control flow, and declarations of user-defined functions.
 
-#### Block
+#### Expression statement
 
-#### Control Flow
+Every expression followed by a semicolon `;` can be used as a statement.
+This is useful for expressions (especially function calls) which do not return a value.
+Nevertheless, it can also be used for expressions with one or more return values, in which case these values are ignored.
+
+*Examples*
+```
+print("hello"); # built-in function without return value
+1 + 2;          # value is ignored, useless but possible
+doSomething();  # possible return values are ignored, but the execution 
+                # of the user-defined function could have side effects
+```
+
+#### Assignment statement
+
+The return value(s) of an expression can be assigned to one (or more) variable(s).
+
+**Single-assignments** are used for expressions with exactly one return value.
+
+*Examples*
+```
+x = 1 + 2;
+```
+
+**Multi-assignments** are used for expressions with more than one return value.
+
+*Examples*
+```
+evals, evecs = eigen(A); # eigen() returns two values, the (n x 1)-matrix of
+                         # eigen-values and the (n x n)-matrix of eigen-vectors
+                         # of the input matrix A.
+```
+
+##### Indexing
+
+The value of an expression can also be assigned to a *partition* of an *existing data object*.
+This is done by (left) indexing, whose syntax is similar to (right) indexing in expressions.
+
+Currently, left indexing is supported only for matrices.
+Furthermore, the rows/columns cannot be addressed by arbitrary positions lists or bit vectors (yet).
+
+The following conditions must be fulfilled:
+- The left-hand-side variable must have been initialized.
+- The left-hand-side variable must represent a matrix.
+- The right-hand-side expression must return a matrix.
+- The shapes of the partition addressed on the left-hand side and the return value of the right-hand-side expression must match.
+- The value type of the left-hand-side and right-hand-side matrices must match.
+
+*Examples*
+```
+X[5, 2] = fill(123, 1, 1);        # insert (1 x 1)-matrix
+X[10:20, 2:5] = fill(123, 10, 3); # insert (10 x 3)-matrix
+```
+
+Left indexing can be used with both single and multi-assignments.
+With the latter, it can be used with each variable on the left-hand side individually and independently.
+
+*Examples*
+```
+x, Y[3, :], Z = calculateSomething();
+```
+
+**Copy-on-write semantics**
+
+Left indexing enables the modification of existing data objects, whereby the semantics is *copy-on-write*.
+That is, if two different variables represent the same runtime data object, then left indexing on one of these variables does not have any effects on the others.
+This is achieved by transparently copying the data as necessary.
+
+*Examples*
+```
+A = ...;           # some matrix
+B = A;             # copy-by-reference
+B[..., ...] = ...; # copy-on-write: changes B, but no effect on A
+A[..., ...] = ...; # copy-on-write: changes A, but no effect on B
+```
+
+#### Block statement
+
+#### Control Flow statement
 
 ##### If-then-else
 
