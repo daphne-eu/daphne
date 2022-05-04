@@ -47,7 +47,6 @@ Newer versions should work as well, older versions might work as well.
 | java (e.g. openjdk) | 11 (1.7 should be fine) |                                                                                                                                              |
 | gfortran            | 9.3.0 |                                                                                                                                              |
 | uuid-dev            |  |                                                                                                                                              |
-| bc                  | 1.07.1 | Optional. Basic Calculator, used for floating point operations in build script. Standard package, probably already installed on your system. |
 
 ##### Hardware
 
