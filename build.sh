@@ -538,19 +538,18 @@ else
     daphne_msg "No need to build OpenBlas again."
 fi
 
+#------------------------------------------------------------------------------
 # nlohmann/json (library for JSON parsing)
-pwdBeforeNlohmannjson=$(pwd)
+#------------------------------------------------------------------------------
 nlohmannjsonDirName=nlohmannjson
 nlohmannjsonVersion=3.10.5
 nlohmannjsonSingleHeaderName=json.hpp
-mkdir --parents $nlohmannjsonDirName
-cd $nlohmannjsonDirName
-if [ ! -f $nlohmannjsonSingleHeaderName ]
-then
+if ! is_dependency_installed "nlohmannjson_v${nlohmannjsonVersion}"; then
+    mkdir --parents "${thirdpartyPath}/${nlohmannjsonDirName}"
+    cd "${thirdpartyPath}/${nlohmannjsonDirName}"
     wget https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName
+    dependency_install_success "nlohmannjson_v_v${catch2Version}"
 fi
-cd $pwdBeforeNlohmannjson
-
 
 #------------------------------------------------------------------------------
 # gRPC
