@@ -221,8 +221,11 @@ function clean() {
     fi
     shift
   fi
-
-  echo -e "${daphne_red_fg}WARNING.${reset} This will delete following..."
+  if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
+    printf "WARNING. This will delete following..."
+  else
+    printf "${daphne_red_fg}WARNING.${reset} This will delete following..."
+  fi
   echo "Directories:"
   for dir in "${__dirs[@]}"; do
     echo " > $dir"
