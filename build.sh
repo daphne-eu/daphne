@@ -275,6 +275,7 @@ function cleanBuildDirs() {
   local dirs=("build" \
     "thirdparty/llvm-project/build" \
     "thirdparty/antlr/build" \
+    "thirdparty/antlr/run" \
     "thirdparty/OpenBLAS/installed" \
     "thirdparty/grpc/cmake/build")
   local files=(\
@@ -466,7 +467,7 @@ if ! is_dependency_installed "antlr_v${antlrVersion}"; then
   # until we upgrade to antlr4-4.9.3+
   sed -i 's#git://github.com#https://github.com#' "${antlrRuntimeDir}/runtime/CMakeLists.txt"
 
-  cd "${antlrRuntimeDir}"
+  cd "${thirdpartyPath}/${antlrDirName}"
   rm -rf ./build
   mkdir -p build
   mkdir -p run
@@ -476,7 +477,7 @@ if ! is_dependency_installed "antlr_v${antlrVersion}"; then
   # $ git config --global url."https://github.com/".insteadOf git://github.com/
 
   daphne_msg "Build Antlr v${antlrVersion}"
-  cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR="$installLibDir"
+  cmake ../${antlrCppRuntimeDirName} -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR="$installLibDir"
   cmake --build . --target install
   dependency_install_success "antlr_v${antlrVersion}"
 else
@@ -526,8 +527,8 @@ if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
     unzip "$openBlasZipName"
     dependency_download_success "openBlas_v${openBlasVersion}"
 fi
-
 if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
+    cd "${thirdpartyPath}/${openBlasDirName}"
     mkdir --parents "$openBlasInstDirName"
     cd "OpenBLAS-${openBlasVersion}"
     make -j
@@ -652,7 +653,7 @@ cd "${projectRoot}/build"
 cmake -G Ninja .. \
     -DMLIR_DIR="$thirdpartyPath/$llvmName/build/lib/cmake/mlir/" \
     -DLLVM_DIR="$thirdpartyPath/$llvmName/build/lib/cmake/llvm/" \
-    -DANTLR4_RUNTIME_DIR="$antlrRuntimeDir" \
+    -DANTLR4_RUNTIME_DIR="${thirdpartyPath}/${antlrDirName}" \
     -DANTLR4_JAR_LOCATION="$thirdpartyPath/$antlrDirName/$antlrJarName" \
     -DOPENBLAS_INST_DIR="$thirdpartyPath/$openBlasDirName/$openBlasInstDirName" \
     -DCMAKE_PREFIX_PATH="$grpcInstDir"\
