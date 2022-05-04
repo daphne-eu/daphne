@@ -612,6 +612,7 @@ fi
 
 llvmName="llvm-project"
 llvmCommit="llvmCommit-local-none"
+cd "${thirdpartyPath}/${llvmName}"
 if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit="$(git log -1 --format=%H)"
