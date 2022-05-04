@@ -57,137 +57,137 @@ animation="1"
 
 # Prints Info message with style ... Daphne style 8-)
 function daphne_msg() {
-  local message date dotSize dots textSize columnWidth
-  # get width of terminal
-  columnWidth="$(tput cols)"
-  # check if output is directed to file, if true, set width to 120
-  if ! [ -t 1 ]; then
-    columnWidth=120
-  fi
-  prefix="[DAPHNE]"
-  message="..${*}"
-  date="[$(date +"%d.%m.%y %H:%M:%S")]"
-  textSize=$(( ${columnWidth} - ${#date}-${#prefix} ))
-  dotSize=$(( ${textSize} - ${#message} ))
+    local message date dotSize dots textSize columnWidth
+    # get width of terminal
+    columnWidth="$(tput cols)"
+    # check if output is directed to file, if true, set width to 120
+    if ! [ -t 1 ]; then
+        columnWidth=120
+    fi
+    prefix="[DAPHNE]"
+    message="..${*}"
+    date="[$(date +"%d.%m.%y %H:%M:%S")]"
+    textSize=$(( ${columnWidth} - ${#date}-${#prefix} ))
+    dotSize=$(( ${textSize} - ${#message} ))
 
-  dots=""
-  for (( i = 0; i < dotSize; i++)); do
-    dots="${dots}."
-  done
+    dots=""
+    for (( i = 0; i < dotSize; i++)); do
+        dots="${dots}."
+    done
 
-  message="${message}${dots}"
+    message="${message}${dots}"
 
-  # no fancy output (if disabled or not standard output, e.g. piped into file)3
-  if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
-    printf "%s%s%s\n" "${prefix}" "${message}" "${date}"
+    # no fancy output (if disabled or not standard output, e.g. piped into file)3
+    if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
+        printf "%s%s%s\n" "${prefix}" "${message}" "${date}"
+        return 0
+    fi
+
+    # colored output
+    printf "${daphne_red_fg}%s${daphne_blue_fg}%s${daphne_red_fg}%s${reset}\n" "${prefix}" "${message}" "${date}"
     return 0
-  fi
-
-  # colored output
-  printf "${daphne_red_fg}%s${daphne_blue_fg}%s${daphne_red_fg}%s${reset}\n" "${prefix}" "${message}" "${date}"
-  return 0
 }
 
 function printableTimestamp () {
-  local t="0"
-  local result=""
-  local tmp
-  if [ -n "$1" ]; then
-    t="$1"
-  fi
+    local t="0"
+    local result=""
+    local tmp
+    if [ -n "$1" ]; then
+        t="$1"
+    fi
 
-  if [ "$t" -eq 0 ]; then
-    printf "0ns"
-    return 0
-  fi
+    if [ "$t" -eq 0 ]; then
+        printf "0ns"
+        return 0
+    fi
 
-  tmp=$((t % 1000))
-  if [ "$tmp" -gt 0 ]; then
-    result="${tmp}ns"
-  fi
-  # t < 1000 ns
-  if [ "$t" -lt 1000 ]; then
+    tmp=$((t % 1000))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}ns"
+    fi
+    # t < 1000 ns
+    if [ "$t" -lt 1000 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 1000))" #us
+    tmp=$((t % 1000))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}us${result}"
+    fi
+    # t < 1000 us
+    if [ "$t" -lt 1000 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 1000))" #ms
+    tmp=$((t % 1000))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}ms${result}"
+    fi
+    # t < 1000 ms
+    if [ "$t" -lt 1000 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 1000))" #s
+    tmp=$((t % 60))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}s${result}"
+    fi
+    # t < 60 s
+    if [ "$t" -lt 60 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 60))" #min
+    tmp=$((t % 60))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}min${result}"
+    fi
+    # t < 60 min
+    if [ "$t" -lt 60 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 60))" #h
+    result="${t}h${result}"
     printf "%s\n" "${result}"
-    return 0
-  fi
-  # add space
-  if [ "$tmp" -gt 0 ]; then result=" $result"; fi
-
-  t="$((t / 1000))" #us
-  tmp=$((t % 1000))
-  if [ "$tmp" -gt 0 ]; then
-    result="${tmp}us${result}"
-  fi
-  # t < 1000 us
-  if [ "$t" -lt 1000 ]; then
-    printf "%s\n" "${result}"
-    return 0
-  fi
-  # add space
-  if [ "$tmp" -gt 0 ]; then result=" $result"; fi
-
-  t="$((t / 1000))" #ms
-  tmp=$((t % 1000))
-  if [ "$tmp" -gt 0 ]; then
-    result="${tmp}ms${result}"
-  fi
-  # t < 1000 ms
-  if [ "$t" -lt 1000 ]; then
-    printf "%s\n" "${result}"
-    return 0
-  fi
-  # add space
-  if [ "$tmp" -gt 0 ]; then result=" $result"; fi
-
-  t="$((t / 1000))" #s
-  tmp=$((t % 60))
-  if [ "$tmp" -gt 0 ]; then
-    result="${tmp}s${result}"
-  fi
-  # t < 60 s
-  if [ "$t" -lt 60 ]; then
-    printf "%s\n" "${result}"
-    return 0
-  fi
-  # add space
-  if [ "$tmp" -gt 0 ]; then result=" $result"; fi
-
-  t="$((t / 60))" #min
-  tmp=$((t % 60))
-  if [ "$tmp" -gt 0 ]; then
-    result="${tmp}min${result}"
-  fi
-  # t < 60 min
-  if [ "$t" -lt 60 ]; then
-    printf "%s\n" "${result}"
-    return 0
-  fi
-  # add space
-  if [ "$tmp" -gt 0 ]; then result=" $result"; fi
-
-  t="$((t / 60))" #h
-  result="${t}h${result}"
-  printf "%s\n" "${result}"
 }
 
 function printLogo(){
-  daphne_msg ""
-  daphne_msg ".Welcome to"
-  daphne_msg ""
-  daphne_msg ".._______.......................__"
-  daphne_msg ".|       \\.....................|  \\"
-  daphne_msg ".| €€€€€€€\\  ______    ______  | €€____   _______    ______"
-  daphne_msg ".| €€  | €€ |      \\  /      \\ | €€    \\ |       \\  /      \\"
-  daphne_msg ".| €€  | €€  \\€€€€€€\\|  €€€€€€\\| €€€€€€€\\| €€€€€€€\\|  €€€€€€\\"
-  daphne_msg ".| €€  | €€ /      €€| €€  | €€| €€  | €€| €€  | €€| €€    €€"
-  daphne_msg ".| €€__/ €€|  €€€€€€€| €€__/ €€| €€  | €€| €€  | €€| €€€€€€€€"
-  daphne_msg ".| €€    €€ \\€€    €€| €€    €€| €€  | €€| €€  | €€ \€€     \\"
-  daphne_msg ". \\€€€€€€€   \\€€€€€€€| €€€€€€€  \\€€   \\€€ \\€€   \\€€  \\€€€€€€€"
-  daphne_msg ".....................| €€"
-  daphne_msg ".....................| €€"
-  daphne_msg "......................\\€€..................EU-H2020.//.957407"
-  daphne_msg ""
-  printf "\n\n"
+    daphne_msg ""
+    daphne_msg ".Welcome to"
+    daphne_msg ""
+    daphne_msg ".._______.......................__"
+    daphne_msg ".|       \\.....................|  \\"
+    daphne_msg ".| €€€€€€€\\  ______    ______  | €€____   _______    ______"
+    daphne_msg ".| €€  | €€ |      \\  /      \\ | €€    \\ |       \\  /      \\"
+    daphne_msg ".| €€  | €€  \\€€€€€€\\|  €€€€€€\\| €€€€€€€\\| €€€€€€€\\|  €€€€€€\\"
+    daphne_msg ".| €€  | €€ /      €€| €€  | €€| €€  | €€| €€  | €€| €€    €€"
+    daphne_msg ".| €€__/ €€|  €€€€€€€| €€__/ €€| €€  | €€| €€  | €€| €€€€€€€€"
+    daphne_msg ".| €€    €€ \\€€    €€| €€    €€| €€  | €€| €€  | €€ \€€     \\"
+    daphne_msg ". \\€€€€€€€   \\€€€€€€€| €€€€€€€  \\€€   \\€€ \\€€   \\€€  \\€€€€€€€"
+    daphne_msg ".....................| €€"
+    daphne_msg ".....................| €€"
+    daphne_msg "......................\\€€..................EU-H2020.//.957407"
+    daphne_msg ""
+    printf "\n\n"
 }
 
 #******************************************************************************
@@ -195,121 +195,121 @@ function printLogo(){
 #******************************************************************************
 
 function clean() {
-  # Throw error, if clean is executed, but output is piped to a file. In this case the user has to accept the
-  # cleaning via parameter --yes
-  if ! [ -t 1 ] && ! [ "$par_acceptAll" -eq 1 ]; then
-    >&2 printf "${daphne_red_fg}"
-    printf "Error: To clean Daphne while piping the output into a file set the --yes option, to accept cleaning.\n" | tee /dev/stderr
-    >&2 printf "${reset}"
-    exit 1
-  fi
-
-  cd "$projectRoot"
-  local -n __dirs
-  local -n __files
-
-  if [ "$#" -gt 0 ]; then
-    if [ -n "$1" ]; then
-      __dirs=$1
+    # Throw error, if clean is executed, but output is piped to a file. In this case the user has to accept the
+    # cleaning via parameter --yes
+    if ! [ -t 1 ] && ! [ "$par_acceptAll" -eq 1 ]; then
+        >&2 printf "${daphne_red_fg}"
+        printf "Error: To clean Daphne while piping the output into a file set the --yes option, to accept cleaning.\n" | tee /dev/stderr
+        >&2 printf "${reset}"
+        exit 1
     fi
-    shift
-  fi
 
-  if [ "$#" -gt 0 ]; then
-    if [ -n "$1" ]; then
-      __files=$1
+    cd "$projectRoot"
+    local -n __dirs
+    local -n __files
+
+    if [ "$#" -gt 0 ]; then
+        if [ -n "$1" ]; then
+            __dirs=$1
+        fi
+        shift
     fi
-    shift
-  fi
-  if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
-    printf "WARNING. This will delete following..."
-  else
-    printf "${daphne_red_fg}WARNING.${reset} This will delete following..."
-  fi
-  echo "Directories:"
-  for dir in "${__dirs[@]}"; do
-    echo " > $dir"
-  done
-  echo "Files:"
-  for file in "${__files[@]}"; do
-    echo " > $file"
-  done
 
-  echo
-
-  # prompt confirmation, if not set by --yes
-  if [ "$par_acceptAll" == "0" ]; then
-    read -p "Are you sure? (y/n) " answer
-
-    if [[ "$answer" != [yY] ]]; then
-      echo "Abort."
-      exit 0
+    if [ "$#" -gt 0 ]; then
+        if [ -n "$1" ]; then
+            __files=$1
+        fi
+        shift
     fi
-  fi
-
-  # Delete entire directories.
-  for dir in "${__dirs[@]}"; do
-    if [ -d "${dir}" ]; then
-      echo "---- cleanup ${dir}"
-      rm -rf "${dir}"
+    if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
+        printf "WARNING. This will delete following..."
     else
-      echo "---- cleanup ${dir} - non-existing"
+        printf "${daphne_red_fg}WARNING.${reset} This will delete following..."
     fi
-  done
+    echo "Directories:"
+    for dir in "${__dirs[@]}"; do
+        echo " > $dir"
+    done
+    echo "Files:"
+    for file in "${__files[@]}"; do
+        echo " > $file"
+    done
 
-  # Delete individual files.
-  for file in "${__files[@]}"; do
-    if [ -f "$file" ]; then
-      echo "---- cleanup $file"
-      rm -f "$file"
-    else
-      echo "---- cleanup $file - non-existing"
+    echo
+
+    # prompt confirmation, if not set by --yes
+    if [ "$par_acceptAll" == "0" ]; then
+        read -p "Are you sure? (y/n) " answer
+
+        if [[ "$answer" != [yY] ]]; then
+            echo "Abort."
+            exit 0
+        fi
     fi
-  done
+
+    # Delete entire directories.
+    for dir in "${__dirs[@]}"; do
+        if [ -d "${dir}" ]; then
+            echo "---- cleanup ${dir}"
+            rm -rf "${dir}"
+        else
+            echo "---- cleanup ${dir} - non-existing"
+        fi
+    done
+
+    # Delete individual files.
+    for file in "${__files[@]}"; do
+        if [ -f "$file" ]; then
+            echo "---- cleanup $file"
+            rm -f "$file"
+        else
+            echo "---- cleanup $file - non-existing"
+        fi
+    done
 }
 
 # Cleans all build directories
 function cleanBuildDirs() {
-  echo "-- Cleanup of build directories in ${projectRoot} ..."
+    echo "-- Cleanup of build directories in ${projectRoot} ..."
 
-  local dirs=("build" \
-    "thirdparty/llvm-project/build" \
-    "thirdparty/antlr/build" \
-    "thirdparty/antlr/run" \
-    "thirdparty/OpenBLAS/installed" \
-    "thirdparty/grpc/cmake/build")
-  local files=(\
-    "thirdparty/antlr_v"*".install.success" \
-    "thirdparty/grpc_v"*".install.success" \
-    "thirdparty/openBlas_v"*".install.success" \
-    "thirdparty/llvm_v"*".install.success" \
-    "${llvmCommitFilePath}")
-  clean dirs files
+    local dirs=("build" \
+      "thirdparty/llvm-project/build" \
+      "thirdparty/antlr/build" \
+      "thirdparty/antlr/run" \
+      "thirdparty/OpenBLAS/installed" \
+      "thirdparty/grpc/cmake/build")
+    local files=(\
+      "thirdparty/antlr_v"*".install.success" \
+      "thirdparty/grpc_v"*".install.success" \
+      "thirdparty/openBlas_v"*".install.success" \
+      "thirdparty/llvm_v"*".install.success" \
+      "${llvmCommitFilePath}")
+    clean dirs files
 }
 
 # Cleans build directory and all dependencies
 function cleanAll() {
-  echo "-- Cleanup of build and library directories in ${projectRoot} ..."
+    echo "-- Cleanup of build and library directories in ${projectRoot} ..."
 
-  local dirs=("build" \
-    # only delete build directory from llvm
-    "thirdparty/llvm-project/build" \
-    "thirdparty/antlr" \
-    "thirdparty/OpenBLAS" \
-    "thirdparty/catch2" \
-    "thirdparty/grpc")
-  local files=(\
-    "thirdparty/antlr_v"*".install.success" \
-    "thirdparty/antlr_v"*".download.success" \
-    "thirdparty/catch2_v"*".install.success" \
-    "thirdparty/grpc_v"*".install.success" \
-    "thirdparty/grpc_v"*".download.success" \
-    "thirdparty/openBlas_v"*".install.success" \
-    "thirdparty/openBlas_v"*".download.success" \
-    "thirdparty/llvm_v"*".install.success" \
-    "${llvmCommitFilePath}")
+    local dirs=("build" \
+      # only delete build directory from llvm
+      "thirdparty/llvm-project/build" \
+      "thirdparty/antlr" \
+      "thirdparty/OpenBLAS" \
+      "thirdparty/catch2" \
+      "thirdparty/grpc")
+    local files=(\
+      "thirdparty/antlr_v"*".install.success" \
+      "thirdparty/antlr_v"*".download.success" \
+      "thirdparty/catch2_v"*".install.success" \
+      "thirdparty/grpc_v"*".install.success" \
+      "thirdparty/grpc_v"*".download.success" \
+      "thirdparty/openBlas_v"*".install.success" \
+      "thirdparty/openBlas_v"*".download.success" \
+      "thirdparty/llvm_v"*".install.success" \
+      "${llvmCommitFilePath}")
 
-  clean dirs files
+    clean dirs files
 }
 
 #******************************************************************************
@@ -319,21 +319,21 @@ function cleanAll() {
 #// creates indicator file which indicates successful dependency installation in <projectRoot>/thirdparty/
 #// param 1 dependency name
 function dependency_install_success() {
-  daphne_msg "Successfully installed ${1}."
-  touch "${thirdpartyPath}/${1}.install.success"
+    daphne_msg "Successfully installed ${1}."
+    touch "${thirdpartyPath}/${1}.install.success"
 }
 function dependency_download_success() {
-  daphne_msg "Successfully downloaded ${1}."
-  touch "${thirdpartyPath}/${1}.download.success"
+    daphne_msg "Successfully downloaded ${1}."
+    touch "${thirdpartyPath}/${1}.download.success"
 }
 
 #// checks if dependency is installed successfully
 #// param 1 dependency name
 function is_dependency_installed() {
-  [ -e "${thirdpartyPath}/${1}.install.success" ]
+    [ -e "${thirdpartyPath}/${1}.install.success" ]
 }
 function is_dependency_downloaded() {
-  [ -e "${thirdpartyPath}/${1}.download.success" ]
+    [ -e "${thirdpartyPath}/${1}.download.success" ]
 }
 
 #******************************************************************************
@@ -389,34 +389,34 @@ done
 
 # check if the bc (basic calculator) is available
 if ! command -v bc &> /dev/null; then
-  animation="0"
+    animation="0"
 fi
 
 if [ -n "$unknown_options" ]; then
-  printf "Unknown option(s): '%s'\n\n" "$unknown_options"
-  printHelp
-  exit 1
+    printf "Unknown option(s): '%s'\n\n" "$unknown_options"
+    printHelp
+    exit 1
 fi
 
 if [ "$par_printHelp" -eq 1 ]; then
-  printHelp
-  exit 0
+    printHelp
+    exit 0
 fi
 
 if [ "$par_clean" -eq 1 ]; then
-  cleanBuildDirs
-  exit 0
+    cleanBuildDirs
+    exit 0
 fi
 if [ "$par_clean" -eq 2 ]; then
-  cleanAll
-  exit 0
+    cleanAll
+    exit 0
 fi
 
 
 # Print Daphne-Logo when first time executing
 if [ ! -d "${projectRoot}/build" ]; then
-  printLogo
-  sleep 1
+    printLogo
+    sleep 1
 fi
 
 
@@ -443,45 +443,45 @@ antlrRuntimeDir="${thirdpartyPath}/${antlrDirName}/${antlrCppRuntimeDirName}"
 
 # Download antlr4 C++ run-time if it does not exist yet.
 if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
-  daphne_msg "Get Antlr version ${antlrVersion}"
-  mkdir --parents "${thirdpartyPath}/${antlrDirName}"
-  cd "${thirdpartyPath}/${antlrDirName}"
-  # Download antlr4 jar if it does not exist yet.
-  if [ ! -f "$antlrJarName" ]
-  then
-    daphne_msg "Download Antlr v${antlrVersion} java executable"
-    wget "https://www.antlr.org/download/${antlrJarName}"
-  fi
-  if [ ! -f "$antlrCppRuntimeZipName" ]; then
-    daphne_msg "Download Antlr v${antlrVersion} Runtime"
-    rm -rf "${antlrRuntimeDir}"
-    mkdir --parents "${antlrRuntimeDir}"
-    wget "https://www.antlr.org/download/${antlrCppRuntimeZipName}"
-    unzip "$antlrCppRuntimeZipName" -d "$antlrCppRuntimeDirName"
-  fi
-  dependency_download_success "antlr_v${antlrVersion}"
+    daphne_msg "Get Antlr version ${antlrVersion}"
+    mkdir --parents "${thirdpartyPath}/${antlrDirName}"
+    cd "${thirdpartyPath}/${antlrDirName}"
+    # Download antlr4 jar if it does not exist yet.
+    if [ ! -f "$antlrJarName" ]
+    then
+        daphne_msg "Download Antlr v${antlrVersion} java executable"
+        wget "https://www.antlr.org/download/${antlrJarName}"
+    fi
+    if [ ! -f "$antlrCppRuntimeZipName" ]; then
+        daphne_msg "Download Antlr v${antlrVersion} Runtime"
+        rm -rf "${antlrRuntimeDir}"
+        mkdir --parents "${antlrRuntimeDir}"
+        wget "https://www.antlr.org/download/${antlrCppRuntimeZipName}"
+        unzip "$antlrCppRuntimeZipName" -d "$antlrCppRuntimeDirName"
+    fi
+    dependency_download_success "antlr_v${antlrVersion}"
 fi
 # build antlr4 C++ run-time
 if ! is_dependency_installed "antlr_v${antlrVersion}"; then
-  # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
-  # until we upgrade to antlr4-4.9.3+
-  sed -i 's#git://github.com#https://github.com#' "${antlrRuntimeDir}/runtime/CMakeLists.txt"
+    # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
+    # until we upgrade to antlr4-4.9.3+
+    sed -i 's#git://github.com#https://github.com#' "${antlrRuntimeDir}/runtime/CMakeLists.txt"
 
-  cd "${thirdpartyPath}/${antlrDirName}"
-  rm -rf ./build
-  mkdir -p build
-  mkdir -p run
-  cd build
-  # if building of antlr fails, because its unable to clone utfcpp, it is probably due to using prohibited protocol by github
-  # to solve this change the used url of github by following command:
-  # $ git config --global url."https://github.com/".insteadOf git://github.com/
+    cd "${thirdpartyPath}/${antlrDirName}"
+    rm -rf ./build
+    mkdir -p build
+    mkdir -p run
+    cd build
+    # if building of antlr fails, because its unable to clone utfcpp, it is probably due to using prohibited protocol by github
+    # to solve this change the used url of github by following command:
+    # $ git config --global url."https://github.com/".insteadOf git://github.com/
 
-  daphne_msg "Build Antlr v${antlrVersion}"
-  cmake ../${antlrCppRuntimeDirName} -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR="$installLibDir"
-  cmake --build . --target install
-  dependency_install_success "antlr_v${antlrVersion}"
+    daphne_msg "Build Antlr v${antlrVersion}"
+    cmake ../${antlrCppRuntimeDirName} -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR="$installLibDir"
+    cmake --build . --target install
+    dependency_install_success "antlr_v${antlrVersion}"
 else
-  daphne_msg "No need to build Antlr4 again."
+    daphne_msg "No need to build Antlr4 again."
 fi
 
 
@@ -501,10 +501,10 @@ if ! is_dependency_installed "catch2_v${catch2Version}"; then
     cd "${thirdpartyPath}/${catch2Name}"
     if [ ! -f "$catch2ZipName" ] || [ ! -f "$catch2SingleHeaderName" ]
     then
-      daphne_msg "Download catch2 version ${catch2Version}"
-      wget "https://github.com/catchorg/Catch2/archive/refs/tags/${catch2ZipName}"
-      unzip -p "$catch2ZipName" "Catch2-${catch2Version}/single_include/catch2/catch.hpp" \
-          > "$catch2SingleHeaderName"
+        daphne_msg "Download catch2 version ${catch2Version}"
+        wget "https://github.com/catchorg/Catch2/archive/refs/tags/${catch2ZipName}"
+        unzip -p "$catch2ZipName" "Catch2-${catch2Version}/single_include/catch2/catch.hpp" \
+            > "$catch2SingleHeaderName"
     fi
     dependency_install_success "catch2_v${catch2Version}"
 else
