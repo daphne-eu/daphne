@@ -13,7 +13,7 @@
 # limitations under the License.
 
 include_directories(${PROJECT_SOURCE_DIR}/test)
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
+include_directories(${THIRDPARTY_DIR}/catch2) # for "catch.hpp"
 
 set(TEST_SOURCES
         run_tests.cpp
@@ -135,3 +135,18 @@ add_executable(theta_join_test run_tests.cpp runtime/local/kernels/ThetaJoinTest
 add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)
+
+# *****************************************************************************
+# Morphstore-specific tests
+# *****************************************************************************
+# @todo: include tests into run_tests
+set(MORPHSTORE_SOURCES
+    run_tests.cpp
+    runtime/local/kernels/MorphStore/SelectTest.cpp
+)
+
+add_executable(morphstore_test ${MORPHSTORE_SOURCES})
+#add_dependencies(morphstore_test daphne DistributedWorker)
+target_link_libraries(morphstore_test PRIVATE ${LIBS})
+target_compile_options(morphstore_test PUBLIC -g -O0)
+target_add_morphstore(morphstore_test)

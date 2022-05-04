@@ -99,13 +99,18 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
 endif()
 
+
+
+if(NOT DEFINED THIRDPARTY_DIR)
+    set(THIRDPARTY_DIR ${PROJECT_SOURCE_DIR}/thirdparty)
+endif()
 # *****************************************************************************
 # Related to MorphStore
 # *****************************************************************************
 
 
-set( MorphStoreRoot ${PROJECT_SOURCE_DIR}/thirdparty/MorphStore )
-include_directories(${MorphStoreRoot}/include)
+set( MorphStoreRoot ${THIRDPARTY_DIR}/MorphStore )
+include(cmake_files/thirdparty/integrate_functions.cmake)
 
 
 # *****************************************************************************
@@ -114,6 +119,8 @@ include_directories(${MorphStoreRoot}/include)
 
 include_directories(${PROJECT_SOURCE_DIR}/src)
 include_directories(${PROJECT_BINARY_DIR}/src)
+
+
 
 # *****************************************************************************
 # Descend to subdirectories
