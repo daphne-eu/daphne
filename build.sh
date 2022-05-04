@@ -56,23 +56,13 @@ fancy="1"
 animation="1"
 
 # Prints Info message with style ... Daphne style 8-)
-# Supports animation, e.g. 'daphne_msg -t 1000 Some Foo Bar Text' takes roughly 1 second (1000 milliseconds) to print the output
 function daphne_msg() {
-  local message date dotSize dots textSize columnWidth _begin_ _end_ time timeFrame inc
-  _begin_=$(date +%s%N)
+  local message date dotSize dots textSize columnWidth
   # get width of terminal
   columnWidth="$(tput cols)"
   # check if output is directed to file, if true, set width to 120
   if ! [ -t 1 ]; then
     columnWidth=120
-  fi
-  ### time of animation
-  timeFrame="0"
-  if [ "$1" == "-t" ]; then
-    if [ "$animation" == "1" ]; then
-      timeFrame="$2"
-    fi
-    shift; shift
   fi
   prefix="[DAPHNE]"
   message="..${*}"
@@ -94,24 +84,8 @@ function daphne_msg() {
   fi
 
   # colored output
-  if [ "$timeFrame" -eq 0 ] ; then
-    printf "${daphne_red_fg}%s${daphne_blue_fg}%s${daphne_red_fg}%s${reset}\n" "${prefix}" "${message}" "${date}"
-    return 0
-  fi
-
-  # animated output
-  ### time of animation
-  inc=2
-  time=$( echo "scale=10; ${timeFrame} * ${inc} / ${textSize} / 1000 * 0.942" | bc )
-  # print prefix (left) and date (right) // they are not part of the animation
-  printf "\r${daphne_red_fg}%*s\r${daphne_red_fg}%s${daphne_blue_fg}" "${columnWidth}" "${date}" "${prefix}"
-  for ((i=0; i < textSize; i=i+inc)); do
-    sleep "${time}"
-    printf "%s" "${message:i:inc}"
-  done
-  printf "${daphne_red_fg}%s${reset}\n" "${date}"
-  _end_=$(date +%s%N)
-#  printf "It took %s ms to print ^^^this^^^ message.\n" "$(echo "($_end_ - $_begin_) / 1000 / 1000" | bc)"
+  printf "${daphne_red_fg}%s${daphne_blue_fg}%s${daphne_red_fg}%s${reset}\n" "${prefix}" "${message}" "${date}"
+  return 0
 }
 
 function printableTimestamp () {
@@ -197,10 +171,6 @@ function printableTimestamp () {
 }
 
 function printLogo(){
-  timeFrame="0"
-  if [ "$1" == "-t" ]; then
-    timeFrame="$2"
-  fi
   daphne_msg ""
   daphne_msg ".Welcome to"
   daphne_msg ""
@@ -216,9 +186,8 @@ function printLogo(){
   daphne_msg ".....................| €€"
   daphne_msg ".....................| €€"
   daphne_msg "......................\\€€..................EU-H2020.//.957407"
-  daphne_msg -t "${timeFrame}" ""
+  daphne_msg ""
   printf "\n\n"
-
 }
 
 #******************************************************************************
@@ -226,6 +195,8 @@ function printLogo(){
 #******************************************************************************
 
 function clean() {
+  # Throw error, if clean is executed, but output is piped to a file. In this case the user has to accept the
+  # cleaning via parameter --yes
   if ! [ -t 1 ] && ! [ "$par_acceptAll" -eq 1 ]; then
     >&2 printf "${daphne_red_fg}"
     printf "Error: To clean Daphne while piping the output into a file set the --yes option, to accept cleaning.\n" | tee /dev/stderr
@@ -440,7 +411,8 @@ fi
 
 # Print Daphne-Logo when first time executing
 if [ ! -d "${projectRoot}/build" ]; then
-  printLogo -t 1500
+  printLogo
+  sleep 1
 fi
 
 
@@ -452,7 +424,7 @@ fi
 
 
 #******************************************************************************
-# Download third-party material if necessary
+# Download and install third-party material if necessary
 #******************************************************************************
 
 #------------------------------------------------------------------------------
@@ -467,7 +439,7 @@ antlrRuntimeDir="${thirdpartyPath}/${antlrDirName}/${antlrCppRuntimeDirName}"
 
 # Download antlr4 C++ run-time if it does not exist yet.
 if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
-  daphne_msg -t 700 "Get Antlr version ${antlrVersion}"
+  daphne_msg "Get Antlr version ${antlrVersion}"
   mkdir --parents "${thirdpartyPath}/${antlrDirName}"
   cd "${thirdpartyPath}/${antlrDirName}"
   # Download antlr4 jar if it does not exist yet.
@@ -520,7 +492,7 @@ catch2Version="2.13.8" # for upgrades, it suffices to simply change the version 
 catch2ZipName="v$catch2Version.zip"
 catch2SingleHeaderName="catch.hpp"
 if ! is_dependency_installed "catch2_v${catch2Version}"; then
-    daphne_msg -t 700 "Get catch2 version ${catch2Version}"
+    daphne_msg "Get catch2 version ${catch2Version}"
     mkdir --parents "${thirdpartyPath}/${catch2Name}"
     cd "${thirdpartyPath}/${catch2Name}"
     if [ ! -f "$catch2ZipName" ] || [ ! -f "$catch2SingleHeaderName" ]
@@ -544,7 +516,7 @@ openBlasVersion="0.3.19"
 openBlasZipName="OpenBLAS-$openBlasVersion.zip"
 openBlasInstDirName="installed"
 if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
-    daphne_msg -t 700 "Get OpenBlas version ${catch2Version}"
+    daphne_msg "Get OpenBlas version ${catch2Version}"
     mkdir --parents "${thirdpartyPath}/${openBlasDirName}"
     cd "${thirdpartyPath}/${openBlasDirName}"
     wget "https://github.com/xianyi/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}"
@@ -583,7 +555,7 @@ grpcDirName="grpc"
 grpcVersion="1.38.0"
 grpcInstDir="${thirdpartyPath}/${grpcDirName}/installed"
 if ! is_dependency_downloaded "grpc_v${grpcVersion}"; then
-    daphne_msg -t 700 "Get grpc version ${grpcVersion}"
+    daphne_msg "Get grpc version ${grpcVersion}"
     cd "${thirdpartyPath}"
     # Download gRPC source code.
     if [ -d "${thirdpartyPath}/${grpcDirName}" ]; then
@@ -643,7 +615,7 @@ then
 fi
 
 if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
-    daphne_msg -t 700 "Build llvm version ${llvmCommit}"
+    daphne_msg "Build llvm version ${llvmCommit}"
     cd "${thirdpartyPath}/${llvmName}"
     echo "Need to build MLIR/LLVM."
     mkdir --parents "build"
@@ -667,10 +639,10 @@ fi
 
 
 # *****************************************************************************
-# Build the DAPHNE prototype.
+# Build DAPHNE target.
 # *****************************************************************************
 
-daphne_msg -t 700 "Build Daphne"
+daphne_msg "Build Daphne"
 mkdir --parents "${projectRoot}/build"
 cd "${projectRoot}/build"
 cmake -G Ninja .. \
@@ -689,6 +661,6 @@ cmake -G Ninja .. \
 
 cmake --build . --target "$target"
 build_ts_end=$(date +%s%N)
-daphne_msg -t 700 "Successfully build Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
+daphne_msg "Successfully build Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
