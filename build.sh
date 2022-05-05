@@ -534,10 +534,13 @@ nlohmannjsonDirName=nlohmannjson
 nlohmannjsonVersion=3.10.5
 nlohmannjsonSingleHeaderName=json.hpp
 if ! is_dependency_installed "nlohmannjson_v${nlohmannjsonVersion}"; then
+    daphne_msg "Get nlohmannjson version ${nlohmannjsonVersion}"
     mkdir --parents "${thirdpartyPath}/${nlohmannjsonDirName}"
     cd "${thirdpartyPath}/${nlohmannjsonDirName}"
     wget https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName
     dependency_install_success "nlohmannjson_v${nlohmannjsonVersion}"
+else
+    daphne_msg "No need to download nlohmannjson again."
 fi
 
 #------------------------------------------------------------------------------
