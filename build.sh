@@ -537,7 +537,7 @@ if ! is_dependency_installed "nlohmannjson_v${nlohmannjsonVersion}"; then
     mkdir --parents "${thirdpartyPath}/${nlohmannjsonDirName}"
     cd "${thirdpartyPath}/${nlohmannjsonDirName}"
     wget https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName
-    dependency_install_success "nlohmannjson_v_v${catch2Version}"
+    dependency_install_success "nlohmannjson_v${nlohmannjsonVersion}"
 fi
 
 #------------------------------------------------------------------------------
