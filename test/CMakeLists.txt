@@ -143,3 +143,11 @@ add_executable(theta_join_test run_tests.cpp runtime/local/kernels/ThetaJoinTest
 add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)
+
+find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+
+add_executable(duckDB_test run_tests.cpp tmp/duckDB.cpp)
+
+target_include_directories(duckDB_test PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+target_link_libraries(duckDB_test PRIVATE ${DUCKDB_LIB} ${LIBS})
+target_compile_options(duckDB_test PUBLIC -g -O0)
