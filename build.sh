@@ -444,18 +444,13 @@ if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
     mkdir --parents "${thirdpartyPath}/${antlrDirName}"
     cd "${thirdpartyPath}/${antlrDirName}"
     # Download antlr4 jar if it does not exist yet.
-    if [ ! -f "$antlrJarName" ]
-    then
-        daphne_msg "Download Antlr v${antlrVersion} java executable"
-        wget "https://www.antlr.org/download/${antlrJarName}"
-    fi
-    if [ ! -f "$antlrCppRuntimeZipName" ]; then
-        daphne_msg "Download Antlr v${antlrVersion} Runtime"
-        rm -rf "${antlrRuntimeDir}"
-        mkdir --parents "${antlrRuntimeDir}"
-        wget "https://www.antlr.org/download/${antlrCppRuntimeZipName}"
-        unzip "$antlrCppRuntimeZipName" -d "$antlrCppRuntimeDirName"
-    fi
+    daphne_msg "Download Antlr v${antlrVersion} java executable"
+    wget "https://www.antlr.org/download/${antlrJarName}"
+    daphne_msg "Download Antlr v${antlrVersion} Runtime"
+    rm -rf "${antlrRuntimeDir}"
+    mkdir --parents "${antlrRuntimeDir}"
+    wget "https://www.antlr.org/download/${antlrCppRuntimeZipName}"
+    unzip "$antlrCppRuntimeZipName" -d "$antlrCppRuntimeDirName"
     dependency_download_success "antlr_v${antlrVersion}"
 fi
 # build antlr4 C++ run-time
