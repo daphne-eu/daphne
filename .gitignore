@@ -4,3 +4,6 @@ thirdparty/*
 .vscode/
 __pycache__/
 tmpdaphne.daphne
+thirdparty/duckdb
+.idea
+cmake-build*
