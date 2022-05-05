@@ -419,9 +419,9 @@ fi
 
 # Make sure that the submodule(s) have been updated since the last clone/pull.
 # But only if this is a git repo.
-if [ -d .git ]; then
-    git submodule update --init --recursive
-fi
+#if [ -d .git ]; then
+#    git submodule update --init --recursive
+#fi
 
 
 #******************************************************************************
@@ -539,6 +539,21 @@ if ! is_dependency_installed "nlohmannjson_v${nlohmannjsonVersion}"; then
     cd "${thirdpartyPath}/${nlohmannjsonDirName}"
     wget https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName
     dependency_install_success "nlohmannjson_v${nlohmannjsonVersion}"
+fi
+
+#------------------------------------------------------------------------------
+# DuckDB
+#------------------------------------------------------------------------------
+duckdbDirName=duckdb
+duckdbVersion=0.3.3
+duckdbZipName=libduckdb-linux-amd64.zip
+if ! is_dependency_installed "duckdb_v${duckdbVersion}"; then
+    daphne_msg "Get duckdb version ${duckdbVersion}"
+    mkdir --parents "${thirdpartyPath}/${duckdbDirName}"
+    cd "${thirdpartyPath}/${duckdbDirName}"
+    wget "https://github.com/duckdb/duckdb/releases/download/v${duckdbVersion}/${duckdbZipName}"
+    unzip "${duckdbZipName}" -d .
+    dependency_install_success "duckdb_v${duckdbVersion}"
 fi
 
 #------------------------------------------------------------------------------
