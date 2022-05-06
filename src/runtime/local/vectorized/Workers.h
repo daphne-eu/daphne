@@ -100,10 +100,11 @@ class WorkerCPUPerCPU : public Worker {
     int _numQueues;
     int _queueMode;
     int _stealLogic;
+    bool _pinWorkers;
 public:
     // this constructor is to be used in practice
-    WorkerCPUPerCPU(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
-            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic) {
+    WorkerCPUPerCPU(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPUPerCPU::run, this);
     }
@@ -111,11 +112,13 @@ public:
     ~WorkerCPUPerCPU() override = default;
 
     void run() override {
-        // pin worker to CPU core
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(_threadID, &cpuset);
-        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        if (_pinWorkers) {
+            // pin worker to CPU core
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(_threadID, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        }
         
         int targetQueue = _threadID;
         int currentDomain = _physical_ids[_threadID];
@@ -262,10 +265,11 @@ class WorkerCPUPerGroup : public Worker {
     int _numQueues;
     int _queueMode;
     int _stealLogic;
+    bool _pinWorkers;
 public:
     // this constructor is to be used in practice
-    WorkerCPUPerGroup(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
-            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic) {
+    WorkerCPUPerGroup(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerCPUPerGroup::run, this);
     }
@@ -273,10 +277,12 @@ public:
     ~WorkerCPUPerGroup() override = default;
 
     void run() override {
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(_threadID, &cpuset);
-        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        if (_pinWorkers) {
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(_threadID, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        }
         int currentDomain = _physical_ids[_threadID];
         int targetQueue = currentDomain;
         

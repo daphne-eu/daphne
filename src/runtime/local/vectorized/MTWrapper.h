@@ -38,7 +38,7 @@ protected:
     std::vector<std::unique_ptr<Worker>> cpp_workers;
     std::vector<int> topology_physical_ids;
     std::vector<int> topology_unique_threads;
-    char* _cpuinfo_path = "/users/stud/g/giger0001/cpuinfo_node_001.txt";
+    char* _cpuinfo_path = "/proc/cpuinfo";
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
@@ -81,7 +81,6 @@ protected:
     }
     
     void get_topology(std::vector<int> &physical_ids, std::vector<int> &unique_threads) {
-        // Placeholder solution based on SchedMD/slurm/blob/master/src/slurmd/common/xcpuinfo.c
         FILE *cpu_info_file;
         char buffer[128];
         std::vector<int> hardware_threads;
@@ -119,7 +118,7 @@ protected:
             w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
     }
 
-    void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0) {
+    void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
         cpp_workers.resize(_numCPPThreads);
         if( numQueues == 0 ) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
@@ -129,12 +128,12 @@ protected:
             topology_unique_threads.resize(_numCPPThreads);
         int i = 0;
         for( auto& w : cpp_workers ) {
-            w = std::make_unique<WorkerCPUPerCPU>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic);
+            w = std::make_unique<WorkerCPUPerCPU>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic, pinWorkers);
             i++;
         }
     }
     
-    void initCPPWorkersPerGroup(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0) {
+    void initCPPWorkersPerGroup(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
         cpp_workers.resize(_numCPPThreads);
         if (numQueues == 0) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
@@ -144,7 +143,7 @@ protected:
             topology_unique_threads.resize(_numCPPThreads);
         int i = 0;
         for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPUPerGroup>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic);
+            w = std::make_unique<WorkerCPUPerGroup>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic, pinWorkers);
             i++;
         }
     }
