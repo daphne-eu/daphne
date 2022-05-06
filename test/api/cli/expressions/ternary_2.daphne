@@ -1,0 +1,6 @@
+x = 10;
+y = 20;
+z = x == y ? x : y;
+print(z == y); // 1
+print(x == y ? x : y); // 20
+print(20 == (x == y ? x : y)); // 1
