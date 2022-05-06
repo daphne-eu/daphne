@@ -6,6 +6,7 @@ build_*/
 # dependencies
 thirdparty/*
 !thirdparty/llvm-project/
+!thirdparty/patches/
 
 # Visual Studio Code
 .vscode/

@@ -1,6 +1,6 @@
 # Building Daphne
 
-The DAPHNE project provides a full-fledged build script. After cloning it does everything from dependency setup to 
+The DAPHNE project provides a full-fledged build script. After cloning, it does everything from dependency setup to 
 generation of the executable.
 
 ### What does the build script do? (simplified)
@@ -11,16 +11,13 @@ generation of the executable.
 
 ### How long does a build take?
 
-The first run will take a while, due to long compilation times of the dependencies. But they only have to be compiled 
-once (except updates).
+The first run will take a while, due to long compilation times of the dependencies (~40 minutes on a 12 vcore laptop, ~10 minutes on a 128 vcore cluster node). But they only have to be compiled 
+once (except updates) .
 Following builds only take a few seconds/minutes.
 
 Contents:
  - [Usage of the build script](#1-usage-of-the-build-script)
  - [Extension of the build script](#2-extension)
-
-
-
 
 
 --- 
@@ -36,7 +33,7 @@ The default command to build the default target **daphne**.
 ./build.sh
 ```
 
-Print the cli build help page. This also shows all of the following options.
+Print the cli build help page. This also shows all the following options.
 
 ```bash
 ./build.sh --help
@@ -56,7 +53,7 @@ For example the following builds the main test target.
 ### Clean
 
 Clean all build directories, i.e. the daphne build dir in `<project_root>/build` and build directories of the dependencies in 
-`<project_root>/thirdparty/<dep>/<path to build folder>`:
+`<project_root>/thirdparty/build/<dep>`:
 
 ```bash
 ./build.sh --clean
@@ -70,14 +67,16 @@ Clean all download and build directories, i.e. `<project_root>/build` and `<proj
 ### Options
 All possible options for the build script:
 
-| Option             | Effect |
-|--------------------| ------- |
-| -h, --help         | Print the help page |
-| --clean            | Clean build directories |
-| --cleanAll         | Clean build directory and delete all dependency |
-| --target \<target> | Build specific target |
-| -nf, --no-fancy    | Disables colorized output |
-| -y, --yes          | Accept prompt (e.g. when executing the clean command) |
+| Option             | Effect                                                     |
+|--------------------|------------------------------------------------------------|
+| -h, --help         | Print the help page                                        |
+| --clean            | Clean build directories                                    |
+| --cleanAll         | Clean build directory and delete all dependency            |
+| --target \<target> | Build specific target                                      |
+| -nf, --no-fancy    | Disables colorized output                                  |
+| -y, --yes          | Accept prompt (e.g. when executing the clean command)      |
+| --cuda             | Compile with support for GPU operations using the CUDA SDK |
+| --debug            | Compile the daphne binary with debug symbols               |
 
 
 ## 2. Extension
@@ -106,18 +105,24 @@ The following list contains a rough overview over the segments and the concrete 
    2. **dependency_download_success(** \<dep> **)** // used after successful download of a dependency; creates related indicator file
    3. **is_dependency_installed(** \<dep> **)** // checks if dependency is already installed/build successfully  
    4. **is_dependency_downloaded(** \<dep> **)** // checks if dependency is already downloaded successfully
-5. Set some paths
+5. Version configuration
+   1. Versions of the software dependencies are configured here
+6. Set some paths
    1. Definition of project related paths
-6. Parse arguments
+   2. Configuration of path prefixes. For example all build directories are prefixed with `buildPrefix`. If fast storage 
+      is available on the system, build directories could be redirected with this central configuration.
+7. Parse arguments
    1. Parsing
    2. Updating git submodules
-7. Download and install third-party material if necessary
+8. Download and install third-party material if necessary
    1. Antlr
    2. catch2
    3. OpenBLAS
-   4. gRPC
-   5. MLIR
-8. Build DAPHNE target
+   4. nlohmannjson
+   5. gRPC
+      1. abseil-cpp - required by gRPC. Compiled separately to apply a patch.
+   6. MLIR
+9. Build DAPHNE target
    1. Compilation of the DAPHNE-target ('daphne' is default)
 
 ### Adding a dependency
@@ -148,3 +153,7 @@ The following list contains a rough overview over the segments and the concrete 
         dependency_install_success "<dep_name>_v${dep_version}"
     fi
     ```
+5. Define a flag for the build script if your dependency is optional or poses unnecessary 
+   overhead for users (e.g., CUDA is optional as the CUDA SDK is a considerably sized package that only owners of Nvidia hardware would want to install).
+
+   See section 6 about argument parsing. Quick guide: define a variable and its default value and add an item to the argument handling loop.
