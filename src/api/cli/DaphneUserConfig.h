@@ -34,6 +34,8 @@ struct DaphneUserConfig {
     bool use_obj_ref_mgnt = true;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
+    bool prePartitionRows = false;
+    bool pinWorkers = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;

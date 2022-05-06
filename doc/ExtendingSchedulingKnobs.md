@@ -95,3 +95,5 @@ In this example, the daphne system will execute `my_script.daphne`  with the fol
 4. the vectorized engine will use 4 threads due to `--num-threads 4` 
 5. work stealing will be used with a sepereate queue for each CPU due to `--PERCPU`
 6. the work stealing victim selection will be sequential prioritized due to `--SEQPRI`
+7. the rows will be evenly distributed before the scheduling technique is applied due to `--pre-partition`
+8. the CPU workers will be pinned to CPU cores due to `--pin-workers`

@@ -127,6 +127,14 @@ main(int argc, char** argv)
             "vec", cat(daphneOptions),
             desc("Enable vectorized execution engine")
     );
+    opt<bool> prePartitionRows(
+            "pre-partition", cat(daphneOptions),
+            desc("Partition rows into the number of queues before applying scheduling technique")
+    );
+    opt<bool> pinWorkers(
+            "pin-workers", cat(daphneOptions),
+            desc("Pin workers to CPU cores")
+    );
     
     // Other options
     
@@ -212,6 +220,8 @@ main(int argc, char** argv)
 	user_config.victimSelection = victimSelection;
     user_config.numberOfThreads = numberOfThreads; 
     user_config.minimumTaskSize = minimumTaskSize; 
+    user_config.pinWorkers = pinWorkers;
+    user_config.prePartitionRows = prePartitionRows;
 
     if(cuda) {
         int device_count = 0;
