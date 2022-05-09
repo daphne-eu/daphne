@@ -52,7 +52,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DenseMatrix), (double, uint3
         checkReshape(arg, 3, 4, exp);
         DataObjectFactory::destroy(exp);
     }
-    SECTION("Reshape view 1") {
+    SECTION("view 1") {
         const DT * initial = genGivenVals<DT>(3, vals); // 3x4
         const DT * view = DataObjectFactory::create<DT>(initial, 0, 3, 2, 4); // 3x2
         const DT * exp = genGivenVals<DT>(2, {2,3,6, 7,10,11}); // 2x3
@@ -62,7 +62,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DenseMatrix), (double, uint3
         DataObjectFactory::destroy(initial);
         DataObjectFactory::destroy(view);
     }
-    SECTION("Reshape view 2") {
+    SECTION("view 2") {
         const DT * initial = genGivenVals<DT>(2, vals); // 2x6
         const DT * view = DataObjectFactory::create<DT>(initial, 1, 2, 0, 6); // 1x6
         const DT * exp = genGivenVals<DT>(3, {6,7 ,8,9, 10,11}); // 3x2
@@ -72,7 +72,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Reshape", TAG_KERNELS, (DenseMatrix), (double, uint3
         DataObjectFactory::destroy(initial);
         DataObjectFactory::destroy(view);
     }
-    SECTION("Reshape view 3") {
+    SECTION("view 3") {
         const DT * initial = genGivenVals<DT>(2, vals); // 2x6
         const DT * view = DataObjectFactory::create<DT>(initial, 1, 2, 0, 4); // 1x4
         const DT * exp = genGivenVals<DT>(2, {6,7 ,8,9}); // 2x2
