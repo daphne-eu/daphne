@@ -70,13 +70,15 @@ main(int argc, char** argv)
     
     // TODO We will probably subdivide the options into multiple groups later.
     OptionCategory daphneOptions("DAPHNE Options");
+    OptionCategory schedulingOptions("Advanced Scheduling Knobs");
+
 
     // Options ----------------------------------------------------------------
     
     // Scheduling options
 
     opt<SelfSchedulingScheme> taskPartitioningScheme(
-            cat(daphneOptions), desc("Choose task partitioning scheme:"),
+            cat(schedulingOptions), desc("Choose task partitioning scheme:"),
             values(
                 clEnumVal(STATIC , "Static (default)"),
                 clEnumVal(SS, "Self-scheduling"),
@@ -93,7 +95,7 @@ main(int argc, char** argv)
             )
     );
     opt<QueueTypeOption> queueSetupScheme(
-            cat(daphneOptions), desc("Choose queue setup scheme:"),
+            cat(schedulingOptions), desc("Choose queue setup scheme:"),
             values(
                 clEnumVal(CENTRALIZED, "One queue (default)"),
                 clEnumVal(PERGROUP, "One queue per CPU group"),
@@ -101,7 +103,7 @@ main(int argc, char** argv)
             )
     );
 	opt<victimSelectionLogic> victimSelection(
-            cat(daphneOptions), desc("Choose work stealing victim selection logic:"),
+            cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
             values(
                 clEnumVal(SEQ, "Steal from next adjacent worker"),
                 clEnumVal(SEQPRI, "Steal from next adjacent worker, prioritize same NUMA domain"),
@@ -111,28 +113,28 @@ main(int argc, char** argv)
     );
 
     opt<int> numberOfThreads(
-            "num-threads", cat(daphneOptions),
+            "num-threads", cat(schedulingOptions),
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
                 "(default is equal to the number of physcial cores on the target node that executes the code)"
             )
     );
     opt<int> minimumTaskSize(
-            "grain-size", cat(daphneOptions),
+            "grain-size", cat(schedulingOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
             )
     );
     opt<bool> useVectorizedPipelines(
-            "vec", cat(daphneOptions),
+            "vec", cat(schedulingOptions),
             desc("Enable vectorized execution engine")
     );
     opt<bool> prePartitionRows(
-            "pre-partition", cat(daphneOptions),
+            "pre-partition", cat(schedulingOptions),
             desc("Partition rows into the number of queues before applying scheduling technique")
     );
     opt<bool> pinWorkers(
-            "pin-workers", cat(daphneOptions),
+            "pin-workers", cat(schedulingOptions),
             desc("Pin workers to CPU cores")
     );
     
@@ -188,7 +190,12 @@ main(int argc, char** argv)
     // Parse arguments
     // ------------------------------------------------------------------------
     
-    HideUnrelatedOptions(daphneOptions);
+    std::vector<const llvm::cl::OptionCategory *> visibleCategories;
+    visibleCategories.push_back(&daphneOptions);
+    visibleCategories.push_back(&schedulingOptions);
+    
+    HideUnrelatedOptions(visibleCategories);
+
     extrahelp(
             "\nEXAMPLES:\n\n"
             "  daphne example.daphne\n"
