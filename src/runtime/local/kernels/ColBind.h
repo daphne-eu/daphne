@@ -118,21 +118,21 @@ struct ColBind<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         size_t lhsStartOffset = lhsRowOffsets[0];
         size_t rhsStartOffset = rhsRowOffsets[0];
 
-        for(size_t rowRes = 0; rowRes < res->getNumRows(); rowRes++){
+        for(size_t r = 0; r < res->getNumRows(); r++){
             size_t lhsOffset = rhsPrevEnd;
-            size_t lhsLength = lhsRowOffsets[rowRes + 1] - lhsRowOffsets[rowRes];
+            size_t lhsLength = lhsRowOffsets[r + 1] - lhsRowOffsets[r];
             size_t rhsOffset = lhsOffset + lhsLength;
-            size_t rhsLength = rhsRowOffsets[rowRes + 1] - rhsRowOffsets[rowRes];
+            size_t rhsLength = rhsRowOffsets[r + 1] - rhsRowOffsets[r];
             rhsPrevEnd = rhsOffset + rhsLength;
 
-            memcpy(&res->getValues()[lhsOffset], &lhs->getValues()[lhsRowOffsets[rowRes]], lhsLength * sizeof(VT));
-            memcpy(&res->getValues()[rhsOffset], &rhs->getValues()[rhsRowOffsets[rowRes]], rhsLength * sizeof(VT));
+            memcpy(&res->getValues()[lhsOffset], &lhs->getValues()[lhsRowOffsets[r]], lhsLength * sizeof(VT));
+            memcpy(&res->getValues()[rhsOffset], &rhs->getValues()[rhsRowOffsets[r]], rhsLength * sizeof(VT));
 
-            memcpy(&res->getColIdxs()[lhsOffset], &lhs->getColIdxs()[lhsRowOffsets[rowRes]], lhsLength * sizeof(size_t));
-            for(size_t colIdx = 0; colIdx < rhsLength; colIdx++)
-                res->getColIdxs()[rhsOffset + colIdx] = rhs->getColIdxs()[rhsRowOffsets[rowRes] + colIdx] + lhs->getNumCols();
+            memcpy(&res->getColIdxs()[lhsOffset], &lhs->getColIdxs()[lhsRowOffsets[r]], lhsLength * sizeof(size_t));
+            for(size_t c = 0; c < rhsLength; c++)
+                res->getColIdxs()[rhsOffset + c] = rhs->getColIdxs()[rhsRowOffsets[r] + c] + lhs->getNumCols();
 
-            resRowOffsets[rowRes] = lhsRowOffsets[rowRes] - lhsStartOffset + rhsRowOffsets[rowRes] - rhsStartOffset;
+            resRowOffsets[r] = lhsRowOffsets[r] - lhsStartOffset + rhsRowOffsets[r] - rhsStartOffset;
         }
         resRowOffsets[res->getNumRows()] = numNonZerosRes;
     }
