@@ -19,6 +19,8 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
+#include <compiler/execution/DaphneIrExecutor.h>
+#include <parser/config/ConfigParser.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -37,16 +39,10 @@
 
 #include <cstdlib>
 #include <cstring>
-#include <vector>
 
 using namespace std;
 using namespace mlir;
 using namespace llvm::cl;
-
-void printHelp(const std::string & cmd) {
-    cout << "Usage: " << cmd << " FILE [--args {ARG=VAL}] [--vec] [--select-matrix-representations]" <<
-     "[--cuda] [--libdir=<path-to-libs>] [--explain] [--no-free]"<< endl;
-}
 
 void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<string, string>& scriptArgsFinal) {
     for(const std::string& pair : scriptArgsCli) {
@@ -97,20 +93,20 @@ main(int argc, char** argv)
                 clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
                 clEnumVal(PSS, "Probabilistic self-scheduling")
             )
-    );    
+    );
 
     opt<int> numberOfThreads(
             "num-threads", cat(daphneOptions),
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
                 "(default is equal to the number of physcial cores on the target node that executes the code)"
-            )   
+            )
     );
     opt<int> minimumTaskSize(
             "grain-size", cat(daphneOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
-            )   
+            )
     );
     opt<bool> useVectorizedPipelines(
             "vec", cat(daphneOptions),
@@ -159,6 +155,13 @@ main(int argc, char** argv)
             ),
             CommaSeparated
     );
+    const std::string configFileInitValue = "-";
+    opt<string> configFile(
+        "config", cat(daphneOptions),
+        desc("A JSON file that contains the DAPHNE configuration"),
+        value_desc("filename"),
+        llvm::cl::init(configFileInitValue)
+    );
 
     // Positional arguments ---------------------------------------------------
     
@@ -187,18 +190,26 @@ main(int argc, char** argv)
     // ************************************************************************
 
     // Initialize user configuration.
-
     DaphneUserConfig user_config{};
+    try {
+        if (configFile != configFileInitValue && ConfigParser::fileExists(configFile)) {
+            ConfigParser::readUserConfig(configFile, user_config);
+        }
+    }
+    catch(std::exception & e) {
+        std::cerr << "Error while reading user config: " << e.what() << std::endl;
+        return StatusCode::PARSER_ERROR;
+    }
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.explain_kernels = explainKernels;
-    user_config.libdir = libDir;
+    user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
-    user_config.numberOfThreads = numberOfThreads; 
-    user_config.minimumTaskSize = minimumTaskSize; 
+    user_config.numberOfThreads = numberOfThreads;
+    user_config.minimumTaskSize = minimumTaskSize;
 
     if(cuda) {
         int device_count = 0;
@@ -255,7 +266,7 @@ main(int argc, char** argv)
         return StatusCode::PARSER_ERROR;
     }
 
-    // Further process the module, including optimization and lowering passes.
+    // Further, process the module, including optimization and lowering passes.
     try{
         if (!executor.runPasses(moduleOp)) {
             return StatusCode::PASS_ERROR;

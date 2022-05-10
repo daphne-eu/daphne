@@ -36,9 +36,7 @@ void distributedRead(Handle<DT> *&res, const char * filename, DCTX(ctx))
 {
     FileMetaData fmd = FileMetaData::ofFile(filename);    
 
-    File * file = openFile(filename);
-    readCsv(res, file, fmd.numRows, fmd.numCols, ',');
-    closeFile(file);    
+    readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
 }
 
 

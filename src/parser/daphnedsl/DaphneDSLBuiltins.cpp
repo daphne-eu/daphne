@@ -641,6 +641,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Matrix decompositions & co
     // ********************************************************************
 
+    if( func == "eigen" ) {
+        checkNumArgsExact(func, numArgs, 1);
+        //TODO JIT-Engine invocation failed: Failed to materialize symbols
+        return builder.create<EigenOp>(loc,
+            args[0].getType(), args[0].getType(), args[0]).getResults();
+    }
+
     // TODO Add built-in functions for those.
 
     // ********************************************************************

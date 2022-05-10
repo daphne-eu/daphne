@@ -1,0 +1,90 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
+#-------------------------------------------------------------
+
+# Principal Component Analysis (PCA) for dimensionality reduction
+# 
+# INPUT PARAMETERS:
+# ---------------------------------------------------------------------------------------------
+# NAME   TYPE    DEFAULT  MEANING
+# ---------------------------------------------------------------------------------------------
+# X      Matrix  ---      Input feature matrix
+# K      Int     2        Number of reduced dimensions (i.e., columns)
+# Center Boolean true     Indicates whether or not to center the feature matrix
+# Scale  Boolean true     Indicates whether or not to scale the feature matrix
+
+# RETURN VALUES
+# ---------------------------------------------------------------------------------------------
+# Xout   Matrix  ---      Output feature matrix with K columns
+# Mout   Matrix  ---      Output dominant eigen vectors (can be used for projections)
+# ---------------------------------------------------------------------------------------------
+
+X = readMatrix($X);
+K = $K;
+
+N = nrow(X);
+Nm1 = as.f64(N) - as.f64(1);
+M = as.si64(ncol(X));
+
+if(K > M) {
+    print("PCA: invalid parameter, K should be <= ncol(X) -- setting K = ncol(X).");
+    K = M;
+}
+
+# perform z-scoring (centering and scaling)
+if( $center ) {
+    X = X - mean(X, 1);
+}
+if( $scale ) {
+    scaleFactor = sqrt(sum(X^2.0, 1)/Nm1);
+    # Replace entries in the scale factor that are 0 and NaN with 1.
+    # To avoid division by 0 or NaN, introducing NaN to the ouput.
+    scaleFactor = replace(scaleFactor, nan, 1.0);
+    scaleFactor = replace(scaleFactor, 0.0, 1.0);
+    X = X / scaleFactor;
+}
+
+# co-variance matrix
+mu = mean(X, 1);
+C = (t(X) @ X) / Nm1 - (t(mu) @ mu) * (as.f64(N)/Nm1);
+
+# compute eigen vectors and values
+# TODO full integration of eigen
+evalues, evectors = eigen(C);
+
+# extract dominant eigenvalues and eigenvectors 
+# TODO sorting of matrices, ctable operations
+# Note: can be emulated by:  cbind(evectors, t(evalues)) + cast, sort frame, + extract
+decreasing_Idx = order(evalues, 1, true, true);
+diagmat = table(seq(1.0, N, 1.0), decreasing_Idx);
+evalues = diagmat @ evalues;
+evectors = evectors @ diagmat;
+eval_dominant = evalues[1:K, 1];
+evec_dominant = evectors[,1:K];
+
+# Construct new data set by treating computed dominant eigenvectors as the basis vectors
+Xout = X @ evec_dominant;
+Mout = evec_dominant;
+
+# Write out results
+writeMatrix(Xout, $Xout);
+writeMatrix(Xout, $Mout);

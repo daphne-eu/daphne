@@ -14,21 +14,32 @@
  * limitations under the License.
  */
 
-x = 1;
-y = 2;
-print(x + y);
+#ifndef SRC_RUNTIME_LOCAL_IO_DAPHNEFILE_H
+#define SRC_RUNTIME_LOCAL_IO_DAPHNEFILE_H
 
-# Creating a random 2x3 matrix
-m = rand(2, 3, 100.0, 200.0, 1.0, -1);
-print(m);
-print(m + m);
+#include <cstdint>
 
-// Print transpose of matrix
-print(t(m));
 
-# Comments are useful to temporarily disable code blocks like this matMul
-Z = m @ t(m);
-print(Z);
+struct DF_header {
+	uint8_t version;
+	uint8_t dt;
+	uint64_t nbrows;
+	uint64_t nbcols;
+};
 
-print("Hello world!");
-print("Bye!");
+enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3};
+
+struct DF_body {
+	uint64_t rx; // row index
+	uint64_t cx; // column index
+};
+
+struct DF_body_block {
+	uint32_t nbrows;
+	uint32_t nbcols;
+	uint8_t bt;
+};
+
+enum DF_body_t {empty = 0, dense = 1, sparse = 2, ultra_sparse = 3};
+
+#endif

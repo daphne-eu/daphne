@@ -41,7 +41,6 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t b
             DataObjectFactory::destroy(localResult);
             localResult = nullptr;
         }
-        this->cleanupFuncInputs(std::move(linputs));
     }
     
     for(size_t o = 0; o < _data._numOutputs; ++o) {

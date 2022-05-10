@@ -23,9 +23,12 @@ enum class UnaryOpCode {
     // Arithmetic/general math.
     SIGN, // signum (-1, 0, +1)
     SQRT,
+    EXP,
     // Rounding.
+    ABS,
     FLOOR,
     CEIL,
+    ROUND,
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

@@ -1,77 +1,110 @@
-# Contributing to the DAPHNE Prototype
+<!--
+Copyright 2021 The DAPHNE Consortium
 
-*Thank you* for your interest in contributing to the DAPHNE Prototype.
-This is a team-effort that can only be successful if many people contribute to it.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
-Below you find a couple of *guidelines* (rather than rules) for contributing.
-Since the Prototype repository is still in an early stage, this document is also *likely to be extended* step by step.
+    http://www.apache.org/licenses/LICENSE-2.0
 
------
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
 
-There are various **ways of contributing** including (but not limited to):
-- implementation work
+# Contributing to the DAPHNE System
+
+*Thank you* for your interest in contributing to the DAPHNE system.
+Our goal is to build an **open and inclusive community of developers** around the system.
+Thus, **contributions are highly welcome**, both from *within the DAPHNE project consortium* and from *external researchers/developers*.
+
+In the following, you find some rough **guidelines on contributing**, which will most likely be extended and further clarified in the future.
+
+## Ways of Contributing
+
+There are **various ways of contributing** including (but not limited to):
+- actual implementation
 - writing test cases
 - writing documentation
 - reporting bugs or any other kind of issue
 - contributing to discussions
 
-We encourage **open communication** about the code through issues and comments here on GitLab.
-That way, we can document the discussion, make it accessible to all partners, and avoid repetition in case someone else has the same question/comment.
+We encourage **open communication** about the system through *comments* on *issues* and *pull requests* directly on GitHub.
+That way, discussions are made *accessible and transparent* to everyone interested.
+This is important to *involve people* and to *avoid repetition* in case multiple people have the same question/comment or encounter the same problem.
+So feel free to create an issue to start a discussion on a particular topic (including these contribution guidelines) or to report a bug or other problem.
 
-### Contributing to the source code
+## Issue tracking
 
-**Issue tracking**
-
-All open/ongoing/completed **work is tracked as issues** here on GitLab.
+All open/ongoing/completed **work is tracked as issues** on GitHub.
 These could be anything from precisely defined small tasks to requests for complex components.
-In any case, we will try to keep the book-keeping effort at a low level; at the same time, we should make each other aware of what everyone is working on.
+In any case, we will try to keep the book-keeping effort at a low level; at the same time, we should make each other aware of what everyone is working on to avoid duplicate work.
 
-If you would like to contribute and are **looking for a task** to work on, browse the [list of issues](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues).
-If you are new to the prototype, you might want to watch out for the label ["good first issue"](https://gitlab.know-center.tugraz.at/daphne/prototype/-/issues?label_name%5B%5D=good+first+issue).
-Once you have selected an issue to work on, please assign yourself or leave a comment.
-It should be explicit who is working on which issue to avoid duplicate work by different people.
+If you would like to contribute and are **looking for a task** to work on, browse the [list of issues](https://github.com/daphne-eu/daphne/issues).
+If you are a *new contributor*, you might want to watch out for ["good first issues"](https://github.com/daphne-eu/daphne/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
-Furthermore, you are invited to **create issues yourself**, e.g., for tasks you want to work on or problems you encountered.
+Furthermore, everyone is invited to **create issues**, e.g., for *tasks* you want to work on or *problems* you encountered.
 This is also a good way to enable discussion on the topic.
-Note that there is a set of labels that can be attached to your issue to clarify what it is about and to make it more easy to find.
+Note that there is a set of *labels* that can be attached to your issue to clarify what it is about and to make it more easy to find.
 
-**Contribution workflow**
+Before you start working on an issue, please make sure to **get assigned to the issue**. New contributors need to *leave a comment* on the issue before they can get assigned. Collaborators can *assign themselves*.
 
-To contribute to the source code, please clone the repository, create a new branch, develop your changes in that branch, and finally make a merge request (aka pull request) to have your changes integrated into the master branch.
-Please note that you can create as many branches and merge requests as you want, it's a really lightweight thing.
+## Contributing to the Source Code
 
-- *Cloning the repository.*
+We appreciate that different contributors can have different levels of familiarity with the code base, and try to adapt to that accordingly.
 
-  `git clone --recursive https://gitlab.know-center.tugraz.at/daphne/prototype.git`, as described in [Getting Started](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/GettingStarted.md).
+### New DAPHNE Contributors
 
-- *Working on your own branch.*
-  
-  Start by creating a new branch locally: `git checkout -b BRANCH_NAME`.
-  Please select `BRANCH_NAME` to clearly indicate what it is about or who is responsible for it, ideally using the pattern `123-some-short-title` (where 123 is the issue number).
-  Make as many commits to your branch as you like.
-  When you push the branch for the first time, use `git push --set-upstream origin BRANCH_NAME`.
-  Finally, note that to push to the repository, you need to have the developer role.
-  To get promoted to a developer, please assign yourself to an issue or contact @pdamme.
+**Contributions from new people are always welcome**, both from within the DAPHNE project consortium and external!
+We are aware that contributing to a new code base *can be challenging* in the beginning.
+Thus, we want to *keep the barrier of entry low* for new contributors.
+That is, please try your best to make a good-quality contribution and we will help you with constructive feedback.
 
-- *Integrating your branch into the master branch.*
+**The procedure is roughly as follows:**
 
-  Once you feel comfortable with your changes, you can ask for their integration into the master branch by creating a *merge request*.
-  Please choose an expressive title and provide a short description of your changes.
-  The default merge options are to (1) squash the commits on your branch into a single commit on the master branch to keep a clean history, and (2) to delete your feature branch after a successful merge.
-  However, these can be decided on a case-by-case basis, and even after the merge request has been created.
+1. **Get assigned to the issue** to let others know you are going to work on it and to avoid duplicate work. Please leave a comment on the issue stating that you are going to work on it. After that, a collaborator will formally assign you.
+2. **Fork the repository** on GitHub and **clone your fork** (see [GitHub docs](https://docs.github.com/en/get-started/quickstart/fork-a-repo)).
+   We recommend cloning by `git clone --recursive https://github.com/<USERNAME>/daphne.git` (note the `--recursive`), as specified in [Getting Started](/doc/GettingStarted.md).
+   
+   *You may skip this step and reuse your existing fork if you have contributed before. Simply update your fork with the recent changes from the original DAPHNE repository (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).*
+3. **Create your own local branch**: `git checkout -b BRANCH_NAME`.
+   `BRANCH_NAME` should clearly indicate what the branch is about; the recommended pattern is `123-some-short-title` (where `123` is the issue number).
+4. **Add as many commits as you like** to your branch, and `git push` them to your fork.
+   Use `git push --set-upstream origin BRANCH_NAME` when you push the first time.
+5. If you work longer on your contribution, make sure to **get the most recent changes from the upstream** (original DAPHNE system repository) from time to time (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/syncing-a-fork)).
+6. Once you feel ready (for integration or for discussion/feedback), **create a pull request** on GitHub (see [GitHub docs](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request)).
+   Normally, you'll want to ask for integration into `base:main`, the repo's default branch.
+   Please choose an expressive title and provide a short description of your changes.
+   Feel free to mark your pull request "WIP: " or "Draft: " in the title.
+   Note that you can add more commits to your pull request after you created it.
+7. You **receive feedback** on your proposed contribution.
+   You may be asked to apply certain changes, or we might apply straightforward adjustments ourselves before the integration.
+8. If it looks good (potentially after some help), **your contribution becomes a part of DAPHNE**.
 
-  After you have created the merge request, GitLab might tell you: "Fast-forward merge is not possible. To merge this request, first rebase locally"
-  This happens when there are conflicts between your branch and the master branch.
-  In that case, please try to resolve the conflicts yourself locally and push any new commits to your branch.
-  If you do not feel comfortable with that, please ask for help by commenting on your merge request.
+### Experienced DAPHNE Contributors (Collaborators)
 
-  Please also feel free to create a merge request to ask for feedback or to start a discusssion on the code.
-  In that case, you should prefix the title of your merge request with "Draft:" or "WIP:" to indicate that you don't ask for its integration right now.
+We appreciate *continued commitment* to the DAPHNE system.
+Thus, **frequent contributors can become collaborators** on GitHub.
+Currently, this requires **at least three non-trivial contributions** to the system.
+Collaborators have *direct write access* to all branches of the repository, including the main branch.
 
-  Finally, you can always add more commits to your merge request by pushing to your branch.
+The goal is to **make development easier for frequent contributors**.
+Collaborators do not need to create a fork, and do not need to go through pull requests to integrate their changes.
+At the same time, this freedom comes with certain responsibilities, which are roughly sketched here:
 
-**Code style**
-
-This a topic on its own.
-We are going to define a code style soon.
-Until then, please try to be consistent with the code that is already there.
+1. Please **follow some simple guidelines when changing the code**:
+   - Feel free to directly push to the main branch, but *be mindful of what you commit*, since it will affect everyone.
+     As a guideline, commits fundamentally changing how certain things work should be announced and discussed first, whereas small changes or changes local to "your" component are not critical.
+   - But **never force push to the main branch**, since it can lead to severe inconsistencies in the Git history.
+   - Even *collaborators may still use pull requests* (just like new contributors) to suggest larger changes.
+     This is also suitable whenever you feel unsure about a change or want to get feedback first.
+2. Please **engage in the handling of pull requests**; especially those affecting the components you are working on.
+   This includes:
+   - reading the code others suggest for integration
+   - trying if it works
+   - providing constructive and *actionable* feedback on improving the contribution prior to the integration
+   - actually merging a pull request in
+   
+   Balancing the handling of pull requests is important to *keep the development process scalable*.

@@ -21,6 +21,8 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 
+#include <stdexcept>
+
 #include <cassert>
 #include <cstddef>
 #include <cstdint>
@@ -95,5 +97,23 @@ struct ExtractCol<Frame, Frame, char> {
     static void apply(Frame *& res, const Frame * arg, const char * sel, DCTX(ctx)) {
         size_t colIdx = arg->getColumnIdx(sel);
         res = DataObjectFactory::create<Frame>(arg, 0, arg->getNumRows(), 1, &colIdx);
+    }
+};
+
+template< typename VTSel >
+struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
+    static void apply(Frame *& res, const Frame * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+        if(sel->getNumCols() != 1)
+            throw std::runtime_error("parameter colIdxs must be a column matrix");
+
+        const size_t numColsRes = sel->getNumRows();
+        const size_t * colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
+        for(size_t i = 0; i < numColsRes; i++) {
+            if(colIdxs[i] < 0 || colIdxs[i] >= arg->getNumCols())
+                throw std::runtime_error("column index out of bounds");
+        }
+        const size_t numRows = arg->getNumRows();
+
+        res = DataObjectFactory::create<Frame>(arg, 0, numRows, numColsRes, colIdxs);
     }
 };
