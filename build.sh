@@ -200,6 +200,19 @@ then
 fi
 cd $pwdBeforeOpenBlas
 
+# nlohmann/json (library for JSON parsing)
+pwdBeforeNlohmannjson=$(pwd)
+nlohmannjsonDirName=nlohmannjson
+nlohmannjsonVersion=3.10.5
+nlohmannjsonSingleHeaderName=json.hpp
+mkdir --parents $nlohmannjsonDirName
+cd $nlohmannjsonDirName
+if [ ! -f $nlohmannjsonSingleHeaderName ]
+then
+    wget https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName
+fi
+cd $pwdBeforeNlohmannjson
+
 # gRPC
 grpcDirName=grpc
 grpcInstDir=$(pwd)/$grpcDirName/installed
@@ -297,6 +310,7 @@ cmake -G Ninja .. \
     -DCMAKE_INSTALL_LIBDIR=$installLibDir
 # optional cmake flags (to be added to the command above):
 # -DUSE_CUDA=ON
+# -DUSE_ARROW=ON
 # -DCMAKE_BUILD_TYPE=Debug
 
 cmake --build . --target $target

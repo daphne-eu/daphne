@@ -312,6 +312,10 @@ public:
     void finishAppend() override {
         fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
     }
+
+    bool isView() const {
+        return (numRowsAllocated > numRows || isRowAllocatedBefore);
+    }
     
     void printValue(std::ostream & os, ValueType val) const {
       switch (ValueTypeUtils::codeFor<ValueType>) {

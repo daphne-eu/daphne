@@ -103,7 +103,7 @@ We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. 
 
 ### Running the DAPHNE system
 
-Write a little DaphneDSL script or use `example.daphne`...
+Write a little DaphneDSL script or use `scripts/example/hello-world.daph`...
 
 ```
 x = 1;
@@ -116,14 +116,14 @@ print(m + m);
 print(t(m));
 ```
 
-... and execute it as follows: `build/bin/daphne example.daphne`.
+... and execute it as follows: `build/bin/daphne scripts/example/hello-world.daph`.
 
 ### Building and running with containers [Alternative path for building and running the system and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
 - you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or higher are sufficient
 - you can use the provided docker file to create an image that contains all dependencies as follows:
 ```bash
-cd daphne
+cd daphne/deploy
 docker build -t <ImageTag> .
 #the image can be built from the dockerhub docker://ahmedeleliemy/test-workflow:latest as well
 docker run -v absolute_path_to_daphne/:absolute_path_to_daphne_in_the_container -it <ImageTag> bash

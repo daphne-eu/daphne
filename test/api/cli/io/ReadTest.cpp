@@ -25,6 +25,11 @@
 
 const std::string dirPath = "test/api/cli/io/";
 
+// TODO Add script-level test cases for reading files in various formats.
+// This test case used to read a COO file, but being a quick fix, it was not
+// integrated cleanly. There should either be a seprate reader for COO, or we
+// should do that via the respective Matrix Market format.
+#if 0
 TEST_CASE("readSparse", TAG_IO) {
     auto arg = "filename=\"" + dirPath + "readSparse.coo\"";
     compareDaphneToRef(dirPath + "readSparse.txt",
@@ -33,3 +38,4 @@ TEST_CASE("readSparse", TAG_IO) {
         "--args",
         arg.c_str());
 }
+#endif

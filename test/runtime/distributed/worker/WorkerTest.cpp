@@ -155,9 +155,8 @@ TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED)
             REQUIRE(status.ok());
 
             DenseMatrix<double> *matOrig = nullptr;
-            struct File *file = openFile(filename.c_str());
             char delim = ',';
-            readCsv(matOrig, file, rows, cols, delim);
+            readCsv(matOrig, filename.c_str(), rows, cols, delim);
 
             auto *received = DataObjectFactory::create<DenseMatrix<double>>(mat.num_rows(), mat.num_cols(), false);
             ProtoDataConverter::convertFromProto(mat, received);

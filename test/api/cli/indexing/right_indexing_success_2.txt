@@ -271,6 +271,30 @@ Frame(10x5, [a:int64_t, b:double, c:int64_t, d:double, e:int64_t])
 42 43 44 45 46
 48 49 50 51 52
 54 55 56 57 58
+X[, emptyIds]
+Frame(10x0, [])
+
+
+
+
+
+
+
+
+
+
+X[, colIds]
+Frame(10x2, [a:int64_t, c:int64_t])
+0 2
+6 8
+12 14
+18 20
+24 26
+30 32
+36 38
+42 44
+48 50
+54 56
 
 row and col - corresponding variants
 X[0, 0]
@@ -352,14 +376,27 @@ Frame(9x5, [a:int64_t, b:double, c:int64_t, d:double, e:int64_t])
 36 37 38 39 40
 42 43 44 45 46
 48 49 50 51 52
+X[emptyIds, emptyIds]
+Frame(0x0, [])
+X[rowIds, colIds]
+Frame(3x2, [a:int64_t, c:int64_t])
+6 8
+24 26
+42 44
 
 row and col - some mixed variants
 X[4, 2:3]
 Frame(1x1, [c:int64_t])
 26
+X[4, colIds]
+Frame(1x2, [a:int64_t, c:int64_t])
+24 26
 X[4:5, 2]
 Frame(1x1, [c:int64_t])
 26
+X[4:5, colIds]
+Frame(1x2, [a:int64_t, c:int64_t])
+24 26
 X[rowIds, 2]
 Frame(3x1, [c:int64_t])
 8

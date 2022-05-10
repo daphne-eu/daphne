@@ -280,7 +280,10 @@
                 "instantiations": [
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]]
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+                    [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+                ]
             },
             {
                 "name" : ["CPP"],
@@ -638,7 +641,10 @@
             },
             {
                 "name":  ["CPP"],
-                "instantiations": [["Frame", "Frame", "char"]]
+                "instantiations": [
+                    ["Frame", "Frame", "char"],
+                    ["Frame", "Frame", ["DenseMatrix", "int64_t"]],
+                    ["Frame", "Frame", ["DenseMatrix", "size_t"]]]
             }
         ]
     },
@@ -2313,6 +2319,8 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]],
+            [["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],
             ["Frame", "Frame", "Frame"]
         ]
     },

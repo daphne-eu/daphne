@@ -112,11 +112,10 @@ print("X[, 2:3]");
 print(X[, 2:3]);
 print("X[, 0:5]");
 print(X[, 0:5]);
-// TODO This doesn't work yet, see #234).
-//print("X[, emptyIds]");
-//print(X[, emptyIds]);
-//print("X[, colIds]");
-//print(X[, colIds]);
+print("X[, emptyIds]");
+print(X[, emptyIds]);
+print("X[, colIds]");
+print(X[, colIds]);
 print("");
 
 // ****************************************************************************
@@ -150,11 +149,10 @@ print("X[4:5, 2:3]");
 print(X[4:5, 2:3]);
 print("X[0:9, 0:5]");
 print(X[0:9, 0:5]);
-// TODO This doesn't work yet, see #234).
-//print("X[emptyIds, emptyIds]");
-//print(X[emptyIds, emptyIds]);
-//print("X[rowIds, colIds]");
-//print(X[rowIds, colIds]);
+print("X[emptyIds, emptyIds]");
+print(X[emptyIds, emptyIds]);
+print("X[rowIds, colIds]");
+print(X[rowIds, colIds]);
 print("");
 
 // ****************************************************************************
@@ -164,14 +162,12 @@ print("");
 print("row and col - some mixed variants");
 print("X[4, 2:3]");
 print(X[4, 2:3]);
-// TODO This doesn't work yet, see #234).
-//print("X[4, colIds]");
-//print(X[4, colIds]);
+print("X[4, colIds]");
+print(X[4, colIds]);
 print("X[4:5, 2]");
 print(X[4:5, 2]);
-// TODO This doesn't work yet, see #234).
-//print("X[4:5, colIds]");
-//print(X[4:5, colIds]);
+print("X[4:5, colIds]");
+print(X[4:5, colIds]);
 print("X[rowIds, 2]");
 print(X[rowIds, 2]);
 print("X[rowIds, 2:3]");
