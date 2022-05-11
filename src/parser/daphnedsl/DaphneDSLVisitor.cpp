@@ -912,16 +912,14 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
     // Generate the operations for the then-block.
     mlir::Block thenBlock;
     builder.setInsertionPointToEnd(&thenBlock);
-    visit(ctx->thenExpr);
+    mlir::Value valThen = utils.valueOrError(visit(ctx->thenExpr));
 
     // Generate the operations for the else-block
     mlir::Block elseBlock;
     builder.setInsertionPointToEnd(&elseBlock);
-    visit(ctx->elseExpr);
+    mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
 
     mlir::Type resultType;
-    mlir::Value valThen = utils.valueOrError(visit(ctx->thenExpr));
-    mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
     if(valThen.getType() != valElse.getType())
         // TODO We could try to cast the types.
         throw std::runtime_error("type missmatch");
@@ -954,8 +952,7 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
         insertElseBlockDo
     );
     
-    mlir::Value result = ifOp.results()[0];
-    return utils.valueOrError(result);
+    return static_cast<mlir::Value>(ifOp.results()[0]);
 }
 
 
