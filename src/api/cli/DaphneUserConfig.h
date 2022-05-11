@@ -36,6 +36,8 @@ struct DaphneUserConfig {
     bool vectorized_single_queue = false;
     bool prePartitionRows = false;
     bool pinWorkers = false;
+    bool hyperthreadingEnabled = false;
+    bool debugMultiThreading = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;

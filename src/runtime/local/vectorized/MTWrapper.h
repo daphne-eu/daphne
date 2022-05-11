@@ -24,6 +24,8 @@
 
 #include <functional>
 #include <queue>
+#include <fstream>
+#include <set>
 
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
@@ -36,12 +38,17 @@ class MTWrapperBase {
 protected:
     std::vector<std::unique_ptr<Worker>> cuda_workers;
     std::vector<std::unique_ptr<Worker>> cpp_workers;
-    std::vector<int> topology_physical_ids;
-    std::vector<int> topology_unique_threads;
-    char* _cpuinfo_path = "/proc/cpuinfo";
+    std::vector<int> topologyPhysicalIds;
+    std::vector<int> topologyUniqueThreads;
+    std::string _cpuinfoPath = "/proc/cpuinfo";
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
+    int _queueMode;
+    // _queueMode 0: Centralized queue for all workers, 1: One queue for every physical ID (socket), 2: One queue per CPU
+    int _numQueues;
+    int _stealLogic;
+    int _totalNumaDomains;
     DCTX(_ctx);
 
     std::pair<size_t, size_t> getInputProperties(Structure** inputs, size_t numInputs, VectorSplit* splits) {
@@ -58,57 +65,46 @@ protected:
         return std::make_pair(len, mem_required);
     }
     
-    int _parse_buffer( char *buffer, char *keyword, char **valptr ) {
-        char *ptr;
-        if (strncmp(buffer, keyword, strlen(keyword)))
-            return false;
-
-        ptr = strstr(buffer, ":");
-        if (ptr != NULL)
-            ptr++;
-        *valptr = ptr;
-        return true;
-    }
-
-    int _parse_line( char *buffer, char *keyword, uint32_t *val ) {
-        char *valptr;
-        if (_parse_buffer(buffer, keyword, &valptr)) {
-            *val = strtoul(valptr, (char **)NULL, 10);
-            return true;
-        } else {
-            return false;
+    int _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
+        std::size_t seperatorLocation = input.find(":");
+        if (seperatorLocation!=std::string::npos) {
+            if (input.find(keyword) == 0) {
+                *val = stoi(input.substr(seperatorLocation+1));
+                return 1;
+            }
+            return 0;
         }
+        return 0;
     }
-    
-    void get_topology(std::vector<int> &physical_ids, std::vector<int> &unique_threads) {
-        FILE *cpu_info_file;
-        char buffer[128];
-        std::vector<int> hardware_threads;
+
+    void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads) {
+        std::ifstream cpuinfoFile(_cpuinfoPath);
+        std::vector<int> utilizedThreads;
         std::vector<int> core_ids;
-        cpu_info_file = fopen(_cpuinfo_path, "r");
-        if (cpu_info_file == NULL) {
-            std::cout << "Error opening file." << std::endl;
-        }
         int index = 0;
-        while (fgets(buffer, sizeof(buffer), cpu_info_file) != NULL) {
-            uint32_t value;
-            if( _parse_line(buffer, "processor", &value) ) {
-                hardware_threads.push_back(value);
-            } else if( _parse_line(buffer, "physical id", &value) ) {
-                physical_ids.push_back(value);
-            } else if( _parse_line(buffer, "core id", &value) ) {
-                int found = 0;
-                for (int i=0; i<index; i++) {
-                        if (core_ids[i] == value && physical_ids[i] == physical_ids[index]) {
+        if( cpuinfoFile.is_open() ) {
+            std::string line;
+            int value;
+            while (std::getline(cpuinfoFile, line)) {
+                if( _parseStringLine(line, "processor", &value ) ) {
+                    utilizedThreads.push_back(value);
+                } else if( _parseStringLine(line, "physical id", &value) ) {
+                    physicalIds.push_back(value);
+                } else if( _parseStringLine(line, "core id", &value) ) {
+                    int found = 0;
+                    for (int i=0; i<index; i++) {
+                        if (core_ids[i] == value && physicalIds[i] == physicalIds[index]) {
                                 found++;
                         }
+                    }
+                    core_ids.push_back(value);
+                    if( _ctx->config.hyperthreadingEnabled || found == 0 ) {
+                        uniqueThreads.push_back(utilizedThreads[index]);
+                    }
+                    index++;
                 }
-                core_ids.push_back(value);
-                if( found == 0 ) {
-                    unique_threads.push_back(hardware_threads[index]);
-                }
-                index++;
             }
+            cpuinfoFile.close();
         }
     }
 
@@ -123,12 +119,11 @@ protected:
         if( numQueues == 0 ) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
         }
-        get_topology(topology_physical_ids, topology_unique_threads);
-        if( _numCPPThreads < topology_unique_threads.size() )
-            topology_unique_threads.resize(_numCPPThreads);
+        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        
         int i = 0;
         for( auto& w : cpp_workers ) {
-            w = std::make_unique<WorkerCPUPerCPU>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic, pinWorkers);
+            w = std::make_unique<WorkerCPUPerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
             i++;
         }
     }
@@ -138,12 +133,12 @@ protected:
         if (numQueues == 0) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
         }
-        get_topology(topology_physical_ids, topology_unique_threads);
-        if( _numCPPThreads < topology_unique_threads.size() )
-            topology_unique_threads.resize(_numCPPThreads);
+        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        if( _numCPPThreads < topologyUniqueThreads.size() )
+            topologyUniqueThreads.resize(_numCPPThreads);
         int i = 0;
         for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPUPerGroup>(qvector, topology_physical_ids, topology_unique_threads, verbose, 0, batchSize, i, numQueues, queueMode, stealLogic, pinWorkers);
+            w = std::make_unique<WorkerCPUPerGroup>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
             i++;
         }
     }
@@ -207,6 +202,32 @@ public:
             _numCUDAThreads = ctx->cuda_contexts.size();
         _numCPPThreads = _numThreads;
         _numThreads = _numCPPThreads + _numCUDAThreads;
+        _queueMode = 0;
+        _numQueues = 1;
+        _stealLogic = ctx->getUserConfig().victimSelection;
+        get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        if( std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled )
+            topologyUniqueThreads.resize(_numCPPThreads);
+        _totalNumaDomains = std::set<double>( topologyPhysicalIds.begin(), topologyPhysicalIds.end() ).size();
+        if( _ctx->config.debugMultiThreading ) {
+            for(const auto & topologyEntry: topologyPhysicalIds) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl;
+            for(const auto & topologyEntry: topologyUniqueThreads) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl;
+            std::cout << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
+        }
+        
+        if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+            _queueMode = 1;
+            _numQueues = _totalNumaDomains;
+        } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
+            _queueMode = 2;
+            _numQueues = _numThreads;
+        }
 #ifndef NDEBUG
         std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;

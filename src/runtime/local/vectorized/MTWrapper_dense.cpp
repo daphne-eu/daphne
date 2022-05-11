@@ -86,10 +86,10 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     auto row_mem = mem_required / len;
 
     // Collect info about numa domains, also needed for per-Core queues because of prioritized victim selection
-
+/*
     struct dirent *dirEntry;
     struct dirent *nodeEntry;
-    int num_numa_doamins = 0;
+    int totalNumaDomains = 0;
     std::vector<int> numaDomains;
     numaDomains.resize(256);
     DIR *dirp = opendir("/sys/devices/system/node/");
@@ -100,7 +100,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
         while ((dirEntry = readdir(dirp)) != NULL) {
             std::string current(dirEntry->d_name);
             if(current.substr(0,4) == "node") {
-                num_numa_doamins++;
+                totalNumaDomains++;
                 DIR *nodeDir = opendir(("/sys/devices/system/node/node" + current.substr(4) + "/").c_str());
                 while((nodeEntry = readdir(nodeDir)) != NULL) {
                     std::string curCPU(nodeEntry->d_name);
@@ -112,23 +112,14 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
             }
         }
         closedir(dirp);
-    }
+    }*/
     
-    int queueMode = 0;
-    int _numQueues = 1;
-    int stealLogic = ctx->getUserConfig().victimSelection;
-    if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
-        queueMode = 1;
-        _numQueues = num_numa_doamins;
-    } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
-        queueMode = 2;
-        _numQueues = this->_numThreads;
-    }
+
     
     std::vector<std::unique_ptr<TaskQueue>> q;
     std::vector<TaskQueue*> qvector;
     if (ctx->getUserConfig().pinWorkers) {
-        for(int i=0; i<_numQueues; i++) {
+        for(int i=0; i<this->_numQueues; i++) {
             // Normally it would be done like this:
             // q.emplace_back(new BlockingTaskQueue(len));
             // However I'm getting an error so they are created with make_unique and get now.
@@ -142,7 +133,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
             qvector.push_back(q[i].get());
         }
     } else {
-        for(int i=0; i<_numQueues; i++) {
+        for(int i=0; i<this->_numQueues; i++) {
             std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
             q.push_back(std::move(tmp));
             qvector.push_back(q[i].get());
@@ -150,10 +141,10 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    if (queueMode == 1) {
-        this->initCPPWorkersPerGroup(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode, stealLogic, ctx->getUserConfig().pinWorkers);
-    } else if (queueMode == 2) {
-        this->initCPPWorkersPerCPU(qvector, numaDomains, batchSize8M, verbose, _numQueues, queueMode, stealLogic, ctx->getUserConfig().pinWorkers);
+    if (this->_queueMode == 1) {
+        this->initCPPWorkersPerGroup(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
+    } else if (this->_queueMode == 2) {
+        this->initCPPWorkersPerCPU(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
     } else {
         std::cerr << "Error in queue group setup" << std::endl;
     }
@@ -183,18 +174,18 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     if(chunkParam<=0)
         chunkParam=1;
     if (ctx->getUserConfig().prePartitionRows) {
-        uint64_t oneChunk = len/_numQueues;
-        int remainder = len - (oneChunk * _numQueues);
+        uint64_t oneChunk = len/this->_numQueues;
+        int remainder = len - (oneChunk * this->_numQueues);
         std::vector<LoadPartitioning> lps;
         lps.emplace_back(method, oneChunk+remainder, chunkParam, this->_numThreads, false);
-        for(int i=1; i<_numQueues; i++) {
+        for(int i=1; i<this->_numQueues; i++) {
             lps.emplace_back(method, oneChunk, chunkParam, this->_numThreads, false);
         }
         if (ctx->getUserConfig().pinWorkers) {
-            for(int i=0; i<_numQueues; i++) {
+            for(int i=0; i<this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    target = currentItr % _numQueues;
+                    target = currentItr % this->_numQueues;
                     qvector[target]->enqueueTaskOnTargetQueue(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, resLock, res), target);
@@ -202,10 +193,10 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
                 }
             }
         } else {
-            for(int i=0; i<_numQueues; i++) {
+            for(int i=0; i<this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    target = currentItr % _numQueues;
+                    target = currentItr % this->_numQueues;
                     qvector[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, resLock, res));
@@ -218,7 +209,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
         if (ctx->getUserConfig().pinWorkers) {
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
-                target = currentItr % _numQueues;
+                target = currentItr % this->_numQueues;
                 qvector[target]->enqueueTaskOnTargetQueue(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                         inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                         outCols, 0, ctx}, resLock, res), target);
@@ -227,7 +218,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
         } else {
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
-                target = currentItr % _numQueues;
+                target = currentItr % this->_numQueues;
                 qvector[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                         inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                         outCols, 0, ctx}, resLock, res));
@@ -235,7 +226,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
             }
         }
     }
-    for(int i=0; i<_numQueues; i++) {
+    for(int i=0; i<this->_numQueues; i++) {
         qvector[i]->closeInput();
     }
 

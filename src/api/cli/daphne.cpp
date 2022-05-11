@@ -137,6 +137,14 @@ main(int argc, char** argv)
             "pin-workers", cat(schedulingOptions),
             desc("Pin workers to CPU cores")
     );
+    opt<bool> hyperthreadingEnabled(
+            "hyperthreading", cat(schedulingOptions),
+            desc("Utilize multiple logical CPUs located on the same physical CPU")
+    );
+    opt<bool> debugMultiThreading(
+            "debug-mt", cat(schedulingOptions),
+            desc("Prints debug information about the Multithreading Wrapper")
+    );
     
     // Other options
     
@@ -228,6 +236,8 @@ main(int argc, char** argv)
     user_config.numberOfThreads = numberOfThreads; 
     user_config.minimumTaskSize = minimumTaskSize; 
     user_config.pinWorkers = pinWorkers;
+    user_config.hyperthreadingEnabled = hyperthreadingEnabled;
+    user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
 
     if(cuda) {
