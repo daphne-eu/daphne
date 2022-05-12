@@ -113,7 +113,13 @@ protected:
         for(auto& w : cpp_workers)
             w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
     }
-
+    
+    void initCPPWorkers(std::vector<TaskQueue*> &qvector, uint32_t batchSize, bool verbose = false) {
+        cpp_workers.resize(_numCPPThreads);
+        for(auto& w : cpp_workers)
+            w = std::make_unique<WorkerCPU>(qvector[0], verbose, 0, batchSize);
+    }
+    
     void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
         cpp_workers.resize(_numCPPThreads);
         if( numQueues == 0 ) {
@@ -248,11 +254,7 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
-            size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
-            VectorCombine* combines, DCTX(ctx), bool verbose);
-
-    void executeQueuePerCPU(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
             VectorCombine* combines, DCTX(ctx), bool verbose);
 
@@ -272,7 +274,7 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
                             size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 

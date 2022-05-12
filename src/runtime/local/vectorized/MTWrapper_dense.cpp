@@ -21,7 +21,7 @@
 #ifdef USE_CUDA
 #include <runtime/local/vectorized/TasksCUDA.h>
 #endif
-
+/*
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
         std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
@@ -73,9 +73,9 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
 
     this->joinAll();
 }
-
+*/
 template<typename VT>
-void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
+void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
         std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
         Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
@@ -85,42 +85,11 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
     auto row_mem = mem_required / len;
 
-    // Collect info about numa domains, also needed for per-Core queues because of prioritized victim selection
-/*
-    struct dirent *dirEntry;
-    struct dirent *nodeEntry;
-    int totalNumaDomains = 0;
-    std::vector<int> numaDomains;
-    numaDomains.resize(256);
-    DIR *dirp = opendir("/sys/devices/system/node/");
-
-    if (dirp == NULL) {
-        std::cout << "Problem retrieving NUMA topology" << std::endl;
-    } else {
-        while ((dirEntry = readdir(dirp)) != NULL) {
-            std::string current(dirEntry->d_name);
-            if(current.substr(0,4) == "node") {
-                totalNumaDomains++;
-                DIR *nodeDir = opendir(("/sys/devices/system/node/node" + current.substr(4) + "/").c_str());
-                while((nodeEntry = readdir(nodeDir)) != NULL) {
-                    std::string curCPU(nodeEntry->d_name);
-                    if(curCPU.substr(0,3) == "cpu" && curCPU.length() < 6) {
-                        numaDomains.at(stoi(curCPU.substr(3))) = stoi(current.substr(4));
-                    }
-                }
-                closedir(nodeDir);
-            }
-        }
-        closedir(dirp);
-    }*/
-    
-
-    
     std::vector<std::unique_ptr<TaskQueue>> q;
     std::vector<TaskQueue*> qvector;
     if (ctx->getUserConfig().pinWorkers) {
         for(int i=0; i<this->_numQueues; i++) {
-            // Normally it would be done like this:
+            // Ideally queues would be created as such:
             // q.emplace_back(new BlockingTaskQueue(len));
             // However I'm getting an error so they are created with make_unique and get now.
             
@@ -141,7 +110,9 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerCPU(
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    if (this->_queueMode == 1) {
+    if (this->_queueMode == 0) {
+        this->initCPPWorkers(qvector, batchSize8M, verbose);
+    } else if (this->_queueMode == 1) {
         this->initCPPWorkersPerGroup(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
     } else if (this->_queueMode == 2) {
         this->initCPPWorkersPerCPU(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
