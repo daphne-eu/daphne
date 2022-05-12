@@ -926,7 +926,7 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
         
     resultType = valThen.getType();
 
-    // Create yield-operations in both branches, possibly with empty results.
+    // Create yield-operations in both branches.
     builder.setInsertionPointToEnd(&thenBlock);
     builder.create<mlir::scf::YieldOp>(loc, valThen);
     builder.setInsertionPointToEnd(&elseBlock);

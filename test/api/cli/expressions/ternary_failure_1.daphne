@@ -1,2 +1,2 @@
-// TYPE MISMATCH
+// Type mismatch.
 print(10 == 20 ? 10.0 : 20);
