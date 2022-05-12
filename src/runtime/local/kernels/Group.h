@@ -28,12 +28,8 @@
 #include <util/DeduceType.h>
 #include <ir/daphneir/Daphne.h>
 
-#include <algorithm>
 #include <iterator>
-#include <memory>
-#include <variant>
 #include <vector>
-#include <iostream>
 
 using mlir::daphne::GroupEnumAttr;
 using mlir::daphne::GroupEnum;
@@ -66,18 +62,22 @@ void group(DTRes *& res, const DTRes * arg, const char ** keyCols, size_t numKey
 // Frame <- Frame
 // ----------------------------------------------------------------------------
 
+// returns the result of the aggregation function aggFunc over the (contiguous) memory between the begin and end pointer 
 template<typename VTRes, typename VTArg>
 VTRes aggregate (const GroupEnum & aggFunc, const VTArg * begin, const VTArg* end) { 
     switch(aggFunc) {
         case GroupEnum::COUNT: return end-begin; break; // TODO: Do we need to check for Null elements here?
-        case GroupEnum::SUM: return std::accumulate(begin, end, 0); break;
+        case GroupEnum::SUM: return std::accumulate(begin, end, (VTRes) 0); break;
         case GroupEnum::MIN: return *std::min_element(begin, end); break;
         case GroupEnum::MAX: return *std::max_element(begin, end); break; 
-        case GroupEnum::AVG: return ((float) std::accumulate(begin, end, 0))/(end-begin); break;
+        case GroupEnum::AVG: return std::accumulate(begin, end, (double) 0)/(double) (end-begin); break;
         default : return *begin; break;
     }
 }
 
+// struct which calls the aggregate() function (specified via aggFunc) on each duplicate group in the groups vector and on
+// all implied single groups for a sepcified column (colIdx) of the argument frame (arg) and stores the result in the
+// specified column (colIdx) of the result frame (res)
 template<typename VTRes, typename VTArg>
 struct ColumnGroupAgg {
     static void apply(Frame * res, const Frame * arg, size_t colIdx, std::vector<std::pair<size_t, size_t>> * groups, GroupEnum aggFunc, DCTX(ctx)) {
@@ -93,8 +93,6 @@ struct ColumnGroupAgg {
             return;
         }
         
-        std::cout << groups->front().first << std::endl;
-        std::cout << rowRes << std::endl;
         for(size_t r = 0; r < groups->front().first; r++)
             valuesRes[rowRes++] = aggregate<VTRes,VTArg>(aggFunc, valuesArg + r, valuesArg + r + 1);
         for(auto it = groups->begin(); it != groups->end(); ++it) {
@@ -114,7 +112,7 @@ template <> struct Group<Frame> {
         size_t numRows = arg->getNumRows();
         size_t numCols = numKeyCols + numAggCols;
         size_t numRowsRes = numRows;
-        if (arg == nullptr || keyCols == nullptr || aggCols == nullptr || aggFuncs == nullptr || numAggFuncs == 0) {
+        if (arg == nullptr || keyCols == nullptr || numKeyCols == 0 || aggCols == nullptr || numAggCols == 0 || aggFuncs == nullptr || numAggFuncs == 0) {
             throw std::runtime_error("group-kernel called with invalid arguments");
         }
 
@@ -132,7 +130,6 @@ template <> struct Group<Frame> {
         // reduce frame columns to keyCols and numAggCols (without copying values or the idx array) and reorder them accordingly 
         Frame* reduced{};
         auto sel = DataObjectFactory::create<DenseMatrix<size_t>>(numCols, 1, idxs);
-        sel->print(std::cout);
         extractCol(reduced, arg, sel, ctx);
         DataObjectFactory::destroy(sel);
     
@@ -141,14 +138,12 @@ template <> struct Group<Frame> {
         Frame* ordered{};     
 
         // order frame rows by groups and get the group vector 
-        order(ordered, reduced, idxs.get(), numKeyCols, ascending, ctx, groups);
+        order(ordered, reduced, idxs.get(), numKeyCols, ascending, numKeyCols, false, ctx, groups);
         delete [] ascending;
         DataObjectFactory::destroy(reduced);
-        ordered->print(std::cout);
         size_t inGroups = 0;
         for (auto & group : *groups){
             inGroups += group.second-group.first;
-            std::cout << "Group: " << group.first << " " << group.second << std::endl;
         }  
         numRowsRes -= inGroups-groups->size();
 
@@ -185,24 +180,3 @@ template <> struct Group<Frame> {
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_GROUP_H
-
-/*
-[DAPHNE-#242] Kernel for GroupOp (grouping by with aggregation) on Frame
-
-To support SQL GROUP BY, we need a kernel for DaphneIR's GroupOp (see src/ir/daphneir/DaphneOps.td). The kernel should have the following interface:
-
-void group(
-        Frame *& res,
-        const Frame * arg,
-        const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols,
-        mlir::daphne::GroupEnumAttr * aggFuncs, size_t numAggFuncs
-);
-The Frame arg shall be grouped by the numKeyCols columns (indicated by name) in keyCols. In addition to that, numAggCols aggregates shall be calculated for each group, whereby the columns to group on are indicated by aggCols and the corresponding aggregate functions (COUNT, SUM, ...) are indicated by aggFuncs. Note that numAggCols and numAggFuncs will always have the same value. Having this information replicated is an artifact of the way we currently lower variadic DaphneIR operations to kernel calls.
-
-For now, it's just about making it work. We can make it efficient later. A straightforward approach would be a sort-based grouping, which sorts the input frame by the key columns using the order-kernel, and calculates the aggregates over the subsequent data elements in a group.
-
-Hints:
-COUNT shall always return a UI64 column.
-AVG shall always return a FP64 column.
-*/

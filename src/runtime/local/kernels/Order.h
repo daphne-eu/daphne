@@ -45,12 +45,12 @@ struct Order {
 
 template<class DT>
 void order(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
-    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupRes);
+    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
 }
 
 template<class DT>
-void orderGroups(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
-    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, ctx, groupsRes);
+void orderGroups(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
 }
 
 // ****************************************************************************
@@ -116,7 +116,7 @@ struct ColumnIDSort {
 };
 
 template <> struct Order<Frame> {
-    static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+    static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
         size_t numRows = arg->getNumRows();
         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr) {
             throw std::runtime_error("order-kernel called with invalid arguments");

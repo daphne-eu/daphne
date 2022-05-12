@@ -34,7 +34,6 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
     using VT2 = int64_t;
     using VT3 = uint32_t;
 
-    GroupEnum aggFuncArray[] = { GroupEnum::COUNT, GroupEnum::SUM, GroupEnum::MIN, GroupEnum::MAX, GroupEnum::AVG };
     size_t numRows = 20;
 
     auto c0 = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5,
@@ -45,33 +44,33 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
                                                         2, -1, 0, 1, 1, 1, 1, -1, -1, -1});
     auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 0, 1, 1, 0, 1, 1, 0, 1, 3,
                                                         2, 1, 0, 1, 1, 1, 1, 1, 1, 1});;
-    auto c4 = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5,
+    auto c4 = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.5, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5,
                                                         2.7, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5 });
     auto c5 = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.6, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.6, 2.8, 1.5,
                                                         2.7, 1.6, 2.7, 1.5, 2.8, 1.5, 2.7, 1.6, 2.8, 1.5 });
-    auto c6 = genGivenVals<DenseMatrix<VT2>>(numRows, { -1, 0, 1, -1, 0, 1, -1, 0, 1, 3,
+    auto c6 = genGivenVals<DenseMatrix<VT2>>(numRows, { -1, 0, 1, -37, 17, 1, -1, 0, 1, 3,
                                                         2, -1, 0, 1, 1, 1, 1, -1, -1, -1});
-    auto c7 = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 0, 1, 1, 0, 1, 1, 0, 1, 3,
+    auto c7 = genGivenVals<DenseMatrix<VT2>>(numRows, { 1, 0, 1, 1, 0, 1, 1, 0, 1, 3,
                                                         2, 1, 0, 1, 1, 1, 1, 1, 1, 1});
-    auto c8 = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5,
-                                                        2.7, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5, 2.7, 1.5 });
+    auto c8 = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 2, 3, 1, 2, 1, 2, 1, 2, 1,
+                                                        2, 1, 2, 1, 2, 1, 2, 1, 2, 1 });
     auto c9 = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.6, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.6, 2.8, 1.5,
                                                         2.7, 1.6, 2.7, 1.5, 2.8, 1.5, 2.7, 1.6, 2.8, 1.5 });
     
     std::vector<Structure *> colsArg {c0, c1, c2, c3, c4, c5, c6, c7, c8, c9};
-    std::string labels[] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg", "hhh", "iii", "jjj",
-                            "kkk", "lll", "mmm", "nnn", "ooo", "ppp", "qqq", "rrr", "sss", "ttt",};
+    std::string labels[] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg", "hhh", "iii", "jjj"};
     auto arg = DataObjectFactory::create<Frame>(colsArg, labels);
+    DataObjectFactory::destroy(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
+
     Frame* exp{};
     Frame* res{};
     size_t numKeyCols;
     size_t numAggCols;
-    const char** keyCols;
-    const char** aggCols;
-    GroupEnumAttr * aggFuncs;
+    const char** keyCols = nullptr;
+    const char** aggCols = nullptr;;
+    GroupEnumAttr * aggFuncs = nullptr;
     
     std::vector<Structure *> colsExp;
-    std::string * labelsExp;
 
     auto context = new mlir::MLIRContext();
 
@@ -83,21 +82,89 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
         aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::COUNT);
 
-        DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(3, { 1.5, 2.7, 3.2 });
-        DenseMatrix<uint64_t> * c1Exp = genGivenVals<DenseMatrix<uint64_t>>(3, { 10, 9, 1});
+        numRows = 3;
+        DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 2.7, 3.2 });
+        DenseMatrix<uint64_t> * c1Exp = genGivenVals<DenseMatrix<uint64_t>>(numRows, { 10, 9, 1});
         std::vector<Structure *> colsExp {c0Exp, c1Exp};
         std::string labelsExp[] = {"aaa", "COUNT(ccc)"};
         exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
         DataObjectFactory::destroy(c0Exp, c1Exp);
     }
-    //TODO: more testcases (multi group combinations: 1-3 SUM, MIN, MAX; 3-1 AVG; 5-5 all functions)
+    SECTION("1 grouping column, 3 aggregation columns") {
+        numKeyCols = 1;
+        numAggCols = 3;
+        keyCols = new const char*[10]{labels[7].c_str()};
+        aggCols = new const char*[10]{labels[0].c_str(), labels[3].c_str(), labels[2].c_str()};
+        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::SUM);
+        aggFuncs[1] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MIN);
+        aggFuncs[2] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MAX);
 
-    DataObjectFactory::destroy(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
+        numRows = 4;
+        DenseMatrix<VT2> * c0Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 0, 1, 2, 3 });
+        DenseMatrix<VT0> * c1Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 3*2.7+1.5, 8*1.5+5*2.7+3.2, 2.7, 1.5 });
+        DenseMatrix<VT3> * c2Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 0, 1, 2, 3 });
+        DenseMatrix<VT2> * c3Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 0, 1, 2, 3 });
+
+        std::vector<Structure *> colsExp {c0Exp, c1Exp, c2Exp, c3Exp};
+        std::string labelsExp[] = {"hhh", "SUM(aaa)", "MIN(ddd)", "MAX(ccc)"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp, c3Exp);
+    }
+    SECTION("3 grouping columns, 1 aggregation column") {
+        numKeyCols = 3;
+        numAggCols = 1;
+        keyCols = new const char*[10]{labels[2].c_str(), labels[1].c_str(), labels[0].c_str()};
+        aggCols = new const char*[10]{labels[6].c_str()};
+        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::AVG);
+
+        numRows = 12;
+        DenseMatrix<VT2> * c0Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { -1, -1, -1, -1, 0, 0, 1, 1, 1, 1, 2, 3 });
+        DenseMatrix<VT1> * c1Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.5, 1.6, 2.7, 2.8, 1.6, 2.7, 1.5, 2.7, 2.8, 3.2, 2.7, 1.5 });
+        DenseMatrix<VT0> * c2Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 1.5, 2.7, 2.7, 1.5, 2.7, 1.5, 2.7, 2.7, 3.2, 2.7, 1.5 });
+        DenseMatrix<double> * c3Exp = genGivenVals<DenseMatrix<double>>(numRows, { -19, -1, -1, -1, 0, 17.0/3.0, 1, 1, 1, 1, 2, 3 });
+        std::vector<Structure *> colsExp {c0Exp, c1Exp, c2Exp, c3Exp};
+        std::string labelsExp[] = {"ccc", "bbb", "aaa", "AVG(ggg)"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp, c3Exp);
+    }
+    SECTION("5 grouping columns, 5 aggregation columns") {
+        numKeyCols = 5;
+        numAggCols = 5;
+        keyCols = new const char*[10]{labels[0].c_str(), labels[6].c_str(), labels[2].c_str(), labels[8].c_str(), labels[4].c_str()};
+        aggCols = new const char*[10]{labels[5].c_str(), labels[1].c_str(), labels[7].c_str(), labels[3].c_str(), labels[9].c_str()};
+        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::COUNT);
+        aggFuncs[1] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::SUM);
+        aggFuncs[2] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MIN);
+        aggFuncs[3] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MAX);
+        aggFuncs[4] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::AVG);
+
+        numRows = 11;
+        DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 1.5, 1.5, 1.5, 1.5, 2.7, 2.7, 2.7, 2.7, 2.7, 3.2 });
+        DenseMatrix<VT2> * c1Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { -37, -1, 0, 1, 3, -1, 0, 1, 2, 17, 1 });
+        DenseMatrix<VT2> * c2Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { -1, -1, 0, 1, 3, -1, 0, 1, 2, 0, 1 });
+        DenseMatrix<VT3> * c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3 });
+        DenseMatrix<VT1> * c4Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.5, 1.5, 1.5, 1.5, 1.5, 2.7, 2.7, 2.7, 2.7, 2.7, 3.2 });
+        DenseMatrix<uint64_t> * c5Exp = genGivenVals<DenseMatrix<uint64_t>>(numRows, { 1, 4, 1, 3, 1, 2, 2, 3, 1, 1, 1 });  
+        DenseMatrix<VT1> * c6Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.5f, 3*1.6f+1.5f, 1.6f, 3*1.5f, 1.5f, 2.7f+2.8f, 2*2.7f, 2*2.8f+2.7f, 2.7f, 2.7f, 3.2f });
+        DenseMatrix<VT2> * c7Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 1, 1, 0, 1, 3, 1, 0, 1, 2, 0, 1 });
+        DenseMatrix<VT3> * c8Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 1, 0, 1, 3, 1, 0, 1, 2, 0, 1 });
+        DenseMatrix<VT0> * c9Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { (double)1.5f, (((double)3*1.6f)+((double)1.5f))/4.0, (double)1.6f, ((double)(3*1.5f))/3.0,
+                                                                             (double)1.5f, ((double)(2.7f+2.8f))/2.0, ((double)(2*2.7f))/2.0, (((double)2*2.8f)+((double)2.7f))/3.0,
+                                                                             (double)2.7f, (double)2.7f, ((double)3.2f) });
+        std::vector<Structure *> colsExp {c0Exp, c1Exp, c2Exp, c3Exp, c4Exp, c5Exp, c6Exp, c7Exp, c8Exp, c9Exp};
+        std::string labelsExp[] = {"aaa", "ggg", "ccc", "iii", "eee", "COUNT(fff)", "SUM(bbb)", "MIN(hhh)", "MAX(ddd)", "AVG(jjj)"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp, c3Exp, c4Exp, c5Exp, c6Exp, c7Exp, c8Exp, c9Exp);
+    }
+
     group(res, arg, keyCols, numKeyCols, aggCols, numAggCols, aggFuncs, numAggCols, nullptr);
     CHECK(*res == *exp);
-
     delete [] keyCols;
     delete [] aggCols;
     delete aggFuncs;
+    delete context;
     DataObjectFactory::destroy(arg, exp, res);
 }
