@@ -83,7 +83,8 @@ def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
 }
 
 def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
-    NumRowsFromArg, NumColsFromArgNumRows
+    NumRowsFromArg, NumColsFromArgNumRows,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
