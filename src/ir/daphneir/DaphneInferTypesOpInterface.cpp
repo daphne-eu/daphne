@@ -66,65 +66,64 @@ Type getFrameColumnTypeByLabel(daphne::FrameType ft, Value label) {
 // For families of operations.
 
 template<class EwCmpOp>
-void inferTypes_EwCmpOp(EwCmpOp * op) {
+std::vector<Type> inferTypes_EwCmpOp(EwCmpOp * op) {
     Type lhsType = op->lhs().getType();
     Type rhsType = op->rhs().getType();
-    Type t;
     if(auto mt = lhsType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
+        return {mt.withSameElementType()};
     else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
+        return {mt.withSameElementType()};
     else {
         // TODO: check rhsType?
         // same as input type, not bool (design decision)
-        t = lhsType;
+        return {lhsType};
     }
-    op->getResult().setType(t);
 }
 
 template<class EwArithOp>
-void inferTypes_EwArithOp(EwArithOp * op) {
+std::vector<Type> inferTypes_EwArithOp(EwArithOp * op) {
     Type lhsType = op->lhs().getType();
     Type rhsType = op->rhs().getType();
-    Type t;
     if(auto mt = lhsType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
+        return {mt.withSameElementType()};
     else if(auto mt = rhsType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
+        return {mt.withSameElementType()};
     else {
         // TODO: check rhsType?
-        t = lhsType;
+        return {lhsType};
     }
-    op->getResult().setType(t);
 }
 
 template<class AllAggOp>
-void inferTypes_AllAggOp(AllAggOp * op) {
+std::vector<Type> inferTypes_AllAggOp(AllAggOp * op) {
     Type argType = op->arg().getType();
     // TODO: f64, si64 and ui64 for sum?
-    op->getResult().setType(argType.cast<daphne::MatrixType>().getElementType());
+    if(auto mt = argType.dyn_cast<daphne::MatrixType>()) // TODO THIS IS A BUGFIX
+        return {mt.getElementType()};
+    return {daphne::UnknownType::get(op->getContext())};
 }
 
 // ****************************************************************************
-// Type inference implementations
+// Type inference interface implementations
 // ****************************************************************************
 
-void daphne::CastOp::inferTypes() {
+std::vector<Type> daphne::CastOp::inferTypes() {
     auto ftArg = arg().getType().dyn_cast<daphne::FrameType>();
     auto mtRes = res().getType().dyn_cast<daphne::MatrixType>();
     if(ftArg && mtRes && mtRes.getElementType().isa<daphne::UnknownType>()) {
         std::vector<Type> ctsArg = ftArg.getColumnTypes();
         if(ctsArg.size() == 1)
-            res().setType(daphne::MatrixType::get(getContext(), ctsArg[0]));
+            return {daphne::MatrixType::get(getContext(), ctsArg[0])};
         else
             throw std::runtime_error(
                     "currently CastOp cannot infer the value type of its "
                     "output matrix, if the input is a multi-column frame"
             );
     }
+    return {daphne::UnknownType::get(getContext())};
 }
 
-void daphne::ColBindOp::inferTypes() {
+std::vector<Type> daphne::ColBindOp::inferTypes() {
     auto ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
     auto ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
     if(ftLhs && ftRhs) {
@@ -133,18 +132,17 @@ void daphne::ColBindOp::inferTypes() {
             newColumnTypes.push_back(t);
         for(Type t : ftRhs.getColumnTypes())
             newColumnTypes.push_back(t);
-        getResult().setType(
-                daphne::FrameType::get(getContext(), newColumnTypes)
-        );
+        return {daphne::FrameType::get(getContext(), newColumnTypes)};
     }
+    return {daphne::UnknownType::get(getContext())};
 }
 
-void daphne::ExtractColOp::inferTypes() {
+std::vector<Type> daphne::ExtractColOp::inferTypes() {
     auto ft = source().getType().dyn_cast<daphne::FrameType>();
     auto st = selectedCols().getType().dyn_cast<daphne::StringType>();
     if(ft && st) {
         Type vt = getFrameColumnTypeByLabel(ft, selectedCols());
-        getResult().setType(daphne::FrameType::get(getContext(), {vt}));
+        return {daphne::FrameType::get(getContext(), {vt})};
     }
     else
         throw std::runtime_error(
@@ -153,14 +151,14 @@ void daphne::ExtractColOp::inferTypes() {
         );
 }
 
-void daphne::CreateFrameOp::inferTypes() {
+std::vector<Type> daphne::CreateFrameOp::inferTypes() {
     std::vector<Type> colTypes;
     for(Value col : cols())
         colTypes.push_back(col.getType().dyn_cast<daphne::MatrixType>().getElementType());
-    getResult().setType(daphne::FrameType::get(getContext(), colTypes));
+    return {daphne::FrameType::get(getContext(), colTypes)};
 }
 
-void daphne::RandMatrixOp::inferTypes() {
+std::vector<Type> daphne::RandMatrixOp::inferTypes() {
     auto elTy = min().getType();
     if(elTy == UnknownType::get(getContext())) {
         elTy = max().getType();
@@ -169,58 +167,56 @@ void daphne::RandMatrixOp::inferTypes() {
         assert((max().getType() == UnknownType::get(getContext()) || elTy == max().getType())
             && "Min and max need to have the same type");
     }
-    getResult().setType(daphne::MatrixType::get(getContext(), elTy));
+    return {daphne::MatrixType::get(getContext(), elTy)};
 }
 
-void daphne::EwEqOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
+std::vector<Type> daphne::EwEqOp::inferTypes() {
+    return {inferTypes_EwCmpOp(this)};
 }
 
-void daphne::EwNeqOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
+std::vector<Type> daphne::EwNeqOp::inferTypes() {
+    return {inferTypes_EwCmpOp(this)};
 }
 
-void daphne::EwLtOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
+std::vector<Type> daphne::EwLtOp::inferTypes() {
+    return {inferTypes_EwCmpOp(this)};
 }
 
-void daphne::EwLeOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
+std::vector<Type> daphne::EwLeOp::inferTypes() {
+    return {inferTypes_EwCmpOp(this)};
 }
 
-void daphne::EwGtOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
+std::vector<Type> daphne::EwGtOp::inferTypes() {
+    return {inferTypes_EwCmpOp(this)};
 }
 
-void daphne::EwGeOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
+std::vector<Type> daphne::EwGeOp::inferTypes() {
+    return {inferTypes_EwCmpOp(this)};
 }
 
-void daphne::ExtractRowOp::inferTypes() {
+std::vector<Type> daphne::ExtractRowOp::inferTypes() {
     Type srcType = source().getType();
-    Type t;
     if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
+        return {mt.withSameElementType()};
     else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
-        t = ft.withSameColumnTypes();
-    getResult().setType(t);
+        return {ft.withSameColumnTypes()};
+    return {daphne::UnknownType::get(getContext())};
 }
 
-void daphne::MatMulOp::inferTypes() {
-    getResult().setType(lhs().getType().dyn_cast<daphne::MatrixType>().withSameElementType());
+std::vector<Type> daphne::MatMulOp::inferTypes() {
+    return {lhs().getType().dyn_cast<daphne::MatrixType>().withSameElementType()};
 }
 
-void daphne::FilterRowOp::inferTypes() {
+std::vector<Type> daphne::FilterRowOp::inferTypes() {
     Type srcType = source().getType();
-    Type t;
     if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
+        return {mt.withSameElementType()};
     else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
-        t = ft.withSameColumnTypes();
-    getResult().setType(t);
+        return {ft.withSameColumnTypes()};
+    return {daphne::UnknownType::get(getContext())};
 }
 
-void daphne::GroupJoinOp::inferTypes() {
+std::vector<Type> daphne::GroupJoinOp::inferTypes() {
     daphne::FrameType lhsFt = lhs().getType().dyn_cast<daphne::FrameType>();
     daphne::FrameType rhsFt = rhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
@@ -228,21 +224,25 @@ void daphne::GroupJoinOp::inferTypes() {
 
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
-    getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType, rhsAggType}));
-    getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
+    return {
+        daphne::FrameType::get(ctx, {lhsOnType, rhsAggType}),
+        daphne::MatrixType::get(ctx, builder.getIndexType())
+    };
 }
 
-void daphne::SemiJoinOp::inferTypes() {
+std::vector<Type> daphne::SemiJoinOp::inferTypes() {
     daphne::FrameType lhsFt = lhs().getType().dyn_cast<daphne::FrameType>();
     Type lhsOnType = getFrameColumnTypeByLabel(lhsFt, lhsOn());
 
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
-    getResult(0).setType(daphne::FrameType::get(ctx, {lhsOnType}));
-    getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
+    return {
+        daphne::FrameType::get(ctx, {lhsOnType}),
+        daphne::MatrixType::get(ctx, builder.getIndexType())
+    };
 }
 
-void daphne::InnerJoinOp::inferTypes() {
+std::vector<Type> daphne::InnerJoinOp::inferTypes() {
     daphne::FrameType ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
     daphne::FrameType ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
     if(ftLhs && ftRhs) {
@@ -251,13 +251,12 @@ void daphne::InnerJoinOp::inferTypes() {
             newColumnTypes.push_back(t);
         for(Type t : ftRhs.getColumnTypes())
             newColumnTypes.push_back(t);
-        getResult().setType(
-                daphne::FrameType::get(getContext(), newColumnTypes)
-        );
+        return {daphne::FrameType::get(getContext(), newColumnTypes)};
     }
+    return {daphne::UnknownType::get(getContext())};
 }
 
-void daphne::GroupOp::inferTypes() {
+std::vector<Type> daphne::GroupOp::inferTypes() {
     MLIRContext * ctx = getContext();
     Builder builder(ctx);
 
@@ -293,93 +292,108 @@ void daphne::GroupOp::inferTypes() {
             newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
         }
     }
-    getResult().setType(daphne::FrameType::get(ctx, newColumnTypes));
+    return {daphne::FrameType::get(ctx, newColumnTypes)};
 }
 
-void daphne::SetColLabelsOp::inferTypes() {
-    getResult().setType(
-            arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()
-    );
+std::vector<Type> daphne::SetColLabelsOp::inferTypes() {
+    return {arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()};
 }
 
-void daphne::SetColLabelsPrefixOp::inferTypes() {
-    getResult().setType(
-            arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()
-    );
+std::vector<Type> daphne::SetColLabelsPrefixOp::inferTypes() {
+    return {arg().getType().dyn_cast<daphne::FrameType>().withSameColumnTypes()};
 }
 
-void daphne::AllAggMaxOp::inferTypes() {
-    return inferTypes_AllAggOp(this);
+std::vector<Type> daphne::AllAggMaxOp::inferTypes() {
+    return {inferTypes_AllAggOp(this)};
 }
 
-void daphne::AllAggMeanOp::inferTypes() {
-    return inferTypes_AllAggOp(this);
+std::vector<Type> daphne::AllAggMeanOp::inferTypes() {
+    return {inferTypes_AllAggOp(this)};
 }
 
-void daphne::AllAggMinOp::inferTypes() {
-    return inferTypes_AllAggOp(this);
+std::vector<Type> daphne::AllAggMinOp::inferTypes() {
+    return {inferTypes_AllAggOp(this)};
 }
 
-void daphne::AllAggStddevOp::inferTypes() {
-    return inferTypes_AllAggOp(this);
+std::vector<Type> daphne::AllAggStddevOp::inferTypes() {
+    return {inferTypes_AllAggOp(this)};
 }
 
-void daphne::AllAggSumOp::inferTypes() {
-    return inferTypes_AllAggOp(this);
+std::vector<Type> daphne::AllAggSumOp::inferTypes() {
+    return {inferTypes_AllAggOp(this)};
 }
 
-void daphne::AllAggVarOp::inferTypes() {
-    return inferTypes_AllAggOp(this);
+std::vector<Type> daphne::AllAggVarOp::inferTypes() {
+    return {inferTypes_AllAggOp(this)};
 }
 
-void daphne::EwAddOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwAddOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwAndOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwAndOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwConcatOp::inferTypes() {
-    getResult().setType(StringType::get(getContext()));
+std::vector<Type> daphne::EwConcatOp::inferTypes() {
+    return {StringType::get(getContext())};
 }
 
-void daphne::EwDivOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwDivOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwLogOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwLogOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwMaxOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwMaxOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwMinOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwMinOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwModOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwModOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwMulOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwMulOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwOrOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwOrOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwPowOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwPowOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwSubOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwSubOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
 }
 
-void daphne::EwXorOp::inferTypes() {
-    return inferTypes_EwArithOp(this);
+std::vector<Type> daphne::EwXorOp::inferTypes() {
+    return {inferTypes_EwArithOp(this)};
+}
+
+// ****************************************************************************
+// Shape inference function
+// ****************************************************************************
+
+std::vector<Type> daphne::tryInferType(Operation* op) {
+    if(auto inferTypeOp = llvm::dyn_cast<daphne::InferTypes>(op))
+        // If the operation implements the type inference interface,
+        // we apply that.
+        return inferTypeOp.inferTypes();
+    else {
+        // If the operation does not implement the type inference interface
+        // and has zero or more than one results, we return unknown.
+        std::vector<Type> types;
+        for(size_t i = 0; i < op->getNumResults(); i++)
+            types.push_back(daphne::UnknownType::get(op->getContext()));
+        return types;
+    }
 }
