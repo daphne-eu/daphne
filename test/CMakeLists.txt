@@ -80,7 +80,9 @@ set(TEST_SOURCES
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
         runtime/local/kernels/HasSpecialValueTest.cpp
+        runtime/local/kernels/InsertColTest.cpp
         runtime/local/kernels/InnerJoinTest.cpp
+        runtime/local/kernels/InsertRowTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MatMulTest.cpp
