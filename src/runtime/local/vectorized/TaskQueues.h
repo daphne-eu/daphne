@@ -29,7 +29,7 @@ public:
     virtual ~TaskQueue() = default;
 
     virtual void enqueueTask(Task* t) = 0;
-    virtual void enqueueTaskOnTargetQueue(Task* t, int targetCPU) = 0;
+    virtual void enqueueTaskPinned(Task* t, int targetCPU) = 0;
     virtual Task* dequeueTask() = 0;
     virtual uint64_t size() = 0;
     virtual void closeInput() = 0;
@@ -64,7 +64,7 @@ public:
         _cv.notify_one();
     }
 
-    void enqueueTaskOnTargetQueue(Task* t, int targetCPU) override {
+    void enqueueTaskPinned(Task* t, int targetCPU) override {
         // Change CPU pinning before enqueue to utilize NUMA first-touch policy
         cpu_set_t cpuset;
         CPU_ZERO(&cpuset);

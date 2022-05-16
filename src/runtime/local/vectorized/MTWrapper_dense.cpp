@@ -21,59 +21,7 @@
 #ifdef USE_CUDA
 #include <runtime/local/vectorized/TasksCUDA.h>
 #endif
-/*
-template<typename VT>
-void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
-        Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
-        VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-    auto inputProps = this->getInputProperties(inputs, numInputs, splits);
-    auto len = inputProps.first;
-    auto mem_required = inputProps.second;
-    mem_required += this->allocateOutput(res, numOutputs, outRows, outCols, combines);
-    auto row_mem = mem_required / len;
 
-    // create task queue (w/o size-based blocking)
-    std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
-
-    auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(q.get(), batchSize8M, verbose);
-
-#ifdef USE_CUDA
-    if(this->_numCUDAThreads) {
-        this->initCUDAWorkers(q.get(), batchSize8M * 4, verbose);
-        this->cudaPrefetchInputs(inputs, numInputs, mem_required, splits);
-#ifndef NDEBUG
-        std::cout << "Required memory (ins/outs): " << mem_required << "\nRequired mem/row: " << row_mem << std::endl;
-        std::cout << "batchsizeCPU=" << batchSize8M << " batchsizeGPU=" << batchSize8M*4 << std::endl;
-#endif
-    }
-#endif
-
-    // lock for aggregation combine
-    // TODO: multiple locks per output
-    std::mutex resLock;
-
-    // create tasks and close input
-    uint64_t startChunk = 0;
-    uint64_t endChunk = 0;
-    int method=ctx->config.taskPartitioningScheme;
-    int chunkParam = ctx->config.minimumTaskSize;
-    if(chunkParam<=0)
-        chunkParam=1;
-    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
-    while (lp.hasNextChunk()) {
-        endChunk += lp.getNextChunk();
-        q->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
-                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                outCols, 0, ctx}, resLock, res));
-        startChunk = endChunk;
-    }
-    q->closeInput();
-
-    this->joinAll();
-}
-*/
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
         std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res, bool* isScalar,
@@ -157,7 +105,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
                     target = currentItr % this->_numQueues;
-                    qvector[target]->enqueueTaskOnTargetQueue(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
+                    qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, resLock, res), target);
                     startChunk = endChunk;
@@ -181,7 +129,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
                 target = currentItr % this->_numQueues;
-                qvector[target]->enqueueTaskOnTargetQueue(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
+                qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                         inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                         outCols, 0, ctx}, resLock, res), target);
                 startChunk = endChunk;

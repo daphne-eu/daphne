@@ -215,6 +215,16 @@ public:
         if( std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled )
             topologyUniqueThreads.resize(_numCPPThreads);
         _totalNumaDomains = std::set<double>( topologyPhysicalIds.begin(), topologyPhysicalIds.end() ).size();
+
+        
+        if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+            _queueMode = 1;
+            _numQueues = _totalNumaDomains;
+        } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
+            _queueMode = 2;
+            _numQueues = _numThreads;
+        }
+        
         if( _ctx->config.debugMultiThreading ) {
             for(const auto & topologyEntry: topologyPhysicalIds) {
                 std::cout << topologyEntry << ',';
@@ -225,14 +235,7 @@ public:
             }
             std::cout << std::endl;
             std::cout << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
-        }
-        
-        if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
-            _queueMode = 1;
-            _numQueues = _totalNumaDomains;
-        } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
-            _queueMode = 2;
-            _numQueues = _numThreads;
+            std::cout << "_numQueues=" << _numQueues << std::endl;
         }
 #ifndef NDEBUG
         std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
