@@ -64,6 +64,8 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DenseMatrix), (double, uin
         DataObjectFactory::destroy(exp_view);
         DataObjectFactory::destroy(exp_arg);
         DataObjectFactory::destroy(ins);
+        DataObjectFactory::destroy(view);
+        DataObjectFactory::destroy(res);
         DataObjectFactory::destroy(arg);
     }
 }

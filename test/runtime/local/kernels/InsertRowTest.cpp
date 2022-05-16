@@ -37,7 +37,7 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow", TAG_KERNELS, (DenseMatrix), (double, uin
      2, 3,  
      4, 5};
     
-     
+    
     SECTION("Check zero-copy") {
         auto arg = genGivenVals<DT>(3, vals); 
 
@@ -67,6 +67,8 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertRow", TAG_KERNELS, (DenseMatrix), (double, uin
         DataObjectFactory::destroy(exp_view);
         DataObjectFactory::destroy(exp_arg);
         DataObjectFactory::destroy(ins);
+        DataObjectFactory::destroy(view);
+        DataObjectFactory::destroy(res);
         DataObjectFactory::destroy(arg);
     }
 }
