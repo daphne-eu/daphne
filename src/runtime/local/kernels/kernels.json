@@ -623,7 +623,7 @@
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
                     [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
             },
             {
                 "name":  ["CPP"],
