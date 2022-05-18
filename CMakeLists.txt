@@ -14,14 +14,6 @@
 
 cmake_minimum_required(VERSION 3.17)
 
-# use gcc 8 because CUDA broke on my Ubuntu 21.10
-if (UNIX)
-#    set(CMAKE_CUDA_HOST_COMPILER g++-8 CACHE INTERNAL "" FORCE)
-    #    set(CMAKE_CUDA_HOST_COMPILER clang++ CACHE INTERNAL "" FORCE)
-    set(CMAKE_CUDA_COMPILER /usr/local/cuda/bin/nvcc CACHE INTERNAL "" FORCE)
-    #    set(CMAKE_CXX_COMPILER g++ CACHE INTERNAL "" FORCE)
-endif()
-
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
@@ -29,7 +21,6 @@ set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
 project(daphne-prototype LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
-
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
@@ -89,6 +80,15 @@ option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    if(${CMAKE_COMPILER_IS_GNUCXX})
+        set(GCC_EXPECTED_VERSION 11.3.0)
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER GCC_EXPECTED_VERSION AND NOT DEFINED ENV{CUDAHOSTCXX})
+            message(WARNING "GCC: Daphne requires version ${GCC_EXPECTED_VERSION} to build but found ${CMAKE_CXX_COMPILER_VERSION} \
+                You should set the env var CUDAHOSTCXX to something like g++-11 (if installed)")
+            execute_process(COMMAND sleep 7)
+        endif()
+    endif()
+
     enable_language(CUDA)
     find_package(CUDAToolkit REQUIRED)
     set(CMAKE_CUDA_ARCHITECTURES  OFF)
@@ -97,6 +97,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
     message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
+    if(DEFINED ENV{CUDAHOSTCXX})
+        message(STATUS "CUDAHOSTCXX value: $ENV{CUDAHOSTCXX}")
+    endif()
 endif()
 
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
