@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef READDAPHNE_H
-#define READDAPHNE_H
 #pragma once
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
@@ -92,14 +90,12 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 	    } else if (bb.bt == DF_body_t::dense) {
 		 f.read((char *)&vt, sizeof(vt));
 
-		 VT* memblock = (VT*) malloc(bb.nbrows*bb.nbcols*sizeof(VT));
-		 f.read((char *)memblock, bb.nbrows*bb.nbcols*sizeof(VT));
-
-		 std::shared_ptr<VT[]> data;
-		 data.reset(memblock);
-
-		 res = DataObjectFactory::create<DenseMatrix<VT>>((size_t)bb.nbrows, 
-								  (size_t)bb.nbcols, data);
+         size_t numItems = bb.nbrows*bb.nbcols;
+         std::streamsize memBlockSize = numItems * sizeof(VT);
+         auto memblock = std::shared_ptr<VT[]>(new VT[numItems], std::default_delete<VT[]>());
+         f.read(reinterpret_cast<char*>(memblock.get()), memBlockSize);
+		 res = DataObjectFactory::create<DenseMatrix<VT>>(static_cast<size_t>(bb.nbrows), static_cast<size_t>(bb.nbcols),
+                 memblock);
 
 		 goto exit;
 	    }
@@ -308,5 +304,3 @@ template <> struct ReadDaphne<Frame> {
     return;
   }
 };
-
-#endif

@@ -63,7 +63,7 @@ struct ExtractCol<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<int64_t>> {
         assert((sel->getNumCols() == 1) && "parameter colIdxs must be a column matrix");
 
         const size_t numColsRes = sel->getNumRows();
-        const size_t * colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
+        const auto* colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
         for(size_t i = 0; i < numColsRes; i++) {
             assert((colIdxs[i] < arg->getNumCols()) && "column index out of bounds");
         }
@@ -107,9 +107,9 @@ struct ExtractCol<Frame, Frame, DenseMatrix<VTSel>> {
             throw std::runtime_error("parameter colIdxs must be a column matrix");
 
         const size_t numColsRes = sel->getNumRows();
-        const size_t * colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
+        const auto* colIdxs = reinterpret_cast<const size_t *>(sel->getValues());
         for(size_t i = 0; i < numColsRes; i++) {
-            if(colIdxs[i] < 0 || colIdxs[i] >= arg->getNumCols())
+            if(colIdxs[i] >= arg->getNumCols())
                 throw std::runtime_error("column index out of bounds");
         }
         const size_t numRows = arg->getNumRows();
