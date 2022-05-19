@@ -47,6 +47,11 @@
 #include <string>
 #include <utility>
 #include <vector>
+namespace mlir::OpTrait {
+    template<class ConcreteOp>
+    class ONEAPISupport : public TraitBase<ConcreteOp, ONEAPISupport> {
+    };
+}
 
 namespace mlir::OpTrait {
     template<class ConcreteOp>

@@ -33,6 +33,7 @@ include "ir/daphneir/DaphneTypeAdaptationTraits.td"
 include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
+include "ir/daphneir/ONEAPISupport.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -155,7 +156,7 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     DataTypeMat, ValueTypeFromArgs,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
-    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport, ONEAPISupport,
     CastFirstTwoArgsToResType
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);

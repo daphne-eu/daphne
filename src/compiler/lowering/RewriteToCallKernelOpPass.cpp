@@ -164,11 +164,12 @@ namespace
 //                else
 //                    std::cout << "attr = null: " << op->getName().getStringRef().str() << std::endl;
             }
-	    else if(op->hasAttr("fpgaopencl_device")) {
-		 callee << "FPGAOPENCL";
-	    }
-		    
-
+	        else if(op->hasAttr("fpgaopencl_device")) {
+		        callee << "FPGAOPENCL";
+	        }
+            else if(op->hasAttr("oneapi_device")) {
+                callee << "ONEAPI";
+            }
             callee << '_' << op->getName().stripDialect().data();
 
 
@@ -394,7 +395,7 @@ namespace
         {
             size_t numOutputs = op.outputs().size();
             size_t numInputs = op.inputs().size();
-                     
+            
             
             std::stringstream callee;
             callee << "_distributedPipeline"; // kernel name

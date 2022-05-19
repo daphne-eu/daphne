@@ -188,6 +188,10 @@ main(int argc, char** argv)
             "fpgaopencl", cat(daphneOptions),
             desc("Use FPGAOPENCL")
     );
+    opt<bool> oneapi(
+            "oneapi", cat(daphneOptions),
+            desc("Use ONEAPI")
+    );
     opt<string> libDir(
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
@@ -284,15 +288,15 @@ main(int argc, char** argv)
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
-    user_config.use_distributed = useDistributedRuntime; 
+    user_config.use_distributed = useDistributedRuntime;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
 	user_config.victimSelection = victimSelection;
-    user_config.numberOfThreads = numberOfThreads; 
-    user_config.minimumTaskSize = minimumTaskSize; 
+    user_config.numberOfThreads = numberOfThreads;
+    user_config.minimumTaskSize = minimumTaskSize;
     user_config.pinWorkers = pinWorkers;
     user_config.hyperthreadingEnabled = hyperthreadingEnabled;
     user_config.debugMultiThreading = debugMultiThreading;
@@ -345,8 +349,11 @@ main(int argc, char** argv)
     if(fpgaopencl) {
         user_config.use_fpgaopencl = true;
     }
-
-
+    
+    if(oneapi) {
+        user_config.use_oneapi = true;
+    }
+    
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)
             user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
