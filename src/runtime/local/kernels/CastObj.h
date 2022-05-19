@@ -190,4 +190,67 @@ public:
 };
 
 
+// ----------------------------------------------------------------------------
+//  DenseMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTArg>
+class CastObj<DenseMatrix<VTArg>, CSRMatrix<VTArg>> {
+
+public:
+    static void apply(DenseMatrix<VTArg> *& res, const CSRMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTArg>>(numRows, numCols, false);
+        VTArg temp;
+        for (size_t r=0; r<numRows; r++){
+            for (size_t c=0; c<numCols; c++){
+                temp=arg->get(r,c);
+
+                res->set(r,c,temp);
+            }
+        }
+
+
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+//  CSRMatrix  <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTArg>
+class CastObj<CSRMatrix<VTArg>, DenseMatrix<VTArg>> {
+
+public:
+    static void apply(CSRMatrix<VTArg> *& res, const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        size_t numNonZeros=0;
+        VTArg temp;
+
+        for (size_t r=0; r<numRows; r++){
+            for (size_t c=0; c<numCols; c++){
+                temp=arg->get(r,c);
+                if (temp!=0)numNonZeros++;
+            }
+        }
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VTArg>>(numRows, numCols, numNonZeros, false);
+        for (size_t r=0; r<numRows; r++){
+            for (size_t c=0; c<numCols; c++){
+                temp=arg->get(r,c);
+
+                res->set(r,c,temp);
+            }
+        }
+
+
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H

@@ -294,3 +294,271 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch",
     DataObjectFactory::destroy(res1, res2);
     DataObjectFactory::destroy(check1, check2);
 }
+
+TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, (double)) {
+    using VT = TestType;
+    using DT = CSRMatrix<VT>;
+    using DenseDT= DenseMatrix<VT>;
+    
+    auto m0 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DT>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0,  1,
+    });
+
+
+     auto d0 = genGivenVals<DenseDT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d1 = genGivenVals<DenseDT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+
+
+     auto d2 = genGivenVals<DenseDT>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0,  1,
+    });
+
+    DenseDT * res0 = nullptr;
+    castObj<DenseDT, DT>(res0, m0, nullptr);
+    DenseDT * res1 = nullptr;
+    castObj<DenseDT, DT>(res1, m1, nullptr);
+    DenseDT * res2 = nullptr;
+    castObj<DenseDT, DT>(res2, m2, nullptr);
+    
+    CHECK(*d0 == *res0);
+    CHECK(*d1 == *res1);
+    CHECK(*d2 == *res2);
+    // d0->print(std::cout);
+    // res0->print(std::cout);
+
+
+    DataObjectFactory::destroy(m0, d0, res0);
+    DataObjectFactory::destroy(m1, d1, res1);
+    DataObjectFactory::destroy(m2, d2, res2);
+
+}
+
+// TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, (float)) {
+//     using VT = TestType;
+//     using DT = CSRMatrix<VT>;
+//     using DenseDT= DenseMatrix<VT>;
+    
+//     auto m0 = genGivenVals<DT>(4, {
+//             0, 0, 0, 0, 0, 0,
+//             0, 4, 0, 0, 0, 2,
+//             0, 0, 0, 3, 0, 0,
+//             0, 0, 0, 0, 0, 0,
+//     });
+//     auto m1 = genGivenVals<DT>(4, {
+//             1, 2, 0, 0, 1, 3,
+//             0, 1, 0, 2, 0, 3,
+//             0, 0, 0, 0, 0, 0,
+//             0, 0, 0, 0, 0, 0,
+//     });
+//     auto m2 = genGivenVals<DT>(4, {
+//             2, 0, 0, 0, 0, 0,
+//             1, 0, 0, 0, 0, 4,
+//             0, 0, 0, 0, 1, 1,
+//             1, 0, 0, 0, 0,  1,
+//     });
+
+
+//      auto d0 = genGivenVals<DenseDT>(4, {
+//             0, 0, 0, 0, 0, 0,
+//             0, 4, 0, 0, 0, 2,
+//             0, 0, 0, 3, 0, 0,
+//             0, 0, 0, 0, 0, 0,
+//     });
+//     auto d1 = genGivenVals<DenseDT>(4, {
+//             1, 2, 0, 0, 1, 3,
+//             0, 1, 0, 2, 0, 3,
+//             0, 0, 0, 0, 0, 0,
+//             0, 0, 0, 0, 0, 0,
+//     });
+
+
+//      auto d2 = genGivenVals<DenseDT>(4, {
+//             2, 0, 0, 0, 0, 0,
+//             1, 0, 0, 0, 0, 4,
+//             0, 0, 0, 0, 1, 1,
+//             1, 0, 0, 0, 0,  1,
+//     });
+
+//     DenseDT * res0 = nullptr;
+//     castObj<DenseDT, DT>(res0, m0, nullptr);
+//     DenseDT * res1 = nullptr;
+//     castObj<DenseDT, DT>(res1, m1, nullptr);
+//     DenseDT * res2 = nullptr;
+//     castObj<DenseDT, DT>(res2, m2, nullptr);
+    
+//     CHECK(*d0 == *res0);
+//     CHECK(*d1 == *res1);
+//     CHECK(*d2 == *res2);
+//     // d0->print(std::cout);
+//     // res0->print(std::cout);
+
+
+//     DataObjectFactory::destroy(m0, d0, res0);
+//     DataObjectFactory::destroy(m1, d1, res1);
+//     DataObjectFactory::destroy(m2, d2, res2);
+
+// }
+
+
+TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, (int64_t)) {
+    using VT = TestType;
+    using DT = CSRMatrix<VT>;
+    using DenseDT= DenseMatrix<VT>;
+    
+    auto m0 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DT>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0,  1,
+    });
+
+
+     auto d0 = genGivenVals<DenseDT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d1 = genGivenVals<DenseDT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+
+
+     auto d2 = genGivenVals<DenseDT>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0,  1,
+    });
+
+    DenseDT * res0 = nullptr;
+    castObj<DenseDT, DT>(res0, m0, nullptr);
+    DenseDT * res1 = nullptr;
+    castObj<DenseDT, DT>(res1, m1, nullptr);
+    DenseDT * res2 = nullptr;
+    castObj<DenseDT, DT>(res2, m2, nullptr);
+    
+    CHECK(*d0 == *res0);
+    CHECK(*d1 == *res1);
+    CHECK(*d2 == *res2);
+    // d0->print(std::cout);
+    // res0->print(std::cout);
+
+
+    DataObjectFactory::destroy(m0, d0, res0);
+    DataObjectFactory::destroy(m1, d1, res1);
+    DataObjectFactory::destroy(m2, d2, res2);
+
+}
+
+
+TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, (double)) {
+    using VT = TestType;
+    using DT = CSRMatrix<VT>;
+    using DenseDT= DenseMatrix<VT>;
+    
+    auto m0 = genGivenVals<DenseDT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DenseDT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DenseDT>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0,  1,
+    });
+
+
+     auto d0 = genGivenVals<DT>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d1 = genGivenVals<DT>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+
+
+     auto d2 = genGivenVals<DT>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0,  1,
+    });
+
+    DT * res0 = nullptr;
+    castObj<DT, DenseDT>(res0, m0, nullptr);
+    DT * res1 = nullptr;
+    castObj<DT, DenseDT>(res1, m1, nullptr);
+    DT * res2 = nullptr;
+    castObj<DT, DenseDT>(res2, m2, nullptr);
+    
+    CHECK(*d0 == *res0);
+    CHECK(*d1 == *res1);
+    CHECK(*d2 == *res2);
+    // d0->print(std::cout);
+    // res0->print(std::cout);
+
+
+    DataObjectFactory::destroy(m0, d0, res0);
+    DataObjectFactory::destroy(m1, d1, res1);
+    DataObjectFactory::destroy(m2, d2, res2);
+
+}
+
+
