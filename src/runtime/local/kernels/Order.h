@@ -125,6 +125,7 @@ template <> struct Order<Frame> {
                     case ValueTypeCode::UI64: multiColumnIDSort(idx, arg->getColumn<uint64_t>(colIdx), groups, ascending[i], ctx); break;
                     case ValueTypeCode::UI32: multiColumnIDSort(idx, arg->getColumn<uint32_t>(colIdx), groups, ascending[i], ctx); break;
                     case ValueTypeCode::UI8 : multiColumnIDSort(idx, arg->getColumn<uint8_t>(colIdx), groups, ascending[i], ctx); break;
+                    default: throw std::runtime_error("unknown value type code");
                 }
             }
         }
@@ -140,6 +141,7 @@ template <> struct Order<Frame> {
             case ValueTypeCode::UI64: columnIDSort(idx, arg->getColumn<uint64_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::UI32: columnIDSort(idx, arg->getColumn<uint32_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
             case ValueTypeCode::UI8 : columnIDSort(idx, arg->getColumn<uint8_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
+            default: throw std::runtime_error("unknown value type code");
         }
 
         //applying the final object ID permutation (result of the sorting procedure) to the frame via a row extraction
