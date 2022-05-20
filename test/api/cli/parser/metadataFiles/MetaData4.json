@@ -1,0 +1,17 @@
+{
+    "numCols": 3,
+    "schema": [
+        {
+            "label": "foo",
+            "valueType": "si64"
+        },
+        {
+            "label": "bar",
+            "valueType": "f64"
+        },
+        {
+            "label": "baz",
+            "valueType": "f32"
+        }
+    ]
+}
