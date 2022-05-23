@@ -2102,7 +2102,8 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"]]
+            [["DenseMatrix", "float"]],
+            [["CSRMatrix", "double"]]
         ]
     },
     {
