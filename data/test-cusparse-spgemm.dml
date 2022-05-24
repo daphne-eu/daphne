@@ -1,0 +1,14 @@
+
+A = rand(rows=5, cols=5, min=0, max=1, sparsity=0.25, seed=42)
+
+B = rand(rows=5, cols=5, min=0, max=1, sparsity=0.1, seed=42)
+
+C = A %*% B;
+
+print("A:\n " + toString(A));
+print("B:\n " + toString(B));
+print("C:\n " + toString(C));
+
+write(A, "A", format="csv");
+write(B, "B", format="csv");
+write(C, "C", format="csv");
