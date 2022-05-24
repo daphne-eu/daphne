@@ -571,7 +571,7 @@ fi
 #------------------------------------------------------------------------------
 abslPath=$sourcePrefix/abseil-cpp
 if ! is_dependency_downloaded "absl_v${abslVersion}"; then
-  daphne_msg "Get abseil version ${grpcVersion}"
+  daphne_msg "Get abseil version ${abslVersion}"
   rm -rf "$abslPath"
   git clone --depth 1 --branch "$abslVersion" https://github.com/abseil/abseil-cpp.git "$abslPath"
   daphne_msg "Applying 0002-absl-stdmax-params.patch"
@@ -596,8 +596,8 @@ grpcInstDir=$installPrefix
 if ! is_dependency_downloaded "grpc_v${grpcVersion}"; then
     daphne_msg "Get grpc version ${grpcVersion}"
     # Download gRPC source code.
-    if [ -d "${thirdpartyPath}/${grpcDirName}" ]; then
-      rm -rf "${thirdpartyPath}/${grpcDirName:?}"
+    if [ -d "${sourcePrefix}/${grpcDirName}" ]; then
+      rm -rf "${sourcePrefix}/${grpcDirName:?}"
     fi
     git clone -b v$grpcVersion --depth 1 https://github.com/grpc/grpc "$sourcePrefix/$grpcDirName"
     pushd "$sourcePrefix/$grpcDirName"
