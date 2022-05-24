@@ -1,0 +1,34 @@
+
+#A = rand(5,5,0.0,1.0, 0.25, 42);
+A = readMatrix("A.csv");
+#B = rand(5,5,0.0,1.0, 0.2, 42);
+B = readMatrix("B.csv");
+C_check = readMatrix("C.csv");
+C = A @ B;
+
+print("A:");
+print(A);
+
+print("B:");
+print(B);
+
+print("C:");
+print(C);
+
+eps = as.f32(0.000000001);
+diff = (C_check - C) < eps;
+diff_sum = sum(diff);
+diff_dim = as.f32(nrow(diff)) * as.f32(ncol(diff));
+
+if(diff_sum == diff_dim)
+  print("Result: OK", 0);
+else {
+
+  print("C_check:");
+  print(C_check);
+  print("diff:");
+  print(diff);
+
+  print("Result: Not OK!", 0);
+}
+print(" (", 0); print(diff_dim - diff_sum, 0); print(" elements differ)");

@@ -1,0 +1,12 @@
+{
+    "data_type": "matrix",
+    "value_type": "double",
+    "rows": 5,
+    "cols": 5,
+    "nnz": 11,
+    "format": "csv",
+    "author": "markd",
+    "header": false,
+    "sep": ",",
+    "created": "2022-05-24 13:57:30 CEST"
+}
