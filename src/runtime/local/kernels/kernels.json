@@ -299,6 +299,7 @@
             ["size_t", "size_t"],
             ["size_t", "bool"],
             ["bool", "double"],
+            ["bool", "float"],
             ["bool", "int64_t"],
             ["bool", "size_t"],
             ["uint32_t", "uint8_t"],
@@ -975,6 +976,13 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            },
+            {
+                "name":  ["CUDA"],
+                "instantiations": [
+                    [["CSRMatrix", "float"], ["CSRMatrix", "float"], ["CSRMatrix", "float"]],
+                    [["CSRMatrix", "double"], ["CSRMatrix", "double"], ["CSRMatrix", "double"]]
                 ]
             }
         ]

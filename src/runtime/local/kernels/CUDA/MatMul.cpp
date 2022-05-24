@@ -175,6 +175,9 @@ namespace CUDA {
         CHECK_CUDART(cudaMalloc((void **) &dC_columns, C_nnz1 * sizeof(int)));
         CHECK_CUDART(cudaMalloc((void **) &dC_values, C_nnz1 * sizeof(VT)));
 
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(C_num_rows1, C_num_cols1, C_nnz1, false);
+
         // update matC with the new pointers
         CHECK_CUSPARSE(cusparseCsrSetPointers(matC, dC_csrOffsets, dC_columns, dC_values));
 
@@ -183,6 +186,13 @@ namespace CUDA {
         // copy the final products to the matrix C
         CHECK_CUSPARSE(cusparseSpGEMM_copy(handle, opA, opB, &blend_alpha, matA, matB, &blend_beta, matC, computeType,
                                            CUSPARSE_SPGEMM_DEFAULT, spgemmDesc));
+
+
+        // copy back C
+        CHECK_CUDART(cudaMemcpy(res->getRowOffsets(), dC_csrOffsets, (nr1 + 1) * sizeof(int), cudaMemcpyDeviceToHost));
+        CHECK_CUDART(cudaMemcpy(res->getColIdxs(), dC_columns, C_nnz1 * sizeof(int), cudaMemcpyDeviceToHost));
+        CHECK_CUDART(cudaMemcpy(res->getValues(), dC_values, C_nnz1 * sizeof(VT), cudaMemcpyDeviceToHost));
+
 
         // destroy matrix/vector descriptors
         CHECK_CUSPARSE(cusparseSpGEMM_destroyDescr(spgemmDesc));
