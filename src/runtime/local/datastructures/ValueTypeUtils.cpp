@@ -72,6 +72,7 @@ template<> const std::string ValueTypeUtils::cppNameFor<uint64_t> = "uint64_t";
 template<> const std::string ValueTypeUtils::cppNameFor<float>  = "float";
 template<> const std::string ValueTypeUtils::cppNameFor<double> = "double";
 template<> const std::string ValueTypeUtils::cppNameFor<bool> = "bool";
+template<> const std::string ValueTypeUtils::cppNameFor<const char*> = "const char*";
 
 template<> const std::string ValueTypeUtils::irNameFor<int8_t>   = "si8";
 template<> const std::string ValueTypeUtils::irNameFor<int32_t>  = "si32";
