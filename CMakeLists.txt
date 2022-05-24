@@ -71,10 +71,8 @@ SET(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 set(BLA_VENDOR OpenBLAS)
+set(BLA_STATIC ON)
 find_package(BLAS)
-find_package(LAPACK)
-message(STATUS "BLAS found: ${BLAS_LIBRARIES}")
-message(STATUS "LAPACK found: ${LAPACK_LIBRARIES}")
 
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources

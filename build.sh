@@ -542,9 +542,10 @@ if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
     dependency_download_success "openBlas_v${openBlasVersion}"
 fi
 if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
-    cmake -S "$sourcePrefix/$openBlasDirName" -B "$buildPrefix/$openBlasDirName" -G Ninja \
-      -DCMAKE_INSTALL_PREFIX="$openBlasInstDirName" -DBUILD_SHARED_LIBS=ON -DBUILD_STATIC_LIBS=ON
-    cmake --build "$buildPrefix/$openBlasDirName" --target install
+    cd "$sourcePrefix/$openBlasDirName"
+    make -j"$(nproc)"
+    make PREFIX="$openBlasInstDirName" install
+    cd -
     dependency_install_success "openBlas_v${openBlasVersion}"
 else
     daphne_msg "No need to build OpenBlas again."
