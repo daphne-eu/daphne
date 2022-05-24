@@ -361,11 +361,11 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
             // TODO use read
             if (isFloat) {
                 DenseMatrix<double> *m2 = nullptr;                
-                readCsv<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
+                readCsvFile<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
                 m = m2;
             } else {
                 DenseMatrix<int64_t> *m2 = nullptr;                
-                readCsv<DenseMatrix<int64_t>>(m2, file, numRows, numCols, delim);
+                readCsvFile<DenseMatrix<int64_t>>(m2, file, numRows, numCols, delim);
                 m = m2;
             }
             closeFile(file);
