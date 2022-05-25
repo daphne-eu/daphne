@@ -95,8 +95,11 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
-
-#        runtime/local/kernels/Morphstore/ProjectTest.cpp
+        runtime/local/kernels/Morphstore/SemiJoinTest.cpp
+        runtime/local/kernels/Morphstore/CalcTest.cpp
+        runtime/local/kernels/Morphstore/SelectTest.cpp
+        runtime/local/kernels/Morphstore/SumTest.cpp
+        runtime/local/kernels/Morphstore/BetweenTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -141,8 +144,12 @@ target_compile_options(theta_join_test PUBLIC -g -O0)
 # *****************************************************************************
 # @todo: include tests into run_tests
 set(MORPHSTORE_SOURCES
-    run_tests.cpp
-    runtime/local/kernels/MorphStore/SelectTest.cpp
+        run_tests.cpp
+        runtime/local/kernels/MorphStore/SelectTest.cpp
+        runtime/local/kernels/MorphStore/SemiJoinTest.cpp
+        runtime/local/kernels/MorphStore/CalcTest.cpp
+        runtime/local/kernels/MorphStore/BetweenTest.cpp
+        runtime/local/kernels/MorphStore/SumTest.cpp
 )
 
 add_executable(morphstore_test ${MORPHSTORE_SOURCES})
