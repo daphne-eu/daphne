@@ -101,3 +101,16 @@ else()
 endif()
 
 target_link_libraries(AllKernels PUBLIC ${LIBS})
+
+# @todo remove before push to main.
+add_executable(ssb_query ./MorphStore/SSBQuery.cpp)
+#add_dependencies(ssb_query daphne DistributedWorker)
+target_link_libraries(ssb_query PRIVATE ${LIBS})
+target_compile_options(ssb_query PUBLIC -g -O0)
+target_add_morphstore(ssb_query)
+
+add_executable(morphstore_perf ./MorphStore/MorphstorePerformanceAligned.cpp)
+#add_dependencies(morphstore_perf daphne DistributedWorker)
+target_link_libraries(morphstore_perf PRIVATE ${LIBS})
+target_compile_options(morphstore_perf PUBLIC -g -O0)
+target_add_morphstore(morphstore_perf)
