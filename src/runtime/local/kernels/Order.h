@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_ORDER_H
-#define SRC_RUNTIME_LOCAL_KERNELS_ORDER_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -25,9 +24,10 @@
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/ExtractRow.h>
 
-#include <vector>
 #include <algorithm>
+#include <functional>
 #include <numeric>
+#include <vector>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -149,5 +149,3 @@ template <> struct Order<Frame> {
         DataObjectFactory::destroy(idx);
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_ORDER_H
