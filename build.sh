@@ -273,15 +273,17 @@ function clean() {
 function cleanBuildDirs() {
     echo "-- Cleanup of build directories in ${projectRoot} ..."
 
-    local dirs=("${buildPrefix}" "${installPrefix}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/antlr_v"*".install.success" \
+      "${thirdpartyPath}/catch2_v"*".install.success" \
       "${thirdpartyPath}/grpc_v"*".install.success" \
       "${thirdpartyPath}/nlohmannjson_v"*".install.success" \
       "${thirdpartyPath}/openBlas_v"*".install.success" \
       "${thirdpartyPath}/llvm_v"*".install.success" \
       "${llvmCommitFilePath}")
+    
     clean dirs files
 }
 
@@ -289,7 +291,7 @@ function cleanBuildDirs() {
 function cleanAll() {
     echo "-- Cleanup of build and library directories in ${projectRoot} ..."
 
-    local dirs=("${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/absl_v"*".download.success" \
@@ -465,8 +467,6 @@ if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
     # Download antlr4 jar if it does not exist yet.
     daphne_msg "Download Antlr v${antlrVersion} java archive"
     wget "https://www.antlr.org/download/${antlrJarName}" -qO "${cacheDir}/${antlrJarName}"
-    mkdir -p "$installPrefix"/share/antlr4/
-    cp "$cacheDir/$antlrJarName" "$installPrefix/share/antlr4/$antlrJarName"
     daphne_msg "Download Antlr v${antlrVersion} Runtime"
     wget https://www.antlr.org/download/${antlrCppRuntimeZipName} -qO "${cacheDir}/${antlrCppRuntimeZipName}"
     rm -rf "${sourcePrefix:?}/$antlrCppRuntimeDirName"
@@ -476,6 +476,9 @@ if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
 fi
 # build antlr4 C++ run-time
 if ! is_dependency_installed "antlr_v${antlrVersion}"; then
+    mkdir -p "$installPrefix"/share/antlr4/
+    cp "$cacheDir/$antlrJarName" "$installPrefix/share/antlr4/$antlrJarName"
+    
     daphne_msg "Applying 0000-antlr-silence-compiler-warnings.patch"
     # disable fail on error as first build might fail and patches might be rejected
     set +e
@@ -681,6 +684,6 @@ cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DEBUG \
 cmake --build "$daphneBuildDir" --target "$target"
 
 build_ts_end=$(date +%s%N)
-daphne_msg "Successfully build Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
+daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
