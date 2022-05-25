@@ -16,6 +16,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     RewriteSqlOpPass.cpp
     DistributeComputationsPass.cpp
     MarkCUDAOpsPass.cpp
+    MarkONEAPIOpsPass.cpp
     InsertDaphneContextPass.cpp
     ManageObjRefsPass.cpp
     LowerToLLVMPass.cpp

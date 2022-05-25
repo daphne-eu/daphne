@@ -300,20 +300,23 @@ cd $initPwd
 
 mkdir --parents build
 cd build
-cmake -G Ninja .. \
+cmake -G Ninja ..  -DCMAKE_BUILD_TYPE=Release \
     -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
     -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
     -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
     -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName \
     -DOPENBLAS_INST_DIR=$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
     -DCMAKE_PREFIX_PATH="$grpcInstDir" \
-    -DCMAKE_INSTALL_LIBDIR=$installLibDir
-# optional cmake flags (to be added to the command above):
-# -DUSE_CUDA=ON
-# -DUSE_ARROW=ON
-# -DCMAKE_BUILD_TYPE=Debug
+    -DCMAKE_INSTALL_LIBDIR=$installLibDir \
+    -DUSE_CUDA=OFF \
+    -DUSE_ONEAPI=ON \
+    -DUSE_ARROW=OFF
 
 cmake --build . --target $target
+cd -
 
+# build OneAPI library in a separate step because of the changed CXX compiler
+CXX=dpcpp cmake -S src/runtime/local/kernels/ONEAPI -B build/oneapi-kernels -G Ninja -DCMAKE_PREFIX_PATH=build -DUSE_ONEAPI=ON
+cmake --build build/oneapi-kernels
 
 set +e

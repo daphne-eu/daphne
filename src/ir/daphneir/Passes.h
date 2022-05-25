@@ -56,6 +56,10 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
 #endif
 
+#ifdef USE_ONEAPI
+    std::unique_ptr<Pass> createMarkONEAPIOpsPass(const DaphneUserConfig& cfg);
+#endif
+
 #define GEN_PASS_REGISTRATION
 #include "ir/daphneir/Passes.h.inc"
 } // namespace mlir::daphne

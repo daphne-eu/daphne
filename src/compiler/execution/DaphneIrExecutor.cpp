@@ -128,6 +128,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
 #endif
 
+#ifdef USE_ONEAPI
+        if(userConfig_.use_oneapi)
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkONEAPIOpsPass(userConfig_));
+#endif
+        
         if(userConfig_.use_obj_ref_mgnt)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createManageObjRefsPass());
         if(userConfig_.explain_obj_ref_mgnt)
@@ -175,6 +180,15 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
             }
         }
 #endif
+
+#ifdef USE_ONEAPI
+        if(userConfig_.use_oneapi) {
+            if(userConfig_.libdir.empty()) {
+                sharedLibRefs.push_back("build/oneapi-kernels/libONEAPIKernels.so");
+            }
+        }
+#endif
+        
         registerLLVMDialectTranslation(context_);
         // module.dump();
         auto maybeEngine = mlir::ExecutionEngine::create(

@@ -28,6 +28,7 @@ include "ir/daphneir/DaphneInferTypesOpInterface.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
+include "ir/daphneir/ONEAPISupport.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -136,7 +137,7 @@ def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     NumRowsFromIthArg<0>, NumColsFromIthArg<1>,
-    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, ONEAPISupport
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs);
     let results = (outs MatrixOf<[NumScalar]>:$res);

@@ -138,7 +138,9 @@ namespace
 //                else
 //                    std::cout << "attr = null: " << op->getName().getStringRef().str() << std::endl;
             }
-
+            else if(op->hasAttr("oneapi_device")) {
+                callee << "ONEAPI";
+            }
             callee << '_' << op->getName().stripDialect().data();
 
 

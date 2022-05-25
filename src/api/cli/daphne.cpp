@@ -142,6 +142,10 @@ main(int argc, char** argv)
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
     );
+    opt<bool> oneapi(
+            "oneapi", cat(daphneOptions),
+            desc("Use ONEAPI")
+    );
     opt<string> libDir(
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
@@ -223,6 +227,9 @@ main(int argc, char** argv)
         }
     }
 
+    if(oneapi) {
+        user_config.use_oneapi = true;
+    }
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)
             user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
