@@ -771,7 +771,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         currentFrame = addMatrixToCurrentFrame(matrix, newColumnName);
         return nullptr;
     }else{ //Get Column after Group
-        std::string newColumnNameAppended = newColumnName + "_" + getEnumLabelExt(ctx->func->getText());
+        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
         return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
     }
