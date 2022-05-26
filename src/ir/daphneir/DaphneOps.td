@@ -559,7 +559,7 @@ def Daphne_OrderOp : Daphne_Op<"order", [
     ShapeFromArg
 ]> {
     // TODO Maybe colIdxs and ascs should be attributes.
-    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolAttr:$returnIdxs);
+    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolScalar:$returnIdxs);
     let results = (outs MatrixOrFrame:$res);
 }
 

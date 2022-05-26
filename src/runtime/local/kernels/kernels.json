@@ -2753,5 +2753,53 @@
                 ]
             }
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Order.h",
+            "opName": "order",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t *",
+                    "name": "colIdxs",
+                    "isVariadic": true
+                },
+                {
+                    "type": "size_t",
+                    "name": "numColIdxs"
+                },
+                {
+                    "type": "bool *",
+                    "name": "ascending",
+                    "isVariadic": true
+                },
+                {
+                    "type": "size_t",
+                    "name": "numAscending"
+                },
+                {
+                    "type": "bool",
+                    "name": "returnIdxs"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame"]
+        ]
     }
 ]

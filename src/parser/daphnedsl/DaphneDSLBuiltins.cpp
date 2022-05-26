@@ -627,7 +627,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         std::vector<mlir::Value> colIdxs;
         std::vector<mlir::Value> ascs;
-        bool returnIdxs = false; // TODO Don't hardcode this.
+        mlir::Value returnIdxs = args[numArgs - 1];
         const size_t numCols = (numArgs - 2) / 2;
         for(size_t i = 0; i < numCols; i++) {
             colIdxs.push_back(utils.castSizeIf(args[1 + i]));
