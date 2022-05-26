@@ -294,7 +294,7 @@ template <> struct ReadDaphne<Frame> {
 						reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
 						break;
 					default:
-						throw std::runtime_error("unknown value type code");
+						throw std::runtime_error("ReadDaphne::apply: unknown value type code");
 				}
 			}
         }

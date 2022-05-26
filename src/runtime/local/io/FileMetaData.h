@@ -69,7 +69,7 @@ struct FileMetaData {
         else if(vtc == ValueTypeCode::UI64) vtc_ = "ui64";
         else if(vtc == ValueTypeCode::UI32) vtc_ = "ui32";
         else if(vtc == ValueTypeCode::UI8)  vtc_ = "ui8";
-        else throw std::runtime_error("unknown value type code");
+        else throw std::runtime_error("FileMetaData::toFile: unknown value type code");
         std::ofstream ofs(filename + ".meta", std::ios::out);
         if (!ofs.good())
             throw std::runtime_error(

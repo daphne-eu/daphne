@@ -240,7 +240,7 @@ struct WriteDaphne<Frame> {
 					f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]), sizeof(double));
 					break;
 				default:
-					throw std::runtime_error("unknown value type code");
+					throw std::runtime_error("WriteDaphne::apply: unknown value type code");
 			}
 		}
 

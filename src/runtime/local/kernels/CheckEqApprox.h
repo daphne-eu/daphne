@@ -214,7 +214,7 @@ template <> struct CheckEqApprox<Frame> {
                     rhs->getColumn<uint8_t>(c), eps, ctx)) return false;
                     break;
                 default:
-                    throw std::runtime_error("unknown value type code");
+                    throw std::runtime_error("CheckEqApprox::apply: unknown value type code");
             }
         }   
         return true;

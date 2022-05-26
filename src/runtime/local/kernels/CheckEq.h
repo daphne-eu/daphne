@@ -206,7 +206,7 @@ template <> struct CheckEq<Frame> {
                     rhs->getColumn<uint8_t>(c), ctx)) return false;
                     break;
                 default:
-                    throw std::runtime_error("unknown value type code");
+                    throw std::runtime_error("CheckEq::apply: unknown value type code");
             }
         }   
         return true;
