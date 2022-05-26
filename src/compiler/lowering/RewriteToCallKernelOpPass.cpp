@@ -47,7 +47,8 @@ namespace
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
             throw std::runtime_error(
-                    "unsupported operation: " + op->getName().getStringRef().str()
+                    "lowering to kernel call not yet supported for this variadic operation: "
+                    + op->getName().getStringRef().str()
             );
         }
 
@@ -93,7 +94,8 @@ namespace
                 );
             }
             throw std::runtime_error(
-                    "unsupported operation: " + op->getName().getStringRef().str()
+                    "lowering to kernel call not yet supported for this variadic operation: "
+                    + op->getName().getStringRef().str()
             );
         }
 
