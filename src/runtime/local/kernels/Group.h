@@ -31,7 +31,6 @@
 #include <iterator>
 #include <vector>
 
-using mlir::daphne::GroupEnumAttr;
 using mlir::daphne::GroupEnum;
 
 // ****************************************************************************
@@ -40,8 +39,8 @@ using mlir::daphne::GroupEnum;
 
 template<class DTRes>
 struct Group {
-    static void apply(DTRes *& res, const DTRes * arg,const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols, GroupEnumAttr * aggFuncs, size_t numAggFuncs, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTRes * arg, const char ** keyCols, size_t numKeyCols,
+        const char ** aggCols, size_t numAggCols, GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -50,7 +49,7 @@ struct Group {
 
 template<class DTRes>
 void group(DTRes *& res, const DTRes * arg, const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols, GroupEnumAttr * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
+        const char ** aggCols, size_t numAggCols, GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
     Group<DTRes>::apply(res, arg, keyCols, numKeyCols, aggCols, numAggCols, aggFuncs, numAggFuncs, ctx);
 }
 
@@ -106,9 +105,20 @@ struct ColumnGroupAgg {
     }
 };
 
+std::string myStringifyGroupEnum(GroupEnum val) {
+  switch (val) {
+    case GroupEnum::COUNT: return "COUNT";
+    case GroupEnum::SUM: return "SUM";
+    case GroupEnum::MIN: return "MIN";
+    case GroupEnum::MAX: return "MAX";
+    case GroupEnum::AVG: return "AVG";
+  }
+  return "";
+}
+
 template <> struct Group<Frame> {
     static void apply(Frame *& res, const Frame * arg, const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols, GroupEnumAttr * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
+        const char ** aggCols, size_t numAggCols, GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
         size_t numRows = arg->getNumRows();
         size_t numCols = numKeyCols + numAggCols;
         size_t numRowsRes = numRows;
@@ -156,8 +166,11 @@ template <> struct Group<Frame> {
             schema[i] = ordered->getColumnType(idxs[i]);
         }
         for (size_t i = numKeyCols; i < numCols; i++) {
-            labels[i] = mlir::daphne::stringifyGroupEnum(aggFuncs[i-numKeyCols].getValue()).str() + "(" +  aggCols[i-numKeyCols] + ")";
-            switch(aggFuncs[i-numKeyCols].getValue()) {
+            // TODO Maybe we can find a good way to call mlir::daphne::stringifyGroupEnum,
+            // we would need to link with the respective library.
+//            labels[i] = mlir::daphne::stringifyGroupEnum(aggFuncs[i-numKeyCols]).str() + "(" +  aggCols[i-numKeyCols] + ")";
+            labels[i] = myStringifyGroupEnum(aggFuncs[i-numKeyCols]) + "(" +  aggCols[i-numKeyCols] + ")";
+            switch(aggFuncs[i-numKeyCols]) {
                 case GroupEnum::COUNT: schema[i] = ValueTypeCode::UI64; break;
                 case GroupEnum::SUM: schema[i] = ordered->getColumnType(idxs[i]); break;
                 case GroupEnum::MIN: schema[i] = ordered->getColumnType(idxs[i]); break;
@@ -172,7 +185,7 @@ template <> struct Group<Frame> {
 
         // copying key columns and column-wise group aggregation
         for (size_t i = 0; i < numCols; i++) {
-            DeduceValueTypeAndExecute<ColumnGroupAgg>::apply(res->getSchema()[i], ordered->getSchema()[i], res, ordered, i, groups, (i < numKeyCols) ? (GroupEnum) 0 : aggFuncs[i-numKeyCols].getValue(), ctx);
+            DeduceValueTypeAndExecute<ColumnGroupAgg>::apply(res->getSchema()[i], ordered->getSchema()[i], res, ordered, i, groups, (i < numKeyCols) ? (GroupEnum) 0 : aggFuncs[i-numKeyCols], ctx);
         }        
         delete groups;
         DataObjectFactory::destroy(ordered);

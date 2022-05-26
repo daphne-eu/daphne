@@ -68,7 +68,7 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
     size_t numAggCols;
     const char** keyCols = nullptr;
     const char** aggCols = nullptr;;
-    GroupEnumAttr * aggFuncs = nullptr;
+    GroupEnum * aggFuncs = nullptr;
     
     std::vector<Structure *> colsExp;
 
@@ -79,8 +79,8 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         numAggCols = 1;
         keyCols = new const char*[10]{labels[0].c_str()};
         aggCols = new const char*[10]{labels[2].c_str()};
-        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
-        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::COUNT);
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::COUNT;
 
         numRows = 3;
         DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 2.7, 3.2 });
@@ -95,10 +95,10 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         numAggCols = 3;
         keyCols = new const char*[10]{labels[7].c_str()};
         aggCols = new const char*[10]{labels[0].c_str(), labels[3].c_str(), labels[2].c_str()};
-        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
-        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::SUM);
-        aggFuncs[1] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MIN);
-        aggFuncs[2] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MAX);
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::SUM;
+        aggFuncs[1] = mlir::daphne::GroupEnum::MIN;
+        aggFuncs[2] = mlir::daphne::GroupEnum::MAX;
 
         numRows = 4;
         DenseMatrix<VT2> * c0Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 0, 1, 2, 3 });
@@ -116,8 +116,8 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         numAggCols = 1;
         keyCols = new const char*[10]{labels[2].c_str(), labels[1].c_str(), labels[0].c_str()};
         aggCols = new const char*[10]{labels[6].c_str()};
-        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
-        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::AVG);
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::AVG;
 
         numRows = 12;
         DenseMatrix<VT2> * c0Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { -1, -1, -1, -1, 0, 0, 1, 1, 1, 1, 2, 3 });
@@ -134,12 +134,12 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         numAggCols = 5;
         keyCols = new const char*[10]{labels[0].c_str(), labels[6].c_str(), labels[2].c_str(), labels[8].c_str(), labels[4].c_str()};
         aggCols = new const char*[10]{labels[5].c_str(), labels[1].c_str(), labels[7].c_str(), labels[3].c_str(), labels[9].c_str()};
-        aggFuncs = new mlir::daphne::GroupEnumAttr[numAggCols];
-        aggFuncs[0] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::COUNT);
-        aggFuncs[1] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::SUM);
-        aggFuncs[2] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MIN);
-        aggFuncs[3] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::MAX);
-        aggFuncs[4] = mlir::daphne::GroupEnumAttr::get(context, mlir::daphne::GroupEnum::AVG);
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::COUNT;
+        aggFuncs[1] = mlir::daphne::GroupEnum::SUM;
+        aggFuncs[2] = mlir::daphne::GroupEnum::MIN;
+        aggFuncs[3] = mlir::daphne::GroupEnum::MAX;
+        aggFuncs[4] = mlir::daphne::GroupEnum::AVG;
 
         numRows = 11;
         DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 1.5, 1.5, 1.5, 1.5, 2.7, 2.7, 2.7, 2.7, 2.7, 3.2 });
