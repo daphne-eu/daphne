@@ -68,7 +68,7 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
     size_t numAggCols;
     const char** keyCols = nullptr;
     const char** aggCols = nullptr;;
-    GroupEnum * aggFuncs = nullptr;
+    mlir::daphne::GroupEnum * aggFuncs = nullptr;
     
     std::vector<Structure *> colsExp;
 

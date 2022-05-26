@@ -48,11 +48,6 @@ void order(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool 
     Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
 }
 
-template<class DT>
-void orderGroups(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
-    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
-}
-
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************

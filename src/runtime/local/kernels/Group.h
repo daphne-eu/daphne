@@ -31,26 +31,24 @@
 #include <iterator>
 #include <vector>
 
-using mlir::daphne::GroupEnum;
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes>
+template<class DT>
 struct Group {
-    static void apply(DTRes *& res, const DTRes * arg, const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols, GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) = delete;
+    static void apply(DT *& res, const DT * arg, const char ** keyCols, size_t numKeyCols,
+        const char ** aggCols, size_t numAggCols, mlir::daphne::GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void group(DTRes *& res, const DTRes * arg, const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols, GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
-    Group<DTRes>::apply(res, arg, keyCols, numKeyCols, aggCols, numAggCols, aggFuncs, numAggFuncs, ctx);
+template<class DT>
+void group(DT *& res, const DT * arg, const char ** keyCols, size_t numKeyCols,
+        const char ** aggCols, size_t numAggCols, mlir::daphne::GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
+    Group<DT>::apply(res, arg, keyCols, numKeyCols, aggCols, numAggCols, aggFuncs, numAggFuncs, ctx);
 }
 
 // ****************************************************************************
@@ -63,7 +61,8 @@ void group(DTRes *& res, const DTRes * arg, const char ** keyCols, size_t numKey
 
 // returns the result of the aggregation function aggFunc over the (contiguous) memory between the begin and end pointer 
 template<typename VTRes, typename VTArg>
-VTRes aggregate (const GroupEnum & aggFunc, const VTArg * begin, const VTArg* end) { 
+VTRes aggregate (const mlir::daphne::GroupEnum & aggFunc, const VTArg * begin, const VTArg* end) {
+    using mlir::daphne::GroupEnum;
     switch(aggFunc) {
         case GroupEnum::COUNT: return end-begin; break; // TODO: Do we need to check for Null elements here?
         case GroupEnum::SUM: return std::accumulate(begin, end, (VTRes) 0); break;
@@ -79,7 +78,7 @@ VTRes aggregate (const GroupEnum & aggFunc, const VTArg * begin, const VTArg* en
 // specified column (colIdx) of the result frame (res)
 template<typename VTRes, typename VTArg>
 struct ColumnGroupAgg {
-    static void apply(Frame * res, const Frame * arg, size_t colIdx, std::vector<std::pair<size_t, size_t>> * groups, GroupEnum aggFunc, DCTX(ctx)) {
+    static void apply(Frame * res, const Frame * arg, size_t colIdx, std::vector<std::pair<size_t, size_t>> * groups, mlir::daphne::GroupEnum aggFunc, DCTX(ctx)) {
         VTRes * valuesRes = res->getColumn<VTRes>(colIdx)->getValues();
         const VTArg * valuesArg = arg->getColumn<VTArg>(colIdx)->getValues();
         size_t rowRes = 0;
@@ -105,45 +104,46 @@ struct ColumnGroupAgg {
     }
 };
 
-std::string myStringifyGroupEnum(GroupEnum val) {
-  switch (val) {
-    case GroupEnum::COUNT: return "COUNT";
-    case GroupEnum::SUM: return "SUM";
-    case GroupEnum::MIN: return "MIN";
-    case GroupEnum::MAX: return "MAX";
-    case GroupEnum::AVG: return "AVG";
-  }
-  return "";
+std::string myStringifyGroupEnum(mlir::daphne::GroupEnum val) {
+    using mlir::daphne::GroupEnum;
+    switch (val) {
+        case GroupEnum::COUNT: return "COUNT";
+        case GroupEnum::SUM: return "SUM";
+        case GroupEnum::MIN: return "MIN";
+        case GroupEnum::MAX: return "MAX";
+        case GroupEnum::AVG: return "AVG";
+    }
+    return "";
 }
 
 template <> struct Group<Frame> {
     static void apply(Frame *& res, const Frame * arg, const char ** keyCols, size_t numKeyCols,
-        const char ** aggCols, size_t numAggCols, GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
-        size_t numRows = arg->getNumRows();
-        size_t numCols = numKeyCols + numAggCols;
-        size_t numRowsRes = numRows;
+        const char ** aggCols, size_t numAggCols, mlir::daphne::GroupEnum * aggFuncs, size_t numAggFuncs, DCTX(ctx)) {
+        size_t numRowsArg = arg->getNumRows();
+        size_t numColsRes = numKeyCols + numAggCols;
+        size_t numRowsRes = numRowsArg;
         if (arg == nullptr || keyCols == nullptr || numKeyCols == 0 || aggCols == nullptr || numAggCols == 0 || aggFuncs == nullptr || numAggFuncs == 0) {
             throw std::runtime_error("group-kernel called with invalid arguments");
         }
 
         // convert labels to indices
-        auto idxs = std::shared_ptr<size_t[]>(new size_t[numCols]);
+        auto idxs = std::shared_ptr<size_t[]>(new size_t[numColsRes]);
         bool * ascending = new bool[numKeyCols];
         for (size_t i = 0; i < numKeyCols; i++) {
             idxs[i] = arg->getColumnIdx(keyCols[i]);
             ascending[i] = true;
         }   
-        for (size_t i = numKeyCols; i < numCols; i++) {
+        for (size_t i = numKeyCols; i < numColsRes; i++) {
             idxs[i] = arg->getColumnIdx(aggCols[i-numKeyCols]);
         }
         
         // reduce frame columns to keyCols and numAggCols (without copying values or the idx array) and reorder them accordingly 
         Frame* reduced{};
-        auto sel = DataObjectFactory::create<DenseMatrix<size_t>>(numCols, 1, idxs);
+        auto sel = DataObjectFactory::create<DenseMatrix<size_t>>(numColsRes, 1, idxs);
         extractCol(reduced, arg, sel, ctx);
         DataObjectFactory::destroy(sel);
     
-        std::iota(idxs.get(), idxs.get()+numCols, 0);
+        std::iota(idxs.get(), idxs.get()+numColsRes, 0);
         auto groups = new std::vector<std::pair<size_t, size_t>>;
         Frame* ordered{};     
 
@@ -158,14 +158,15 @@ template <> struct Group<Frame> {
         numRowsRes -= inGroups-groups->size();
 
         // create the result frame
-        std::string * labels = new std::string[numCols];
-        ValueTypeCode * schema = new ValueTypeCode[numCols];
+        std::string * labels = new std::string[numColsRes];
+        ValueTypeCode * schema = new ValueTypeCode[numColsRes];
 
         for (size_t i = 0; i < numKeyCols; i++) {
             labels[i] = keyCols[i];
             schema[i] = ordered->getColumnType(idxs[i]);
         }
-        for (size_t i = numKeyCols; i < numCols; i++) {
+        using mlir::daphne::GroupEnum;
+        for (size_t i = numKeyCols; i < numColsRes; i++) {
             // TODO Maybe we can find a good way to call mlir::daphne::stringifyGroupEnum,
             // we would need to link with the respective library.
 //            labels[i] = mlir::daphne::stringifyGroupEnum(aggFuncs[i-numKeyCols]).str() + "(" +  aggCols[i-numKeyCols] + ")";
@@ -179,12 +180,12 @@ template <> struct Group<Frame> {
             }
         } 
         
-        res = DataObjectFactory::create<Frame>(numRowsRes, numCols, schema, labels, false);
+        res = DataObjectFactory::create<Frame>(numRowsRes, numColsRes, schema, labels, false);
         delete [] labels;
         delete [] schema;
 
         // copying key columns and column-wise group aggregation
-        for (size_t i = 0; i < numCols; i++) {
+        for (size_t i = 0; i < numColsRes; i++) {
             DeduceValueTypeAndExecute<ColumnGroupAgg>::apply(res->getSchema()[i], ordered->getSchema()[i], res, ordered, i, groups, (i < numKeyCols) ? (GroupEnum) 0 : aggFuncs[i-numKeyCols], ctx);
         }        
         delete groups;
