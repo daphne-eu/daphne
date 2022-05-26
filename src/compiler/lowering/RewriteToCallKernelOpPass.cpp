@@ -236,6 +236,44 @@ namespace
                     callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
                     newOperands.push_back(op->getOperand(i));
                 }
+            
+            if(auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
+                // GroupOp carries the aggregation functions to apply as an
+                // attribute. Since attributes to not automatically become
+                // inputs to the kernel call, we need to add them explicitly
+                // here.
+                
+                callee << "__GroupEnum_variadic__size_t";
+                
+                ArrayAttr aggFuncs = groupOp.aggFuncs();
+                const size_t numAggFuncs = aggFuncs.size();
+                const Type t = rewriter.getIntegerType(32, false);
+                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                        loc,
+                        daphne::VariadicPackType::get(rewriter.getContext(), t),
+                        rewriter.getIndexAttr(numAggFuncs)
+                );
+                size_t k = 0;
+                for(Attribute aggFunc : aggFuncs.getValue())
+                    rewriter.create<daphne::StoreVariadicPackOp>(
+                            loc,
+                            cvpOp,
+                            rewriter.create<daphne::ConstantOp>(
+                                    loc,
+                                    rewriter.getIntegerAttr(
+                                            t,
+                                            static_cast<uint32_t>(
+                                                    aggFunc.dyn_cast<daphne::GroupEnumAttr>().getValue()
+                                            )
+                                    )
+                            ),
+                            rewriter.getIndexAttr(k++)
+                    );
+                newOperands.push_back(cvpOp);
+                newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                        loc, rewriter.getIndexAttr(numAggFuncs))
+                );
+            }
 
             if(auto distCompOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
                 MLIRContext newContext;
