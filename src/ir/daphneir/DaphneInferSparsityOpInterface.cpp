@@ -18,7 +18,7 @@
 
 #include <mlir/IR/Value.h>
 
-#include <runtime/local/io/FileMetaData.h>
+#include <parser/metadata/MetaDataParser.h>
 
 #include <vector>
 #include <stdexcept>
@@ -101,7 +101,7 @@ std::vector<double> daphne::ReadOp::inferSparsity() {
     if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(fileName().getDefiningOp())) {
         if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>()) {
             auto filename = strAttr.getValue().str();
-            FileMetaData fmd = FileMetaData::ofFile(filename);
+            FileMetaData fmd = MetaDataParser::readMetaData(filename);
             if (fmd.numNonZeros == -1)
                 return {-1.0};
             // TODO: maybe use type shape info instead of file? (would require correct order of optimization passes)
