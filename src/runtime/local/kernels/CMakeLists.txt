@@ -101,4 +101,4 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
-target_link_libraries(AllKernels PUBLIC ${LIBS})
+target_link_libraries(AllKernels PUBLIC ${LIBS} DaphneMetaDataParser)

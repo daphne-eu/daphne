@@ -17,7 +17,7 @@
 #pragma once
 
 #include <ir/daphneir/Daphne.h>
-#include <runtime/local/io/FileMetaData.h>
+#include <parser/metadata/MetaDataParser.h>
 
 #include <mlir/IR/Value.h>
 
@@ -36,7 +36,7 @@ namespace CompilerUtils {
     }
 
     [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename) {
-        return FileMetaData::ofFile(getConstantString2(filename));
+        return MetaDataParser::readMetaData(getConstantString2(filename));
     }
 
     [[maybe_unused]] static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
