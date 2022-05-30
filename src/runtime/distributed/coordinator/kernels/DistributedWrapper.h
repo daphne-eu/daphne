@@ -24,6 +24,8 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCollect.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
+#include <runtime/distributed/coordinator/kernels/IAllocationDescriptorDistributed.h>
+#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
 
@@ -65,7 +67,11 @@ public:
             workersStr.erase(0, pos + delimiter.size());
         }
         workers.push_back(workersStr);
-
+        
+        // Backend Implementation 
+        // gRPC hard-coded selection
+        // TODO choose implementation based on configFile/command-line argument        
+        auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
 
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
@@ -85,19 +91,19 @@ public:
             // (i.e. rows/cols splitted accordingly). If it does then we can skip.
                     
             if (isBroadcast(splits[i], inputs[i])){
-                broadcast(inputs[i], _ctx);
+                broadcast(inputs[i], alloc_type, _ctx);
             }
             else {
-                distribute(inputs[i], _ctx);
+                distribute(inputs[i], alloc_type, _ctx);
             }
         }
           
-        distributedCompute(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
+        distributedCompute(res, numOutputs, inputs, numInputs, mlirCode, combines, alloc_type, _ctx);
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect(*res[o], _ctx);           
+            distributedCollect(*res[o], alloc_type, _ctx);           
         }
         
         

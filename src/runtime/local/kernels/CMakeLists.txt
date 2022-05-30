@@ -72,7 +72,7 @@ add_custom_command(
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
 )
 
-list(APPEND LIBS DataStructures IO ProtoDataConverter BLAS::BLAS)
+list(APPEND LIBS DataStructures IO ProtoDataConverter AllocationDescriptorDistributed BLAS::BLAS)
 
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED

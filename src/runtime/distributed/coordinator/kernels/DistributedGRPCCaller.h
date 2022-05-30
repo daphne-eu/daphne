@@ -33,7 +33,7 @@
 * @tparam  ReturnType The result class returned by the call
 */
 template<class StoredInfo, class Argument, class ReturnType>
-class DistributedCaller {
+class DistributedGRPCCaller {
 private:
     
     /**
@@ -59,8 +59,8 @@ private:
     grpc::CompletionQueue cq_;
 
 public:
-    DistributedCaller() {};
-    ~DistributedCaller() {};
+    DistributedGRPCCaller() {};
+    ~DistributedGRPCCaller() {};
     
     /**
     * @brief Enqueues an asynchronous Store call to be executed.     

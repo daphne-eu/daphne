@@ -21,92 +21,12 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <runtime/distributed/proto/worker.pb.h>
-#include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 
 #include <cassert>
 #include <cstddef>
+#include <runtime/distributed/coordinator/kernels/IAllocationDescriptorDistributed.h>
+#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
 
-using mlir::daphne::VectorCombine;
-
-
-// ****************************************************************************
-// Template speciliazations for each communication framework (gRPC, OPENMPI, etc.)
-// ****************************************************************************
-
-template<DISTRIBUTED_BACKEND backend, class DT>
-struct CollectImplementationClass
-{
-    static void apply(DT *&mat, DCTX(ctx));
-};
-
-template<DISTRIBUTED_BACKEND backend, class DT>
-void collectImplementation(DT *&mat, DCTX(ctx)) 
-{
-    CollectImplementationClass<backend, DT>::apply(mat, ctx);
-}
-
-// ****************************************************************************
-// gRPC implementation
-// ****************************************************************************
-template<class DT>
-struct CollectImplementationClass<DISTRIBUTED_BACKEND::GRPC, DT>
-{
-    static void apply(DT *&mat, DCTX(ctx)) 
-    {        
-        // Get num workers
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        auto workersSize = 0;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workersSize++;
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workersSize++;
-
-        struct StoredInfo{
-            size_t omd_id;
-        };
-        DistributedCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
-
-
-        auto omdVector = mat->getObjectMetaDataByType(ALLOCATION_TYPE::DISTRIBUTED);
-        for (auto &omd : *omdVector) {
-            auto address = omd->allocation->getLocation();
-            
-            auto distributedData = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();
-            StoredInfo storedInfo({omd->omd_id});
-            distributed::StoredData protoData;
-            protoData.set_filename(distributedData.filename);
-            protoData.set_num_rows(distributedData.numRows);
-            protoData.set_num_cols(distributedData.numCols);                       
-
-            caller.asyncTransferCall(address, storedInfo, protoData);
-        }
-                
-        
-
-        while (!caller.isQueueEmpty()){
-            auto response = caller.getNextResult();
-            auto omd_id = response.storedInfo.omd_id;
-            auto omd = mat->getObjectMetaDataByID(omd_id);
-            auto data = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();            
-
-            auto matProto = response.result;
-            ProtoDataConverter<DT>::convertFromProto(
-                matProto, mat,
-                omd->range->r_start, omd->range->r_start + omd->range->r_len,
-                omd->range->c_start, omd->range->c_start + omd->range->c_len);                
-            data.isPlacedAtWorker = false;
-            dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);
-        }      
-    }
-};
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -115,13 +35,24 @@ struct CollectImplementationClass<DISTRIBUTED_BACKEND::GRPC, DT>
 template<class DT>
 struct DistributedCollect
 {
-    static void apply(DT *&mat, DCTX(ctx)) 
+    static void apply(DT *&mat, ALLOCATION_TYPE alloc_type, DCTX(ctx)) 
     {
-       
+        // Find alloc_type
+        IAllocationDescriptorDistributed *backend;
+        switch (alloc_type){
+            case ALLOCATION_TYPE::DIST_GRPC:
+                backend = new AllocationDescriptorDistributedGRPC();
+                break;
+            case ALLOCATION_TYPE::DIST_OPENMPI:
+                std::runtime_error("MPI support missing");
+                break;
+                    
+            default:
+                std::runtime_error("No distributed implementation found");
+                break;
+        }
         assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
-        // Is there anything to do that is framework agnostic?        
-        collectImplementation<DISTRIBUTED_BACKEND::GRPC, DT>(mat, ctx);
-  
+        backend->Collect(mat);  
     };
 };
 
@@ -130,9 +61,9 @@ struct DistributedCollect
 // ****************************************************************************
 
 template<class DT>
-void distributedCollect(DT *&mat, DCTX(ctx))
+void distributedCollect(DT *&mat, ALLOCATION_TYPE alloc_type, DCTX(ctx))
 {
-    DistributedCollect<DT>::apply(mat, ctx);
+    DistributedCollect<DT>::apply(mat, alloc_type, ctx);
 }
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOLLECT_H

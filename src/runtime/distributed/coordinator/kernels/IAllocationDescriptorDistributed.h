@@ -16,15 +16,10 @@
 
 #pragma once
 
-#include <cstdint>
-#include <string>
-#include "ObjectMetaData.h"
-#include "runtime/local/context/DaphneContext.h"
-
-enum DISTRIBUTED_BACKEND {
-    MPI,
-    GRPC
-};
+#include <runtime/local/datastructures/Structure.h>
+#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/ObjectMetaData.h>
+#include <ir/daphneir/Daphne.h>
 
 class DistributedIndex
 {
@@ -68,65 +63,54 @@ struct DistributedData
 
 };
 
-
-class AllocationDescriptorDistributed : public IAllocationDescriptor {
-    ALLOCATION_TYPE type = ALLOCATION_TYPE::DISTRIBUTED;
+class IAllocationDescriptorDistributed : public IAllocationDescriptor {
+protected: 
     DaphneContext* dctx{};
     std::string workerAddress;
-
     DistributedData data_;
+public:
+    IAllocationDescriptorDistributed() {} ;
 
-
-public:    
-    
-    
-    AllocationDescriptorDistributed() = delete;
-
-    AllocationDescriptorDistributed(DaphneContext* ctx, 
+    IAllocationDescriptorDistributed(DaphneContext* ctx, 
             std::string workerAddress) : 
             dctx(ctx), workerAddress(workerAddress) { }
-    AllocationDescriptorDistributed(DaphneContext* ctx, 
+    IAllocationDescriptorDistributed(DaphneContext* ctx, 
                             std::string workerAddress, 
                             DistributedData data) : 
                  dctx(ctx), workerAddress(workerAddress), data_(data) { }
+    virtual ~IAllocationDescriptorDistributed() = default;    
 
-    ~AllocationDescriptorDistributed() override {
-        // missing for now
-    }
-
-    [[nodiscard]] ALLOCATION_TYPE getType() const override { return type; }
+    // Generic overriden implementations
+    void createAllocation(size_t size, bool zero) override { std::runtime_error("not implemented"); }
+    std::shared_ptr<std::byte> getData() override { std::runtime_error("not implemented"); }
 
     std::string getLocation() const override { return workerAddress; }
 
-    void createAllocation(size_t size, bool zero) override {
-        
-    }
+    // Primitives
 
-    std::shared_ptr<std::byte> getData() override { return nullptr; }
-
-    [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
-        return std::make_unique<AllocationDescriptorDistributed>(*this);
-    }
-
-    void transferTo(std::byte* src, size_t size) override {
-        std::runtime_error("transferTo grpc not implemented");
-    }
-    void transferFrom(std::byte* dst, size_t size) override {
-        std::runtime_error("transferFrom grpc not implemented");
+    // Information that workers store and we need to retrieve after communication happens
+    struct StoredInfo {
+        std::string filename;
+        size_t numRows, numCols;
     };
+    // Distributed operations should return a vector, one entry for each result (multiple in case of compute primitive).
+    // Each entry is a map with ObjectMetaData_ID as key
+    // and Stored Info struct as value
+    using DistributedResult = std::vector<std::map<size_t, StoredInfo>>;
 
-    bool operator==(const IAllocationDescriptor* other) const override {
-        if(getType() == other->getType())
-            return(getLocation() == dynamic_cast<const AllocationDescriptorDistributed *>(other)->getLocation());
-        return false;
-    }
-    const DistributedIndex getDistributedIndex()
-    { return data_.ix; }
+    virtual DistributedResult Distribute(const Structure *arg) = 0;
+    virtual DistributedResult Broadcast(const Structure *arg) = 0;
     
+    // Compute cannot use key and ObjectMetadata_ID, 
+    // it needs to map results using worker identifier (rank, address, etc)
+    using DistributedComputeResult = std::vector<std::map<std::string, StoredInfo>>;
+    virtual DistributedComputeResult Compute(const Structure **args, size_t numInputs, const char *mlirCode) = 0;
+    virtual void Collect(Structure *arg) = 0; 
+
+    const DistributedIndex getDistributedIndex()
+    { return data_.ix; }    
     const DistributedData getDistributedData()
     { return data_; }
-    
     void updateDistributedData(DistributedData data)
     { data_ = data; }
 };
-
