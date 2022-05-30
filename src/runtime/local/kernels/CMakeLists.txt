@@ -94,4 +94,8 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
+list(APPEND LIBS 
+        MLIRDaphne
+        MLIRDaphneTransforms
+        )
 target_link_libraries(AllKernels PUBLIC ${LIBS})

@@ -22,7 +22,7 @@ void StoreCallData::Proceed() {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
-        service_->RequestStore(&ctx_, &matrix, &responder_, cq_, cq_,
+        service_->RequestStore(&ctx_, &data, &responder_, cq_, cq_,
                                 this);
     }
     else if (status_ == PROCESS)
@@ -30,7 +30,7 @@ void StoreCallData::Proceed() {
         status_ = FINISH;
 
         new StoreCallData(worker, cq_);
-        grpc::Status status = worker->Store(&ctx_, &matrix, &storedData);
+        grpc::Status status = worker->StoreGRPC(&ctx_, &data, &storedData);
 
         responder_.Finish(storedData, grpc::Status::OK, this);
     }
@@ -56,7 +56,7 @@ void ComputeCallData::Proceed() {
 
         new ComputeCallData(worker, cq_);
 
-        grpc::Status status = worker->Compute(&ctx_, &task, &result);
+        grpc::Status status = worker->ComputeGRPC(&ctx_, &task, &result);
 
         responder_.Finish(result, status, this);
     }
@@ -82,7 +82,7 @@ void TransferCallData::Proceed() {
 
         new TransferCallData(worker, cq_);
 
-        grpc::Status status = worker->Transfer(&ctx_, &storedData, &matrix);
+        grpc::Status status = worker->TransferGRPC(&ctx_, &storedData, &matrix);
 
         responder_.Finish(matrix, status, this);
     }
@@ -94,28 +94,28 @@ void TransferCallData::Proceed() {
 }
 
 
-void FreeMemCallData::Proceed() {
-    if (status_ == CREATE)
-    {
-        // Make this instance progress to the PROCESS state.
-        status_ = PROCESS;
+// void FreeMemCallData::Proceed() {
+//     if (status_ == CREATE)
+//     {
+//         // Make this instance progress to the PROCESS state.
+//         status_ = PROCESS;
 
-        service_->RequestFreeMem(&ctx_, &storedData, &responder_, cq_, cq_,
-                                    this);
-    }
-    else if (status_ == PROCESS)
-    {
-        status_ = FINISH;
+//         service_->RequestFreeMem(&ctx_, &storedData, &responder_, cq_, cq_,
+//                                     this);
+//     }
+//     else if (status_ == PROCESS)
+//     {
+//         status_ = FINISH;
 
-        new FreeMemCallData(worker, cq_);
+//         new FreeMemCallData(worker, cq_);
 
-        grpc::Status status = worker->FreeMem(&ctx_, &storedData, &emptyMessage);
+//         grpc::Status status = worker->FreeMem(&ctx_, &storedData, &emptyMessage);
 
-        responder_.Finish(emptyMessage, status, this);
-    }
-    else
-    {
-        GPR_ASSERT(status_ == FINISH);
-        delete this;
-    }
-}
+//         responder_.Finish(emptyMessage, status, this);
+//     }
+//     else
+//     {
+//         GPR_ASSERT(status_ == FINISH);
+//         delete this;
+//     }
+// }

@@ -21,96 +21,50 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <grpcpp/grpcpp.h>
-#include <runtime/distributed/proto/worker.pb.h>
-#include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/coordinator/kernels/DistributedCaller.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
+#include <runtime/distributed/proto/ProtoDataConverter.h>
 
 #include <cassert>
 #include <cstddef>
-#include <runtime/local/datastructures/AllocationDescriptorDistributed.h>
-#include <runtime/distributed/worker/ProtoDataConverter.h>
 
-// ****************************************************************************
-// Template speciliazations for each communication framework (gRPC, OPENMPI, etc.)
-// ****************************************************************************
-
-template<DISTRIBUTED_BACKEND backend, class DT>
-struct DistributeImplementationClass
-{
-    static void apply(DT* mat) = delete;
-};
-
-template<DISTRIBUTED_BACKEND backend, class DT>
-void distributeImplementation(DT* mat)
-{
-    DistributeImplementationClass<backend, DT>::apply(mat);
-}
-// ****************************************************************************
-// gRPC implementation
-// ****************************************************************************
-template<class DT>
-struct DistributeImplementationClass<DISTRIBUTED_BACKEND::GRPC, DT>
-{
-    static void apply(DT *mat)
-    {        
-        struct StoredInfo {
-            size_t omd_id;
-        };                
-        DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
-
-        auto omdVector = (mat->getObjectMetaDataByType(ALLOCATION_TYPE::DISTRIBUTED));
-        for (auto &omd : *omdVector) {
-            // Skip if already placed at workers
-            if (dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData().isPlacedAtWorker)
-                continue;
-            distributed::Matrix protoMat;
-            // TODO: We need to handle different data types 
-            // (this will be simplified when serialization is implemented)
-            auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
-            if (!denseMat){
-                std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
-            }
-            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, &protoMat, 
-                                                    omd->range->r_start,
-                                                    omd->range->r_start + omd->range->r_len,
-                                                    omd->range->c_start,
-                                                    omd->range->c_start + omd->range->c_len);
-
-            StoredInfo storedInfo({omd->omd_id}); 
-            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getLocation(), storedInfo, protoMat);
-        }
-
-        // ToDO triger transfers
-        // get results        
-        while (!caller.isQueueEmpty()){
-            auto response = caller.getNextResult();
-            auto omd_id = response.storedInfo.omd_id;
-            auto omd = mat->getObjectMetaDataByID(omd_id);
-
-            auto storedData = response.result;
-            
-            // storedData.set_type(response.storedInfo.dataType);
-            DistributedData data;
-            data.ix = dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedIndex();
-            data.filename = storedData.filename();
-            data.numRows = storedData.num_rows();
-            data.numCols = storedData.num_cols();
-            data.isPlacedAtWorker = true;
-            dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);
-        }
-        
-
-    }
-};
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
+template<ALLOCATION_TYPE AT, class DT>
+struct Distribute {
+    static void apply(DT *mat, DCTX(ctx)) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+template<ALLOCATION_TYPE AT, class DT>
+void distribute(DT *mat, DCTX(ctx))
+{
+    Distribute<AT, DT>::apply(mat, ctx);
+}
+
+
+// ****************************************************************************
+// (Partial) template specializations for different distributed backends
+// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// GRPC
+// ----------------------------------------------------------------------------
+
 template<class DT>
-struct Distribute
+struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
 {
     static void apply(DT *mat, DCTX(ctx)) {
+        struct StoredInfo {
+            size_t dp_id;
+        }; 
+        
+        DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
+        
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
         std::string workersStr(envVar);
@@ -139,44 +93,68 @@ struct Distribute
             range.c_start = 0;
             range.c_len = mat->getNumCols();
                         
-            IAllocationDescriptor *allocationDescriptor;
             DistributedData data;
             data.ix = DistributedIndex(workerIx, 0);
-            // If omd already exists simply
-            // update range (in case we have a different one) and distributed data
-            if (auto omd = mat->getObjectMetaDataByLocation(workerAddr)) {
-                // TODO consider declaring objectmetadata functions const and objectmetadata array as mutable
-                const_cast<typename std::remove_const<DT>::type*>(mat)->updateRangeObjectMetaDataByID(omd->omd_id, &range);     
-                dynamic_cast<AllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);
+            // If dp already exists simply
+            // update range (in case we have a different one) and distribute data
+            DataPlacement *dp;
+            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
-                allocationDescriptor = new AllocationDescriptorDistributed(
-                                            ctx, 
-                                            workerAddr,
-                                            data);            
-                const_cast<typename std::remove_const<DT>::type*>(mat)->addObjectMetaData(allocationDescriptor, &range);                    
+                    AllocationDescriptorGRPC *allocationDescriptor;
+                    allocationDescriptor = new AllocationDescriptorGRPC(
+                                                ctx,
+                                                workerAddr,
+                                                data);
+                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    
             }
             // keep track of proccessed rows
-            r = (workerIx + 1) * k + std::min(workerIx + 1, m);
-        }
-        // TODO choose implementation
-        // Possible to call all implementations and each one will try to find allocators (MPI, gRPC)
-        // if none is find, then the implementation simply returns.
-        distributeImplementation<DISTRIBUTED_BACKEND::GRPC, DT>(mat);
+            // Skip if already placed at workers
+            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+                continue;
+            distributed::Data protoMsg;
+        
 
+            // TODO: We need to handle different data types 
+            // (this will be simplified when serialization is implemented)
+            auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
+            if (!denseMat){
+                throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            }
+            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix(), 
+                                                    range.r_start,
+                                                    range.r_start + range.r_len,
+                                                    range.c_start,
+                                                    range.c_start + range.c_len);
+
+            StoredInfo storedInfo({dp->dp_id}); 
+            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);
+            r = (workerIx + 1) * k + std::min(workerIx + 1, m);
+        }                
+                       
+
+        // get results       
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto dp_id = response.storedInfo.dp_id;
+            
+            auto storedData = response.result;            
+
+            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
+            
+            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+            data.identifier = storedData.identifier();
+            data.numRows = storedData.num_rows();
+            data.numCols = storedData.num_cols();
+            data.isPlacedAtWorker = true;
+            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);            
+        }
 
     }
 };
 
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-template<class DT>
-void distribute(DT *mat, DCTX(ctx))
-{
-    Distribute<DT>::apply(mat, ctx);
-}
 
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H

@@ -334,20 +334,13 @@ namespace
         {
             size_t numOutputs = op.outputs().size();
             size_t numInputs = op.inputs().size();
-            
-            if(numOutputs > 2)
-                throw std::runtime_error(
-                        "distributed pipelines with more than 2 outputs are "
-                        "not supported at the moment"
-                );
+                     
             
             std::stringstream callee;
             callee << "_distributedPipeline"; // kernel name
-            for(size_t i = 0; i < numOutputs; i++)
-                callee << "__DenseMatrix_double"; // outputs
-            callee
-                << "__Structure_variadic" // inputs
+            callee << "__DenseMatrix_double_variadic" // outputs
                 << "__size_t" // numOutputs
+                << "__Structure_variadic" // inputs
                 << "__size_t" // numInputs
                 << "__int64_t" // outRows
                 << "__int64_t" // outCols
@@ -368,7 +361,7 @@ namespace
                 rewriter.create<daphne::StoreVariadicPackOp>(
                         loc, cvpInputs, op.inputs()[i], rewriter.getIndexAttr(i)
                 );
-            // Constants for #inputs and #outputs.
+            // Constants for #inputs.
             auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
             auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
             // Variadic pack for out_rows.
@@ -408,15 +401,17 @@ namespace
             
             // Create CallKernelOp.
             std::vector<Value> newOperands = {
-                cvpInputs, coNumInputs, coNumOutputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.ir(), dctx
+                cvpInputs, coNumInputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.ir(), dctx
             };
-            rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(
+            auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(
                     op.getOperation(),
                     callee.str(),
                     newOperands,
                     op.outputs().getTypes()
             );
-            
+            // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
+            cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
+      
             return success();
         }
     };

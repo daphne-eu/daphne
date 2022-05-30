@@ -24,6 +24,17 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCollect.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
+
+
+
+#include <mlir/InitAllDialects.h>
+#include <mlir/IR/AsmState.h>
+#include <mlir/Parser.h>
+#include <llvm/Support/SourceMgr.h>
+#include <mlir/IR/BuiltinTypes.h>
+#include <vector>
+
 using mlir::daphne::VectorSplit;
 using mlir::daphne::VectorCombine;
 
@@ -65,7 +76,11 @@ public:
             workersStr.erase(0, pos + delimiter.size());
         }
         workers.push_back(workersStr);
-
+        
+        // Backend Implementation 
+        // gRPC hard-coded selection
+        // TODO choose implementation based on configFile/command-line argument        
+        const auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
 
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
@@ -76,33 +91,99 @@ public:
                 *(res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
             }
         }
+
+        // Currently an input might appear twice in the inputs array of a pipeline.
+        // E.g. an input is needed both "Distributed/Scattered" and "Broadcasted".
+        // This might cause conflicts regarding the meta data of an object since 
+        // we need to represent multiple different "DataPlacements" (ways of how the data is distributed).
+        // A solution would be to support multiple meta data for a single Structure, each one representing
+        // a different way data is placed.
+        // @pdamme suggested that if an input is appearing multiple times in the input pipeline, 
+        // we can probably solve this by applying a more "aggressive" pipelining and removing duplicate inputs.
+        // For now we support only unique inputs.
+        std::vector<const Structure *> vec;
+        for (size_t i = 0; i < numInputs; i++)
+            vec.push_back(inputs[i]);
+        sort(vec.begin(), vec.end());
+        const bool hasDuplicates = std::adjacent_find(vec.begin(), vec.end()) != vec.end();
+        if(hasDuplicates)
+            throw std::runtime_error("Distributed runtime only supports unique inputs for now (no duplicate inputs in a pipeline)");
         
+        // Parse mlir code fragment to determin pipeline inputs/outputs
+        auto inputTypes = getPipelineInputTypes(mlirCode);
         // Distribute and broadcast inputs        
         // Each primitive sends information to workers and changes the Structures' metadata information 
         for (auto i = 0u; i < numInputs; ++i) {
             // if already placed on workers, skip
             // TODO maybe this is not enough. We might also need to check if data resides in the specific way we need to.
             // (i.e. rows/cols splitted accordingly). If it does then we can skip.
-                    
             if (isBroadcast(splits[i], inputs[i])){
-                broadcast(inputs[i], _ctx);
+                auto type = inputTypes.at(i);
+                if (type==INPUT_TYPE::Matrix) {            
+                    broadcast<alloc_type>(inputs[i], false, _ctx);
+                }
+                else {
+                    broadcast<alloc_type>(inputs[i], true, _ctx);
+                }
             }
             else {
-                distribute(inputs[i], _ctx);
+                assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
+                // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
+                distribute<alloc_type>(inputs[i], _ctx);        
             }
         }
+
           
-        distributedCompute(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
+        distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect(*res[o], _ctx);           
+            distributedCollect<alloc_type>(*res[o], _ctx);           
         }
         
         
     }
-};
 
+private:
+    enum INPUT_TYPE {
+        Matrix,
+        Double,
+        // TOOD add more
+    };
+    std::vector<INPUT_TYPE> getPipelineInputTypes(const char *mlirCode)
+    {
+        // is it safe to pass null for mlir::DaphneContext? 
+        // Fixme: is it ok to allow unregistered dialects?
+        mlir::MLIRContext ctx;
+        ctx.allowUnregisteredDialects();
+        mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
+        if (!module) {
+            auto message = "DistributedWrapper: Failed to parse source string.\n";
+            throw std::runtime_error(message);
+        }
+
+        auto *distOp = module->lookupSymbol("dist");
+        mlir::FuncOp distFunc;
+        if (!(distFunc = llvm::dyn_cast_or_null<mlir::FuncOp>(distOp))) {
+            auto message = "DistributedWrapper: MLIR fragment has to contain `dist` FuncOp\n";
+            throw std::runtime_error(message);
+        }
+        auto distFuncTy = distFunc.getType();
+        
+        // TODO passing a vector<mlir::Type> seems to causes problems...
+        // Use enum as work around for now but consider returning mlir::Type
+        std::vector<INPUT_TYPE> inputTypes;
+        auto distFuncTyArr = distFuncTy.getInputs();
+        for (size_t i = 0; i < distFuncTyArr.size(); i++) {
+            auto type = distFuncTyArr[i];
+            if (type.isIntOrFloat())
+                inputTypes.push_back(INPUT_TYPE::Double);
+            else
+                inputTypes.push_back(INPUT_TYPE::Matrix);
+        }
+        return inputTypes;
+    }
+};
 
 #endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDWRAPPER_H

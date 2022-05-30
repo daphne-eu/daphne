@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <runtime/distributed/worker/WorkerImpl.h>
+#include <runtime/distributed/worker/WorkerImplGRPC.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
@@ -30,7 +30,7 @@ public:
 class StoreCallData final : public CallData
 {
 public:
-    StoreCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+    StoreCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
@@ -40,13 +40,13 @@ public:
     void Proceed() override;
 
 private:
-    WorkerImpl *worker;
+    WorkerImplGRPC *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
     grpc::ServerContext ctx_;
     // What we get from the client.
-    distributed::Matrix matrix;
+    distributed::Data data;
     // What we send back to the client.
     distributed::StoredData storedData;
     // The means to get back to the client.
@@ -64,7 +64,7 @@ private:
 class ComputeCallData final : public CallData
 {
 public:
-    ComputeCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+    ComputeCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
@@ -74,7 +74,7 @@ public:
     void Proceed() override;
 
 private:
-    WorkerImpl *worker;
+    WorkerImplGRPC *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -99,7 +99,7 @@ private:
 class TransferCallData final : public CallData
 {
 public:
-    TransferCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
+    TransferCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
@@ -107,7 +107,7 @@ public:
     }
     void Proceed() override;
 private:
-    WorkerImpl *worker;
+    WorkerImplGRPC *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -129,32 +129,32 @@ private:
     CallStatus status_; // The current serving state.
 };
 
-class FreeMemCallData final : public CallData
-{
-    public:
-        FreeMemCallData(WorkerImpl *worker_, grpc::ServerCompletionQueue *cq)
-            : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
-        {
-            // Invoke the serving logic right away.
-            Proceed();
-        }
-        void Proceed() override;
-    private:
-        WorkerImpl *worker;
-        distributed::Worker::AsyncService *service_;
-        // The producer-consumer queue where for asynchronous server notifications.
-        grpc::ServerCompletionQueue *cq_;
-        grpc::ServerContext ctx_;
+// class FreeMemCallData final : public CallData
+// {
+//     public:
+//         FreeMemCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
+//             : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
+//         {
+//             // Invoke the serving logic right away.
+//             Proceed();
+//         }
+//         void Proceed() override;
+//     private:
+//         WorkerImplGRPC *worker;
+//         distributed::Worker::AsyncService *service_;
+//         // The producer-consumer queue where for asynchronous server notifications.
+//         grpc::ServerCompletionQueue *cq_;
+//         grpc::ServerContext ctx_;
         
-        distributed::StoredData storedData;
-        distributed::Empty emptyMessage;
-        grpc::ServerAsyncResponseWriter<distributed::Empty> responder_;
+//         distributed::StoredData storedData;
+//         distributed::Empty emptyMessage;
+//         grpc::ServerAsyncResponseWriter<distributed::Empty> responder_;
 
-    enum CallStatus
-    {
-        CREATE,
-        PROCESS,
-        FINISH
-    };
-    CallStatus status_; // The current serving state.
-};
+//     enum CallStatus
+//     {
+//         CREATE,
+//         PROCESS,
+//         FINISH
+//     };
+//     CallStatus status_; // The current serving state.
+// };

@@ -59,6 +59,10 @@ public:
         return refCounter;
     }
     
+    MetaDataObject& getMetaDataObject() const {
+        return mdo;
+    }
+
     /**
      * @brief Increases the reference counter of this data object.
      * 
