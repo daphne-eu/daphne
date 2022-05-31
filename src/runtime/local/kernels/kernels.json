@@ -773,6 +773,38 @@
     },
     {
         "kernelTemplate": {
+            "header": "MatrixConstant.h",
+            "opName": "matrixConstant",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "matrixAddr"
+                }
+            ]
+        },
+        
+        "instantiations": [
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "bool"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "ExtractRow.h",
             "opName": "extractRow",
             "returnType": "void",
