@@ -1008,6 +1008,26 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             )
         );
     }
+    else if(currentValue.getType().isSignlessInteger()){
+        std::shared_ptr<bool[]> vals = std::shared_ptr<bool[]>(new bool[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != contentType)
+                throw std::runtime_error("matrix of elements of different types");
+
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto boolAttr = co.value().dyn_cast<mlir::BoolAttr>())
+                    vals.get()[i] = boolAttr.getValue();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(  
+        builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(contentType),
+                builder.create<mlir::daphne::ConstantOp>(loc,
+                    builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+            )
+        );
+    }
     else
         throw std::runtime_error("invalid type");
 
