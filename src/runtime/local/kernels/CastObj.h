@@ -113,6 +113,7 @@ public:
                     case ValueTypeCode::UI64: castCol<uint64_t>(res, arg, c); break;
                     case ValueTypeCode::UI32: castCol<uint32_t>(res, arg, c); break;
                     case ValueTypeCode::UI8 : castCol<uint8_t >(res, arg, c); break;
+                    default: throw std::runtime_error("CastObj::apply: unknown value type code");
                 }
             }
         }
@@ -152,5 +153,41 @@ public:
         res = DataObjectFactory::create<Frame>(cols, nullptr);
     }
 };
+
+// ----------------------------------------------------------------------------
+//  DenseMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTRes, typename VTArg>
+class CastObj<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+
+public:
+    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
+        
+        auto resVals = res->getValues();
+        auto argVals = arg->getValues();
+
+        if(arg->getRowSkip() == numCols && res->getRowSkip() == numCols)
+            // Since DenseMatrix implementation is backed by 
+            // a single dense array of values, we can simply 
+            // perform cast in one loop over that array.
+            for(size_t idx = 0; idx < numCols*numRows; idx++)
+                resVals[idx] = static_cast<VTRes>(argVals[idx]);
+        else
+            // res and arg might be views into a larger DenseMatrix.
+            for(size_t r = 0; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++)
+                    resVals[c] = static_cast<VTRes>(argVals[c]);
+                resVals += res->getRowSkip();
+                argVals += arg->getRowSkip();
+            }
+    }
+};
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H

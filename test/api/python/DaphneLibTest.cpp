@@ -51,4 +51,3 @@ MAKE_TEST_CASE("random_matrix_functions")
 MAKE_TEST_CASE("scalar_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
-

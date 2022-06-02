@@ -1,0 +1,70 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+msec_factor = as.f32(0.000001);
+
+# num images
+N = 5;
+
+# image size (will be squared)
+Isize = 32;
+
+# num channels
+C = 10;
+
+# num filters
+Fsize = 5;
+
+# filter size
+F = 64;
+
+# seed for random input generation
+seed = 42;
+
+t_start = now();
+X = rand(N, Isize*Isize*C, 0, 256.0, 1.0, seed);
+# print("X:",0); print(X);
+# print("X dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
+
+# Uncomment, to alternatively read pre generated input
+# X = readMatrix("test_input.csv");
+# N = as.si64(nrow(X));
+# t_end_read = now();
+# print("Time input read:  ",0);print(as.f32((t_end_read - t_start)) * msec_factor,0);print(" ms");
+
+W = rand(F, C*Fsize*Fsize, 0.0, 1.0, 1.0, seed);
+b = rand(1, F, 0.0, 1.0, 1.0, seed);
+
+gamma = rand(F, 1, 1.0, 1.0, 1.0, seed);
+beta = rand(F, 1, 0.0, 0.0, 1.0, seed);
+ema_mean= rand(F, 1, 0.0, 0.0, 1.0, seed);
+ema_var = rand(F, 1, 1.0, 1.0, 1.0, seed);
+eps = 0.00001;
+
+t_start_conv = now();
+X_conv, Hout, Wout = conv2d(X, W, N, F, Isize, Isize, Fsize, Fsize, 1, 1, 1, 1, b);
+t_end_conv = now();
+X_bn = batch_norm2d(X_conv, gamma, beta, ema_mean, ema_var, eps);
+t_end_bn = now();
+X_relu = relu(X_bn);
+t_end_relu = now();
+
+# print("X_conv",0); print(X_conv[fill(1,1,1),]);
+print("X_conv dims: ",0) ;print(nrow(X_conv),0);print("x",0);print(ncol(X_conv));
+print("Time conv:  ",0);print(as.f32((t_end_conv - t_start_conv)) * msec_factor,0);print(" ms");
+print("Time bn:    ",0);print(as.f32((t_end_bn - t_end_conv)) * msec_factor,0);print(" ms");
+print("Time relu:  ",0);print(as.f32((t_end_relu - t_end_bn)) * msec_factor,0);print(" ms");
+print("Time total: ",0);print(as.f32((t_end_relu - t_start)) * msec_factor,0);print(" ms");

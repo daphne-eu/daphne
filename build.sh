@@ -17,11 +17,14 @@
 # Stop immediately if any command fails.
 set -e
 
+build_ts_begin=$(date +%s%N)
+
 #******************************************************************************
 # Help message
 #******************************************************************************
 
 function printHelp {
+    printLogo
     echo "Build the DAPHNE prototype."
     echo ""
     echo "Usage: $0 [-h|--help] [--target TARGET]"
@@ -35,50 +38,331 @@ function printHelp {
     echo "  -h, --help        Print this help message and exit."
     echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
     echo "  --clean           Remove all temporary build directories for a fresh build"
+    echo "  --cleanAll        Remove all thirdparty library directories for a build from scratch"
+    echo "  -nf, --no-fancy   Suppress all colored and animated output"
+    echo "  -y, --yes         Accept all prompts"
+}
+
+#******************************************************************************
+# Build message helper
+#******************************************************************************
+# Daphne Colors
+daphne_red_fg='\e[38;2;247;1;70m'
+daphne_red_bg='\e[48;2;247;1;70m'
+daphne_blue_fg='\e[38;2;120;137;251m'
+daphne_blue_bg='\e[48;2;36;42;76m'
+daphne_black_fg='\e[38;2;0;0;0m'
+daphne_black_bg='\e[48;2;0;0;0m'
+reset='\e[00m'
+fancy="1"
+
+# Prints info message with style ... Daphne style 8-)
+function daphne_msg() {
+    local message date dotSize dots textSize columnWidth
+    # get width of terminal
+    columnWidth="$(tput cols)"
+    # check if output is directed to file, if true, set width to 120
+    if ! [ -t 1 ]; then
+        columnWidth=120
+    fi
+    prefix="[DAPHNE]"
+    message="..${*}"
+    date="[$(date +"%d.%m.%y %H:%M:%S")]"
+    textSize=$(( ${columnWidth} - ${#date}-${#prefix} ))
+    dotSize=$(( ${textSize} - ${#message} ))
+
+    dots=""
+    for (( i = 0; i < dotSize; i++)); do
+        dots="${dots}."
+    done
+
+    message="${message}${dots}"
+
+    # no fancy output (if disabled or not standard output, e.g. piped into file)
+    if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
+        printf "%s%s%s\n" "${prefix}" "${message}" "${date}"
+        return 0
+    fi
+
+    # colored output
+    printf "${daphne_red_fg}%s${daphne_blue_fg}%s${daphne_red_fg}%s${reset}\n" "${prefix}" "${message}" "${date}"
+    return 0
+}
+
+function printableTimestamp () {
+    local t="0"
+    local result=""
+    local tmp
+    if [ -n "$1" ]; then
+        t="$1"
+    fi
+
+    if [ "$t" -eq 0 ]; then
+        printf "0ns"
+        return 0
+    fi
+
+    tmp=$((t % 1000))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}ns"
+    fi
+    # t < 1000 ns
+    if [ "$t" -lt 1000 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 1000))" #us
+    tmp=$((t % 1000))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}us${result}"
+    fi
+    # t < 1000 us
+    if [ "$t" -lt 1000 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 1000))" #ms
+    tmp=$((t % 1000))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}ms${result}"
+    fi
+    # t < 1000 ms
+    if [ "$t" -lt 1000 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 1000))" #s
+    tmp=$((t % 60))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}s${result}"
+    fi
+    # t < 60 s
+    if [ "$t" -lt 60 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 60))" #min
+    tmp=$((t % 60))
+    if [ "$tmp" -gt 0 ]; then
+        result="${tmp}min${result}"
+    fi
+    # t < 60 min
+    if [ "$t" -lt 60 ]; then
+        printf "%s\n" "${result}"
+        return 0
+    fi
+    # add space
+    if [ "$tmp" -gt 0 ]; then result=" $result"; fi
+
+    t="$((t / 60))" #h
+    result="${t}h${result}"
+    printf "%s\n" "${result}"
+}
+
+function printLogo(){
+    daphne_msg ""
+    daphne_msg ".Welcome to"
+    daphne_msg ""
+    daphne_msg ".._______.......................__"
+    daphne_msg ".|       \\.....................|  \\"
+    daphne_msg ".| €€€€€€€\\  ______    ______  | €€____   _______    ______"
+    daphne_msg ".| €€  | €€ |      \\  /      \\ | €€    \\ |       \\  /      \\"
+    daphne_msg ".| €€  | €€  \\€€€€€€\\|  €€€€€€\\| €€€€€€€\\| €€€€€€€\\|  €€€€€€\\"
+    daphne_msg ".| €€  | €€ /      €€| €€  | €€| €€  | €€| €€  | €€| €€    €€"
+    daphne_msg ".| €€__/ €€|  €€€€€€€| €€__/ €€| €€  | €€| €€  | €€| €€€€€€€€"
+    daphne_msg ".| €€    €€ \\€€    €€| €€    €€| €€  | €€| €€  | €€ \€€     \\"
+    daphne_msg ". \\€€€€€€€   \\€€€€€€€| €€€€€€€  \\€€   \\€€ \\€€   \\€€  \\€€€€€€€"
+    daphne_msg ".....................| €€"
+    daphne_msg ".....................| €€"
+    daphne_msg "......................\\€€..................EU-H2020.//.957407"
+    daphne_msg ""
+    printf "\n\n"
 }
 
 #******************************************************************************
 # Clean build directories
 #******************************************************************************
 
-function cleanBuildDirs {
-    echo "-- Cleanup of build directories pwd=$(pwd) ..."
+function clean() {
+    # Throw error, if clean is executed, but output is piped to a file. In this case the user has to accept the
+    # cleaning via parameter --yes
+    if ! [ -t 1 ] && ! [ "$par_acceptAll" -eq 1 ]; then
+        >&2 printf "${daphne_red_fg}"
+        printf "Error: To clean Daphne while piping the output into a file set the --yes option, to accept cleaning.\n" | tee /dev/stderr
+        >&2 printf "${reset}"
+        exit 1
+    fi
+
+    cd "$projectRoot"
+    local -n __dirs
+    local -n __files
+
+    if [ "$#" -gt 0 ]; then
+        if [ -n "$1" ]; then
+            __dirs=$1
+        fi
+        shift
+    fi
+
+    if [ "$#" -gt 0 ]; then
+        if [ -n "$1" ]; then
+            __files=$1
+        fi
+        shift
+    fi
+    if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
+        printf "WARNING. This will delete the following..."
+    else
+        printf "${daphne_red_fg}WARNING.${reset} This will delete following..."
+    fi
+    echo "Directories:"
+    for dir in "${__dirs[@]}"; do
+        echo " > $dir"
+    done
+    echo "Files:"
+    for file in "${__files[@]}"; do
+        echo " > $file"
+    done
+
+    echo
+
+    # prompt confirmation, if not set by --yes
+    if [ "$par_acceptAll" == "0" ]; then
+        read -p "Are you sure? (y/n) " answer
+
+        if [[ "$answer" != [yY] ]]; then
+            echo "Abort."
+            exit 0
+        fi
+    fi
 
     # Delete entire directories.
-    local dirs=("build" \
-        "thirdparty/llvm-project/build" \
-        "thirdparty/antlr")
-    for ((i=0; i<${#dirs[@]}; i++))
-    do
-        if [ -d ${dirs[$i]} ]
-        then
-            echo "---- cleanup ${dirs[$i]}"
-            rm -rf ${dirs[$i]}
+    for dir in "${__dirs[@]}"; do
+        if [ -d "${dir}" ]; then
+            echo "---- cleanup ${dir}"
+            rm -rf "${dir}"
         else
-            echo "---- cleanup ${dirs[$i]} - non-existing"
+            echo "---- cleanup ${dir} - non-existing"
         fi
     done
 
     # Delete individual files.
-    if [ -f $llvmCommitFilePath ]
-    then
-        echo "---- cleanup $llvmCommitFilePath"
-        rm -f $llvmCommitFilePath
-    else
-        echo "---- cleanup $llvmCommitFilePath - non-existing"
-    fi
+    for file in "${__files[@]}"; do
+        if [ -f "$file" ]; then
+            echo "---- cleanup $file"
+            rm -f "$file"
+        else
+            echo "---- cleanup $file - non-existing"
+        fi
+    done
+}
+
+# Cleans all build directories
+function cleanBuildDirs() {
+    echo "-- Cleanup of build directories in ${projectRoot} ..."
+
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}")
+    local files=(\
+      "${thirdpartyPath}/absl_v"*".install.success" \
+      "${thirdpartyPath}/antlr_v"*".install.success" \
+      "${thirdpartyPath}/catch2_v"*".install.success" \
+      "${thirdpartyPath}/grpc_v"*".install.success" \
+      "${thirdpartyPath}/nlohmannjson_v"*".install.success" \
+      "${thirdpartyPath}/openBlas_v"*".install.success" \
+      "${thirdpartyPath}/llvm_v"*".install.success" \
+      "${llvmCommitFilePath}")
+    
+    clean dirs files
+}
+
+# Cleans build directory and all dependencies
+function cleanAll() {
+    echo "-- Cleanup of build and library directories in ${projectRoot} ..."
+
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}")
+    local files=(\
+      "${thirdpartyPath}/absl_v"*".install.success" \
+      "${thirdpartyPath}/absl_v"*".download.success" \
+      "${thirdpartyPath}/antlr_v"*".install.success" \
+      "${thirdpartyPath}/antlr_v"*".download.success" \
+      "${thirdpartyPath}/catch2_v"*".install.success" \
+      "${thirdpartyPath}/grpc_v"*".install.success" \
+      "${thirdpartyPath}/grpc_v"*".download.success" \
+      "${thirdpartyPath}/nlohmannjson_v"*".install.success" \
+      "${thirdpartyPath}/openBlas_v"*".install.success" \
+      "${thirdpartyPath}/openBlas_v"*".download.success" \
+      "${thirdpartyPath}/llvm_v"*".install.success" \
+      "${llvmCommitFilePath}")
+
+    clean dirs files
 }
 
 #******************************************************************************
-# Set some paths
+# Create / Check Indicator-files
 #******************************************************************************
 
-initPwd=$(pwd)
-thirdpartyPath=$initPwd/thirdparty
-llvmCommitFilePath=$thirdpartyPath/llvm-last-built-commit.txt
+#// creates indicator file which indicates successful dependency installation in <projectRoot>/thirdparty/
+#// param 1 dependency name
+function dependency_install_success() {
+    daphne_msg "Successfully installed ${1}."
+    touch "${thirdpartyPath}/${1}.install.success"
+}
+function dependency_download_success() {
+    daphne_msg "Successfully downloaded ${1}."
+    touch "${thirdpartyPath}/${1}.download.success"
+}
 
-# a hotfix, to solve issue #216 @todo investigate possible side effects
-installLibDir=lib
+#// checks if dependency is installed successfully
+#// param 1 dependency name
+function is_dependency_installed() {
+    [ -e "${thirdpartyPath}/${1}.install.success" ]
+}
+function is_dependency_downloaded() {
+    [ -e "${thirdpartyPath}/${1}.download.success" ]
+}
+
+#******************************************************************************
+# versions of third party dependencies
+#******************************************************************************
+antlrVersion=4.9.2
+catch2Version=2.13.8
+openBlasVersion=0.3.19
+abslVersion=20211102.0
+grpcVersion=1.38.0
+nlohmannjsonVersion=3.10.5
+
+#******************************************************************************
+# Set some prefixes, paths and dirs
+#******************************************************************************
+
+projectRoot="$(pwd)"
+thirdpartyPath="${projectRoot}/thirdparty"
+
+# a convenience indirection to set build/cache/install/source dirs at once (e.g., to /tmp/daphne)
+myPrefix=$thirdpartyPath
+#myPrefix=/tmp/daphne
+
+daphneBuildDir="$projectRoot/build"
+llvmCommitFilePath="${thirdpartyPath}/llvm-last-built-commit.txt"
+patchDir="$thirdpartyPath/patches"
+installPrefix="${myPrefix}/installed"
+buildPrefix="${myPrefix}/build"
+sourcePrefix="${myPrefix}/sources"
+cacheDir="${myPrefix}/download-cache"
+
+mkdir -p "$cacheDir"
 
 #******************************************************************************
 # Parse arguments
@@ -86,156 +370,266 @@ installLibDir=lib
 
 # Defaults.
 target="daphne"
+par_printHelp="0"
+par_clean="0"
+par_acceptAll="0"
+unknown_options=""
+BUILD_CUDA="-DUSE_CUDA=OFF"
+BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 
-while [[ $# -gt 0 ]]
-do
+while [[ $# -gt 0 ]]; do
     key=$1
     shift
     case $key in
         -h|--help)
-            printHelp
-            exit 0
+            par_printHelp="1"
             ;;
         --clean)
-            cleanBuildDirs
-            exit 0
+            par_clean="1"
+            ;;
+        --cleanAll)
+            par_clean="2"
             ;;
         --target)
             target=$1
             shift
             ;;
+        -nf|--no-fancy)
+            fancy="0"
+            ;;
+        -y|--yes)
+            par_acceptAll="1"
+            ;;
+        --cuda)
+            echo using CUDA
+            export BUILD_CUDA="-DUSE_CUDA=ON"
+            ;;
+        --debug)
+            echo building DEBUG version
+            export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
+            ;;
         *)
-            printf "Unknown option: '%s'\n\n" $key
-            printHelp
-            exit 1
+            unknown_options="${unknown_options} ${key}"
             ;;
     esac
-done;
+done
+
+
+if [ -n "$unknown_options" ]; then
+    printf "Unknown option(s): '%s'\n\n" "$unknown_options"
+    printHelp
+    exit 1
+fi
+
+if [ "$par_printHelp" -eq 1 ]; then
+    printHelp
+    exit 0
+fi
+
+if [ "$par_clean" -eq 1 ]; then
+    cleanBuildDirs
+    exit 0
+fi
+if [ "$par_clean" -eq 2 ]; then
+    cleanAll
+    exit 0
+fi
+
+
+# Print Daphne-Logo when first time executing
+if [ ! -d "${projectRoot}/build" ]; then
+    printLogo
+    sleep 1
+fi
 
 
 # Make sure that the submodule(s) have been updated since the last clone/pull.
 # But only if this is a git repo.
-if [ -d .git ]
-then
+if [ -d .git ]; then
     git submodule update --init --recursive
 fi
 
 
 #******************************************************************************
-# Handle third-party material
+# Download and install third-party material if necessary
 #******************************************************************************
 
-cd $thirdpartyPath
-
 #------------------------------------------------------------------------------
-# Download third-party material if necessary
+# Antlr4 (parser)
 #------------------------------------------------------------------------------
+antlrJarName="antlr-${antlrVersion}-complete.jar"
+antlrCppRuntimeDirName="antlr4-cpp-runtime-${antlrVersion}-source"
+antlrCppRuntimeZipName="${antlrCppRuntimeDirName}.zip"
 
-# antlr4 (parser).
-pwdBeforeAntlr=$(pwd)
-antlrDirName=antlr
-antlrVersion=4.9.2
-antlrJarName=antlr-${antlrVersion}-complete.jar
-antlrCppRuntimeDirName=antlr4-cpp-runtime-${antlrVersion}-source
-antlrCppRuntimeZipName=$antlrCppRuntimeDirName.zip
-mkdir --parents $antlrDirName
-cd $antlrDirName
-# Download antlr4 jar if it does not exist yet.
-if [ ! -f $antlrJarName ]
-then
-    wget https://www.antlr.org/download/$antlrJarName
+# Download antlr4 C++ run-time if it does not exist yet.
+if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
+    daphne_msg "Get Antlr version ${antlrVersion}"
+    # Download antlr4 jar if it does not exist yet.
+    daphne_msg "Download Antlr v${antlrVersion} java archive"
+    wget "https://www.antlr.org/download/${antlrJarName}" -qO "${cacheDir}/${antlrJarName}"
+    daphne_msg "Download Antlr v${antlrVersion} Runtime"
+    wget https://www.antlr.org/download/${antlrCppRuntimeZipName} -qO "${cacheDir}/${antlrCppRuntimeZipName}"
+    rm -rf "${sourcePrefix:?}/$antlrCppRuntimeDirName"
+    mkdir --parents "$sourcePrefix/$antlrCppRuntimeDirName"
+    unzip -q "$cacheDir/$antlrCppRuntimeZipName" -d "$sourcePrefix/$antlrCppRuntimeDirName"
+    dependency_download_success "antlr_v${antlrVersion}"
 fi
-# Download and build antlr4 C++ run-time if it does not exist yet.
-if [ ! -f $antlrCppRuntimeZipName ]
-then
-    wget https://www.antlr.org/download/$antlrCppRuntimeZipName
-    mkdir --parents $antlrCppRuntimeDirName
-    unzip $antlrCppRuntimeZipName -d $antlrCppRuntimeDirName
-    cd $antlrCppRuntimeDirName
+# build antlr4 C++ run-time
+if ! is_dependency_installed "antlr_v${antlrVersion}"; then
+    mkdir -p "$installPrefix"/share/antlr4/
+    cp "$cacheDir/$antlrJarName" "$installPrefix/share/antlr4/$antlrJarName"
+    
+    daphne_msg "Applying 0000-antlr-silence-compiler-warnings.patch"
+    # disable fail on error as first build might fail and patches might be rejected
+    set +e
+    patch -Np0 -i "$patchDir/0000-antlr-silence-compiler-warnings.patch" \
+      -d "$sourcePrefix/$antlrCppRuntimeDirName"
     # Github disabled the unauthenticated git:// protocol, patch antlr4 to use https://
     # until we upgrade to antlr4-4.9.3+
-    sed -i 's#git://github.com#https://github.com#' runtime/CMakeLists.txt
-    rm -rf ./build
-    mkdir -p build
-    mkdir -p run
-    cd build
-    cmake .. -G Ninja  -DANTLR_JAR_LOCATION=../$antlrJarName -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../run/usr/local -DCMAKE_INSTALL_LIBDIR=$installLibDir
-    cmake --build . --target install
-fi
-cd $pwdBeforeAntlr
+    sed -i 's#git://github.com#https://github.com#' "$sourcePrefix/$antlrCppRuntimeDirName/runtime/CMakeLists.txt"
 
-# catch2 (unit test framework).
+    daphne_msg "Build Antlr v${antlrVersion}"
+    cmake -S "$sourcePrefix/$antlrCppRuntimeDirName" -B "${buildPrefix}/${antlrCppRuntimeDirName}" \
+      -G Ninja -DANTLR4_INSTALL=ON -DCMAKE_INSTALL_PREFIX="$installPrefix" -DCMAKE_BUILD_TYPE=Release
+    cmake --build "${buildPrefix}/${antlrCppRuntimeDirName}"
+    daphne_msg "Applying 0001-antlr-gtest-silence-warnings.patch"
+    patch -Np1 -i "$patchDir/0001-antlr-gtest-silence-warnings.patch" \
+      -d "$buildPrefix/$antlrCppRuntimeDirName/runtime/thirdparty/utfcpp/extern/gtest/"
+
+    # enable fail on error again
+    set -e
+    cmake --build "${buildPrefix}/${antlrCppRuntimeDirName}" --target install
+
+    dependency_install_success "antlr_v${antlrVersion}"
+else
+    daphne_msg "No need to build Antlr4 again."
+fi
+
+
+#------------------------------------------------------------------------------
+# catch2 (unit test framework)
+#------------------------------------------------------------------------------
 # Download catch2 release zip (if necessary), and unpack the single header file
 # (if necessary).
-catch2Name=catch2
-catch2Version=2.13.8 # for upgrades, it suffices to simply change the version here
-catch2ZipName=v$catch2Version.zip
-catch2SingleHeaderName=catch.hpp
-mkdir --parents $catch2Name
-cd $catch2Name
-if [ ! -f $catch2ZipName ] || [ ! -f $catch2SingleHeaderName ]
-then
-    wget https://github.com/catchorg/Catch2/archive/refs/tags/$catch2ZipName
-    unzip -p $catch2ZipName "Catch2-$catch2Version/single_include/catch2/catch.hpp" \
-        > $catch2SingleHeaderName
+catch2Name="catch2"
+catch2ZipName="v$catch2Version.zip"
+catch2SingleHeaderInstalledPath=$installPrefix/include/catch.hpp
+if ! is_dependency_installed "catch2_v${catch2Version}"; then
+    daphne_msg "Get catch2 version ${catch2Version}"
+    mkdir --parents "${thirdpartyPath}/${catch2Name}"
+    cd "${thirdpartyPath}/${catch2Name}"
+    if [ ! -f "$catch2ZipName" ] || [ ! -f "$catch2SingleHeaderInstalledPath" ]
+    then
+        daphne_msg "Download catch2 version ${catch2Version}"
+        wget "https://github.com/catchorg/Catch2/archive/refs/tags/${catch2ZipName}" -qO "${cacheDir}/catch2-${catch2ZipName}"
+        unzip -q -p "$cacheDir/$catch2Name-$catch2ZipName" "Catch2-$catch2Version/single_include/catch2/catch.hpp" \
+            > "$catch2SingleHeaderInstalledPath"
+    fi
+    dependency_install_success "catch2_v${catch2Version}"
+else
+    daphne_msg "No need to download Catch2 again."
 fi
-cd ..
 
+
+#------------------------------------------------------------------------------
 # OpenBLAS (basic linear algebra subprograms)
-pwdBeforeOpenBlas=$(pwd)
-openBlasDirName=OpenBLAS
-openBlasVersion=0.3.19
-openBlasZipName=OpenBLAS-$openBlasVersion.zip
-openBlasInstDirName=installed
-mkdir --parents $openBlasDirName
-cd $openBlasDirName
-if [ ! -f $openBlasZipName ]
-then
-    wget https://github.com/xianyi/OpenBLAS/releases/download/v$openBlasVersion/$openBlasZipName
-    unzip $openBlasZipName
-    mkdir --parents $openBlasInstDirName
-    cd OpenBLAS-$openBlasVersion
-    make -j
-    make install PREFIX=../$openBlasInstDirName
+#------------------------------------------------------------------------------
+openBlasDirName="OpenBLAS-$openBlasVersion"
+openBlasZipName="${openBlasDirName}.zip"
+openBlasInstDirName=$installPrefix
+if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
+    daphne_msg "Get OpenBlas version ${openBlasVersion}"
+    wget "https://github.com/xianyi/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
+        -qO "${cacheDir}/${openBlasZipName}"
+    unzip -q "$cacheDir/$openBlasZipName" -d "$sourcePrefix"
+    dependency_download_success "openBlas_v${openBlasVersion}"
 fi
-cd $pwdBeforeOpenBlas
+if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
+    cd "$sourcePrefix/$openBlasDirName"
+    make -j"$(nproc)"
+    make PREFIX="$openBlasInstDirName" install
+    cd -
+    dependency_install_success "openBlas_v${openBlasVersion}"
+else
+    daphne_msg "No need to build OpenBlas again."
+fi
 
+
+#------------------------------------------------------------------------------
+# nlohmann/json (library for JSON parsing)
+#------------------------------------------------------------------------------
+nlohmannjsonDirName=nlohmannjson
+nlohmannjsonSingleHeaderName=json.hpp
+if ! is_dependency_installed "nlohmannjson_v${nlohmannjsonVersion}"; then
+    daphne_msg "Get nlohmannjson version ${nlohmannjsonVersion}"
+    mkdir -p "${installPrefix}/include/${nlohmannjsonDirName}"
+    wget "https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName" \
+      -qO "${installPrefix}/include/${nlohmannjsonDirName}/${nlohmannjsonSingleHeaderName}"
+    dependency_install_success "nlohmannjson_v${nlohmannjsonVersion}"
+else
+    daphne_msg "No need to download nlohmannjson again."
+fi
+
+#------------------------------------------------------------------------------
+# abseil (compiled separately to apply a patch)
+#------------------------------------------------------------------------------
+abslPath=$sourcePrefix/abseil-cpp
+if ! is_dependency_downloaded "absl_v${abslVersion}"; then
+  daphne_msg "Get abseil version ${abslVersion}"
+  rm -rf "$abslPath"
+  git clone --depth 1 --branch "$abslVersion" https://github.com/abseil/abseil-cpp.git "$abslPath"
+  daphne_msg "Applying 0002-absl-stdmax-params.patch"
+  patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
+  dependency_download_success "absl_v${abslVersion}"
+fi
+if ! is_dependency_installed "absl_v${abslVersion}"; then
+    cmake -S "$abslPath" -B "$buildPrefix/absl" -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
+      -DCMAKE_INSTALL_PREFIX="$installPrefix" -DCMAKE_CXX_STANDARD=17 -DABSL_PROPAGATE_CXX_STD=ON
+    cmake --build "$buildPrefix/absl" --target install
+    dependency_install_success "absl_v${abslVersion}"
+else
+    daphne_msg "No need to build Abseil again."
+fi
+
+
+#------------------------------------------------------------------------------
 # gRPC
-grpcDirName=grpc
-grpcInstDir=$(pwd)/$grpcDirName/installed
-if [ ! -d $grpcDirName ]
-then
+#------------------------------------------------------------------------------
+grpcDirName="grpc"
+grpcInstDir=$installPrefix
+if ! is_dependency_downloaded "grpc_v${grpcVersion}"; then
+    daphne_msg "Get grpc version ${grpcVersion}"
     # Download gRPC source code.
-    git clone --recurse-submodules -b v1.38.0 https://github.com/grpc/grpc $grpcDirName
-    mkdir -p "$grpcInstDir"
-
-    pushd $grpcDirName
-
-    # Install gRPC and its dependencies.
-    mkdir -p "cmake/build"
-    pushd "cmake/build"
-    cmake \
+    if [ -d "${sourcePrefix}/${grpcDirName}" ]; then
+      rm -rf "${sourcePrefix}/${grpcDirName:?}"
+    fi
+    git clone -b v$grpcVersion --depth 1 https://github.com/grpc/grpc "$sourcePrefix/$grpcDirName"
+    pushd "$sourcePrefix/$grpcDirName"
+    git submodule update --init --depth 1 third_party/boringssl-with-bazel
+    git submodule update --init --depth 1 third_party/cares/cares
+    git submodule update --init --depth 1 third_party/protobuf
+    git submodule update --init --depth 1 third_party/re2
+    daphne_msg "Applying 0003-protobuf-override.patch"
+    patch -Np1 -i "${patchDir}/0003-protobuf-override.patch" -d "$sourcePrefix/$grpcDirName/third_party/protobuf"
+    popd
+    dependency_download_success "grpc_v${grpcVersion}"
+fi
+if ! is_dependency_installed "grpc_v${grpcVersion}"; then
+    cmake -G Ninja -S "$sourcePrefix/$grpcDirName" -B "$buildPrefix/$grpcDirName" \
       -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
       -DCMAKE_BUILD_TYPE=Release \
       -DgRPC_INSTALL=ON \
       -DgRPC_BUILD_TESTS=OFF \
-      ../..
-      #-DgRPC_ABSL_PROVIDER=package \
-    make -j4 install
-    popd
-
-    # Install abseil.
-    mkdir -p third_party/abseil-cpp/cmake/build
-    pushd third_party/abseil-cpp/cmake/build
-    cmake -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
-        -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
-        ../..
-    make -j
-    make install
-    popd
-
-    popd
+      -DCMAKE_CXX_STANDARD=17 \
+      -DCMAKE_INCLUDE_PATH="$installPrefix/include" \
+      -DgRPC_ABSL_PROVIDER=package \
+      -DgRPC_ZLIB_PROVIDER=package
+    cmake --build "$buildPrefix/$grpcDirName" --target install
+    dependency_install_success "grpc_v${grpcVersion}"
+else
+    daphne_msg "No need to build GRPC again."
 fi
+
 
 #------------------------------------------------------------------------------
 # Build MLIR
@@ -247,59 +641,49 @@ fi
 # file does not exist (first build of the prototype) or does not contain the
 # expected hash (upgrade of the LLVM sub-module).
 
-llvmName=llvm-project
-cd $llvmName
+llvmName="llvm-project"
 llvmCommit="llvmCommit-local-none"
+cd "${thirdpartyPath}/${llvmName}"
 if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
-    llvmCommit=$(git log -1 --format=%H)
+    llvmCommit="$(git log -1 --format=%H)"
 fi
 
-if [ ! -f $llvmCommitFilePath ] || [ $(cat $llvmCommitFilePath) != $llvmCommit ]
-then
+if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
+    daphne_msg "Build llvm version ${llvmCommit}"
+    cd "${thirdpartyPath}/${llvmName}"
     echo "Need to build MLIR/LLVM."
-    mkdir --parents build
-    cd build
-    cmake -G Ninja ../llvm \
+    cmake -G Ninja -S llvm -B "$buildPrefix/$llvmName" \
        -DLLVM_ENABLE_PROJECTS=mlir \
        -DLLVM_BUILD_EXAMPLES=OFF \
        -DLLVM_TARGETS_TO_BUILD="X86" \
        -DCMAKE_BUILD_TYPE=Release \
        -DLLVM_ENABLE_ASSERTIONS=ON \
        -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
-       -DLLVM_ENABLE_RTTI=ON
-    cmake --build . --target check-mlir
-    echo $llvmCommit > $llvmCommitFilePath
+       -DLLVM_ENABLE_RTTI=ON \
+       -DCMAKE_INSTALL_PREFIX="$installPrefix"
+    cmake --build "$buildPrefix/$llvmName" --target check-mlir
+    echo "$llvmCommit" > "$llvmCommitFilePath"
+    dependency_install_success "llvm_v${llvmCommit}"
 else
-    echo "No need to build MLIR/LLVM again."
+    daphne_msg "No need to build MLIR/LLVM again."
 fi
 
-#------------------------------------------------------------------------------
-# Go back
-#------------------------------------------------------------------------------
-
-cd $initPwd
-
 
 # *****************************************************************************
-# Build the DAPHNE prototype.
+# Build DAPHNE target.
 # *****************************************************************************
 
-mkdir --parents build
-cd build
-cmake -G Ninja .. \
-    -DMLIR_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/mlir/ \
-    -DLLVM_DIR=$thirdpartyPath/$llvmName/build/lib/cmake/llvm/ \
-    -DANTLR4_RUNTIME_DIR=$thirdpartyPath/$antlrDirName/$antlrCppRuntimeDirName \
-    -DANTLR4_JAR_LOCATION=$thirdpartyPath/$antlrDirName/$antlrJarName \
-    -DOPENBLAS_INST_DIR=$thirdpartyPath/$openBlasDirName/$openBlasInstDirName \
-    -DCMAKE_PREFIX_PATH="$grpcInstDir" \
-    -DCMAKE_INSTALL_LIBDIR=$installLibDir
-# optional cmake flags (to be added to the command above):
-# -DUSE_CUDA=ON
-# -DCMAKE_BUILD_TYPE=Debug
+daphne_msg "Build Daphne"
 
-cmake --build . --target $target
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DEBUG \
+  -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
+  -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
+  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
 
+cmake --build "$daphneBuildDir" --target "$target"
+
+build_ts_end=$(date +%s%N)
+daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e

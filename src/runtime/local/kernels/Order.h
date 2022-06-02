@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_ORDER_H
-#define SRC_RUNTIME_LOCAL_KERNELS_ORDER_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -25,26 +24,27 @@
 #include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/ExtractRow.h>
 
-#include <vector>
 #include <algorithm>
+#include <functional>
 #include <numeric>
+#include <vector>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes>
+template<class DT>
 struct Order {
-    static void apply(DTRes *& res, const DTRes * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, DCTX(ctx)) = delete;
+    static void apply(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes>
-void order(DTRes *& res, const DTRes * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, DCTX(ctx)) {
-    Order<DTRes>::apply(res, arg, colIdxs, numKeyCols, ascending, ctx);
+template<class DT>
+void order(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx)) {
+    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx);
 }
 
 // ****************************************************************************
@@ -99,9 +99,9 @@ void multiColumnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, std
 } 
 
 template <> struct Order<Frame> {
-    static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numKeyCols, bool * ascending, DCTX(ctx)) {
+    static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx)) {
         size_t numRows = arg->getNumRows();
-        if (arg == nullptr || colIdxs == nullptr || numKeyCols == 0 || ascending == nullptr) {
+        if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr) {
             throw std::runtime_error("order-kernel called with invalid arguments");
         }
 
@@ -112,8 +112,8 @@ template <> struct Order<Frame> {
         std::vector<std::pair<size_t, size_t>> groups;
         groups.push_back(std::make_pair(0, numRows));
         
-        if (numKeyCols > 1) {
-            for (size_t i = 0; i < numKeyCols-1; i++) {
+        if (numColIdxs > 1) {
+            for (size_t i = 0; i < numColIdxs-1; i++) {
                 colIdx = colIdxs[i];
                 switch(arg->getColumnType(colIdx)) {
                     // TODO Memory leak (getColumn(), see #222).
@@ -125,21 +125,23 @@ template <> struct Order<Frame> {
                     case ValueTypeCode::UI64: multiColumnIDSort(idx, arg->getColumn<uint64_t>(colIdx), groups, ascending[i], ctx); break;
                     case ValueTypeCode::UI32: multiColumnIDSort(idx, arg->getColumn<uint32_t>(colIdx), groups, ascending[i], ctx); break;
                     case ValueTypeCode::UI8 : multiColumnIDSort(idx, arg->getColumn<uint8_t>(colIdx), groups, ascending[i], ctx); break;
+                    default: throw std::runtime_error("unknown value type code");
                 }
             }
         }
 
-        colIdx = colIdxs[numKeyCols-1];
+        colIdx = colIdxs[numColIdxs-1];
         switch(arg->getColumnType(colIdx)) {
             // TODO Memory leak (getColumn(), see #222).
-            case ValueTypeCode::F64: columnIDSort(idx, arg->getColumn<double>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
-            case ValueTypeCode::F32: columnIDSort(idx, arg->getColumn<float>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
-            case ValueTypeCode::SI64: columnIDSort(idx, arg->getColumn<int64_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
-            case ValueTypeCode::SI32: columnIDSort(idx, arg->getColumn<int32_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break; 
-            case ValueTypeCode::SI8 : columnIDSort(idx, arg->getColumn<int8_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break; 
-            case ValueTypeCode::UI64: columnIDSort(idx, arg->getColumn<uint64_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
-            case ValueTypeCode::UI32: columnIDSort(idx, arg->getColumn<uint32_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
-            case ValueTypeCode::UI8 : columnIDSort(idx, arg->getColumn<uint8_t>(colIdx), groups, ascending[numKeyCols-1], ctx); break;
+            case ValueTypeCode::F64: columnIDSort(idx, arg->getColumn<double>(colIdx), groups, ascending[numColIdxs-1], ctx); break;
+            case ValueTypeCode::F32: columnIDSort(idx, arg->getColumn<float>(colIdx), groups, ascending[numColIdxs-1], ctx); break;
+            case ValueTypeCode::SI64: columnIDSort(idx, arg->getColumn<int64_t>(colIdx), groups, ascending[numColIdxs-1], ctx); break;
+            case ValueTypeCode::SI32: columnIDSort(idx, arg->getColumn<int32_t>(colIdx), groups, ascending[numColIdxs-1], ctx); break; 
+            case ValueTypeCode::SI8 : columnIDSort(idx, arg->getColumn<int8_t>(colIdx), groups, ascending[numColIdxs-1], ctx); break; 
+            case ValueTypeCode::UI64: columnIDSort(idx, arg->getColumn<uint64_t>(colIdx), groups, ascending[numColIdxs-1], ctx); break;
+            case ValueTypeCode::UI32: columnIDSort(idx, arg->getColumn<uint32_t>(colIdx), groups, ascending[numColIdxs-1], ctx); break;
+            case ValueTypeCode::UI8 : columnIDSort(idx, arg->getColumn<uint8_t>(colIdx), groups, ascending[numColIdxs-1], ctx); break;
+            default: throw std::runtime_error("unknown value type code");
         }
 
         //applying the final object ID permutation (result of the sorting procedure) to the frame via a row extraction
@@ -147,5 +149,3 @@ template <> struct Order<Frame> {
         DataObjectFactory::destroy(idx);
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_ORDER_H
