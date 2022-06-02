@@ -36,8 +36,8 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
-#include "CallData.h"
-#include <runtime/distributed/worker/ProtoDataConverter.h>
+#include <runtime/distributed/proto/CallData.h>
+#include <runtime/distributed/proto/ProtoDataConverter.h>
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 

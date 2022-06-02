@@ -18,8 +18,8 @@
 #include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/ProtoDataConverter.h>
-#include <runtime/distributed/coordinator/kernels/DistributedGRPCCaller.h>
+#include <runtime/distributed/proto/ProtoDataConverter.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <ir/daphneir/Daphne.h>
 

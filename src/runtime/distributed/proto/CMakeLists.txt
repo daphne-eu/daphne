@@ -33,3 +33,24 @@ target_include_directories(Proto PUBLIC ${CMAKE_CURRENT_BINARY_DIR})
 get_target_property(grpc_cpp_plugin_location gRPC::grpc_cpp_plugin LOCATION)
 protobuf_generate(TARGET Proto LANGUAGE cpp)
 protobuf_generate(TARGET Proto LANGUAGE grpc GENERATE_EXTENSIONS .grpc.pb.h .grpc.pb.cc PLUGIN "protoc-gen-grpc=${grpc_cpp_plugin_location}")
+
+
+# *****************************************************************************
+# CallData library
+# *****************************************************************************
+
+set(SOURCES CallData.cpp)
+set(LIBS Proto)
+
+add_library(CallData ${SOURCES})
+target_link_libraries(CallData PRIVATE ${LIBS})
+
+# *****************************************************************************
+# ProtoDataConverter library
+# *****************************************************************************
+
+set(SOURCES ProtoDataConverter.cpp)
+set(LIBS DataStructures Proto)
+
+add_library(ProtoDataConverter ${SOURCES})
+target_link_libraries(ProtoDataConverter PRIVATE ${LIBS})
