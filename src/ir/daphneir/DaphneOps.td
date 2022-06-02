@@ -747,8 +747,9 @@ def Daphne_ReplaceOp : Daphne_Op<"replace", [
 }
 
 def Daphne_CTableOp : Daphne_Op<"ctable"> {
-    // TODO The last three arguments should be optional.
-    let arguments = (ins Matrix:$lhs, AnyTypeOf<[Matrix, AnyScalar]>:$rhs, AnyTypeOf<[Matrix, AnyScalar]>:$weights, Size:$outHeight, Size:$outWidth);
+    //// TODO The last three arguments should be optional.
+    //let arguments = (ins Matrix:$lhs, AnyTypeOf<[Matrix, AnyScalar]>:$rhs, AnyTypeOf<[Matrix, AnyScalar]>:$weights, Size:$outHeight, Size:$outWidth);
+    let arguments = (ins Matrix:$lhs, Matrix:$rhs);
     let results = (outs Matrix:$res);
 }
 
