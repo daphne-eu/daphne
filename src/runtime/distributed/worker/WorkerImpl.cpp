@@ -36,8 +36,6 @@
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <compiler/execution/DaphneIrExecutor.h>
-#include <runtime/distributed/proto/CallData.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
@@ -54,101 +52,21 @@ WorkerImpl::~WorkerImpl() = default;
 //     cq_->Shutdown();
 //     HandleRpcsThread.join();
 // }
-void WorkerImpl::HandleRpcs() {
-    // Spawn a new CallData instance to serve new clients.
-    new StoreCallData(this, cq_.get());
-    new ComputeCallData(this, cq_.get());
-    new TransferCallData(this, cq_.get());
-    new FreeMemCallData(this, cq_.get());
-    void* tag;  // uniquely identifies a request.
-    bool ok;
-    // Block waiting to read the next event from the completion queue. The
-    // event is uniquely identified by its tag, which in this case is the
-    // memory address of a CallData instance.
-    // The return value of Next should always be checked. This return value
-    // tells us whether there is any kind of event or cq_ is shutting down.
-    while (cq_->Next(&tag, &ok)) {        
-        if(ok){         
-            // Thread pool ? with caution. For now on each worker only one thread operates (sefe IO).
-            // We might need to add locks inside Store/Compute/Transfer methods if we deploy threads
-            static_cast<CallData*>(tag)->Proceed();
-        } else {
-            // TODO maybe handle this internally ?
-            delete static_cast<CallData*>(tag);
-        }
-    }
-  }
 
-template<>
-DenseMatrix<double>* WorkerImpl::CreateMatrix<DenseMatrix<double>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<DenseMatrix<double>>(mat->num_rows(), mat->num_cols(), false);
-}
-template<>
-DenseMatrix<int64_t>* WorkerImpl::CreateMatrix<DenseMatrix<int64_t>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<DenseMatrix<int64_t>>(mat->num_rows(), mat->num_cols(), false);
-}
-template<>
-CSRMatrix<double>* WorkerImpl::CreateMatrix<CSRMatrix<double>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<CSRMatrix<double>>(mat->num_rows(), mat->num_cols(), mat->csr_matrix().values_f64().cells_size(), true);
-}
-template<>
-CSRMatrix<int64_t>* WorkerImpl::CreateMatrix<CSRMatrix<int64_t>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<CSRMatrix<int64_t>>(mat->num_rows(), mat->num_cols(), mat->csr_matrix().values_i64().cells_size(), true);
-}
 
-grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
-                               const ::distributed::Matrix *request,
-                               ::distributed::StoredData *response)
-{
-    Structure *mat;
-    switch (request->matrix_case()){
-    case distributed::Matrix::MatrixCase::kDenseMatrix:
-        switch (request->dense_matrix().cells_case())
-        {
-        case distributed::DenseMatrix::CellsCase::kCellsI64:
-            mat = CreateMatrix<DenseMatrix<int64_t>>(request);
-            ProtoDataConverter<DenseMatrix<int64_t>>::convertFromProto(*request, dynamic_cast<DenseMatrix<int64_t>*>(mat));
-            break;
-        case distributed::DenseMatrix::CellsCase::kCellsF64:
-            mat = CreateMatrix<DenseMatrix<double>>(request);
-            ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*request, dynamic_cast<DenseMatrix<double>*>(mat));
-            break;    
-        default:
-            break;
-        }
-        break;
-    case distributed::Matrix::MatrixCase::kCsrMatrix:
-        switch (request->csr_matrix().values_case())
-        {
-        case distributed::CSRMatrix::ValuesCase::kValuesI64:
-            mat = CreateMatrix<CSRMatrix<int64_t>>(request);
-            ProtoDataConverter<CSRMatrix<int64_t>>::convertFromProto(*request, dynamic_cast<CSRMatrix<int64_t>*>(mat));
-            break;
-        case distributed::CSRMatrix::ValuesCase::kValuesF64:
-            mat = CreateMatrix<CSRMatrix<double>>(request);
-            ProtoDataConverter<CSRMatrix<double>>::convertFromProto(*request, dynamic_cast<CSRMatrix<double>*>(mat));
-            break;
-        }
-        
-    default:
-        // error message         
-        return ::grpc::Status::CANCELLED;
-        break;
-    };
+
+
+WorkerImpl::StoredInfo WorkerImpl::Store(Structure *mat)
+{    
     auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
     localData_[identification] = mat;
-
-    response->set_filename(identification);
-    response->set_num_rows(mat->getNumRows());
-    response->set_num_cols(mat->getNumCols());
-    return ::grpc::Status::OK;
+    
+    return StoredInfo({identification, mat->getNumRows(), mat->getNumCols()});
 }
 
 
 
-grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
-                                 const ::distributed::Task *request,
-                                 ::distributed::ComputeResult *response)
+std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
 {
     // ToDo: user config
     DaphneUserConfig cfg;
@@ -160,11 +78,11 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     // the FreeOps at the coordinator already.
     DaphneIrExecutor executor(false, false, cfg);
 
-    mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(request->mlir_code(), executor.getContext()));
+    mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {
         auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
-        return ::grpc::Status(::grpc::StatusCode::ABORTED, message);
+        return (message);
     }
 
     auto *distOp = module->lookupSymbol(DISTRIBUTED_FUNCTION_NAME);
@@ -172,16 +90,16 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     if (!(distFunc = llvm::dyn_cast_or_null<mlir::FuncOp>(distOp))) {
         auto message = "MLIR fragment has to contain `dist` FuncOp\n";
         llvm::errs() << message;
-        return ::grpc::Status(::grpc::StatusCode::ABORTED, message);
+        return message;
     }
     auto distFuncTy = distFunc.getType();
 
-    std::vector<void *> inputs;
-    std::vector<void *> outputs;
+    std::vector<void *> inputsObj;
+    std::vector<void *> outputsObj;
     auto packedInputsOutputs = createPackedCInterfaceInputsOutputs(distFuncTy,
-        request->inputs(),
-        outputs,
-        inputs);
+        inputs,
+        outputsObj,
+        inputsObj);
     
     // Increase the reference counters of all inputs to the `dist` function.
     // (But only consider data objects, not scalars.)
@@ -190,11 +108,11 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     // local function calls, where we also increase the inputs' reference
     // counters before the call, for the same reason. See ManageObjsRefsPass
     // for details.
-    for(size_t i = 0; i < inputs.size(); i++)
+    for(size_t i = 0; i < inputsObj.size(); i++)
         // TODO Use CompilerUtils::isObjType() once this branch has been rebased.
         // if(CompilerUtils::isObjType(distFuncTy.getInput(i)))
         if(distFuncTy.getInput(i).isa<mlir::daphne::MatrixType, mlir::daphne::FrameType>())
-            reinterpret_cast<Structure*>(inputs[i])->increaseRefCounter();
+            reinterpret_cast<Structure*>(inputsObj[i])->increaseRefCounter();
 
     // Execution
     // TODO Before we run the passes, we should insert information on shape
@@ -207,14 +125,14 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
         ss << "Module Pass Error.\n";
         // module->print(ss, llvm::None);
         llvm::errs() << ss.str();
-        return ::grpc::Status(::grpc::StatusCode::ABORTED, ss.str());
+        return ss.str();
     }
 
     mlir::registerLLVMDialectTranslation(*module->getContext());
 
     auto engine = executor.createExecutionEngine(module.get());
     if (!engine) {
-        return ::grpc::Status(::grpc::StatusCode::ABORTED, "Failed to create JIT-Execution engine");
+        return std::string("Failed to create JIT-Execution engine");
     }
     auto error = engine->invokePacked(DISTRIBUTED_FUNCTION_NAME,
         llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
@@ -222,70 +140,47 @@ grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
     if (error) {
         std::stringstream ss("JIT-Engine invocation failed.");
         llvm::errs() << "JIT-Engine invocation failed: " << error << '\n';
-        return ::grpc::Status(::grpc::StatusCode::ABORTED, ss.str());
+        return ss.str();
     }
 
-    for (auto zipped : llvm::zip(outputs, distFuncTy.getResults())) {
+    for (auto zipped : llvm::zip(outputsObj, distFuncTy.getResults())) {
         auto output = std::get<0>(zipped);
         auto type = std::get<1>(zipped);
 
         auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
         localData_[identification] = output;
 
-        distributed::WorkData::DataCase dataCase = dataCaseForType(type);
-
-        distributed::WorkData workData;
-        switch (dataCase) {
-        case distributed::WorkData::kStored: {
-            auto mat = static_cast<Structure*>(output);
-            workData.mutable_stored()->set_filename(identification);
-            workData.mutable_stored()->set_num_rows(mat->getNumRows());
-            workData.mutable_stored()->set_num_cols(mat->getNumCols());
-            break;
-        }
-        default: assert(false);
-        }
-        *response->add_outputs() = workData;
+        auto mat = static_cast<Structure*>(output);
+                    
+        outputs->push_back(StoredInfo({identification, mat->getNumRows(), mat->getNumCols()}));
     }
     // TODO: cache management (Write to file/evict matrices present as files)
-    return ::grpc::Status::OK;
+    return "OK";
 }
 
-distributed::WorkData::DataCase WorkerImpl::dataCaseForType(mlir::Type type)
-{
-    distributed::WorkData::DataCase dataCase;
-    if (type.isa<mlir::daphne::MatrixType>()) {
-        dataCase = distributed::WorkData::kStored;
-    }
-    else {
-        // TODO: further types data cases
-        assert(false && "TODO");
-    }
-    return dataCase;
-}
+// distributed::WorkData::DataCase WorkerImpl::dataCaseForType(mlir::Type type)
+// {
+//     distributed::WorkData::DataCase dataCase;
+//     if (type.isa<mlir::daphne::MatrixType>()) {
+//         dataCase = distributed::WorkData::kStored;
+//     }
+//     else {
+//         // TODO: further types data cases
+//         assert(false && "TODO");
+//     }
+//     return dataCase;
+// }
 
 
-grpc::Status WorkerImpl::Transfer(::grpc::ServerContext *context,
-                                  const ::distributed::StoredData *request,
-                                  ::distributed::Matrix *response)
+Structure * WorkerImpl::Transfer(StoredInfo info)
 {
-    Structure *mat = readOrGetMatrix(request->filename(), request->num_rows(), request->num_cols());
-    if(auto matDT = dynamic_cast<DenseMatrix<double>*>(mat))        
-        ProtoDataConverter<DenseMatrix<double>>::convertToProto(matDT, response);
-    else if(auto matDT = dynamic_cast<DenseMatrix<int64_t>*>(mat))        
-        ProtoDataConverter<DenseMatrix<int64_t>>::convertToProto(matDT, response);
-    else if(auto matDT = dynamic_cast<CSRMatrix<int64_t>*>(mat))        
-        ProtoDataConverter<CSRMatrix<int64_t>>::convertToProto(matDT, response);
-    else if(auto matDT = dynamic_cast<CSRMatrix<double>*>(mat))        
-        ProtoDataConverter<CSRMatrix<double>>::convertToProto(matDT, response);
-    else 
-        std::runtime_error("Type is not supported atm");
-    return ::grpc::Status::OK;
+    Structure *mat = readOrGetMatrix(info.filename, info.numRows, info.numCols);
+    return mat;
 }
 
 
 std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::FunctionType functionType,
-                                                                    google::protobuf::RepeatedPtrField<distributed::WorkData> workInputs,
+                                                                    std::vector<WorkerImpl::StoredInfo> workInputs,
                                                                     std::vector<void *> &outputs,
                                                                     std::vector<void *> &inputs)
 {
@@ -313,23 +208,14 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
     return inputsAndOutputs;
 }
 
-void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, const distributed::WorkData &workInput)
-{
-    switch (workInput.data_case()) {
-    case distributed::WorkData::kStored: {
-        const auto &stored = workInput.stored();
-        // TODO: all types
-        auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();        
-        bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;       
-        bool isFloat = matTy.getElementType().isa<mlir::Float64Type>();
-        
-        return readOrGetMatrix(stored.filename(), stored.num_rows(), stored.num_cols(), isSparse, isFloat);      
-        break;
-    }
-    default:
-//        assert(false && "We only support stored data for now");
-        throw std::runtime_error("We only support stored data for now");
-    }
+void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput)
+{    
+    // TODO: all types
+    auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();        
+    bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;       
+    bool isFloat = matTy.getElementType().isa<mlir::Float64Type>();
+    
+    return readOrGetMatrix(workInput.filename, workInput.numRows, workInput.numCols, isSparse, isFloat);
 }
 
 Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/)
@@ -377,41 +263,41 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
     }
 }
 
-grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
-                               const ::distributed::StoredData *request,
-                               ::distributed::Empty *emptyMessg)
-{
-    // switch (request->type())
-    // {
-    // case distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64:
-    // case distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64:
-    //     return FreeMemType<int64_t>(context, request, emptyMessg);
-    //     break;
-    // case distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64:
-    // case distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64:
-    //     return FreeMemType<double>(context, request, emptyMessg);
-    //     break;
-    // default:
-    //     break;
-    // }
-    // return grpc::Status::CANCELLED;
-}
+// grpc::Status WorkerImpl::FreeMem(::grpc::ServerContext *context,
+//                                const ::distributed::StoredData *request,
+//                                ::distributed::Empty *emptyMessg)
+// {
+//     // switch (request->type())
+//     // {
+//     // case distributed::StoredData::Type::StoredData_Type_DenseMatrix_i64:
+//     // case distributed::StoredData::Type::StoredData_Type_CSRMatrix_i64:
+//     //     return FreeMemType<int64_t>(context, request, emptyMessg);
+//     //     break;
+//     // case distributed::StoredData::Type::StoredData_Type_DenseMatrix_f64:
+//     // case distributed::StoredData::Type::StoredData_Type_CSRMatrix_f64:
+//     //     return FreeMemType<double>(context, request, emptyMessg);
+//     //     break;
+//     // default:
+//     //     break;
+//     // }
+//     // return grpc::Status::CANCELLED;
+// }
 
-template<typename VT>
-grpc::Status WorkerImpl::FreeMemType(::grpc::ServerContext *context,
-                               const ::distributed::StoredData *request,
-                               ::distributed::Empty *emptyMessg)
-{
-    auto filename = request->filename();
-    auto data_it = localData_.find(filename);
+// template<typename VT>
+// grpc::Status WorkerImpl::FreeMemType(::grpc::ServerContext *context,
+//                                const ::distributed::StoredData *request,
+//                                ::distributed::Empty *emptyMessg)
+// {
+//     auto filename = request->filename();
+//     auto data_it = localData_.find(filename);
 
-    if (data_it != localData_.end()) {
-        auto * mat = reinterpret_cast<Matrix<VT> *>(data_it->second);
-        if(auto m = dynamic_cast<DenseMatrix<VT> *>(mat))
-            DataObjectFactory::destroy(m);
-        else if(auto m = dynamic_cast<CSRMatrix<VT> *>(mat))
-            DataObjectFactory::destroy(m);
-        localData_.erase(filename);
-    }
-    return grpc::Status::OK;
-}
+//     if (data_it != localData_.end()) {
+//         auto * mat = reinterpret_cast<Matrix<VT> *>(data_it->second);
+//         if(auto m = dynamic_cast<DenseMatrix<VT> *>(mat))
+//             DataObjectFactory::destroy(m);
+//         else if(auto m = dynamic_cast<CSRMatrix<VT> *>(mat))
+//             DataObjectFactory::destroy(m);
+//         localData_.erase(filename);
+//     }
+//     return grpc::Status::OK;
+// }

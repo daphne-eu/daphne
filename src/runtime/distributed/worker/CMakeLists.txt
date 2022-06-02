@@ -18,7 +18,10 @@
 # *****************************************************************************
 
 # FIXME: use DaphneIrExecutor target instead
-set(SOURCES WorkerImpl.cpp ../../../compiler/execution/DaphneIrExecutor.cpp)
+set(SOURCES 
+        WorkerImpl.cpp 
+        WorkerImplGRPC.cpp
+        ../../../compiler/execution/DaphneIrExecutor.cpp)
 
 #source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 
