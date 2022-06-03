@@ -69,6 +69,7 @@ set(TEST_SOURCES
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
+        runtime/local/kernels/CTableTest.cpp
         runtime/local/kernels/DiagMatrixTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/DNNPoolingTest.cpp
