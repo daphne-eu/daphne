@@ -195,8 +195,9 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
             // mapped to the superclass Structure (see #397).
             // Check if all results have the same type.
             Type t0 = resultTypes[0];
+            Type mt0 = t0.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
             for(size_t i = 1; i < numRes; i++)
-                if(resultTypes[i] != t0)
+                if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
                     throw std::runtime_error(
                             "all results of a CallKernelOp must have the same "
                             "type to combine them into a single variadic result"
@@ -671,8 +672,9 @@ public:
         
         // TODO Support individual types for all outputs (see #397).
         // Check if all results have the same type.
+        Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
         for(size_t i = 1; i < numRes; i++)
-            if(resultTypes[0] != resultTypes[i])
+            if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
                 throw std::runtime_error(
                         "encountered a vectorized pipelines with different "
                         "result types, but at the moment we require all "
