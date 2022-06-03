@@ -34,19 +34,19 @@ Newer versions should work as well, older versions might work as well.
 
 ##### Software
 
-| tool/lib | version known to work (*) | comment |
-| ----------- | ----------- | ----------- |
-| clang | 10.0.0 | |
-| cmake | 3.17 | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
-| git | 2.25.1 | |
-| lld | 10.0.0 | |
-| ninja | 1.10.0 | |
-| pkg-config | 0.29.1 | |
-| python3 | 3.8.5 | |
-| numpy | 1.19.5 | |
-| java (e.g. openjdk) | 11 (1.7 should be fine) | |
-| gfortran | 9.3.0 | |
-| uuid-dev |  | |
+| tool/lib            | version known to work (*) | comment                                                                                                                                      |
+|---------------------| ----------- |----------------------------------------------------------------------------------------------------------------------------------------------|
+| clang               | 10.0.0 |                                                                                                                                              |
+| cmake               | 3.17 | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3.      |
+| git                 | 2.25.1 |                                                                                                                                              |
+| lld                 | 10.0.0 |                                                                                                                                              |
+| ninja               | 1.10.0 |                                                                                                                                              |
+| pkg-config          | 0.29.1 |                                                                                                                                              |
+| python3             | 3.8.5 |                                                                                                                                              |
+| numpy               | 1.19.5 |                                                                                                                                              |
+| java (e.g. openjdk) | 11 (1.7 should be fine) |                                                                                                                                              |
+| gfortran            | 9.3.0 |                                                                                                                                              |
+| uuid-dev            |  |                                                                                                                                              |
 
 ##### Hardware
 
@@ -93,6 +93,9 @@ If the build fails in between (e.g., due to missing packages), multiple build di
 ./build.sh --clean
 ```
 
+See [this page](/doc/development/BuildingDaphne) for more information.
+
+
 ### Running the Tests
 
 ```bash
@@ -103,7 +106,7 @@ We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. 
 
 ### Running the DAPHNE system
 
-Write a little DaphneDSL script or use `scripts/example/hello-world.daph`...
+Write a little DaphneDSL script or use [`scripts/examples/hello-world.daph`](../scripts/examples/hello-world.daph)...
 
 ```
 x = 1;
@@ -116,7 +119,7 @@ print(m + m);
 print(t(m));
 ```
 
-... and execute it as follows: `build/bin/daphne scripts/example/hello-world.daph`.
+... and execute it as follows: `build/bin/daphne scripts/examples/hello-world.daph`.
 
 ### Building and running with containers [Alternative path for building and running the system and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.

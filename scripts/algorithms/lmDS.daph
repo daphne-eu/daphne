@@ -17,10 +17,9 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-# Modifications Copyright 2021 The DAPHNE Consortium
+# Modifications Copyright 2022 The DAPHNE Consortium
 #
 #-------------------------------------------------------------
-
 
 # The lmDC function solves linear regression using the direct solve method
 # (this script has been ported from Apache SystemDS to DaphneDSL)

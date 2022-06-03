@@ -197,7 +197,7 @@ public:
             case ValueTypeCode::UI64: return builder.getIntegerType(64, false);
             case ValueTypeCode::F32: return builder.getF32Type();
             case ValueTypeCode::F64: return builder.getF64Type();
-            default: throw std::runtime_error("unknown value type code");
+            default: throw std::runtime_error("ParserUtils::mlirTypeForCode: unknown value type code");
         }
     }
 

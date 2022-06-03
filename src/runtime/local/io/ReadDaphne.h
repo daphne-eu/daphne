@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef READDAPHNE_H
-#define READDAPHNE_H
 #pragma once
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
@@ -92,14 +90,12 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 	    } else if (bb.bt == DF_body_t::dense) {
 		 f.read((char *)&vt, sizeof(vt));
 
-		 VT* memblock = (VT*) malloc(bb.nbrows*bb.nbcols*sizeof(VT));
-		 f.read((char *)memblock, bb.nbrows*bb.nbcols*sizeof(VT));
-
-		 std::shared_ptr<VT[]> data;
-		 data.reset(memblock);
-
-		 res = DataObjectFactory::create<DenseMatrix<VT>>((size_t)bb.nbrows, 
-								  (size_t)bb.nbcols, data);
+         size_t numItems = bb.nbrows*bb.nbcols;
+         std::streamsize memBlockSize = numItems * sizeof(VT);
+         auto memblock = std::shared_ptr<VT[]>(new VT[numItems], std::default_delete<VT[]>());
+         f.read(reinterpret_cast<char*>(memblock.get()), memBlockSize);
+		 res = DataObjectFactory::create<DenseMatrix<VT>>(static_cast<size_t>(bb.nbrows), static_cast<size_t>(bb.nbcols),
+                 memblock);
 
 		 goto exit;
 	    }
@@ -255,50 +251,52 @@ template <> struct ReadDaphne<Frame> {
             }
 
 	    for (size_t r=0; r < h.nbrows; r++) {
-		for (size_t c=0; c < h.nbcols; c++) { 
-			switch (schema[c]) {
-			case ValueTypeCode::SI8:
-				int8_t val_si8;
-				f.read((char *) &val_si8, sizeof(val_si8));
-				reinterpret_cast<int8_t *>(rawCols[c])[r] = val_si8;
-				break;
-			case ValueTypeCode::SI32:
-			        int32_t val_si32;
-				f.read((char *) &val_si32, sizeof(val_si32));
-			        reinterpret_cast<int32_t *>(rawCols[c])[r] = val_si32;
-			        break;
-                        case ValueTypeCode::SI64:
-                                int64_t val_si64;
-				f.read((char *) &val_si64, sizeof(val_si64));
-                                reinterpret_cast<int64_t *>(rawCols[c])[r] = val_si64;
-                                break;
-                        case ValueTypeCode::UI8:
-				uint8_t val_ui8;
-				f.read((char *) &val_ui8, sizeof(val_ui8));
-				reinterpret_cast<uint8_t *>(rawCols[c])[r] = val_ui8;
-				break;
-                        case ValueTypeCode::UI32:
-	                       uint32_t val_ui32;
-			       f.read((char *) &val_ui32, sizeof(val_ui32));
-			       reinterpret_cast<uint32_t *>(rawCols[c])[r] = val_ui32;
-			       break;
-                        case ValueTypeCode::UI64:
-				uint64_t val_ui64;
-			        f.read((char *) &val_ui64, sizeof(val_ui64));
-				reinterpret_cast<uint64_t *>(rawCols[c])[r] = val_ui64;
-				break;
-                        case ValueTypeCode::F32:
-				float val_f32;
-			        f.read((char *) &val_f32, sizeof(val_f32));
-				reinterpret_cast<float *>(rawCols[c])[r] = val_f32;
-				break;
-                        case ValueTypeCode::F64:
-	                        double val_f64;
-			        f.read((char *) &val_f64, sizeof(val_f64));
-			        reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
-				break;
+			for (size_t c=0; c < h.nbcols; c++) { 
+				switch (schema[c]) {
+					case ValueTypeCode::SI8:
+						int8_t val_si8;
+						f.read((char *) &val_si8, sizeof(val_si8));
+						reinterpret_cast<int8_t *>(rawCols[c])[r] = val_si8;
+						break;
+					case ValueTypeCode::SI32:
+						int32_t val_si32;
+						f.read((char *) &val_si32, sizeof(val_si32));
+						reinterpret_cast<int32_t *>(rawCols[c])[r] = val_si32;
+						break;
+					case ValueTypeCode::SI64:
+						int64_t val_si64;
+						f.read((char *) &val_si64, sizeof(val_si64));
+						reinterpret_cast<int64_t *>(rawCols[c])[r] = val_si64;
+						break;
+					case ValueTypeCode::UI8:
+						uint8_t val_ui8;
+						f.read((char *) &val_ui8, sizeof(val_ui8));
+						reinterpret_cast<uint8_t *>(rawCols[c])[r] = val_ui8;
+						break;
+					case ValueTypeCode::UI32:
+						uint32_t val_ui32;
+						f.read((char *) &val_ui32, sizeof(val_ui32));
+						reinterpret_cast<uint32_t *>(rawCols[c])[r] = val_ui32;
+						break;
+					case ValueTypeCode::UI64:
+						uint64_t val_ui64;
+						f.read((char *) &val_ui64, sizeof(val_ui64));
+						reinterpret_cast<uint64_t *>(rawCols[c])[r] = val_ui64;
+						break;
+					case ValueTypeCode::F32:
+						float val_f32;
+						f.read((char *) &val_f32, sizeof(val_f32));
+						reinterpret_cast<float *>(rawCols[c])[r] = val_f32;
+						break;
+					case ValueTypeCode::F64:
+						double val_f64;
+						f.read((char *) &val_f64, sizeof(val_f64));
+						reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
+						break;
+					default:
+						throw std::runtime_error("ReadDaphne::apply: unknown value type code");
+				}
 			}
-		}
         }
 
 	delete[] rawCols;
@@ -308,5 +306,3 @@ template <> struct ReadDaphne<Frame> {
     return;
   }
 };
-
-#endif

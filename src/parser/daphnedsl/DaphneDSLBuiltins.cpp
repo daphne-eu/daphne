@@ -627,7 +627,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         std::vector<mlir::Value> colIdxs;
         std::vector<mlir::Value> ascs;
-        bool returnIdxs = false; // TODO Don't hardcode this.
+        mlir::Value returnIdxs = args[numArgs - 1];
         const size_t numCols = (numArgs - 2) / 2;
         for(size_t i = 0; i < numCols; i++) {
             colIdxs.push_back(utils.castSizeIf(args[1 + i]));
@@ -726,11 +726,13 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 5);
         mlir::Value lhs = args[0];
         mlir::Value rhs = args[1];
-        mlir::Value weights = args[2];
-        mlir::Value outHeight = utils.castSizeIf(args[3]);
-        mlir::Value outWidth = utils.castSizeIf(args[4]);
+        // TODO Support all parameters of this operation again.
+//        mlir::Value weights = args[2];
+//        mlir::Value outHeight = utils.castSizeIf(args[3]);
+//        mlir::Value outWidth = utils.castSizeIf(args[4]);
         return static_cast<mlir::Value>(builder.create<CTableOp>(
-                loc, lhs.getType(), lhs, rhs, weights, outHeight, outWidth
+//                loc, lhs.getType(), lhs, rhs, weights, outHeight, outWidth
+                loc, lhs.getType(), lhs, rhs
         ));
     }
     if(func == "syrk") {
