@@ -1,1 +1,19 @@
-5,3,1,f32,a,bc,def
+{
+    "numRows": 5,
+    "numCols": 3,
+    "valueType": "f32",
+    "schema": [
+        {
+            "label": "a",
+            "valueType": ""
+        },
+        {
+            "label": "bc",
+            "valueType": ""
+        },
+        {
+            "label": "def",
+            "valueType": ""
+        }
+    ]    
+}

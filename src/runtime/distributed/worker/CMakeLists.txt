@@ -39,6 +39,7 @@ set(LIBS
         ProtoDataConverter
         CallData
         Proto
+        DaphneMetaDataParser
         )
 
 add_library(WorkerImpl ${SOURCES})

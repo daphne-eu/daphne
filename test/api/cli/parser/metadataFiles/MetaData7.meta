@@ -1,14 +1,15 @@
 {
-    "numRows": 2,
-    "numCols": 2,
+    "numRows": 3,
+    "numCols": 3,
     "schema": [
         {
-            "label": "foo",
             "valueType": "si64"
         },
         {
-            "label": "bar",
             "valueType": "f64"
+        },
+        {
+            "valueType": "f32"
         }
     ]
 }

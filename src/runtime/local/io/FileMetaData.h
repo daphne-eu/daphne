@@ -20,6 +20,7 @@
 #include <runtime/local/datastructures/ValueTypeCode.h>
 
 #include <vector>
+#include <string>
 
 /**
  * @brief Very simple representation of basic file meta data.

@@ -20,9 +20,9 @@
 #include <fstream>
 
 FileMetaData MetaDataParser::readMetaData(const std::string& filename) {
-    std::ifstream ifs(filename, std::ios::in);
+    std::ifstream ifs(filename + ".meta", std::ios::in);
     if (!ifs.good())
-        throw std::runtime_error("Could not open file '" + filename + "' for reading meta data.");
+        throw std::runtime_error("Could not open file '" + filename + ".meta' for reading meta data.");
 
     nlohmann::basic_json jf = nlohmann::json::parse(ifs);
 
@@ -58,9 +58,9 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename) {
 }
 
 void MetaDataParser::writeMetaData(const std::string& filename, const FileMetaData& metaData) {
-    std::ofstream ofs(filename + ".json", std::ios::out);
+    std::ofstream ofs(filename + ".meta", std::ios::out);
     if (!ofs.good())
-        throw std::runtime_error("could not open file '" + filename + "'.json for writing meta data");
+        throw std::runtime_error("could not open file '" + filename + "'.meta for writing meta data");
 
     if(ofs.is_open()) {
         nlohmann::json json;

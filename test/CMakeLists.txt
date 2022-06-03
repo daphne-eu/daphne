@@ -58,7 +58,6 @@ set(TEST_SOURCES
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
 
-        runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
 	runtime/local/io/ReadParquetTest.cpp
 	runtime/local/io/ReadMMTest.cpp
