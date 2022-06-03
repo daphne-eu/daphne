@@ -59,7 +59,7 @@ class Matrix(OperationNode):
                 f.close()
 
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
-                f.write(str(np.shape(self._np_array)[0])+","+str(np.shape(self._np_array)[1])+","+"1"+","+self.getDType(self._np_array.dtype))
+                f.write("{\"numRows\":"+str(np.shape(self._np_array)[0])+",\"numCols\":"+str(np.shape(self._np_array)[1])+",\"valueType\":\""+self.getDType(self._np_array.dtype)+"\"}")
                 f.close()
         return code_line
 

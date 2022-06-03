@@ -1,1 +1,6 @@
-2,4,1,f64,nnz=0
+{
+    "numRows": 2,
+    "numCols": 4,
+    "valueType": "f64",
+    "numNonZeros": 0
+}
