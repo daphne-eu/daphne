@@ -91,7 +91,7 @@ struct AggAll<DenseMatrix<VT>> {
         }
         // else op-code is STDDEV
         // TODO STDDEV
-        return agg; // return something for now to avoid compiler warnings
+        throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
     }
 };
 
@@ -146,7 +146,7 @@ struct AggAll<CSRMatrix<VT>> {
                 return agg / (arg->getNumRows() * arg->getNumCols());
             
             // TODO STDDEV
-            return agg;
+            throw std::runtime_error("unsupported AggOpCode in AggAll for CSRMatrix");
         }
     }
 };

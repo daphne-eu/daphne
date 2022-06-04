@@ -128,7 +128,8 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
                 return;
             
             // else op-code is STDDEV
-            // TODO
+            // TODO STDDEV
+            throw std::runtime_error("unsupported AggOpCode in AggRow for DenseMatrix");
         }
     }
 };
@@ -184,7 +185,9 @@ struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
                     ctx
                 );
                 if (opCode == AggOpCode::MEAN)
-                    *valuesRes = *valuesRes / (arg->getNumRows() * arg->getNumCols());
+                    *valuesRes = *valuesRes / numCols;
+                else
+                    throw std::runtime_error("unsupported AggOpCode in AggRow for CSRMatrix");
                 valuesRes += res->getRowSkip();
             }
         }

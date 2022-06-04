@@ -195,7 +195,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
 }
 
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<typename DTArg::VT>;
     
