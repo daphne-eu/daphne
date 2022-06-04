@@ -28,7 +28,7 @@
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "int64_t"]]
         ],
-        "opCodes": ["SUM", "MIN", "MAX"]
+        "opCodes": ["SUM", "MIN", "MAX", "MEAN"]
     },
     {
         "kernelTemplate": {
@@ -122,7 +122,7 @@
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
         ],
-        "opCodes": ["SUM", "MIN", "MAX", "IDXMIN", "IDXMAX"]
+        "opCodes": ["SUM", "MIN", "MAX", "MEAN", "IDXMIN", "IDXMAX"]
     },
     {
         "kernelTemplate": {
