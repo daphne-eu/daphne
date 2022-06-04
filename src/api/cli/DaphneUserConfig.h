@@ -35,6 +35,10 @@ struct DaphneUserConfig {
     bool use_obj_ref_mgnt = true;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
+    bool prePartitionRows = false;
+    bool pinWorkers = false;
+    bool hyperthreadingEnabled = false;
+    bool debugMultiThreading = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;
@@ -45,6 +49,8 @@ struct DaphneUserConfig {
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
+    QueueTypeOption queueSetupScheme = CENTRALIZED;
+	victimSelectionLogic victimSelection = SEQPRI;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     

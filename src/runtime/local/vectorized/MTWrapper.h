@@ -24,6 +24,8 @@
 
 #include <functional>
 #include <queue>
+#include <fstream>
+#include <set>
 
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
@@ -36,9 +38,17 @@ class MTWrapperBase {
 protected:
     std::vector<std::unique_ptr<Worker>> cuda_workers;
     std::vector<std::unique_ptr<Worker>> cpp_workers;
+    std::vector<int> topologyPhysicalIds;
+    std::vector<int> topologyUniqueThreads;
+    std::string _cpuinfoPath = "/proc/cpuinfo";
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
+    int _queueMode;
+    // _queueMode 0: Centralized queue for all workers, 1: One queue for every physical ID (socket), 2: One queue per CPU
+    int _numQueues;
+    int _stealLogic;
+    int _totalNumaDomains;
     DCTX(_ctx);
 
     std::pair<size_t, size_t> getInputProperties(Structure** inputs, size_t numInputs, VectorSplit* splits) {
@@ -54,11 +64,89 @@ protected:
         }
         return std::make_pair(len, mem_required);
     }
+    
+    int _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
+        std::size_t seperatorLocation = input.find(":");
+        if (seperatorLocation!=std::string::npos) {
+            if (input.find(keyword) == 0) {
+                *val = stoi(input.substr(seperatorLocation+1));
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
+    }
+
+    void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads) {
+        std::ifstream cpuinfoFile(_cpuinfoPath);
+        std::vector<int> utilizedThreads;
+        std::vector<int> core_ids;
+        int index = 0;
+        if( cpuinfoFile.is_open() ) {
+            std::string line;
+            int value;
+            while (std::getline(cpuinfoFile, line)) {
+                if( _parseStringLine(line, "processor", &value ) ) {
+                    utilizedThreads.push_back(value);
+                } else if( _parseStringLine(line, "physical id", &value) ) {
+                    physicalIds.push_back(value);
+                } else if( _parseStringLine(line, "core id", &value) ) {
+                    int found = 0;
+                    for (int i=0; i<index; i++) {
+                        if (core_ids[i] == value && physicalIds[i] == physicalIds[index]) {
+                                found++;
+                        }
+                    }
+                    core_ids.push_back(value);
+                    if( _ctx->config.hyperthreadingEnabled || found == 0 ) {
+                        uniqueThreads.push_back(utilizedThreads[index]);
+                    }
+                    index++;
+                }
+            }
+            cpuinfoFile.close();
+        }
+    }
 
     void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cpp_workers.resize(_numCPPThreads);
         for(auto& w : cpp_workers)
             w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
+    }
+    
+    void initCPPWorkers(std::vector<TaskQueue*> &qvector, uint32_t batchSize, bool verbose = false) {
+        cpp_workers.resize(_numCPPThreads);
+        for(auto& w : cpp_workers)
+            w = std::make_unique<WorkerCPU>(qvector[0], verbose, 0, batchSize);
+    }
+    
+    void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
+        cpp_workers.resize(_numCPPThreads);
+        if( numQueues == 0 ) {
+            std::cout << "numQueues is 0, this should not happen." << std::endl;
+        }
+        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        
+        int i = 0;
+        for( auto& w : cpp_workers ) {
+            w = std::make_unique<WorkerCPUPerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+            i++;
+        }
+    }
+    
+    void initCPPWorkersPerGroup(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
+        cpp_workers.resize(_numCPPThreads);
+        if (numQueues == 0) {
+            std::cout << "numQueues is 0, this should not happen." << std::endl;
+        }
+        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        if( _numCPPThreads < topologyUniqueThreads.size() )
+            topologyUniqueThreads.resize(_numCPPThreads);
+        int i = 0;
+        for(auto& w : cpp_workers) {
+            w = std::make_unique<WorkerCPUPerGroup>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+            i++;
+        }
     }
 
 #ifdef USE_CUDA
@@ -120,6 +208,35 @@ public:
             _numCUDAThreads = ctx->cuda_contexts.size();
         _numCPPThreads = _numThreads;
         _numThreads = _numCPPThreads + _numCUDAThreads;
+        _queueMode = 0;
+        _numQueues = 1;
+        _stealLogic = ctx->getUserConfig().victimSelection;
+        get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        if( std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled )
+            topologyUniqueThreads.resize(_numCPPThreads);
+        _totalNumaDomains = std::set<double>( topologyPhysicalIds.begin(), topologyPhysicalIds.end() ).size();
+
+        
+        if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+            _queueMode = 1;
+            _numQueues = _totalNumaDomains;
+        } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
+            _queueMode = 2;
+            _numQueues = _numThreads;
+        }
+        
+        if( _ctx->config.debugMultiThreading ) {
+            for(const auto & topologyEntry: topologyPhysicalIds) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl;
+            for(const auto & topologyEntry: topologyUniqueThreads) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl;
+            std::cout << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
+            std::cout << "_numQueues=" << _numQueues << std::endl;
+        }
 #ifndef NDEBUG
         std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;
@@ -140,7 +257,7 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
             VectorCombine* combines, DCTX(ctx), bool verbose);
 
@@ -160,7 +277,11 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
+                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+
+    void executeQueuePerCPU(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
                             size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 

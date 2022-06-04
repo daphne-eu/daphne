@@ -72,13 +72,15 @@ main(int argc, char** argv)
     
     // TODO We will probably subdivide the options into multiple groups later.
     OptionCategory daphneOptions("DAPHNE Options");
+    OptionCategory schedulingOptions("Advanced Scheduling Knobs");
+
 
     // Options ----------------------------------------------------------------
     
     // Scheduling options
 
     opt<SelfSchedulingScheme> taskPartitioningScheme(
-            cat(daphneOptions), desc("Choose task partitioning scheme:"),
+            cat(schedulingOptions), desc("Choose task partitioning scheme:"),
             values(
                 clEnumVal(STATIC , "Static (default)"),
                 clEnumVal(SS, "Self-scheduling"),
@@ -94,23 +96,56 @@ main(int argc, char** argv)
                 clEnumVal(PSS, "Probabilistic self-scheduling")
             )
     );
+    opt<QueueTypeOption> queueSetupScheme(
+            cat(schedulingOptions), desc("Choose queue setup scheme:"),
+            values(
+                clEnumVal(CENTRALIZED, "One queue (default)"),
+                clEnumVal(PERGROUP, "One queue per CPU group"),
+                clEnumVal(PERCPU, "One queue per CPU core")
+            )
+    );
+	opt<victimSelectionLogic> victimSelection(
+            cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
+            values(
+                clEnumVal(SEQ, "Steal from next adjacent worker"),
+                clEnumVal(SEQPRI, "Steal from next adjacent worker, prioritize same NUMA domain"),
+                clEnumVal(RANDOM, "Steal from random worker"),
+				clEnumVal(RANDOMPRI, "Steal from random worker, prioritize same NUMA domain")
+            )
+    );
 
     opt<int> numberOfThreads(
-            "num-threads", cat(daphneOptions),
+            "num-threads", cat(schedulingOptions),
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
                 "(default is equal to the number of physcial cores on the target node that executes the code)"
             )
     );
     opt<int> minimumTaskSize(
-            "grain-size", cat(daphneOptions),
+            "grain-size", cat(schedulingOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
             )
     );
     opt<bool> useVectorizedPipelines(
-            "vec", cat(daphneOptions),
+            "vec", cat(schedulingOptions),
             desc("Enable vectorized execution engine")
+    );
+    opt<bool> prePartitionRows(
+            "pre-partition", cat(schedulingOptions),
+            desc("Partition rows into the number of queues before applying scheduling technique")
+    );
+    opt<bool> pinWorkers(
+            "pin-workers", cat(schedulingOptions),
+            desc("Pin workers to CPU cores")
+    );
+    opt<bool> hyperthreadingEnabled(
+            "hyperthreading", cat(schedulingOptions),
+            desc("Utilize multiple logical CPUs located on the same physical CPU")
+    );
+    opt<bool> debugMultiThreading(
+            "debug-mt", cat(schedulingOptions),
+            desc("Prints debug information about the Multithreading Wrapper")
     );
     
     // Other options
@@ -172,7 +207,12 @@ main(int argc, char** argv)
     // Parse arguments
     // ------------------------------------------------------------------------
     
-    HideUnrelatedOptions(daphneOptions);
+    std::vector<const llvm::cl::OptionCategory *> visibleCategories;
+    visibleCategories.push_back(&daphneOptions);
+    visibleCategories.push_back(&schedulingOptions);
+    
+    HideUnrelatedOptions(visibleCategories);
+
     extrahelp(
             "\nEXAMPLES:\n\n"
             "  daphne example.daphne\n"
@@ -208,8 +248,14 @@ main(int argc, char** argv)
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
-    user_config.numberOfThreads = numberOfThreads;
-    user_config.minimumTaskSize = minimumTaskSize;
+    user_config.queueSetupScheme = queueSetupScheme;
+	user_config.victimSelection = victimSelection;
+    user_config.numberOfThreads = numberOfThreads; 
+    user_config.minimumTaskSize = minimumTaskSize; 
+    user_config.pinWorkers = pinWorkers;
+    user_config.hyperthreadingEnabled = hyperthreadingEnabled;
+    user_config.debugMultiThreading = debugMultiThreading;
+    user_config.prePartitionRows = prePartitionRows;
 
     if(cuda) {
         int device_count = 0;

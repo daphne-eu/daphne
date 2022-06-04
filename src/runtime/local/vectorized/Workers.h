@@ -17,6 +17,8 @@
 #pragma once
 
 #include <thread>
+#include <sched.h>
+#include <numeric>
 
 class Worker {
 protected:
@@ -81,6 +83,237 @@ public:
             //get next tasks (blocking)
             t = _q->dequeueTask();
         }
+        if( _verbose )
+            std::cerr << "WorkerCPU: received EOF, finalized." << std::endl;
+    }
+};
+
+class WorkerCPUPerCPU : public Worker {
+    std::vector<TaskQueue*> _q;
+    std::vector<int> _physical_ids;
+    std::vector<int> _unique_threads;
+    std::array<bool, 256> eofWorkers;
+    bool _verbose;
+    uint32_t _fid;
+    uint32_t _batchSize;
+    int _threadID;
+    int _numQueues;
+    int _queueMode;
+    int _stealLogic;
+    bool _pinWorkers;
+public:
+    // this constructor is to be used in practice
+    WorkerCPUPerCPU(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
+        // at last, start the thread
+        t = std::make_unique<std::thread>(&WorkerCPUPerCPU::run, this);
+    }
+    
+    ~WorkerCPUPerCPU() override = default;
+
+    void run() override {
+        if (_pinWorkers) {
+            // pin worker to CPU core
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(_threadID, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        }
+        
+        int targetQueue = _threadID;
+        int currentDomain = _physical_ids[_threadID];
+        
+        Task* t = _q[targetQueue]->dequeueTask();
+
+        while( !isEOF(t) ) {
+            //execute self-contained task
+            if( _verbose )
+                std::cerr << "WorkerCPU: executing task." << std::endl;
+            t->execute(_fid, _batchSize);
+            delete t;
+            //get next tasks (blocking)
+            t = _q[targetQueue]->dequeueTask();
+        }
+        
+        if( _stealLogic == 0) {
+            // Stealing in sequential order
+            
+            targetQueue = (targetQueue+1)%_numQueues;
+            
+            while (targetQueue != _threadID) {
+                t = _q[targetQueue]->dequeueTask();
+                if( isEOF(t) ) {
+                    targetQueue = (targetQueue+1)%_numQueues;
+                } else {
+                    t->execute(_fid, _batchSize);
+                    delete t;
+                }
+            }
+        } else if ( _stealLogic == 1) {
+            // Stealing in sequential order from same domain first
+        
+            targetQueue = (targetQueue+1)%_numQueues;
+
+            while (targetQueue != _threadID) {
+                if ( _physical_ids[targetQueue] == currentDomain ){
+                    t = _q[targetQueue]->dequeueTask();
+                    if( isEOF(t) ) {
+                        targetQueue = (targetQueue+1)%_numQueues;
+                    } else {
+                        t->execute(_fid, _batchSize);
+                        delete t;
+                    }
+                } else {
+                    targetQueue = (targetQueue+1)%_numQueues;
+                }
+            }
+            
+            // No more tasks on this domain, now switching to other domain
+            
+            targetQueue = (targetQueue+1)%_numQueues;
+            
+            while (targetQueue != _threadID) {
+                if ( _physical_ids[targetQueue] != currentDomain ){
+                    t = _q[targetQueue]->dequeueTask();
+                    if( isEOF(t) ) {
+                        targetQueue = (targetQueue+1)%_numQueues;
+                    } else {
+                        t->execute(_fid, _batchSize);
+                        delete t;
+                    }
+                } else {
+                    targetQueue = (targetQueue+1)%_numQueues;
+                }
+            }
+        } else if( _stealLogic == 2) {
+            // stealing from random workers until all workers EOF
+            
+            eofWorkers.fill(false);
+            while( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues ) {
+                targetQueue = rand() % _numQueues;
+                if( eofWorkers[targetQueue] == false ) {
+                    t = _q[targetQueue]->dequeueTask();
+                    //std::cout << "Execute task stolen from: " << targetQueue << std::endl;
+                    if( isEOF(t) ) {
+                        eofWorkers[targetQueue] = true;
+                    } else {
+                        t->execute(_fid, _batchSize);
+                        delete t;
+                    }
+                }
+            }
+            
+        } else if ( _stealLogic == 3) {
+            // stealing from random workers from same socket first
+            int queuesThisDomain = 0;
+            eofWorkers.fill(false);
+            
+            for( int i=0; i<_numQueues; i++ ) {
+                if( _physical_ids[i] == currentDomain ) {
+                    queuesThisDomain++;
+                }
+            }
+            
+            while( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain ) {
+                targetQueue = rand() % _numQueues;
+                if( _physical_ids[targetQueue] == currentDomain ) {
+                    if( eofWorkers[targetQueue] == false ) {
+                        t = _q[targetQueue]->dequeueTask();
+                        if( isEOF(t) ) {
+                            eofWorkers[targetQueue] = true;
+                        } else {
+                            t->execute(_fid, _batchSize);
+                            delete t;
+                        }
+                    }
+                }
+            }
+            
+            // all workers on same domain are EOF, now also allowing stealing from other domain
+            // This could also be done by keeping a list of EOF workers on the other domain
+            
+            while ( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < _numQueues ) {
+                targetQueue = rand() % _numQueues;
+                // no need to check if they are on the other domain, because otherwise they would be EOF anyway
+                if( eofWorkers[targetQueue] == false ) {
+                    t = _q[targetQueue]->dequeueTask();
+                    if( isEOF(t) ) {
+                        eofWorkers[targetQueue] = true;
+                    } else {
+                        t->execute(_fid, _batchSize);
+                        delete t;
+                    }
+                }
+            }
+        }
+        
+        // No more tasks available anywhere
+        if( _verbose )
+            std::cerr << "WorkerCPU: received EOF, finalized." << std::endl;
+    }
+};
+
+class WorkerCPUPerGroup : public Worker {
+    std::vector<TaskQueue*> _q;
+    std::vector<int> _physical_ids;
+    std::vector<int> _unique_threads;
+    std::array<bool, 256> eofWorkers;
+    bool _verbose;
+    uint32_t _fid;
+    uint32_t _batchSize;
+    int _threadID;
+    int _numQueues;
+    int _queueMode;
+    int _stealLogic;
+    bool _pinWorkers;
+public:
+    // this constructor is to be used in practice
+    WorkerCPUPerGroup(std::vector<TaskQueue*> deques, std::vector<int> physical_ids, std::vector<int> unique_threads, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100, int threadID = 0, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) : Worker(), _q(deques), _physical_ids(physical_ids), _unique_threads(unique_threads),
+            _verbose(verbose), _fid(fid), _batchSize(batchSize), _threadID(threadID), _numQueues(numQueues), _queueMode(queueMode), _stealLogic(stealLogic), _pinWorkers(pinWorkers) {
+        // at last, start the thread
+        t = std::make_unique<std::thread>(&WorkerCPUPerGroup::run, this);
+    }
+    
+    ~WorkerCPUPerGroup() override = default;
+
+    void run() override {
+        if (_pinWorkers) {
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(_threadID, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        }
+        int currentDomain = _physical_ids[_threadID];
+        int targetQueue = currentDomain;
+        
+        Task* t = _q[targetQueue]->dequeueTask();
+
+        while( !isEOF(t) ) {
+            //execute self-contained task
+            if( _verbose )
+                std::cerr << "WorkerCPU: executing task." << std::endl;
+            t->execute(_fid, _batchSize);
+            delete t;
+            //get next tasks (blocking)
+            t = _q[targetQueue]->dequeueTask();
+        }
+        
+        // No more tasks on own queue, now switching to other queues
+        // Can be improved by assigning a "Foreman" for each socket
+        // responsible for task stealing
+        
+        targetQueue = (targetQueue+1)%_numQueues;
+
+        while(targetQueue != currentDomain) {
+            t = _q[targetQueue]->dequeueTask();
+            if( isEOF(t) ) {
+                targetQueue = (targetQueue+1)%_numQueues;
+            } else {
+                t->execute(_fid, _batchSize);
+                delete t;
+            }
+        }
+
         if( _verbose )
             std::cerr << "WorkerCPU: received EOF, finalized." << std::endl;
     }
