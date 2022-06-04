@@ -30,6 +30,10 @@
 
 using namespace mlir;
 
+// Optional attribute of CallKernelOp, which indicates that all results shall
+// be combined into a single variadic result.
+const std::string ATTR_HASVARIADICRESULTS = "hasVariadicResults";
+
 #if 0
 // At the moment, all of these operations are lowered to kernel calls.
 template <typename BinaryOp, typename ReplIOp, typename ReplFOp>
@@ -175,17 +179,57 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
                                                      MLIRContext *context,
                                                      TypeConverter *typeConverter,
                                                      TypeRange resultTypes,
-                                                     TypeRange operandTypes)
+                                                     TypeRange operandTypes,
+                                                     bool hasVarRes,
+                                                     Type indexType)
     {
-
         llvm::SmallVector<Type, 5> args;
-        for (auto type : resultTypes) {
-            if (typeConverter->isLegal(type)) {
-                args.push_back(type);
-            }
-            else if (failed(typeConverter->convertType(type, args)))
-                emitError(loc) << "Couldn't convert result type `" << type << "`\n";
+        
+        // --------------------------------------------------------------------
+        // Results
+        // --------------------------------------------------------------------
+        
+        const size_t numRes = resultTypes.size();
+        if(hasVarRes) { // combine all results into one variadic result
+            // TODO Support individual result types, at least if they are all
+            // mapped to the superclass Structure (see #397).
+            // Check if all results have the same type.
+            Type t0 = resultTypes[0];
+            Type mt0 = t0.dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+            for(size_t i = 1; i < numRes; i++)
+                if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
+                    throw std::runtime_error(
+                            "all results of a CallKernelOp must have the same "
+                            "type to combine them into a single variadic result"
+                    );
+            // Wrap the common result type into a pointer, since we need an
+            // array of that type.
+            args.push_back(LLVM::LLVMPointerType::get(
+                    typeConverter->isLegal(t0)
+                    ? t0
+                    : typeConverter->convertType(t0)
+            ));
         }
+        else // typical case
+            for (auto type : resultTypes) {
+                if (typeConverter->isLegal(type)) {
+                    args.push_back(type);
+                }
+                else if (failed(typeConverter->convertType(type, args)))
+                    emitError(loc) << "Couldn't convert result type `" << type << "`\n";
+            }
+        
+        // --------------------------------------------------------------------
+        // Operands
+        // --------------------------------------------------------------------
+        
+        if(hasVarRes)
+            // Create a parameter for passing the number of results in the
+            // single variadic result.
+            args.push_back(typeConverter->isLegal(indexType)
+                    ? indexType
+                    : typeConverter->convertType(indexType));
+        
         for (auto type : operandTypes) {
             if (typeConverter->isLegal(type)) {
                 args.push_back(type);
@@ -194,16 +238,24 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
                 emitError(loc) << "Couldn't convert operand type `" << type << "`\n";
         }
 
+        // --------------------------------------------------------------------
+        // Create final LLVM types
+        // --------------------------------------------------------------------
+        
         std::vector<Type> argsLLVM;
         for (size_t i = 0; i < args.size(); i++) {
-            Type type = args[i]; //.cast<Type>();
-            if (i < resultTypes.size()) {
-                // outputs have to be given by reference
+            Type type = args[i];
+            // Wrap result types into a pointer, since we want to pass results
+            // "by-reference". Note that a variadic result is not passed
+            // "by-reference", since we don't need to change the array itself
+            // in a kernel.
+            if (!hasVarRes && i < numRes) {
                 type = LLVM::LLVMPointerType::get(type);
             }
-
+            
             argsLLVM.push_back(type);
         }
+        
         return argsLLVM;
     }
 
@@ -236,20 +288,29 @@ public:
     matchAndRewrite(daphne::CallKernelOp op, ArrayRef<Value> operands,
                     ConversionPatternRewriter &rewriter) const override
     {
+        // Whether all results of the operation shall be combined into one
+        // vardiadic result. If this is false (typical case), we pass a
+        // separate nullptr for each result to the kernel. If it is true, we
+        // create an array with the number of results, fill it with nullptrs,
+        // and pass that to the kernel (variadic results).
+        const bool hasVarRes = op->hasAttr(ATTR_HASVARIADICRESULTS)
+                ? op->getAttr(ATTR_HASVARIADICRESULTS).dyn_cast<BoolAttr>().getValue()
+                : false;
+        
         auto module = op->getParentOfType<ModuleOp>();
         auto loc = op.getLoc();
 
         auto inputOutputTypes = getLLVMInputOutputTypes(
                                                         loc, rewriter.getContext(), typeConverter,
-                                                        op.getResultTypes(), ValueRange(operands).getTypes());
+                                                        op.getResultTypes(), ValueRange(operands).getTypes(),
+                                                        hasVarRes, rewriter.getIndexType());
 
         // create function protoype and get `FlatSymbolRefAttr` to it
         auto kernelRef = getOrInsertFunctionAttr(
                                                  rewriter, module, op.getCalleeAttr().getValue(),
                                                  getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
 
-        auto kernelOperands =
-                allocOutputReferences(loc, rewriter, operands, inputOutputTypes);
+        auto kernelOperands = allocOutputReferences(loc, rewriter, operands, inputOutputTypes, op->getNumResults(), hasVarRes);
 
         // call function
         rewriter.create<CallOp>(
@@ -257,7 +318,8 @@ public:
                 /*no return value*/ LLVM::LLVMVoidType::get(rewriter.getContext()),
                 kernelOperands);
         rewriter.replaceOp(op, dereferenceOutputs(loc, rewriter, module,
-                                                  operands.size(), kernelOperands));
+                                                  op->getNumResults(),
+                                                  hasVarRes, kernelOperands));
         return success();
     }
 
@@ -265,33 +327,57 @@ private:
 
     static std::vector<Value>
     dereferenceOutputs(Location &loc, PatternRewriter &rewriter, ModuleOp &module,
-                       size_t numInputs, std::vector<Value> kernelOperands)
+                       size_t numResults, bool hasVarRes, std::vector<Value> kernelOperands)
     {
         // transformed results
         std::vector<Value> results;
-        for (size_t i = 0; i < kernelOperands.size() - numInputs; i++) {
-            // dereference output
-            auto value = kernelOperands[i];
-            // load element (dereference)
-            auto resultVal = rewriter.create<LLVM::LoadOp>(loc, value);
-
-            results.push_back(resultVal);
+        
+        if(hasVarRes) { // combine all results into one variadic result
+            for(size_t i = 0; i < numResults; i++) {
+                std::vector<Value> indices = {rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))};
+                results.push_back(rewriter.create<LLVM::LoadOp>(
+                        loc,
+                        rewriter.create<LLVM::GEPOp>(
+                                loc,
+                                kernelOperands[0].getType(),
+                                kernelOperands[0],
+                                indices
+                        )
+                ));
+            }
         }
+        else // typical case
+            for (size_t i = 0; i < numResults; i++) {
+                // dereference output
+                auto value = kernelOperands[i];
+                // load element (dereference)
+                auto resultVal = rewriter.create<LLVM::LoadOp>(loc, value);
+
+                results.push_back(resultVal);
+            }
+        
         return results;
     }
 
     std::vector<Value>
     allocOutputReferences(Location &loc, PatternRewriter &rewriter,
                           ArrayRef<Value> operands,
-                          std::vector<Type> inputOutputTypes) const
+                          std::vector<Type> inputOutputTypes, size_t numRes, bool hasVarRes) const
     {
-        // constant of 1 for alloca of output
-        Value cst1 =
-                rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(1));
 
         std::vector<Value> kernelOperands;
-        for (size_t i = 0; i < inputOutputTypes.size() - operands.size(); i++) {
-            auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1);
+        
+        // --------------------------------------------------------------------
+        // Results
+        // --------------------------------------------------------------------
+        
+        if(hasVarRes) { // combine all results into one variadic result
+            // Allocate an array of numRes elements.
+            auto allocaOp = rewriter.create<LLVM::AllocaOp>(
+                    loc,
+                    inputOutputTypes[0],
+                    rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(numRes)).getResult()
+            );
             kernelOperands.push_back(allocaOp);
 
             // If the type of this result parameter is a pointer (i.e. when it
@@ -299,17 +385,56 @@ private:
             // element with a null pointer (required by the kernels). Otherwise
             // (i.e. when it represents a scalar), initialization is not
             // required.
-            if(inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType().isa<LLVM::LLVMPointerType>()) {
-                auto elType = inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType();
-                rewriter.create<LLVM::StoreOp>(
-                    loc,
-                    rewriter.create<LLVM::NullOp>(loc, elType),
-                    allocaOp
-                );
+            Type elType = inputOutputTypes[0].dyn_cast<LLVM::LLVMPointerType>().getElementType();
+            if(elType.isa<LLVM::LLVMPointerType>()) {
+                for(size_t i = 0; i < numRes; i++) {
+                    std::vector<Value> indices = {rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))};
+                    rewriter.create<LLVM::StoreOp>(
+                        loc,
+                        rewriter.create<LLVM::NullOp>(loc, elType),
+                        rewriter.create<LLVM::GEPOp>(
+                                loc, inputOutputTypes[0], allocaOp, indices
+                        )
+                    );
+                }
             }
         }
+        else { // typical case
+            // Constant of 1 for AllocaOp of output.
+            Value cst1 = rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(1));
+            
+            for (size_t i = 0; i < numRes; i++) {
+                // Allocate space for a single element.
+                auto allocaOp = rewriter.create<LLVM::AllocaOp>(loc, inputOutputTypes[i], cst1);
+                kernelOperands.push_back(allocaOp);
+
+                // If the type of this result parameter is a pointer (i.e. when it
+                // represents a matrix or frame), then initialize the allocated
+                // element with a null pointer (required by the kernels). Otherwise
+                // (i.e. when it represents a scalar), initialization is not
+                // required.
+                Type elType = inputOutputTypes[i].dyn_cast<LLVM::LLVMPointerType>().getElementType();
+                if(elType.isa<LLVM::LLVMPointerType>()) {
+                    rewriter.create<LLVM::StoreOp>(
+                        loc,
+                        rewriter.create<LLVM::NullOp>(loc, elType),
+                        allocaOp
+                    );
+                }
+            }
+        }
+        
+        // --------------------------------------------------------------------
+        // Operands
+        // --------------------------------------------------------------------
+        
+        if(hasVarRes)
+            // Insert the number of results in the variadic result as a constant.
+            kernelOperands.push_back(rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(numRes)));
+        
         for(auto op : operands)
             kernelOperands.push_back(op);
+        
         return kernelOperands;
     }
 };
@@ -401,7 +526,6 @@ public:
         auto numDataOperands = op.inputs().size();
         std::vector<mlir::Value> func_ptrs;
 
-        // TODO: multi-input multi-return support
         auto i1Ty = IntegerType::get(getContext(), 1);
         auto ptrI1Ty = LLVM::LLVMPointerType::get(i1Ty);
         auto ptrPtrI1Ty = LLVM::LLVMPointerType::get(ptrI1Ty);
@@ -542,22 +666,27 @@ public:
         std::stringstream callee;
         callee << '_' << op->getName().stripDialect().str();
 
-        // TODO: multi-return, pass returns as operand instead
-        if(op->getNumResults() > 0 && op->getNumResults() < 3) {
-            // Append names of result types to the kernel name.
-            Operation::result_type_range resultTypes = op->getResultTypes();
-            for (size_t i = 0; i < resultTypes.size(); i++)
-                callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[i]);
-        }
-        else {
-            throw std::runtime_error(std::string("Encountered vectorizedPipelineOp with ") +
-                    std::string(std::to_string(op->getNumResults())) +
-                    std::string(" results. We support them with either one or two results atm."));
-        }
+        // Get some information on the results.
+        Operation::result_type_range resultTypes = op->getResultTypes();
+        const size_t numRes = op->getNumResults();
+        
+        // TODO Support individual types for all outputs (see #397).
+        // Check if all results have the same type.
+        Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+        for(size_t i = 1; i < numRes; i++)
+            if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
+                throw std::runtime_error(
+                        "encountered a vectorized pipelines with different "
+                        "result types, but at the moment we require all "
+                        "results to have the same type"
+                );
+        
+        // Append the name of the common type of all results to the kernel name.
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
 
         mlir::Type operandType;
         std::vector<Value> newOperands;
-        if(op->getNumResults() > 0) {
+        if(numRes > 0) {
             auto m32type = rewriter.getF32Type();
             auto m64type = rewriter.getF64Type();
             auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
@@ -612,8 +741,6 @@ public:
         newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numDataOperands)));
 
         auto numOutputs = op.getNumResults();
-        callee << "__size_t";
-        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numOutputs)));
         // Variadic num rows operands.
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
         auto rowsOperands = operands.drop_front(numDataOperands);
@@ -661,8 +788,9 @@ public:
             loc,
             callee.str(),
             newOperands,
-            op->getResultTypes()
+            resultTypes
         );
+        kernel->setAttr(ATTR_HASVARIADICRESULTS, rewriter.getBoolAttr(true));
         rewriter.replaceOp(op, kernel.getResults());
         return success();
     }

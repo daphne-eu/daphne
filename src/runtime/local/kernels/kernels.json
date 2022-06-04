@@ -1987,8 +1987,12 @@
             ],
             "runtimeParams": [
                 {
-                    "type": "DTRes *&",
-                    "name": "res"
+                    "type": "DTRes **",
+                    "name": "outputs"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numOutputs"
                 },
                 {
                     "type": "bool *",
@@ -2001,78 +2005,6 @@
                 {
                     "type": "size_t",
                     "name": "numInputs"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numOutputs"
-                },
-                {
-                    "type": "int64_t *",
-                    "name": "outRows"
-                },
-                {
-                    "type": "int64_t *",
-                    "name": "outCols"
-                },
-                {
-                    "type": "int64_t *",
-                    "name": "splits"
-                },
-                {
-                    "type": "int64_t *",
-                    "name": "combines"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numFuncs"
-                },
-                {
-                    "type": "void **",
-                    "name": "fun"
-                }
-            ]
-        },
-        "instantiations": [
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "float"]],
-            [["CSRMatrix", "double"]]
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "VectorizedPipeline.h",
-            "opName": "vectorizedPipeline",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "DTRes *&",
-                    "name": "res1"
-                },
-                {
-                    "type": "DTRes *&",
-                    "name": "res2"
-                },
-                {
-                    "type": "bool *",
-                    "name": "isScalar"
-                },
-                {
-                    "type": "Structure **",
-                    "name": "inputs"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numInputs"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numOutputs"
                 },
                 {
                     "type": "int64_t *",
