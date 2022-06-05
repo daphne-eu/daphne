@@ -122,10 +122,10 @@ template <> struct Group<Frame> {
         size_t numRowsArg = arg->getNumRows();
         size_t numColsRes = numKeyCols + numAggCols;
         size_t numRowsRes = numRowsArg;
-        if (arg == nullptr || keyCols == nullptr || numKeyCols == 0 || aggCols == nullptr || numAggCols == 0 || aggFuncs == nullptr || numAggFuncs == 0) {
+        if (arg == nullptr || (keyCols == nullptr && numKeyCols != 0) || (aggCols == nullptr && numAggCols != 0) || (aggFuncs == nullptr && numAggFuncs != 0))   {
             throw std::runtime_error("group-kernel called with invalid arguments");
         }
-
+        
         // convert labels to indices
         auto idxs = std::shared_ptr<size_t[]>(new size_t[numColsRes]);
         bool * ascending = new bool[numKeyCols];
@@ -147,10 +147,16 @@ template <> struct Group<Frame> {
         auto groups = new std::vector<std::pair<size_t, size_t>>;
         Frame* ordered{};     
 
-        // order frame rows by groups and get the group vector 
-        order(ordered, reduced, idxs.get(), numKeyCols, ascending, numKeyCols, false, ctx, groups);
+        // order frame rows by groups and get the group vector;
+        if (numKeyCols > 0){
+            order(ordered, reduced, idxs.get(), numKeyCols, ascending, numKeyCols, false, ctx, groups);
+            DataObjectFactory::destroy(reduced);
+        } else {
+            //skip for pure aggregation over all rows (no grouping) 
+            groups->push_back(std::make_pair(0, numRowsArg));
+            ordered = reduced;
+        }
         delete [] ascending;
-        DataObjectFactory::destroy(reduced);
         size_t inGroups = 0;
         for (auto & group : *groups){
             inGroups += group.second-group.first;

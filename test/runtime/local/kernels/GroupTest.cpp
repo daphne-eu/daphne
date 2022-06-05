@@ -159,6 +159,40 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
         DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp, c3Exp, c4Exp, c5Exp, c6Exp, c7Exp, c8Exp, c9Exp);
     }
+    SECTION("0 grouping columns, 2 identical aggregation columns") {
+        numKeyCols = 0;
+        numAggCols = 2;
+        keyCols = new const char*[10]{};
+        aggCols = new const char*[10]{labels[2].c_str(), labels[2].c_str()};
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::COUNT;
+        aggFuncs[1] = mlir::daphne::GroupEnum::SUM;
+
+        numRows = 1;
+        DenseMatrix<uint64_t> * c0Exp = genGivenVals<DenseMatrix<uint64_t>>(numRows, { 20 });
+        DenseMatrix<VT2> * c1Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 5 });
+        std::vector<Structure *> colsExp {c0Exp, c1Exp};
+        std::string labelsExp[] = {"COUNT(ccc)", "SUM(ccc)"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp);
+    }
+    SECTION("3 grouping column, 0 aggregation columns") {
+        numKeyCols = 3;
+        numAggCols = 0;
+        keyCols = new const char*[10]{labels[0].c_str(), labels[2].c_str(), labels[3].c_str()};
+        aggCols = new const char*[10]{};
+        aggFuncs = nullptr;
+
+        numRows = 9;
+        DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1.5, 1.5, 1.5, 1.5, 2.7, 2.7, 2.7, 2.7, 3.2 });
+        DenseMatrix<VT2> * c1Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { -1, 0, 1, 3, -1, 0, 1, 2, 1 });
+        DenseMatrix<VT3> * c2Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 0, 1, 3, 1, 0, 1, 2, 1 });
+
+        std::vector<Structure *> colsExp {c0Exp, c1Exp, c2Exp};
+        std::string labelsExp[] = {"aaa", "ccc", "ddd"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp);
+    }
 
     group(res, arg, keyCols, numKeyCols, aggCols, numAggCols, aggFuncs, numAggCols, nullptr);
     CHECK(*res == *exp);
