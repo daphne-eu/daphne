@@ -343,9 +343,7 @@ namespace
             
             std::stringstream callee;
             callee << "_distributedPipeline"; // kernel name
-            for(size_t i = 0; i < numOutputs; i++)
-                callee << "__DenseMatrix_double"; // outputs
-            callee
+            callee << "__DenseMatrix_double_variadic" // outputs
                 << "__Structure_variadic" // inputs
                 << "__size_t" // numOutputs
                 << "__size_t" // numInputs

@@ -53,7 +53,7 @@ using mlir::daphne::VectorCombine;
 // One output.
 template<class DTRes>
 void distributedPipeline(
-        DTRes *& output0,
+        DTRes ** outputs,
         const Structure ** inputs,
         size_t numInputs, size_t numOutputs,
         int64_t * outRows, int64_t * outCols,
@@ -61,34 +61,12 @@ void distributedPipeline(
         const char * irCode,
         DCTX(ctx)
 ) {
-    assert(numOutputs == 1 && "FIXME: lowered to wrong kernel");
 
     auto wrapper = std::make_unique<DistributedWrapper<DTRes>>(ctx);
-
-    DTRes **res[] = {&output0};
+    // TODO *** -> **
+    DTRes ***res = new DTRes **[numOutputs];
+    for (size_t i = 0; i < numOutputs; i++)
+        res[i] = outputs+i;
     wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows, outCols,
-            reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
-}
-
-// Two outputs.
-template<class DTRes>
-void distributedPipeline(
-        DTRes *& output0,
-        DTRes *& output1,
-        const Structure ** inputs,
-        size_t numInputs, size_t numOutputs,
-        int64_t * outRows, int64_t * outCols,
-        int64_t * splits, int64_t * combines,
-        const char * irCode,
-        DCTX(ctx)
-) {
-    assert(numOutputs == 2 && "FIXME: lowered to wrong kernel");
-
-    auto wrapper = std::make_unique<DistributedWrapper<DTRes>>(ctx);
-
-    DTRes*** res = new DTRes**[2];
-    res[0] = &output0;
-    res[1] = &output1;
-    wrapper->execute(irCode, res, inputs, numInputs, numOutputs, outRows, outCols, 
             reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines));
 }
