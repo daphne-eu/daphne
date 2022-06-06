@@ -31,9 +31,9 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
 
-template<class DT>
-void checkAggAll(AggOpCode opCode, const DT * arg, typename DT::VT exp) {
-    typename DT::VT res = aggAll<DT>(opCode, arg, nullptr);
+template<typename VTRes, class DTArg>
+void checkAggAll(AggOpCode opCode, const DTArg * arg, VTRes exp) {
+    VTRes res = aggAll<VTRes, DTArg>(opCode, arg, nullptr);
     CHECK(res == exp);
 }
 
@@ -104,10 +104,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 2, 0, 0,
         0, 0, 5, 0,
     });
-    
-    checkAggAll(AggOpCode::MAX, m0, 0);
-    checkAggAll(AggOpCode::MAX, m1, 9);
-    checkAggAll(AggOpCode::MAX, m2, 9);
+
+    // In case of max the result type is the same as the input type
+    checkAggAll(AggOpCode::MAX, m0, (typename DT::VT)0);
+    checkAggAll(AggOpCode::MAX, m1, (typename DT::VT)9);
+    checkAggAll(AggOpCode::MAX, m2, (typename DT::VT)9);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
@@ -124,7 +125,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         0, 0, 0, 0,
     });
     auto m1 = genGivenVals<DT>(3, {
-        4, 6, 3, 9,
+        1, 6, 3, 9,
         2, 2, 8, 9,
         4, 4, 5, 4,
     });
@@ -134,9 +135,9 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_
         0, 0, 5, 0,
     });
     
-    checkAggAll(AggOpCode::MEAN, m0, 0);
-    checkAggAll(AggOpCode::MEAN, m1, 5);
-    checkAggAll(AggOpCode::MEAN, m2, 2);
+    checkAggAll(AggOpCode::MEAN, m0, (typename DT::VT)0);
+    checkAggAll(AggOpCode::MEAN, m1, (typename DT::VT)4.75);
+    checkAggAll(AggOpCode::MEAN, m2, (typename DT::VT)2);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
