@@ -39,6 +39,7 @@ set(TEST_SOURCES
         api/cli/sql/SQLTest.cpp
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
+        api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
     
         api/python/DaphneLibTest.cpp

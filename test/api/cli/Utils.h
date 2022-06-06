@@ -457,4 +457,19 @@ void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string
  */
 [[maybe_unused]] [[nodiscard]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl);
 
+// TODO Ideally, we shouldn't need that. There should be a way to print data
+// objects without technical information such as their physical data
+// representation.
+/**
+ * @brief Replaces all occurrences of "DenseMatrix" and "CSRMatrix" in the
+ * given string by "<SomeMatrix>".
+ * 
+ * Can be used to prepare the outputs of a DaphneDSL script with two different
+ * sets of arguments for string comparison.
+ * 
+ * @param str 
+ * @return
+ */
+std::string generalizeDataTypes(const std::string& str);
+
 #endif //TEST_API_CLI_UTILS_H

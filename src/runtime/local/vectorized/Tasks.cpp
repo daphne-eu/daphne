@@ -120,46 +120,58 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
 
 template<typename VT>
 void CompiledPipelineTask<CSRMatrix<VT>>::execute(uint32_t fid, uint32_t batchSize) {
-    assert(_data._numOutputs == 1 && "TODO");
-    size_t localResNumRows;
-    size_t localResNumCols;
-    switch(_data._combines[0]) {
-        case VectorCombine::ROWS: {
-            assert(_data._wholeResultCols[0] != -1 && "TODO");
-            localResNumRows = _data._ru - _data._rl;
-            localResNumCols = _data._wholeResultCols[0];
-            break;
+    std::vector<size_t> localResNumRows(_data._numOutputs);
+    std::vector<size_t> localResNumCols(_data._numOutputs);
+    for(size_t i = 0; i < _data._numOutputs; i++) {
+        switch(_data._combines[i]) {
+            case VectorCombine::ROWS: {
+                assert(_data._wholeResultCols[i] != -1 && "TODO");
+                localResNumRows[i] = _data._ru - _data._rl;
+                localResNumCols[i] = _data._wholeResultCols[i];
+                break;
+            }
+            case VectorCombine::COLS: {
+                assert(_data._wholeResultRows[i] != -1 && "TODO");
+                localResNumRows[i] = _data._wholeResultRows[i];
+                localResNumCols[i] = _data._ru - _data._rl;
+                break;
+            }
+            default:
+                throw std::runtime_error("Not implemented");
         }
-        case VectorCombine::COLS: {
-            assert(_data._wholeResultRows[0] != -1 && "TODO");
-            localResNumRows = _data._wholeResultRows[0];
-            localResNumCols = _data._ru - _data._rl;
-            break;
-        }
-        default:
-            throw std::runtime_error("Not implemented");
     }
     
-    VectorizedDataSink<CSRMatrix<VT>> localSink(_data._combines[0], localResNumRows, localResNumCols);
-    CSRMatrix<VT> *lres = nullptr;
+    std::vector<VectorizedDataSink<CSRMatrix<VT>>*> localSinks(_data._numOutputs);
+    for(size_t i = 0; i < _data._numOutputs; i++)
+        localSinks[i] = new VectorizedDataSink<CSRMatrix<VT>>(_data._combines[i], localResNumRows[i], localResNumCols[i]);
+    
+    std::vector<CSRMatrix<VT>*> lres(_data._numOutputs, nullptr);
     for(uint64_t r = _data._rl ; r < _data._ru ; r += batchSize) {
         //create zero-copy views of inputs/outputs
         uint64_t r2 = std::min(r + batchSize, _data._ru);
         
         auto linputs = this->createFuncInputs(r, r2);
-        CSRMatrix<VT> **outputs[] = {&lres};
+        CSRMatrix<VT> *** outputs = new CSRMatrix<VT>**[_data._numOutputs];
+        for(size_t i = 0; i < _data._numOutputs; i++)
+            outputs[i] = &(lres[i]);
         //execute function on given data binding (batch size)
         _data._funcs[fid](outputs, linputs.data(), _data._ctx);
-        localSink.add(lres, r - _data._rl, false);
+        delete[] outputs;
+        for(size_t i = 0; i < _data._numOutputs; i++)
+            localSinks[i]->add(lres[i], r - _data._rl, false);
 
         // cleanup
-        lres = nullptr;
+        for(size_t i = 0; i < _data._numOutputs; i++)
+            lres[i] = nullptr;
         
         // Note that a pipeline manages the reference counters of its inputs
         // internally. Thus, we do not need to care about freeing the inputs
         // here.
     }
-    _resultSink.add(localSink.consume(), _data._rl);
+    for(size_t i = 0; i < _data._numOutputs; i++) {
+        _resultSinks[i]->add(localSinks[i]->consume(), _data._rl);
+        delete localSinks[i];
+    }
 }
 
 template class CompiledPipelineTask<DenseMatrix<double>>;
