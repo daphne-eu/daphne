@@ -214,13 +214,23 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_
     auto m2 = genGivenVals<DTArg>(3, {
         4, 0, 0, 8,
         0, 4, 0, 0,
-        0, 0, 8, 0,
+        0, 0, 7, 0,
     });
-    auto m2exp = genGivenVals<DTRes>(3, {3, 1, 2});
+    auto m2exp = genGivenVals<DTRes>(3, {3, 1, typename DTArg::VT(1.75)});
+
+    // Test case integer matrix -> double results.
+    // Maybe move this to seperate TEST_CASE_TEMPLATE ?
+    auto m3 = genGivenVals<DTArg>(3, {
+        5, 7, 1, 9,
+        2, 5, 7, 1,
+        7, 1, 5, 4,
+    });
+    auto m3exp = genGivenVals<DenseMatrix<double>>(3, {5.5, 3.75, 4.25});
     
     checkAggRow(AggOpCode::MEAN, m0, m0exp);
     checkAggRow(AggOpCode::MEAN, m1, m1exp);
     checkAggRow(AggOpCode::MEAN, m2, m2exp);
+    checkAggRow(AggOpCode::MEAN, m3, m3exp);
     
-    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
 }
