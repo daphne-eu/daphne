@@ -125,17 +125,18 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
     size_t colIdxs[4];
     bool ascending[4];
 
-    DenseMatrix<VT>* argMatrix = genGivenVals<DenseMatrix<VT>>(4, {
-            1, 10, 3, 7, 7, 7,
-            17, 7, 2, 3, 7, 7,
-            7, 7, 1, 2, 3, 7,
-            7, 7, 1, 1, 2, 3,
-        });
+    DenseMatrix<VT>* argMatrix = nullptr;
     DenseMatrix<VT>* resMatrix = nullptr;
     DenseMatrix<VT>* expMatrix = nullptr;
 
 
     SECTION("single key column, ascending") {
+        argMatrix = genGivenVals<DenseMatrix<VT>>(4, {
+            1, 10, 3, 7, 7, 7,
+            17, 7, 2, 3, 7, 7,
+            7, 7, 1, 2, 3, 7,
+            7, 7, 1, 1, 2, 3,
+        });
         expMatrix =  genGivenVals<DenseMatrix<VT>>(4, {
             7, 7, 1, 1, 2, 3,
             7, 7, 1, 2, 3, 7,
@@ -147,11 +148,49 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
         ascending[0] = true;
     }
     SECTION("four key columns, ascending/descending") {
-        expMatrix =  genGivenVals<DenseMatrix<VT>>(4, {
-            17, 7, 2, 3, 7, 7,
-            7, 7, 1, 1, 2, 3,
-            7, 7, 1, 2, 3, 7,
-            1, 10, 3, 7, 7, 7,
+        argMatrix = genGivenVals<DenseMatrix<VT>>(20, {
+            1.1, 1.1, 0, 6,
+            -3.1, -2, 0, 3,
+            4.4, 4.4, 1, 9,
+            -8.8, 2.1, 1, 1,
+            5.6, 1.1, 0, 13,
+            2.3, 2.3, 0, 7,
+            0.3, 0.5, 0, 5,
+            4.4, 4.4, 3, 10,
+            6.6, -10, 0, 15,
+            6.6, 0, 0, 16,
+            -8.8, 2.1, 2, 2,
+            6.6, 10, 1, 17,
+            6.6, 10, 2, 18,
+            4.4, 4.4, 3, 11,
+            -0.3, -0.3, 0, 4,
+            4.4, -15.5, 0, 12,
+            6.6, 10, 3, 19,
+            2.3, -2.3, 0, 8,
+            6.6, 10, 3, 20,
+            5.6, -1.1, 0, 14
+        });
+        expMatrix = genGivenVals<DenseMatrix<VT>>(20, {
+            4.4, -15.5, 0, 12,
+            6.6, -10, 0, 15,
+            2.3, -2.3, 0, 8,
+            -3.1, -2, 0, 3,
+            5.6, -1.1, 0, 14,
+            -0.3, -0.3, 0, 4,
+            6.6, 0, 0, 16,
+            0.3, 0.5, 0, 5,
+            5.6, 1.1, 0, 13,
+            1.1, 1.1, 0, 6,
+            -8.8, 2.1, 2, 2,
+            -8.8, 2.1, 1, 1,
+            2.3, 2.3, 0, 7,
+            4.4, 4.4, 3, 10,
+            4.4, 4.4, 3, 11,
+            4.4, 4.4, 1, 9,
+            6.6, 10, 3, 19,
+            6.6, 10, 3, 20,
+            6.6, 10, 2, 18,
+            6.6, 10, 1, 17
         });
         numKeyCols = 4;
         colIdxs[0] = 1;
