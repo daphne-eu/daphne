@@ -118,3 +118,56 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     DataObjectFactory::destroy(exp);
     DataObjectFactory::destroy(res);
 }
+
+TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-err58-cpp)
+    using VT = TestType;
+    size_t numKeyCols;
+    size_t colIdxs[4];
+    bool ascending[4];
+
+    DenseMatrix<VT>* argMatrix = genGivenVals<DenseMatrix<VT>>(4, {
+            1, 10, 3, 7, 7, 7,
+            17, 7, 2, 3, 7, 7,
+            7, 7, 1, 2, 3, 7,
+            7, 7, 1, 1, 2, 3,
+        });
+    DenseMatrix<VT>* resMatrix = nullptr;
+    DenseMatrix<VT>* expMatrix = nullptr;
+
+
+    SECTION("single key column, ascending") {
+        expMatrix =  genGivenVals<DenseMatrix<VT>>(4, {
+            7, 7, 1, 1, 2, 3,
+            7, 7, 1, 2, 3, 7,
+            17, 7, 2, 3, 7, 7,
+            1, 10, 3, 7, 7, 7
+        });
+        numKeyCols = 1;
+        colIdxs[0] = 3;
+        ascending[0] = true;
+    }
+    SECTION("four key columns, ascending/descending") {
+        expMatrix =  genGivenVals<DenseMatrix<VT>>(4, {
+            17, 7, 2, 3, 7, 7,
+            7, 7, 1, 1, 2, 3,
+            7, 7, 1, 2, 3, 7,
+            1, 10, 3, 7, 7, 7,
+        });
+        numKeyCols = 4;
+        colIdxs[0] = 1;
+        ascending[0] = true;
+        colIdxs[1] = 0;
+        ascending[1] = false;
+        colIdxs[2] = 2;
+        ascending[2] = false;
+        colIdxs[3] = 3;
+        ascending[3] = true;
+    }
+    
+    order(resMatrix, argMatrix, colIdxs, numKeyCols, ascending, numKeyCols, false, nullptr);
+
+    CHECK(*resMatrix ==*expMatrix);
+    DataObjectFactory::destroy(argMatrix);
+    DataObjectFactory::destroy(resMatrix);
+    DataObjectFactory::destroy(expMatrix);
+}
