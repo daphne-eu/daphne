@@ -48,9 +48,9 @@ void ctable(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
 // DenseMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
 
-template<typename VTArg>
-struct CTable<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTArg> *& res, const DenseMatrix<VTArg> * lhs, const DenseMatrix<VTArg> * rhs, DCTX(ctx)) {
+template<typename VT>
+struct CTable<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t lhsNumRows = lhs->getNumRows();
         const size_t lhsNumCols = lhs->getNumCols();
         const size_t rhsNumRows = rhs->getNumRows();
@@ -60,14 +60,14 @@ struct CTable<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTArg>> {
         auto rhsVals = rhs->getValues();
 
         if((lhsNumCols != 1) || (rhsNumCols != 1))
-            throw std::runtime_error("lhs and rhs must have only one column");
+            throw std::runtime_error("ctable: lhs and rhs must have only one column");
         if(lhsNumRows != rhsNumRows)
-            throw std::runtime_error("lhs and rhs must have the same number of rows");
+            throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTArg>>(*std::max_element(lhsVals, &lhsVals[lhsNumRows-1]) + 1, 
+            res = DataObjectFactory::create<DenseMatrix<VT>>(*std::max_element(lhsVals, &lhsVals[lhsNumRows-1]) + 1, 
                                                                 *std::max_element(rhsVals, &rhsVals[rhsNumRows-1]) + 1, true);
 
-        // res[i, j] = |{ k | A[k] = i and B[k] = j, 0 ≤ k ≤ n-1 }|.
+        // res[i, j] = |{ k | lhs[k] = i and rhs[k] = j, 0 ≤ k ≤ n-1 }|.
         auto resVals = res->getValues();
         const size_t resRowSkip = res->getRowSkip();
         for(size_t c = 0; c < lhsNumRows; c++)
@@ -78,9 +78,9 @@ struct CTable<DenseMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTArg>> {
 // ----------------------------------------------------------------------------
 // CSRMatrix <- DenseMatrix, DenseMatrix
 // ----------------------------------------------------------------------------
-template<typename VTArg>
-struct CTable<CSRMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTArg>> {
-    static void apply(CSRMatrix<VTArg> *& res, const DenseMatrix<VTArg> * lhs, const DenseMatrix<VTArg> * rhs, DCTX(ctx)) {
+template<typename VT>
+struct CTable<CSRMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *& res, const DenseMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
         const size_t lhsNumRows = lhs->getNumRows();
         const size_t lhsNumCols = lhs->getNumCols();
         const size_t rhsNumRows = rhs->getNumRows();
@@ -90,12 +90,14 @@ struct CTable<CSRMatrix<VTArg>, DenseMatrix<VTArg>, DenseMatrix<VTArg>> {
         auto rhsVals = rhs->getValues();
 
         if((lhsNumCols != 1) || (rhsNumCols != 1))
-            throw std::runtime_error("lhs and rhs must have only one column");
+            throw std::runtime_error("ctable: lhs and rhs must have only one column");
         if(lhsNumRows != rhsNumRows)
-            throw std::runtime_error("lhs and rhs must have the same number of rows");
-        if(res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VTArg>>(*std::max_element(lhsVals, &lhsVals[lhsNumRows-1]) + 1, 
-                                                              *std::max_element(rhsVals, &rhsVals[rhsNumRows-1]) + 1, lhsNumRows, true);
+            throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
+        if(res == nullptr) {
+            const size_t resNumRows = *std::max_element(lhsVals, &lhsVals[lhsNumRows-1]) + 1;
+            const size_t resNumCols = *std::max_element(rhsVals, &rhsVals[rhsNumRows-1]) + 1;
+            res = DataObjectFactory::create<CSRMatrix<VT>>(resNumRows, resNumCols, std::min(lhsNumRows, resNumRows * resNumCols), true);
+        }
 
         for(size_t c = 0; c < lhsNumRows; c++){
             auto i = lhsVals[c];

@@ -25,14 +25,29 @@
 #include <vector>
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("CTable DenseMatrix", TAG_KERNELS, (DenseMatrix), (int64_t, int32_t, double)) {
-    using DT = TestType;
+TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int64_t, int32_t, double)) {
+    using DTRes = TestType;
+    using VT = typename DTRes::VT;
 
+    DenseMatrix<VT> * m0 = nullptr;
+    DenseMatrix<VT> * m1 = nullptr;
+    DTRes * exp = nullptr;
+    
+    SECTION("Very small") {
+        m0 = genGivenVals<DenseMatrix<VT>>(1, {2});
+        m1 = genGivenVals<DenseMatrix<VT>>(1, {2});
+
+        exp = genGivenVals<DTRes>(3, {
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 1,
+        });
+    }
     SECTION("Small") {
-        auto m0 = genGivenVals<DT>(4, {2,4,5,4,});
-        auto m1 = genGivenVals<DT>(4, {0,3,1,3,});
+        m0 = genGivenVals<DenseMatrix<VT>>(4, {2,4,5,4,});
+        m1 = genGivenVals<DenseMatrix<VT>>(4, {0,3,1,3,});
 
-        auto exp = genGivenVals<DT>(6, {
+        exp = genGivenVals<DTRes>(6, {
             0, 0, 0, 0,
             0, 0, 0, 0,
             1, 0, 0, 0,
@@ -40,22 +55,12 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable DenseMatrix", TAG_KERNELS, (DenseMatrix), (in
             0, 0, 0, 2,
             0, 1, 0, 0,
         });
-        
-        DT * res = nullptr;
-        ctable<DT, DT, DT>(res, m0, m1, nullptr);
-        CHECK(*res == *exp);
-        
-        DataObjectFactory::destroy(m0);
-        DataObjectFactory::destroy(m1);
-        DataObjectFactory::destroy(exp);
-        DataObjectFactory::destroy(res);
     }
-
     SECTION("Larger") {
-        auto m0 = genGivenVals<DT>(7, {2,4,5,4,5,1,0,});
-        auto m1 = genGivenVals<DT>(7, {0,3,1,3,1,6,3,});
+        m0 = genGivenVals<DenseMatrix<VT>>(7, {2,4,5,4,5,1,0,});
+        m1 = genGivenVals<DenseMatrix<VT>>(7, {0,3,1,3,1,6,3,});
 
-        auto exp = genGivenVals<DT>(6, {
+        exp = genGivenVals<DTRes>(6, {
             0, 0, 0, 1, 0, 0, 0, 
             0, 0, 0, 0, 0, 0, 1, 
             1, 0, 0, 0, 0, 0, 0,
@@ -63,54 +68,14 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable DenseMatrix", TAG_KERNELS, (DenseMatrix), (in
             0, 0, 0, 2, 0, 0, 0,
             0, 2, 0, 0, 0, 0, 0,
         });
-        
-        DT * res = nullptr;
-        ctable<DT, DT, DT>(res, m0, m1, nullptr);
-        CHECK(*res == *exp);
-        
-        DataObjectFactory::destroy(m0);
-        DataObjectFactory::destroy(m1);
-        DataObjectFactory::destroy(exp);
-        DataObjectFactory::destroy(res);
     }
-}
+    
+    DTRes * res = nullptr;
+    ctable(res, m0, m1, nullptr);
+    CHECK(*res == *exp);
 
-TEMPLATE_PRODUCT_TEST_CASE("CTable CSRMatrix", TAG_KERNELS, (CSRMatrix), (int64_t, int32_t, double)) {
-    using DT = TestType;
-    using VT = typename DT::VT;
-
-    SECTION("Small") {
-        auto m0 = genGivenVals<DenseMatrix<VT>>(1, {2});
-        auto m1 = genGivenVals<DenseMatrix<VT>>(1, {2});
-
-        auto exp = DataObjectFactory::create<DT>(3, 3, 1, true);
-        exp->set(2,2, VT(1));
-        DT * res = nullptr;
-        ctable<DT, DenseMatrix<VT>, DenseMatrix<VT>>(res, m0, m1, nullptr);
-        CHECK(*res == *exp);
-        
-        DataObjectFactory::destroy(m0);
-        DataObjectFactory::destroy(m1);
-        DataObjectFactory::destroy(exp);
-        DataObjectFactory::destroy(res);
-    }
-
-    SECTION("Larger") {
-        auto m0 = genGivenVals<DenseMatrix<VT>>(4, {2,4,5,4,});
-        auto m1 = genGivenVals<DenseMatrix<VT>>(4, {0,3,1,3,});
-
-        auto exp = DataObjectFactory::create<DT>(6, 4, 4, true);
-        exp->set(2,0, VT(1));
-        exp->set(4,3, VT(2));
-        exp->set(5,1, VT(1));
-
-        DT * res = nullptr;
-        ctable<DT, DenseMatrix<VT>, DenseMatrix<VT>>(res, m0, m1, nullptr);
-        CHECK(*res == *exp);
-        
-        DataObjectFactory::destroy(m0);
-        DataObjectFactory::destroy(m1);
-        DataObjectFactory::destroy(exp);
-        DataObjectFactory::destroy(res);
-    }
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(exp);
+    DataObjectFactory::destroy(res);
 }
