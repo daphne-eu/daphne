@@ -64,8 +64,8 @@ struct CTable<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
         if(lhsNumRows != rhsNumRows)
             throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(*std::max_element(lhsVals, &lhsVals[lhsNumRows-1]) + 1, 
-                                                                *std::max_element(rhsVals, &rhsVals[rhsNumRows-1]) + 1, true);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(*std::max_element(lhsVals, &lhsVals[lhsNumRows]) + 1, 
+                                                                *std::max_element(rhsVals, &rhsVals[rhsNumRows]) + 1, true);
 
         // res[i, j] = |{ k | lhs[k] = i and rhs[k] = j, 0 ≤ k ≤ n-1 }|.
         auto resVals = res->getValues();
@@ -94,8 +94,8 @@ struct CTable<CSRMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>> {
         if(lhsNumRows != rhsNumRows)
             throw std::runtime_error("ctable: lhs and rhs must have the same number of rows");
         if(res == nullptr) {
-            const size_t resNumRows = *std::max_element(lhsVals, &lhsVals[lhsNumRows-1]) + 1;
-            const size_t resNumCols = *std::max_element(rhsVals, &rhsVals[rhsNumRows-1]) + 1;
+            const size_t resNumRows = *std::max_element(lhsVals, &lhsVals[lhsNumRows]) + 1;
+            const size_t resNumCols = *std::max_element(rhsVals, &rhsVals[rhsNumRows]) + 1;
             res = DataObjectFactory::create<CSRMatrix<VT>>(resNumRows, resNumCols, std::min(lhsNumRows, resNumRows * resNumCols), true);
         }
 

@@ -43,7 +43,7 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int
             0, 0, 1,
         });
     }
-    SECTION("Small") {
+    SECTION("Small1") {
         m0 = genGivenVals<DenseMatrix<VT>>(4, {2,4,5,4,});
         m1 = genGivenVals<DenseMatrix<VT>>(4, {0,3,1,3,});
 
@@ -54,6 +54,18 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int
             0, 0, 0, 0,
             0, 0, 0, 2,
             0, 1, 0, 0,
+        });
+    }
+    SECTION("Small2") {
+        m0 = genGivenVals<DenseMatrix<VT>>(4, {1,2,3,4,});
+        m1 = genGivenVals<DenseMatrix<VT>>(4, {3,2,1,4,});
+
+        exp = genGivenVals<DTRes>(5, {
+            0, 0, 0, 0, 0,
+            0, 0, 0, 1, 0,
+            0, 0, 1, 0, 0,
+            0, 1, 0, 0, 0,
+            0, 0, 0, 0, 1,
         });
     }
     SECTION("Larger") {
