@@ -2811,5 +2811,56 @@
         "instantiations": [
             ["Frame"]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Group.h",
+            "opName": "group",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char **",
+                    "name": "keyCols"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numKeyCols"
+                },
+                {
+                    "type": "const char **",
+                    "name": "aggCols"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numAggCols"
+                },
+                {
+                    "type": "mlir::daphne::GroupEnum *",
+                    "name": "aggFuncs",
+                    "isVariadic": true
+                },
+                {
+                    "type": "size_t",
+                    "name": "numAggFuncs"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame"]
+        ]
     }
 ]
