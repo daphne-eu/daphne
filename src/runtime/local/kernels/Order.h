@@ -43,6 +43,9 @@ struct Order {
 // Convenience function
 // ****************************************************************************
 
+// Note that we normally don't pass any arguments after the DaphneContext. In
+// this case it is only okay because groupsRes has a default and is meant to be
+// used only by other kernels, not from DaphneDSL.
 template<class DT>
 void order(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
     Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
