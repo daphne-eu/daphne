@@ -723,7 +723,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         ));
     }
     if(func == "ctable") {
-        checkNumArgsExact(func, numArgs, 5);
+        checkNumArgsExact(func, numArgs, 2);
         mlir::Value lhs = args[0];
         mlir::Value rhs = args[1];
         // TODO Support all parameters of this operation again.

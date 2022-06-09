@@ -59,19 +59,39 @@ struct AggAll<DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
         
         const VT * valuesArg = arg->getValues();
-        
-        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
-        VT agg = AggOpCodeUtils::template getNeutral<VT>(opCode);
+        EwBinaryScaFuncPtr<VT, VT, VT> func;
+        VT agg;
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
+            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            agg = AggOpCodeUtils::template getNeutral<VT>(opCode);
+        }
+        else {
+            // TODO Setting the function pointer yields the correct result.
+            // However, since MEAN and STDDEV are not sparse-safe, the program
+            // does not take the same path for doing the summation, and is less
+            // efficient.
+            // for MEAN and STDDDEV, we need to sum
+            func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            agg = VT(0);
+        }
+
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
                 agg = func(agg, valuesArg[c], ctx);
             valuesArg += arg->getRowSkip();
         }
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode))
+            return agg;
 
-        return agg;
+        // The op-code is either MEAN or STDDEV.
+        if (opCode == AggOpCode::MEAN) {
+            agg /= arg->getNumCols() * arg->getNumRows();
+            return agg;
+        }
+        // else op-code is STDDEV
+        // TODO STDDEV
+        throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
     }
 };
 
@@ -97,19 +117,37 @@ struct AggAll<CSRMatrix<VT>> {
     }
     
     static VT apply(AggOpCode opCode, const CSRMatrix<VT> * arg, DCTX(ctx)) {
-        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode)) {
 
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
-        
-        return aggArray(
+            EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            
+            return aggArray(
+                    arg->getValues(0),
+                    arg->getNumNonZeros(),
+                    arg->getNumRows() * arg->getNumCols(),
+                    func,
+                    AggOpCodeUtils::isSparseSafe(opCode),
+                    AggOpCodeUtils::template getNeutral<VT>(opCode),
+                    ctx
+            );
+        }
+        else { // The op-code is either MEAN or STDDEV.
+            EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));            
+            auto agg = aggArray(
                 arg->getValues(0),
                 arg->getNumNonZeros(),
                 arg->getNumRows() * arg->getNumCols(),
                 func,
-                AggOpCodeUtils::isSparseSafe(opCode),
-                AggOpCodeUtils::template getNeutral<VT>(opCode),
+                true,
+                VT(0),
                 ctx
-        );
+            );
+            if (opCode == AggOpCode::MEAN)
+                return agg / (arg->getNumRows() * arg->getNumCols());
+            
+            // TODO STDDEV
+            throw std::runtime_error("unsupported AggOpCode in AggAll for CSRMatrix");
+        }
     }
 };
 

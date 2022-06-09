@@ -193,3 +193,34 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
     
     DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
+
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    });
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
+    auto m1 = genGivenVals<DTArg>(3, {
+        5, 7, 3, 9,
+        2, 5, 0, 1,
+        7, 4, 5, 4,
+    });
+    auto m1exp = genGivenVals<DTRes>(3, {6, 2, 5});
+    auto m2 = genGivenVals<DTArg>(3, {
+        4, 0, 0, 8,
+        0, 4, 0, 0,
+        0, 0, 8, 0,
+    });
+    auto m2exp = genGivenVals<DTRes>(3, {3, 1, 2});
+    
+    checkAggRow(AggOpCode::MEAN, m0, m0exp);
+    checkAggRow(AggOpCode::MEAN, m1, m1exp);
+    checkAggRow(AggOpCode::MEAN, m2, m2exp);
+    
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
+}

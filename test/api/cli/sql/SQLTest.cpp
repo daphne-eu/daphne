@@ -71,9 +71,7 @@ MAKE_SUCCESS_TEST_CASE("where", 4);
 
 MAKE_SUCCESS_TEST_CASE("join", 1);
 
-// TODO Use these test cases once we have a kernel for GroupOp, otherwise they
-// always fail.
-//MAKE_SUCCESS_TEST_CASE("group", 3);
+MAKE_SUCCESS_TEST_CASE("group", 3);
 MAKE_PASS_FAILURE_TEST_CASE("group", 1);
 
 // TODO Use the scripts testing failure cases.
