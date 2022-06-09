@@ -353,13 +353,16 @@ struct CharBuf
         strings = new char[capacity];
         currentTop = strings;
     }
+    ~CharBuf() {
+        delete[] strings;
+    }
     
     void expandStringBuffer(const size_t toFit, const char **vals, const size_t valsSize) {
         size_t strBufSize = getSize();
 
         size_t largerStrCapacity = (capacity * 2) > toFit ? (capacity * 2) : toFit;
         char* largerStrings = new char[largerStrCapacity];
-        memcpy(static_cast<void*>(largerStrings), static_cast<const void*>(strings), strBufSize);
+        memcpy(largerStrings, strings, strBufSize);
 
         auto start = vals[0];
         for(size_t offset = 0; offset < valsSize; offset++)
@@ -513,10 +516,10 @@ public:
         size_t currentSize = strBuf.get()->getSize();
         int32_t diff = strlen(value) - strlen(currentVal);
 
-        if(currentSize + diff > strBuf->capacity)
+        if(currentSize + diff > strBuf->capacity){
             strBuf.get()->expandStringBuffer(currentSize + diff, vals, getNumItems());
-        
-        currentVal = vals[currentPos];
+            currentVal = vals[currentPos];
+        }
 
         if(diff && (currentPos + 1 < getStrBuf()->numCells)) {
             const char* from = values[currentPos + 1];
@@ -528,7 +531,7 @@ public:
 
         if(diff){
             for(size_t offset = currentPos + 1; offset < getStrBuf()->numCells; offset++)
-                vals[offset] = vals[offset] + diff; 
+                vals[offset] += diff; 
         }
 
         strBuf->currentTop += diff;
