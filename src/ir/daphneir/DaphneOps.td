@@ -1221,6 +1221,26 @@ def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOper
     let hasCanonicalizeMethod = 1;
 }
 
+// TODO_198: Check if its ok to create a new "sector" for higher order operations
+// ****************************************************************************
+// Higher-order operations
+// ****************************************************************************
+//TODO_198 add argument to specify which 'axis' to use
+def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
+
+    let summary = "Applies a user defined function to elements of a matrix or frame.";
+    
+    //TODO_198 complete description
+    let description = [{
+        This operation...
+    }];
+
+    let arguments = (ins Matrix:$arg, SymbolNameAttr:$func);
+    //let arguments = (ins MatrixOrFrame:$source, SymbolNameAttr:$func);
+    let results = (outs Matrix:$res);
+}
+
+
 // ****************************************************************************
 // Low-level auxiliary operations
 // ****************************************************************************

@@ -1062,6 +1062,25 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         ));
     }
 
+    // ****************************************************************************
+    // Higher-order operations
+    // ****************************************************************************
+
+    if(func == "map") {
+        // TODO_198 Adapt when incorparating column/rowwise operations
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value source = args[0];
+
+        auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
+        mlir::Attribute attr = co.value();
+
+        return static_cast<mlir::Value>(builder.create<MapOp>(
+            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()
+        ));
+
+    }
+
+
     // ********************************************************************
 
     throw std::runtime_error("unknown built-in function: '" + func + "'");

@@ -179,16 +179,17 @@ namespace {
 
         /**
          * @brief Try to reuse an existing specialization for the given template function
-         * @param callOp The call operation
-         * @param templateFunction The template function called by the `callOp`
+         * @param operandTypes Operand types of the operation
+         * @param templateFunction The template function called by the operation
          * @return either an existing and matching `FuncOp`, `nullptr` otherwise
          */
-        FuncOp tryReuseExistingSpecialization(daphne::GenericCallOp callOp, FuncOp templateFunction) {
+        // TODO_198 Replace callOp by result of callOp->getOperandTypes() to also use it for mapOp
+        FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, FuncOp templateFunction) {
             auto eqIt = specializedVersions.equal_range(templateFunction.sym_name().str());
             for(auto it = eqIt.first ; it != eqIt.second ; ++it) {
                 auto specializedFunc = it->second;
 
-                if(callTypesMatchFunctionTypes(specializedFunc.getType(), callOp->getOperandTypes())) {
+                if(callTypesMatchFunctionTypes(specializedFunc.getType(), operandTypes)) {
                     // reuse existing specialized function
                     return specializedFunc;
                 }
@@ -196,27 +197,89 @@ namespace {
             return nullptr;
         }
 
+        /**
+         * @brief Try to reuse an existing specializtion if one exists, else creates a new 
+         *  specialization
+         * @param operandTypes Operand types of the operation
+         * @param calledFunction The function called by the operation
+         * @return A `FuncOp`for the specialization
+         */
+        FuncOp createOrReuseSpecialization(TypeRange operandTypes, FuncOp calledFunction) {
+            // check for existing specialization that matches
+            FuncOp specializedFunc = tryReuseExistingSpecialization(operandTypes, calledFunction);
+            if(!specializedFunc) {
+                // Create specialized function
+                auto specializedTypes =
+                    getSpecializedFuncArgTypes(calledFunction.getType(), operandTypes);
+                specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
+            }
+            return specializedFunc;
+        }
+
+        /**
+         * @brief Recursively specializes all functions within a `FuncOp` based on calls to the functions
+         * @param function The `FuncOp` to scan for function specializations
+         */
         void specializeCallsInFunction(FuncOp function) {
             if(visited.count(function)) {
                 return;
             }
             visited.insert(function);
+            // Specialize all functions called directly
             function.walk([&](daphne::GenericCallOp callOp) {
                 auto calledFunction = functions[callOp.callee().str()];
                 if(isFunctionTemplate(calledFunction)) {
-                    // check for existing specialization that matches
-                    FuncOp specializedFunc = tryReuseExistingSpecialization(callOp, calledFunction);
-                    if(!specializedFunc) {
-                        // Create specialized function
-                        auto specializedTypes =
-                            getSpecializedFuncArgTypes(calledFunction.getType(), callOp.getOperandTypes());
-                        specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
-                    }
-
+                    FuncOp specializedFunc = createOrReuseSpecialization(callOp.getOperandTypes(), calledFunction);
                     callOp.calleeAttr(specializedFunc.sym_nameAttr());
                     if(fixResultTypes(callOp->getResults(), specializedFunc.getType())) {
                         inferTypesInFunction(function);
                     }
+                    specializeCallsInFunction(specializedFunc);
+                }
+                else {
+                    specializeCallsInFunction(calledFunction);
+                }
+            });
+
+            // Specialize all functions called by MapOp
+            // TODO_198 Maybe abstract some more of the internals of the specialization for 
+            // mapOp and GenericCallOp to reduce some more code
+            // Maybe even better would be to define a common interface s.t. we only have
+            // to walk for that interface
+            function.walk([&](daphne::MapOp mapOp) {
+                auto calledFunction = functions[mapOp.func().str()];
+                 if(isFunctionTemplate(calledFunction)) {
+                     // Get the element type of the matrix the function should be mapped on
+                    mlir::Type opTy = mapOp.arg().getType();
+                    auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
+                    FuncOp specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), calledFunction);
+                    mapOp.funcAttr(specializedFunc.sym_nameAttr());
+ 
+                    // We only allow functions that return exactly one result for mapOp
+                    if(specializedFunc.getType().getNumResults() != 1) 
+                        throw std::runtime_error(
+                            "map expects a function with exactly one return value." 
+                            "The provided function returns" + 
+                            std::to_string(specializedFunc.getType().getNumResults()) +
+                            "values instead."
+                        );
+
+                    // Get current mapOp result matrix type and fix it if needed.
+                    // If we fixed somethin we rerun inference of the whole function
+                    // TODO_198 maybe put this in a separate function                    
+                    daphne::MatrixType resMatrixTy = mapOp.getType();
+                    mlir::Type funcResTy = specializedFunc.getType().getResult(0);
+
+                    // TODO_198 is this necessary? Shape inference happens later anyways
+                    // The matrix that results from the mapOp has the same dimension as the input 
+                    // matrix and the element-type returned by the specialized function
+                    if(resMatrixTy.getNumCols() != inpMatrixTy.getNumCols() || 
+                       resMatrixTy.getNumRows() != inpMatrixTy.getNumRows() ||
+                       resMatrixTy.getElementType() != funcResTy) {
+                        mapOp.getResult().setType(inpMatrixTy.withElementType(funcResTy));
+                        inferTypesInFunction(function);
+                    }
+
                     specializeCallsInFunction(specializedFunc);
                 }
                 else {

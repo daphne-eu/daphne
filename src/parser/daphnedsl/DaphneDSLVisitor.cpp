@@ -630,6 +630,17 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
     std::string var = ctx->var->getText();
+
+    // TODO_198 Right now we return the function symbol for the first UDF we find for 
+    // that name, however the first function might not be applicable - this can be a problem
+    if (auto funcIt = functionsSymbolMap.find(var); funcIt != std::end(functionsSymbolMap))
+    {
+        mlir::Location loc = utils.getLoc(ctx->start);
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(loc, funcIt->second.sym_name().str())
+        );
+    }
+
     try {
         return symbolTable.get(var).value;
     }
