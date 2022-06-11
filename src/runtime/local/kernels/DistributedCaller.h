@@ -94,6 +94,40 @@ public:
         auto channel = GetOrCreateChannel(workerAddr);
         asyncStoreCall(channel, storedInfo, arg);
     }
+    
+     /**
+    * @brief Enqueues an asynchronous Broadcast call to be executed.     
+    * 
+    * @param  workerAddr An address (or channel) to make the call
+    * @param  StoredInfo An StoredInfo type returned when call response is ready
+    * @param  arg Argument passed to the asynchronous call
+    */
+    void asyncBroadcastCall(
+        std::shared_ptr<grpc::Channel> channel,
+        StoredInfo storedInfo,
+        const distributed::BroadcastedData arg
+        )
+    {        
+        AsyncClientCall *call = new AsyncClientCall;
+        call->storedInfo = storedInfo;
+
+        auto stub = distributed::Worker::NewStub(channel);
+        auto response_reader = stub->AsyncBroadcast(&call->context_, arg, &cq_);
+        
+        response_reader->Finish(&call->result, &call->status, (void*)call);
+        callCounter++;
+    }
+    void asyncBroadcastCall(
+        std::string workerAddr,
+        StoredInfo storedInfo,
+        const distributed::BroadcastedData arg
+        )
+    {
+        auto channel = GetOrCreateChannel(workerAddr);
+        asyncBroadcastCall(channel, storedInfo, arg);
+    }
+
+
     /**
     * @brief Enqueues an asynchronous Compute call to be executed.     
     * 

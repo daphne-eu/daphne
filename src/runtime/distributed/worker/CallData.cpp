@@ -41,6 +41,31 @@ void StoreCallData::Proceed() {
     }
 }
 
+void BroadcastCallData::Proceed() {
+    if (status_ == CREATE)
+    {
+        // Make this instance progress to the PROCESS state.
+        status_ = PROCESS;
+
+        service_->RequestBroadcast(&ctx_, &data, &responder_, cq_, cq_,
+                                this);
+    }
+    else if (status_ == PROCESS)
+    {
+        status_ = FINISH;
+
+        new BroadcastCallData(worker, cq_);
+        grpc::Status status = worker->Broadcast(&ctx_, &data, &broadcastedStoredData);
+
+        responder_.Finish(broadcastedStoredData, grpc::Status::OK, this);
+    }
+    else
+    {
+        GPR_ASSERT(status_ == FINISH);
+        delete this;
+    }
+}
+
 void ComputeCallData::Proceed() {
     if (status_ == CREATE)
     {

@@ -65,45 +65,91 @@ struct Broadcast<DenseMatrix<double>>
 
         size_t pos;
         std::vector<std::string> workers;
+
         while ((pos = workersStr.find(delimiter)) != std::string::npos) {
             workers.push_back(workersStr.substr(0, pos));
             workersStr.erase(0, pos + delimiter.size());
         }
         workers.push_back(workersStr);
 
+
         // auto blockSize = DistributedData::BLOCK_SIZE;
 
-        struct StoredInfo {
+        struct StoredInfo {            
             DistributedIndex *ix ;
             std::string workerAddr;
             std::shared_ptr<grpc::Channel> channel;
         };
-        DistributedCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
+        // Keep a vector for holding data about all workers
+        using StoredInfoVector = std::vector<StoredInfo>;
+        StoredInfoVector storedInfoLeftChild, storedInfoRightChild;
+
+        DistributedCaller<std::vector<StoredInfo>, distributed::BroadcastedData, distributed::BroadcastedStored> caller;
         
         Handle<DenseMatrix<double>>::HandleMap map;   
 
         distributed::Matrix protoMat;
         ProtoDataConverter::convertToProto(mat, &protoMat);
         
-        for (auto i=0ul; i < workers.size(); i++){
-            auto workerAddr = workers.at(i);
-
-            auto channel = caller.GetOrCreateChannel(workerAddr);
-            StoredInfo storedInfo ({new DistributedIndex(0, 0), workerAddr, channel});
-            caller.asyncStoreCall(workerAddr, storedInfo, protoMat);
         
+        // Split worker vector in half. Each child worker recieves half of the workers to continue the broadcast call
+        std::string leftChildAddr, rightChildAddr;
+        distributed::BroadcastedData dataLeftChild, dataRightChild;
+        
+        leftChildAddr = workers[0];
+        rightChildAddr = workers[workers.size() / 2];
+        
+        // Left child
+        auto channelLeftChild = caller.GetOrCreateChannel(leftChildAddr);
+        storedInfoLeftChild.push_back({new DistributedIndex(0, 0), leftChildAddr, channelLeftChild});
+        
+        
+        // Children of left child
+        for (auto i = 1ul; i < workers.size() / 2; i++){
+            // Data sent to child worker
+            // Protobuf's "repeated" fields retain the order of items
+            // therefore we can ensure that DistributedIndexes are assigned as expected.
+            dataLeftChild.add_addresses(workers[i]);
+            // Store data
+            auto channel = caller.GetOrCreateChannel(workers[i]);
+            storedInfoLeftChild.push_back({new DistributedIndex(i, 0), workers[i], channel});
         }
+        // Make call
+        dataLeftChild.mutable_matrix()->CopyFrom(protoMat);
+        caller.asyncBroadcastCall(leftChildAddr, storedInfoLeftChild, dataLeftChild);
+
+        // Repeat for right child
+        // Right Child is optional
+        if (rightChildAddr != leftChildAddr){
+            auto channelRightChild = caller.GetOrCreateChannel(rightChildAddr);
+            storedInfoRightChild.push_back({new DistributedIndex(workers.size() / 2, 0), rightChildAddr, channelRightChild});
+
+        
+            // Children of right child
+            for (auto i = (workers.size() / 2) + 1; i < workers.size(); i++){
+                dataRightChild.add_addresses(workers[i]);
+                
+                auto channel = caller.GetOrCreateChannel(workers[i]);
+                storedInfoRightChild.push_back({new DistributedIndex(i, 0), workers[i], channel});
+            }
+            dataRightChild.mutable_matrix()->CopyFrom(protoMat);
+            caller.asyncBroadcastCall(rightChildAddr, storedInfoRightChild, dataRightChild);        
+        }                    
+
         // get results
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
-            auto ix = response.storedInfo.ix;
-            auto workerAddr = response.storedInfo.workerAddr;
-            auto channel = response.storedInfo.channel;
-
-            auto storedData = response.result;
-
-            DistributedData data(storedData, workerAddr, channel);
-            map.insert({*ix, data});
+            auto childStoredInfo = response.storedInfo;
+            for (auto i = 0ul; i < childStoredInfo.size(); i++){
+                auto item = childStoredInfo[i];                
+                auto ix = item.ix;
+                auto addr = item.workerAddr;
+                auto channel = item.channel;
+                // Get actuall results
+                auto storedData = response.result.stored(i);
+                DistributedData data(storedData, addr, channel);
+                map.insert({*ix, data});
+            }
         }
         res = new Handle<DenseMatrix<double>>(map, mat->getNumRows(), mat->getNumCols());
     }

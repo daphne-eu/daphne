@@ -39,6 +39,8 @@
 #include <compiler/execution/DaphneIrExecutor.h>
 #include "CallData.h"
 
+#include <runtime/local/kernels/DistributedCaller.h>
+
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
 WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
@@ -57,6 +59,7 @@ WorkerImpl::~WorkerImpl() = default;
 void WorkerImpl::HandleRpcs() {
     // Spawn a new CallData instance to serve new clients.
     new StoreCallData(this, cq_.get());
+    new BroadcastCallData(this, cq_.get());
     new ComputeCallData(this, cq_.get());
     new TransferCallData(this, cq_.get());
     new FreeMemCallData(this, cq_.get());
@@ -93,6 +96,65 @@ grpc::Status WorkerImpl::Store(::grpc::ServerContext *context,
     response->set_num_rows(mat->getNumRows());
     response->set_num_cols(mat->getNumCols());
     return ::grpc::Status::OK;
+}
+
+grpc::Status WorkerImpl::Broadcast(::grpc::ServerContext *context,
+                         const ::distributed::BroadcastedData *request,
+                         ::distributed::BroadcastedStored *response) 
+{
+    // Split data and start broadcasting if you need to
+    struct StoredInfo {
+        // Empty no need to store anything on the worker side
+    };
+    DistributedCaller<StoredInfo, distributed::BroadcastedData, distributed::BroadcastedStored> caller;
+    std::string leftChildAddr, rightChildAddr;
+    distributed::BroadcastedData dataLeftChild, dataRightChild;
+
+    if (request->addresses_size() > 0){
+        leftChildAddr = request->addresses(0);
+        rightChildAddr = request->addresses(request->addresses_size() / 2);
+
+        // Left Child  
+        // This is empty
+        StoredInfo emptyInfo;
+        for (auto i = 1ul; i < request->addresses_size() / 2; i++){
+            dataLeftChild.add_addresses(request->addresses(i));
+        }
+        
+        // Make call
+        dataLeftChild.mutable_matrix()->CopyFrom(request->matrix());
+        caller.asyncBroadcastCall(leftChildAddr, emptyInfo, dataLeftChild);
+
+        // Repeat for right child
+        // Right Child is optional
+        if (rightChildAddr != leftChildAddr){
+            StoredInfo emptyInfo;
+            for (auto i = (request->addresses_size() / 2) + 1; i < request->addresses_size(); i++){
+                dataRightChild.add_addresses(request->addresses(i));
+            }
+
+            dataRightChild.mutable_matrix()->CopyFrom(request->matrix());            
+            caller.asyncBroadcastCall(rightChildAddr, emptyInfo, dataRightChild);            
+        }
+    }
+    // Save your local data
+    distributed::StoredData localStoredData;
+    grpc::Status localStatus = Store(context, &request->matrix(), &localStoredData);    
+
+    *response->add_stored() = localStoredData;
+
+    // Wait for childs
+    if (request->addresses_size() > 0) {
+        while (!caller.isQueueEmpty()){
+            auto childResponse = caller.getNextResult();
+            // Store results
+            for (auto i = 0ul; i < childResponse.result.stored_size(); i++){
+                *response->add_stored() = childResponse.result.stored(i);
+            }
+        }
+    }
+    // Return
+    return localStatus;
 }
 
 grpc::Status WorkerImpl::Compute(::grpc::ServerContext *context,
