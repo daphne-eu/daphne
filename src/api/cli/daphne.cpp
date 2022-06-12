@@ -142,7 +142,7 @@ main(int argc, char** argv)
             desc("The directory containing kernel libraries")
     );
 
-    enum Explains {
+    enum ExplainArgs {
       kernels,
       llvm,
       parsing,
@@ -152,7 +152,7 @@ main(int argc, char** argv)
       obj_ref_mgnt
     };
 
-    llvm::cl::list<Explains> explainArgList(
+    llvm::cl::list<ExplainArgs> explainArgList(
         "explain", cat(daphneOptions),
         llvm::cl::desc("Available explainations:"),
         llvm::cl::values(
