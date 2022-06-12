@@ -133,11 +133,6 @@ main(int argc, char** argv)
             "select-matrix-representations", aliasopt(selectMatrixRepr),
             desc("Alias for --select-matrix-repr")
     );
-    // TODO: parse --explain=[list,of,compiler,passes,to,explain]
-    opt<bool> explainKernels(
-            "explain-kernels", cat(daphneOptions),
-            desc("Show DaphneIR after lowering to kernel calls")
-    );
     opt<bool> cuda(
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
@@ -146,6 +141,28 @@ main(int argc, char** argv)
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
+
+    enum Explains {
+      kernels,
+      llvm,
+      parsing,
+      property_inference,
+      sql,
+      vectorized,
+      obj_ref_mgnt
+    };
+
+    llvm::cl::list<Explains> explainArgList(
+        "explain", cat(daphneOptions),
+        llvm::cl::desc("Available explainations:"),
+        llvm::cl::values(clEnumVal(kernels, "KERNELS"), clEnumVal(llvm, "LLVM"),
+                         clEnumVal(parsing, "PARSING"),
+                         clEnumVal(property_inference, "PROPERT INFERENCE"),
+                         clEnumVal(sql, "SQL"),
+                         clEnumVal(vectorized, "VECTORIZED"),
+                         clEnumVal(obj_ref_mgnt, "OBJ REF MGNT")),
+        CommaSeparated);
+
     llvm::cl::list<string> scriptArgs1(
             "args", cat(daphneOptions),
             desc(
@@ -204,12 +221,37 @@ main(int argc, char** argv)
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
-    user_config.explain_kernels = explainKernels;
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.numberOfThreads = numberOfThreads;
     user_config.minimumTaskSize = minimumTaskSize;
+
+    for (auto explain : explainArgList) {
+        switch (explain) {
+            case kernels:
+                user_config.explain_kernels = true;
+                break;
+            case llvm:
+                user_config.explain_llvm = true;
+                break;
+            case parsing:
+                user_config.explain_parsing = true;
+                break;
+            case property_inference:
+                user_config.explain_property_inference = true;
+                break;
+            case sql:
+                user_config.explain_sql = true;
+                break;
+            case vectorized:
+                user_config.explain_vectorized = true;
+                break;
+            case obj_ref_mgnt:
+                user_config.explain_obj_ref_mgnt = true;
+                break;
+        }
+    }
 
     if(cuda) {
         int device_count = 0;
