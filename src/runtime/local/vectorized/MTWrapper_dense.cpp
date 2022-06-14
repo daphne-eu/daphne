@@ -16,8 +16,6 @@
 
 #include "MTWrapper.h"
 #include <runtime/local/vectorized/Tasks.h>
-#include <dirent.h>
-#include <string>
 #ifdef USE_CUDA
 #include <runtime/local/vectorized/TasksCUDA.h>
 #endif
@@ -65,7 +63,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
     } else if (this->_queueMode == 2) {
         this->initCPPWorkersPerCPU(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
     } else {
-        std::cerr << "Error in queue group setup" << std::endl;
+        std::cerr << "Error in vectorized engine queue allocation" << std::endl;
     }
 
 #ifdef USE_CUDA

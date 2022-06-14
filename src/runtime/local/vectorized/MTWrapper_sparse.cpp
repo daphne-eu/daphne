@@ -26,7 +26,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
     auto len = inputProps.first;
     auto mem_required = inputProps.second;
-    // ToDo: sparse output mem requirements
+    // TODO: sparse output mem requirements
     auto row_mem = mem_required / len;
 
     std::vector<std::unique_ptr<TaskQueue>> q;
@@ -61,7 +61,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     } else if (this->_queueMode == 2) {
         this->initCPPWorkersPerCPU(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
     } else {
-        std::cerr << "Error in queue group setup" << std::endl;
+        std::cerr << "Error in vectorized engine queue allocation" << std::endl;
     }
 
 
@@ -98,8 +98,8 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
                     endChunk += lps[i].getNextChunk();
                     target = currentItr % this->_numQueues;
                     qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
-                    inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                    outCols, 0, ctx}, dataSinks), target);
+                            inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                            outCols, 0, ctx}, dataSinks), target);
                     startChunk = endChunk;
 		    currentItr++;
                 }
@@ -110,8 +110,8 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
                     endChunk += lps[i].getNextChunk();
                     target = currentItr % this->_numQueues;
                     qvector[target]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
-                    inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                    outCols, 0, ctx}, dataSinks));
+                            inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                            outCols, 0, ctx}, dataSinks));
                     startChunk = endChunk;
 		    currentItr++;
                 }
@@ -124,8 +124,8 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
                 endChunk += lp.getNextChunk();
                 target = currentItr % this->_numQueues;
                 qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
-                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                outCols, 0, ctx}, dataSinks), target);
+                        inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                        outCols, 0, ctx}, dataSinks), target);
                 startChunk = endChunk;
 		currentItr++;
             }
@@ -134,8 +134,8 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
                 endChunk += lp.getNextChunk();
                 target = currentItr % this->_numQueues;
                 qvector[target]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
-                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                outCols, 0, ctx}, dataSinks));
+                        inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                        outCols, 0, ctx}, dataSinks));
                 startChunk = endChunk;
 		currentItr++;
             }
@@ -143,7 +143,6 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     }
     for(int i=0; i<this->_numQueues; i++) {
         qvector[i]->closeInput();
-        startChunk = endChunk;
     }
 
     this->joinAll();
