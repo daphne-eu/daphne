@@ -109,6 +109,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, resLock, res), target);
                     startChunk = endChunk;
+		    currentItr++;
                 }
             }
         } else {
@@ -120,6 +121,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, resLock, res));
                     startChunk = endChunk;
+		    currentItr++;
                 }
             }
         }
@@ -133,6 +135,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
                         inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                         outCols, 0, ctx}, resLock, res), target);
                 startChunk = endChunk;
+		currentItr++;
             }
         } else {
             while (lp.hasNextChunk()) {
@@ -142,6 +145,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
                         inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                         outCols, 0, ctx}, resLock, res));
                 startChunk = endChunk;
+		currentItr++;
             }
         }
     }
