@@ -72,6 +72,11 @@ def Daphne_FillOp : Daphne_Op<"fill", [
     let results = (outs Matrix:$res);
 }
 
+def Daphne_MatrixConstantOp : Daphne_Op<"matrixConstant">{
+    let arguments = (ins UI64:$matrixAddr);
+    let results = (outs Matrix:$res);
+}
+
 def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
     SameVariadicOperandSize,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,

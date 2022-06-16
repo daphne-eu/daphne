@@ -461,6 +461,50 @@
     },
     {
         "kernelTemplate": {
+            "header": "CTable.h",
+            "opName": "ctable",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+
+            [["CSRMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["CSRMatrix", "int32_t"], ["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"]],
+            [["CSRMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "DestroyDaphneContext.h",
             "opName": "destroyDaphneContext",
             "returnType": "void",
@@ -769,6 +813,38 @@
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "MatrixConstant.h",
+            "opName": "matrixConstant",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "uint64_t",
+                    "name": "matrixAddr"
+                }
+            ]
+        },
+        
+        "instantiations": [
+            [["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "bool"]]
         ]
     },
     {
@@ -1096,6 +1172,7 @@
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
+            [["DenseMatrix", "bool"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
             [["CSRMatrix", "int64_t"]],
@@ -1371,7 +1448,8 @@
         },
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "bool"], ["DenseMatrix", "bool"]]
         ]
     },
     {
@@ -2727,6 +2805,57 @@
                 {
                     "type": "bool",
                     "name": "returnIdxs"
+                }
+            ]
+        },
+        "instantiations": [
+            ["Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Group.h",
+            "opName": "group",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DT",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DT *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DT *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char **",
+                    "name": "keyCols"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numKeyCols"
+                },
+                {
+                    "type": "const char **",
+                    "name": "aggCols"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numAggCols"
+                },
+                {
+                    "type": "mlir::daphne::GroupEnum *",
+                    "name": "aggFuncs",
+                    "isVariadic": true
+                },
+                {
+                    "type": "size_t",
+                    "name": "numAggFuncs"
                 }
             ]
         },
