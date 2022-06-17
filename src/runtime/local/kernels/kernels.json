@@ -1789,7 +1789,7 @@
         },
         "api": [
             {
-                "name":  ["CUDA", "CPP"],
+                "name":  ["CPP"],
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
