@@ -2763,16 +2763,16 @@
                     "name": "outputs"
                 },
                 {
+                    "type": "size_t",
+                    "name": "numOutputs"
+                },
+                {
                     "type": "const Structure **",
                     "name": "inputs"
                 },
                 {
                     "type": "size_t",
                     "name": "numInputs"
-                },
-                {
-                    "type": "size_t",
-                    "name": "numOutputs"
                 },
                 {
                     "type": "int64_t *",
