@@ -183,7 +183,6 @@ namespace {
          * @param templateFunction The template function called by the operation
          * @return either an existing and matching `FuncOp`, `nullptr` otherwise
          */
-        // TODO_198 Replace callOp by result of callOp->getOperandTypes() to also use it for mapOp
         FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, FuncOp templateFunction) {
             auto eqIt = specializedVersions.equal_range(templateFunction.sym_name().str());
             for(auto it = eqIt.first ; it != eqIt.second ; ++it) {
@@ -242,10 +241,6 @@ namespace {
             });
 
             // Specialize all functions called by MapOp
-            // TODO_198 Maybe abstract some more of the internals of the specialization for 
-            // mapOp and GenericCallOp to reduce some more code
-            // Maybe even better would be to define a common interface s.t. we only have
-            // to walk for that interface
             function.walk([&](daphne::MapOp mapOp) {
                 auto calledFunction = functions[mapOp.func().str()];
                  if(isFunctionTemplate(calledFunction)) {
@@ -266,11 +261,9 @@ namespace {
 
                     // Get current mapOp result matrix type and fix it if needed.
                     // If we fixed somethin we rerun inference of the whole function
-                    // TODO_198 maybe put this in a separate function                    
                     daphne::MatrixType resMatrixTy = mapOp.getType();
                     mlir::Type funcResTy = specializedFunc.getType().getResult(0);
 
-                    // TODO_198 is this necessary? Shape inference happens later anyways
                     // The matrix that results from the mapOp has the same dimension as the input 
                     // matrix and the element-type returned by the specialized function
                     if(resMatrixTy.getNumCols() != inpMatrixTy.getNumCols() || 

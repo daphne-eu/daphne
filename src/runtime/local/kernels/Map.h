@@ -57,18 +57,14 @@ struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
-        // TODO_198 when is res != nullptr the case?
-        if(res == nullptr)
+        if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
-        else if (res->getNumRows() != numRows || res->getNumCols() != numCols)
-            throw std::runtime_error("res and arg must have the same shape");
         
         auto udf = reinterpret_cast<VTRes(*)(VTArg)>(func);
 
         const VTArg * valuesArg = arg->getValues();
         VTRes * valuesRes = res->getValues();
 
-        // TODO_198 Regarding getRowSkip: is this correct?
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] = udf(valuesArg[c]);

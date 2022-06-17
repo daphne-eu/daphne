@@ -398,7 +398,6 @@ public:
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
 
         // Input Matrix
-        // TODO_198 Could we use operands for this as well? If not - why?
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.arg().getType());
 
         // Pointer to UDF 

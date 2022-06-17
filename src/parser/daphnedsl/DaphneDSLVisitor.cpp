@@ -631,16 +631,6 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
     std::string var = ctx->var->getText();
 
-    // TODO_198 Right now we return the function symbol for the first UDF we find for 
-    // that name, however the first function might not be applicable - this can be a problem
-    if (auto funcIt = functionsSymbolMap.find(var); funcIt != std::end(functionsSymbolMap))
-    {
-        mlir::Location loc = utils.getLoc(ctx->start);
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ConstantOp>(loc, funcIt->second.sym_name().str())
-        );
-    }
-
     try {
         return symbolTable.get(var).value;
     }
@@ -653,52 +643,140 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
     return utils.valueOrError(visit(ctx->expr()));
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
-    std::string func = ctx->func->getText();
-    mlir::Location loc = utils.getLoc(ctx->start);
- 
-    // Parse arguments.
-    std::vector<mlir::Value> args;
-    for(unsigned i = 0; i < ctx->expr().size(); i++)
-        args.push_back(utils.valueOrError(visit(ctx->expr(i))));
+bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const {
+    auto argMatTy = argTy.dyn_cast<mlir::daphne::MatrixType>();
+    auto paramMatTy = paramTy.dyn_cast<mlir::daphne::MatrixType>();
 
+    bool isMatchingUnknownMatrix =
+        argMatTy && paramMatTy && paramMatTy.getElementType() == utils.unknownType;
+
+    return paramTy == argTy || paramTy == utils.unknownType || isMatchingUnknownMatrix;
+}
+
+std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
     // search user defined functions
-    auto range = functionsSymbolMap.equal_range(func);
+    auto range = functionsSymbolMap.equal_range(functionName);
     // TODO: find not only a matching version, but the `most` specialized
     for (auto it = range.first; it != range.second; ++it) {
         auto userDefinedFunc = it->second;
         auto funcTy = userDefinedFunc.getType();
         auto compatible = true;
 
-        if (funcTy.getInputs().size() != args.size()) {
+        if (funcTy.getNumInputs() != args.size()) {
             continue;
         }
         for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
-            auto funcInputType = std::get<0>(compIt);
+            auto funcParamType = std::get<0>(compIt);
             auto argVal = std::get<1>(compIt);
 
-            auto funcMatTy = funcInputType.dyn_cast<mlir::daphne::MatrixType>();
-            auto specializedMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
-            bool isMatchingUnknownMatrix =
-                funcMatTy && specializedMatTy && funcMatTy.getElementType() == utils.unknownType;
-            if(funcInputType != argVal.getType() && !isMatchingUnknownMatrix && funcInputType != utils.unknownType) {
+            if (!argAndUDFParamCompatible(argVal.getType(), funcParamType)) {
                 compatible = false;
                 break;
             }
         }
         if (compatible) {
-            // TODO: variable results
-            return builder
-                .create<mlir::daphne::GenericCallOp>(loc,
-                    userDefinedFunc.sym_name(),
-                    args,
-                    userDefinedFunc.getType().getResults())
-                .getResult(0);
+            return userDefinedFunc;
         }
     }
+    // UDF with the provided name exists, but no version matches the argument types
     if (range.second != range.first) {
         // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
-        throw std::runtime_error("No function definition of `" + func + "` found with matching types");
+        throw std::runtime_error("No function definition of `" + functionName + "` found with matching types");
+    }
+
+    // UDF with the provided name does not exist
+    return std::nullopt;
+}
+
+
+std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const {
+    // search user defined functions
+    auto range = functionsSymbolMap.equal_range(functionName);
+    
+    // TODO: find not only a matching version, but the `most` specialized    
+    for (auto it = range.first; it != range.second; ++it) {
+        auto userDefinedFunc = it->second;
+        auto funcTy = userDefinedFunc.getType();
+        auto compatible = true;
+
+        if (funcTy.getNumInputs() != 1) {
+            continue;
+        }
+
+        if (argAndUDFParamCompatible(argType, funcTy.getInput(0))) {
+            return userDefinedFunc;
+        }
+    }
+    // UDF with the provided name exists, but no version matches the argument types
+    if (range.second != range.first) {
+        // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
+        throw std::runtime_error("No function definition of `" + functionName + "` found with matching types");
+    }
+
+    // UDF with the provided name does not exist
+    return std::nullopt;
+}
+
+antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx) {
+    std::string func = ctx->func->getText();
+    assert(func == "map" && "Called 'handleMapOpCall' for another function");
+    mlir::Location loc = utils.getLoc(ctx->start);
+    
+    if (ctx->expr().size() != 2) {
+      throw std::runtime_error(
+                "built-in function 'map' expects exactly 2 argument(s), but got " +
+                std::to_string(ctx->expr().size())
+        );
+    }
+
+    std::vector<mlir::Value> args;
+    
+    auto argVal = utils.valueOrError(visit(ctx->expr(0)));
+    args.push_back(argVal);
+
+    auto argMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
+    if (!argMatTy)
+        throw std::runtime_error("built-in function 'map' expects argument of type matrix as its first parameter");
+    
+    std::string udfName = ctx->expr(1)->getText();
+    auto maybeUDF = findMatchingUnaryUDF(udfName, argMatTy.getElementType());
+
+    if (!maybeUDF)
+        throw std::runtime_error("No function definition of `" + udfName + "` found");
+
+    args.push_back(static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->sym_name().str())
+    ));
+
+    // Create DaphneIR operation for the built-in function.
+    return builtins.build(loc, func, args);
+}
+
+
+antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
+    std::string func = ctx->func->getText();
+    mlir::Location loc = utils.getLoc(ctx->start);
+ 
+    // mapOp expects a UDF as its second argument. 
+    // Currently we do not support
+    if (func == "map") 
+        return handleMapOpCall(ctx);
+
+    // Parse arguments.
+    std::vector<mlir::Value> args;
+    for(unsigned i = 0; i < ctx->expr().size(); i++)
+        args.push_back(utils.valueOrError(visit(ctx->expr(i))));
+
+    auto maybeUDF = findMatchingUDF(func, args);
+
+    if (maybeUDF) {
+        // TODO: variable results
+        return builder
+            .create<mlir::daphne::GenericCallOp>(loc,
+                maybeUDF->sym_name(),
+                args,
+                maybeUDF->getType().getResults())
+            .getResult(0);
     }
 
     // Create DaphneIR operation for the built-in function.

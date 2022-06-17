@@ -1067,7 +1067,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // ****************************************************************************
 
     if(func == "map") {
-        // TODO_198 Adapt when incorparating column/rowwise operations
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value source = args[0];
 
