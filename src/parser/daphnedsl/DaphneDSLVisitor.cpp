@@ -698,7 +698,6 @@ std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUnaryUDF(const std::st
     for (auto it = range.first; it != range.second; ++it) {
         auto userDefinedFunc = it->second;
         auto funcTy = userDefinedFunc.getType();
-        auto compatible = true;
 
         if (funcTy.getNumInputs() != 1) {
             continue;
@@ -758,8 +757,6 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     std::string func = ctx->func->getText();
     mlir::Location loc = utils.getLoc(ctx->start);
  
-    // mapOp expects a UDF as its second argument. 
-    // Currently we do not support
     if (func == "map") 
         return handleMapOpCall(ctx);
 
