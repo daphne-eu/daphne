@@ -40,6 +40,8 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
+            if(llvm::isa<daphne::OrderOp>(op))
+                return 4;
             if(llvm::isa<daphne::GroupOp>(op))
                 return 3;
             if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
@@ -47,7 +49,8 @@ namespace
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
             throw std::runtime_error(
-                    "unsupported operation: " + op->getName().getStringRef().str()
+                    "lowering to kernel call not yet supported for this variadic operation: "
+                    + op->getName().getStringRef().str()
             );
         }
 
@@ -56,6 +59,7 @@ namespace
         // isVariadic boolean array is automatically generated *within* the
         // getODSOperandIndexAndLength method.
         static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
+            // TODO Simplify those by a macro.
             if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {true, true};
@@ -92,8 +96,18 @@ namespace
                         isVariadic[index]
                 );
             }
+            if(auto concreteOp = llvm::dyn_cast<daphne::OrderOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, true, true, false};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
             throw std::runtime_error(
-                    "unsupported operation: " + op->getName().getStringRef().str()
+                    "lowering to kernel call not yet supported for this variadic operation: "
+                    + op->getName().getStringRef().str()
             );
         }
 
@@ -168,9 +182,10 @@ namespace
             if(
                 // TODO Unfortunately, one needs to know the exact N for
                 // AtLeastNOperands... There seems to be no simple way to
-                // detect if an operation has variadic ODS operands.
+                // detect if an operation has variadic ODS operands with any N.
                 op->hasTrait<OpTrait::VariadicOperands>() ||
-                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>()
+                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>() ||
+                op->hasTrait<OpTrait::AtLeastNOperands<2>::Impl>()
             ) {
                 // For operations with variadic operands, we replace all
                 // occurrences of a variadic operand by a single operand of
@@ -221,6 +236,44 @@ namespace
                     callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
                     newOperands.push_back(op->getOperand(i));
                 }
+            
+            if(auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
+                // GroupOp carries the aggregation functions to apply as an
+                // attribute. Since attributes to not automatically become
+                // inputs to the kernel call, we need to add them explicitly
+                // here.
+                
+                callee << "__GroupEnum_variadic__size_t";
+                
+                ArrayAttr aggFuncs = groupOp.aggFuncs();
+                const size_t numAggFuncs = aggFuncs.size();
+                const Type t = rewriter.getIntegerType(32, false);
+                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                        loc,
+                        daphne::VariadicPackType::get(rewriter.getContext(), t),
+                        rewriter.getIndexAttr(numAggFuncs)
+                );
+                size_t k = 0;
+                for(Attribute aggFunc : aggFuncs.getValue())
+                    rewriter.create<daphne::StoreVariadicPackOp>(
+                            loc,
+                            cvpOp,
+                            rewriter.create<daphne::ConstantOp>(
+                                    loc,
+                                    rewriter.getIntegerAttr(
+                                            t,
+                                            static_cast<uint32_t>(
+                                                    aggFunc.dyn_cast<daphne::GroupEnumAttr>().getValue()
+                                            )
+                                    )
+                            ),
+                            rewriter.getIndexAttr(k++)
+                    );
+                newOperands.push_back(cvpOp);
+                newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                        loc, rewriter.getIndexAttr(numAggFuncs))
+                );
+            }
 
             if(auto distCompOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
                 MLIRContext newContext;

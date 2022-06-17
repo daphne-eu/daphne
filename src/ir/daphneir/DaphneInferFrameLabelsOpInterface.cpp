@@ -180,7 +180,7 @@ void daphne::GroupOp::inferFrameLabels() {
         aggFuncNames.push_back(stringifyGroupEnum(aggFuncValue).str());
     }
     for(size_t i = 0; i < aggFuncNames.size() && i < aggColLabels.size(); i++){
-        newLabels->push_back(aggColLabels.at(i) + "_" + aggFuncNames.at(i));
+        newLabels->push_back(aggFuncNames.at(i) + "(" + aggColLabels.at(i) + ")");
     }
 
     getResult().setType(res().getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));

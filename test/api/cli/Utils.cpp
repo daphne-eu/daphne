@@ -21,6 +21,7 @@
 #include <grpcpp/server_builder.h>
 
 #include <fstream>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -46,4 +47,9 @@ std::string readTextFile(const std::string & filePath) {
     builder.SetMaxSendMessageSize(INT_MAX);
     
     return builder.BuildAndStart();
+}
+
+std::string generalizeDataTypes(const std::string& str) {
+    std::regex re("(DenseMatrix|CSRMatrix)");
+    return std::regex_replace(str, re, "<SomeMatrix>");
 }

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CHECKEQAPPROX_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CHECKEQAPPROX_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -59,7 +58,7 @@ struct CheckEqApprox{
 template<class DT>
 bool checkEqApprox(const DT * lhs, const DT * rhs, double eps, DCTX(ctx)) {
     return CheckEqApprox<DT>::apply(lhs, rhs, eps, ctx);
-};
+}
 
 /*
 // ****************************************************************************
@@ -79,7 +78,7 @@ bool operator==(const DT & lhs, const DT & rhs) {
 // ****************************************************************************
 
 // Note that we do not use the generic `get` interface to matrices here since
-// this operators is meant to be used for writing tests for, besides others,
+// this operator is meant to be used for writing tests for, besides others,
 // those generic interfaces.
 
 // ----------------------------------------------------------------------------
@@ -176,7 +175,7 @@ template <> struct CheckEqApprox<Frame> {
         if(numRows != rhs->getNumRows() || numCols != rhs->getNumCols())
             return false;
         
-        if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)))
+        if(memcmp(lhs->getSchema(), rhs->getSchema(), numCols * sizeof(ValueTypeCode)) != 0)
             return false;
 
         const std::string * labelsLhs = lhs->getLabels();
@@ -214,10 +213,10 @@ template <> struct CheckEqApprox<Frame> {
                 case ValueTypeCode::UI8 : if (!checkEqApprox(lhs->getColumn<uint8_t>(c),
                     rhs->getColumn<uint8_t>(c), eps, ctx)) return false;
                     break;
+                default:
+                    throw std::runtime_error("CheckEqApprox::apply: unknown value type code");
             }
         }   
         return true;
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CHECKEQAPPROX_H

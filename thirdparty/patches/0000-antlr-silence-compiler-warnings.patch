@@ -1,0 +1,27 @@
+--- runtime/src/atn/ATNState.h       2021-07-14 14:33:34.944682323 +0200
++++ runtime/src/atn/ATNState.h_fixed 2021-07-14 14:29:51.303066228 +0200
+@@ -70,7 +70,9 @@
+   ///
+   /// <embed src="images/OptionalNonGreedy.svg" type="image/svg+xml"/>
+   /// </summary>
+-  class ANTLR4CPP_PUBLIC ATN;
++  // change by mdokter@know-center.at to silence a compiler warning:
++  // commented next line
++  // class ANTLR4CPP_PUBLIC ATN;
+ 
+   class ANTLR4CPP_PUBLIC ATNState {
+   public:
+--- runtime/src/support/Any.h	2021-07-14 14:33:26.236619490 +0200
++++ runtime/src/support/Any.h_fixed	2021-07-14 14:29:38.422972965 +0200
+@@ -116,8 +116,9 @@
+     }
+ 
+     T value;
+-
+-    Base* clone() const {
++    // change by mdokter@know-center.at to silence a compiler warning:
++    // added override
++    Base* clone() const override {
+       return clone<>();
+     }
+ 

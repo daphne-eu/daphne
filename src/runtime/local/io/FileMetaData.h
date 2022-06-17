@@ -55,6 +55,9 @@ struct FileMetaData {
         //
     }
     
+    /**
+     * @deprecated Since JSON parser for meta data has been added.
+     */
     static void toFile(const std::string filename, size_t numRows, size_t numCols, bool isSingleValueType, ValueTypeCode vtc)
     {
         std::string vtc_;
@@ -66,7 +69,7 @@ struct FileMetaData {
         else if(vtc == ValueTypeCode::UI64) vtc_ = "ui64";
         else if(vtc == ValueTypeCode::UI32) vtc_ = "ui32";
         else if(vtc == ValueTypeCode::UI8)  vtc_ = "ui8";
-        else throw std::runtime_error("unknown value type code");
+        else throw std::runtime_error("FileMetaData::toFile: unknown value type code");
         std::ofstream ofs(filename + ".meta", std::ios::out);
         if (!ofs.good())
             throw std::runtime_error(
@@ -77,9 +80,10 @@ struct FileMetaData {
             ofs << numRows << "," << numCols << "," << isSingleValueType << "," << vtc_;
     }
     
-    /**
+    /** 
      * @brief Retrieves the file meta data for the specified file.
      * 
+     * @deprecated Since JSON parser for meta data has been added.
      * @param filename The name of the file for which to retrieve the meta
      * data. Note that the extension ".meta" is appended to this filename to
      * determine the name of the meta data file.

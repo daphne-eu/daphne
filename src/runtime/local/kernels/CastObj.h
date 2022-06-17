@@ -113,6 +113,7 @@ public:
                     case ValueTypeCode::UI64: castCol<uint64_t>(res, arg, c); break;
                     case ValueTypeCode::UI32: castCol<uint32_t>(res, arg, c); break;
                     case ValueTypeCode::UI8 : castCol<uint8_t >(res, arg, c); break;
+                    default: throw std::runtime_error("CastObj::apply: unknown value type code");
                 }
             }
         }
