@@ -40,7 +40,7 @@ IAllocationDescriptorDistributed::DistributedResult AllocationDescriptorDistribu
         // (this will be simplified when serialization is implemented)
         auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
         if (!denseMat){
-            std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
         }
         ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, &protoMat, 
                                                 omd->range->r_start,
@@ -83,7 +83,7 @@ IAllocationDescriptorDistributed::DistributedResult AllocationDescriptorDistribu
     distributed::Matrix protoMat;
     auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
     if (!denseMat){
-        std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+        throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
     }
     ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, &protoMat);
     auto omdVector = (mat->getObjectMetaDataByType(ALLOCATION_TYPE::DIST_GRPC));
@@ -234,7 +234,7 @@ void AllocationDescriptorDistributedGRPC::Collect(Structure *mat)
         
         auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
         if (!denseMat){
-            std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
         }        
         ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
             matProto, denseMat,
