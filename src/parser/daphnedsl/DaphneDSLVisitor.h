@@ -122,7 +122,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @brief Checks if the type of an agrument to a UDF is compatible with the 
      *   corresponding parameter type
      * @param argTy Type of the argument passed to the UDF
-     * @param argTy2 Type of the corresponding UDF parameter
+     * @param paramTy Type of the corresponding UDF parameter
      * @return true if the argument type and the parameter type ar compatible
      */
     bool argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const;
@@ -130,7 +130,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     /**
      * @brief Handles calls to `mapOp`
      * @param ctx Context of the call expresion
-     * @return the created MapOp
+     * @return the created `mapOp`
      */
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
 
