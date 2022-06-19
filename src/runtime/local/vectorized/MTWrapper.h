@@ -169,11 +169,13 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        if(ctx->config.numberOfThreads > 0){
+        get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        if ( ctx->config.numberOfThreads > 0 ) {
             _numCPPThreads = ctx->config.numberOfThreads;
         }
-        else{
-            _numCPPThreads = std::thread::hardware_concurrency();
+        else {
+            //_numCPPThreads = std::thread::hardware_concurrency();
+            _numCPPThreads = topologyUniqueThreads.size();
         }
         // If the available CPUs from Slurm is less than the configured num threads, use the value from Slurm
         if( const char* env_m = std::getenv("SLURM_CPUS_ON_NODE") ) {
@@ -183,16 +185,14 @@ public:
         }
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
-        _numThreads = _numCPPThreads + _numCUDAThreads;
         _queueMode = 0;
         _numQueues = 1;
         _stealLogic = ctx->getUserConfig().victimSelection;
-        get_topology(topologyPhysicalIds, topologyUniqueThreads);
         if( std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled )
             topologyUniqueThreads.resize(_numCPPThreads);
+        _numThreads = _numCPPThreads + _numCUDAThreads;
         _totalNumaDomains = std::set<double>( topologyPhysicalIds.begin(), topologyPhysicalIds.end() ).size();
 
-        
         if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
             _queueMode = 1;
             _numQueues = _totalNumaDomains;

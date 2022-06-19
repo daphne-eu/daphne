@@ -87,18 +87,19 @@ public:
             CPU_SET(_threadID, &cpuset);
             sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
         }
-        
+
+        int currentDomain = _physical_ids[_threadID];
         int targetQueue = _threadID;
 	if( _queueMode == 0 ) {
             targetQueue = 0;
         } else if ( _queueMode == 1) {
-            targetQueue = _physical_ids[_threadID];
+            targetQueue = currentDomain;
         } else if ( _queueMode == 2) {
             targetQueue = _threadID;
 	} else {
             std::cout << "Error finding queue." << std::endl;
         }
-        int currentDomain = _physical_ids[_threadID];
+        int startingQueue = targetQueue;
         
         Task* t = _q[targetQueue]->dequeueTask();
 
@@ -111,13 +112,16 @@ public:
             //get next tasks (blocking)
             t = _q[targetQueue]->dequeueTask();
         }
+
+        // All tasks from own queue have completed. Now stealing from other queues.
+
         if( _numQueues > 1 ) {
         if( _stealLogic == 0) {
             // Stealing in sequential order
             
             targetQueue = (targetQueue+1)%_numQueues;
             
-            while (targetQueue != _threadID) {
+            while ( targetQueue != startingQueue ) {
                 t = _q[targetQueue]->dequeueTask();
                 if( isEOF(t) ) {
                     targetQueue = (targetQueue+1)%_numQueues;
@@ -128,10 +132,10 @@ public:
             }
         } else if ( _stealLogic == 1) {
             // Stealing in sequential order from same domain first
-        
+            if ( _queueMode == 2 ) {
             targetQueue = (targetQueue+1)%_numQueues;
 
-            while (targetQueue != _threadID) {
+            while ( targetQueue != startingQueue ) {
                 if ( _physical_ids[targetQueue] == currentDomain ){
                     t = _q[targetQueue]->dequeueTask();
                     if( isEOF(t) ) {
@@ -144,13 +148,13 @@ public:
                     targetQueue = (targetQueue+1)%_numQueues;
                 }
             }
+            }
             
             // No more tasks on this domain, now switching to other domain
             
             targetQueue = (targetQueue+1)%_numQueues;
             
-            while (targetQueue != _threadID) {
-                if ( _physical_ids[targetQueue] != currentDomain ){
+            while ( targetQueue != startingQueue ) {
                     t = _q[targetQueue]->dequeueTask();
                     if( isEOF(t) ) {
                         targetQueue = (targetQueue+1)%_numQueues;
@@ -158,9 +162,6 @@ public:
                         t->execute(_fid, _batchSize);
                         delete t;
                     }
-                } else {
-                    targetQueue = (targetQueue+1)%_numQueues;
-                }
             }
         } else if( _stealLogic == 2) {
             // stealing from random workers until all workers EOF
@@ -190,10 +191,10 @@ public:
                     queuesThisDomain++;
                 }
             }
-            
+            if ( _queueMode == 2 ) {
             while( std::accumulate(eofWorkers.begin(), eofWorkers.end(), 0) < queuesThisDomain ) {
                 targetQueue = rand() % _numQueues;
-                if( _physical_ids[targetQueue] == currentDomain ) {
+                if( _physical_ids[targetQueue] == currentDomain) {
                     if( eofWorkers[targetQueue] == false ) {
                         t = _q[targetQueue]->dequeueTask();
                         if( isEOF(t) ) {
@@ -204,6 +205,7 @@ public:
                         }
                     }
                 }
+            }
             }
             
             // all workers on same domain are EOF, now also allowing stealing from other domain
