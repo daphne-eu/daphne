@@ -107,20 +107,7 @@ protected:
             cpuinfoFile.close();
         }
     }
-
-    void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
-        cpp_workers.resize(_numCPPThreads);
-        for(auto& w : cpp_workers)
-            w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
-    }
-    
-    void initCPPWorkers(std::vector<TaskQueue*> &qvector, uint32_t batchSize, bool verbose = false) {
-        cpp_workers.resize(_numCPPThreads);
-        for(auto& w : cpp_workers)
-            w = std::make_unique<WorkerCPU>(qvector[0], verbose, 0, batchSize);
-    }
-    
-    void initCPPWorkersPerCPU(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
+    void initCPPWorkers(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
         cpp_workers.resize(_numCPPThreads);
         if( numQueues == 0 ) {
             std::cout << "numQueues is 0, this should not happen." << std::endl;
@@ -129,26 +116,10 @@ protected:
         
         int i = 0;
         for( auto& w : cpp_workers ) {
-            w = std::make_unique<WorkerCPUPerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
             i++;
         }
     }
-    
-    void initCPPWorkersPerGroup(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
-        cpp_workers.resize(_numCPPThreads);
-        if (numQueues == 0) {
-            std::cout << "numQueues is 0, this should not happen." << std::endl;
-        }
-        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
-        if( _numCPPThreads < topologyUniqueThreads.size() )
-            topologyUniqueThreads.resize(_numCPPThreads);
-        int i = 0;
-        for(auto& w : cpp_workers) {
-            w = std::make_unique<WorkerCPUPerGroup>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
-            i++;
-        }
-    }
-
 #ifdef USE_CUDA
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cuda_workers.resize(_numCUDAThreads);
@@ -199,14 +170,19 @@ protected:
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
         if(ctx->config.numberOfThreads > 0){
-            _numThreads = ctx->config.numberOfThreads;
+            _numCPPThreads = ctx->config.numberOfThreads;
         }
         else{
-            _numThreads = std::thread::hardware_concurrency();
+            _numCPPThreads = std::thread::hardware_concurrency();
+        }
+        // If the available CPUs from Slurm is less than the configured num threads, use the value from Slurm
+        if( const char* env_m = std::getenv("SLURM_CPUS_ON_NODE") ) {
+            if( (uint32_t)std::stoi(env_m) < _numThreads ) {
+                _numCPPThreads = std::stoi(env_m);
+            }
         }
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
-        _numCPPThreads = _numThreads;
         _numThreads = _numCPPThreads + _numCUDAThreads;
         _queueMode = 0;
         _numQueues = 1;
@@ -222,7 +198,7 @@ public:
             _numQueues = _totalNumaDomains;
         } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
             _queueMode = 2;
-            _numQueues = _numThreads;
+            _numQueues = _numCPPThreads;
         }
         
         if( _ctx->config.debugMultiThreading ) {

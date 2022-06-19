@@ -54,15 +54,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    if (this->_queueMode == 0) {
-        this->initCPPWorkers(qvector, batchSize8M, verbose);
-    } else if (this->_queueMode == 1) {
-        this->initCPPWorkersPerGroup(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
-    } else if (this->_queueMode == 2) {
-        this->initCPPWorkersPerCPU(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
-    } else {
-        std::cerr << "Error in vectorized engine queue allocation" << std::endl;
-    }
+    this->initCPPWorkers(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
 
 
     for(size_t i = 0; i < numOutputs; i++)

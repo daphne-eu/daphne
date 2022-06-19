@@ -56,15 +56,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    if (this->_queueMode == 0) {
-        this->initCPPWorkers(qvector, batchSize8M, verbose);
-    } else if (this->_queueMode == 1) {
-        this->initCPPWorkersPerGroup(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
-    } else if (this->_queueMode == 2) {
-        this->initCPPWorkersPerCPU(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
-    } else {
-        std::cerr << "Error in vectorized engine queue allocation" << std::endl;
-    }
+    this->initCPPWorkers(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
 
 #ifdef USE_CUDA
     if(this->_numCUDAThreads) {
@@ -211,8 +203,35 @@ template<typename VT>
     DenseMatrix<VT> ***res_cpp{};
     std::unique_ptr<TaskQueue> q_cpp;
     if(cpu_task_len > 0) {
-        q_cpp = std::make_unique<BlockingTaskQueue>(cpu_task_len);
-        this->initCPPWorkers(q_cpp.get(), batchSize8M, verbose);
+        //q_cpp = std::make_unique<BlockingTaskQueue>(cpu_task_len);
+        //this->initCPPWorkers(q_cpp.get(), batchSize8M, verbose);
+
+// Multiple Queues addition
+    std::vector<std::unique_ptr<TaskQueue>> q;
+    std::vector<TaskQueue*> qvector;
+    if (ctx->getUserConfig().pinWorkers) {
+        for(int i=0; i<this->_numQueues; i++) {
+            // Ideally queues would be created as such:
+            // q.emplace_back(new BlockingTaskQueue(len));
+            // However I'm getting an error so they are created with make_unique and get now.
+            
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(i, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+            std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
+            q.push_back(std::move(tmp));
+            qvector.push_back(q[i].get());
+        }
+    } else {
+        for(int i=0; i<this->_numQueues; i++) {
+            std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
+            q.push_back(std::move(tmp));
+            qvector.push_back(q[i].get());
+        }
+    }
+    this->initCPPWorkers(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
+// End Multiple Queues
         res_cpp = new DenseMatrix<VT> **[numOutputs];
         auto offset = device_task_len;
 
@@ -231,6 +250,8 @@ template<typename VT>
 
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
+	uint64_t currentItr = 0;
+	uint64_t target = 0;
         int method=ctx->config.taskPartitioningScheme;
         int chunkParam = ctx->config.minimumTaskSize;
         if(chunkParam<=0)
@@ -238,12 +259,16 @@ template<typename VT>
         LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
         while (lp.hasNextChunk()) {
             endChunk += lp.getNextChunk();
-            q_cpp->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
+	    target = currentItr % this->_numQueues;
+            qvector[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{
                     funcs, isScalar, inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk,
                     outRows, outCols, offset, ctx}, resLock, res_cpp));
             startChunk = endChunk;
+	    currentItr++;
         }
-        q_cpp->closeInput();
+        for(int i=0; i<this->_numQueues; i++) {
+            qvector[i]->closeInput();
+        }
     }
     this->joinAll();
 
