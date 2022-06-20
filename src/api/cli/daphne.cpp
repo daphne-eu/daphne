@@ -154,15 +154,16 @@ main(int argc, char** argv)
 
     llvm::cl::list<ExplainArgs> explainArgList(
         "explain", cat(daphneOptions),
-        llvm::cl::desc("Available explainations:"),
+        llvm::cl::desc("Show DaphneIR after certain compiler passes (separate "
+                       "multiple values by comma, the order is irrelevant)"),
         llvm::cl::values(
-            clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
             clEnumVal(parsing, "Show DaphneIR after parsing"),
-            clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
+            clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
-            clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references")),
+            clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
+            clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
         CommaSeparated);
 
     llvm::cl::list<string> scriptArgs1(
