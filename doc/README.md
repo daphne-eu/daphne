@@ -21,6 +21,7 @@ limitations under the License.
 ## User Documentation
 
 - Command-line interface API: see `build/bin/daphne --help`
+- [DaphneDSL](https://gitlab.know-center.tugraz.at/daphne/prototype/-/blob/master/doc/DaphneDSL.md)
 
 ## Developer Documentation
 
