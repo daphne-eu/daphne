@@ -343,7 +343,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, utils.matrixOf(arg), arg, numRows, numCols
         ));
     }
-    if(func == "frame") {
+    if(func == "createFrame") {
         checkNumArgsMin(func, numArgs, 1);
         // Determine which arguments are column matrices and which are labels.
         std::vector<mlir::Type> colTypes;

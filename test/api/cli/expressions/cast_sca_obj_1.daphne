@@ -1,0 +1,26 @@
+//-- Specify DataType Only
+
+//scalar<f64>->matrix
+x0 = 0.5;
+print(as.matrix(x0));
+
+//scalar<si64>->matrix
+x1 = 1;
+print(as.matrix(x1));
+
+//scalar<f64>->frame
+x2 = 2.5;
+print(as.frame(x2));
+
+//scalar<si64>->frame
+x3 = 3;
+print(as.frame(x3));
+
+//-- Specify DataType and ValueType
+//scalar<f64>->matrix<si64>
+x4 = 4.4;
+print(as.matrix<si64>(x4));
+
+//scalar<si64>->matrix<f64>
+x5 = 5;
+print(as.matrix<f64>(x5));
