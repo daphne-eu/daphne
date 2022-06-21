@@ -860,18 +860,60 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             if(ctx->VALUE_TYPE())
                 vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
             else
-                vt = utils.unknownType;
+            {
+                vt = utils.valueOrError(visit(ctx->expr())).getType();
+                if(vt.isa<mlir::daphne::FrameType>()){
+                    vt = vt.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                    if(vt.isa<mlir::daphne::MatrixType>())
+                        vt = vt.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+                }
+            }
             resType = utils.matrixOf(vt);
         }
-        else if(dtStr == "frame")
-            throw std::runtime_error("casting to a frame is not supported yet");
+        else if(dtStr == "frame"){
+            // Currently does not support casts of type "Specify value type only" (e.g., as.si64(x)) 
+            // and "Specify data type and value type" (e.g., as.frame<[si64, f64]>(x)) 
+            std::vector<mlir::Type> colTypes;
+            if(ctx->VALUE_TYPE())
+                colTypes = {utils.getValueTypeByName(ctx->VALUE_TYPE()->getText())};
+            else
+                colTypes = {utils.valueOrError(visit(ctx->expr())).getType()};
+            resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        }
+        else if(dtStr == "scalar"){
+            if(ctx->VALUE_TYPE())
+                resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+            else
+            {
+                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                if(argType.isa<mlir::daphne::MatrixType>())
+                    resType = argType.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+                else if(argType.isa<mlir::daphne::FrameType>())
+                    resType = argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                else
+                    resType = argType;
+            }
+        }
         else
             throw std::runtime_error(
                     "unsupported data type in cast expression: " + dtStr
             );
     }
     else if(ctx->VALUE_TYPE())
-        resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+    { //Data type shall be retained
+        mlir::Type vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+        mlir::Type dt = utils.valueOrError(visit(ctx->expr())).getType();
+        if(dt.isa<mlir::daphne::MatrixType>())
+            resType = utils.matrixOf(vt);
+        else if(dt.isa<mlir::daphne::FrameType>())
+        {
+            size_t numCols = dt.dyn_cast<mlir::daphne::FrameType>().getColumnTypes().size();
+            std::vector<mlir::Type> colTypes(numCols, vt);
+            resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        }
+        else
+            resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+    }
     else
         throw std::runtime_error(
                 "casting requires the specification of the target data and/or "

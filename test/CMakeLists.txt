@@ -19,6 +19,7 @@ set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
+        api/cli/expressions/CastTest.cpp
         api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
@@ -68,7 +69,9 @@ set(TEST_SOURCES
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
+        runtime/local/kernels/CastObjScaTest.cpp
         runtime/local/kernels/CastScaTest.cpp
+        runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
