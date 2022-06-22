@@ -670,19 +670,21 @@ public:
         Operation::result_type_range resultTypes = op->getResultTypes();
         const size_t numRes = op->getNumResults();
         
-        // TODO Support individual types for all outputs (see #397).
-        // Check if all results have the same type.
-        Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
-        for(size_t i = 1; i < numRes; i++)
-            if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
-                throw std::runtime_error(
-                        "encountered a vectorized pipelines with different "
-                        "result types, but at the moment we require all "
-                        "results to have the same type"
-                );
-        
-        // Append the name of the common type of all results to the kernel name.
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
+        if(numRes > 0) {
+            // TODO Support individual types for all outputs (see #397).
+            // Check if all results have the same type.
+            Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+            for(size_t i = 1; i < numRes; i++)
+                if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
+                    throw std::runtime_error(
+                            "encountered a vectorized pipelines with different "
+                            "result types, but at the moment we require all "
+                            "results to have the same type"
+                    );
+            
+            // Append the name of the common type of all results to the kernel name.
+            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
+        }
 
         mlir::Type operandType;
         std::vector<Value> newOperands;
@@ -702,7 +704,7 @@ public:
             }
         }
         else {
-            throw std::runtime_error("vectorizedPipelineOp without inputs not supported at the moment!");
+            throw std::runtime_error("vectorizedPipelineOp without outputs not supported at the moment!");
         }
 
         // Handle variadic operands isScalar and inputs (both share numInputs).
