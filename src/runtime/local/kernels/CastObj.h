@@ -240,7 +240,7 @@ public:
         }
         
         if(res == nullptr)
-            res = DataObjectFactory::create<CSRMatrix<VTArg>>(numRows, numCols, numNonZeros, false);
+            res = DataObjectFactory::create<CSRMatrix<VTArg>>(numRows, numCols, numNonZeros, true);
         for (size_t r=0; r<numRows; r++){
             for (size_t c=0; c<numCols; c++){
                 temp=arg->get(r,c);
