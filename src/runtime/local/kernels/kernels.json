@@ -251,7 +251,14 @@
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "int8_t"]],
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint32_t"]],
-            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]]
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]],
+            
+            [["DenseMatrix","double"],["CSRMatrix","double"]],
+            [["DenseMatrix","float"],["CSRMatrix","float"]],
+            [["DenseMatrix","int64_t"],["CSRMatrix","int64_t"]],
+            [["CSRMatrix","double"], ["DenseMatrix","double"]],
+            [["CSRMatrix","float"], ["DenseMatrix","float"]],
+            [["CSRMatrix","int64_t"], ["DenseMatrix","int64_t"]]
         ]
     },
     {
