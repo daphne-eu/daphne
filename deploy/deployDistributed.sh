@@ -26,7 +26,7 @@ PEERS=localhost:50051,localhost:50052
 
 PORT=50000
 
-PATH_TO_BUILD=/home/kostas/workspace/new_Daphne/workers/DaphneDistributedWorker
+PATH_TO_BUILD=~/DaphneDistributedWorker
 
 #******************************************************************************
 # SSH Configurations
@@ -34,8 +34,8 @@ PATH_TO_BUILD=/home/kostas/workspace/new_Daphne/workers/DaphneDistributedWorker
 
 # TODO different configurations for each machine
 
-identity_file=~/.ssh/id_rsa.pub
-USERNAME=kostas
+identity_file=
+USERNAME=
 sshPort=22
 
 #******************************************************************************
