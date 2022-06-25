@@ -94,24 +94,20 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
             for(int i=0; i<this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    target = currentItr % this->_numQueues;
-                    qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
+                    qvector[i]->enqueueTaskPinned(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                            outCols, 0, ctx}, resLock, res), target);
+                            outCols, 0, ctx}, resLock, res), this->topologyResponsibleThreads[i]);
                     startChunk = endChunk;
-		    currentItr++;
                 }
             }
         } else {
             for(int i=0; i<this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    target = currentItr % this->_numQueues;
-                    qvector[target]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
+                    qvector[i]->enqueueTask(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, resLock, res));
                     startChunk = endChunk;
-		    currentItr++;
                 }
             }
         }
@@ -123,7 +119,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
                 target = currentItr % this->_numQueues;
                 qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<DenseMatrix<VT>>(CompiledPipelineTaskData<DenseMatrix<VT>>{funcs, isScalar,
                         inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                        outCols, 0, ctx}, resLock, res), target);
+                        outCols, 0, ctx}, resLock, res), this->topologyUniqueThreads[target]);
                 startChunk = endChunk;
 		currentItr++;
             }

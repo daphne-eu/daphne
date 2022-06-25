@@ -88,24 +88,20 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
             for(int i=0; i<this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    target = currentItr % this->_numQueues;
-                    qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
+                    qvector[i]->enqueueTaskPinned(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                            outCols, 0, ctx}, dataSinks), target);
+                            outCols, 0, ctx}, dataSinks), this->topologyResponsibleThreads[i]);
                     startChunk = endChunk;
-		    currentItr++;
                 }
             }
         } else {
             for(int i=0; i<this->_numQueues; i++) {
                 while (lps[i].hasNextChunk()) {
                     endChunk += lps[i].getNextChunk();
-                    target = currentItr % this->_numQueues;
-                    qvector[target]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
+                    qvector[i]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
                             inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
                             outCols, 0, ctx}, dataSinks));
                     startChunk = endChunk;
-		    currentItr++;
                 }
             }
         }

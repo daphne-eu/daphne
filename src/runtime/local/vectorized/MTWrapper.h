@@ -40,6 +40,7 @@ protected:
     std::vector<std::unique_ptr<Worker>> cpp_workers;
     std::vector<int> topologyPhysicalIds;
     std::vector<int> topologyUniqueThreads;
+    std::vector<int> topologyResponsibleThreads;
     std::string _cpuinfoPath = "/proc/cpuinfo";
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
@@ -77,7 +78,7 @@ protected:
         return 0;
     }
 
-    void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads) {
+    void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
         std::ifstream cpuinfoFile(_cpuinfoPath);
         std::vector<int> utilizedThreads;
         std::vector<int> core_ids;
@@ -85,10 +86,15 @@ protected:
         if( cpuinfoFile.is_open() ) {
             std::string line;
             int value;
-            while (std::getline(cpuinfoFile, line)) {
+            while ( std::getline(cpuinfoFile, line) ) {
                 if( _parseStringLine(line, "processor", &value ) ) {
                     utilizedThreads.push_back(value);
                 } else if( _parseStringLine(line, "physical id", &value) ) {
+                    if ( _ctx->getUserConfig().queueSetupScheme == PERGROUP ) {
+                        if (std::find(physicalIds.begin(), physicalIds.end(), value) == physicalIds.end()) {
+                            responsibleThreads.push_back(utilizedThreads[index]);
+                        }
+                    }
                     physicalIds.push_back(value);
                 } else if( _parseStringLine(line, "core id", &value) ) {
                     int found = 0;
@@ -100,6 +106,11 @@ protected:
                     core_ids.push_back(value);
                     if( _ctx->config.hyperthreadingEnabled || found == 0 ) {
                         uniqueThreads.push_back(utilizedThreads[index]);
+                        if ( _ctx->getUserConfig().queueSetupScheme == PERCPU ) {
+                            responsibleThreads.push_back(value);
+                        } else if ( _ctx->getUserConfig().queueSetupScheme == CENTRALIZED ) {
+                            responsibleThreads.push_back(0);
+                        }
                     }
                     index++;
                 }
@@ -169,7 +180,7 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
         if ( ctx->config.numberOfThreads > 0 ) {
             _numCPPThreads = ctx->config.numberOfThreads;
         }
@@ -187,30 +198,34 @@ public:
             _numCUDAThreads = ctx->cuda_contexts.size();
         _queueMode = 0;
         _numQueues = 1;
-        _stealLogic = ctx->getUserConfig().victimSelection;
+        _stealLogic = _ctx->getUserConfig().victimSelection;
         if( std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled )
             topologyUniqueThreads.resize(_numCPPThreads);
         _numThreads = _numCPPThreads + _numCUDAThreads;
         _totalNumaDomains = std::set<double>( topologyPhysicalIds.begin(), topologyPhysicalIds.end() ).size();
 
-        if (ctx->getUserConfig().queueSetupScheme == PERGROUP) {
+        if ( _ctx->getUserConfig().queueSetupScheme == PERGROUP ) {
             _queueMode = 1;
             _numQueues = _totalNumaDomains;
-        } else if (ctx->getUserConfig().queueSetupScheme == PERCPU) {
+        } else if ( _ctx->getUserConfig().queueSetupScheme == PERCPU ) {
             _queueMode = 2;
             _numQueues = _numCPPThreads;
         }
         
         if( _ctx->config.debugMultiThreading ) {
+            std::cout << "topologyPhysicalIds:" << std::endl;
             for(const auto & topologyEntry: topologyPhysicalIds) {
                 std::cout << topologyEntry << ',';
             }
-            std::cout << std::endl;
+            std::cout << std::endl << "topologyUniqueThreads:" << std::endl;
             for(const auto & topologyEntry: topologyUniqueThreads) {
                 std::cout << topologyEntry << ',';
             }
-            std::cout << std::endl;
-            std::cout << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
+            std::cout << std::endl << "topologyResponsibleThreads:" << std::endl;
+            for(const auto & topologyEntry: topologyResponsibleThreads) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
 #ifndef NDEBUG
