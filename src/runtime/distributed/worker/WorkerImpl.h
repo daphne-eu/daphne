@@ -43,7 +43,8 @@ public:
      * @param mat Structure * obj to store
      * @return StoredInfo Information regarding stored object (filename, numRows, numCols)
      */
-    StoredInfo Store(Structure *mat) ;
+    template<class DT>
+    StoredInfo Store(DT *mat) ;
     
     /**
      * @brief Computes a pipeline
@@ -83,7 +84,7 @@ private:
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
     
-    Structure *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse = false, bool isFloat = false);
+    Structure *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse = false, bool isFloat = false, bool isScalar = false);
     void *loadWorkInputData(mlir::Type mlirType, StoredInfo& workInput);
     
 

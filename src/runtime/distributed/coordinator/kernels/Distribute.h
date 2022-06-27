@@ -82,10 +82,10 @@ struct Distribute
                                                     data);            
                         break;
                     case ALLOCATION_TYPE::DIST_OPENMPI:
-                        std::runtime_error("MPI support missing");
+                        throw std::runtime_error("MPI support missing");
                         break;
                     default:
-                        std::runtime_error("No distributed implementation found");
+                        throw std::runtime_error("No distributed implementation found");
                         break;    
                 }
                 const_cast<typename std::remove_const<DT>::type*>(mat)->addObjectMetaData(allocationDescriptor, &range);                    
@@ -100,11 +100,11 @@ struct Distribute
                 backend = new AllocationDescriptorDistributedGRPC();
                 break;
             case ALLOCATION_TYPE::DIST_OPENMPI:
-                std::runtime_error("MPI support missing");
+                throw std::runtime_error("MPI support missing");
                 break;
                     
             default:
-                std::runtime_error("No distributed implementation found");
+                throw std::runtime_error("No distributed implementation found");
                 break;
         }
         auto results = backend->Distribute(mat);

@@ -22,7 +22,7 @@ void StoreCallData::Proceed() {
         // Make this instance progress to the PROCESS state.
         status_ = PROCESS;
 
-        service_->RequestStore(&ctx_, &matrix, &responder_, cq_, cq_,
+        service_->RequestStore(&ctx_, &data, &responder_, cq_, cq_,
                                 this);
     }
     else if (status_ == PROCESS)
@@ -30,7 +30,7 @@ void StoreCallData::Proceed() {
         status_ = FINISH;
 
         new StoreCallData(worker, cq_);
-        grpc::Status status = worker->StoreGRPC(&ctx_, &matrix, &storedData);
+        grpc::Status status = worker->StoreGRPC(&ctx_, &data, &storedData);
 
         responder_.Finish(storedData, grpc::Status::OK, this);
     }

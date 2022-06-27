@@ -28,28 +28,28 @@ IAllocationDescriptorDistributed::DistributedResult AllocationDescriptorDistribu
     struct StoredInfo {
         size_t omd_id;
     };                
-    DistributedGRPCCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
+    DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
 
     auto omdVector = (mat->getObjectMetaDataByType(ALLOCATION_TYPE::DIST_GRPC));
     for (auto &omd : *omdVector) {
         // Skip if already placed at workers
         if (dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData().isPlacedAtWorker)
             continue;
-        distributed::Matrix protoMat;
+        distributed::Data protoMsg;
         // TODO: We need to handle different data types 
         // (this will be simplified when serialization is implemented)
         auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
         if (!denseMat){
             throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
         }
-        ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, &protoMat, 
+        ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix(), 
                                                 omd->range->r_start,
                                                 omd->range->r_start + omd->range->r_len,
                                                 omd->range->c_start,
                                                 omd->range->c_start + omd->range->c_len);
 
         StoredInfo storedInfo({omd->omd_id}); 
-        caller.asyncStoreCall(dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getLocation(), storedInfo, protoMat);
+        caller.asyncStoreCall(dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getLocation(), storedInfo, protoMsg);
     }
 
     // get results       
@@ -72,27 +72,66 @@ IAllocationDescriptorDistributed::DistributedResult AllocationDescriptorDistribu
 }
 
 IAllocationDescriptorDistributed::DistributedResult AllocationDescriptorDistributedGRPC::Broadcast(const Structure *mat) 
-{ 
-    
+{   
     struct StoredInfo {
         size_t omd_id;
     };
-    DistributedGRPCCaller<StoredInfo, distributed::Matrix, distributed::StoredData> caller;
+    DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
     
-
-    distributed::Matrix protoMat;
+    distributed::Data protoMsg;
     auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
     if (!denseMat){
         throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
     }
-    ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, &protoMat);
+    ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix());
     auto omdVector = (mat->getObjectMetaDataByType(ALLOCATION_TYPE::DIST_GRPC));
     for (auto &omd : *omdVector) {
         if (dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData().isPlacedAtWorker)
             continue;
         auto addr = dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getLocation();       
         StoredInfo storedInfo({omd->omd_id});
-        caller.asyncStoreCall(addr, storedInfo, protoMat);
+        caller.asyncStoreCall(addr, storedInfo, protoMsg);
+    }
+    
+    IAllocationDescriptorDistributed::DistributedResult results;
+    // get results        
+    std::map<size_t, IAllocationDescriptorDistributed::StoredInfo> map;
+    while (!caller.isQueueEmpty()){
+
+        IAllocationDescriptorDistributed::StoredInfo info;
+
+        auto response = caller.getNextResult();            
+        auto omd_id = response.storedInfo.omd_id;
+        auto storedData = response.result;
+        
+        // storedData.set_type(dataType);
+        info.filename = storedData.filename();
+        info.numRows = storedData.num_rows();
+        info.numCols = storedData.num_cols();
+        
+        map.insert({omd_id, info});
+    }
+    results.push_back(map);  
+    return results;
+}
+
+IAllocationDescriptorDistributed::DistributedResult AllocationDescriptorDistributedGRPC::Broadcast(const double *val, const Structure *arg)
+{
+    struct StoredInfo {
+        size_t omd_id;
+    };
+    DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
+    distributed::Data protoMsg;
+    auto protoVal = protoMsg.mutable_value();
+    protoVal->set_f64(*val);
+
+    auto omdVector = (arg->getObjectMetaDataByType(ALLOCATION_TYPE::DIST_GRPC));
+    for (auto &omd : *omdVector) {
+        if (dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData().isPlacedAtWorker)
+            continue;
+        auto addr = dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getLocation();       
+        StoredInfo storedInfo({omd->omd_id});
+        caller.asyncStoreCall(addr, storedInfo, protoMsg);
     }
     
     IAllocationDescriptorDistributed::DistributedResult results;

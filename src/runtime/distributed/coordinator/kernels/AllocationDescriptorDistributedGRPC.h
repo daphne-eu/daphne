@@ -43,6 +43,7 @@ public:
     // Primitives
     DistributedResult Distribute(const Structure *arg) override;
     DistributedResult Broadcast(const Structure *arg) override;
+    DistributedResult Broadcast(const double *val, const Structure *arg) override;
     DistributedComputeResult Compute(const Structure **args, size_t numInputs, const char *mlirCode) override;
     void Collect(Structure *arg) override;
 };

@@ -100,6 +100,8 @@ public:
 
     virtual DistributedResult Distribute(const Structure *arg) = 0;
     virtual DistributedResult Broadcast(const Structure *arg) = 0;
+    // Broadcast a double. For now we also pass a Structure object which needs to be used for obj meta data.
+    virtual DistributedResult Broadcast(const double *arg, const Structure *mat) = 0;
     
     // Compute cannot use key and ObjectMetadata_ID, 
     // it needs to map results using worker identifier (rank, address, etc)

@@ -33,9 +33,9 @@ private:
     std::unique_ptr<grpc::Server> server;
 public:
     WorkerImplGRPC(std::string addr);
-    void Wait();
+    void Wait() override;
     grpc::Status StoreGRPC(::grpc::ServerContext *context,
-                         const ::distributed::Matrix *request,
+                         const ::distributed::Data *request,
                          ::distributed::StoredData *response) ;
     grpc::Status ComputeGRPC(::grpc::ServerContext *context,
                          const ::distributed::Task *request,

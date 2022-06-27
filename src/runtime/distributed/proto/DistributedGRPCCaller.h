@@ -72,7 +72,7 @@ public:
     void asyncStoreCall(
         std::shared_ptr<grpc::Channel> channel,
         StoredInfo storedInfo,
-        const distributed::Matrix arg
+        const distributed::Data arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -87,7 +87,7 @@ public:
     void asyncStoreCall(
         std::string workerAddr,
         StoredInfo storedInfo,
-        const distributed::Matrix arg
+        const distributed::Data arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);

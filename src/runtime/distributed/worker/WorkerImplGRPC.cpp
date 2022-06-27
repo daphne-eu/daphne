@@ -76,45 +76,69 @@ CSRMatrix<int64_t>* WorkerImplGRPC::CreateMatrix<CSRMatrix<int64_t>>(const ::dis
 }
 
 grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
-                         const ::distributed::Matrix *request,
+                         const ::distributed::Data *request,
                          ::distributed::StoredData *response) 
 {
-    Structure *mat;
-    switch (request->matrix_case()){
-    case distributed::Matrix::MatrixCase::kDenseMatrix:
-        switch (request->dense_matrix().cells_case())
+    StoredInfo storedInfo;
+    switch (request->data_case()){
+        case distributed::Data::DataCase::kMatrix: {
+            Structure *mat;
+            auto matrix = &request->matrix();
+            switch (matrix->matrix_case()) {
+                case distributed::Matrix::MatrixCase::kDenseMatrix:
+                    switch (matrix->dense_matrix().cells_case())
+                    {
+                    case distributed::DenseMatrix::CellsCase::kCellsI64:
+                        mat = CreateMatrix<DenseMatrix<int64_t>>(matrix);
+                        ProtoDataConverter<DenseMatrix<int64_t>>::convertFromProto(*matrix, dynamic_cast<DenseMatrix<int64_t>*>(mat));
+                        break;
+                    case distributed::DenseMatrix::CellsCase::kCellsF64:
+                        mat = CreateMatrix<DenseMatrix<double>>(matrix);
+                        ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*matrix, dynamic_cast<DenseMatrix<double>*>(mat));
+                        break;    
+                    default:
+                        break;
+                    }
+                    break;
+                case distributed::Matrix::MatrixCase::kCsrMatrix:
+                    switch (matrix->csr_matrix().values_case())
+                    {
+                    case distributed::CSRMatrix::ValuesCase::kValuesI64:
+                        mat = CreateMatrix<CSRMatrix<int64_t>>(matrix);
+                        ProtoDataConverter<CSRMatrix<int64_t>>::convertFromProto(*matrix, dynamic_cast<CSRMatrix<int64_t>*>(mat));
+                        break;
+                    case distributed::CSRMatrix::ValuesCase::kValuesF64:
+                        mat = CreateMatrix<CSRMatrix<double>>(matrix);
+                        ProtoDataConverter<CSRMatrix<double>>::convertFromProto(*matrix, dynamic_cast<CSRMatrix<double>*>(mat));
+                        break;
+                    }
+                    break;
+            }
+            storedInfo = Store<Structure>(mat);
+            break; 
+        }
+        case distributed::Data::DataCase::kValue:
         {
-        case distributed::DenseMatrix::CellsCase::kCellsI64:
-            mat = CreateMatrix<DenseMatrix<int64_t>>(request);
-            ProtoDataConverter<DenseMatrix<int64_t>>::convertFromProto(*request, dynamic_cast<DenseMatrix<int64_t>*>(mat));
-            break;
-        case distributed::DenseMatrix::CellsCase::kCellsF64:
-            mat = CreateMatrix<DenseMatrix<double>>(request);
-            ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*request, dynamic_cast<DenseMatrix<double>*>(mat));
-            break;    
-        default:
+            auto protoVal = &request->value();
+            switch (protoVal->value_case())
+            {
+                case distributed::Value::ValueCase::kF64:
+                {
+                    double * val = new double(protoVal->f64());
+                    storedInfo = Store(val);
+                    break;
+                }
+                default:
+                    throw std::runtime_error(protoVal->value_case() + " not supported atm");
+                    break;
+            }
             break;
         }
-        break;
-    case distributed::Matrix::MatrixCase::kCsrMatrix:
-        switch (request->csr_matrix().values_case())
-        {
-        case distributed::CSRMatrix::ValuesCase::kValuesI64:
-            mat = CreateMatrix<CSRMatrix<int64_t>>(request);
-            ProtoDataConverter<CSRMatrix<int64_t>>::convertFromProto(*request, dynamic_cast<CSRMatrix<int64_t>*>(mat));
-            break;
-        case distributed::CSRMatrix::ValuesCase::kValuesF64:
-            mat = CreateMatrix<CSRMatrix<double>>(request);
-            ProtoDataConverter<CSRMatrix<double>>::convertFromProto(*request, dynamic_cast<CSRMatrix<double>*>(mat));
-            break;
-        }
-        
     default:
         // error message         
         return ::grpc::Status::CANCELLED;
         break;
     };
-    auto storedInfo = Store(mat);
 
     response->set_filename(storedInfo.filename);
     response->set_num_rows(storedInfo.numRows);

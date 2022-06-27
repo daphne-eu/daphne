@@ -31,7 +31,7 @@
 template<class DT>
 struct Broadcast
 {
-    static void apply(DT *mat, ALLOCATION_TYPE alloc_type, DCTX(ctx)) 
+    static void apply(DT *&mat, bool isScalar, ALLOCATION_TYPE alloc_type, DCTX(ctx)) 
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
         assert(envVar && "Environment variable has to be set");
@@ -47,12 +47,18 @@ struct Broadcast
         workers.push_back(workersStr);
 
         assert(mat != nullptr);
-
+        double val;
+        if (isScalar) {
+            auto ptr = (double*)(&mat);
+            val = *ptr;
+            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false);
+        }
+       
         Range range;
         range.r_start = 0;
-        range.r_len = mat->getNumRows();
         range.c_start = 0;
-        range.c_len = mat->getNumCols();
+        range.r_len = mat->getNumRows();
+        range.c_len = mat->getNumCols();        
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
 
@@ -92,13 +98,17 @@ struct Broadcast
                 backend = new AllocationDescriptorDistributedGRPC();
                 break;
             case ALLOCATION_TYPE::DIST_OPENMPI:
-                std::runtime_error("MPI support missing");
+                throw std::runtime_error("MPI support missing");
                 break;
             default:
-                std::runtime_error("No distributed implementation found");
+                throw std::runtime_error("No distributed implementation found");
                 break;
         }
-        auto results = backend->Broadcast(mat);
+        IAllocationDescriptorDistributed::DistributedResult results;
+        if (isScalar)
+            results = backend->Broadcast(&val, mat);
+        else
+            results = backend->Broadcast(mat);
         for (auto &output : results){ 
             for (auto &workerResponse : output) {
                 auto omd_id = workerResponse.first;
@@ -112,7 +122,7 @@ struct Broadcast
                 data.isPlacedAtWorker = true;
                 dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);
             }
-        }
+        }        
     };           
 };
 
@@ -121,9 +131,9 @@ struct Broadcast
 // ****************************************************************************
 
 template<class DT>
-void broadcast(DT *mat, ALLOCATION_TYPE alloc_type, DCTX(ctx))
+void broadcast(DT *&mat, bool isScalar, ALLOCATION_TYPE alloc_type, DCTX(ctx))
 {
-    Broadcast<DT>::apply(mat, alloc_type, ctx);
+    Broadcast<DT>::apply(mat, isScalar, alloc_type, ctx);
 }
 
 

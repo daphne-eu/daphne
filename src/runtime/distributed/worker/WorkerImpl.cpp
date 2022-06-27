@@ -55,15 +55,22 @@ WorkerImpl::~WorkerImpl() = default;
 
 
 
-
-WorkerImpl::StoredInfo WorkerImpl::Store(Structure *mat)
+template<>
+WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat)
 {    
     auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
     localData_[identification] = mat;
-    
     return StoredInfo({identification, mat->getNumRows(), mat->getNumCols()});
 }
-
+template<>
+WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
+{    
+    auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
+    localData_[identification] = val;
+    return StoredInfo({identification, 0, 0});
+}
+    
+    
 
 
 std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
@@ -151,7 +158,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
         localData_[identification] = output;
 
         auto mat = static_cast<Structure*>(output);
-                    
+
         outputs->push_back(StoredInfo({identification, mat->getNumRows(), mat->getNumCols()}));
     }
     // TODO: cache management (Write to file/evict matrices present as files)
@@ -211,19 +218,31 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
 void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput)
 {    
     // TODO: all types
-    auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();        
-    bool isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;       
-    bool isFloat = matTy.getElementType().isa<mlir::Float64Type>();
-    
-    return readOrGetMatrix(workInput.filename, workInput.numRows, workInput.numCols, isSparse, isFloat);
+    bool isSparse = false;
+    bool isFloat = false;
+    bool isScalar = false;
+    if (mlirType.isa<mlir::daphne::MatrixType>()){
+        auto matTy = mlirType.dyn_cast<mlir::daphne::MatrixType>();        
+        isSparse = matTy.getRepresentation() == mlir::daphne::MatrixRepresentation::Sparse;       
+        isFloat = matTy.getElementType().isa<mlir::Float64Type>();
+    }
+    else
+        isScalar = true;
+    return readOrGetMatrix(workInput.filename, workInput.numRows, workInput.numCols, isSparse, isFloat, isScalar);
 }
 
-Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/)
+Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/, bool isScalar /* = false */)
 {
     auto data_it = localData_.find(filename);
     if (data_it != localData_.end()) {
         // Data already cached
-        return static_cast<Structure *>(data_it->second);
+        if (isScalar){
+            auto valAddress = (double*)(data_it->second);
+            auto structurePtrPtr = (Structure**)valAddress;
+            return (*structurePtrPtr);
+        }
+        else
+            return static_cast<Structure *>(data_it->second);
     }
     else {
         // Data not yet loaded -> load from file

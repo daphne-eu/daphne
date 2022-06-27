@@ -46,7 +46,7 @@ private:
     grpc::ServerCompletionQueue *cq_;
     grpc::ServerContext ctx_;
     // What we get from the client.
-    distributed::Matrix matrix;
+    distributed::Data data;
     // What we send back to the client.
     distributed::StoredData storedData;
     // The means to get back to the client.
