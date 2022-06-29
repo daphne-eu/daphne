@@ -220,6 +220,24 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     return {{numRows, numCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
+    auto shapeLhs = getShape(lhs());
+    auto shapeRhs = getShape(rhs());
+    size_t ta = false;
+    size_t tb = false;
+
+    if(auto co = transa().getDefiningOp<mlir::daphne::ConstantOp>()) {
+        ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    }
+    if(auto co = transb().getDefiningOp<mlir::daphne::ConstantOp>()) {
+        tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    }
+
+    size_t numRows = ta ? shapeLhs.second : shapeLhs.first;
+    size_t numCols = tb ? shapeRhs.first : shapeRhs.second;
+    return {{numRows, numCols}};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
     FileMetaData fmd = CompilerUtils::getFileMetaData(fileName());
     return {{fmd.numRows, fmd.numCols}};

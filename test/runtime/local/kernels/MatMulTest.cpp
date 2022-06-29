@@ -26,9 +26,9 @@
 #include <vector>
 
 template<class DT>
-void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp) {
+void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp, bool transa = false, bool transb = false) {
     DT * res = nullptr;
-    matMul<DT, DT, DT>(res, lhs, rhs, nullptr);
+    matMul<DT, DT, DT>(res, lhs, rhs, transa, transb, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
@@ -65,6 +65,12 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
         3, 4,
         2, 2,
     });
+    auto m6 = genGivenVals<DT>(4, {
+        1, 0,
+        0, 0,
+        3, 2,
+        0, 0,
+    });
     auto v0 = genGivenVals<DT>(3, {
         0,
         0,
@@ -96,6 +102,17 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
         3
     });
     auto v6 = genGivenVals<DT>(1, {14});
+    auto v7 = genGivenVals<DT>(2, {
+        1,
+        1,
+    });
+    auto v8 = genGivenVals<DT>(4, {
+        1,
+        0,
+        5,
+        0
+    });
+
 
     checkMatMul(m0, m0, m0);
     checkMatMul(m1, m1, m2);
@@ -106,7 +123,91 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
     checkMatMul(m0, v1, v0);
     checkMatMul(m1, v1, v3);
     checkMatMul(m1, v2, v4);
+    checkMatMul(m6, v7, v8);
     checkMatMul(v5, v2, v6);
+
+    DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, m6, v0, v1, v2, v3, v4, v5, v6, v7, v8);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DenseMatrix), (float, double)) {
+    using DT = TestType;
+
+    auto m0 = genGivenVals<DT>(3, {
+        1, 2, 3,
+        3, 1, 2,
+        2, 3, 1,
+    });
+    auto m1 = genGivenVals<DT>(3, {
+        13, 10, 13,
+        13, 13, 10,
+        10, 13, 13,
+    });
+    auto m2 = genGivenVals<DT>(2, {
+        1, 0, 3, 0,
+        0, 0, 2, 0,
+    });
+    auto m3 = genGivenVals<DT>(4, {
+        0, 1,
+        2, 0,
+        1, 1,
+        0, 0,
+    });
+    auto m4 = genGivenVals<DT>(4, {
+        0, 2, 1, 0,
+        0, 0, 0, 0,
+        2, 6, 5, 0,
+        0, 0, 0, 0,
+    });
+    auto m5 = genGivenVals<DT>(4, {
+        1, 0, 1, 0,
+        0, 4, 2, 0,
+        1, 2, 2, 0,
+        0, 0, 0, 0,
+    });
+    auto v0 = genGivenVals<DT>(3, {
+        1,
+        1,
+        1
+    });
+    auto v1 = genGivenVals<DT>(3, {
+        1,
+        2,
+        3
+    });
+    auto v2 = genGivenVals<DT>(3, {
+        13,
+        13,
+        10
+    });
+    auto v3 = genGivenVals<DT>(4, {
+        1,
+        1,
+        1,
+        1
+    });
+    auto v4 = genGivenVals<DT>(2, {
+        3,
+        2
+    });
+    auto v5 = genGivenVals<DT>(2, {
+        1,
+        1,
+    });
+    auto v6 = genGivenVals<DT>(4, {
+        1,
+        0,
+        5,
+        0
+    });
+
+    checkMatMul(m0, m0, m1, true, true);
+    checkMatMul(m2, m3, m4, true, true);
+    checkMatMul(m0, v1, v2, true);
+    checkMatMul(m3, v3, v4, true);
+    checkMatMul(m2, v5, v6, true);
+    checkMatMul(m3, m3, m5, false, true);
+
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);
 }
+

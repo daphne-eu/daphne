@@ -881,6 +881,53 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
 }
 
 /**
+ * @brief Transposition-aware matrix multiplication
+ * Identifies if an input to a MatMulOp is the result of a TransposeOp; Rewrites the Operation,
+ * passing transposition info as a flag, instead of transposing the matrix before multiplication
+ */
+mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
+        mlir::daphne::MatMulOp op, PatternRewriter &rewriter
+) {    
+    mlir::Value lhs = op.lhs();
+    mlir::Value rhs = op.rhs();
+    mlir::Value transa = op.transa();
+    mlir::Value transb = op.transb();
+    bool ta = false;
+    bool tb = false;
+
+    if(auto co = transa.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    }
+    if(auto co = transb.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    }
+
+
+    mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();
+    mlir::daphne::TransposeOp rhsTransposeOp = rhs.getDefiningOp<mlir::daphne::TransposeOp>();
+
+    if (!lhsTransposeOp && !rhsTransposeOp){
+        return mlir::failure();
+    }
+
+    if(lhsTransposeOp) {
+        lhs = lhsTransposeOp.arg();
+        ta = !ta;
+    }
+    if(rhsTransposeOp) {
+        rhs = rhsTransposeOp.arg();
+        tb = !tb;
+    }
+
+    rewriter.replaceOpWithNewOp<mlir::daphne::MatMulOp>(
+        op, op.getType(), lhs, rhs,
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), rewriter.getBoolAttr(ta))),
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), rewriter.getBoolAttr(tb)))
+    );
+    return mlir::success();
+}
+
+/**
  * @brief Replaces NumRowsOp by a constant, if the #rows of the input is known
  * (e.g., due to shape inference).
  */

@@ -33,7 +33,7 @@ void checkSyrk(const DT * arg) {
     DT * resExp = nullptr;
     DT * argT = nullptr;
     transpose(argT, arg, nullptr);
-    matMul(resExp, argT, arg, nullptr);
+    matMul(resExp, argT, arg, false, false, nullptr);
 
     DT * resAct = nullptr;
     syrk(resAct, arg, nullptr);
