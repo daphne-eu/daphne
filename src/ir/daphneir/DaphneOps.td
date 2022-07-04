@@ -140,6 +140,7 @@ def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
 def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     NumRowsFromIthArg<0>, NumColsFromIthArg<1>,
     DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport
 ]> {
