@@ -8,6 +8,7 @@
     "explain_kernels": false,
     "explain_llvm": false,
     "explain_parsing": false,
+    "explain_parsing_simplified": false,
     "explain_property_inference": false,
     "explain_sql": false,
     "explain_vectorized": false,
