@@ -14,34 +14,30 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H
-#define SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H
+#pragma once
 
 #include <parser/Parser.h>
 
 #include <mlir/IR/Builders.h>
+#include <api/cli/DaphneUserConfig.h>
 
 #include <istream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 class DaphneDSLParser : public Parser {
 
     std::unordered_map<std::string, std::string> args;
+    DaphneUserConfig userConf;
     
 public:
 
-    DaphneDSLParser(std::unordered_map<std::string, std::string> args) : args(args) {
-        //
-    }
+    DaphneDSLParser(std::unordered_map<std::string, std::string> args, DaphneUserConfig userConf) :
+            args(std::move(args)), userConf(std::move(userConf)) { }
 
-    DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>()) {
-        //
-    }
+    DaphneDSLParser() : DaphneDSLParser(std::unordered_map<std::string, std::string>(), DaphneUserConfig()) { }
 
     void parseStream(mlir::OpBuilder &builder, std::istream &stream, const std::string &sourceName) override;
     
 };
-
-#endif /* SRC_PARSER_DAPHNEDSL_DAPHNEDSLPARSER_H */
-

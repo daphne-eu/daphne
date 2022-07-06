@@ -367,7 +367,7 @@ main(int argc, char** argv)
 
     // Parse the input file and generate the corresponding DaphneIR operations
     // inside the module, assuming DaphneDSL as the input format.
-    DaphneDSLParser parser(scriptArgsFinal);
+    DaphneDSLParser parser(scriptArgsFinal, user_config);
     try {
         parser.parseFile(builder, inputFile);
     }

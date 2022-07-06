@@ -17,6 +17,8 @@
 #include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
+#include <parser/daphnedsl/DaphneDSLParser.h>
+#include <parser/CancelingErrorListener.h>
 #include <parser/ScopedSymbolTable.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -36,6 +38,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 
 // ****************************************************************************
 // Utilities
@@ -253,6 +256,152 @@ antlrcpp::Any DaphneDSLVisitor::visitBlockStatement(DaphneDSLGrammarParser::Bloc
     return res;
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::ImportStatementContext * ctx) {
+    if(symbolTable.getNumScopes() != 1)
+        throw std::runtime_error("Imports can only be done in the main scope");
+
+    const char prefixDelim = '.';
+    std::string prefix;
+    std::vector<std::string> importPaths;
+    std::string path = ctx->filePath->getText();
+    // Remove quotes
+    path = path.substr(1, path.size() - 2);
+    
+    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top()).parent_path());
+    std::filesystem::path importingPath = path;
+
+    //Determine the prefix from alias/filename
+    if(ctx->alias)
+    {
+        prefix = ctx->alias->getText();
+        prefix = prefix.substr(1, prefix.size() - 2);
+    }
+    else
+        prefix = importingPath.stem().string(); 
+
+    prefix += prefixDelim;
+
+    // Absolute path can be used as is, we have to handle relative paths and config paths
+    if(importingPath.is_relative())
+    {
+        std::filesystem::path absolutePath = importerDirPath /  importingPath;
+        if(std::filesystem::exists(absolutePath))
+            absolutePath = std::filesystem::canonical(absolutePath);
+
+        // Check directories in UserConfig (if provided)
+        if(!userConf.daphnedsl_import_paths.empty())
+        {
+            const auto& configPaths = userConf.daphnedsl_import_paths;
+            // User specified _default_ paths.
+            if(importingPath.has_extension() && (configPaths.find("default_dirs") != configPaths.end()))
+            {
+                for(std::filesystem::path defaultPath: configPaths.at("default_dirs"))
+                {
+                    std::filesystem::path libFile = defaultPath / path;
+                    if(std::filesystem::exists(libFile))
+                    {
+                        if(std::filesystem::exists(absolutePath) && std::filesystem::canonical(libFile) != absolutePath)
+                            throw std::runtime_error(std::string("Ambiguous import: ").append(importingPath)
+                                .append(", found another file with the same name in default paths of UserConfig: ").append(libFile));
+                        absolutePath = libFile;
+                    }
+                }
+            }
+
+            // User specified "libraries" -> import all files
+            if(!importingPath.has_extension() && (configPaths.find(path) != configPaths.end()))
+                for (std::filesystem::path const& dir_entry : std::filesystem::directory_iterator{configPaths.at(path)[0]})
+                    importPaths.push_back(dir_entry.string());
+        }
+        path = absolutePath.string();
+    }
+
+    if(importPaths.empty())
+        importPaths.push_back(path);
+
+    if(std::filesystem::absolute(scriptPaths.top()).string() == path)
+        throw std::runtime_error(std::string("You cannot import the file you are currently in: ").append(path));
+
+    for(const auto& somePath: importPaths)
+    {
+        for(const auto& imported: importedFiles)
+            if(std::filesystem::equivalent(somePath, imported))
+                throw std::runtime_error(std::string("You cannot import the same file twice: ").append(somePath));
+
+        importedFiles.push_back(somePath);
+    }
+
+    antlrcpp::Any res;
+    for(const auto& importPath : importPaths)
+    {
+        if(!std::filesystem::exists(importPath))
+            throw std::runtime_error(std::string("The import path doesn't exist: ").append(importPath));
+
+        std::string finalPrefix = prefix;
+        auto origScope = symbolTable.extractScope();
+
+        // If we import a library, we insert a filename (e.g., "algorithms/kmeans.daphne" -> algorithms.kmeans.km)
+        if(!importingPath.has_extension())
+            finalPrefix += std::filesystem::path(importPath).stem().string() + prefixDelim;
+        else 
+        {
+            // If the prefix is already occupied (and is not part of some other prefix), we append a parent directory name
+            for(const auto& symbol : origScope)
+                if(symbol.first.find(finalPrefix) == 0 && std::count(symbol.first.begin(), symbol.first.end(), '.') == 1)
+                {
+                    // Throw error when we want to use an explicit alias that results in a prefix clash
+                    if(ctx->alias)
+                    {
+                        throw std::runtime_error(std::string("Alias ").append(ctx->alias->getText())
+                        .append(" results in a name clash with another prefix"));
+                    }
+//                    finalPrefix = importingPath.parent_path().filename().string() + prefixDelim + finalPrefix;
+                    finalPrefix.insert(0, importingPath.parent_path().filename().string() + prefixDelim);
+                    break;
+                }
+        }
+        
+        CancelingErrorListener errorListener;
+        std::ifstream ifs(importPath, std::ios::in);
+        antlr4::ANTLRInputStream input(ifs);
+        input.name = importPath;
+
+        DaphneDSLGrammarLexer lexer(&input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(&errorListener);
+        antlr4::CommonTokenStream tokens(&lexer);
+
+        DaphneDSLGrammarParser parser(&tokens);
+        parser.removeErrorListeners();
+        parser.addErrorListener(&errorListener);
+        DaphneDSLGrammarParser::ScriptContext * importCtx = parser.script();
+        
+        std::multimap<std::string, mlir::FuncOp> origFuncMap = functionsSymbolMap;
+        functionsSymbolMap.clear();
+
+        symbolTable.pushScope();
+        scriptPaths.push(path);
+        res = visitScript(importCtx);
+        scriptPaths.pop();
+
+        ScopedSymbolTable::SymbolTable symbTable = symbolTable.extractScope();
+
+        // If the current import file also imported something, we discard it
+        for(const auto& symbol : symbTable)
+            if(symbol.first.find('.') == std::string::npos)
+                origScope[finalPrefix + symbol.first] = symbol.second;
+
+        symbolTable.put(origScope);
+        
+        for(std::pair<std::string, mlir::FuncOp> funcSymbol : functionsSymbolMap)
+            if(funcSymbol.first.find('.') == std::string::npos)
+                origFuncMap.insert({finalPrefix + funcSymbol.first, funcSymbol.second});
+        functionsSymbolMap.clear();
+        functionsSymbolMap = origFuncMap;
+    }
+    return res;
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitExprStatement(DaphneDSLGrammarParser::ExprStatementContext * ctx) {
     return visitChildren(ctx);
 }
@@ -316,7 +465,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     visit(ctx->thenStmt);
     ScopedSymbolTable::SymbolTable owThen = symbolTable.popScope();
 
-    // Generate the operations for the else-block, if it is present. Otherwise
+    // Generate the operations for the else-block, if it is present. Otherwise,
     // leave it empty; we might need to insert a yield-operation.
     mlir::Block elseBlock;
     ScopedSymbolTable::SymbolTable owElse;
@@ -608,7 +757,7 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
     // Retrieve the name of the referenced CLI argument.
     std::string arg = ctx->arg->getText();
 
-    // Find out if this argument was specified on the comman line.
+    // Find out if this argument was specified on the command line.
     auto it = args.find(arg);
     if(it == args.end())
         throw std::runtime_error(
@@ -630,7 +779,10 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
-    std::string var = ctx->var->getText();
+    std::string var;
+    const auto& identifierVec = ctx->IDENTIFIER();
+    for(size_t s = 0; s < identifierVec.size(); s++)
+        var += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
     try {
         return symbolTable.get(var).value;
     }
@@ -644,13 +796,16 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
-    std::string func = ctx->func->getText();
+    std::string func;
+    const auto& identifierVec = ctx->IDENTIFIER();
+    for(size_t s = 0; s < identifierVec.size(); s++)
+        func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
     mlir::Location loc = utils.getLoc(ctx->start);
 
     // Parse arguments.
-    std::vector<mlir::Value> args;
+    std::vector<mlir::Value> args_vec;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
-        args.push_back(utils.valueOrError(visit(ctx->expr(i))));
+        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
 
     // search user defined functions
     auto range = functionsSymbolMap.equal_range(func);
@@ -660,10 +815,10 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
         auto funcTy = userDefinedFunc.getType();
         auto compatible = true;
 
-        if (funcTy.getInputs().size() != args.size()) {
+        if (funcTy.getInputs().size() != args_vec.size()) {
             continue;
         }
-        for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
+        for (auto compIt : llvm::zip(funcTy.getInputs(), args_vec)) {
             auto funcInputType = std::get<0>(compIt);
             auto argVal = std::get<1>(compIt);
 
@@ -680,9 +835,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
             // TODO: variable results
             return builder
                 .create<mlir::daphne::GenericCallOp>(loc,
-                    userDefinedFunc.sym_name(),
-                    args,
-                    userDefinedFunc.getType().getResults())
+                                                     userDefinedFunc.sym_name(),
+                                                     args_vec,
+                                                     userDefinedFunc.getType().getResults())
                 .getResult(0);
         }
     }
@@ -692,7 +847,7 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     }
 
     // Create DaphneIR operation for the built-in function.
-    return builtins.build(loc, func, args);
+    return builtins.build(loc, func, args_vec);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {

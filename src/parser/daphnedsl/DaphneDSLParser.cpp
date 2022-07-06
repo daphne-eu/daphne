@@ -54,7 +54,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         parser.addErrorListener(&errorListener);
 
         DaphneDSLGrammarParser::ScriptContext * ctx = parser.script();
-        DaphneDSLVisitor visitor(module, builder, args);
+        DaphneDSLVisitor visitor(module, builder, args, sourceName, userConf);
         visitor.visitScript(ctx);
 
         mlir::Location loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
