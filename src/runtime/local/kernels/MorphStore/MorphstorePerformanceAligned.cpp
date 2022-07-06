@@ -29,7 +29,7 @@
 
 #include <core/operators/otfly_derecompr/select.h>
 #include <core/morphing/uncompr.h>
-#include <core/operators/otfly_derecompr/project.h>
+#include <core/operators/otfly_derecompr/join_uncompr.h>
 #include <core/storage/column.h>
 #include <core/storage/column_gen.h>
 //using namespace morphstore;
@@ -39,14 +39,27 @@ int main() {
     long long time_aligned = 0;
     long long time_unaligned = 0;
 
-    //using ve = vectorlib::avx512<vectorlib::v512<uint64_t> >;
-    using ve = vectorlib::scalar<vectorlib::v64<uint64_t>>;
+    using ve = vectorlib::avx512<vectorlib::v512<uint64_t> >;
+    //using ve = vectorlib::scalar<vectorlib::v64<uint64_t>>;
 
     const size_t dataCount = 50 * 1000 * 1000;
 
     size_t loops = 500;
 
-    const morphstore::column<morphstore::uncompr_f> *const column = morphstore::ColumnGenerator::generate_with_distr(
+    const morphstore::column<morphstore::uncompr_f> *const column1 = morphstore::ColumnGenerator::generate_with_distr(
+            dataCount,
+            std::uniform_int_distribution<uint64_t>(
+                    0,
+                    dataCount
+            ),
+            false
+    );
+
+    auto selectValue = new size_t[loops];
+    for(size_t i = 0; i < loops; ++i) {
+        selectValue[i] = rand();
+    }
+    const morphstore::column<morphstore::uncompr_f> *const column2 = morphstore::ColumnGenerator::generate_with_distr(
             dataCount,
             std::uniform_int_distribution<uint64_t>(
                     0,
@@ -56,9 +69,15 @@ int main() {
     );
     for (size_t i = 0; i < loops; ++i) {
 
+        std::cout << i << std::endl;
+
         auto start = std::chrono::high_resolution_clock::now();
-        auto result = morphstore::select<ve, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column,
-                                                                                                             rand());
+        auto result = morphstore::select<ve, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column1,
+                                                                                                             selectValue[i]);
+        //auto result = morphstore::semi_join<ve,
+        //        morphstore::uncompr_f,
+        //        morphstore::uncompr_f,
+        //        morphstore::uncompr_f>(column1, column2);
         auto end = std::chrono::high_resolution_clock::now();
         time_aligned += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         delete result;
@@ -66,7 +85,7 @@ int main() {
 
     std::shared_ptr<uint64_t[]> data = std::shared_ptr<uint64_t[]>(new uint64_t[dataCount]);
 
-    uint64_t * oldData = column->get_data();
+    uint64_t * oldData = column1->get_data();
 
     for (size_t i = 0; i < dataCount; ++ i) {
         data[i] = oldData[i];
@@ -74,11 +93,28 @@ int main() {
 
     uint64_t * ptr = data.get();
 
-    const morphstore::column<morphstore::uncompr_f> * const column_2 = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * dataCount, ptr);
+    const morphstore::column<morphstore::uncompr_f> * const column_1 = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * dataCount, ptr);
+
+    std::shared_ptr<uint64_t[]> data2 = std::shared_ptr<uint64_t[]>(new uint64_t[dataCount]);
+
+    uint64_t * oldData2 = column1->get_data();
+
+    for (size_t i = 0; i < dataCount; ++ i) {
+        data2[i] = oldData2[i];
+    }
+
+    uint64_t * ptr2 = data.get();
+
+    const morphstore::column<morphstore::uncompr_f> * const column_2 = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * dataCount, ptr2);
     for (size_t i = 0; i < loops ; ++i) {
+        std::cout << i << std::endl;
 
         auto start = std::chrono::high_resolution_clock::now();
-        auto result = morphstore::select<ve, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column_2, rand());
+        auto result = morphstore::select<ve, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column_1, selectValue[i]);
+        //auto result = morphstore::semi_join<ve,
+        //        morphstore::uncompr_f,
+        //        morphstore::uncompr_f,
+        //        morphstore::uncompr_f>(column_1, column_2);
         auto end = std::chrono::high_resolution_clock::now();
         time_unaligned += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         delete result;
