@@ -68,6 +68,11 @@ DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements,
     return GenGivenVals<DT>::generate(numRows, elements, minNumNonZeros);
 }
 
+template<class DT>
+DT * genGivenVals(size_t numRows, size_t numCols, std::shared_ptr<typename DT::VT[]>& ptr) {
+    return GenGivenVals<DT>::generate(numRows, numCols, ptr);
+}
+
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
@@ -89,6 +94,11 @@ struct GenGivenVals<DenseMatrix<VT>> {
         const size_t numCols = numCells / numRows;
         auto res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         memcpy(res->getValues(), elements.data(), numCells * sizeof(VT));
+        return res;
+    }
+
+    static DenseMatrix<VT> * generate(size_t numRows, size_t numCols, std::shared_ptr<VT[]> & ptr) {
+        auto res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, ptr);
         return res;
     }
 };
