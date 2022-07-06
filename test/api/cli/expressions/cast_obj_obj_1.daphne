@@ -1,0 +1,25 @@
+//-- Specify DataType Only
+
+//matrix->frame
+m0 = [0.1, 0.2];
+print(as.frame(m0));
+
+//frame->matrix
+c0 = seq(20, 22, 1);
+f0 = createFrame(c0);
+print(as.matrix(f0[,0]));
+
+//-- Specify ValueType Only
+
+//matrix<f64>->matrix<si64>
+m1 = [1.5];
+print(as.si64(m1));
+
+//matrix<si64>->matrix<si64>
+m2 = [2];
+print(as.f64(m2));
+
+//-- Specify DataType and ValueType
+c0 = seq(20, 22, 1);
+f0 = createFrame(c0);
+print(as.matrix<f64>(f0[,0]));
