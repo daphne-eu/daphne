@@ -150,6 +150,7 @@ set(MORPHSTORE_SOURCES
         runtime/local/kernels/MorphStore/CalcTest.cpp
         runtime/local/kernels/MorphStore/BetweenTest.cpp
         runtime/local/kernels/MorphStore/SumTest.cpp
+        runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
 )
 
 add_executable(morphstore_test ${MORPHSTORE_SOURCES})

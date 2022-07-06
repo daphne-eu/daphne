@@ -32,6 +32,48 @@
 
 #include <runtime/local/kernels/MorphStore/calc.h>
 
+TEST_CASE("Morphstore Calc: Test the operator with empty input", TAG_KERNELS) {
+    /// Data generation
+    auto lhs_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    auto lhs_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    std::vector<Structure *> lhsCols = {lhs_col0, lhs_col1};
+    std::string lhsLabels[] = {"R.idx", "R.a"};
+    auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
+
+    auto rhs_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    auto rhs_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    std::vector<Structure *> rhsCols = {rhs_col0, rhs_col1};
+    std::string rhsLabels[] = {"S.idx", "S.a"};
+    auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
+
+
+    Frame * expectedResult;
+    /// create expected result set
+    {
+        auto er_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+        std::string labels[] = {"Calc"};
+        /// create result data
+        expectedResult = DataObjectFactory::create<Frame>(
+                std::vector<Structure*>{er_col0},
+                labels);
+        /// cleanup
+        DataObjectFactory::destroy(er_col0);
+        DataObjectFactory::destroy(lhs_col0, lhs_col1, rhs_col0, rhs_col1);
+    }
+
+    /// test execution
+    Frame * resultFrame = nullptr;
+
+    calc(resultFrame, lhs, rhs, "R.a", "S.a", CalcOperation::Add);
+
+    /// test if result matches expected result
+    CHECK(*resultFrame == *expectedResult);
+
+    /// cleanup
+    DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
+
+}
+
 TEST_CASE("Morphstore Calc: Test the Calc operation with the Add Operation", TAG_KERNELS) {
     /// Data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9});
