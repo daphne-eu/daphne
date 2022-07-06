@@ -32,6 +32,43 @@
 
 #include <runtime/local/kernels/MorphStore/sum.h>
 
+TEST_CASE("Morphstore Sum: Test the operator for empty input", TAG_KERNELS) {
+    /// Data generation
+    auto lhs_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    auto lhs_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    std::vector<Structure *> lhsCols = {lhs_col0, lhs_col1};
+    std::string lhsLabels[] = {"R.idx", "R.a"};
+    auto f = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
+
+    Frame * expectedResult;
+    /// create expected result set
+    {
+        std::string resultLabels[] = {"Agg_sum"};
+        size_t size = 1;
+        const std::vector<uint64_t> vals {0};
+        auto er_col0 = genGivenVals<DenseMatrix<uint64_t>>(size, vals);
+        /// create result data
+        expectedResult = DataObjectFactory::create<Frame>(
+                std::vector<Structure*>{er_col0},
+                resultLabels);
+        /// cleanup
+        DataObjectFactory::destroy(er_col0);
+        DataObjectFactory::destroy(lhs_col0, lhs_col1);
+    }
+
+    /// test execution
+    Frame * resultFrame = nullptr;
+
+    agg_sum(resultFrame, f, "R.a");
+
+    /// test if result matches expected result
+    CHECK(*resultFrame == *expectedResult);
+
+    /// cleanup
+    DataObjectFactory::destroy(resultFrame, expectedResult, f);
+
+}
+
 TEST_CASE("Morphstore Sum: Test the AggSum operation", TAG_KERNELS) {
     /// Data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9});

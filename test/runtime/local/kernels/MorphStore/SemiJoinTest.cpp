@@ -31,6 +31,104 @@
 
 #include <runtime/local/kernels/MorphStore/semijoin.h>
 
+TEST_CASE("Morphstore Semijoin: Test the operator with empty input", TAG_KERNELS) {
+    /// Data generation
+    auto lhs_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    auto lhs_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    std::vector<Structure *> lhsCols = {lhs_col0, lhs_col1};
+    std::string lhsLabels[] = {"R.idx", "R.a"};
+    auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
+
+    auto rhs_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    auto rhs_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+    std::vector<Structure *> rhsCols = {rhs_col0, rhs_col1};
+    std::string rhsLabels[] = {"S.idx", "S.a"};
+    auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
+
+
+    Frame * expectedResult;
+    /// create expected result set
+    {
+        auto er_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+        auto er_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+        std::string labels[] = {"R.idx", "R.a"};
+        /// create result data
+        expectedResult = DataObjectFactory::create<Frame>(
+                std::vector<Structure*>{er_col0,er_col1},
+                labels);
+        /// cleanup
+        DataObjectFactory::destroy(er_col0, er_col1);
+        DataObjectFactory::destroy(lhs_col0, lhs_col1, rhs_col0, rhs_col1);
+    }
+
+    /// test execution
+    Frame * resultFrame = nullptr;
+    uint64_t equations = 1;
+
+    /// R.a == S.a
+    auto lhsQLabels = new const char*[10]{"R.a"};
+    auto rhsQLabels = new const char*[10]{"S.a"};
+
+    semijoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations);
+    delete[] lhsQLabels, delete[] rhsQLabels;
+
+    /// test if result matches expected result
+    CHECK(*resultFrame == *expectedResult);
+
+    /// cleanup
+    DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
+
+}
+
+TEST_CASE("Morphstore Semijoin: Test the operator with empty output", TAG_KERNELS) {
+    /// Data generation
+    auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9});
+    auto lhs_col1 = genGivenVals<DenseMatrix<uint64_t>>(10,  { 0, 11, 22, 33, 44, 55, 66, 77, 88, 99});
+    std::vector<Structure *> lhsCols = {lhs_col0, lhs_col1};
+    std::string lhsLabels[] = {"R.idx", "R.a"};
+    auto lhs = DataObjectFactory::create<Frame>(lhsCols, lhsLabels);
+
+    auto rhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, {   0,  1,  2,  3,  4,  5,  6,  7,  8,  9});
+    auto rhs_col1 = genGivenVals<DenseMatrix<uint64_t>>(10,  { 100, 90, 80, 70, 60, 50, 40, 30, 20, 10});
+    std::vector<Structure *> rhsCols = {rhs_col0, rhs_col1};
+    std::string rhsLabels[] = {"S.idx", "S.a"};
+    auto rhs = DataObjectFactory::create<Frame>(rhsCols, rhsLabels);
+
+
+    Frame * expectedResult;
+    /// create expected result set
+    {
+        auto er_col0 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+        auto er_col1 = DataObjectFactory::create<DenseMatrix<uint64_t>>(0, 1, false);
+        std::string labels[] = {"R.idx", "R.a"};
+        /// create result data
+        expectedResult = DataObjectFactory::create<Frame>(
+                std::vector<Structure*>{er_col0,er_col1},
+                labels);
+        /// cleanup
+        DataObjectFactory::destroy(er_col0, er_col1);
+        DataObjectFactory::destroy(lhs_col0, lhs_col1, rhs_col0, rhs_col1);
+    }
+
+    /// test execution
+    Frame * resultFrame = nullptr;
+    uint64_t equations = 1;
+
+    /// R.a == S.a
+    auto lhsQLabels = new const char*[10]{"R.a"};
+    auto rhsQLabels = new const char*[10]{"S.a"};
+
+    semijoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations);
+    delete[] lhsQLabels, delete[] rhsQLabels;
+
+    /// test if result matches expected result
+    CHECK(*resultFrame == *expectedResult);
+
+    /// cleanup
+    DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
+
+}
+
 TEST_CASE("Morphstore Semijoin: Test the Equals operation with one join condition where R.a = S.a", TAG_KERNELS) {
     /// Data generation
     auto lhs_col0 = genGivenVals<DenseMatrix<uint64_t>>(10, { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9});
