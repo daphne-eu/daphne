@@ -1,0 +1,2 @@
+// Ambiguous import name (exists in the current directory and in UserConfig's default_dirs)
+import "c.daphne"; 

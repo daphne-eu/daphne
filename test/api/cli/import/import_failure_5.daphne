@@ -1,0 +1,3 @@
+// Alias clash
+import "sandbox/b.daphne"; 
+import "sandbox/a.daphne" as "b"; 

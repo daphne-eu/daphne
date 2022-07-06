@@ -265,24 +265,23 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
     std::vector<std::string> importPaths;
     std::string path = ctx->filePath->getText();
     // Remove quotes
-    path = std::string(path, 1, path.size()-2);
-
-    // std::filesystem::path currentWDPath = std::filesystem::current_path();
+    path = path.substr(1, path.size() - 2);
+    
     std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top()).parent_path());
     std::filesystem::path importingPath = path;
 
     //Determine the prefix from alias/filename
     if(ctx->alias)
     {
-        prefix=ctx->alias->getText();
-        prefix = std::string(prefix, 1, prefix.size()-2);
+        prefix = ctx->alias->getText();
+        prefix = prefix.substr(1, prefix.size() - 2);
     }
     else
         prefix = importingPath.stem().string(); 
 
     prefix += prefixDelim;
 
-    // Absolute paths can be used as is, we have to handle relative paths and config paths
+    // Absolute path can be used as is, we have to handle relative paths and config paths
     if(importingPath.is_relative())
     {
         std::filesystem::path absolutePath = importerDirPath /  importingPath;
@@ -293,7 +292,6 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
         if(!userConf.daphnedsl_import_paths.empty())
         {
             auto configPaths = userConf.daphnedsl_import_paths;
-
             // User specified _default_ paths.
             if(importingPath.has_extension() && (configPaths.find("default_dirs") != configPaths.end()))
             {
@@ -303,9 +301,9 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
                     if(std::filesystem::exists(libFile))
                     {
                         if(std::filesystem::exists(absolutePath) && std::filesystem::canonical(libFile) != absolutePath)
-                            throw std::runtime_error(std::string("Ambiguous import: ").append(importingPath).append(", found file with the same name in one of default paths of UserConfig"));
+                            throw std::runtime_error(std::string("Ambiguous import: ").append(importingPath)
+                                .append(", found another file with the same name in default paths of UserConfig: ").append(libFile));
                         absolutePath = libFile;
-                        break;
                     }
                 }
             }
@@ -332,20 +330,21 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
 
         importedFiles.push_back(somePath);
     }
-    antlrcpp::Any res;
 
-    for(auto p : importPaths)
+    antlrcpp::Any res;
+    for(auto importPath : importPaths)
     {
-        if(!std::filesystem::exists(p))
-            throw std::runtime_error(std::string("Wrong path for import: ").append(importingPath.string()));
+        if(!std::filesystem::exists(importPath))
+            throw std::runtime_error(std::string("The import path doesn't exist: ").append(importPath));
 
         std::string finalPrefix = prefix;
         auto origScope = symbolTable.extractScope();
 
         // If we import a library, we insert a filename (e.g., "algorithms/kmeans.daphne" -> algorithms.kmeans.km)
         if(!importingPath.has_extension())
-            finalPrefix += std::filesystem::path(p).stem().string() + prefixDelim;
-        else {
+            finalPrefix += std::filesystem::path(importPath).stem().string() + prefixDelim;
+        else 
+        {
             // If the prefix is already occupied (and is not part of some other prefix), we append a parent directory name
             for(auto symbol : origScope)
                 if(symbol.first.find(finalPrefix) == 0 && std::count(symbol.first.begin(), symbol.first.end(), '.') == 1)
@@ -353,8 +352,8 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
                     // Throw error when we want to use an explicit alias that results in a prefix clash
                     if(ctx->alias)
                     {
-                        throw std::runtime_error(std::string("The specified alias \"").append(prefix)
-                        .append("\" results in a clash with another prefix, example variable:").append(symbol.first));
+                        throw std::runtime_error(std::string("Alias ").append(ctx->alias->getText())
+                        .append(" results in a name clash with another prefix"));
                     }
                     finalPrefix = importingPath.parent_path().filename().string() + prefixDelim + finalPrefix;
                     break;
@@ -362,9 +361,9 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
         }
         
         CancelingErrorListener errorListener;
-        std::ifstream ifs(p, std::ios::in);
+        std::ifstream ifs(importPath, std::ios::in);
         antlr4::ANTLRInputStream input(ifs);
-        input.name = p;
+        input.name = importPath;
 
         DaphneDSLGrammarLexer lexer(&input);
         lexer.removeErrorListeners();
