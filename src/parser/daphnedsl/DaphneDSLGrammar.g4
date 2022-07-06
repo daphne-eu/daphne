@@ -39,7 +39,11 @@ statement:
     | forStatement
     | functionStatement
     | returnStatement
+    | importStatement
     ;
+
+importStatement:
+    KW_IMPORT filePath=STRING_LITERAL (KW_AS alias=STRING_LITERAL)?';';
 
 blockStatement:
     '{' statement* '}' ';'? ;
@@ -48,7 +52,7 @@ exprStatement:
     expr ';' ;
 
 assignStatement:
-    IDENTIFIER indexing? ( ',' IDENTIFIER indexing? )* '=' expr ';' ;
+    (IDENTIFIER '.')* IDENTIFIER indexing? ( ',' (IDENTIFIER '.')* IDENTIFIER indexing? )* '=' expr ';' ;
 
 ifStatement:
     KW_IF '(' cond=expr ')' thenStmt=statement (KW_ELSE elseStmt=statement)? ;
@@ -75,9 +79,9 @@ funcTypeDef: (dataTy=DATA_TYPE ('<' elTy=VALUE_TYPE '>')? | scalarTy=VALUE_TYPE)
 expr:
     literal # literalExpr
     | '$' arg=IDENTIFIER # argExpr
-    | var=IDENTIFIER # identifierExpr
+    | (( IDENTIFIER '.' )* IDENTIFIER) # identifierExpr
     | '(' expr ')' # paranthesesExpr
-    | func=IDENTIFIER '(' (expr (',' expr)*)? ')' # callExpr
+    | (( IDENTIFIER '.' )* IDENTIFIER) '(' (expr (',' expr)*)? ')' # callExpr
     | KW_AS ('.' DATA_TYPE)? ('.' VALUE_TYPE)? '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
     | obj=expr idx=indexing # rightIdxExtractExpr
@@ -124,6 +128,7 @@ KW_FALSE: 'false';
 KW_AS: 'as';
 KW_DEF: 'def';
 KW_RETURN: 'return';
+KW_IMPORT: 'import';
 
 fragment DIGIT:
     [0-9] ;

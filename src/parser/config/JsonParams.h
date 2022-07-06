@@ -48,6 +48,7 @@ struct DaphneConfigJsonParams {
 
     inline static const std::string LIB_DIR = "libdir";
     inline static const std::string LIBRARY_PATHS = "library_paths";
+    inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
 
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
@@ -69,7 +70,8 @@ struct DaphneConfigJsonParams {
             MINIMUM_TASK_SIZE,
             CUDA_DEVICES,
             LIB_DIR,
-            LIBRARY_PATHS
+            LIBRARY_PATHS,
+            DAPHNEDSL_IMPORT_PATHS
     };
 };
 

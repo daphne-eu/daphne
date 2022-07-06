@@ -1,0 +1,12 @@
+// Absolute path
+// import "/home/user/daphne/test/api/cli/import/sandbox/a.daphne";
+
+// Relative path
+import "sandbox/b.daphne"; 
+import "sandbox/c.daphne" as "something";
+import "sandbox/algos/kmeans1.daphne" as "kmeans";
+
+// print(a.x);
+print(b.x);
+print(something.x);
+print(kmeans.km(22));

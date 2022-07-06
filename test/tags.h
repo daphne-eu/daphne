@@ -32,6 +32,7 @@
 #define TAG_FUNCTIONS "[functions]"
 #define TAG_INDEXING "[indexing]"
 #define TAG_INFERENCE "[inference]"
+#define TAG_IMPORT "[import]"
 #define TAG_IO "[io]"
 #define TAG_KERNELS "[kernels]"
 #define TAG_DNN "[dnn]"

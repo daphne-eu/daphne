@@ -180,8 +180,11 @@ public:
      * @param tab The single-level symbol table to read from.
      */
     void put(SymbolTable tab) {
-        for(auto it = tab.begin(); it != tab.end(); it++)
-            put(it->first, it->second);
+        if(!getNumScopes())
+            scopes.push_back(tab);
+        else
+            for(auto it = tab.begin(); it != tab.end(); it++)
+                put(it->first, it->second);
     }
     
     /**
@@ -218,6 +221,17 @@ public:
         }
         scopes.pop_back();
         return overwritten;
+    }
+
+    /**
+     * @brief Removes and returns the current scope from the hierarchy of nested scopes.
+     * 
+     * @return A single-level symbol table with all its symbols
+     */
+    SymbolTable extractScope() {
+        SymbolTable curScope = scopes.back();
+        scopes.pop_back();
+        return curScope;
     }
     
     /**
