@@ -205,6 +205,8 @@ template <> struct CheckEq<Frame> {
                 case ValueTypeCode::UI8 : if (!checkEq(lhs->getColumn<uint8_t>(c),
                     rhs->getColumn<uint8_t>(c), ctx)) return false;
                     break;
+                default:
+                    throw std::runtime_error("CheckEq::apply: unknown value type code");
             }
         }   
         return true;

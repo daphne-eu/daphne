@@ -72,6 +72,11 @@ def Daphne_FillOp : Daphne_Op<"fill", [
     let results = (outs Matrix:$res);
 }
 
+def Daphne_MatrixConstantOp : Daphne_Op<"matrixConstant">{
+    let arguments = (ins UI64:$matrixAddr);
+    let results = (outs Matrix:$res);
+}
+
 def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
     SameVariadicOperandSize,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
@@ -83,7 +88,8 @@ def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
 }
 
 def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
-    NumRowsFromArg, NumColsFromArgNumRows
+    NumRowsFromArg, NumColsFromArgNumRows,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
@@ -558,7 +564,7 @@ def Daphne_OrderOp : Daphne_Op<"order", [
     ShapeFromArg
 ]> {
     // TODO Maybe colIdxs and ascs should be attributes.
-    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolAttr:$returnIdxs);
+    let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolScalar:$returnIdxs);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -746,8 +752,9 @@ def Daphne_ReplaceOp : Daphne_Op<"replace", [
 }
 
 def Daphne_CTableOp : Daphne_Op<"ctable"> {
-    // TODO The last three arguments should be optional.
-    let arguments = (ins Matrix:$lhs, AnyTypeOf<[Matrix, AnyScalar]>:$rhs, AnyTypeOf<[Matrix, AnyScalar]>:$weights, Size:$outHeight, Size:$outWidth);
+    //// TODO The last three arguments should be optional.
+    //let arguments = (ins Matrix:$lhs, AnyTypeOf<[Matrix, AnyScalar]>:$rhs, AnyTypeOf<[Matrix, AnyScalar]>:$weights, Size:$outHeight, Size:$outWidth);
+    let arguments = (ins Matrix:$lhs, Matrix:$rhs);
     let results = (outs Matrix:$res);
 }
 

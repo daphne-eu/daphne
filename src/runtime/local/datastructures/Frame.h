@@ -107,6 +107,22 @@ class Frame : public Structure {
             labels2idxs[labels[i]] = i;
         }
     }
+
+    /**
+     * @brief Initializes the mapping from column labels to column positions in
+     * the frame and assigns default labels to duplicate column labels.
+     * 
+     * This method should only be called by constructors, that may intentionally duplicate 
+     * columns, instead of initLabels2Idxs(), after the column labels have been initialized.
+     */
+    void initDeduplicatedLabels2Idxs() {
+        labels2idxs.clear();
+        for(size_t i = 0; i < numCols; i++) {
+            if(labels2idxs.count(labels[i]))
+               labels[i] = getDefaultLabel(i);
+            labels2idxs[labels[i]] = i;
+        }
+    }
     
     // TODO Should the given schema array really be copied, or reused?
     /**
@@ -131,7 +147,8 @@ class Frame : public Structure {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc]);
+            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc],
+                    std::default_delete<ColByteType []>());
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
         }
@@ -264,7 +281,7 @@ class Frame : public Structure {
                     src->columns[colIdxs[i]].get() + rowLowerIncl * ValueTypeUtils::sizeOf(schema[i])
             );
         }
-        initLabels2Idxs();
+        initDeduplicatedLabels2Idxs();
     }
     
     ~Frame() {

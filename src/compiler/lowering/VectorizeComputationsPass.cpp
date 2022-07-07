@@ -193,20 +193,46 @@ void VectorizeComputationsPass::runOnOperation()
             auto operand = std::get<0>(e);
             auto defOp = operand.getDefiningOp<daphne::Vectorizable>();
             if(defOp && v->getBlock() == defOp->getBlock() && CompilerUtils::isMatrixComputation(defOp)) {
-                auto split = std::get<1>(e);
-                // find the corresponding `OpResult` to figure out combine
-                auto opResult = *llvm::find(defOp->getResults(), operand);
-                auto combine = defOp.getVectorCombines()[opResult.getResultNumber()];
+                // defOp is not a candidate for fusion with v, if the
+                // result/operand along which we would fuse is used within a
+                // nested block (e.g., control structure) between defOp and v.
+                // In that case, we cannot, in general, move the using
+                // operation before or after the pipeline.
+                // TODO This is actually too restrictive. There are situations
+                // when it would be safe (also taking NoSideEffect into
+                // account).
+                bool qualified = true;
+                for(OpOperand & use : operand.getUses()) {
+                    Operation * user = use.getOwner();
+                    if(user->getBlock() != v->getBlock()) {
+                        // user must be in a child block of the block in which
+                        // v resides, because we have already checked that v
+                        // and defOp are in the same block.
+                        while(user->getBlock() != v->getBlock())
+                            user = user->getParentOp();
+                        if(user->isBeforeInBlock(v)) {
+                            qualified = false;
+                            break;
+                        }
+                    }
+                }
+                
+                if(qualified){
+                    auto split = std::get<1>(e);
+                    // find the corresponding `OpResult` to figure out combine
+                    auto opResult = *llvm::find(defOp->getResults(), operand);
+                    auto combine = defOp.getVectorCombines()[opResult.getResultNumber()];
 
-                if(split == daphne::VectorSplit::ROWS) {
-                    if(combine == daphne::VectorCombine::ROWS)
-                        possibleMerges.insert({v, defOp});
-                }
-                else if (split == daphne::VectorSplit::NONE) {
-                    // can't be merged
-                }
-                else {
-                    throw std::runtime_error("VectorSplit case `" + stringifyEnum(split).str() + "` not handled");
+                    if(split == daphne::VectorSplit::ROWS) {
+                        if(combine == daphne::VectorCombine::ROWS)
+                            possibleMerges.insert({v, defOp});
+                    }
+                    else if (split == daphne::VectorSplit::NONE) {
+                        // can't be merged
+                    }
+                    else {
+                        throw std::runtime_error("VectorSplit case `" + stringifyEnum(split).str() + "` not handled");
+                    }
                 }
             }
         }

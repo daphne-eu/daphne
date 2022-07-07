@@ -274,11 +274,9 @@ Matrix<double> *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t 
         }
         else {
             DenseMatrix<double> *m2 = nullptr;
-            struct File *file = openFile(filename.c_str());
             char delim = ',';
             // TODO use read
-            readCsv<DenseMatrix<double>>(m2, file, numRows, numCols, delim);
-            closeFile(file);
+            readCsv<DenseMatrix<double>>(m2, filename.c_str(), numRows, numCols, delim);
             m = m2;
         }
 //        auto result = localData_.insert({filename, m});

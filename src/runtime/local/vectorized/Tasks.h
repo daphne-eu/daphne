@@ -132,12 +132,11 @@ private:
 
 template<typename VT>
 class CompiledPipelineTask<CSRMatrix<VT>> : public CompiledPipelineTaskBase<CSRMatrix<VT>> {
-    // TODO: multiple sinks
-    VectorizedDataSink<CSRMatrix<VT>> &_resultSink;
+    std::vector<VectorizedDataSink<CSRMatrix<VT>> *>& _resultSinks;
     using CompiledPipelineTaskBase<CSRMatrix<VT>>::_data;
 public:
-    CompiledPipelineTask(CompiledPipelineTaskData<CSRMatrix<VT>> data, VectorizedDataSink<CSRMatrix<VT>> &resultSink)
-        : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSink(resultSink) {}
+    CompiledPipelineTask(CompiledPipelineTaskData<CSRMatrix<VT>> data, std::vector<VectorizedDataSink<CSRMatrix<VT>> *>& resultSinks)
+        : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSinks(resultSinks) {}
     
     void execute(uint32_t fid, uint32_t batchSize) override;
 };

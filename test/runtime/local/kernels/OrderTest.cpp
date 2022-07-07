@@ -111,7 +111,7 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     exp = DataObjectFactory::create<Frame>(colsExp, nullptr);
     DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp, c3Exp);
     
-    order(res, arg, colIdxs, numKeyCols, ascending, nullptr);
+    order(res, arg, colIdxs, numKeyCols, ascending, numKeyCols, false, nullptr);
     CHECK(*res == *exp);
         
     DataObjectFactory::destroy(arg);

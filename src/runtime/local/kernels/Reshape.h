@@ -59,9 +59,20 @@ struct Reshape<DenseMatrix<VT>, DenseMatrix<VT>> {
 
         if(arg->getRowSkip() == arg->getNumCols() && res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg->getValuesSharedPtr());
-        else
-            // TODO Support those cases. See #224.
-            throw std::runtime_error("reshape does not support cases which aren't pure meta data operations yet");
+        else {
+            if(res == nullptr)
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+
+            auto resVals = res->getValues();
+            auto argVals = arg->getValues();
+            size_t numArgRows = arg->getNumRows();
+            size_t numArgCols = arg->getNumCols();
+            for(size_t r = 0; r < numArgRows; r++) {
+                memcpy(resVals, argVals, numArgCols * sizeof(VT));
+                argVals += arg->getRowSkip();
+                resVals += numArgCols;
+            }
+        }
     }
 };
 

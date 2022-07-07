@@ -64,6 +64,8 @@ class DeduceValueType_Helper {
                     DeduceValueType_Helper<depth - 1, TExec, TList..., float   >::apply(std::forward<TArgs>(args)...); return;
                 case ValueTypeCode::F64:
                     DeduceValueType_Helper<depth - 1, TExec, TList..., double  >::apply(std::forward<TArgs>(args)...); return;
+                default:
+                    throw std::runtime_error("DeduceValueType_Helper::apply: unknown value type code");
             }
         } else {
             switch (vtc) {
@@ -83,6 +85,8 @@ class DeduceValueType_Helper {
                     TExec<TList..., float   >::apply(std::forward<TArgs>(args)...); return;
                 case ValueTypeCode::F64:
                     TExec<TList..., double  >::apply(std::forward<TArgs>(args)...); return;
+                default:
+                    throw std::runtime_error("DeduceValueType_Helper::apply: unknown value type code");
             }
         }
     

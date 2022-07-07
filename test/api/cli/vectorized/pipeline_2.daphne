@@ -1,0 +1,15 @@
+// Pipeline with inputs and 3 outputs.
+// All inputs and outputs get represented as CSRMatrix with --select-matrix-reprs.
+// The above is true at the time of this writing.
+// TODO Find a way to double-check the assumptions (in presence of changes to the compiler).
+
+a = diagMatrix(rand(12, 1, 1.0, 2.0, 1, 12345));
+
+b = a * a;
+x = b * a;
+y = b * a;
+z = b * a;
+
+print(x);
+print(y);
+print(z);
