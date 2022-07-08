@@ -664,6 +664,8 @@ if [[ "$BUILD_ARROW" == "-DUSE_ARROW=ON" ]]; then
         make -j$(nproc)
         make install
         dependency_install_success "arrow_v${arrowVersion}"
+    else
+        daphne_msg "No need to build Arrow again."
     fi
 fi
 
