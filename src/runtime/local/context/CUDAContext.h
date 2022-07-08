@@ -16,14 +16,14 @@
 
 #pragma once
 
-//#include <api/cli/DaphneUserConfig.h>
 #include "IContext.h"
-#include <runtime/local/kernels/CUDA/HostUtils.h>
-//#include <cublasLt.h>
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/kernels/CUDA/HostUtils.h"
 
 #include <cassert>
 #include <iostream>
 #include <memory>
+#include <map>
 
 class CUDAContext : public IContext {
     int device_id = -1;
@@ -44,13 +44,13 @@ class CUDAContext : public IContext {
     // preallocate 64MB
     size_t cudnn_workspace_size{};
     void* cudnn_workspace{};
-
-    // cublasLt API
-//    cublasLtHandle_t cublaslt_Handle = nullptr;
-//    void* cublas_workspace{};
-//    size_t cublas_workspace_size{};
-
+    
+    std::map<size_t, std::shared_ptr<std::byte>> allocations;
+    static size_t alloc_count;
     explicit CUDAContext(int id) : device_id(id) { }
+    
+    void init();
+    
 public:
     CUDAContext() = delete;
     CUDAContext(const CUDAContext&) = delete;
@@ -63,9 +63,6 @@ public:
     [[nodiscard]] cublasHandle_t getCublasHandle() const { return cublas_handle; }
     [[nodiscard]] cusparseHandle_t getCusparseHandle() const { return cusparse_handle; }
 
-//    [[nodiscard]] cublasLtHandle_t getCublasLtHandle() const { return cublaslt_Handle; }
-//    [[nodiscard]] void* getCublasWorkspacePtr() const { return cublas_workspace; }
-//    [[nodiscard]] size_t getCublasWorkspaceSize() const { return cublas_workspace_size; }
     [[nodiscard]] const cudaDeviceProp* getDeviceProperties() const { return &device_properties; }
     [[nodiscard]] cudnnHandle_t  getCUDNNHandle() const { return cudnn_handle; }
     [[nodiscard]] cusolverDnHandle_t getCUSOLVERHandle() const { return cusolver_handle; }
@@ -79,7 +76,7 @@ public:
 
     void* getCUDNNWorkspace(size_t size);
 
-    size_t getMemBudget() { return mem_budget; }
+    [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
@@ -91,7 +88,10 @@ public:
     cudnnFilterDescriptor_t filterDesc{};
     cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
+    static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
 
-private:
-    void init();
+
+    std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);
+    void free(size_t id);
+    
 };

@@ -14,14 +14,16 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
+#pragma once
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/ObjectMetaData.h>
 
-#include <mutex>
-
+#include <algorithm>
 #include <cstddef>
+#include <map>
+#include <mutex>
+#include <array>
 
 /**
  * @brief The base class of all data structure implementations.
@@ -34,19 +36,22 @@ private:
     
     template<class DataType>
     friend void DataObjectFactory::destroy(const DataType * obj);
-    
+
 protected:
     size_t numRows;
     size_t numCols;
 
-    Structure(size_t numRows, size_t numCols) :
-            refCounter(1), numRows(numRows), numCols(numCols)
-    {
-        // nothing to do
+    Structure(size_t numRows, size_t numCols) : refCounter(1), numRows(numRows), numCols(numCols) { // nothing to do
     };
 
 public:
-    virtual ~Structure() = default;
+    virtual ~Structure() {
+//        for(const auto& _omdType : objectMetaData) {
+//            for (auto& _omd: _omdType) {
+//                _omd.destroy();
+//            }
+//        }
+    }
     
     size_t getRefCounter() const {
         return refCounter;
@@ -130,6 +135,62 @@ public:
      * @return 
      */
     virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
-};
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
+    ObjectMetaData* addObjectMetaData(const IAllocationDescriptor* allocInfo, Range* r = nullptr) {
+        
+        objectMetaData[static_cast<size_t>(allocInfo->getType())].emplace_back(std::make_unique<ObjectMetaData>(
+                allocInfo->clone(), r == nullptr ? nullptr : r->clone()));
+        return objectMetaData[static_cast<size_t>(allocInfo->getType())].back().get();
+    }
+
+    const std::vector<std::unique_ptr<ObjectMetaData>>* getObjectMetaDataByType(ALLOCATION_TYPE type) const {
+        return &(objectMetaData[static_cast<size_t>(type)]); }
+    
+    ObjectMetaData* getObjectMetaDataByID(size_t id) const {
+        for(const auto& _omdType : objectMetaData) {
+            for(auto& _omd : _omdType) {
+                if(_omd->omd_id == id)
+                    return const_cast<ObjectMetaData*>(_omd.get());
+            }
+        }
+        return nullptr;
+    }
+    
+protected:
+    const ObjectMetaData* findObjectMetaData(const IAllocationDescriptor* alloc_desc, const Range* range) const {
+        auto res = getObjectMetaDataByType(alloc_desc->getType());
+        if(res->empty())
+            return nullptr;
+        else {
+//            for(auto& omd: res) {
+//                if(omd.allocation->operator==(_omd.allocation)) {
+//                    if((omd.range == nullptr && _omd.range == nullptr) ||
+//                       (omd.range != nullptr && omd.range->operator==(_omd.range))) {
+//                        return &omd;
+//                    }
+            for(size_t i = 0; i < res->size(); ++i) {
+                if((*res)[i]->allocation->operator==(alloc_desc)) {
+                    if(((*res)[i]->range == nullptr && range == nullptr) ||
+                       ((*res)[i]->range != nullptr && (*res)[i]->range->operator==(range))) {
+                        return (*res)[i].get();
+                    }
+                }
+            }
+            return nullptr;
+        }
+    }
+
+    bool isLatestVersion(size_t omd_id) const {
+        return(std::find(latest_version.begin(), latest_version.end(), omd_id) != latest_version.end());
+    }
+
+    //    using ObjectMetaDataTypeMap = std::map<uint32_t, ObjectMetaData*>;
+//    ObjectMetaDataTypeMap omd;
+//    std::vector<ObjectMetaData> objectMetaData;
+    std::array<std::vector<std::unique_ptr<ObjectMetaData>>, static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)> objectMetaData;
+
+    std::vector<size_t> latest_version;
+
+    // Object Meta Data ID
+    size_t omd_id{};
+};

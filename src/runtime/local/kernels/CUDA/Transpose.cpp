@@ -64,14 +64,16 @@ namespace CUDA {
             res = arg->vectorTranspose();
         }
         else {
-            auto ctx = dctx->getCUDAContext(0);
+            const size_t deviceID = 0; //ToDo: multi device support
+            auto ctx = CUDAContext::get(dctx, deviceID);
+            AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
             const VT blend_alpha = 1.0f;
             const VT blend_beta = 0.0f;
-            const VT *d_arg = arg->getValuesCUDA();
+            const VT *d_arg = arg->getValues(&alloc_desc);
 
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(nc1, nr1, false, ALLOCATION_TYPE::CUDA_ALLOC);
-            VT *d_res = res->getValuesCUDA();
+                res = DataObjectFactory::create<DenseMatrix<VT>>(nc1, nr1, false, &alloc_desc);
+            VT *d_res = res->getValues(&alloc_desc);
             launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_arg, d_res);
         }
     }

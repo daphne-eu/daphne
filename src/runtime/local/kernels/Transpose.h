@@ -57,7 +57,8 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
         const size_t numCols = arg->getNumCols();
 
         // skip data movement for vectors
-        if (numRows == 1 || numCols == 1) {
+        // the additional check for rows == rowSkip guards against tiled transpose, where this shortcut does not apply
+        if ((numRows == 1 || numCols == 1) && (numRows == arg->getRowSkip())) {
             res = arg->vectorTranspose();
         }
         else {

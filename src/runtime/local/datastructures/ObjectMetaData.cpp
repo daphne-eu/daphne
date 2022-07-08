@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2022 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,15 +14,6 @@
  * limitations under the License.
  */
 
-#pragma once
+#include "ObjectMetaData.h"
 
-#include "runtime/local/context/DaphneContext.h"
-#include "runtime/local/datastructures/DataObjectFactory.h"
-#include "runtime/local/datastructures/DenseMatrix.h"
-
-namespace CUDA::Affine {
-    template<typename DTRes, typename DTArg>
-    struct Forward {
-        static void apply(DTRes *&res, const DTArg *data, const DTArg *weights, const DTArg *bias, DCTX(dctx));
-    };
-}
+size_t ObjectMetaData::instance_count = 0;

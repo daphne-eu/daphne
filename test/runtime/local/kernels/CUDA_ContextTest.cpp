@@ -23,8 +23,9 @@
 
 TEST_CASE("CreateCUDAContext", TAG_KERNELS) {
     DaphneUserConfig user_config{};
+    const size_t deviceID = 0; //ToDo: multi device support
     auto dctx = std::make_unique<DaphneContext>(user_config);
     CUDA::createCUDAContext(dctx.get());
-    auto p = dctx->getCUDAContext(0)->getDeviceProperties();
+    auto p = CUDAContext::get(dctx.get(), deviceID)->getDeviceProperties();
     CHECK(p);
 }

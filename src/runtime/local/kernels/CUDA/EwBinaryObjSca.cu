@@ -15,6 +15,9 @@
  */
 
 #include "EwBinaryObjSca.h"
+
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
+
 #include "bin_ops.cuh"
 
 template<class VT, class OP>
@@ -27,45 +30,46 @@ __global__ void ewBinMatSca(VT* res, const VT* lhs, const VT rhs, size_t N, OP o
 namespace CUDA {
     template<typename VT>
     void EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT>::apply(BinaryOpCode opCode, DenseMatrix<VT> *&res,
-            const DenseMatrix<VT> *lhs, VT rhs, DCTX(ctx)) {
+            const DenseMatrix<VT> *lhs, VT rhs, DCTX(dctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-
+    
+        const size_t deviceID = 0; //ToDo: multi device support
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        
         int blockSize;
         int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
         size_t gridSize;
 
         if (res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false, ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false, &alloc_desc);
 
         auto N = res->getNumItems();
 
         // ToDo: use templates instead of this if-else madness
         if (opCode == BinaryOpCode::ADD) {
             SumOp<VT> op;
-            // auto ctx = dctx->getCUDAContext(0);
-
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, SumOp<VT>>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            ewBinMatSca<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs, N, op);
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else if (opCode == BinaryOpCode::DIV) {
             DivOp<VT> op;
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            ewBinMatSca<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs, N, op);
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else if (opCode == BinaryOpCode::POW) {
             PowOp<VT> op;
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            ewBinMatSca<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs, N, op);
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
         else if (opCode == BinaryOpCode::SUB) {
             MinusOp<VT> op;
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatSca<VT, decltype(op)>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            ewBinMatSca<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs, N, op);
+            ewBinMatSca<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs, N, op);
         }
 
         else {

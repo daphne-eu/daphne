@@ -15,6 +15,7 @@
  */
 
 #include "runtime/local/kernels/CUDA/Pooling.h"
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
 namespace CUDA::Pooling {
 
@@ -24,11 +25,14 @@ namespace CUDA::Pooling {
             const size_t pool_h, const size_t pool_w, const size_t stride_h, const size_t stride_w, const size_t pad_h,
             const size_t pad_w, DCTX(dctx))
     {
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+    
         using VT = typename DTRes::VT;
-        auto ctx = dctx->getCUDAContext(0);
         const VT blend_alpha = 1;
         const VT blend_beta = 0;
-        const VT* d_input = data->getValuesCUDA();
+        const VT* d_input = data->getValues(&alloc_desc);
 
         CHECK_CUDNN(cudnnSetPooling2dDescriptor(ctx->pooling_desc, OP<VT>::isMAX() ? CUDNN_POOLING_MAX :
                 CUDNN_POOLING_AVERAGE_COUNT_EXCLUDE_PADDING, CUDNN_PROPAGATE_NAN, pool_h, pool_w, pad_h, pad_w, stride_h,
@@ -49,9 +53,9 @@ namespace CUDA::Pooling {
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), n, c, h, w));
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false, ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DTRes>(batch_size, c * h * w, false, &alloc_desc);
         }
-        VT* d_res = res->getValuesCUDA();
+        VT* d_res = res->getValues(&alloc_desc);
 
         CHECK_CUDNN(cudnnPoolingForward(ctx->getCUDNNHandle(), ctx->pooling_desc, &blend_alpha, ctx->src_tensor_desc,
                                         d_input, &blend_beta, ctx->dst_tensor_desc, d_res));

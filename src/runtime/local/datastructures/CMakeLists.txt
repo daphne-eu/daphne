@@ -15,7 +15,11 @@
 add_library(DataStructures
         Frame.cpp
         ValueTypeUtils.cpp
-        DenseMatrix.cpp)
+        DenseMatrix.cpp
+        ObjectMetaData.h
+        AllocationDescriptorHost.h
+        AllocationDescriptorCUDA.h
+        ObjectMetaData.cpp)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(DataStructures PUBLIC ${CUDAToolkit_INCLUDE_DIRS})

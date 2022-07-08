@@ -15,6 +15,8 @@
  */
 
 #include "ColBind.h"
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
+
 #include <cstdint>
 
 namespace CUDA {
@@ -47,6 +49,9 @@ namespace CUDA {
     template<typename VTres, typename VTlhs, typename VTrhs>
     void ColBind<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>>::apply(DenseMatrix<VTres> *& res,
             const DenseMatrix<VTlhs> * lhs, const DenseMatrix<VTrhs> * rhs, DCTX(dctx)) {
+        const size_t deviceID = 0; //ToDo: multi device support
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
@@ -54,7 +59,7 @@ namespace CUDA {
 
         if(res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs + numColsRhs, false,
-                    ALLOCATION_TYPE::CUDA_ALLOC);
+                    &alloc_desc);
         }
         auto N = res->getNumItems();
         int blockSize;
@@ -68,8 +73,8 @@ namespace CUDA {
                 " total threads for " << N << " items" << std::endl;
 #endif
 
-        cbind<<<gridSize, blockSize>>>(lhs->getValuesCUDA(), rhs->getValuesCUDA(), res->getValuesCUDA(), numRowsLhs,
-                numColsLhs, numRowsRhs, numColsRhs);
+        cbind<<<gridSize, blockSize>>>(lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc), res->getValues(&alloc_desc),
+                numRowsLhs, numColsLhs, numRowsRhs, numColsRhs);
     }
     template struct ColBind<DenseMatrix<int64_t>, DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
     template struct ColBind<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>;

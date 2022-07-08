@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
+#pragma once
 
+#include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
@@ -27,8 +27,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
-
-// TODO DenseMatrix should not be concerned about CUDA.
 
 /**
  * @brief A dense matrix implementation.
@@ -52,14 +50,7 @@ class DenseMatrix : public Matrix<ValueType>
     
     size_t rowSkip;
     std::shared_ptr<ValueType[]> values{};
-    std::shared_ptr<ValueType> cuda_ptr{};
-    uint32_t deleted = 0;
-
-    mutable bool cuda_dirty = false;
-    mutable bool host_dirty = false;
-    mutable bool cuda_buffer_current = false;
-    mutable bool host_buffer_current = false;
-
+    
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
     
@@ -80,7 +71,7 @@ class DenseMatrix : public Matrix<ValueType>
      * @param zero Whether the allocated memory of the `values` array shall be
      * initialized to zeros (`true`), or be left uninitialized (`false`).
      */
-    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC);
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo = nullptr);
     
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values
@@ -90,9 +81,8 @@ class DenseMatrix : public Matrix<ValueType>
      * @param numCols The exact number of columns.
      * @param values A `std::shared_ptr` to an existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values
-                , std::shared_ptr<ValueType> cuda_ptr_ = nullptr) : Matrix<ValueType>(numRows, numCols),
-                rowSkip(numCols), values(values), cuda_ptr(cuda_ptr_), lastAppendedRowIdx(0), lastAppendedColIdx(0) { }
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values) : Matrix<ValueType>(numRows, numCols),
+                rowSkip(numCols), values(values), lastAppendedRowIdx(0), lastAppendedColIdx(0) { }
 
     /**
      * @brief Creates a `DenseMatrix` around a sub-matrix of another
@@ -138,8 +128,6 @@ class DenseMatrix : public Matrix<ValueType>
 
     void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
-    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0);
-
 public:
 
     void shrinkNumRows(size_t numRows) {
@@ -152,37 +140,21 @@ public:
         return rowSkip;
     }
 
-    const ValueType * getValues() const
+    const ValueType* getValuesInternal(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const;
+    
+    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const
     {
-        if(!values)
-            const_cast<DenseMatrix*>(this)->alloc_shared_values();
-#ifdef USE_CUDA
-        if (cuda_dirty || (!host_buffer_current && cuda_buffer_current)) {
-            cuda2host();
-        }
-        host_buffer_current = true;
-#endif
-        return values.get();
+        return(getValuesInternal(alloc_desc, range));
     }
 
-    ValueType * getValues()
-    {
-        if(!values)
-            alloc_shared_values();
+    ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
+        auto ret = const_cast<ValueType*>((const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range)));
+        this->latest_version.clear();
+        this->latest_version.push_back(this->omd_id);
+        return ret;
 
-#ifdef USE_CUDA
-        if (cuda_dirty || (!host_buffer_current && cuda_buffer_current)) {
-            cuda2host();
-        }
-        cuda_buffer_current = false;
-        host_buffer_current = true;
-        host_dirty = true;
-#endif
-        return values.get();
     }
-
-
-
+    
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
     }
@@ -218,13 +190,9 @@ public:
     }
 
     void print(std::ostream & os) const override {
-        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
-                << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
-#ifdef USE_CUDA
-        if ((cuda_ptr && cuda_dirty) || !values) {
-              cuda2host();
-        }
-#endif
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
+                << std::endl;
+
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
                 printValue(os, get(r, c));
@@ -247,85 +215,12 @@ public:
         return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru, cl, cu);
     }
 
+    // convenience functions
     size_t bufferSize();
 
-    size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
-
-    float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
-
+    [[nodiscard]] size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
+    
     DenseMatrix<ValueType>* vectorTranspose() const;
-
-
-#ifdef USE_CUDA
-    const ValueType* getValuesCUDA() const {
-        if(!cuda_ptr)
-            const_cast<DenseMatrix*>(this)->alloc_shared_cuda_buffer();
-
-        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
-            host2cuda();
-        }
-        cuda_buffer_current = true;
-        return cuda_ptr.get();
-    }
-
-    ValueType* getValuesCUDA() {
-        if(!cuda_ptr)
-            alloc_shared_cuda_buffer();
-
-        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
-            host2cuda();
-        }
-        cuda_dirty = true;
-        cuda_buffer_current = true;
-        host_buffer_current = false;
-        return cuda_ptr.get();
-    }
-
-    [[maybe_unused]] bool isBufferDirty(ALLOCATION_TYPE type) const {
-        switch(type) {
-            case ALLOCATION_TYPE::CUDA_ALLOC:
-                return cuda_dirty;
-            case ALLOCATION_TYPE::HOST_ALLOC:
-            default:
-                return host_dirty;
-        }
-    }
-
-    [[maybe_unused]] bool isBufferCurrent(ALLOCATION_TYPE type) const {
-        switch(type) {
-            case ALLOCATION_TYPE::CUDA_ALLOC:
-                return cuda_buffer_current;
-            case ALLOCATION_TYPE::HOST_ALLOC:
-            default:
-                return host_buffer_current;
-        }
-    }
-
-    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
-        return cuda_ptr;
-    }
-
-    [[maybe_unused]] void printCUDAValuesSharedPtrUseCount() const {
-        std::ios state(nullptr);
-        state.copyfmt(std::cout);
-        std::cout << "CudaPtr " << cuda_ptr.get() << " use_count: " << cuda_ptr.use_count() << std::endl;
-        std::cout.copyfmt(state);
-    }
-
-    void host2cuda();
-    void cuda2host();
-
-    void host2cuda() const {
-        const_cast<DenseMatrix*>(this)->host2cuda();
-    }
-    void cuda2host() const {
-        const_cast<DenseMatrix*>(this)->cuda2host();
-    }
-#else
-    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
-        return nullptr;
-    }
-#endif
 };
 
 template <typename ValueType>
@@ -334,5 +229,3 @@ std::ostream & operator<<(std::ostream & os, const DenseMatrix<ValueType> & obj)
     obj.print(os);
     return os;
 }
-
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H

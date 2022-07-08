@@ -15,6 +15,7 @@
  */
 
 #include "Convolution.h"
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
 namespace CUDA::Convolution {
     template<typename DTRes, typename DTArg>
@@ -22,13 +23,16 @@ namespace CUDA::Convolution {
             const size_t batch_size, const size_t num_channels, const size_t img_h, const size_t img_w, const size_t filter_h,
             const size_t filter_w, const size_t stride_h, const size_t stride_w, const size_t pad_h, const size_t pad_w, DCTX(dctx))
     {
-        auto ctx = dctx->getCUDAContext(0);
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        
         using VT = typename DTRes::VT;
         auto F = filter->getNumRows(); // num filters
         const VT blend_alpha = 1;
         VT blend_beta = 0;
-        const VT* d_input = data->getValuesCUDA();
-        const VT* d_filter = filter->getValuesCUDA();
+        const VT* d_input = data->getValues(&alloc_desc);
+        const VT* d_filter = filter->getValues(&alloc_desc);
 
         cudnnConvolutionFwdAlgo_t algo;
 
@@ -66,9 +70,10 @@ namespace CUDA::Convolution {
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->template getCUDNNDataType<VT>(), n, c, h, w));
 
         if (res == nullptr) {
-            res = DataObjectFactory::create<DTRes>(batch_size, c*h*w, false, ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DTRes>(batch_size, c*h*w, false, &alloc_desc);
         }
-        VT* d_res = res->getValuesCUDA();
+        
+        VT* d_res = res->getValues(&alloc_desc);
         if (ctx->conv_algorithm < 0) {
             int requestedAlgoCount = CUDNN_CONVOLUTION_FWD_ALGO_COUNT;
             int returnedAlgoCount = -1;
@@ -98,7 +103,7 @@ namespace CUDA::Convolution {
 
         if(bias) {
             if (bias != filter) {
-                const VT *d_bias = bias->getValuesCUDA();
+                const VT *d_bias = bias->getValues(&alloc_desc);
 //            CHECK_CUDART(cudaMalloc(reinterpret_cast<void**>(&d_bias), bias->getNumCols() * sizeOfDataType));
 //            CHECK_CUDART(cudaMemcpy(d_bias, bias->getValues(), bias->getNumCols() * sizeOfDataType, cudaMemcpyHostToDevice));
 

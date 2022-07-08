@@ -15,6 +15,9 @@
  */
 
 #include "ExtractCol.h"
+
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
+
 #include <cstdint>
 
 namespace CUDA {
@@ -33,12 +36,14 @@ namespace CUDA {
     // ----------------------------------------------------------------------------
     template<class DTRes, class DTArg, class DTSel>
     void ExtractCol<DenseMatrix<DTRes>, DenseMatrix<DTArg>, DenseMatrix<DTSel>>::apply(DenseMatrix<DTRes>*& res,
-            const DenseMatrix<DTArg>* arg, const DenseMatrix<DTSel>* sel, DCTX(ctx)) {
-
+            const DenseMatrix<DTArg>* arg, const DenseMatrix<DTSel>* sel, DCTX(dctx)) {
+        const size_t deviceID = 0; //ToDo: multi device support
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
         if(res == nullptr) {
             res = DataObjectFactory::create<DenseMatrix<DTRes>>(arg->getNumRows(), sel->getNumRows(), false,
-                    ALLOCATION_TYPE::CUDA_ALLOC);
+                    &alloc_desc);
         }
+        
         auto N = res->getNumItems();
         int blockSize;
         int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
@@ -51,15 +56,9 @@ namespace CUDA {
                 << " total threads for " << N << " items" << std::endl;
 #endif
 
-        extract_col<<<gridSize, blockSize>>>(res->getValuesCUDA(), arg->getValuesCUDA(), sel->getValuesCUDA(),
+        extract_col<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), arg->getValues(&alloc_desc), sel->getValues(&alloc_desc),
                 sel->getNumRows(), arg->getNumCols(), N);
-
-
-//        std::vector<DTRes> res_host(res->getNumItems());
-//        CHECK_CUDART(cudaMemcpy(res_host.data(), res->getValuesCUDA(), res->bufferSize(), cudaMemcpyDeviceToHost));
-//        for(auto j=0; j < res->getNumItems(); j++)
-//            std::cout << res_host[j] << " ";
-//        std::cout << std::endl;
+        
     }
     template struct ExtractCol<DenseMatrix<int64_t>, DenseMatrix<int64_t>, DenseMatrix<int64_t>>;
     template struct ExtractCol<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<int64_t>>;

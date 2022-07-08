@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "runtime/local/context/CUDAContext.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"

@@ -15,22 +15,25 @@
  */
 
 #include "Activation.h"
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
 namespace CUDA::Activation {
     template<typename OP, typename DTRes, typename DTArg>
     void Forward<OP, DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, DCTX(dctx)) {
-        auto ctx = dynamic_cast<CUDAContext*>(dctx->getCUDAContext(0));
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
         using VT = typename DTRes::VT;
         const size_t nr1 = data->getNumRows();
         const size_t nc1 = data->getNumCols();
         const VT blend_alpha = 1;
         const VT blend_beta = 0;
-        const VT* d_input = data->getValuesCUDA();
-
+        const VT* d_input = data->getValues(&alloc_desc);
+    
         if (res == nullptr) {
-            res = DataObjectFactory::create<DTRes>(nr1, nc1, false, ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DTRes>(nr1, nc1, false, &alloc_desc);
         }
-        VT* d_res = res->getValuesCUDA();
+        VT* d_res = res->getValues(&alloc_desc);
 
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->src_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1, nr1, nc1));
         CHECK_CUDNN(cudnnSetTensor4dDescriptor(ctx->dst_tensor_desc, ctx->tensor_format, ctx->getCUDNNDataType<VT>(), 1, 1, nr1, nc1));

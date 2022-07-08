@@ -15,6 +15,8 @@
  */
 
 #include "EwBinaryMat.h"
+#include "HostUtils.h"
+#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/kernels/CUDA/bin_ops.cuh"
 #include <cstdint>
 
@@ -84,10 +86,11 @@ namespace CUDA {
 // ----------------------------------------------------------------------------
     template<typename VTres, typename VTlhs, typename VTrhs>
     void EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>>::apply(BinaryOpCode opCode,
-                                                                                        DenseMatrix<VTres> *&res,
-                                                                                        const DenseMatrix<VTlhs> *lhs,
-                                                                                        const DenseMatrix<VTrhs> *rhs,
-                                                                                        DCTX(dctx)) {
+            DenseMatrix<VTres> *&res, const DenseMatrix<VTlhs> *lhs, const DenseMatrix<VTrhs> *rhs, DCTX(dctx)) {
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
@@ -96,11 +99,9 @@ namespace CUDA {
         int blockSize;
         int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
         size_t gridSize;
-//    const VTres alpha = 1;
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false,
-                                                                ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false, &alloc_desc);
 
         auto N = res->getNumItems();
         bool err = false;
@@ -114,7 +115,7 @@ namespace CUDA {
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VTres, SumOp<VTres>>, 0,
                                                            0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMat<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(), N,
+                ewBinMat<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc), N,
                                                   op);
             }
             else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
@@ -123,7 +124,7 @@ namespace CUDA {
                                                            0,
                                                            0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(),
+                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc),
                                                       numColsRhs, N, op);
             }
             else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
@@ -132,7 +133,7 @@ namespace CUDA {
                                                            0,
                                                            0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMatCVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(),
+                ewBinMatCVec<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc),
                                                       numRowsRhs, N, op);
             }
             else {
@@ -146,7 +147,7 @@ namespace CUDA {
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VTres, decltype(op)>, 0,
                                                            0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMat<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(), N,
+                ewBinMat<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc), N,
                                                   op);
             }
             else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
@@ -155,7 +156,7 @@ namespace CUDA {
                                                            0,
                                                            0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(),
+                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc),
                                                       numColsRhs, N, op);
             }
             else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
@@ -164,7 +165,7 @@ namespace CUDA {
                                                            0,
                                                            0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMatCVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(), rhs->getValuesCUDA(),
+                ewBinMatCVec<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc),
                                                       numRowsRhs, N, op);
             }
             else {
@@ -177,24 +178,24 @@ namespace CUDA {
                 CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMat<VTres, decltype(op)>,
                                                                 0, 0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMat<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(),
-                                                  rhs->getValuesCUDA(), N, op);
+                ewBinMat<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
+                                                  rhs->getValues(&alloc_desc), N, op);
             }
             else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
                 CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatRVec<VTres,
                         decltype(op)>, 0, 0));
                 gridSize = (N + blockSize - 1) / blockSize;
 
-                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(),
-                                                      rhs->getValuesCUDA(), numColsRhs, N, op);
+                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
+                                                      rhs->getValues(&alloc_desc), numColsRhs, N, op);
             }
             else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
                 CHECK_CUDART(
                         cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, ewBinMatCVec<VTres, decltype(op)>,
                                                            0, 0));
                 gridSize = (N + blockSize - 1) / blockSize;
-                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValuesCUDA(), lhs->getValuesCUDA(),
-                                                      rhs->getValuesCUDA(), numColsRhs, N, op);
+                ewBinMatRVec<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), lhs->getValues(&alloc_desc),
+                                                      rhs->getValues(&alloc_desc), numColsRhs, N, op);
             }
             else {
                 err = true;

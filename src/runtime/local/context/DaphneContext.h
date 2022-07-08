@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
-#define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
-
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
@@ -26,10 +23,6 @@
 #include <memory>
 
 #include "IContext.h"
-
-#ifdef USE_CUDA
-    #include "CUDAContext.h"
-#endif
 
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
@@ -77,8 +70,8 @@ struct DaphneContext {
 
 #ifdef USE_CUDA
     // ToDo: in a multi device setting this should use a find call instead of a direct [] access
-    [[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const {
-        return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
+    [[nodiscard]] IContext* getCUDAContext(size_t dev_id) const {
+        return cuda_contexts[dev_id].get();
     }
 #endif
 
@@ -86,5 +79,3 @@ struct DaphneContext {
     
     [[maybe_unused]] [[nodiscard]] DaphneUserConfig getUserConfig() const { return config; }
 };
-
-#endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

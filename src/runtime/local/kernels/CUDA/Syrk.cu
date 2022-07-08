@@ -16,6 +16,8 @@
 
 #include "Syrk.h"
 
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
+
 namespace CUDA {
     template<typename T>
     __global__ void copy_u2l_dense(T *ret, int dim, int N) {
@@ -53,18 +55,20 @@ namespace CUDA {
     void Syrk<DenseMatrix<VTres>, DenseMatrix<VTarg>>::apply(DenseMatrix <VTres> *&res, const DenseMatrix <VTarg> *arg,
             DCTX(dctx)) {
         using VT = typename DenseMatrix<VTres>::VT;
-        auto ctx = dctx->getCUDAContext(0);
-
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
         const size_t nr1 = arg->getNumRows();
         const size_t nc1 = arg->getNumCols();
 
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
-        const VT *d_arg = arg->getValuesCUDA();
+        const VT *d_arg = arg->getValues(&alloc_desc);
 
         if(res == nullptr)
-            res = DataObjectFactory::create < DenseMatrix < VTres >> (nc1, nc1, false, ALLOCATION_TYPE::CUDA_ALLOC);
-        VT *d_res = res->getValuesCUDA();
+            res = DataObjectFactory::create < DenseMatrix < VTres >> (nc1, nc1, false, &alloc_desc);
+        
+        VT *d_res = res->getValues(&alloc_desc);
         launch_cublas_syrk<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_arg, d_res);
 
         // num threads

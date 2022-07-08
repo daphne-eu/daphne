@@ -16,6 +16,8 @@
 
 #include "runtime/local/context/CUDAContext.h"
 
+size_t CUDAContext::alloc_count = 0;
+
 void CUDAContext::destroy() {
 #ifndef NDEBUG
     std::cout << "Destroying CUDA context..." << std::endl;
@@ -110,9 +112,7 @@ void* CUDAContext::getCUDNNWorkspace(size_t size) {
 }
 
 std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
-    //#ifndef NDEBUG
-//    std::cout << "creating CUDA context..." << std::endl;
-//#endif
+
     int device_count = -1;
     CHECK_CUDART(cudaGetDeviceCount(&device_count));
 
@@ -129,5 +129,22 @@ std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
     auto ctx = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
     ctx->init();
     return ctx;
+}
+
+std::shared_ptr<std::byte> CUDAContext::malloc(size_t size, bool zero, size_t& id) {
+    id = alloc_count++;
+    std::byte* dev_ptr;
+    CHECK_CUDART(cudaMalloc(reinterpret_cast<void **>(&dev_ptr), size));
+    allocations.emplace(id, std::shared_ptr<std::byte>(dev_ptr, CudaDeleter<std::byte>()));
+
+    if(zero)
+        CHECK_CUDART(cudaMemset(dev_ptr, 0, size));
+    return allocations.at(id);
+}
+
+void CUDAContext::free(size_t id) {
+    // ToDo: handle reuse
+    CHECK_CUDART(cudaFree(allocations.at(id).get()));
+    allocations.erase(id);
 }
 
