@@ -645,22 +645,22 @@ fi
 #------------------------------------------------------------------------------
 # Arrow / Parquet
 #------------------------------------------------------------------------------
-
+arrowDirName="arrow"
 if [[ "$BUILD_ARROW" == "-DUSE_ARROW=ON" ]]; then
     if ! is_dependency_downloaded "arrow_v${arrowVersion}"; then
-        rm -rf $thirdpartyPath/arrow
-        git clone -n https://github.com/apache/arrow.git $thirdpartyPath/arrow
-        cd $thirdpartyPath/arrow
+        rm -rf ${sourcePrefix}/${arrowDirName}
+        git clone -n https://github.com/apache/arrow.git ${sourcePrefix}/${arrowDirName}
+        cd ${sourcePrefix}/${arrowDirName}
         git checkout $arrowVersion
         cd ..
         dependency_download_success "arrow_v${arrowVersion}"
     fi
     if ! is_dependency_installed "arrow_v${arrowVersion}"; then
-        cd $thirdpartyPath/arrow/cpp
+        cd ${sourcePrefix}/${arrowDirName}/cpp
         rm -rf build-release
         mkdir build-release
         cd build-release
-        cmake -DCMAKE_INSTALL_PREFIX=$thirdpartyPath/installed  -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON ..
+        cmake -DCMAKE_INSTALL_PREFIX=${installPrefix} -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON ..
         make -j$(nproc)
         make install
         dependency_install_success "arrow_v${arrowVersion}"
