@@ -73,7 +73,7 @@ void columnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* arg, size_t c
 
 template<typename VT>
 VT* nextWithRowskip(VT*& first, VT*& last, const size_t rowSkip) {
-    for (VT* next = first; first != last; next+=rowSkip) {
+    for (VT* next = first; next != last; next+=rowSkip) {
         if (*next != *first)
             return next;
     }
@@ -151,7 +151,7 @@ template <> struct Order<Frame> {
                 DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdxs[i]], arg, idx, groups, ascending[i], colIdxs[i], ctx);
             }
         }
-
+    
         // efficient last sort pass OR finalizing the groups vector for further use
         size_t colIdx = colIdxs[numColIdxs-1];
         if (groupsRes == nullptr) {
