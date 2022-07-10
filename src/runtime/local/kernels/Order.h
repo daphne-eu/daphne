@@ -34,9 +34,9 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DT>
+template<class DTRes, class DTArg>
 struct Order {
-    static void apply(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) = delete;
 };
 
 // ****************************************************************************
@@ -46,13 +46,13 @@ struct Order {
 // Note that we normally don't pass any arguments after the DaphneContext. In
 // this case it is only okay because groupsRes has a default and is meant to be
 // used only by other kernels, not from DaphneDSL.
-template<class DT>
-void order(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
-    Order<DT>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
+template<class DTRes, class DTArg>
+void order(DTRes *& res, const DTArg * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+    Order<DTRes,DTArg>::apply(res, arg, colIdxs, numColIdxs, ascending, numAscending, returnIdx, ctx, groupsRes);
 }
 
 // ****************************************************************************
-// Functions called by mulriple template specializations
+// Functions called by multiple template specializations
 // ****************************************************************************
 
 // sorts input idx DenseMatrix within the index ranges in the input groups vector on the values of the input column (column with id colIdx in DenseMatrix arg; id 0 for column matrices)
@@ -113,7 +113,7 @@ void multiColumnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, siz
 }
 
 // ----------------------------------------------------------------------------
-// Frame <- Frame
+//  Frame order structs
 // ----------------------------------------------------------------------------
 
 template<typename VTCol>
@@ -132,14 +132,10 @@ struct MultiColumnIDSort {
     }
 };
 
-template <> struct Order<Frame> {
-    static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+struct OrderFrame {
+    static void apply(DenseMatrix<size_t> *& idx, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, std::vector<std::pair<size_t, size_t>> * groupsRes, DCTX(ctx)) {
         size_t numRows = arg->getNumRows();
-        if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr) {
-            throw std::runtime_error("order-kernel called with invalid arguments");
-        }
-        
-        auto idx = DataObjectFactory::create<DenseMatrix<size_t>>(numRows, 1, false);
+        idx = DataObjectFactory::create<DenseMatrix<size_t>>(numRows, 1, false);
         auto indicies = idx->getValues();
         std::iota(indicies, indicies+numRows, 0);
         
@@ -151,7 +147,7 @@ template <> struct Order<Frame> {
                 DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdxs[i]], arg, idx, groups, ascending[i], colIdxs[i], ctx);
             }
         }
-    
+
         // efficient last sort pass OR finalizing the groups vector for further use
         size_t colIdx = colIdxs[numColIdxs-1];
         if (groupsRes == nullptr) {
@@ -163,21 +159,49 @@ template <> struct Order<Frame> {
             }
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
+    }
+};
 
-        //applying the final object ID permutation (result of the sorting procedure) to the frame via a row extraction
+// ----------------------------------------------------------------------------
+// Frame <- Frame 
+// ----------------------------------------------------------------------------
+template <> struct Order<Frame, Frame> {
+    static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+        if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr || returnIdx) {
+            throw std::runtime_error("order-kernel called with invalid arguments");
+        }
+        DenseMatrix<size_t>* idx = nullptr;
+        OrderFrame::apply(idx, arg, colIdxs, numColIdxs, ascending, numAscending, groupsRes, ctx);
         extractRow(res, arg, idx, ctx);
         DataObjectFactory::destroy(idx);
     }
 };
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- Frame 
+// ----------------------------------------------------------------------------
+template <typename VTRes> struct Order<DenseMatrix<VTRes>, Frame> {
+    static void apply(DenseMatrix<VTRes> *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+        if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr || !returnIdx) {
+            throw std::runtime_error("order-kernel called with invalid arguments");
+        }
+        DenseMatrix<size_t>* idx = nullptr;
+        OrderFrame::apply(idx, arg, colIdxs, numColIdxs, ascending, numAscending, groupsRes, ctx);
+        res = idx;
+    }
+};  
+
+// ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix 
 // ----------------------------------------------------------------------------
-template <typename VT>
-struct Order<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
+template <typename VTRes, typename VTArg>
+struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
         size_t numRows = arg->getNumRows();
-        if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr) {
+        if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr ||
+            (returnIdx == false && !std::is_same<VTRes, VTArg>::value) || 
+            (returnIdx == true && !std::is_same<VTRes, size_t>::value)
+        ) {
             throw std::runtime_error("order-kernel called with invalid arguments");
         }
 
@@ -203,7 +227,12 @@ struct Order<DenseMatrix<VT>> {
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
 
-        extractRow<DenseMatrix<VT>, DenseMatrix<VT>, size_t>(res, arg, idx, ctx);
-        DataObjectFactory::destroy(idx);
+        if (returnIdx)
+        {
+           res = (DenseMatrix<VTRes>*) idx;
+        } else {
+            extractRow<DenseMatrix<VTArg>, DenseMatrix<VTArg>, size_t>((DenseMatrix<VTArg>*&) res, arg, idx, ctx);
+            DataObjectFactory::destroy(idx);
+        }
     }
 };

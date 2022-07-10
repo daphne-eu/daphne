@@ -225,6 +225,27 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
     return {{fmd.numRows, fmd.numCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
+    size_t numRows = -1;
+    size_t numCols = -1;
+    bool idxs = false;
+
+    Type t = arg().getType();
+    if(auto mt = t.dyn_cast<daphne::MatrixType>()){
+        numRows = mt.getNumRows();
+        numCols = mt.getNumCols();
+    }
+    if(auto ft = t.dyn_cast<daphne::FrameType>()){
+        numRows = ft.getNumRows();
+        numCols = ft.getNumCols();
+    }
+    if(auto co = returnIdxs().getDefiningOp<mlir::daphne::ConstantOp>()) 
+        idxs = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    if (idxs)
+        numCols = 1;
+    return {{numRows, numCols}};
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************

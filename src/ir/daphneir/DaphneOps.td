@@ -561,7 +561,7 @@ def Daphne_ReverseOp : Daphne_Op<"reverse", [
 
 def Daphne_OrderOp : Daphne_Op<"order", [
     SameVariadicOperandSize,
-    ShapeFromArg
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     // TODO Maybe colIdxs and ascs should be attributes.
     let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolScalar:$returnIdxs);

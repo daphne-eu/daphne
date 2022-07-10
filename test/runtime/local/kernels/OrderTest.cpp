@@ -30,7 +30,7 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     using VT0 = double;
     using VT1 = float;
     using VT2 = int64_t;
-    using VT3 = uint32_t;
+    using VT3 = size_t;
 
     size_t numRows = 20;
 
@@ -39,13 +39,14 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     auto c1 = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.1, -2, 4.4, 2.1, 1.1, 2.3, 0.5, 4.4, -10, 0, 2.1,
                                                         10, 10, 4.4, -0.3, -15.5, 10, -2.3, 10, -1.1 });
     auto c2 = genGivenVals<DenseMatrix<VT2>>(numRows, { 0, 0, 1, 1, 0, 0, 0, 3, 0, 0, 2, 1, 2, 3, 0, 0, 3, 0, 3, 0 });
-    auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, { 6, 3, 9, 1, 13, 7, 5, 10, 15, 16, 2, 17, 18, 11, 4, 12, 19, 8, 20, 14 });
+    auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
     
     std::vector<Structure *> colsArg = {c0, c1, c2, c3};
     auto arg = DataObjectFactory::create<Frame>(colsArg, nullptr);
     DataObjectFactory::destroy(c0, c1, c1, c2);
     Frame* exp{};
     Frame* res{};
+    DenseMatrix<size_t>* resIdxs  = nullptr;
     size_t numKeyCols;
     size_t colIdxs[4];
     bool ascending[4];
@@ -60,21 +61,22 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
         c1Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { 2.1, 2.1, -2, -0.3, 0.5, 1.1, 2.3, -2.3, 4.4, 4.4,
                                                                4.4, -15.5, 1.1, -1.1, -10, 0, 10, 10, 10, 10 });
         c2Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 1, 2, 0, 0, 0, 0, 0, 0, 1, 3, 3, 0, 0, 0, 0, 0, 1, 2, 3, 3 });
-        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
+        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 3, 10, 1, 14, 6, 0, 5, 17, 2, 7, 13, 15, 4, 19, 8, 9 , 11, 12, 16, 18 });
         numKeyCols = 1;
         colIdxs[0] = 0;
         ascending[0] = true;
     }
     SECTION("single key column, descending") {
         c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 6.6, 6.6, 6.6, 6.6, 4.4, 4.4, 4.4, 2.3, -8.8, -8.8, 
-                                                               1.1, 5.6, 0.3, 6.6,-0.3, 5.6, -3.1, 2.3, 6.6, 4.4 });
+                                                               1.1, 5.6, 0.3, 6.6, -0.3, 5.6, -3.1, 2.3, 6.6, 4.4 });
         c1Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { 10, 10, 10, 10, 4.4, 4.4, 4.4, 2.3, 2.1, 2.1, 1.1,
                                                                1.1, 0.5, 0, -0.3, -1.1, -2, -2.3, -10, -15.5 });
         c2Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 1, 2, 3, 3, 1, 3, 3, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 17, 18, 19, 20, 9, 10, 11, 7, 1, 2, 6, 13, 5, 16, 4, 14, 3, 8, 15, 12 });  
+        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 11, 12, 16, 18, 2, 7, 13, 5, 3, 10, 0, 4, 6, 9, 14, 19, 1, 17, 8, 15 });
         numKeyCols = 1;
         colIdxs[0] = 1;
         ascending[0] = false;
+        
     }
     SECTION("two key columns, ascending/descending") {
         c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { -8.8, -8.8, -3.1, -0.3, 0.3, 1.1, 2.3, 2.3, 4.4, 4.4,
@@ -82,7 +84,7 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
         c1Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { 2.1, 2.1, -2, -0.3, 0.5, 1.1, 2.3, -2.3, 4.4, 4.4,
                                                                4.4, -15.5, 1.1, -1.1, 10, 10, 10, 10, -10, 0 });
         c2Exp = genGivenVals<DenseMatrix<VT2>>(numRows, { 2, 1, 0, 0, 0, 0, 0, 0, 3, 3, 1, 0, 0, 0, 3, 3, 2, 1, 0, 0 });
-        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 2, 1, 3, 4, 5, 6, 7, 8, 10, 11, 9, 12, 13, 14, 19, 20, 18, 17, 15, 16 });
+        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 10, 3, 1, 14, 6, 0, 5, 17, 7, 13, 2, 15, 4, 19, 16, 18, 12, 11, 8, 9 });
         numKeyCols = 2;
         colIdxs[0] = 0;
         ascending[0] = true;
@@ -95,7 +97,7 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
         c1Exp = genGivenVals<DenseMatrix<VT1>>(numRows, { -15.5, -10, -2.3, -2, -1.1, -0.3, 0, 0.5, 1.1, 1.1, 
                                                                 2.1, 2.1, 2.3, 4.4, 4.4, 4.4, 10, 10, 10, 10 });
         c2Exp = genGivenVals<DenseMatrix<VT2>>(numRows, {  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 1, 0, 3, 3, 1, 3, 3, 2, 1 });
-        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 12, 15, 8, 3, 14, 4, 16, 5, 13, 6, 2, 1, 7, 10, 11, 9, 19, 20, 18, 17 });
+        c3Exp = genGivenVals<DenseMatrix<VT3>>(numRows, { 15, 8, 17, 1, 19, 14, 9, 6, 4, 0, 10, 3, 5, 7, 13, 2, 16, 18, 12, 11 });
         numKeyCols = 4;
         colIdxs[0] = 1;
         ascending[0] = true;
@@ -109,11 +111,15 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
 
     std::vector<Structure *> colsExp = {c0Exp, c1Exp, c2Exp, c3Exp};
     exp = DataObjectFactory::create<Frame>(colsExp, nullptr);
-    DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp, c3Exp);
+    DataObjectFactory::destroy(c0Exp, c1Exp, c2Exp);
     
     order(res, arg, colIdxs, numKeyCols, ascending, numKeyCols, false, nullptr);
+    order(resIdxs, arg, colIdxs, numKeyCols, ascending, numKeyCols, true, nullptr);
+    
     CHECK(*res == *exp);
-        
+    CHECK(*resIdxs == *c3Exp);
+    DataObjectFactory::destroy(c3Exp);
+
     DataObjectFactory::destroy(arg);
     DataObjectFactory::destroy(exp);
     DataObjectFactory::destroy(res);
@@ -128,7 +134,8 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
     DenseMatrix<VT>* argMatrix = nullptr;
     DenseMatrix<VT>* resMatrix = nullptr;
     DenseMatrix<VT>* expMatrix = nullptr;
-
+    DenseMatrix<size_t>* resIdxs = nullptr;
+    DenseMatrix<size_t>* expIdxs = nullptr;
 
     SECTION("single key column, ascending") {
         argMatrix = genGivenVals<DenseMatrix<VT>>(4, {
@@ -143,6 +150,7 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
             17, 7, 2, 3, 7, 7,
             1, 10, 3, 7, 7, 7
         });
+        expIdxs = genGivenVals<DenseMatrix<size_t>>(4, { 3, 2, 1, 0});
         numKeyCols = 1;
         colIdxs[0] = 3;
         ascending[0] = true;
@@ -192,6 +200,8 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
             6.6, 10, 2, 18,
             6.6, 10, 1, 17
         });
+        expIdxs = genGivenVals<DenseMatrix<size_t>>(20, { 15, 8, 17, 1, 19, 14, 9, 6, 4, 0,
+                                                          10, 3, 5, 7, 13, 2, 16, 18, 12, 11 });
         numKeyCols = 4;
         colIdxs[0] = 1;
         ascending[0] = true;
@@ -200,13 +210,18 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
         colIdxs[2] = 2;
         ascending[2] = false;
         colIdxs[3] = 3;
-        ascending[3] = true;
+        ascending[3] = true;   
     }
     
     order(resMatrix, argMatrix, colIdxs, numKeyCols, ascending, numKeyCols, false, nullptr);
+    order(resIdxs, argMatrix, colIdxs, numKeyCols, ascending, numKeyCols, true, nullptr);
 
-    CHECK(*resMatrix ==*expMatrix);
+    CHECK(*resMatrix == *expMatrix);
+    CHECK(*resIdxs == *expIdxs);
+
     DataObjectFactory::destroy(argMatrix);
     DataObjectFactory::destroy(resMatrix);
     DataObjectFactory::destroy(expMatrix);
+    DataObjectFactory::destroy(resIdxs);
+    DataObjectFactory::destroy(expIdxs);
 }
