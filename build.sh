@@ -412,7 +412,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --arrow)
             echo using ARROW
-            export BUILD_ARROW="-DUSE_ARROW=ON"
+            BUILD_ARROW="-DUSE_ARROW=ON"
             ;;
         --debug)
             echo building DEBUG version
