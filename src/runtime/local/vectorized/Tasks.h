@@ -35,6 +35,7 @@ public:
     virtual ~Task() = default;
 
     virtual void execute(uint32_t fid, uint32_t batchSize) = 0;
+    virtual uint64_t getTaskSize() = 0;
 };
 
 // task for signaling closed input queue (no more tasks)
@@ -43,6 +44,7 @@ public:
     EOFTask() = default;
     ~EOFTask() override = default;
     void execute(uint32_t fid, uint32_t batchSize) override {}
+    uint64_t getTaskSize() override {return 0;}
 };
 
 template<class DT>
@@ -79,6 +81,7 @@ protected:
 public:
     explicit CompiledPipelineTaskBase(CompiledPipelineTaskData<DT> data) : _data(data) {}
     void execute(uint32_t fid, uint32_t batchSize) override = 0;
+    uint64_t getTaskSize() override = 0;
 
 protected:
     bool isBroadcast(mlir::daphne::VectorSplit splitMethod, Structure *input) {
@@ -124,6 +127,7 @@ public:
         : CompiledPipelineTaskBase<DenseMatrix<VT>>(data), _resLock(resLock), _res(res) {}
 
     void execute(uint32_t fid, uint32_t batchSize) override;
+    uint64_t getTaskSize() override;
 
 private:
     void accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
@@ -139,4 +143,5 @@ public:
         : CompiledPipelineTaskBase<CSRMatrix<VT>>(data), _resultSinks(resultSinks) {}
     
     void execute(uint32_t fid, uint32_t batchSize) override;
+    uint64_t getTaskSize() override;
 };

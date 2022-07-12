@@ -66,6 +66,11 @@ void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batch
 }
 
 template<typename VT>
+uint64_t CompiledPipelineTask<DenseMatrix<VT>>::getTaskSize() {
+return _data._ru;
+}
+
+template<typename VT>
 void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseMatrix<VT> *> &localResults,
         std::vector<DenseMatrix<VT> *> &localAddRes, uint64_t rowStart, uint64_t rowEnd) {
     //TODO: in-place computation via better compiled pipelines
@@ -173,6 +178,13 @@ void CompiledPipelineTask<CSRMatrix<VT>>::execute(uint32_t fid, uint32_t batchSi
         delete localSinks[i];
     }
 }
+
+
+template<typename VT>
+uint64_t CompiledPipelineTask<CSRMatrix<VT>>::getTaskSize() {
+return _data._ru-_data._rl;
+}
+
 
 template class CompiledPipelineTask<DenseMatrix<double>>;
 template class CompiledPipelineTask<DenseMatrix<float>>;

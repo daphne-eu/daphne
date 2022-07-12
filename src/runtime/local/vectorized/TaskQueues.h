@@ -29,6 +29,7 @@ public:
     virtual ~TaskQueue() = default;
 
     virtual void enqueueTask(Task* t) = 0;
+    virtual void enqueueTaskPinned(Task* t, int targetCPU) = 0;
     virtual Task* dequeueTask() = 0;
     virtual uint64_t size() = 0;
     virtual void closeInput() = 0;
@@ -60,6 +61,19 @@ public:
         // add task to end of list
         _data.push_back(t);
         // notify blocked dequeue operations
+        _cv.notify_one();
+    }
+
+    void enqueueTaskPinned(Task* t, int targetCPU) override {
+        // Change CPU pinning before enqueue to utilize NUMA first-touch policy
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(targetCPU, &cpuset);
+        sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+        std::unique_lock<std::mutex> ul(_qmutex);
+        while( _data.size() + 1 > _capacity )
+            _cv.wait(ul);
+        _data.push_back(t);
         _cv.notify_one();
     }
 

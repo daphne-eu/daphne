@@ -24,6 +24,8 @@
 
 #include <functional>
 #include <queue>
+#include <fstream>
+#include <set>
 
 //TODO use the wrapper to cache threads
 //TODO generalize for arbitrary inputs (not just binary)
@@ -36,9 +38,18 @@ class MTWrapperBase {
 protected:
     std::vector<std::unique_ptr<Worker>> cuda_workers;
     std::vector<std::unique_ptr<Worker>> cpp_workers;
+    std::vector<int> topologyPhysicalIds;
+    std::vector<int> topologyUniqueThreads;
+    std::vector<int> topologyResponsibleThreads;
+    std::string _cpuinfoPath = "/proc/cpuinfo";
     uint32_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
+    int _queueMode;
+    // _queueMode 0: Centralized queue for all workers, 1: One queue for every physical ID (socket), 2: One queue per CPU
+    int _numQueues;
+    int _stealLogic;
+    int _totalNumaDomains;
     DCTX(_ctx);
 
     std::pair<size_t, size_t> getInputProperties(Structure** inputs, size_t numInputs, VectorSplit* splits) {
@@ -54,13 +65,72 @@ protected:
         }
         return std::make_pair(len, mem_required);
     }
-
-    void initCPPWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
-        cpp_workers.resize(_numCPPThreads);
-        for(auto& w : cpp_workers)
-            w = std::make_unique<WorkerCPU>(q, verbose, 0, batchSize);
+    
+    int _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
+        std::size_t seperatorLocation = input.find(":");
+        if (seperatorLocation!=std::string::npos) {
+            if (input.find(keyword) == 0) {
+                *val = stoi(input.substr(seperatorLocation+1));
+                return 1;
+            }
+            return 0;
+        }
+        return 0;
     }
 
+    void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
+        std::ifstream cpuinfoFile(_cpuinfoPath);
+        std::vector<int> utilizedThreads;
+        std::vector<int> core_ids;
+        int index = 0;
+        if( cpuinfoFile.is_open() ) {
+            std::string line;
+            int value;
+            while ( std::getline(cpuinfoFile, line) ) {
+                if( _parseStringLine(line, "processor", &value ) ) {
+                    utilizedThreads.push_back(value);
+                } else if( _parseStringLine(line, "physical id", &value) ) {
+                    if ( _ctx->getUserConfig().queueSetupScheme == PERGROUP ) {
+                        if (std::find(physicalIds.begin(), physicalIds.end(), value) == physicalIds.end()) {
+                            responsibleThreads.push_back(utilizedThreads[index]);
+                        }
+                    }
+                    physicalIds.push_back(value);
+                } else if( _parseStringLine(line, "core id", &value) ) {
+                    int found = 0;
+                    for (int i=0; i<index; i++) {
+                        if (core_ids[i] == value && physicalIds[i] == physicalIds[index]) {
+                                found++;
+                        }
+                    }
+                    core_ids.push_back(value);
+                    if( _ctx->config.hyperthreadingEnabled || found == 0 ) {
+                        uniqueThreads.push_back(utilizedThreads[index]);
+                        if ( _ctx->getUserConfig().queueSetupScheme == PERCPU ) {
+                            responsibleThreads.push_back(value);
+                        } else if ( _ctx->getUserConfig().queueSetupScheme == CENTRALIZED ) {
+                            responsibleThreads.push_back(0);
+                        }
+                    }
+                    index++;
+                }
+            }
+            cpuinfoFile.close();
+        }
+    }
+    void initCPPWorkers(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
+        cpp_workers.resize(_numCPPThreads);
+        if( numQueues == 0 ) {
+            std::cout << "numQueues is 0, this should not happen." << std::endl;
+        }
+        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
+        
+        int i = 0;
+        for( auto& w : cpp_workers ) {
+            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+            i++;
+        }
+    }
 #ifdef USE_CUDA
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cuda_workers.resize(_numCUDAThreads);
@@ -110,16 +180,56 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        if(ctx->config.numberOfThreads > 0){
-            _numThreads = ctx->config.numberOfThreads;
+        if( _ctx->getUserConfig().queueSetupScheme != CENTRALIZED ) {
+            get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
         }
-        else{
-            _numThreads = std::thread::hardware_concurrency();
+        if ( ctx->config.numberOfThreads > 0 ) {
+            _numCPPThreads = ctx->config.numberOfThreads;
+        }
+        else {
+            //_numCPPThreads = std::thread::hardware_concurrency();
+            _numCPPThreads = topologyUniqueThreads.size();
+        }
+        // If the available CPUs from Slurm is less than the configured num threads, use the value from Slurm
+        if( const char* env_m = std::getenv("SLURM_CPUS_ON_NODE") ) {
+            if( (uint32_t)std::stoi(env_m) < _numThreads ) {
+                _numCPPThreads = std::stoi(env_m);
+            }
         }
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
-        _numCPPThreads = _numThreads;
+        _queueMode = 0;
+        _numQueues = 1;
+        _stealLogic = _ctx->getUserConfig().victimSelection;
+        if( std::thread::hardware_concurrency() < topologyUniqueThreads.size() && _ctx->config.hyperthreadingEnabled )
+            topologyUniqueThreads.resize(_numCPPThreads);
         _numThreads = _numCPPThreads + _numCUDAThreads;
+        _totalNumaDomains = std::set<double>( topologyPhysicalIds.begin(), topologyPhysicalIds.end() ).size();
+
+        if ( _ctx->getUserConfig().queueSetupScheme == PERGROUP ) {
+            _queueMode = 1;
+            _numQueues = _totalNumaDomains;
+        } else if ( _ctx->getUserConfig().queueSetupScheme == PERCPU ) {
+            _queueMode = 2;
+            _numQueues = _numCPPThreads;
+        }
+        
+        if( _ctx->config.debugMultiThreading ) {
+            std::cout << "topologyPhysicalIds:" << std::endl;
+            for(const auto & topologyEntry: topologyPhysicalIds) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl << "topologyUniqueThreads:" << std::endl;
+            for(const auto & topologyEntry: topologyUniqueThreads) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl << "topologyResponsibleThreads:" << std::endl;
+            for(const auto & topologyEntry: topologyResponsibleThreads) {
+                std::cout << topologyEntry << ',';
+            }
+            std::cout << std::endl << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
+            std::cout << "_numQueues=" << _numQueues << std::endl;
+        }
 #ifndef NDEBUG
         std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;
@@ -140,7 +250,7 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
             VectorCombine* combines, DCTX(ctx), bool verbose);
 
@@ -160,7 +270,11 @@ public:
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
+                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+
+    void executeQueuePerCPU(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
                             size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
                             VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 

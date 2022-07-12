@@ -86,10 +86,16 @@ opt<SelfSchedulingScheme> taskPartitioningScheme(
 
 Users may now pass the new technique as an option when they execute a DaphneDSL script.
 ```bash
-daphne --vec --MYTECH --grain-size 10 --num-threads 4 my_script.daphne
+daphne --vec --MYTECH --grain-size 10 --num-threads 4 --PERCPU --SEQPRI --hyperthreading --debug-mt my_script.daphne
 ```
 In this example, the daphne system will execute `my_script.daphne`  with the following configuration:
 1. the vectorized engine is enabled due to `--vec`
 2. the DAPHNE runtime will use MYTECH for task partitioning due to `--MYTECH`
 3. the minimum partition size will be 10 due to `--grain-size 10 ` 
 4. the vectorized engine will use 4 threads due to `--num-threads 4` 
+5. work stealing will be used with a sepereate queue for each CPU due to `--PERCPU`
+6. the work stealing victim selection will be sequential prioritized due to `--SEQPRI`
+7. the rows will be evenly distributed before the scheduling technique is applied due to `--pre-partition`
+8. the CPU workers will be pinned to CPU cores due to `--pin-workers`
+9. if the number of threads were not specified the number of logical CPU cores would be used (instead of physical CPU cores) due to `--hyperthreading`
+10. Debugging information related to the multithreading of vectorizable operations will be printed due to `--debug-mt`
