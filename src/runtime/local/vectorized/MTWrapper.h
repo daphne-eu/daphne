@@ -180,7 +180,9 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
+        if( _ctx->getUserConfig().queueSetupScheme != CENTRALIZED ) {
+            get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
+        }
         if ( ctx->config.numberOfThreads > 0 ) {
             _numCPPThreads = ctx->config.numberOfThreads;
         }
