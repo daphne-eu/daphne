@@ -33,7 +33,7 @@ void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp) {
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double, int64_t)) {
     using DT = TestType;
     
     auto m0 = genGivenVals<DT>(3, {
