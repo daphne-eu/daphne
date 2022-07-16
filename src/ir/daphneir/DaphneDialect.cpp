@@ -939,9 +939,16 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(FoldAdaptor adaptor) {
  * Identifies if an input to a MatMulOp is the result of a TransposeOp; Rewrites the Operation,
  * passing transposition info as a flag, instead of transposing the matrix before multiplication
  */
-mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
-        mlir::daphne::MatMulOp op, PatternRewriter &rewriter
-) {    
+struct TranspositionAwareMatMul : public mlir::OpRewritePattern<mlir::daphne::MatMulOp> {
+    TranspositionAwareMatMul(mlir::MLIRContext *context)
+        : OpRewritePattern<mlir::daphne::MatMulOp>(context, 1) {
+        //
+    }
+    
+    mlir::LogicalResult
+    matchAndRewrite(
+            mlir::daphne::MatMulOp op, mlir::PatternRewriter &rewriter
+    ) const override {
     mlir::Value lhs = op.getLhs();
     mlir::Value rhs = op.getRhs();
     mlir::Value transa = op.getTransa();
@@ -978,8 +985,129 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
         static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), ta)),
         static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), tb))
     );
+
+    if(lhsTransposeOp)
+        rewriter.eraseOp(lhsTransposeOp);
+    if(rhsTransposeOp)
+        rewriter.eraseOp(rhsTransposeOp);
+        
     return mlir::success();
-}
+    }
+};
+
+/**
+ * @brief 
+ * @param context
+ */
+struct MatMulChainOptimization : public mlir::OpRewritePattern<mlir::daphne::MatMulOp> {
+    MatMulChainOptimization(mlir::MLIRContext *context)
+        : OpRewritePattern<mlir::daphne::MatMulOp>(context, 1) {
+        //
+    }
+
+    mutable llvm::SmallDenseSet<mlir::Value> optimized;
+    
+    mlir::LogicalResult
+    matchAndRewrite(
+            mlir::daphne::MatMulOp op, mlir::PatternRewriter &rewriter
+    ) const override {
+        llvm::SmallVector<std::tuple<mlir::Value, mlir::Value>> matMulChain;
+        llvm::SmallVector<mlir::daphne::MatMulOp> matMuls;
+
+        // a callable that builds a matrix multiplication chain by performing a recursive 
+        // pre-order walk on the tree of nested matrix multiplications
+        std::function<void(mlir::Value, mlir::Value)> walk =
+            [&matMulChain, &matMuls, &walk, this](mlir::Value val, mlir::Value trans)-> void {
+            if (!val.hasOneUse() || !val.getDefiningOp() || optimized.count(val)) {
+                matMulChain.push_back({val, trans});
+                return;
+            }
+            if (auto mm = llvm::dyn_cast<mlir::daphne::MatMulOp>(val.getDefiningOp())) {
+                matMuls.push_back(mm);
+                walk(mm.lhs(), mm.transa());
+                walk(mm.rhs(), mm.transb());
+                return;
+            }
+            matMulChain.push_back({val, trans});
+        };
+
+        walk(op, op.transa());
+        const int chainLength = matMulChain.size();
+
+        // no matrix multiplication chain; just a single matrix multiplication -> no rewrite
+        if (chainLength < 3)
+            return mlir::failure();
+
+        // extracting dimensions from the matrix multiplication chain
+        llvm::SmallVector<uint64_t> dimensions;
+        dimensions.reserve(chainLength + 1);
+        auto [val, trans] = matMulChain[0];
+        if(auto mt = val.getType().dyn_cast<mlir::daphne::MatrixType>()) {
+            if(auto co = trans.getDefiningOp<mlir::daphne::ConstantOp>())
+                co.value().dyn_cast<mlir::BoolAttr>().getValue() ?
+                    dimensions.push_back(mt.getNumCols()) : dimensions.push_back(mt.getNumRows());
+        }
+        for (auto const& [val, trans] : matMulChain) {
+            if(auto mt = val.getType().dyn_cast<mlir::daphne::MatrixType>()) {
+                if(auto co = trans.getDefiningOp<mlir::daphne::ConstantOp>())
+                    co.value().dyn_cast<mlir::BoolAttr>().getValue() ?
+                        dimensions.push_back(mt.getNumRows()) : dimensions.push_back(mt.getNumCols());
+            }   
+        }
+
+        // initializing the costs memo table
+        llvm::SmallVector<int> costs(chainLength * chainLength, 0);
+        auto costsMemoTable = [&costs, chainLength](int numCols, int numRows)
+            -> int & { return costs[numCols * chainLength + numRows]; };
+
+        // initializing the splits memo table
+        llvm::SmallVector<int> splits(chainLength * chainLength, 0);
+        auto splitsMemoTable = [&splits, chainLength](int numCols, int numRows)
+            -> int & { return splits[numCols * chainLength + numRows]; };
+
+        // populate both memo-tables with optimal cost/split
+        for (int length = 1; length < chainLength; ++length) {
+            for (int i = 0; i < chainLength - length; ++i) {
+                int j = i + length;
+                costsMemoTable(i, j) = std::numeric_limits<int>::max();
+                for (int k = i; k < j; ++k) {
+                    int64_t cost = costsMemoTable(i, k) + costsMemoTable(k + 1, j) +
+                        dimensions[i] * dimensions[k + 1] * dimensions[j + 1];
+                    if (cost < costsMemoTable(i, j)) {
+                        costsMemoTable(i, j) = cost;
+                        splitsMemoTable(i, j) = k;
+                    }
+                }
+            }
+        }
+
+        // a callable that recursively builds the optimal matrix multiplication chain by 
+        // following the path of optimal splits (from the splits memo-table)
+        std::function<std::tuple<mlir::Value, mlir::Value>(int, int)> buildOptimalMatMulChain =
+            [&, this](int i, int j)-> std::tuple<mlir::Value, mlir::Value> {
+            if (i == j)
+                return matMulChain[i];
+            auto [lhs, transa] = buildOptimalMatMulChain(i, splitsMemoTable(i, j));
+            auto [rhs, transb] = buildOptimalMatMulChain(splitsMemoTable(i, j) + 1, j);
+            mlir::daphne::MatMulOp mm = rewriter.create<mlir::daphne::MatMulOp>(op.getLoc(), lhs.getType(), lhs, rhs, transa, transb);
+            // infer shape of individual matrix multiplications in the multiplication chain
+            mm.inferShape();
+            // remember that this matMulOp is part of an already optimized chain
+            optimized.insert(mm.getResult());
+            auto co = static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), rewriter.getBoolAttr(false)));
+            return { mm.getResult(), co};
+        };
+
+        mlir::Value optimalChain;
+        std::tie(optimalChain, std::ignore) = buildOptimalMatMulChain(0, chainLength - 1);
+        rewriter.replaceOp(op, {llvm::dyn_cast<mlir::daphne::MatMulOp>(optimalChain.getDefiningOp())});
+        for (auto& mm : matMuls) {
+            if(mm != op)
+                rewriter.eraseOp(mm);
+        }
+        return mlir::success();
+    }
+};
 
 /**
  * @brief Replaces NumRowsOp by a constant, if the #rows of the input is known
@@ -1316,4 +1444,10 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
 
         return mlir::success();
     }
+}
+
+void mlir::daphne::MatMulOp::getCanonicalizationPatterns(
+        RewritePatternSet &results, MLIRContext *context
+) {
+    results.add<TranspositionAwareMatMul, MatMulChainOptimization>(context);
 }
