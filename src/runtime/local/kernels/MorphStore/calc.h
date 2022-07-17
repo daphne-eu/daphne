@@ -22,8 +22,6 @@
 #include <cstdint>
 
 #include <core/storage/column.h>
-#include "core/operators/otfly_derecompr/select.h"
-#include "core/operators/otfly_derecompr/project.h"
 #include <core/operators/otfly_derecompr/calc_uncompr.h>
 #include "core/morphing/uncompr.h"
 

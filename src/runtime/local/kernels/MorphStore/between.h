@@ -27,21 +27,23 @@
 #include "runtime/local/datastructures/Frame.h"
 #include "core/morphing/uncompr.h"
 
+#include <ir/daphneir/Daphne.h>
+
 template<class DTRes, class DTIn>
 class Between {
 public:
-    static void apply(DTRes * & res, const DTIn * in, const char * inOn, size_t lowerBound, CompareOperation cmpLower, size_t upperBound, CompareOperation cmpUpper) = delete;
+    static void apply(DTRes * & res, const DTIn * in, const char * inOn, uint64_t lowerBound, CompareOperation cmpLower, uint64_t upperBound, CompareOperation cmpUpper) = delete;
 };
 
 template<class DTRes, class DTIn>
-void between(DTRes * & res, const DTIn * in, const char * inOn, size_t lowerBound, CompareOperation cmpLower, size_t upperBound, CompareOperation cmpUpper) {
+void between(DTRes * & res, const DTIn * in, const char * inOn, uint64_t lowerBound, CompareOperation cmpLower, uint64_t upperBound, CompareOperation cmpUpper) {
     Between<DTRes, DTIn>::apply(res, in, inOn, lowerBound, cmpLower, upperBound, cmpUpper);
 }
 
 template<>
 class Between<Frame, Frame> {
 public:
-    static void apply(Frame * & res, const Frame * in, const char * inOn, size_t lowerBound, CompareOperation cmpLower, size_t upperBound, CompareOperation cmpUpper) {
+    static void apply(Frame * & res, const Frame * in, const char * inOn, uint64_t lowerBound, CompareOperation cmpLower, uint64_t upperBound, CompareOperation cmpUpper) {
 
         using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
 

@@ -95,11 +95,14 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
-        runtime/local/kernels/Morphstore/SemiJoinTest.cpp
-        runtime/local/kernels/Morphstore/CalcTest.cpp
-        runtime/local/kernels/Morphstore/SelectTest.cpp
-        runtime/local/kernels/Morphstore/SumTest.cpp
-        runtime/local/kernels/Morphstore/BetweenTest.cpp
+        #runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
+        #runtime/local/kernels/MorphStore/SemiJoinTest.cpp
+        #runtime/local/kernels/MorphStore/CalcTest.cpp
+        #runtime/local/kernels/MorphStore/SelectTest.cpp
+        #runtime/local/kernels/MorphStore/SumTest.cpp
+        #runtime/local/kernels/MorphStore/BetweenTest.cpp
+        #runtime/local/kernels/MorphStore/GroupByTest.cpp
+        #runtime/local/kernels/MorphStore/GroupSumTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -151,6 +154,8 @@ set(MORPHSTORE_SOURCES
         runtime/local/kernels/MorphStore/BetweenTest.cpp
         runtime/local/kernels/MorphStore/SumTest.cpp
         runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
+        runtime/local/kernels/MorphStore/GroupByTest.cpp
+        runtime/local/kernels/MorphStore/GroupSumTest.cpp
 )
 
 add_executable(morphstore_test ${MORPHSTORE_SOURCES})

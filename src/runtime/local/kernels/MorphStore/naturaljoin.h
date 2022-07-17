@@ -24,7 +24,6 @@
 #include "core/operators/otfly_derecompr/join_uncompr.h"
 #include "core/operators/otfly_derecompr/project.h"
 #include "runtime/local/datastructures/Frame.h"
-#include <core/operators/otfly_derecompr/intersect.h>
 #include <core/operators/otfly_derecompr/intersect_tuples.h>
 #include "core/morphing/uncompr.h"
 #include "core/utils/printing.h"
@@ -77,9 +76,6 @@ public:
             /// @todo Check which elements should be deleted.
             // delete currentPosCol, delete join_col_left, delete join_col_right, delete col_data_left, delete col_data_right;
         }
-        morphstore::print_columns_csv({selectPosLeft, selectPosRight});
-
-
 
         const std::string *columnLabelsLeft = inLeft->getLabels();
         const std::string *columnLabelsRight = inRight->getLabels();
