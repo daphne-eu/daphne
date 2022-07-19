@@ -48,6 +48,7 @@ Newer versions should work as well, older versions might work as well.
 | java (e.g. openjdk) | 11 (1.7 should be fine) |                                                                                                                                              |
 | gfortran            | 9.3.0                   |                                                                                                                                              |
 | uuid-dev            |                         |                                                                                                                                              |
+| libboost-dev        | 1.71.0.0 | Only required when building with support for Arrow (`--arrow`) |
 
 ##### Hardware
 

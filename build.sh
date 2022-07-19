@@ -307,6 +307,7 @@ function cleanAll() {
       "${thirdpartyPath}/openBlas_v"*".download.success" \
       "${thirdpartyPath}/llvm_v"*".install.success" \
       "${thirdpartyPath}/arrow_v"*".install.success" \
+      "${thirdpartyPath}/arrow_v"*".download.success" \
       "${llvmCommitFilePath}")
 
     clean dirs files
@@ -652,17 +653,13 @@ if [[ "$BUILD_ARROW" == "-DUSE_ARROW=ON" ]]; then
         git clone -n https://github.com/apache/arrow.git ${sourcePrefix}/${arrowDirName}
         cd ${sourcePrefix}/${arrowDirName}
         git checkout $arrowVersion
-        cd ..
         dependency_download_success "arrow_v${arrowVersion}"
     fi
     if ! is_dependency_installed "arrow_v${arrowVersion}"; then
-        cd ${sourcePrefix}/${arrowDirName}/cpp
-        rm -rf build-release
-        mkdir build-release
-        cd build-release
-        cmake -DCMAKE_INSTALL_PREFIX=${installPrefix} -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON ..
-        make -j$(nproc)
-        make install
+        cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
+            -DCMAKE_INSTALL_PREFIX=${installPrefix} \
+            -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
+        cmake --build "${buildPrefix}/${arrowDirName}" --target install
         dependency_install_success "arrow_v${arrowVersion}"
     else
         daphne_msg "No need to build Arrow again."
