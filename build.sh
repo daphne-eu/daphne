@@ -382,7 +382,6 @@ unknown_options=""
 BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
-arrow="OFF"
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -418,8 +417,6 @@ while [[ $# -gt 0 ]]; do
         --debug)
             echo building DEBUG version
             export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
-        --arrow)
-            arrow="ON"
             ;;
         *)
             unknown_options="${unknown_options} ${key}"
@@ -714,8 +711,7 @@ daphne_msg "Build Daphne"
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
-  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/" \
-  -DUSE_ARROW=$arrow
+  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
 
 cmake --build "$daphneBuildDir" --target "$target"
 
