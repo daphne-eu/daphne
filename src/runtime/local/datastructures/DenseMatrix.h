@@ -357,7 +357,7 @@ struct CharBuf
         delete[] strings;
     }
     
-    void expandStringBuffer(const size_t toFit, const char **vals, const size_t valsSize) {
+    void expandStringBuffer(const size_t toFit, const char **vals, size_t numRows, size_t rowSkip, const size_t valsSize) {
         size_t strBufSize = getSize();
 
         size_t largerStrCapacity = (capacity * 2) > toFit ? (capacity * 2) : toFit;
@@ -365,8 +365,14 @@ struct CharBuf
         memcpy(largerStrings, strings, strBufSize);
 
         auto start = vals[0];
-        for(size_t offset = 0; offset < valsSize; offset++)
-            vals[offset] = &largerStrings[static_cast<size_t>(vals[offset] - start)];
+        const size_t numCols = numCells / numRows;
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                size_t offset = vals[c] - start;
+                vals[c] = &largerStrings[offset];
+            }
+            vals += rowSkip;
+        }
 
         delete[] strings;
         strings = largerStrings;
@@ -517,7 +523,7 @@ public:
         int32_t diff = strlen(value) - strlen(currentVal);
 
         if(currentSize + diff > strBuf->capacity){
-            strBuf.get()->expandStringBuffer(currentSize + diff, vals, getNumItems());
+            strBuf.get()->expandStringBuffer(currentSize + diff, vals, numRows, rowSkip, getNumItems());
             currentVal = vals[currentPos];
         }
 
@@ -553,7 +559,7 @@ public:
         size_t currentSize = strBuf.get()->getSize();
 
         if(currentSize + length > strBuf->capacity)
-            strBuf.get()->expandStringBuffer(currentSize + length, vals, getNumRows() * getNumCols());
+            strBuf.get()->expandStringBuffer(currentSize + length, vals, numRows, rowSkip, getNumRows() * getNumCols());
     
         memcpy(strBuf->currentTop, value, length);
         vals[pos(rowIdx, colIdx)] = strBuf->currentTop;
