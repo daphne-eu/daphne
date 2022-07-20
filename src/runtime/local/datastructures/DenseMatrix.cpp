@@ -166,7 +166,6 @@ void DenseMatrix<const char*>::alloc_shared_values(std::shared_ptr<const char*[]
 }
 
 void DenseMatrix<const char*>::alloc_shared_strings(std::shared_ptr<CharBuf> src, size_t strBufferCapacity_) {
-    // correct since C++17: Calls delete[] instead of simple delete
     if(src) {
         strBuf = std::shared_ptr<CharBuf>(src);
     }
