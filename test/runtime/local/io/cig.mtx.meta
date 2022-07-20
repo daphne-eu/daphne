@@ -1,1 +1,6 @@
-9,9,1,ui32,nnz=50
+{
+    "numRows": 9,
+    "numCols": 9,
+    "valueType": "ui32",
+    "numNonZeros": 50
+}

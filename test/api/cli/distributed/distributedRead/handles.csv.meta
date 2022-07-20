@@ -1,1 +1,5 @@
-10,10,1,f64
+{
+    "numRows": 10,
+    "numCols": 10,
+    "valueType": "f64"
+}

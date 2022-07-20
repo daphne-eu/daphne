@@ -26,42 +26,48 @@ const std::string dirPath = "test/api/cli/parser/metadataFiles/";
 
 TEST_CASE("Proper meta data file for Matrix", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaData1.json";
+    const std::string metaDataFile = dirPath + "MetaData1";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEST_CASE("Proper meta data file for Frame", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaData2.json";
+    const std::string metaDataFile = dirPath + "MetaData2";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEST_CASE("Meta data file mising \"numRows\" key", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaData3.json";
+    const std::string metaDataFile = dirPath + "MetaData3";
     REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEST_CASE("Meta data file mising \"numCols\" key", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaData4.json";
+    const std::string metaDataFile = dirPath + "MetaData4";
     REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEST_CASE("Matrix meta data file missing \"valueType\" key", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaData5.json";
+    const std::string metaDataFile = dirPath + "MetaData5";
     REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEST_CASE("Meta data file without \"numNonZeros\" key", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaData6.json";
+    const std::string metaDataFile = dirPath + "MetaData6";
     REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
 }
 
 TEST_CASE("A non existing meta data file passed to the method", TAG_PARSER)
 {
-    const std::string metaDataFile = dirPath + "MetaMetaData.json";
+    const std::string metaDataFile = dirPath + "MetaMetaData";
+    REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
+}
+
+TEST_CASE("Frame meta data file without \"label\" keys", TAG_PARSER)
+{
+    const std::string metaDataFile = dirPath + "MetaData7";
     REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
 }
