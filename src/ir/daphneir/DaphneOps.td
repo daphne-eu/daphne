@@ -1229,6 +1229,16 @@ def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOper
 }
 
 // ****************************************************************************
+// Higher-order operations
+// ****************************************************************************
+def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
+    let summary = "Applies a user defined function to elements of a matrix.";
+    let arguments = (ins Matrix:$arg, SymbolNameAttr:$func);
+    let results = (outs Matrix:$res);
+}
+
+
+// ****************************************************************************
 // Low-level auxiliary operations
 // ****************************************************************************
 
