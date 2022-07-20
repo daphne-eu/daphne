@@ -22,7 +22,7 @@
 #include <vector>
 #include <string>
 #include <memory>
-#include <vector>
+#include <map>
 
 /*
  * Container to pass around user configuration
@@ -60,4 +60,5 @@ struct DaphneUserConfig {
 #endif
     std::string libdir;
     std::vector<std::string> library_paths;
+    std::map<std::string, std::vector<std::string>> daphnedsl_import_paths;
 };

@@ -1,0 +1,4 @@
+import "cascade/y.daphne";
+
+z = 333 + y.y;
+print(z);

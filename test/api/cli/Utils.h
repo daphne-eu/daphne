@@ -377,7 +377,7 @@ void compareDaphneToDaphneLibScalar(const std::string & pythonScriptFilePath, co
 template<typename... Args>
 void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
-    compareDaphneToRef(filePath + ".txt", args..., filePath + ".daphne");
+    compareDaphneToRef(filePath + ".txt",  filePath + ".daphne", args...);
 }
 
 template<typename... Args>

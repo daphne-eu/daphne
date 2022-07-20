@@ -1,0 +1,29 @@
+// K-means clustering.
+// Arguments:
+// - r ... number of records
+// - c ... number of centroids
+// - f ... number of features
+// - i ... number of iterations
+Z = 3;
+def km(i:si64) {
+    // Data generation.
+    // Data generation.
+    X = [-0.4,0.0,0.5,0.0];
+    X = reshape(X, 2, 2);
+    C = [-0.6,-0.4,0.0,0.0];
+    C = reshape(X, 2, 2);
+
+
+    // K-means clustering (decisive part).
+    for(i in 1:i) {
+        D = (X @ t(C)) * -2.0 + t(sum(C ^ 2.0, 0));
+        minD = aggMin(D, 0);
+        P = D <= minD;
+        P = P / sum(P, 0);
+        P_denom = sum(P, 1);
+        C = (t(P) @ X) / t(P_denom);
+    }
+
+    // Result output.
+    return C;
+}
