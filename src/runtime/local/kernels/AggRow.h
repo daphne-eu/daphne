@@ -68,7 +68,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         
         if(opCode == AggOpCode::IDXMIN) {
             for(size_t r = 0; r < numRows; r++) {
-                VTRes minVal = valuesArg[0];
+                VTArg minVal = valuesArg[0];
                 size_t minValIdx = 0;
                 for(size_t c = 1; c < numCols; c++)
                     if(valuesArg[c] < minVal) {
@@ -107,7 +107,7 @@ struct AggRow<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 func = getEwBinaryScaFuncPtr<VTRes, VTArg, VTArg>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
             for(size_t r = 0; r < numRows; r++) {
-                VTArg agg = *valuesArg;
+                VTRes agg = static_cast<VTRes>(*valuesArg);
                 for(size_t c = 1; c < numCols; c++)
                     agg = func(agg, valuesArg[c], ctx);
                 *valuesRes = static_cast<VTRes>(agg);
