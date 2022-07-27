@@ -17,6 +17,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
+#include <runtime/local/datagen/GenGivenVals.h>
 
 #include <tags.h>
 
@@ -43,6 +44,128 @@ TEMPLATE_TEST_CASE("DenseMatrix allocates enough space", TAG_DATASTRUCTURES, ALL
         values[i] = ValueType(1);
     
     DataObjectFactory::destroy(m);
+}
+
+TEST_CASE("DenseMatrix for strings", TAG_DATASTRUCTURES) {
+    const size_t numRows = 3;
+    const size_t numCols = 4;
+    const size_t bytesPerCell = 1;
+
+    using expectedStrings = const std::vector<std::string>;
+    
+    // We do not use operator== to compare to a matrix created by genGivenVals()
+    // here, since this would rely on the functionality we want to test.
+    auto compareMatToArr = [](const DenseMatrix<const char*>* mat, const expectedStrings& exp) {
+        for(size_t r = 0; r < mat->getNumRows(); r++)
+            for(size_t c = 0; c < mat->getNumCols(); c++)
+                if(strcmp(mat->get(r,c), exp[r*mat->getNumCols() + c].c_str()))
+                    return false;
+        return true;
+    };
+
+    SECTION("Append") {
+        auto m = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false);
+        m->prepareAppend();
+        expectedStrings exp = {"0", "", "", "3", 
+                            "10", "", "", "13",
+                            "20", "", "", "23"};
+        m->prepareAppend();
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++)
+                if(c % 3 == 0)
+                    m->append(r, c, std::string(std::to_string(r*10+c)).c_str());
+
+        m->finishAppend();
+        CHECK(compareMatToArr(m, exp));
+        DataObjectFactory::destroy(m);
+    }
+
+    SECTION("Set") {
+        expectedStrings exp1 = {"", "1", "", "3",
+                                    "", "11", "", "13",
+                                    "", "21", "", "23"};
+
+        expectedStrings exp2 = {"0", "1" ,"2", "3",
+                                    "10", "11", "12", "13",
+                                    "20", "21", "22", "23"};
+        DenseMatrix<const char*> * m = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false, numRows*numCols*bytesPerCell);
+
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++){
+                size_t num = r*10+c;
+                if(num % 2){
+                    m->set(r, c, std::string(std::to_string(num)).c_str());
+                }
+            }
+        CHECK(compareMatToArr(m, exp1));
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++){
+                size_t num = r*10+c;
+                if(!(num % 2)){
+                    m->set(r, c, std::string(std::to_string(num)).c_str());
+                }
+            }
+        CHECK(compareMatToArr(m, exp2));
+        DataObjectFactory::destroy(m);
+    }
+
+    SECTION("Append + Set") {
+
+        expectedStrings exp1 = {"0", "", "", "3", 
+                                    "10", "", "", "13",    
+                                    "20", "", "", "23"};
+
+        expectedStrings exp2 = {"0", "", "", "3", 
+                                    "10", std::string(100, 'O').c_str(), "", "13",    
+                                    "20", "", "", "23"};
+
+        expectedStrings exp3 = {"0", "", "", "3", 
+                                    "10", std::string(100, 'O').c_str(), "", "13",    
+                                    "20", std::string(5000, 'X').c_str(), "", "23"};
+
+        expectedStrings exp4 = {"0", "", "", "3", 
+                                    "10", std::string(100, 'O').c_str(), "", "13",    
+                                    "20", std::string(5, 'X').c_str(), "", "23"};
+
+        auto m = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false, numRows*numCols*bytesPerCell);
+        m->set(1, 1, std::string(20, 'C').c_str()); // will be overwritten by append
+        m->prepareAppend();
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++)
+                if(c % 3 == 0)
+                    m->append(r, c, std::string(std::to_string(r*10+c)).c_str());
+        m->finishAppend();
+
+        CHECK(compareMatToArr(m, exp1));
+        m->set(1, 1, std::string(100, 'O').c_str());
+        CHECK(compareMatToArr(m, exp2));
+        m->set(2, 1, std::string(5000, 'X').c_str());
+        CHECK(compareMatToArr(m, exp3));
+        m->set(2, 1, std::string(5, 'X').c_str());
+        CHECK(compareMatToArr(m, exp4));
+        DataObjectFactory::destroy(m);
+    }
+
+    SECTION("View") {
+        expectedStrings exp1 = {"1", "2", "11", "12"};
+        expectedStrings exp2 = {"1", "2", "11", std::string(5, 'X').c_str()};
+        expectedStrings exp3 = {"0", "1", "2", "3",
+                                    "10", "11", std::string(5, 'X').c_str(), "13",
+                                    "20", "21", "22", "23"};
+        DenseMatrix<const char*> * m = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false, numRows*numCols*bytesPerCell);
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++)
+                m->set(r, c, std::string(std::to_string(r*10+c)).c_str());
+        auto mView = DataObjectFactory::create<DenseMatrix<const char*>>(m, 0, 2, 1, 3);
+        CHECK(compareMatToArr(mView, exp1));
+        
+        mView->set(1, 1, std::string(5, 'X').c_str());
+        CHECK(compareMatToArr(mView, exp2));
+        CHECK(compareMatToArr(m, exp3));
+
+        DataObjectFactory::destroy(m);
+        DataObjectFactory::destroy(mView);
+    }
 }
 
 TEST_CASE("DenseMatrix sub-matrix works properly", TAG_DATASTRUCTURES) {
