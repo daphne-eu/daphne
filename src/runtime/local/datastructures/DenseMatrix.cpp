@@ -18,6 +18,7 @@
 
 #include "DenseMatrix.h"
 #include <chrono>
+#include <new>
 
 #ifdef USE_CUDA
     #include <runtime/local/kernels/CUDA/HostUtils.h>
@@ -85,7 +86,10 @@ void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> sr
         values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
     }
     else
-        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
+        // Align the data to enable processing with vector extensions. Should be removed when a
+        // memory manager is implemented. If the DenseMatrix is created based on a pointer to data,
+        // we still have to make sure that the data is aligned to enable the use of vector extensions.
+        values = std::shared_ptr<ValueType[]>(new (std::align_val_t(64)) ValueType[numRows*numCols]);
 }
 
 template<typename ValueType>

@@ -48,7 +48,7 @@ class Select {
     static void apply(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation cmp, uint64_t selValue) = delete;
 };
 
-template<class DTRes, class DTIn>
+template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void select(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
     Select<DTRes, DTIn>::apply(res, in, inOn, cmp, selValue);
 }
@@ -56,11 +56,10 @@ void select(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation 
 template<>
 class Select<Frame, Frame> {
     public:
+        template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
         static void apply(Frame * & res, const Frame * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
             auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(inOn)));
             const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), colData);
-
-            using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
 
             const morphstore::column<morphstore::uncompr_f> * selectPos;
 

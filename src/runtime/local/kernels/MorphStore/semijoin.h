@@ -34,7 +34,7 @@ public:
     static void apply(DTRes * & res, const DTInLeft * inLeft, const DTInRight * inRight, const char ** inOnLeft, size_t numLhsOn, const char ** inOnRight, size_t numRhsOn) = delete;
 };
 
-template<class DTRes, class DTInLeft, class DTInRight>
+template<class DTRes, class DTInLeft, class DTInRight, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void semijoin(DTRes * & res, const DTInLeft * inLeft, const DTInRight * inRight, const char ** inOnLeft, size_t numLhsOn, const char ** inOnRight, size_t numRhsOn) {
     Semijoin<DTRes, DTInLeft, DTInRight>::apply(res, inLeft, inRight, inOnLeft, numLhsOn, inOnRight, numRhsOn);
 }
@@ -42,11 +42,10 @@ void semijoin(DTRes * & res, const DTInLeft * inLeft, const DTInRight * inRight,
 template<>
 class Semijoin<Frame, Frame, Frame> {
 public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
     static void apply(Frame * & res, const Frame * inLeft, const Frame * inRight, const char ** inOnLeft, size_t numLhsOn, const char ** inOnRight, size_t numRhsOn) {
 
         assert((numLhsOn == numRhsOn) && "incorrect amount of compare values");
-
-        using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
 
         const morphstore::column<morphstore::uncompr_f> *selectPos = nullptr;
 

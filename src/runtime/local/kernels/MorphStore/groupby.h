@@ -31,7 +31,7 @@ public:
     static void apply(DTRes * & res, const DTIn * in, const std::string * groupLabels, const size_t numLabels) = delete;
 };
 
-template<class DTRes, class DTIn>
+template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void groupby(DTRes * & res, const DTIn * in, const std::string * groupLabels, const size_t numLabels) {
     Groupby<DTRes, DTIn>::apply(res, in, groupLabels, numLabels);
 }
@@ -39,9 +39,8 @@ void groupby(DTRes * & res, const DTIn * in, const std::string * groupLabels, co
 template<>
 class Groupby<Frame, Frame> {
 public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
     static void apply(Frame * & res, const Frame * in, const std::string * groupLabels, const size_t numLabels) {
-        using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
-
         std::tuple<const morphstore::column<morphstore::uncompr_f> *, const morphstore::column<morphstore::uncompr_f> *> resultPos;
         for (size_t i = 0; i < numLabels; ++ i) {
             auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(groupLabels[i])));
