@@ -31,7 +31,7 @@ public:
     static void apply(DTRes * & res, const DTIn * in, const char * inOn) = delete;
 };
 
-template<class DTRes, class DTIn>
+template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void agg_sum(DTRes * & res, const DTIn * in, const char * inOn) {
     AggSum<DTRes, DTIn>::apply(res, in, inOn);
 }
@@ -39,11 +39,10 @@ void agg_sum(DTRes * & res, const DTIn * in, const char * inOn) {
 template<>
 class AggSum<Frame, Frame> {
 public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
     static void apply(Frame * & res, const Frame * in, const char * inOn) {
         auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(inOn)));
         const morphstore::column<morphstore::uncompr_f> * const aggCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), colData);
-
-        using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
 
         auto* aggResult = const_cast<morphstore::column<morphstore::uncompr_f> *>(morphstore::agg_sum_all<ve, morphstore::uncompr_f, morphstore::uncompr_f>(aggCol));
 

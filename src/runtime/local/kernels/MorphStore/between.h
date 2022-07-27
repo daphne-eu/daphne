@@ -35,18 +35,16 @@ public:
     static void apply(DTRes * & res, const DTIn * in, const char * inOn, uint64_t lowerBound, CompareOperation cmpLower, uint64_t upperBound, CompareOperation cmpUpper) = delete;
 };
 
-template<class DTRes, class DTIn>
+template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void between(DTRes * & res, const DTIn * in, const char * inOn, uint64_t lowerBound, CompareOperation cmpLower, uint64_t upperBound, CompareOperation cmpUpper) {
-    Between<DTRes, DTIn>::apply(res, in, inOn, lowerBound, cmpLower, upperBound, cmpUpper);
+    Between<DTRes, DTIn>::template apply<ve>(res, in, inOn, lowerBound, cmpLower, upperBound, cmpUpper);
 }
 
 template<>
 class Between<Frame, Frame> {
 public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
     static void apply(Frame * & res, const Frame * in, const char * inOn, uint64_t lowerBound, CompareOperation cmpLower, uint64_t upperBound, CompareOperation cmpUpper) {
-
-        using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
-
         auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(inOn)));
         const morphstore::column<morphstore::uncompr_f> * const betweenCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), colData);
 
