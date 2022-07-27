@@ -226,15 +226,18 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
     size_t ta = false;
     size_t tb = false;
 
+    ssize_t numRows = -1;
     if(auto co = transa().getDefiningOp<mlir::daphne::ConstantOp>()) {
         ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+        numRows = ta ? shapeLhs.second : shapeLhs.first;
     }
+    
+    ssize_t numCols = -1;
     if(auto co = transb().getDefiningOp<mlir::daphne::ConstantOp>()) {
         tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+        numCols = tb ? shapeRhs.first : shapeRhs.second;
     }
 
-    size_t numRows = ta ? shapeLhs.second : shapeLhs.first;
-    size_t numCols = tb ? shapeRhs.first : shapeRhs.second;
     return {{numRows, numCols}};
 }
 
