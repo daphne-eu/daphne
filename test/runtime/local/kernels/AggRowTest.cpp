@@ -136,7 +136,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
+    using DTRes = DenseMatrix<size_t>;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -166,7 +166,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VAL
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
+    using DTRes = DenseMatrix<size_t>;
     
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
@@ -195,42 +195,43 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
 }
 
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
-    
-    auto m0 = genGivenVals<DTArg>(3, {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    });
-    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0});
-    auto m1 = genGivenVals<DTArg>(3, {
-        5, 7, 3, 9,
-        2, 5, 0, 1,
-        7, 4, 5, 4,
-    });
-    auto m1exp = genGivenVals<DTRes>(3, {6, 2, 5});
-    auto m2 = genGivenVals<DTArg>(3, {
-        4, 0, 0, 8,
-        0, 4, 0, 0,
-        0, 0, 7, 0,
-    });
-    auto m2exp = genGivenVals<DTRes>(3, {3, 1, typename DTArg::VT(1.75)});
+#define MEAN_TEST_CASE(ResultType) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result type: " #ResultType), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType; \
+    using DTRes = DenseMatrix<ResultType>; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(3, {0, 0, 0}); \
+    auto m1 = genGivenVals<DTArg>(3, { \
+        5, 7, 3, 9, \
+        2, 5, 0, 1, \
+        7, 4, 5, 4, \
+    }); \
+    auto m1exp = genGivenVals<DTRes>(3, {6, 2, 5}); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        4, 0, 0, 8, \
+        0, 4, 0, 0, \
+        0, 0, 7, 0, \
+    }); \
+    auto m2exp = genGivenVals<DTRes>(3, {(ResultType)3, (ResultType)1, (ResultType)1.75}); \
+ \
+    auto m3 = genGivenVals<DTArg>(3, { \
+        5, 7, 1, 9, \
+        2, 5, 7, 1, \
+        7, 1, 5, 4, \
+    }); \
+    auto m3exp = genGivenVals<DTRes>(3, {(ResultType)5.5, (ResultType)3.75, (ResultType)4.25}); \
+     \
+    checkAggRow(AggOpCode::MEAN, m0, m0exp); \
+    checkAggRow(AggOpCode::MEAN, m1, m1exp); \
+    checkAggRow(AggOpCode::MEAN, m2, m2exp); \
+    checkAggRow(AggOpCode::MEAN, m3, m3exp); \
+     \
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp); \
+} \
 
-    // Test case integer matrix -> double results.
-    // Maybe move this to seperate TEST_CASE_TEMPLATE ?
-    auto m3 = genGivenVals<DTArg>(3, {
-        5, 7, 1, 9,
-        2, 5, 7, 1,
-        7, 1, 5, 4,
-    });
-    auto m3exp = genGivenVals<DenseMatrix<double>>(3, {5.5, 3.75, 4.25});
-    
-    checkAggRow(AggOpCode::MEAN, m0, m0exp);
-    checkAggRow(AggOpCode::MEAN, m1, m1exp);
-    checkAggRow(AggOpCode::MEAN, m2, m2exp);
-    checkAggRow(AggOpCode::MEAN, m3, m3exp);
-    
-    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
-}
+MEAN_TEST_CASE(int64_t);
+MEAN_TEST_CASE(double);

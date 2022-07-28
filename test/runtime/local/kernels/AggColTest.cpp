@@ -134,70 +134,62 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) {
-    using DTArg = TestType;
-    using VT = typename DTArg::VT;
-    using DTRes = DenseMatrix<VT>;
-    
-    auto m0 = genGivenVals<DTArg>(3, {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    });
-    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0});
-    auto m2 = genGivenVals<DTArg>(4, {
-        1, 3, 0, -1,
-        1, 3, 5,  3,
-        3, 1, 0,  0,
-        3, 1, 5, -1,
-    });
-    auto m2exp = genGivenVals<DTRes>(1, {VT(2.0), VT(2.0), VT(2.5), VT(0.25)});
-    
-    // Test case integer matrix -> double results. Maybe move this to seperate TEST_CASE_TEMPLATE ?
-    auto m3 = genGivenVals<DTArg>(4, {
-        1, 3, 0, -1,
-        1, 3, 5,  3,
-        3, 1, 0,  0,
-        3, 1, 5, -1,
-    });
-    auto m3exp = genGivenVals<DenseMatrix<double>>(1, {2.0, 2.0, 2.5, 0.25});
-    
-    checkAggCol(AggOpCode::MEAN, m0, m0exp);
-    checkAggCol(AggOpCode::MEAN, m2, m2exp);
-    checkAggCol(AggOpCode::MEAN, m3, m3exp);
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m2exp);
-    DataObjectFactory::destroy(m3);
-    DataObjectFactory::destroy(m3exp);
-}
+#define MEAN_TEST_CASE(resultType) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result type: " #ResultType), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
+    using DTArg = TestType; \
+    using DTRes = DenseMatrix<ResultType>; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0}); \
+    auto m2 = genGivenVals<DTArg>(4, { \
+        1, 3, 0, -1, \
+        1, 3, 5,  3, \
+        3, 1, 0,  0, \
+        3, 1, 5, -1, \
+    }); \
+    auto m2exp = genGivenVals<DTRes>(1, {(ResultType)2.0, (ResultType)2.0, (ResultType)2.5, (ResultType)0.25}); \
+    \
+    checkAggCol(AggOpCode::MEAN, m0, m0exp); \
+    checkAggCol(AggOpCode::MEAN, m2, m2exp); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m0exp); \
+    DataObjectFactory::destroy(m2); \
+    DataObjectFactory::destroy(m2exp); \
+} 
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev"), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) {
-    using DTArg = TestType;
-    using VT = typename DTArg::VT;
-    using DTRes = DenseMatrix<VT>;
-    
-    auto m0 = genGivenVals<DTArg>(3, {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    });
-    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0});
-    auto m2 = genGivenVals<DTArg>(4, {
-        1, 3, 0, -1,
-        1, 3, 5,  3,
-        3, 1, 0,  0,
-        3, 1, 5, -1,
-    });
-    auto m2exp = genGivenVals<DTRes>(1, {1, 1, VT(2.5), VT(1.6393596310755)});
-    
-    checkAggCol(AggOpCode::STDDEV, m0, m0exp);
-    checkAggCol(AggOpCode::STDDEV, m2, m2exp);
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m2exp);
-}
+MEAN_TEST_CASE(int64_t);
+MEAN_TEST_CASE(double);
+
+#define STDDEV_TEST_CASE(ResultType) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result type: " #ResultType), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
+    using DTArg = TestType; \
+    using DTRes = DenseMatrix<ResultType>; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0}); \
+    auto m2 = genGivenVals<DTArg>(4, { \
+        1, 3, 0, -1, \
+        1, 3, 5,  3, \
+        3, 1, 0,  0, \
+        3, 1, 5, -1, \
+    }); \
+    auto m2exp = genGivenVals<DTRes>(1, {(ResultType)1, (ResultType)1, (ResultType)2.5, (ResultType)1.6393596310755}); \
+     \
+    checkAggCol(AggOpCode::STDDEV, m0, m0exp); \
+    checkAggCol(AggOpCode::STDDEV, m2, m2exp); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m0exp); \
+    DataObjectFactory::destroy(m2); \
+    DataObjectFactory::destroy(m2exp); \
+} \
+
+STDDEV_TEST_CASE(int64_t);
+STDDEV_TEST_CASE(double);
