@@ -27,7 +27,7 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
-
+#include <stdexcept>
 // TODO DenseMatrix should not be concerned about CUDA.
 
 /**
@@ -104,13 +104,15 @@ class DenseMatrix : public Matrix<ValueType>
      * @param colLowerIncl Inclusive lower bound for the range of columns to extract.
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
-    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
+    DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
 
     ~DenseMatrix() override = default;
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        assert((colIdx < numCols) && "colIdx is out of bounds");
+        if(rowIdx >= numRows)
+            throw std::runtime_error("rowIdx is out of bounds");
+        if(colIdx >= numCols)
+            throw std::runtime_error("colIdx is out of bounds");
         return rowIdx * rowSkip + colIdx;
     }
     
@@ -335,4 +337,284 @@ std::ostream & operator<<(std::ostream & os, const DenseMatrix<ValueType> & obj)
     return os;
 }
 
+/*
+    Helper struct for DenseMatrix with strings, represents a char buffer.
+    Needs to keep numCells from original DenseMatrix to manage modifications from views.
+*/
+struct CharBuf
+{
+    char* strings;
+    char* currentTop;
+
+    size_t capacity;
+    size_t numCells;
+
+    CharBuf(size_t capacity_, size_t numCells_) : capacity(capacity_), numCells(numCells_) {
+        strings = new char[capacity];
+        currentTop = strings;
+    }
+    ~CharBuf() {
+        delete[] strings;
+    }
+    
+    void expandStringBuffer(const size_t toFit, const char **vals, size_t numRows, size_t rowSkip, const size_t valsSize) {
+        size_t strBufSize = getSize();
+
+        size_t largerStrCapacity = (capacity * 2) > toFit ? (capacity * 2) : toFit;
+        char* largerStrings = new char[largerStrCapacity];
+        memcpy(largerStrings, strings, strBufSize);
+
+        auto start = vals[0];
+        const size_t numCols = numCells / numRows;
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                size_t offset = vals[c] - start;
+                vals[c] = &largerStrings[offset];
+            }
+            vals += rowSkip;
+        }
+
+        delete[] strings;
+        strings = largerStrings;
+        capacity = largerStrCapacity;
+        currentTop = &largerStrings[strBufSize];
+    }
+
+    size_t getSize() {
+        return currentTop - strings;
+    }
+};
+
+template <>
+class DenseMatrix<const char*> : public Matrix<const char*>
+{
+    // `using`, so that we do not need to prefix each occurrence of these
+    // fields from the super-classes.
+    using Matrix<const char*>::numRows;
+    using Matrix<const char*>::numCols;
+    
+    size_t rowSkip;
+    std::shared_ptr<const char*[]> values{};
+    std::shared_ptr<CharBuf> strBuf;
+
+    std::shared_ptr<const char*> cuda_ptr{};
+    uint32_t deleted = 0;
+
+    size_t lastAppendedRowIdx;
+    size_t lastAppendedColIdx;
+    
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
+    template<class DataType, typename ... ArgTypes>
+    friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
+
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, size_t strBufCapacity = 1024, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC);
+    
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<const char*[]>& strings, size_t strBufCapacity = 1024, std::shared_ptr<const char*> cuda_ptr_ = nullptr);
+
+    DenseMatrix(const DenseMatrix<const char*> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
+
+    ~DenseMatrix() override = default;
+
+    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
+        if(rowIdx >= numRows)
+            throw std::runtime_error("rowIdx is out of bounds");
+        if(colIdx >= numCols)
+            throw std::runtime_error("colIdx is out of bounds");
+        return rowIdx * rowSkip + colIdx;
+    }
+    
+    void appendZerosRange(const char** valsStartPos, const size_t length)
+    {
+        memset(strBuf->currentTop, '\0', length * sizeof(char));
+        for(size_t val = 0; val < length; val++){
+            valsStartPos[val] = &strBuf->currentTop[val];
+        }
+        strBuf->currentTop += length;
+    }
+
+    void fillZeroUntil(size_t rowIdx, size_t colIdx) {
+        auto vals = values.get();
+        if(rowSkip == numCols || lastAppendedRowIdx == rowIdx) {
+            const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
+            const size_t endPosExcl = pos(rowIdx, colIdx);
+            if(startPosIncl < endPosExcl){
+                appendZerosRange(&vals[startPosIncl], endPosExcl - startPosIncl);
+            }
+        }
+        else {
+            auto v = vals + lastAppendedRowIdx * rowSkip;
+            appendZerosRange(&v[lastAppendedColIdx + 1], numCols - lastAppendedColIdx - 1);
+            v += rowSkip;
+            
+            for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
+                appendZerosRange(v, numCols);
+                v += rowSkip;
+            }
+
+            if(colIdx)
+                appendZerosRange(v, colIdx - 1);
+        }
+    }
+
+    void printValue(std::ostream & os, const char* val) const;
+
+    void alloc_shared_values(std::shared_ptr<const char*[]> src = nullptr, size_t offset = 0);
+
+    void alloc_shared_strings(std::shared_ptr<CharBuf> src = nullptr, size_t strBufferCapacity = 1024);
+
+    void alloc_shared_cuda_buffer(std::shared_ptr<const char*> src = nullptr, size_t offset = 0);
+
+public:
+
+    void shrinkNumRows(size_t numRows) {
+        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
+        // TODO Here we could reduce the allocated size of the values array.
+        this->numRows = numRows;
+    }
+    
+    [[nodiscard]] size_t getRowSkip() const {
+        return rowSkip;
+    }
+
+    const char** getValues() const{
+        if(!values)
+            const_cast<DenseMatrix*>(this)->alloc_shared_values();
+        return values.get();
+    }
+
+    const char** getValues(){
+        if(!values)
+            alloc_shared_values();
+        return values.get();
+    }
+
+    std::shared_ptr<CharBuf> getStrBufSharedPtr() const{
+        return strBuf;
+    }
+
+    CharBuf* getStrBuf() const{
+        if(!strBuf)
+            const_cast<DenseMatrix*>(this)->alloc_shared_strings();
+        return strBuf.get();
+    }
+
+    CharBuf* getStrBuf() {
+        if(!strBuf)
+            alloc_shared_strings();
+        return strBuf.get();
+    }
+
+    std::shared_ptr<const char*[]> getValuesSharedPtr() const {
+        return values;
+    }
+    
+    const char* get(size_t rowIdx, size_t colIdx) const override {
+        return getValues()[pos(rowIdx, colIdx)];
+    }
+
+    void set(size_t rowIdx, size_t colIdx, const char* value) override {
+        auto vals = getValues();
+        size_t currentPos = pos(rowIdx, colIdx);
+        auto currentVal = vals[currentPos];
+        size_t currentSize = strBuf.get()->getSize();
+        int32_t diff = strlen(value) - strlen(currentVal);
+
+        if(currentSize + diff > strBuf->capacity){
+            strBuf.get()->expandStringBuffer(currentSize + diff, vals, numRows, rowSkip, getNumItems());
+            currentVal = vals[currentPos];
+        }
+
+        if(diff && (currentPos + 1 < getStrBuf()->numCells)) {
+            const char* from = values[currentPos + 1];
+            const char* to = from + diff;
+            size_t length = strBuf->currentTop - from;
+            memmove(const_cast<char*>(to), from, length);
+        }
+        memcpy(const_cast<char*>(currentVal), value, strlen(value) + 1);
+
+        if(diff){
+            for(size_t offset = currentPos + 1; offset < getStrBuf()->numCells; offset++)
+                vals[offset] += diff; 
+        }
+
+        strBuf->currentTop += diff;
+    }
+    
+    void prepareAppend() override {
+        values.get()[0] = "\0";
+        lastAppendedRowIdx = 0;
+        lastAppendedColIdx = 0;
+        strBuf->currentTop = strBuf.get()->strings;
+    }
+    
+    void append(size_t rowIdx, size_t colIdx, const char* value) override {
+        // Set all cells since the last one that was appended to zero.
+        fillZeroUntil(rowIdx, colIdx);
+        auto vals = getValues();
+        // Set the specified cell.
+        size_t length = strlen(value) + 1;
+        size_t currentSize = strBuf.get()->getSize();
+
+        if(currentSize + length > strBuf->capacity)
+            strBuf.get()->expandStringBuffer(currentSize + length, vals, numRows, rowSkip, getNumRows() * getNumCols());
+    
+        memcpy(strBuf->currentTop, value, length);
+        vals[pos(rowIdx, colIdx)] = strBuf->currentTop;
+
+        strBuf->currentTop += length;
+        // Update append state.
+        lastAppendedRowIdx = rowIdx;
+        lastAppendedColIdx = colIdx;
+    }
+    
+    void finishAppend() override {
+        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+            append(numRows - 1, numCols - 1, "\0");
+    }
+
+    void print(std::ostream & os) const override {
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
+                << ValueTypeUtils::cppNameFor<const char*> << ')' << std::endl;
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
+                printValue(os, get(r, c));
+                if (c < numCols - 1)
+                    os << ' ';
+            }
+            os << std::endl;
+        }
+    }
+
+    DenseMatrix<const char*>* sliceRow(size_t rl, size_t ru) const override {
+        return slice(rl, ru, 0, numCols);
+    }
+
+    DenseMatrix<const char*>* sliceCol(size_t cl, size_t cu) const override {
+        return slice(0, numRows, cl, cu);
+    }
+
+    DenseMatrix<const char*>* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+        return DataObjectFactory::create<DenseMatrix<const char*>>(this, rl, ru, cl, cu);
+    }
+
+    size_t bufferSize();
+
+    size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
+
+    float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
+
+    DenseMatrix<const char*>* vectorTranspose() const;
+
+    bool operator==(const DenseMatrix<const char*> &M) const {
+        assert(getNumRows() != 0 && getNumCols() != 0 && strBuf && values && "Invalid matrix");
+        for(size_t r = 0; r < getNumRows(); r++)
+            for(size_t c = 0; c < getNumCols(); c++)
+                if(strcmp(M.getValues()[M.pos(r,c)], values.get()[pos(r,c)]))
+                    return false;
+        return true;
+  }
+};
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H

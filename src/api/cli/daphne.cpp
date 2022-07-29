@@ -146,6 +146,7 @@ main(int argc, char** argv)
       kernels,
       llvm,
       parsing,
+      parsing_simplified,
       property_inference,
       sql,
       vectorized,
@@ -158,6 +159,7 @@ main(int argc, char** argv)
                        "multiple values by comma, the order is irrelevant)"),
         llvm::cl::values(
             clEnumVal(parsing, "Show DaphneIR after parsing"),
+            clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
@@ -240,6 +242,9 @@ main(int argc, char** argv)
                 break;
             case parsing:
                 user_config.explain_parsing = true;
+                break;
+            case parsing_simplified:
+                user_config.explain_parsing_simplified = true;
                 break;
             case property_inference:
                 user_config.explain_property_inference = true;
