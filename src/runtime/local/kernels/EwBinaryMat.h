@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <type_traits>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -340,7 +341,15 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         res->prepareAppend();
         for(size_t r = 0; r < numRows; r++)
             for(size_t c = 0; c < numCols; c++)
-                res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
+            {
+                if constexpr (std::is_same_v<VT, StringScalarType>)
+                {
+                    auto temporaryString = func(lhs->get(r, c), rhs->get(r, c), ctx);
+                    res->append(r, c, temporaryString);
+                    delete[] temporaryString;
+                }else
+                    res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
+            }
         res->finishAppend();
     }
 };

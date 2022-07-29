@@ -24,7 +24,9 @@
 #include <stdexcept>
 
 #include <cmath>
+#include <cstring>
 
+using StringScalarType = const char*;
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
@@ -57,33 +59,43 @@ using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
-    switch (opCode) {
-#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
-        // Arithmetic.
-        MAKE_CASE(BinaryOpCode::ADD)
-        MAKE_CASE(BinaryOpCode::SUB)
-        MAKE_CASE(BinaryOpCode::MUL)
-        MAKE_CASE(BinaryOpCode::DIV)
-        MAKE_CASE(BinaryOpCode::POW)
-        MAKE_CASE(BinaryOpCode::MOD)
-        MAKE_CASE(BinaryOpCode::LOG)
-        // Comparisons.
-        MAKE_CASE(BinaryOpCode::EQ)
-        MAKE_CASE(BinaryOpCode::NEQ)
-        MAKE_CASE(BinaryOpCode::LT)
-        MAKE_CASE(BinaryOpCode::LE)
-        MAKE_CASE(BinaryOpCode::GT)
-        MAKE_CASE(BinaryOpCode::GE)
-        // Min/max.
-        MAKE_CASE(BinaryOpCode::MIN)
-        MAKE_CASE(BinaryOpCode::MAX)
-        // Logical.
-        MAKE_CASE(BinaryOpCode::AND)
-        MAKE_CASE(BinaryOpCode::OR)
-#undef MAKE_CASE
-        default:
-            throw std::runtime_error("unknown BinaryOpCode");
+    #define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
+    if constexpr(std::is_same_v<VTRes, StringScalarType>){
+        // String-only ops.
+        switch(opCode) {
+            MAKE_CASE(BinaryOpCode::CONCAT)
+            default:
+                throw std::runtime_error("unknown BinaryOpCode");
+        }
+    } else{
+        switch (opCode) {
+            // Arithmetic.
+            MAKE_CASE(BinaryOpCode::ADD)
+            MAKE_CASE(BinaryOpCode::SUB)
+            MAKE_CASE(BinaryOpCode::MUL)
+            MAKE_CASE(BinaryOpCode::DIV)
+            MAKE_CASE(BinaryOpCode::POW)
+            MAKE_CASE(BinaryOpCode::MOD)
+            MAKE_CASE(BinaryOpCode::LOG)
+            // Comparisons.
+            MAKE_CASE(BinaryOpCode::EQ)
+            MAKE_CASE(BinaryOpCode::NEQ)
+            MAKE_CASE(BinaryOpCode::LT)
+            MAKE_CASE(BinaryOpCode::LE)
+            MAKE_CASE(BinaryOpCode::GT)
+            MAKE_CASE(BinaryOpCode::GE)
+            // Min/max.
+            MAKE_CASE(BinaryOpCode::MIN)
+            MAKE_CASE(BinaryOpCode::MAX)
+            // Logical.
+            MAKE_CASE(BinaryOpCode::AND)
+            MAKE_CASE(BinaryOpCode::OR)
+
+            default:
+                throw std::runtime_error("unknown BinaryOpCode");
+        }
     }
+    #undef MAKE_CASE
 }
 
 // ****************************************************************************
@@ -113,6 +125,29 @@ struct EwBinarySca<BinaryOpCode::MUL, bool, TLhs, TRhs> {
     inline static bool apply(TLhs lhs, TRhs rhs, DCTX(ctx)) {
         uint32_t result = lhs * rhs;
         return static_cast<bool>(result);
+    }
+};
+
+template<>
+struct EwBinarySca<BinaryOpCode::CONCAT, StringScalarType, StringScalarType, StringScalarType> {
+    inline static StringScalarType apply(StringScalarType lhs, StringScalarType rhs, DCTX(ctx)) {
+        const uint64_t lhsLength = strlen(lhs)+1; 
+        const uint64_t rhsLength = strlen(rhs)+1; 
+        char* temporaryStrPtr = new char[lhsLength + rhsLength - 1]; 
+        memcpy(temporaryStrPtr, lhs, lhsLength - 1);
+        memcpy(temporaryStrPtr + lhsLength - 1, rhs, rhsLength);
+        return temporaryStrPtr;
+    }
+};
+
+template<>
+struct EwBinarySca<BinaryOpCode::LIKE, bool, StringScalarType, StringScalarType> {
+    inline static bool apply(StringScalarType lhs, StringScalarType pattern, DCTX(ctx)) {
+        const uint64_t lhsLength = strlen(lhs)+1; 
+        const uint64_t patternLength = strlen(pattern)+1;
+        bool found = false;
+        // TODO: could take a while
+        return found;
     }
 };
 

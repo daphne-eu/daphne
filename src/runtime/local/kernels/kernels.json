@@ -683,7 +683,7 @@
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "CONCAT"]
             }
         ]
     },
@@ -1665,7 +1665,7 @@
             ["float", "float"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND"]
+        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND", "UPPERCASE", "LOWERCASE"]
     },
     {
         "kernelTemplate": {

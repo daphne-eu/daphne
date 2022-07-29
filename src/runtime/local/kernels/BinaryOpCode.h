@@ -42,6 +42,11 @@ enum class BinaryOpCode {
     AND,
     OR,
 
+    // String-only.
+    CONCAT,
+    LIKE,
+    
+
     ISSYM,
 };
 

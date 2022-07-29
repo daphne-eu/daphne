@@ -27,8 +27,13 @@
 
 template<BinaryOpCode opCode, typename VT>
 void checkEwBinarySca(VT lhs, VT rhs, VT exp) {
-    CHECK(EwBinarySca<opCode, VT, VT, VT>::apply(lhs, rhs, nullptr) == exp);
-    CHECK(ewBinarySca<VT, VT, VT>(opCode, lhs, rhs, nullptr) == exp);
+    if constexpr(std::is_same_v<VT, StringScalarType>){
+        CHECK(strcmp(EwBinarySca<opCode, VT, VT, VT>::apply(lhs, rhs, nullptr), exp) == 0);
+        CHECK(strcmp(ewBinarySca<VT, VT, VT>(opCode, lhs, rhs, nullptr), exp) == 0);
+    }else{
+        CHECK(EwBinarySca<opCode, VT, VT, VT>::apply(lhs, rhs, nullptr) == exp);
+        CHECK(ewBinarySca<VT, VT, VT>(opCode, lhs, rhs, nullptr) == exp);
+    }
 }
 
 // ****************************************************************************
@@ -149,6 +154,17 @@ TEMPLATE_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::OR, VT>( 0, -2, 1);
     checkEwBinarySca<BinaryOpCode::OR, VT>(-2,  0, 1);
     checkEwBinarySca<BinaryOpCode::OR, VT>(-2, -2, 1);
+}
+
+// ****************************************************************************
+// String
+// ****************************************************************************
+TEMPLATE_TEST_CASE(TEST_NAME("CONCAT"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = const char* ;
+    VT lhs = "Hello";
+    VT rhs = "World!";
+    VT exp = "HelloWorld!";
+    checkEwBinarySca<BinaryOpCode::CONCAT, VT>(lhs, rhs, exp);
 }
 
 // ****************************************************************************

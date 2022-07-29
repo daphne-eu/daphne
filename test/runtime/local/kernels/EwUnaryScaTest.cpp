@@ -31,8 +31,13 @@
 
 template<UnaryOpCode opCode, typename VT>
 void checkEwUnarySca(VT arg, VT exp) {
-    CHECK(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr) == exp);
-    CHECK(ewUnarySca<VT, VT>(opCode, arg, nullptr) == exp);
+    if constexpr(std::is_same_v<VT, StringScalarType>){
+        CHECK(strcmp(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr), exp) == 0);
+        CHECK(strcmp(ewUnarySca<VT, VT>(opCode, arg, nullptr), exp) == 0);
+    }else{
+        CHECK(EwUnarySca<opCode, VT, VT>::apply(arg, nullptr) == exp);
+        CHECK(ewUnarySca<VT, VT>(opCode, arg, nullptr) == exp);
+    }
 }
 
 template<UnaryOpCode opCode, typename VT>
@@ -68,6 +73,19 @@ TEMPLATE_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS, FP_V
     checkEwUnarySca<UnaryOpCode::SIGN, VT>(-std::numeric_limits<VT>::infinity(), -1);
     checkEwUnaryScaNaN<UnaryOpCode::SIGN, VT>(std::numeric_limits<VT>::quiet_NaN());
 }
+
+// ****************************************************************************
+// String
+// ****************************************************************************
+TEMPLATE_TEST_CASE(TEST_NAME("Lower/UpperCase"), TAG_KERNELS, VALUE_TYPES) {
+    using VT = const char* ;
+    VT arg = "hElLo";
+    VT expUpper = "HELLO";
+    VT expLower = "hello";
+    checkEwUnarySca<UnaryOpCode::UPPERCASE, VT>(arg, expUpper);
+    checkEwUnarySca<UnaryOpCode::LOWERCASE, VT>(arg, expLower);
+}
+
 
 // ****************************************************************************
 // Invalid op-code
