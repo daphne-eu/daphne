@@ -58,12 +58,22 @@ struct Fill<DenseMatrix<VT>, VT> {
         assert(numCols > 0 && "numCols must be > 0");
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        {
+            if constexpr (std::is_same_v<VT, const char*>)
+                res = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false, numCols*numRows*(strlen(arg)+1));
+            else
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        }
 
         VT * valuesRes = res->getValues();
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = arg;
+            {
+                if constexpr (std::is_same_v<VT, const char*>)
+                    res->set(r,c, arg);
+                else
+                    valuesRes[c] = arg;
+            }
             valuesRes += res->getRowSkip();
         }
     }
