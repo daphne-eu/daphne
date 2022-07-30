@@ -851,7 +851,8 @@
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint8_t"]],
-            [["DenseMatrix", "bool"]]
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "const char *"]]
         ]
     },
     {
@@ -1180,6 +1181,7 @@
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
             [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "const char *"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
             [["CSRMatrix", "int64_t"]],
@@ -1456,7 +1458,8 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "bool"], ["DenseMatrix", "bool"]]
+            [["DenseMatrix", "bool"], ["DenseMatrix", "bool"]],
+            [["DenseMatrix", "const char *"], ["DenseMatrix", "const char *"]]
         ]
     },
     {
