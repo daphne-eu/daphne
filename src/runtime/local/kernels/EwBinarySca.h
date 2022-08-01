@@ -191,8 +191,8 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs, strcmp(lhs, rhs) <= 0)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs, strcmp(lhs, rhs) >  0)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs, strcmp(lhs, rhs) >= 0) 
 // Min/max.
-MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs), std::min(static_cast<std::string_view>(lhs),static_cast<std::string_view>(rhs)).data())
-MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs), std::max(static_cast<std::string_view>(lhs),static_cast<std::string_view>(rhs)).data())
+MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min(lhs, rhs), strcmp(lhs, rhs) < 0 ? lhs : rhs)
+MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max(lhs, rhs), strcmp(lhs, rhs) > 0 ? lhs : rhs)
 // Logical.
 MAKE_EW_BINARY_SCA(BinaryOpCode::AND, lhs && rhs, NO_SUPPORT_FOR_STRING)
 MAKE_EW_BINARY_SCA(BinaryOpCode::OR , lhs || rhs, NO_SUPPORT_FOR_STRING)
