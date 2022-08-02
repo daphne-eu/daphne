@@ -38,32 +38,37 @@ void checkAggCol(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     CHECK(*res == *exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DTArg = TestType;
-    using DTRes = DenseMatrix<typename DTArg::VT>;
-    
-    auto m0 = genGivenVals<DTArg>(3, {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    });
-    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0});
-    auto m1 = genGivenVals<DTArg>(3, {
-        3, 0, 2, 0,
-        0, 0, 1, 1,
-        2, 5, 0, 0,
-    });
-    auto m1exp = genGivenVals<DTRes>(1, {5, 5, 3, 1});
-    
-    checkAggCol(AggOpCode::SUM, m0, m0exp);
-    checkAggCol(AggOpCode::SUM, m1, m1exp);
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m1exp);
+// The value types of argument and result could be different, so we need to
+// test various combinations.
+#define SUM_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType; \
+    using DTRes = DenseMatrix<VTRes>; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m0exp = genGivenVals<DTRes>(1, {0, 0, 0, 0}); \
+    auto m1 = genGivenVals<DTArg>(3, { \
+        3, 0, 2, 0, \
+        0, 0, 1, 1, \
+        2, 5, 0, 0, \
+    }); \
+    auto m1exp = genGivenVals<DTRes>(1, {5, 5, 3, 1}); \
+     \
+    checkAggCol(AggOpCode::SUM, m0, m0exp); \
+    checkAggCol(AggOpCode::SUM, m1, m1exp); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m0exp); \
+    DataObjectFactory::destroy(m1); \
+    DataObjectFactory::destroy(m1exp); \
 }
+SUM_TEST_CASE(int64_t)
+SUM_TEST_CASE(double)
 
+// The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<typename DTArg::VT>;
@@ -99,6 +104,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2exp);
 }
 
+// The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<typename DTArg::VT>;
@@ -134,9 +140,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2exp);
 }
 
-#define MEAN_TEST_CASE(resultType) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result type: " #ResultType), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
+// The value types of argument and result could be different, so we need to
+// test various combinations.
+#define MEAN_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<ResultType>; \
+    using DTRes = DenseMatrix<VTRes>; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -150,7 +158,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         3, 1, 0,  0, \
         3, 1, 5, -1, \
     }); \
-    auto m2exp = genGivenVals<DTRes>(1, {(ResultType)2.0, (ResultType)2.0, (ResultType)2.5, (ResultType)0.25}); \
+    auto m2exp = genGivenVals<DTRes>(1, {(VTRes)2.0, (VTRes)2.0, (VTRes)2.5, (VTRes)0.25}); \
     \
     checkAggCol(AggOpCode::MEAN, m0, m0exp); \
     checkAggCol(AggOpCode::MEAN, m2, m2exp); \
@@ -159,14 +167,15 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m0exp); \
     DataObjectFactory::destroy(m2); \
     DataObjectFactory::destroy(m2exp); \
-} 
-
+}
 MEAN_TEST_CASE(int64_t);
 MEAN_TEST_CASE(double);
 
-#define STDDEV_TEST_CASE(ResultType) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result type: " #ResultType), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
+// The value types of argument and result could be different, so we need to
+// test various combinations.
+#define STDDEV_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("stddev - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) { \
     using DTArg = TestType; \
-    using DTRes = DenseMatrix<ResultType>; \
+    using DTRes = DenseMatrix<VTRes>; \
      \
     auto m0 = genGivenVals<DTArg>(3, { \
         0, 0, 0, 0, \
@@ -180,7 +189,7 @@ MEAN_TEST_CASE(double);
         3, 1, 0,  0, \
         3, 1, 5, -1, \
     }); \
-    auto m2exp = genGivenVals<DTRes>(1, {(ResultType)1, (ResultType)1, (ResultType)2.5, (ResultType)1.6393596310755}); \
+    auto m2exp = genGivenVals<DTRes>(1, {1, 1, (VTRes)2.5, (VTRes)1.6393596310755}); \
      \
     checkAggCol(AggOpCode::STDDEV, m0, m0exp); \
     checkAggCol(AggOpCode::STDDEV, m2, m2exp); \
@@ -189,7 +198,6 @@ MEAN_TEST_CASE(double);
     DataObjectFactory::destroy(m0exp); \
     DataObjectFactory::destroy(m2); \
     DataObjectFactory::destroy(m2exp); \
-} \
-
+}
 STDDEV_TEST_CASE(int64_t);
 STDDEV_TEST_CASE(double);
