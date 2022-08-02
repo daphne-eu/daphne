@@ -141,8 +141,8 @@ MAKE_EW_BINARY_SCA(BinaryOpCode::LE , lhs <= rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GT , lhs >  rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::GE , lhs >= rhs)
 // Min/max.
-MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min<double>(lhs, rhs))
-MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max<double>(lhs, rhs))
+MAKE_EW_BINARY_SCA(BinaryOpCode::MIN, std::min<double>(lhs, rhs)) // TODO remove <double> again
+MAKE_EW_BINARY_SCA(BinaryOpCode::MAX, std::max<double>(lhs, rhs)) // TODO remove <double> again
 // Logical.
 MAKE_EW_BINARY_SCA(BinaryOpCode::AND, lhs && rhs)
 MAKE_EW_BINARY_SCA(BinaryOpCode::OR , lhs || rhs)
