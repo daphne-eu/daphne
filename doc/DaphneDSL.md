@@ -419,9 +419,74 @@ A[..., ...] = ...; # copy-on-write: changes A, but no effect on B
 
 #### Block statement
 
-#### Control Flow statement
+A block statement allows to view an enclosed sequence of statements like a single statement.
+This is very useful in combination with the control flow statements described below.
+Besides that, a block statement starts a new scope in terms of visibility of variables.
+Within a block, all variables from outside the block can be read and written.
+However, variables created inside a block are not visible anymore after the block.
+
+The syntax of a block statement is:
+```
+{
+    statement1
+    statement2
+    ...
+}
+```
+
+*Examples*
+```
+x = 1;
+{
+    print(x); # read access
+    x = 2;    # write access
+    y = 1;    # variable created inside the block
+}
+print(x);     # prints 2
+print(y);     # error
+```
+
+#### Control Flow statements
+
+TODO: Maybe move block statement here, for consistency as ease of explanation.
+TODO: Mention that control flow statements (including block statements) can be nested arbitrarily.
 
 ##### If-then-else
+
+The syntax of an if-then-else statement is as follows:
+```
+if (condition)
+    then-statement
+else
+    else-statement
+```
+*condition* is an expression returning a single value.
+If this value is `true` (when casted to value type `bool`, if necessary), the *then-statement* is executed.
+Otherwise, the *else-statement* is executed, *if it is present*.
+Note that the *else*-branch (keyword and statement) may be omitted.
+Furthermore, *then-statement* and *else-statement* can be block statements, to allow any number of statements in the then and else-branches.
+
+*Examples:*
+```
+if (sum(X) == 0)
+    X = X + 1;
+```
+```
+if (2 * x > y) {
+    z = z / 2;
+    a = true;
+}
+else
+    z = z * 2;
+```
+```
+if (a)
+    print("a");
+else if (b)
+    print("not a, but b");
+else
+    print("neither a nor b");
+```
 
 ##### Loops
 
