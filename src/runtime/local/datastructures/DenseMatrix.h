@@ -515,29 +515,28 @@ public:
         return getValues()[pos(rowIdx, colIdx)];
     }
 
-    void set(size_t rowIdx, size_t colIdx, const char* value) override {
-        auto vals = getValues();
+    void set(size_t rowIdx, size_t colIdx, const char* stringToSet) override {
         size_t currentPos = pos(rowIdx, colIdx);
-        auto currentVal = vals[currentPos];
+        auto currentVal = values[currentPos];
         size_t currentSize = strBuf.get()->getSize();
-        int32_t diff = strlen(value) - strlen(currentVal);
+        const size_t valueLength = strlen(stringToSet);
+        int32_t diff = valueLength - strlen(currentVal);
 
         if(currentSize + diff > strBuf->capacity){
-            strBuf.get()->expandStringBuffer(currentSize + diff, vals, numRows, rowSkip, getNumItems());
-            currentVal = vals[currentPos];
+            strBuf.get()->expandStringBuffer(currentSize + diff, values.get(), numRows, rowSkip, getNumItems());
+            currentVal = values[currentPos];
         }
-
         if(diff && (currentPos + 1 < getStrBuf()->numCells)) {
             const char* from = values[currentPos + 1];
             const char* to = from + diff;
             size_t length = strBuf->currentTop - from;
             memmove(const_cast<char*>(to), from, length);
         }
-        memcpy(const_cast<char*>(currentVal), value, strlen(value) + 1);
+        memcpy(const_cast<char*>(currentVal), stringToSet, valueLength + 1);
 
         if(diff){
             for(size_t offset = currentPos + 1; offset < getStrBuf()->numCells; offset++)
-                vals[offset] += diff; 
+                values[offset] += diff; 
         }
 
         strBuf->currentTop += diff;

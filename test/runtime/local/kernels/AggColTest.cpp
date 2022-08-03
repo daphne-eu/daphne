@@ -35,7 +35,11 @@ template<class DTRes, class DTArg>
 void checkAggCol(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
     DTRes * res = nullptr;
     aggCol<DTRes, DTArg>(opCode, res, arg, nullptr);
-    CHECK(*res == *exp);
+    if constexpr(std::is_same_v<DTRes, DenseMatrix<StringScalarType>>)
+        for(size_t val = 0; val < exp->getNumItems(); val++)
+            CHECK(strcmp(res->getValues()[val], exp->getValues()[val]) == 0);
+    else
+        CHECK(*res == *exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -86,17 +90,19 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(1, {0, 0, 0, 0});
+    auto m3 = genGivenVals<DenseMatrix<const char*>>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+    auto m3exp = genGivenVals<DenseMatrix<const char*>>(1, {"Austria", "Australia", "Canada", "Iceland"});
     
     checkAggCol(AggOpCode::MIN, m0, m0exp);
     checkAggCol(AggOpCode::MIN, m1, m1exp);
     checkAggCol(AggOpCode::MIN, m2, m2exp);
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m1exp);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m2exp);
+    checkAggCol(AggOpCode::MIN, m3, m3exp);
+
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -121,17 +127,20 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(1, {4, 2, 5, 9});
+
+    auto m3 = genGivenVals<DenseMatrix<const char*>>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+    auto m3exp = genGivenVals<DenseMatrix<const char*>>(1, {"Zambia", "Germany", "Zimbabwe", "Vatican"});
     
     checkAggCol(AggOpCode::MAX, m0, m0exp);
     checkAggCol(AggOpCode::MAX, m1, m1exp);
     checkAggCol(AggOpCode::MAX, m2, m2exp);
+    checkAggCol(AggOpCode::MAX, m3, m3exp);
     
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m0exp);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m1exp);
-    DataObjectFactory::destroy(m2);
-    DataObjectFactory::destroy(m2exp);
+DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (int64_t, double)) {

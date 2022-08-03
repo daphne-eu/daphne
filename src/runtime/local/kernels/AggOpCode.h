@@ -45,7 +45,7 @@ struct AggOpCodeUtils {
             case AggOpCode::STDDEV:
                 return false;
             default:
-                throw std::runtime_error("unsupported AggOpCode");
+                throw std::runtime_error("unsupported pure binary reduction AggOpCode");
         }
     }
     

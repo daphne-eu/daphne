@@ -31,23 +31,13 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
 
-template<class DT>
-void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const DT * exp) {
-    DT * res = nullptr;
-    ewBinaryMat<DT, DT, DT>(opCode, res, lhs, rhs, nullptr);
-    CHECK(*res == *exp);
-}
-
-template<typename VTRes>
-void checkEwBinaryStrMat(BinaryOpCode opCode, const DenseMatrix<StringScalarType> * lhs, 
-                        const DenseMatrix<StringScalarType> * rhs, const DenseMatrix<VTRes> * exp) {
-    DenseMatrix<VTRes> * res = nullptr;
-    ewBinaryMat<DenseMatrix<VTRes>, DenseMatrix<StringScalarType>, DenseMatrix<StringScalarType>>(opCode, res, lhs, rhs, nullptr);
-    if constexpr(std::is_same_v<VTRes, StringScalarType>){
-        for(size_t r = 0; r < exp->getNumRows(); r++)
-            for(size_t c = 0; c < exp->getNumCols(); c++)
-                CHECK(strcmp(res->get(r,c), exp->get(r,c)) == 0);
-    }
+template<class DTRes, class DTLhs, class DTRhs>
+void checkEwBinaryMat(BinaryOpCode opCode, const DTLhs * lhs, const DTRhs * rhs, const DTRes * exp) {
+    DTRes * res = nullptr;
+    ewBinaryMat<DTRes, DTLhs, DTRhs>(opCode, res, lhs, rhs, nullptr);
+    if constexpr(std::is_same_v<DTRes, DenseMatrix<StringScalarType>>)
+        for(size_t val = 0; val < exp->getNumItems(); val++)
+            CHECK(strcmp(res->getValues()[val], exp->getValues()[val]) == 0);
     else
         CHECK(*res == *exp);
 }
@@ -242,7 +232,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (VALUE_T
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<int>>(2, {0, 1, 0,  1, 1, 0,});
-    checkEwBinaryStrMat(BinaryOpCode::EQ, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::EQ, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -264,7 +254,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DenseMatrix), (VALUE_
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<int>>(2, {1, 0, 1,  0, 0, 1,});
-    checkEwBinaryStrMat(BinaryOpCode::NEQ, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::NEQ, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -286,7 +276,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DenseMatrix), (VALUE_T
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<int>>(2, {1, 0, 1,  0, 0, 0,});
-    checkEwBinaryStrMat(BinaryOpCode::LT, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::LT, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -308,7 +298,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DenseMatrix), (VALUE_T
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<int>>(2, {1, 1, 1,  1, 1, 0,});
-    checkEwBinaryStrMat(BinaryOpCode::LE, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::LE, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -330,7 +320,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DenseMatrix), (VALUE_T
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<int>>(2, {0, 0, 0,  0, 0, 1,});
-    checkEwBinaryStrMat(BinaryOpCode::GT, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::GT, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -352,7 +342,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DenseMatrix), (VALUE_T
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<int>>(2, {0, 1, 0,  1, 1, 1,});
-    checkEwBinaryStrMat(BinaryOpCode::GE, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::GE, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -378,7 +368,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DenseMatrix), (VALUE_
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "double",});
-    checkEwBinaryStrMat(BinaryOpCode::MIN, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::MIN, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -400,7 +390,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DenseMatrix), (VALUE_
     auto m4 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m5 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m6 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "triple",});
-    checkEwBinaryStrMat(BinaryOpCode::MAX, m4, m5, m6);
+    checkEwBinaryMat(BinaryOpCode::MAX, m4, m5, m6);
     DataObjectFactory::destroy(m4);
     DataObjectFactory::destroy(m5);
     DataObjectFactory::destroy(m6);
@@ -445,7 +435,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("concat"), TAG_KERNELS, (DenseMatrix), (VAL
     auto m1 = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34",  "90", "as", "triple",});
     auto m2 = genGivenVals<DenseMatrix<const char*>>(2, {"121", "23", "4",  "90", "as", "double",});
     auto m3 = genGivenVals<DenseMatrix<const char*>>(2, {"12121", "2323", "344",  "9090", "asas", "tripledouble",});
-    checkEwBinaryStrMat(BinaryOpCode::CONCAT, m1, m2, m3);
+    checkEwBinaryMat(BinaryOpCode::CONCAT, m1, m2, m3);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);

@@ -78,46 +78,55 @@ struct AggCol<DenseMatrix<VT>, DenseMatrix<VT>> {
             // for MEAN and STDDDEV, we need to sum
             func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
-        memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
+        if constexpr(std::is_same_v<VT, StringScalarType>)
+            for(size_t c = 0; c < numCols; c++)
+                res->set(0, c, valuesArg[c]);
+        else  
+            memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
         
         for(size_t r = 1; r < numRows; r++) {
             valuesArg += arg->getRowSkip();
             for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = func(valuesRes[c], valuesArg[c], ctx);
+                if constexpr(std::is_same_v<VT, StringScalarType>)
+                    res->set(0, c, func(valuesRes[c], valuesArg[c], ctx));
+                else 
+                    valuesRes[c] = func(valuesRes[c], valuesArg[c], ctx);
         }
-        
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             return;
-        
-        // The op-code is either MEAN or STDDEV.
-
-        for(size_t c = 0; c < numCols; c++)
-            valuesRes[c] /= numRows;
-
-        if(opCode != AggOpCode::STDDEV)
+        if constexpr(std::is_same_v<VT, StringScalarType>)
             return;
+        else{
+            // The op-code is either MEAN or STDDEV.
 
-        auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
-        VT * valuesT = tmp->getValues();
-        valuesArg = arg->getValues();
+            for(size_t c = 0; c < numCols; c++)
+                valuesRes[c] /= numRows;
 
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++) {
-                VT val = valuesArg[c] - valuesRes[c];
-                valuesT[c] = valuesT[c] + val * val;
+            if(opCode != AggOpCode::STDDEV)
+                return;
+
+            auto tmp = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, true);
+            VT * valuesT = tmp->getValues();
+            valuesArg = arg->getValues();
+
+            for(size_t r = 0; r < numRows; r++) {
+                for(size_t c = 0; c < numCols; c++) {
+                    VT val = valuesArg[c] - valuesRes[c];
+                    valuesT[c] = valuesT[c] + val * val;
+                }
+                valuesArg += arg->getRowSkip();
             }
-            valuesArg += arg->getRowSkip();
-        }
 
-        for(size_t c = 0; c < numCols; c++) {
-            valuesT[c] /= numRows;
-            valuesT[c] = sqrt(valuesT[c]);
-        }
+            for(size_t c = 0; c < numCols; c++) {
+                valuesT[c] /= numRows;
+                valuesT[c] = sqrt(valuesT[c]);
+            }
 
-        // TODO We could avoid copying by returning tmp and destroying res. But
-        // that might be wrong if res was not nullptr initially.
-        memcpy(valuesRes, valuesT, numCols * sizeof(VT));
-        DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
+            // TODO We could avoid copying by returning tmp and destroying res. But
+            // that might be wrong if res was not nullptr initially.
+            memcpy(valuesRes, valuesT, numCols * sizeof(VT));
+            DataObjectFactory::destroy<DenseMatrix<VT>>(tmp);
+        }
     }
 };
 
