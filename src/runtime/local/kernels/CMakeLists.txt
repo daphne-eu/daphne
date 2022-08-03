@@ -84,6 +84,8 @@ add_custom_command(
 
 list(APPEND LIBS DataStructures IO ProtoDataConverter ${OPENBLAS_LIBRARIES})
 
+find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
