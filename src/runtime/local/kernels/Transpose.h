@@ -61,8 +61,12 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
             res = arg->vectorTranspose();
         }
         else {
-            if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
+            if (res == nullptr){
+                if constexpr(std::is_same_v<VT, const char*>)
+                    res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false, arg->getStrBufSharedPtr()->getSize()); 
+                else
+                    res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
+            }
 
             const VT *valuesArg = arg->getValues();
             const size_t rowSkipArg = arg->getRowSkip();
@@ -70,7 +74,10 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
             for (size_t r = 0; r < numRows; r++) {
                 VT *valuesRes = res->getValues() + r;
                 for (size_t c = 0; c < numCols; c++) {
-                    *valuesRes = valuesArg[c];
+                    if constexpr(std::is_same_v<VT, const char*>)
+                        res->set(c, r, valuesArg[c]);
+                    else
+                        *valuesRes = valuesArg[c];
                     valuesRes += rowSkipRes;
                 }
                 valuesArg += rowSkipArg;
