@@ -450,6 +450,7 @@ print(y);     # error
 
 TODO: Maybe move block statement here, for consistency as ease of explanation.
 TODO: Mention that control flow statements (including block statements) can be nested arbitrarily.
+TODO: Indentations are optional, but are recommended for readability.
 
 ##### If-then-else
 
@@ -492,9 +493,78 @@ else
 
 **For-Loops**
 
+For-loops are used to iterate over the elements of a sequence of integers.
+The syntax of a for-loop is as follows:
+```
+for (var in start:end[:step])
+    body-statement
+```
+*var* must be a valid identifier and is assigned the values from *start* to *end* in increments of *step*.
+*start*, *end*, and *step* are expressions evaluating to a single number.
+*step* is optional and defaults to 1 if *end* is greater than *start*, or -1 otherwise.
+In that sense, for-loops can also be used to count backwards by setting *start* greater than *end*.
+The *body-statement* is executed for each value in the sequence, and within the *body-statement, this value is accessible via the read-only variable `var`.
+Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
+
+*Examples:*
+```
+for(i in 1:3)
+    print(i); # 1 2 3
+```
+```
+x = 0; y = 0;
+for(i in 10:1:-3) {
+    x = x + i;
+    y = y + 1;
+}
+print(x); # 22
+print(y); #  4
+```
+
 **While-Loops**
 
+While loops are used to execute a (block of) statement(s) as long as an arbitrary condition holds true.
+The syntax of a while-loop is as follows:
+```
+while (condition)
+    body-statement
+```
+*condition* is an expression returning a single value, and is evaluated before each iteration.
+If this value is `true` (when casted to value type `bool`, if necessary), the *body-statement* is executed, and the loop starts anew.
+Otherwise, the program continues after the loop.
+Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
+
+*Examples:*
+```
+i = 0;
+while(i < 10 && !converged) {
+    A = A @ B;
+    converged = sum(A);
+    i = i + 1;
+}
+```
+
 **Do-While-Loops**
+
+Do-while-loops are a variant of while-loops, which checks the condition after each iteration.
+Consequently, a do-while-loop always executes at least one iteration.
+The syntax of a do-while-loop is as follows:
+```
+do
+    body-statement
+while (condition);
+```
+The semicolon at the end is optional.
+Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
+
+*Examples:*
+```
+i = 5;
+do {
+    A = sqrt(A);
+    i = i - 1;
+} while (mean(A) > 100 && i > 0);
+```
 
 ### Functions
 
