@@ -34,7 +34,7 @@ size_t ValueTypeUtils::sizeOf(ValueTypeCode type) {
         case ValueTypeCode::UI64: return sizeof(uint64_t);
         case ValueTypeCode::F32: return sizeof(float);
         case ValueTypeCode::F64: return sizeof(double);
-        default: throw std::runtime_error("unknown value type code");
+        default: throw std::runtime_error("ValueTypeUtils::sizeOf: unknown value type code");
     }
 }
 
@@ -50,7 +50,7 @@ void ValueTypeUtils::printValue(std::ostream & os, ValueTypeCode type, const voi
         case ValueTypeCode::UI64: os << reinterpret_cast<const uint64_t *>(array)[pos]; break;
         case ValueTypeCode::F32: os << reinterpret_cast<const float  *>(array)[pos]; break;
         case ValueTypeCode::F64: os << reinterpret_cast<const double *>(array)[pos]; break;
-        default: throw std::runtime_error("unknown value type code");
+        default: throw std::runtime_error("ValueTypeUtils::printValue: unknown value type code");
     }
 }
 
@@ -71,6 +71,7 @@ template<> const std::string ValueTypeUtils::cppNameFor<uint32_t> = "uint32_t";
 template<> const std::string ValueTypeUtils::cppNameFor<uint64_t> = "uint64_t";
 template<> const std::string ValueTypeUtils::cppNameFor<float>  = "float";
 template<> const std::string ValueTypeUtils::cppNameFor<double> = "double";
+template<> const std::string ValueTypeUtils::cppNameFor<bool> = "bool";
 
 template<> const std::string ValueTypeUtils::irNameFor<int8_t>   = "si8";
 template<> const std::string ValueTypeUtils::irNameFor<int32_t>  = "si32";
@@ -91,7 +92,7 @@ const std::string ValueTypeUtils::cppNameForCode(ValueTypeCode type) {
         case ValueTypeCode::UI64: return cppNameFor<uint64_t>;
         case ValueTypeCode::F32: return cppNameFor<float>;
         case ValueTypeCode::F64: return cppNameFor<double>;
-        default: throw std::runtime_error("unknown value type code");
+        default: throw std::runtime_error("ValueTypeUtils::cppNameForCode: unknown value type code");
     }
 }
 
@@ -105,6 +106,6 @@ const std::string ValueTypeUtils::irNameForCode(ValueTypeCode type) {
         case ValueTypeCode::UI64: return irNameFor<uint64_t>;
         case ValueTypeCode::F32: return irNameFor<float>;
         case ValueTypeCode::F64: return irNameFor<double>;
-        default: throw std::runtime_error("unknown value type code");
+        default: throw std::runtime_error("ValueTypeUtils::irNameForCode: unknown value type code");
     }
 }

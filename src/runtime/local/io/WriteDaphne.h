@@ -214,32 +214,34 @@ struct WriteDaphne<Frame> {
 
 	for (size_t r=0; r < h.nbrows; r++) {
 		for (size_t c=0; c < h.nbcols; c++) { 
-		   switch (schema[c]) {
-			case ValueTypeCode::SI8:
-				f.write((char *)&(reinterpret_cast<int8_t *>(vals[c])[r]), sizeof(int8_t));
-				break;
-			case ValueTypeCode::SI32:
-				f.write((char *)&(reinterpret_cast<int32_t *>(vals[c])[r]), sizeof(int32_t));
-			        break;
-                        case ValueTypeCode::SI64:
-				f.write((char *)&(reinterpret_cast<int64_t *>(vals[c])[r]), sizeof(int64_t));
-                                break;
-                        case ValueTypeCode::UI8:
-				f.write((char *)&(reinterpret_cast<uint8_t *>(vals[c])[r]), sizeof(uint8_t));
-				break;
-                        case ValueTypeCode::UI32:
-				f.write((char *)&(reinterpret_cast<uint32_t *>(vals[c])[r]), sizeof(uint32_t));
-			       break;
-                        case ValueTypeCode::UI64:
-				f.write((char *)&(reinterpret_cast<uint64_t *>(vals[c])[r]), sizeof(uint64_t));
-				break;
-                        case ValueTypeCode::F32:
-				f.write((char *)&(reinterpret_cast<float *>(vals[c])[r]), sizeof(float));
-				break;
-                        case ValueTypeCode::F64:
-				f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]), sizeof(double));
-				break;
-		    }
+			switch (schema[c]) {
+				case ValueTypeCode::SI8:
+					f.write((char *)&(reinterpret_cast<int8_t *>(vals[c])[r]), sizeof(int8_t));
+					break;
+				case ValueTypeCode::SI32:
+					f.write((char *)&(reinterpret_cast<int32_t *>(vals[c])[r]), sizeof(int32_t));
+						break;
+				case ValueTypeCode::SI64:
+					f.write((char *)&(reinterpret_cast<int64_t *>(vals[c])[r]), sizeof(int64_t));
+					break;
+				case ValueTypeCode::UI8:
+					f.write((char *)&(reinterpret_cast<uint8_t *>(vals[c])[r]), sizeof(uint8_t));
+					break;
+				case ValueTypeCode::UI32:
+					f.write((char *)&(reinterpret_cast<uint32_t *>(vals[c])[r]), sizeof(uint32_t));
+					break;
+				case ValueTypeCode::UI64:
+					f.write((char *)&(reinterpret_cast<uint64_t *>(vals[c])[r]), sizeof(uint64_t));
+					break;
+				case ValueTypeCode::F32:
+					f.write((char *)&(reinterpret_cast<float *>(vals[c])[r]), sizeof(float));
+					break;
+				case ValueTypeCode::F64:
+					f.write((char *)&(reinterpret_cast<double *>(vals[c])[r]), sizeof(double));
+					break;
+				default:
+					throw std::runtime_error("WriteDaphne::apply: unknown value type code");
+			}
 		}
 
 	}

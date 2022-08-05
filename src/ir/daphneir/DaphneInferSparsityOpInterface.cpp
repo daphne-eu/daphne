@@ -57,6 +57,18 @@ double getSparsityOrUnknownFromScalar(Value v) {
 // Sparsity inference interface implementations
 // ****************************************************************************
 
+std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
+    auto argTy = arg().getType().dyn_cast<daphne::MatrixType>();
+    auto k = argTy.getNumRows();
+    auto sparsity = argTy.getSparsity();
+
+    if(argTy.getSparsity() == -1.0) {
+        sparsity = 1;
+    }
+
+    return {sparsity / k};
+}
+
 std::vector<double> daphne::MatMulOp::inferSparsity() {
     auto lhsTy = lhs().getType().dyn_cast<daphne::MatrixType>();
     auto rhsTy = rhs().getType().dyn_cast<daphne::MatrixType>();

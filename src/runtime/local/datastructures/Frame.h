@@ -147,7 +147,8 @@ class Frame : public Structure {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc]);
+            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc],
+                    std::default_delete<ColByteType []>());
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
         }

@@ -107,6 +107,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     # typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
         rp["type"]
+            [((rp["type"].rfind("::") + 2) if "::" in rp["type"] else 0):]
             .replace("const ", "")
             .replace(" **", "" if rp["isOutput"] else "_variadic")
             .replace(" *", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")

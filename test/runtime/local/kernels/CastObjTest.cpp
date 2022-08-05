@@ -294,3 +294,121 @@ TEMPLATE_PRODUCT_TEST_CASE("castObj, matrix to matrix, zero dim & dim mismatch",
     DataObjectFactory::destroy(res1, res2);
     DataObjectFactory::destroy(check1, check2);
 }
+
+TEMPLATE_TEST_CASE("CastObj CSRMatrix to DenseMatrix", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTArg = CSRMatrix<VT>;
+    using DTRes= DenseMatrix<VT>;
+    
+    auto m0 = genGivenVals<DTArg>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DTArg>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DTArg>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0, 1,
+    });
+
+    auto d0 = genGivenVals<DTRes>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d1 = genGivenVals<DTRes>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d2 = genGivenVals<DTRes>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0, 1,
+    });
+
+    DTRes * res0 = nullptr;
+    castObj<DTRes, DTArg>(res0, m0, nullptr);
+    DTRes * res1 = nullptr;
+    castObj<DTRes, DTArg>(res1, m1, nullptr);
+    DTRes * res2 = nullptr;
+    castObj<DTRes, DTArg>(res2, m2, nullptr);
+    
+    CHECK(*d0 == *res0);
+    CHECK(*d1 == *res1);
+    CHECK(*d2 == *res2);
+
+    DataObjectFactory::destroy(m0, d0, res0);
+    DataObjectFactory::destroy(m1, d1, res1);
+    DataObjectFactory::destroy(m2, d2, res2);
+}
+
+TEMPLATE_TEST_CASE("CastObj DenseMatrix to CSRMatrix", TAG_KERNELS, double, float, int64_t) {
+    using VT = TestType;
+    using DTRes = CSRMatrix<VT>;
+    using DTArg= DenseMatrix<VT>;
+    
+    auto m0 = genGivenVals<DTArg>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DTArg>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto m2 = genGivenVals<DTArg>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0, 1,
+    });
+
+    auto d0 = genGivenVals<DTRes>(4, {
+            0, 0, 0, 0, 0, 0,
+            0, 4, 0, 0, 0, 2,
+            0, 0, 0, 3, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d1 = genGivenVals<DTRes>(4, {
+            1, 2, 0, 0, 1, 3,
+            0, 1, 0, 2, 0, 3,
+            0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0,
+    });
+    auto d2 = genGivenVals<DTRes>(4, {
+            2, 0, 0, 0, 0, 0,
+            1, 0, 0, 0, 0, 4,
+            0, 0, 0, 0, 1, 1,
+            1, 0, 0, 0, 0, 1,
+    });
+
+    DTRes * res0 = nullptr;
+    castObj<DTRes, DTArg>(res0, m0, nullptr);
+    DTRes * res1 = nullptr;
+    castObj<DTRes, DTArg>(res1, m1, nullptr);
+    DTRes * res2 = nullptr;
+    castObj<DTRes, DTArg>(res2, m2, nullptr);
+    
+    CHECK(*d0 == *res0);
+    CHECK(*d1 == *res1);
+    CHECK(*d2 == *res2);
+
+    DataObjectFactory::destroy(m0, d0, res0);
+    DataObjectFactory::destroy(m1, d1, res1);
+    DataObjectFactory::destroy(m2, d2, res2);
+}

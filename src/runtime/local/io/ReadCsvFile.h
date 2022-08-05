@@ -306,6 +306,8 @@ template <> struct ReadCsvFile<Frame> {
           convertCstr(line + pos, &val_f64);
           reinterpret_cast<double *>(rawCols[col])[row] = val_f64;
           break;
+        default:
+          throw std::runtime_error("ReadCsvFile::apply: unknown value type code");
         }
 
         if (++col >= numCols) {

@@ -185,6 +185,7 @@ while ( converge != 1 ) #TODO !converge
 
         R = R; S = S; # TODO remove forward refs
         innerconverge = innerconverge; norm_R2 = norm_R2;
+        // TODO Why self-assignment?
         is_trust_boundary_reached =  is_trust_boundary_reached;
 
         if (norm_Snew2 <= delta2) {
@@ -192,7 +193,9 @@ while ( converge != 1 ) #TODO !converge
             R = R - HV * alpha;
             old_norm_R2 = norm_R2; 
             norm_R2 = sum (R ^ 2.0);
-            V = R +  V * (norm_R2 / old_norm_R2);
+            // TODO V is never used. We need to comment it out to prevent a
+            // vectorized pipeline with zero results (which we don't support yet).
+            //V = R +  V * (norm_R2 / old_norm_R2);
             innerconverge = as.si64(sqrt (norm_R2) <= psi * norm_Grad);
         } 
         else {

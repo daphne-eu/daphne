@@ -819,14 +819,20 @@ antlrcpp::Any SQLVisitor::visitOrderByClause(
         columnIdxs.push_back(utils.castSizeIf(idx));
         asc.push_back(utils.castBoolIf(boolean));
     }
-
+    mlir::Value returnFrame = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                    loc,
+                    builder.getBoolAttr(false)
+            )
+        );
     return static_cast<mlir::Value>(
         builder.create<mlir::daphne::OrderOp>(
             loc,
             currentFrame.getType().dyn_cast<mlir::daphne::FrameType>(),
             currentFrame,
             columnIdxs,
-            asc
+            asc,
+            returnFrame
         )
     );
 }
@@ -932,7 +938,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         currentFrame = addMatrixToCurrentFrame(matrix, newColumnName);
         return nullptr;
     }else{ //Get Column after Group
-        std::string newColumnNameAppended = newColumnName + "_" + getEnumLabelExt(ctx->func->getText());
+        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
         return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
     }
