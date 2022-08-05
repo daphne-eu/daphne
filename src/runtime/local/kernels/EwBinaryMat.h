@@ -76,10 +76,10 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++){
                     if constexpr(std::is_same_v<VTres, StringScalarType>){
-                        auto temporaryString = func(valuesLhs[c], valuesRhs[c], ctx);
-                        res->set(r,c, temporaryString);
+                        auto stringPtr = func(valuesLhs[c], valuesRhs[c], ctx);
+                        res->set(r,c, stringPtr);
                         if(opCode == BinaryOpCode::CONCAT)
-                            delete[] temporaryString;
+                            delete[] stringPtr;
                     } else
                         valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
                 }
@@ -94,10 +94,10 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++){
                     if constexpr(std::is_same_v<VTres, StringScalarType>){
-                        auto temporaryString = func(valuesLhs[c], valuesRhs[c], ctx);
-                        res->set(r,c, temporaryString);
+                        auto stringPtr = func(valuesLhs[c], valuesRhs[c], ctx);
+                        res->set(r,c, stringPtr);
                         if(opCode == BinaryOpCode::CONCAT)
-                            delete[] temporaryString;
+                            delete[] stringPtr;
                     } else
                         valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
                 }
@@ -110,10 +110,10 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
             for(size_t r = 0; r < numRowsLhs; r++) {
                 for(size_t c = 0; c < numColsLhs; c++){
                     if constexpr(std::is_same_v<VTres, StringScalarType>){
-                        auto temporaryString = func(valuesLhs[c], valuesRhs[0], ctx);
-                        res->set(r,c, temporaryString);
+                        auto stringPtr = func(valuesLhs[c], valuesRhs[0], ctx);
+                        res->set(r,c, stringPtr);
                         if(opCode == BinaryOpCode::CONCAT)
-                            delete[] temporaryString;
+                            delete[] stringPtr;
                     } else
                         valuesRes[c] = func(valuesLhs[c], valuesRhs[0], ctx);
                 }
