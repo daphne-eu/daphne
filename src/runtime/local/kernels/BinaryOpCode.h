@@ -44,7 +44,6 @@ enum class BinaryOpCode {
 
     // String-only.
     CONCAT,
-    LIKE,
     
 
     ISSYM,

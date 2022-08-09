@@ -151,17 +151,6 @@ struct EwBinarySca<BinaryOpCode::CONCAT, StringScalarType, StringScalarType, Str
     }
 };
 
-template<>
-struct EwBinarySca<BinaryOpCode::LIKE, bool, StringScalarType, StringScalarType> {
-    inline static bool apply(StringScalarType lhs, StringScalarType pattern, DCTX(ctx)) {
-        // const uint64_t lhsLength = strlen(lhs)+1; 
-        // const uint64_t patternLength = strlen(pattern)+1;
-        bool found = false;
-        // TODO: could take a while
-        return found;
-    }
-};
-
 #define MAKE_EW_BINARY_SCA(opCode, numericExpr, stringExpr) \
     template<typename TRes, typename TLhs, typename TRhs> \
     struct EwBinarySca<opCode, TRes, TLhs, TRhs> { \
