@@ -76,7 +76,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
         mlir::PassManager pm(&context_);
         pm.addPass(mlir::createCanonicalizerPass());
-        //pm.addPass(mlir::daphne::createPrintIRPass("IR after canonicalization:"));
+        if(userConfig_.explain_parsing_simplified)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing and some simplifications:"));
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         if(userConfig_.explain_sql)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));

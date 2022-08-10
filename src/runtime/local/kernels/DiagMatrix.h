@@ -21,6 +21,8 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
+#include <stdexcept>
+
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -71,6 +73,72 @@ struct DiagMatrix<DenseMatrix<VT>, DenseMatrix<VT>> {
             *valuesRes = *valuesArg;
             valuesArg += rowSkipArg;
             valuesRes += rowSkipRes + 1;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct DiagMatrix<CSRMatrix<VT>, DenseMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+        if(arg->getNumCols() != 1)
+            throw std::runtime_error("parameter arg must be a column-matrix");
+
+        const size_t numRowsCols = arg->getNumRows();
+        if(res==nullptr){
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRowsCols, numRowsCols, numRowsCols, false);
+        }
+
+        const VT * valuesArg = arg->getValues();
+        const size_t rowSkipArg = arg->getRowSkip();
+
+        VT * valuesRes = res->getValues();
+        size_t * colIdxsRes = res->getColIdxs();
+        size_t * rowOffsetsRes = res->getRowOffsets();
+
+        rowOffsetsRes[0] = 0;
+
+        for(size_t r = 0, pos = 0; r < numRowsCols; r++) {
+            if (*valuesArg) {
+	        valuesRes[pos] = *valuesArg;
+	        colIdxsRes[pos++] = r;
+	    }
+	    rowOffsetsRes[r + 1] = pos;
+            valuesArg += rowSkipArg;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
+// CSRMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct DiagMatrix<CSRMatrix<VT>, CSRMatrix<VT>> {
+    static void apply(CSRMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
+        if(arg->getNumCols() != 1)
+            throw std::runtime_error("parameter arg must be a column-matrix");
+
+        const size_t numRowsCols = arg->getNumRows();
+        if(res==nullptr){
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRowsCols, numRowsCols, numRowsCols, false);
+        }
+
+        VT * valuesRes = res->getValues();
+        size_t * colIdxsRes = res->getColIdxs();
+        size_t * rowOffsetsRes = res->getRowOffsets();
+
+	rowOffsetsRes[0] = 0;
+
+        for(size_t r = 0, pos = 0; r < numRowsCols; r++) {
+            if (arg->getNumNonZeros(r)) {
+	        valuesRes[pos] = *(arg->getValues(r));
+	        colIdxsRes[pos++] = r;
+	    }
+	    rowOffsetsRes[r + 1] = pos;
         }
     }
 };

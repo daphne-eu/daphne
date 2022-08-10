@@ -16,6 +16,7 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -123,4 +124,103 @@ TEST_CASE("ColBind - Frame", TAG_KERNELS) {
     DataObjectFactory::destroy(c4);
     DataObjectFactory::destroy(f01);
     DataObjectFactory::destroy(f234);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("ColBind", TAG_KERNELS, (CSRMatrix), (double, uint32_t)) {
+    using DT = TestType;
+    using VT = typename DT::VT;
+
+    size_t numRows = 4;
+    size_t numCols = 5;
+    size_t numNonZeros = 5;
+
+    auto m0 = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, true);
+    m0->set(1,1, VT(11.));
+    m0->set(2,1, VT(21.));
+    m0->set(2,3, VT(23.));
+    m0->set(3,3, VT(33.));
+    m0->set(3,4, VT(34.));
+    
+    DT * res = nullptr;
+    
+    SECTION("Normal on normal") {
+        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, 3, true);
+        m1->set(1,0, VT(10.));
+        m1->set(1,2, VT(12.));
+        m1->set(3,0, VT(30.));
+
+        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols*2, 8, true);
+        exp->set(1,1, VT(11.));
+        exp->set(2,1, VT(21.));
+        exp->set(2,3, VT(23.));
+        exp->set(3,3, VT(33.));
+        exp->set(3,4, VT(34.));
+
+        exp->set(1,0+numCols, VT(10.));
+        exp->set(1,2+numCols, VT(12.));
+        exp->set(3,0+numCols, VT(30.));
+
+        colBind<DT, DT, DT>(res, m0, m1, nullptr);
+        CHECK(*res == *exp);
+
+        DataObjectFactory::destroy(m1);
+        DataObjectFactory::destroy(exp);
+        DataObjectFactory::destroy(res);
+    }
+
+    SECTION("View on normal") {
+        size_t lowerBound = 1;
+        size_t upperBound = 3;
+        size_t rowsTake = upperBound - lowerBound;
+        
+        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lowerBound, upperBound);
+
+        auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols, 3, true);
+        m2->set(0,0, VT(10.));
+        m2->set(0,2, VT(12.));
+        m2->set(1,1, VT(21.));
+
+        auto exp = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols*2, 8, true);
+        exp->set(1-lowerBound,1, VT(11.));
+        exp->set(2-lowerBound,1, VT(21.));
+        exp->set(2-lowerBound,3, VT(23.));
+
+        exp->set(0,numCols, VT(10.));
+        exp->set(0,2+numCols, VT(12.));
+        exp->set(1,1+numCols, VT(21.));
+
+        colBind<DT, DT, DT>(res, m1, m2, nullptr);
+        CHECK(*res == *exp);
+
+        DataObjectFactory::destroy(m1);
+        DataObjectFactory::destroy(m2);
+        DataObjectFactory::destroy(exp);
+        DataObjectFactory::destroy(res);
+    }
+
+    SECTION("View on view") {
+        size_t lowerBound = 0;
+        size_t upperBound = 2;
+        size_t rowsTake = upperBound - lowerBound;
+        auto m1 = DataObjectFactory::create<CSRMatrix<VT>>(m0, lowerBound, upperBound);
+        auto m2 = DataObjectFactory::create<CSRMatrix<VT>>(m0, upperBound, rowsTake*2);
+
+        auto exp  = DataObjectFactory::create<CSRMatrix<VT>>(rowsTake, numCols*2, numNonZeros, true);
+        exp->set(1,1, VT(11.));
+
+        exp->set(2-rowsTake,1+numCols, VT(21.));
+        exp->set(2-rowsTake,3+numCols, VT(23.));
+        exp->set(3-rowsTake,3+numCols, VT(33.));
+        exp->set(3-rowsTake,4+numCols, VT(34.));
+
+        colBind<DT, DT, DT>(res, m1, m2, nullptr);
+        CHECK(*res == *exp);
+
+        DataObjectFactory::destroy(m1);
+        DataObjectFactory::destroy(m2);
+        DataObjectFactory::destroy(exp);
+        DataObjectFactory::destroy(res);
+    }
+
+    DataObjectFactory::destroy(m0);
 }

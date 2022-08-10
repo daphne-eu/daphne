@@ -25,10 +25,6 @@ message(STATUS "ANTLR4_JAR_LOCATION is ${ANTLR4_JAR_LOCATION}")
 
 include(GNUInstallDirs) # for ${CMAKE_INSTALL_LIBDIR}
 
-SET(antlr4-generator_DIR ${ANTLR4_RUNTIME_DIR}/run/usr/local/${CMAKE_INSTALL_LIBDIR}/cmake/antlr4-generator)
-SET(antlr4-runtime_DIR ${ANTLR4_RUNTIME_DIR}/run/usr/local/${CMAKE_INSTALL_LIBDIR}/cmake/antlr4-runtime)
-message(STATUS "antlr4-generator_DIR is ${antlr4-generator_DIR}")
-message(STATUS "antlr4-runtime_DIR is ${antlr4-runtime_DIR}")
 find_package(antlr4-generator REQUIRED)
 find_package(antlr4-runtime REQUIRED)
 

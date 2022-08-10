@@ -1,6 +1,10 @@
 # Building Daphne
 
+<<<<<<< HEAD
 The DAPHNE project provides a full-fledged build script. After cloning it does everything from dependency setup to 
+=======
+The DAPHNE project provides a full-fledged build script. After cloning, it does everything from dependency setup to 
+>>>>>>> main
 generation of the executable.
 
 ### What does the build script do? (simplified)
@@ -11,8 +15,12 @@ generation of the executable.
 
 ### How long does a build take?
 
+<<<<<<< HEAD
 The first run will take a while, due to long compilation times of the dependencies. But they only have to be compiled 
 once (except updates).
+=======
+The first run will take a while, due to long compilation times of the dependencies (~40 minutes on a 12 vcore laptop, ~10 minutes on a 128 vcore cluster node). But they only have to be compiled once (except updates).
+>>>>>>> main
 Following builds only take a few seconds/minutes.
 
 Contents:
@@ -20,9 +28,12 @@ Contents:
  - [Extension of the build script](#2-extension)
 
 
+<<<<<<< HEAD
 
 
 
+=======
+>>>>>>> main
 --- 
 ## 1. Usage of the build script
 
@@ -36,7 +47,11 @@ The default command to build the default target **daphne**.
 ./build.sh
 ```
 
+<<<<<<< HEAD
 Print the cli build help page. This also shows all of the following options.
+=======
+Print the cli build help page. This also shows all the following options.
+>>>>>>> main
 
 ```bash
 ./build.sh --help
@@ -55,14 +70,23 @@ For example the following builds the main test target.
 
 ### Clean
 
+<<<<<<< HEAD
 Clean all build directories, i.e. the daphne build dir in `<project_root>/build` and build directories of the dependencies in 
 `<project_root>/thirdparty/<dep>/<path to build folder>`:
+=======
+Clean all build directories, i.e., the daphne build dir `<project_root>/build` and the build directory of the dependencies 
+`<project_root>/thirdparty/build`:
+>>>>>>> main
 
 ```bash
 ./build.sh --clean
 ```
 
+<<<<<<< HEAD
 Clean all download and build directories, i.e. `<project_root>/build` and `<project_root>/thirdparty/*`
+=======
+Clean all download and build directories, i.e., `<project_root>/build`, `<project_root>/thirdparty/installed`, `<project_root>/thirdparty/build`, `<project_root>/thirdparty/sources`, and `<project_root>/thirdparty/download-cache`:
+>>>>>>> main
 
 ```bash
 ./build.sh --cleanAll
@@ -70,6 +94,7 @@ Clean all download and build directories, i.e. `<project_root>/build` and `<proj
 ### Options
 All possible options for the build script:
 
+<<<<<<< HEAD
 | Option             | Effect |
 |--------------------| ------- |
 | -h, --help         | Print the help page |
@@ -78,6 +103,18 @@ All possible options for the build script:
 | --target \<target> | Build specific target |
 | -nf, --no-fancy    | Disables colorized output |
 | -y, --yes          | Accept prompt (e.g. when executing the clean command) |
+=======
+| Option             | Effect                                                     |
+|--------------------|------------------------------------------------------------|
+| -h, --help         | Print the help page                                        |
+| --clean            | Clean build directories                                    |
+| --cleanAll         | Clean build directories and download directories           |
+| --target \<target> | Build specific target                                      |
+| -nf, --no-fancy    | Disable colorized output                                  |
+| -y, --yes          | Accept prompt (e.g., when executing the clean command)      |
+| --cuda             | Compile with support for GPU operations using the CUDA SDK |
+| --debug            | Compile the daphne binary with debug symbols               |
+>>>>>>> main
 
 
 ## 2. Extension
@@ -88,15 +125,25 @@ The build script is divided into segments, visualized by
 # Segment name
 #******************************************************************************
 ```
+<<<<<<< HEAD
 Each segment should only contain functionality, related to the segment name.
+=======
+Each segment should only contain functionality related to the segment name.
+>>>>>>> main
 
 The following list contains a rough overview over the segments and the concrete functions or functionality done here. 
 1. Help message
    1. **printHelp()** // prints help message
 2. Build message helper
+<<<<<<< HEAD
    1. **daphne_msg(** [-t \<timeframe>] \<message> **)** // prints a status message in DAPHNE style; optional timeframe for animated output
    2. **printableTimestamp(** \<timestamp> **)** // converts a unix epoch timestamp into a human readable string (e.g. 5min 20s 100ms)
    3. **printLogo(** [-t \<timeframe>]**)** // prints a DAPHNE logo to the console
+=======
+   1. **daphne_msg(** \<message> **)** // prints a status message in DAPHNE style
+   2. **printableTimestamp(** \<timestamp> **)** // converts a unix epoch timestamp into a human readable string (e.g., 5min 20s 100ms)
+   3. **printLogo()** // prints a DAPHNE logo to the console
+>>>>>>> main
 3. Clean build directories
    1. **clean(** \<array ref dirs> \<array ref files> **)** // removes all given directories (1. parameter) and all given files (2. parameter) from disk
    2. **cleanBuildDirs()** // cleans build dirs (daphne and dependency build dirs)
@@ -104,6 +151,7 @@ The following list contains a rough overview over the segments and the concrete 
 4. Create / Check Indicator-files
    1. **dependency_install_success(** \<dep> **)** // used after successful build of a dependency; creates related indicator file 
    2. **dependency_download_success(** \<dep> **)** // used after successful download of a dependency; creates related indicator file
+<<<<<<< HEAD
    3. **is_dependency_installed(** \<dep> **)** // checks if dependency is already installed/build successfully  
    4. **is_dependency_downloaded(** \<dep> **)** // checks if dependency is already downloaded successfully
 5. Set some paths
@@ -122,6 +170,32 @@ The following list contains a rough overview over the segments and the concrete 
 
 ### Adding a dependency
 1. Create a new subsegment in segment 7.
+=======
+   3. **is_dependency_installed(** \<dep> **)** // checks if dependency is already installed/built successfully
+   4. **is_dependency_downloaded(** \<dep> **)** // checks if dependency is already downloaded successfully
+5. Version configuration
+   1. Versions of the software dependencies are configured here
+6. Set some paths
+   1. Definition of project related paths
+   2. Configuration of path prefixes. For example all build directories are prefixed with `buildPrefix`. If fast storage 
+      is available on the system, build directories could be redirected with this central configuration.
+7. Parse arguments
+   1. Parsing
+   2. Updating git submodules
+8. Download and install third-party material if necessary
+   1. Antlr
+   2. catch2
+   3. OpenBLAS
+   4. nlohmannjson
+   5. abseil-cpp - Required by gRPC. Compiled separately to apply a patch.
+   6. gRPC
+   7. MLIR
+9. Build DAPHNE target
+   1. Compilation of the DAPHNE-target ('daphne' is default)
+
+### Adding a dependency
+1. Create a new subsegment in segment 8.
+>>>>>>> main
 2. Define needed dependency variables
    1. DirName
    2. Version
@@ -130,21 +204,44 @@ The following list contains a rough overview over the segments and the concrete 
    5. etc.
 3. Download the dependency, encased by:
     ```
+<<<<<<< HEAD
    dep_dirname="<dep_name>"
    dep_version="<dep_version>"
     if ! is_dependency_downloaded "<dep_name>_v${dep_version}"; then
    
         # do your stuff here
    
+=======
+    dep_dirname="<dep_name>"
+    dep_version="<dep_version>"
+    if ! is_dependency_downloaded "<dep_name>_v${dep_version}"; then
+    
+        # do your stuff here
+    
+>>>>>>> main
         dependency_download_success "<dep_name>_v${dep_version}"
     fi
     ```
 4. Install the dependency (if necessary), encased by:
     ```
     if ! is_dependency_installed "<dep_name>_v${dep_version}"; then
+<<<<<<< HEAD
    
         # do your stuff here
    
         dependency_install_success "<dep_name>_v${dep_version}"
     fi
     ```
+=======
+    
+        # do your stuff here
+    
+        dependency_install_success "<dep_name>_v${dep_version}"
+    fi
+    ```
+5. Define a flag for the build script if your dependency is optional or poses unnecessary 
+   overhead for users (e.g., CUDA is optional as the CUDA SDK is a considerably sized package that only owners of Nvidia hardware would want to install).
+
+   See section 7 about argument parsing. Quick guide: define a variable and its default value and add an item to the argument handling loop.
+
+>>>>>>> main

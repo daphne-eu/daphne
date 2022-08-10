@@ -35,8 +35,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
 //try {
     checkAnyUnexpectedKeys(jf, filename);   // raise an error if the config JSON file contains any unexpected keys
 
-    if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA))
-        config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
+        config.use_cuda = jf.at(DaphneConfigJsonParams::USE_CUDA_).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_VECTORIZED_EXEC))
         config.use_vectorized_exec = jf.at(DaphneConfigJsonParams::USE_VECTORIZED_EXEC).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_OBJ_REF_MGNT))
@@ -53,6 +53,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_llvm = jf.at(DaphneConfigJsonParams::EXPLAIN_LLVM).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING))
         config.explain_parsing = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED))
+        config.explain_parsing_simplified = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE))
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))

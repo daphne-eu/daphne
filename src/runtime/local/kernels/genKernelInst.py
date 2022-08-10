@@ -79,7 +79,7 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
 
     # The function wrapping the generated kernel instantiation always has
     # the return type void. If the considered kernel returns a scalar value,
-    # we prepend an additional run-time parameter. 
+    # we prepend an additional run-time parameter.
     extendedRuntimeParams = [
         {"name": DEFAULT_NEWRESPARAM, "type": "{} *".format(returnType), "isOutput": True}
     ] if (returnType != "void") else []
@@ -107,9 +107,10 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
     # typesForName = "__".join([("{}_{}".format(tv[0], tv[1]) if isinstance(tv, list) else tv) for tv in templateValues])
     typesForName = "__".join([
         rp["type"]
+            [((rp["type"].rfind("::") + 2) if "::" in rp["type"] else 0):]
             .replace("const ", "")
             .replace(" **", "" if rp["isOutput"] else "_variadic")
-            .replace(" *", "")
+            .replace(" *", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")
             .replace("& ", "")
             .replace("<", "_").replace(">", "")
         for rp in extendedRuntimeParams

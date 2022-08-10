@@ -25,7 +25,7 @@
  * configuration.
  */
 struct DaphneConfigJsonParams {
-    inline static const std::string USE_CUDA = "use_cuda";
+    inline static const std::string USE_CUDA_ = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
@@ -35,6 +35,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_KERNELS = "explain_kernels";
     inline static const std::string EXPLAIN_LLVM = "explain_llvm";
     inline static const std::string EXPLAIN_PARSING = "explain_parsing";
+    inline static const std::string EXPLAIN_PARSING_SIMPLIFIED = "explain_parsing_simplified";
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
@@ -49,7 +50,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string LIBRARY_PATHS = "library_paths";
 
     inline static const std::string JSON_PARAMS[] = {
-            USE_CUDA,
+            USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
             CUDA_FUSE_ANY,
@@ -58,6 +59,7 @@ struct DaphneConfigJsonParams {
             EXPLAIN_KERNELS,
             EXPLAIN_LLVM,
             EXPLAIN_PARSING,
+            EXPLAIN_PARSING_SIMPLIFIED,
             EXPLAIN_PROPERTY_INFERENCE,
             EXPLAIN_SQL,
             EXPLAIN_VECTORIZED,

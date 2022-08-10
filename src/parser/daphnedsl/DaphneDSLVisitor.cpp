@@ -18,6 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <parser/ScopedSymbolTable.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarLexer.h"
@@ -901,6 +902,137 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
     
     throw std::runtime_error("unexpected op symbol");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprContext * ctx) {
+    mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    mlir::OpBuilder oldBuilder = builder;
+
+    // Generate the operations for the then-block.
+    mlir::Block thenBlock;
+    builder.setInsertionPointToEnd(&thenBlock);
+    mlir::Value valThen = utils.valueOrError(visit(ctx->thenExpr));
+
+    // Generate the operations for the else-block
+    mlir::Block elseBlock;
+    builder.setInsertionPointToEnd(&elseBlock);
+    mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
+
+    mlir::Type resultType;
+    if(valThen.getType() != valElse.getType())
+        // TODO We could try to cast the types.
+        throw std::runtime_error("type missmatch");
+        
+    resultType = valThen.getType();
+
+    // Create yield-operations in both branches.
+    builder.setInsertionPointToEnd(&thenBlock);
+    builder.create<mlir::scf::YieldOp>(loc, valThen);
+    builder.setInsertionPointToEnd(&elseBlock);
+    builder.create<mlir::scf::YieldOp>(loc, valElse);
+    
+    // Restore the old state of the builder.
+    builder = oldBuilder;
+    
+    // Helper functions to move the operations in the two blocks created above
+    // into the actual branches of the if-operation.
+    auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), thenBlock.getOperations());
+    };
+    auto insertElseBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
+    };
+
+    auto ifOp = builder.create<mlir::scf::IfOp>(
+        loc,
+        resultType,
+        cond,
+        insertThenBlockDo,
+        insertElseBlockDo
+    );
+    
+    return static_cast<mlir::Value>(ifOp.results()[0]);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
+    if(!ctx->literal().size())
+        throw std::runtime_error("can't infer type from an empty matrix");
+
+    mlir::Location loc = utils.getLoc(ctx->start);
+    mlir::Value currentValue = utils.valueOrError(visitLiteral(ctx->literal(0)));
+    mlir::Value result;
+    mlir::Type valueType = currentValue.getType();
+
+    // TODO: extracting primitives is borrowed from getConstantInt()/getConstantFloat()/.. in DaphneInferShapeOpInterface.cpp, which 
+    // is itself a workaround to later become a central utility. Do not forget to change it here as well.
+
+    // TODO Reduce the code duplication in these cases.
+    if(currentValue.getType().isSignedInteger(64)){
+        std::shared_ptr<int64_t[]> vals = std::shared_ptr<int64_t[]>(new int64_t[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != valueType)
+                throw std::runtime_error("matrix of elements of different types");
+            
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto intAttr = co.value().dyn_cast<mlir::IntegerAttr>())
+                    vals.get()[i] = intAttr.getValue().getLimitedValue();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(  
+                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+                        builder.create<mlir::daphne::ConstantOp>(loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                )
+        );
+    }
+    else if(currentValue.getType().isF64()){
+        std::shared_ptr<double[]> vals = std::shared_ptr<double[]>(new double[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != valueType)
+                throw std::runtime_error("matrix of elements of different types");
+
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto floatAttr = co.value().dyn_cast<mlir::FloatAttr>())
+                    vals.get()[i] = floatAttr.getValue().convertToDouble();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(  
+                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+                        builder.create<mlir::daphne::ConstantOp>(loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                )
+        );
+    }
+    else if(currentValue.getType().isSignlessInteger()){
+        std::shared_ptr<bool[]> vals = std::shared_ptr<bool[]>(new bool[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != valueType)
+                throw std::runtime_error("matrix of elements of different types");
+
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto boolAttr = co.value().dyn_cast<mlir::BoolAttr>())
+                    vals.get()[i] = boolAttr.getValue();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(  
+                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+                        builder.create<mlir::daphne::ConstantOp>(loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                )
+        );
+    }
+    else
+        throw std::runtime_error("invalid value type for matrix literal");
+
+    return result;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {

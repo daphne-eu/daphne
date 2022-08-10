@@ -15,10 +15,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_PARSER_CONFIG_CONFIGPARSER_H
-#define SRC_PARSER_CONFIG_CONFIGPARSER_H
-
-#include "../../../thirdparty/nlohmannjson/json.hpp"
+#pragma once
+#include <nlohmannjson/json.hpp>
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <api/cli/DaphneUserConfig.h>
 #include <string>
@@ -48,5 +46,3 @@ private:
     static bool keyExists(const nlohmann::json& j, const std::string& key);
     static void checkAnyUnexpectedKeys(const nlohmann::basic_json<>& j, const std::string& filename);
 };
-
-#endif

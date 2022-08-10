@@ -113,3 +113,32 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
 }
+
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
+    using DT = TestType;
+    
+    auto m0 = genGivenVals<DT>(3, {
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+        0, 0, 0, 0,
+    });
+    auto m1 = genGivenVals<DT>(3, {
+        4, 6, 3, 9,
+        2, 2, 8, 9,
+        4, 4, 5, 4,
+    });
+    auto m2 = genGivenVals<DT>(3, {
+        4, 0, 0, 9,
+        0, 6, 0, 0,
+        0, 0, 5, 0,
+    });
+    
+    checkAggAll(AggOpCode::MEAN, m0, 0);
+    checkAggAll(AggOpCode::MEAN, m1, 5);
+    checkAggAll(AggOpCode::MEAN, m2, 2);
+    
+    DataObjectFactory::destroy(m0);
+    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(m2);
+}

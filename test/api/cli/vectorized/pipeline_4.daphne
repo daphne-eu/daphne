@@ -1,0 +1,10 @@
+// Using an intermediate within a pipeline: Cannot fuse together.
+
+m = fill(1.0, 3, 3);
+
+x = m + m;
+if(true)
+    print(x);
+y = x + m;
+
+print(y);
