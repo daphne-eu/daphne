@@ -29,14 +29,14 @@
 
 #include <ir/daphneir/Daphne.h>
 
-enum class CompareOperation : uint32_t {
-  Equal = 1,
-  LessThan = 2,
-  LessEqual = 3,
-  GreaterThan = 4,
-  GreaterEqual = 5,
-  NotEqual = 6,
-};
+/**enum class CompareOperation{
+  Equal,
+  LessThan,
+  LessEqual,
+  GreaterThan,
+  GreaterEqual,
+  NotEqual,
+};**/
 
 /// later use this CompareOperation Enum
 //using mlir::daphne::CompareOperation;
@@ -46,11 +46,17 @@ template<class DTRes, class DTIn>
 class Select {
   public:
     static void apply(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation cmp, uint64_t selValue) = delete;
+    static void apply(DTRes * & res, const DTIn * in, CompareOperation cmp, uint64_t selValue) = delete;
 };
 
 template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void select(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
     Select<DTRes, DTIn>::apply(res, in, inOn, cmp, selValue);
+}
+
+template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
+void select(DTRes * & res, const DTIn * in, CompareOperation cmp, uint64_t selValue) {
+    Select<DTRes, DTIn>::apply(res, in, cmp, selValue);
 }
 
 template<>
@@ -157,4 +163,181 @@ class Select<Frame, Frame> {
         }
 
     };
+
+template<>
+class Select<DenseMatrix<uint64_t>, Frame> {
+public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
+    static void apply(DenseMatrix<uint64_t> * & res, const Frame * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
+        auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(inOn)));
+        const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), colData);
+
+        const morphstore::column<morphstore::uncompr_f> * selectPos;
+
+        switch (cmp) {
+            case CompareOperation::Equal:
+
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::equal,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::LessThan:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::less,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::LessEqual:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::lessequal,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::GreaterThan:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::greater,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::GreaterEqual:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::greaterequal,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::NotEqual:
+                auto smallerPos = morphstore::select<
+                        ve,
+                        vectorlib::less,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                auto greaterPos = morphstore::select<
+                        ve,
+                        vectorlib::greater,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+
+                selectPos = morphstore::merge_sorted<ve,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f>(smallerPos, greaterPos);
+                delete smallerPos, delete greaterPos;
+                break;
+        }
+
+        DenseMatrix<uint64_t> * bitmap = DataObjectFactory::create<DenseMatrix<uint64_t>>(in->getNumRows(), 1, true);
+
+        const uint64_t * const data = selectPos->get_data();
+
+        for (uint64_t i = 0; i < selectPos->get_count_values(); ++i) {
+            bitmap->set(*(data+i), 0, 1);
+        }
+
+        res = bitmap;
+
+        delete selectPos, delete selectCol;
+    }
+
+};
+
+template<>
+class Select<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>> {
+public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
+    static void apply(DenseMatrix<uint64_t> * & res, const DenseMatrix<uint64_t> * in, CompareOperation cmp, uint64_t selValue) {
+        const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), in->getValues());
+
+        const morphstore::column<morphstore::uncompr_f> * selectPos;
+
+        switch (cmp) {
+            case CompareOperation::Equal:
+
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::equal,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::LessThan:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::less,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::LessEqual:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::lessequal,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::GreaterThan:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::greater,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::GreaterEqual:
+                selectPos = morphstore::select<
+                        ve,
+                        vectorlib::greaterequal,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                break;
+            case CompareOperation::NotEqual:
+                auto smallerPos = morphstore::select<
+                        ve,
+                        vectorlib::less,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+                auto greaterPos = morphstore::select<
+                        ve,
+                        vectorlib::greater,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f
+                >(selectCol, selValue);
+
+                selectPos = morphstore::merge_sorted<ve,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f,
+                        morphstore::uncompr_f>(smallerPos, greaterPos);
+                delete smallerPos, delete greaterPos;
+                break;
+        }
+
+        DenseMatrix<uint64_t> * bitmap = DataObjectFactory::create<DenseMatrix<uint64_t>>(in->getNumRows(), 1, true);
+
+        const uint64_t * const data = selectPos->get_data();
+
+        for (uint64_t i = 0; i < selectPos->get_count_values(); ++i) {
+            bitmap->set(*(data+i), 0, 1);
+        }
+
+        res = bitmap;
+
+        delete selectPos, delete selectCol;
+    }
+
+};
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MORPHSTORE_SELECT_H

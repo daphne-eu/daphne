@@ -48,8 +48,16 @@ int main() {
     long long time_unaligned_join_25 = 0;
     long long time_aligned_join_100 = 0;
     long long time_unaligned_join_100 = 0;
+    long long time_aligned_select_500_avx = 0;
+    long long time_unaligned_select_500_avx = 0;
+    long long time_aligned_select_100k_avx = 0;
+    long long time_unaligned_select_100k_avx = 0;
+    long long time_aligned_join_25_avx = 0;
+    long long time_unaligned_join_25_avx = 0;
+    long long time_aligned_join_100_avx = 0;
+    long long time_unaligned_join_100_avx = 0;
 
-    //using ve = vectorlib::avx512<vectorlib::v512<uint64_t> >;
+    using ve_avx = vectorlib::avx512<vectorlib::v512<uint64_t>>;
     using ve = vectorlib::scalar<vectorlib::v64<uint64_t>>;
 
     size_t dataCount_500 = 50 * 1000 * 1000;
@@ -127,6 +135,16 @@ int main() {
         delete result;
     }
 
+    for (size_t i = 0; i < loops; ++i) {
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::select<ve_avx, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column1_500,
+                                                                                                             selectValue_500[i]);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        time_aligned_select_500_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
     loops = 100000;
     auto selectValue_100k = new size_t[loops];
     for(size_t i = 0; i < loops; ++i) {
@@ -143,7 +161,19 @@ int main() {
         delete result;
     }
 
+    for (size_t i = 0; i < loops; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::select<ve_avx, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column1_100k,
+                                                                                                             selectValue_100k[i]);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        time_aligned_select_100k_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
     loops = 25;
+
     for (size_t i = 0; i < loops; ++i) {
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -156,7 +186,20 @@ int main() {
         delete result;
     }
 
+    for (size_t i = 0; i < loops; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::semi_join<ve_avx,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f>(column2_25, column1_25);
+        auto end = std::chrono::high_resolution_clock::now();
+        time_aligned_join_25_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
     loops = 100;
+
     for (size_t i = 0; i < loops; ++i) {
 
         auto start = std::chrono::high_resolution_clock::now();
@@ -166,6 +209,18 @@ int main() {
                 morphstore::uncompr_f>(column2_100, column1_100);
         auto end = std::chrono::high_resolution_clock::now();
         time_aligned_join_100 += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
+    for (size_t i = 0; i < loops; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::semi_join<ve_avx,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f>(column2_100, column1_100);
+        auto end = std::chrono::high_resolution_clock::now();
+        time_aligned_join_100_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         delete result;
     }
 
@@ -233,6 +288,16 @@ int main() {
         delete result;
     }
 
+    for (size_t i = 0; i < loops ; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::select<ve_avx, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column_1_500, selectValue_500[i]);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        time_unaligned_select_500_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
     loops = 100000;
     for (size_t i = 0; i < loops ; ++i) {
 
@@ -241,6 +306,16 @@ int main() {
 
         auto end = std::chrono::high_resolution_clock::now();
         time_unaligned_select_100k += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
+    for (size_t i = 0; i < loops ; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::select<ve_avx, vectorlib::equal, morphstore::uncompr_f, morphstore::uncompr_f>(column_1_100k, selectValue_100k[i]);
+
+        auto end = std::chrono::high_resolution_clock::now();
+        time_unaligned_select_100k_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
         delete result;
     }
 
@@ -257,6 +332,18 @@ int main() {
         delete result;
     }
 
+    for (size_t i = 0; i < loops; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::semi_join<ve_avx,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f>(column_2_25, column_1_25);
+        auto end = std::chrono::high_resolution_clock::now();
+        time_unaligned_join_25_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
     loops = 100;
     for (size_t i = 0; i < loops; ++i) {
 
@@ -270,12 +357,25 @@ int main() {
         delete result;
     }
 
+    for (size_t i = 0; i < loops; ++i) {
+
+        auto start = std::chrono::high_resolution_clock::now();
+        auto result = morphstore::semi_join<ve_avx,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f,
+                morphstore::uncompr_f>(column_2_100, column_1_100);
+        auto end = std::chrono::high_resolution_clock::now();
+        time_unaligned_join_100_avx += std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        delete result;
+    }
+
     std::ofstream out;
     out.open("results_otfly_scalar.txt", std::ofstream::out | std::ofstream::app);
     if (out.fail())
     {
         std::cout << "Failed to open outputfile.\n";
     }
+
     out << "Elapsed time in milliseconds with alignment for 500 Loops Select: "
         << time_aligned_select_500 / 1000 / 1000
         << " ms" << std::endl;
@@ -297,14 +397,45 @@ int main() {
 
     out << "Elapsed time in milliseconds without alignment for 25 Loops LeftSemiJoin: "
         << time_unaligned_join_25 / 1000 / 1000
-        << " ms" << std::endl << std::endl;
+        << " ms" << std::endl;
 
     out << "Elapsed time in milliseconds with alignment for 100 Loops LeftSemiJoin: "
-        << time_aligned_join_25 / 1000 / 1000
+        << time_aligned_join_100 / 1000 / 1000
         << " ms" << std::endl;
 
     out << "Elapsed time in milliseconds without alignment for 100 Loops LeftSemiJoin: "
-        << time_unaligned_join_25 / 1000 / 1000
+        << time_unaligned_join_100 / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds with alignment for 500 Loops Select: "
+        << time_aligned_select_500_avx / 1000 / 1000
+        << " ms" << std::endl;
+    out << "AVX Elapsed time in milliseconds without alignment for 500 Loops Select: "
+        << time_unaligned_select_500_avx / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds with alignment for 100k Loops Select: "
+        << time_aligned_select_100k_avx / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds without alignment for 100k Loops Select: "
+        << time_unaligned_select_100k_avx / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds with alignment for 25 Loops LeftSemiJoin: "
+        << time_aligned_join_25_avx / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds without alignment for 25 Loops LeftSemiJoin: "
+        << time_unaligned_join_25_avx / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds with alignment for 100 Loops LeftSemiJoin: "
+        << time_aligned_join_100_avx / 1000 / 1000
+        << " ms" << std::endl;
+
+    out << "AVX Elapsed time in milliseconds without alignment for 100 Loops LeftSemiJoin: "
+        << time_unaligned_join_100_avx / 1000 / 1000
         << " ms" << std::endl << std::endl;
     out.close();
     return 0;

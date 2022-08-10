@@ -34,6 +34,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstring>
+#include <new>
 
 /**
  * @brief A data structure with an individual value type per column.
@@ -131,7 +132,9 @@ class Frame : public Structure {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc]);
+            // Align the data to enable processing with vector extensions. Should be removed when a
+            // memory manager is implemented.
+            this->columns[i] = std::shared_ptr<ColByteType>(new (std::align_val_t(64)) ColByteType[sizeAlloc]);
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
         }
