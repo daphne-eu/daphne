@@ -41,7 +41,7 @@ public:
     static void apply(DTRes * & res, const DTIn * inLhs, const DTIn inRhs, const char * inOnLeft, const char * inOnRight, CalcOperation calc) = delete;
 };
 
-template<class DTRes, class DTIn>
+template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
 void calc(DTRes * & res, const DTIn * inLhs, const DTIn * inRhs, const char * inOnLeft, const char * inOnRight, CalcOperation calc) {
     Calc<DTRes, DTIn>::apply(res, inLhs, inRhs, inOnLeft, inOnRight, calc);
 }
@@ -49,6 +49,7 @@ void calc(DTRes * & res, const DTIn * inLhs, const DTIn * inRhs, const char * in
 template<>
 class Calc<Frame, Frame> {
 public:
+    template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
     static void apply(Frame * & res, const Frame * inLhs, const Frame * inRhs, const char * inOnLeft, const char * inOnRight, CalcOperation calc) {
         assert((inLhs->getNumRows() == inRhs->getNumRows()) && "number of input rows not the same");
 
@@ -57,8 +58,6 @@ public:
 
         auto colDataRight = static_cast<uint64_t const *>(inRhs->getColumnRaw(inRhs->getColumnIdx(inOnRight)));
         const morphstore::column<morphstore::uncompr_f> * const opColRight = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * inRhs->getNumRows(), colDataRight);
-
-        using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
 
         morphstore::column<morphstore::uncompr_f> *result;
 

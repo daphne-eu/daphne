@@ -17,6 +17,9 @@
 #ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 #define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
 
+#define is_aligned(POINTER, BYTE_COUNT) \
+    (((uintptr_t)(const void *)(POINTER)) % (BYTE_COUNT) == 0)
+
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
