@@ -16,6 +16,9 @@
 
 #pragma once
 
+#define is_aligned(POINTER, BYTE_COUNT) \
+    (((uintptr_t)(const void *)(POINTER)) % (BYTE_COUNT) == 0)
+
 #include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
@@ -50,7 +53,7 @@ class DenseMatrix : public Matrix<ValueType>
     
     size_t rowSkip;
     std::shared_ptr<ValueType[]> values{};
-    
+
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
     
@@ -203,7 +206,7 @@ public:
             this->mdo.setLatest(id);
         return ptr;
     }
-    
+
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
     }
@@ -296,7 +299,7 @@ struct CharBuf
     ~CharBuf() {
         delete[] strings;
     }
-    
+
     void expandStringBuffer(const size_t toFit, const char **vals, size_t numRows, size_t rowSkip, const size_t valsSize) {
         size_t strBufSize = getSize();
 
@@ -332,7 +335,7 @@ class DenseMatrix<const char*> : public Matrix<const char*>
     // fields from the super-classes.
     using Matrix<const char*>::numRows;
     using Matrix<const char*>::numCols;
-    
+
     size_t rowSkip;
     std::shared_ptr<const char*[]> values{};
     std::shared_ptr<CharBuf> strBuf;
@@ -342,7 +345,7 @@ class DenseMatrix<const char*> : public Matrix<const char*>
 
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
-    
+
     // Grant DataObjectFactory access to the private constructors and
     // destructors.
     template<class DataType, typename ... ArgTypes>
@@ -351,7 +354,7 @@ class DenseMatrix<const char*> : public Matrix<const char*>
     friend void DataObjectFactory::destroy(const DataType * obj);
 
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, size_t strBufCapacity = 1024, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST);
-    
+
     DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<const char*[]>& strings, size_t strBufCapacity = 1024, std::shared_ptr<const char*> cuda_ptr_ = nullptr);
 
     DenseMatrix(const DenseMatrix<const char*> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
@@ -365,7 +368,7 @@ class DenseMatrix<const char*> : public Matrix<const char*>
             throw std::runtime_error("colIdx is out of bounds");
         return rowIdx * rowSkip + colIdx;
     }
-    
+
     void appendZerosRange(const char** valsStartPos, const size_t length)
     {
         memset(strBuf->currentTop, '\0', length * sizeof(char));
@@ -388,7 +391,7 @@ class DenseMatrix<const char*> : public Matrix<const char*>
             auto v = vals + lastAppendedRowIdx * rowSkip;
             appendZerosRange(&v[lastAppendedColIdx + 1], numCols - lastAppendedColIdx - 1);
             v += rowSkip;
-            
+
             for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
                 appendZerosRange(v, numCols);
                 v += rowSkip;
@@ -414,7 +417,7 @@ public:
         // TODO Here we could reduce the allocated size of the values array.
         this->numRows = numRows;
     }
-    
+
     [[nodiscard]] size_t getRowSkip() const {
         return rowSkip;
     }
@@ -450,7 +453,7 @@ public:
     std::shared_ptr<const char*[]> getValuesSharedPtr() const {
         return values;
     }
-    
+
     const char* get(size_t rowIdx, size_t colIdx) const override {
         return getValues()[pos(rowIdx, colIdx)];
     }
@@ -482,14 +485,14 @@ public:
 
         strBuf->currentTop += diff;
     }
-    
+
     void prepareAppend() override {
         values.get()[0] = "\0";
         lastAppendedRowIdx = 0;
         lastAppendedColIdx = 0;
         strBuf->currentTop = strBuf.get()->strings;
     }
-    
+
     void append(size_t rowIdx, size_t colIdx, const char* value) override {
         // Set all cells since the last one that was appended to zero.
         fillZeroUntil(rowIdx, colIdx);
@@ -500,7 +503,7 @@ public:
 
         if(currentSize + length > strBuf->capacity)
             strBuf.get()->expandStringBuffer(currentSize + length, vals, numRows, rowSkip, getNumRows() * getNumCols());
-    
+
         memcpy(strBuf->currentTop, value, length);
         vals[pos(rowIdx, colIdx)] = strBuf->currentTop;
 
@@ -509,7 +512,7 @@ public:
         lastAppendedRowIdx = rowIdx;
         lastAppendedColIdx = colIdx;
     }
-    
+
     void finishAppend() override {
         if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
             append(numRows - 1, numCols - 1, "\0");

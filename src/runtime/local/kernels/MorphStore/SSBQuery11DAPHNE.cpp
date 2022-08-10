@@ -26,11 +26,14 @@
 #include "core/utils/basic_types.h"
 #include <runtime/local/datastructures/Frame.h>
 
+#include <runtime/local/kernels/EwBinaryObjSca.h>
+#include <runtime/local/kernels/EwBinaryMat.h>
+#include <runtime/local/kernels/FilterRow.h>
+#include <runtime/local/kernels/SemiJoin.h>
+#include <runtime/local/kernels/AggAll.h>
+#include <runtime/local/kernels/AggOpCode.h>
+#include <runtime/local/kernels/ThetaJoin.h>
 #include <runtime/local/kernels/MorphStore/select.h>
-#include <runtime/local/kernels/MorphStore/between.h>
-#include <runtime/local/kernels/MorphStore/calc.h>
-#include <runtime/local/kernels/MorphStore/semijoin.h>
-#include <runtime/local/kernels/MorphStore/sum.h>
 
 #include <functional>
 
@@ -69,7 +72,7 @@ int main(int argc, const char ** argv) {
     }
     const std::string dataPath(argv[1]);
 
-    using ve = vectorlib::scalar<vectorlib::v64<uint64_t> >;
+    using ps = vectorlib::scalar<vectorlib::v64<uint64_t> >;
 
 
     // ------------------------------------------------------------------------
@@ -152,29 +155,52 @@ int main(int argc, const char ** argv) {
     std::cerr << "Query execution started... ";
     std::cerr.flush();
 
-    Frame * X_47 = nullptr;
+    DenseMatrix<uint64_t> * X_47 = nullptr;
+    DenseMatrix<uint64_t> * X_48 = nullptr;
+
     size_t lower = 1;
     size_t upper = 3;
-    const char * element = "lo_discount";
-    between<Frame, Frame, vectorlib::avx512<vectorlib::v512<uint64_t>>>(X_47, lineorderFrame, element, lower, CompareOperation::GreaterEqual, upper, CompareOperation::LessEqual);
+    ewBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>(BinaryOpCode::GE, X_47, lineorderFrame->getColumn<uint64_t>("lo_discount"), lower, nullptr);
+    ewBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>(BinaryOpCode::LE, X_48, lineorderFrame->getColumn<uint64_t>("lo_discount"), upper, nullptr);
+
+    DenseMatrix<uint64_t> * X_49 = nullptr;
+    ewBinaryMat<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, DenseMatrix<uint64_t>>(BinaryOpCode::AND, X_49, X_47, X_48, nullptr);
+
+    DenseMatrix<uint64_t> * X_50 = nullptr;
+    //ewBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>(BinaryOpCode::LT, X_50, lineorderFrame->getColumn<uint64_t>("lo_quantity"), 25, nullptr);
+    select(X_50, lineorderFrame->getColumn<uint64_t>("lo_quantity"), CompareOperation::LessThan, 25);
+    std::cout << is_aligned(X_50->getValues(), 64) << std::endl;
+
+    DenseMatrix<uint64_t> * X_51 = nullptr;
+    ewBinaryMat<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, DenseMatrix<uint64_t>>(BinaryOpCode::AND, X_51, X_50, X_49, nullptr);
 
     Frame * X_53 = nullptr;
-    select(X_53, X_47, "lo_quantity", CompareOperation::LessThan, 25);
+    filterRow<Frame, Frame, uint64_t>(X_53, lineorderFrame, X_51, nullptr);
+
+    DenseMatrix<uint64_t> * X_76 = nullptr;
+    ewBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>(BinaryOpCode::EQ, X_76, dateFrame->getColumn<uint64_t>("d_year"), 1993, nullptr);
 
     Frame * X_77 = nullptr;
-    select(X_77, dateFrame, "d_year", CompareOperation::Equal, 1993);
+    filterRow<Frame, Frame, uint64_t>(X_77, dateFrame, X_76, nullptr);
 
     Frame * X_81 = nullptr;
+    DenseMatrix<uint64_t> * TEMP = nullptr;
     auto lhsQLabels = new const char*[10]{"lo_orderdate"};
     auto rhsQLabels = new const char*[10]{"d_datekey"};
-    semijoin(X_81, X_53, X_77, lhsQLabels, 1, rhsQLabels, 1);
+    uint64_t equations = 1;
 
-    Frame * X_93 = nullptr;
-    calc(X_93, X_81, X_81, "lo_extendedprice", "lo_discount", CalcOperation::Mul);
+    /// R.a == S.a
+    auto cmps = new CompareOperation[10]{CompareOperation::Equal};
 
-    Frame * X_96 = nullptr;
-    agg_sum(X_96, X_93, "Calc");
+    thetaJoin(X_81, X_53, X_77, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    //semiJoin(X_81, TEMP, X_53, X_77, "lo_orderdate", "d_datekey", nullptr);
 
+    DenseMatrix<uint64_t> * X_93 = nullptr;
+    ewBinaryMat(BinaryOpCode::MUL, X_93, X_81->getColumn<uint64_t>("lo_extendedprice"), X_81->getColumn<uint64_t>("lo_discount"), nullptr);
+
+    unsigned long result = aggAll(AggOpCode::SUM, X_93, nullptr);
+
+    std::cout << result << std::endl;
     std::cerr << "done." << std::endl;
 
     // ------------------------------------------------------------------------
@@ -187,11 +213,11 @@ int main(int argc, const char ** argv) {
     // No morphing of the result columns required.
 
     // Print the result columns.
-    X_96->print(std::cout);
+    //X_96->print(std::cout);
 
     // Free all intermediate results.
 #ifdef MSV_NO_SELFMANAGED_MEMORY
-    DataObjectFactory::destroy(X_47, X_53, X_77, X_81, X_93, X_96);
+    DataObjectFactory::destroy(X_47, X_53, X_77, X_81, X_93);
 #endif
 
     std::cerr << "done." << std::endl;

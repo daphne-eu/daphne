@@ -34,6 +34,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstring>
+#include <new>
 
 /**
  * @brief A data structure with an individual value type per column.
@@ -111,8 +112,8 @@ class Frame : public Structure {
     /**
      * @brief Initializes the mapping from column labels to column positions in
      * the frame and assigns default labels to duplicate column labels.
-     * 
-     * This method should only be called by constructors, that may intentionally duplicate 
+     *
+     * This method should only be called by constructors, that may intentionally duplicate
      * columns, instead of initLabels2Idxs(), after the column labels have been initialized.
      */
     void initDeduplicatedLabels2Idxs() {
@@ -123,7 +124,7 @@ class Frame : public Structure {
             labels2idxs[labels[i]] = i;
         }
     }
-    
+
     // TODO Should the given schema array really be copied, or reused?
     /**
      * @brief Creates a `Frame` and allocates enough memory for the specified
@@ -147,7 +148,9 @@ class Frame : public Structure {
             this->schema[i] = schema[i];
             this->labels[i] = labels ? labels[i] : getDefaultLabel(i);
             const size_t sizeAlloc = maxNumRows * ValueTypeUtils::sizeOf(schema[i]);
-            this->columns[i] = std::shared_ptr<ColByteType>(new ColByteType[sizeAlloc],
+            // Align the data to enable processing with vector extensions. Should be removed when a
+            // memory manager is implemented.
+            this->columns[i] = std::shared_ptr<ColByteType>(new (std::align_val_t(64)) ColByteType[sizeAlloc],
                     std::default_delete<ColByteType []>());
             if(zero)
                 memset(this->columns[i].get(), 0, sizeAlloc);
