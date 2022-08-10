@@ -125,6 +125,11 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
+option(USE_DUCKDB "Whether to use DuckDB as sql feature" OFF)
+if(USE_DUCKDB)
+    add_definitions(-DUSE_DUCKDB)
+endif()
+
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
 if(USE_ARROW)
     find_package(Arrow CONFIG REQUIRED

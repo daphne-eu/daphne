@@ -56,6 +56,8 @@ namespace
                 rewriter.eraseOp(op);
                 return success();
             }else if(auto sqlop = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
+
+#ifndef USE_DUCKDB
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
 
@@ -68,6 +70,11 @@ namespace
 
                 rewriter.replaceOp(op, result_op);
                 return success();
+#else
+                //TODO: add the translation to DaphneSQL
+                rewriter.eraseOp(op);
+                std::cout << "WOWIE!!!!" << std::endl;
+#endif
             }
             return failure();
         }
