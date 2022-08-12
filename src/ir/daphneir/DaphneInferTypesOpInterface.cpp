@@ -242,6 +242,10 @@ void daphne::SemiJoinOp::inferTypes() {
     getResult(1).setType(daphne::MatrixType::get(ctx, builder.getIndexType()));
 }
 
+void daphne::DuckDbSqlOp::inferTypes() {
+//TODO? For now it seems to works like this.
+}
+
 void daphne::InnerJoinOp::inferTypes() {
     daphne::FrameType ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
     daphne::FrameType ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();

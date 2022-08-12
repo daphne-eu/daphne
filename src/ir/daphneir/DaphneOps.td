@@ -792,10 +792,13 @@ def Daphne_SqlOp : Daphne_Op<"sql"> {
     let results = (outs Frame:$res);
 }
 
-def Daphne_DuckDbSqlOp : Daphne_Op<"duckdbsql", [SameVariadicOperandSize]> {
+def Daphne_DuckDbSqlOp : Daphne_Op<"duckDbSql", [
+    SameVariadicOperandSize,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>
+    ]> {
     let arguments = (ins
         StrScalar:$query,
-        Variadic<Frame>:$table,
+        Variadic<Frame>:$tables,
         Variadic<StrScalar>:$tableNames
     );
     let results = (outs Frame:$res);

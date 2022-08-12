@@ -252,7 +252,7 @@
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint32_t"]],
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]],
-            
+
             [["DenseMatrix","double"],["CSRMatrix","double"]],
             [["DenseMatrix","float"],["CSRMatrix","float"]],
             [["DenseMatrix","int64_t"],["CSRMatrix","int64_t"]],
@@ -844,7 +844,7 @@
                 }
             ]
         },
-        
+
         "instantiations": [
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
@@ -1017,6 +1017,43 @@
     	"instantiations": [
     		[]
     	]
+    },
+    {
+        "kernelTemplate": {
+            "header": "DuckDBSQL.h",
+            "opName": "duckDbSql",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const char *",
+                    "name": "query"
+                },
+                {
+                    "type": "Frame **",
+                    "name": "tables"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numTables"
+                },
+                {
+                    "type": "const char **",
+                    "name": "tableNames"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numTableNames"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
     },
     {
         "kernelTemplate": {
@@ -2198,7 +2235,7 @@
             ["Frame", "Frame"]
         ]
     },
-    
+
     {
         "kernelTemplate": {
             "header": "SliceCol.h",

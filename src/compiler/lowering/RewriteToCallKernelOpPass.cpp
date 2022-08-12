@@ -42,7 +42,7 @@ namespace
         static size_t getNumODSOperands(Operation * op) {
             if(llvm::isa<daphne::OrderOp>(op))
                 return 4;
-            if(llvm::isa<daphne::GroupOp>(op))
+            if(llvm::isa<daphne::GroupOp, daphne::DuckDbSqlOp>(op))
                 return 3;
             if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
                 return 2;
@@ -90,6 +90,15 @@ namespace
             if(auto concreteOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {false, true, true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::DuckDbSqlOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, true, true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -236,15 +245,15 @@ namespace
                     callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
                     newOperands.push_back(op->getOperand(i));
                 }
-            
+
             if(auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
                 // GroupOp carries the aggregation functions to apply as an
                 // attribute. Since attributes to not automatically become
                 // inputs to the kernel call, we need to add them explicitly
                 // here.
-                
+
                 callee << "__GroupEnum_variadic__size_t";
-                
+
                 ArrayAttr aggFuncs = groupOp.aggFuncs();
                 const size_t numAggFuncs = aggFuncs.size();
                 const Type t = rewriter.getIntegerType(32, false);
