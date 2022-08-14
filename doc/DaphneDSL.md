@@ -566,7 +566,27 @@ do {
 } while (mean(A) > 100 && i > 0);
 ```
 
-### Functions
+### User-defined Functions
+
+only at top level (not nested into sth else)
+typed and untyped
+body is a block statement, curly braces, even if just one statement
+
+The syntax of a function definition looks as follows:
+
+```
+def funcName(param1[:type1], param2[:type2], ...) [-> return-type] {
+    statement1
+    statement2
+    ...
+}
+```
+
+DaphneDSL supports both, typed and untyped functions.
+
+
+**Calling user-defined functions**
+- see expressions above
 
 ### Selected Aspects
 
@@ -575,5 +595,12 @@ do {
 #### File I/O
 
 ### Planned Features
+
+- loops
+  - parfor-loops
+  - break and continue not supported yet
+- functions
+  - keyword arguments
+  - return multiple values
 
 ## Running a DaphneDSL script
