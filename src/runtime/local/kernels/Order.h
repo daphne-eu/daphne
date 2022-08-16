@@ -52,7 +52,7 @@ void order(DT *& res, const DT * arg, size_t * colIdxs, size_t numColIdxs, bool 
 }
 
 // ****************************************************************************
-// Functions called by mulriple template specializations
+// Functions called by multiple template specializations
 // ****************************************************************************
 
 // sorts input idx DenseMatrix within the index ranges in the input groups vector on the values of the input column (column with id colIdx in DenseMatrix arg; id 0 for column matrices)
@@ -112,6 +112,10 @@ void multiColumnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, siz
     DataObjectFactory::destroy(tmp);
 }
 
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
 // ----------------------------------------------------------------------------
 // Frame <- Frame
 // ----------------------------------------------------------------------------
@@ -151,7 +155,7 @@ template <> struct Order<Frame> {
                 DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdxs[i]], arg, idx, groups, ascending[i], colIdxs[i], ctx);
             }
         }
-    
+
         // efficient last sort pass OR finalizing the groups vector for further use
         size_t colIdx = colIdxs[numColIdxs-1];
         if (groupsRes == nullptr) {
@@ -173,6 +177,7 @@ template <> struct Order<Frame> {
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix 
 // ----------------------------------------------------------------------------
+
 template <typename VT>
 struct Order<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
@@ -182,8 +187,8 @@ struct Order<DenseMatrix<VT>> {
         }
 
         auto idx = DataObjectFactory::create<DenseMatrix<size_t>>(numRows, 1, false);
-        auto indicies = idx->getValues();
-        std::iota(indicies, indicies+numRows, 0);
+        auto indices = idx->getValues();
+        std::iota(indices, indices+numRows, 0);
         std::vector<std::pair<size_t, size_t>> groups;
         groups.push_back(std::make_pair(0, numRows));
 
