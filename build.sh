@@ -41,6 +41,7 @@ function printHelp {
     echo "  --cleanAll        Remove all thirdparty library directories for a build from scratch"
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
+    echo "  --arrow           Compile with support for Arrow/Parquet files"
 }
 
 #******************************************************************************
@@ -282,6 +283,7 @@ function cleanBuildDirs() {
       "${thirdpartyPath}/nlohmannjson_v"*".install.success" \
       "${thirdpartyPath}/openBlas_v"*".install.success" \
       "${thirdpartyPath}/llvm_v"*".install.success" \
+      "${thirdpartyPath}/arrow_v"*".install.success" \
       "${llvmCommitFilePath}")
     
     clean dirs files
@@ -304,6 +306,8 @@ function cleanAll() {
       "${thirdpartyPath}/openBlas_v"*".install.success" \
       "${thirdpartyPath}/openBlas_v"*".download.success" \
       "${thirdpartyPath}/llvm_v"*".install.success" \
+      "${thirdpartyPath}/arrow_v"*".install.success" \
+      "${thirdpartyPath}/arrow_v"*".download.success" \
       "${llvmCommitFilePath}")
 
     clean dirs files
@@ -342,6 +346,7 @@ openBlasVersion=0.3.19
 abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
+arrowVersion=d9d78946607f36e25e9d812a5cc956bd00ab2bc9
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -375,6 +380,7 @@ par_clean="0"
 par_acceptAll="0"
 unknown_options=""
 BUILD_CUDA="-DUSE_CUDA=OFF"
+BUILD_ARROW="-DUSE_ARROW=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 
 while [[ $# -gt 0 ]]; do
@@ -403,6 +409,10 @@ while [[ $# -gt 0 ]]; do
         --cuda)
             echo using CUDA
             export BUILD_CUDA="-DUSE_CUDA=ON"
+            ;;
+        --arrow)
+            echo using ARROW
+            BUILD_ARROW="-DUSE_ARROW=ON"
             ;;
         --debug)
             echo building DEBUG version
@@ -630,6 +640,28 @@ else
     daphne_msg "No need to build GRPC again."
 fi
 
+#------------------------------------------------------------------------------
+# Arrow / Parquet
+#------------------------------------------------------------------------------
+arrowDirName="arrow"
+if [[ "$BUILD_ARROW" == "-DUSE_ARROW=ON" ]]; then
+    if ! is_dependency_downloaded "arrow_v${arrowVersion}"; then
+        rm -rf ${sourcePrefix}/${arrowDirName}
+        git clone -n https://github.com/apache/arrow.git ${sourcePrefix}/${arrowDirName}
+        cd ${sourcePrefix}/${arrowDirName}
+        git checkout $arrowVersion
+        dependency_download_success "arrow_v${arrowVersion}"
+    fi
+    if ! is_dependency_installed "arrow_v${arrowVersion}"; then
+        cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
+            -DCMAKE_INSTALL_PREFIX=${installPrefix} \
+            -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
+        cmake --build "${buildPrefix}/${arrowDirName}" --target install
+        dependency_install_success "arrow_v${arrowVersion}"
+    else
+        daphne_msg "No need to build Arrow again."
+    fi
+fi
 
 #------------------------------------------------------------------------------
 # Build MLIR
@@ -676,7 +708,7 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"

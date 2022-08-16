@@ -47,7 +47,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
 }
 
 template<typename ValueType>
-DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
+DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
         size_t colUpperExcl) : Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl),
         lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
@@ -103,6 +103,90 @@ DenseMatrix<ValueType>* DenseMatrix<ValueType>::vectorTranspose() const {
     transposed->cuda_buffer_current = this->cuda_buffer_current;
     transposed->host_dirty = this->host_dirty;
     transposed->host_buffer_current = this->host_buffer_current;
+    return transposed;
+}
+
+DenseMatrix<const char*>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, size_t strBufferCapacity_, ALLOCATION_TYPE type) :
+        Matrix<const char*>(maxNumRows, numCols), rowSkip(numCols), lastAppendedRowIdx(0), lastAppendedColIdx(0)
+{
+#ifndef NDEBUG
+    std::cout << "creating dense matrix of allocation type " << static_cast<int>(type) <<
+              ", dims: " << numRows << "x" << numCols << " req.mem.: " << printBufferSize() << "Mb" << " with at least " << strBufferCapacity_ << " bytes for strings" <<  std::endl;
+#endif
+    if (type == ALLOCATION_TYPE::HOST_ALLOC) {
+        alloc_shared_values();
+        alloc_shared_strings(nullptr, strBufferCapacity_);
+    }
+    else {
+        throw std::runtime_error("Unknown allocation type: " + std::to_string(static_cast<int>(type)));
+    }
+}
+
+DenseMatrix<const char*>::DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<const char*[]>& strings_, size_t strBufferCapacity_, std::shared_ptr<const char*> cuda_ptr_): 
+            Matrix<const char*>(numRows, numCols), rowSkip(numCols), cuda_ptr(cuda_ptr_), lastAppendedRowIdx(0), lastAppendedColIdx(0){ 
+                alloc_shared_values();
+                alloc_shared_strings();
+                prepareAppend();
+                for(size_t r = 0; r < numRows; r++)
+                    for(size_t c = 0; c < numCols; c++)
+                        append(r, c, strings_.get()[r * rowSkip + c]);
+                finishAppend();
+            }
+
+DenseMatrix<const char*>::DenseMatrix(const DenseMatrix<const char*> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
+        size_t colUpperExcl) : Matrix<const char*>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl), lastAppendedRowIdx(0), lastAppendedColIdx(0)
+{
+    assert(src && "src must not be null");
+    assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+    assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
+    assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+    assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+    assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
+    assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
+
+    rowSkip = src->rowSkip;
+    auto offset = rowLowerIncl * src->rowSkip + colLowerIncl;
+    alloc_shared_values(src->values, offset);
+    alloc_shared_strings(src->strBuf);
+}
+
+void DenseMatrix<const char*>::printValue(std::ostream & os, const char* val) const {
+    os << '\"' << val << "\"";
+}
+
+void DenseMatrix<const char*>::alloc_shared_values(std::shared_ptr<const char*[]> src, size_t offset) {
+    // correct since C++17: Calls delete[] instead of simple delete
+    if(src) {
+        values = std::shared_ptr<const char*[]>(src, src.get() + offset);
+    }
+    else
+    {
+        values = std::shared_ptr<const char*[]>(new const char*[getNumItems()]);
+    }
+}
+
+void DenseMatrix<const char*>::alloc_shared_strings(std::shared_ptr<CharBuf> src, size_t strBufferCapacity_) {
+    if(src) {
+        strBuf = std::shared_ptr<CharBuf>(src);
+    }
+    else
+    {
+        if(!values)
+            alloc_shared_values();
+        strBuf = std::make_shared<CharBuf>(strBufferCapacity_, getNumItems());
+        appendZerosRange(&values[0], getNumItems());
+    }
+}
+
+size_t DenseMatrix<const char*>::bufferSize() {
+    return this->getNumItems() * sizeof(const char*);
+}
+
+DenseMatrix<const char*>* DenseMatrix<const char*>::vectorTranspose() const {
+    assert((this->numRows == 1 || this->numCols == 1) && "no-op transpose for vectors only");
+
+    auto transposed = DataObjectFactory::create<DenseMatrix<const char*>>(this->getNumCols(), this->getNumRows(),
+                                                                        this->getValuesSharedPtr());
     return transposed;
 }
 
@@ -191,3 +275,4 @@ template class DenseMatrix<unsigned char>;
 template class DenseMatrix<unsigned int>;
 template class DenseMatrix<unsigned long>;
 template class DenseMatrix<bool>;
+template class DenseMatrix<const char*>;

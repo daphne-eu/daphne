@@ -488,14 +488,26 @@ public:
         auto addr = rewriter.create<LLVM::GEPOp>(
                 loc, pack.getType(), pack, indices
         );
-        if (item.getType() != elementType) {
+        Type itemType = item.getType();
+        if (itemType != elementType) {
             if (elementType.isa<LLVM::LLVMPointerType>()) {
-                item = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getI64Type(), item);
+                if(itemType.isSignedInteger())
+                    item = rewriter.create<LLVM::SExtOp>(loc, rewriter.getI64Type(), item);
+                else if(itemType.isUnsignedInteger() || itemType.isSignlessInteger())
+                    item = rewriter.create<LLVM::ZExtOp>(loc, rewriter.getI64Type(), item);
+                else if(itemType.isa<FloatType>()) {
+                    item = rewriter.create<LLVM::FPExtOp>(loc, rewriter.getF64Type(), item);
+                    item = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getI64Type(), item);
+                }
+                else
+                    throw std::runtime_error("itemType is an unsupported type");
                 item = rewriter.create<LLVM::IntToPtrOp>(loc, elementType, item);
             }
-            else {
-                item = rewriter.create<LLVM::BitcastOp>(loc, elementType, item);
-            }
+            else
+                throw std::runtime_error(
+                        "casting to a non-pointer type in "
+                        "StoreVariadicPackOpLowering is not implemented yet"
+                );
         }
         rewriter.replaceOpWithNewOp<LLVM::StoreOp>(
                 op.getOperation(), item, addr
@@ -572,7 +584,14 @@ public:
                 if (expTy != val.getType()) {
                     // casting for scalars
                     val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
-                    val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
+                    if(expTy.isa<IntegerType>())
+                        val = rewriter.create<LLVM::TruncOp>(loc, expTy, val);
+                    else if(expTy.isa<FloatType>()) {
+                        val = rewriter.create<LLVM::BitcastOp>(loc, rewriter.getF64Type(), val);
+                        val = rewriter.create<LLVM::FPTruncOp>(loc, expTy, val);
+                    }
+                    else
+                        throw std::runtime_error("expTy is an unsupported type");
                 }
                 funcBlock.getArgument(0).replaceAllUsesWith(val);
                 funcBlock.eraseArgument(0);
@@ -670,19 +689,21 @@ public:
         Operation::result_type_range resultTypes = op->getResultTypes();
         const size_t numRes = op->getNumResults();
         
-        // TODO Support individual types for all outputs (see #397).
-        // Check if all results have the same type.
-        Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
-        for(size_t i = 1; i < numRes; i++)
-            if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
-                throw std::runtime_error(
-                        "encountered a vectorized pipelines with different "
-                        "result types, but at the moment we require all "
-                        "results to have the same type"
-                );
-        
-        // Append the name of the common type of all results to the kernel name.
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
+        if(numRes > 0) {
+            // TODO Support individual types for all outputs (see #397).
+            // Check if all results have the same type.
+            Type mt0 = resultTypes[0].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr();
+            for(size_t i = 1; i < numRes; i++)
+                if(mt0 != resultTypes[i].dyn_cast<daphne::MatrixType>().withSameElementTypeAndRepr())
+                    throw std::runtime_error(
+                            "encountered a vectorized pipelines with different "
+                            "result types, but at the moment we require all "
+                            "results to have the same type"
+                    );
+            
+            // Append the name of the common type of all results to the kernel name.
+            callee << "__" << CompilerUtils::mlirTypeToCppTypeName(resultTypes[0]) << "_variadic__size_t";
+        }
 
         mlir::Type operandType;
         std::vector<Value> newOperands;
@@ -702,7 +723,7 @@ public:
             }
         }
         else {
-            throw std::runtime_error("vectorizedPipelineOp without inputs not supported at the moment!");
+            throw std::runtime_error("vectorizedPipelineOp without outputs not supported at the moment!");
         }
 
         // Handle variadic operands isScalar and inputs (both share numInputs).

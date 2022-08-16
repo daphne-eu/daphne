@@ -35,6 +35,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_KERNELS = "explain_kernels";
     inline static const std::string EXPLAIN_LLVM = "explain_llvm";
     inline static const std::string EXPLAIN_PARSING = "explain_parsing";
+    inline static const std::string EXPLAIN_PARSING_SIMPLIFIED = "explain_parsing_simplified";
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
@@ -58,6 +59,7 @@ struct DaphneConfigJsonParams {
             EXPLAIN_KERNELS,
             EXPLAIN_LLVM,
             EXPLAIN_PARSING,
+            EXPLAIN_PARSING_SIMPLIFIED,
             EXPLAIN_PROPERTY_INFERENCE,
             EXPLAIN_SQL,
             EXPLAIN_VECTORIZED,

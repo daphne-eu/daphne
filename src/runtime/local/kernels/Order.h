@@ -162,9 +162,14 @@ struct OrderFrame {
     }
 };
 
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
 // ----------------------------------------------------------------------------
 // Frame <- Frame 
 // ----------------------------------------------------------------------------
+
 template <> struct Order<Frame, Frame> {
     static void apply(Frame *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr || returnIdx) {
@@ -180,6 +185,7 @@ template <> struct Order<Frame, Frame> {
 // ----------------------------------------------------------------------------
 // DenseMatrix <- Frame 
 // ----------------------------------------------------------------------------
+
 template <typename VTRes> struct Order<DenseMatrix<VTRes>, Frame> {
     static void apply(DenseMatrix<VTRes> *& res, const Frame * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr || !returnIdx) {
@@ -194,6 +200,7 @@ template <typename VTRes> struct Order<DenseMatrix<VTRes>, Frame> {
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix 
 // ----------------------------------------------------------------------------
+
 template <typename VTRes, typename VTArg>
 struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
@@ -206,8 +213,8 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
 
         auto idx = DataObjectFactory::create<DenseMatrix<size_t>>(numRows, 1, false);
-        auto indicies = idx->getValues();
-        std::iota(indicies, indicies+numRows, 0);
+        auto indices = idx->getValues();
+        std::iota(indices, indices+numRows, 0);
         std::vector<std::pair<size_t, size_t>> groups;
         groups.push_back(std::make_pair(0, numRows));
 

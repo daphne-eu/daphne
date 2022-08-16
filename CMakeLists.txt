@@ -127,9 +127,12 @@ endif()
 
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
 if(USE_ARROW)
-    find_package(Arrow CONFIG REQUIRED)
+    find_package(Arrow CONFIG REQUIRED
+        PATHS thirdparty/installed/lib/cmake/arrow
+        NO_DEFAULT_PATH
+    )
     find_package(Parquet CONFIG REQUIRED
-        PATHS /usr/local/lib/cmake/arrow
+        PATHS thirdparty/installed/lib/cmake/arrow
         NO_DEFAULT_PATH
     )
     link_libraries(arrow_shared parquet_shared)

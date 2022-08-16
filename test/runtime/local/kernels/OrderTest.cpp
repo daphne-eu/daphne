@@ -125,26 +125,26 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-err58-cpp)
-    using VT = TestType;
+TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix), (double, float)){ // NOLINT(cert-err58-cpp)
+    using DT = TestType;
     size_t numKeyCols;
     size_t colIdxs[4];
     bool ascending[4];
 
-    DenseMatrix<VT>* argMatrix = nullptr;
-    DenseMatrix<VT>* resMatrix = nullptr;
-    DenseMatrix<VT>* expMatrix = nullptr;
+    DT* argMatrix = nullptr;
+    DT* resMatrix = nullptr;
+    DT* expMatrix = nullptr;
     DenseMatrix<size_t>* resIdxs = nullptr;
     DenseMatrix<size_t>* expIdxs = nullptr;
 
     SECTION("single key column, ascending") {
-        argMatrix = genGivenVals<DenseMatrix<VT>>(4, {
+        argMatrix = genGivenVals<DT>(4, {
             1, 10, 3, 7, 7, 7,
             17, 7, 2, 3, 7, 7,
             7, 7, 1, 2, 3, 7,
             7, 7, 1, 1, 2, 3,
         });
-        expMatrix =  genGivenVals<DenseMatrix<VT>>(4, {
+        expMatrix =  genGivenVals<DT>(4, {
             7, 7, 1, 1, 2, 3,
             7, 7, 1, 2, 3, 7,
             17, 7, 2, 3, 7, 7,
@@ -156,7 +156,7 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
         ascending[0] = true;
     }
     SECTION("four key columns, ascending/descending") {
-        argMatrix = genGivenVals<DenseMatrix<VT>>(20, {
+        argMatrix = genGivenVals<DT>(20, {
             1.1, 1.1, 0, 6,
             -3.1, -2, 0, 3,
             4.4, 4.4, 1, 9,
@@ -178,7 +178,7 @@ TEMPLATE_TEST_CASE("Order - DenseMatrix", TAG_KERNELS, double){ // NOLINT(cert-e
             6.6, 10, 3, 20,
             5.6, -1.1, 0, 14
         });
-        expMatrix = genGivenVals<DenseMatrix<VT>>(20, {
+        expMatrix = genGivenVals<DT>(20, {
             4.4, -15.5, 0, 12,
             6.6, -10, 0, 15,
             2.3, -2.3, 0, 8,

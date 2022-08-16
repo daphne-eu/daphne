@@ -53,6 +53,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_llvm = jf.at(DaphneConfigJsonParams::EXPLAIN_LLVM).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING))
         config.explain_parsing = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED))
+        config.explain_parsing_simplified = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE))
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
