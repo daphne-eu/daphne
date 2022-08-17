@@ -633,8 +633,17 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             colIdxs.push_back(utils.castSizeIf(args[1 + i]));
             ascs.push_back(utils.castBoolIf(args[1 + numCols + i]));
         }
+        mlir::Type retTy;
+        if(auto co = returnIdxs.getDefiningOp<ConstantOp>()) {
+            if(co.value().dyn_cast<mlir::BoolAttr>().getValue())
+                retTy = utils.matrixOfSizeType;
+            else
+                retTy = args[0].getType();
+        }
+        else
+            retTy = utils.unknownType;
         return static_cast<mlir::Value>(builder.create<OrderOp>(
-                loc, args[0].getType(), arg, colIdxs, ascs, returnIdxs
+                loc, retTy, arg, colIdxs, ascs, returnIdxs
         ));
     }
 

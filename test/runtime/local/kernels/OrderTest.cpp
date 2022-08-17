@@ -210,7 +210,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Order", TAG_KERNELS, (DenseMatrix), (double, float))
         colIdxs[2] = 2;
         ascending[2] = false;
         colIdxs[3] = 3;
-        ascending[3] = true;   
+        ascending[3] = true;
     }
     
     order(resMatrix, argMatrix, colIdxs, numKeyCols, ascending, numKeyCols, false, nullptr);
