@@ -25,6 +25,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <type_traits>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -67,8 +68,15 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
         
         for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = func(valuesArg[c], ctx);
+            for(size_t c = 0; c < numCols; c++){
+                if constexpr (std::is_same_v<VT, StringScalarType>)
+                {
+                    auto temporaryString = func(valuesArg[c], ctx);
+                    res->set(r,c, temporaryString);
+                    delete[] temporaryString;
+                }else
+                    valuesRes[c] = func(valuesArg[c], ctx);
+            }
             valuesArg += arg->getRowSkip();
             valuesRes += res->getRowSkip();
         }

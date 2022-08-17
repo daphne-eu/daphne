@@ -20,6 +20,7 @@
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarParser.h"
@@ -95,6 +96,9 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     
     template<class InsertAxOp, class NumAxOp>
     mlir::Value applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax, bool allowLabel);
+
+    template<typename VT>
+    DenseMatrix<VT>* getDenseMatForMatrixConstant(mlir::Type valueType, DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx);
 
 public:
     DaphneDSLVisitor(

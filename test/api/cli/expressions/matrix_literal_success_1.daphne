@@ -12,3 +12,8 @@ checkMatBool = [true,true,false,true];
 print(checkMatBool);
 checkMatBool = reshape(checkMatBool, 2, 2);
 print(checkMatBool);
+
+checkMatString= ["Hello", "", "The answer is", "42"];
+print(checkMatString);
+checkMatString = reshape(checkMatString, 2, 2);
+print(checkMatString);

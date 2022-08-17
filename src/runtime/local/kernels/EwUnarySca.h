@@ -21,9 +21,13 @@
 #include <runtime/local/kernels/UnaryOpCode.h>
 
 #include <limits>
+#include <algorithm>
 #include <stdexcept>
 
 #include <cmath>
+#include <cstring>
+
+using StringScalarType = const char*;
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -57,8 +61,17 @@ using EwUnaryScaFuncPtr = VTRes (*)(VTArg, DCTX());
  */
 template<typename VTRes, typename VTArg>
 EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
-    switch(opCode) {
-        #define MAKE_CASE(opCode) case opCode: return &EwUnarySca<opCode, VTRes, VTArg>::apply;
+    #define MAKE_CASE(opCode) case opCode: return &EwUnarySca<opCode, VTRes, VTArg>::apply;
+    if constexpr(std::is_same_v<VTArg, StringScalarType>){
+        // String-only ops.
+        switch(opCode) {
+            MAKE_CASE(UnaryOpCode::LOWERCASE)
+            MAKE_CASE(UnaryOpCode::UPPERCASE)
+            default:
+                throw std::runtime_error("unknown UnaryOpCode");
+        }
+    } else{
+        switch(opCode) {
         // Arithmetic/general math.
         MAKE_CASE(UnaryOpCode::SIGN)
         MAKE_CASE(UnaryOpCode::SQRT)
@@ -68,10 +81,12 @@ EwUnaryScaFuncPtr<VTRes, VTArg> getEwUnaryScaFuncPtr(UnaryOpCode opCode) {
         MAKE_CASE(UnaryOpCode::FLOOR)
         MAKE_CASE(UnaryOpCode::CEIL)
         MAKE_CASE(UnaryOpCode::ROUND)
-        #undef MAKE_CASE
+        
         default:
             throw std::runtime_error("unknown UnaryOpCode");
+        }
     }
+    #undef MAKE_CASE
 }
 
 // ****************************************************************************
@@ -93,6 +108,13 @@ TRes ewUnarySca(UnaryOpCode opCode, TArg arg, DCTX(ctx)) {
 // ****************************************************************************
 // (Partial) template specializations for different op codes
 // ****************************************************************************
+template<typename UnaryOpType>
+StringScalarType stringUnaryOp(StringScalarType arg, UnaryOpType unaryOperator){
+    const uint64_t argLength = strlen(arg)+1; 
+    char* temporaryStrPtr = new char[argLength]; 
+    std::transform(arg, arg + argLength, temporaryStrPtr, unaryOperator);
+    return temporaryStrPtr;
+}
 
 #define MAKE_EW_UNARY_SCA(opCode, expr) \
     template<typename TRes, typename TArg> \
@@ -113,6 +135,8 @@ MAKE_EW_UNARY_SCA(UnaryOpCode::FLOOR, floor(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::CEIL, std::ceil(arg));
 MAKE_EW_UNARY_SCA(UnaryOpCode::ROUND, round(arg));
 
+MAKE_EW_UNARY_SCA(UnaryOpCode::LOWERCASE, stringUnaryOp(arg, ::tolower));
+MAKE_EW_UNARY_SCA(UnaryOpCode::UPPERCASE, stringUnaryOp(arg, ::toupper));
 #undef MAKE_EW_UNARY_SCA
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYSCA_H
+#endif 

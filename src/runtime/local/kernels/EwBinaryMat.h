@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <cstddef>
+#include <type_traits>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -73,8 +74,16 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
             // matrix op matrix (same size)
             for(size_t r = 0; r < numRowsLhs; r++) {
-                for(size_t c = 0; c < numColsLhs; c++)
-                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
+                for(size_t c = 0; c < numColsLhs; c++){
+                    if constexpr(std::is_same_v<VTres, StringScalarType>){
+                        auto stringPtr = func(valuesLhs[c], valuesRhs[c], ctx);
+                        res->set(r,c, stringPtr);
+                        if(opCode == BinaryOpCode::CONCAT)
+                            delete[] stringPtr;
+                    } else
+                        valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
+                }
+                    
                 valuesLhs += lhs->getRowSkip();
                 valuesRhs += rhs->getRowSkip();
                 valuesRes += res->getRowSkip();
@@ -83,8 +92,15 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         else if(numColsLhs == numColsRhs && (numRowsRhs == 1 || numRowsLhs == 1)) {
             // matrix op row-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
-                for(size_t c = 0; c < numColsLhs; c++)
-                    valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
+                for(size_t c = 0; c < numColsLhs; c++){
+                    if constexpr(std::is_same_v<VTres, StringScalarType>){
+                        auto stringPtr = func(valuesLhs[c], valuesRhs[c], ctx);
+                        res->set(r,c, stringPtr);
+                        if(opCode == BinaryOpCode::CONCAT)
+                            delete[] stringPtr;
+                    } else
+                        valuesRes[c] = func(valuesLhs[c], valuesRhs[c], ctx);
+                }
                 valuesLhs += lhs->getRowSkip();
                 valuesRes += res->getRowSkip();
             }
@@ -92,8 +108,15 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         else if(numRowsLhs == numRowsRhs && (numColsRhs == 1 || numColsLhs == 1)) {
             // matrix op col-vector
             for(size_t r = 0; r < numRowsLhs; r++) {
-                for(size_t c = 0; c < numColsLhs; c++)
-                    valuesRes[c] = func(valuesLhs[c], valuesRhs[0], ctx);
+                for(size_t c = 0; c < numColsLhs; c++){
+                    if constexpr(std::is_same_v<VTres, StringScalarType>){
+                        auto stringPtr = func(valuesLhs[c], valuesRhs[0], ctx);
+                        res->set(r,c, stringPtr);
+                        if(opCode == BinaryOpCode::CONCAT)
+                            delete[] stringPtr;
+                    } else
+                        valuesRes[c] = func(valuesLhs[c], valuesRhs[0], ctx);
+                }
                 valuesLhs += lhs->getRowSkip();
                 valuesRhs += rhs->getRowSkip();
                 valuesRes += res->getRowSkip();
@@ -339,8 +362,15 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         
         res->prepareAppend();
         for(size_t r = 0; r < numRows; r++)
-            for(size_t c = 0; c < numCols; c++)
-                res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
+            for(size_t c = 0; c < numCols; c++){
+                if constexpr (std::is_same_v<VT, StringScalarType>){
+                    auto temporaryString = func(lhs->get(r, c), rhs->get(r, c), ctx);
+                    res->append(r, c, temporaryString);
+                    if(opCode == BinaryOpCode::CONCAT)
+                        delete[] temporaryString;
+                } else
+                    res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
+            }
         res->finishAppend();
     }
 };

@@ -683,7 +683,7 @@
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "CONCAT"]
             }
         ]
     },
@@ -819,7 +819,8 @@
             [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"],
-            [["DenseMatrix", "uint8_t"], "uint8_t"]
+            [["DenseMatrix", "uint8_t"], "uint8_t"],
+            [["DenseMatrix", "const char *"], "const char *"]
         ]
     },
     {
@@ -851,7 +852,8 @@
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint64_t"]],
             [["DenseMatrix", "uint8_t"]],
-            [["DenseMatrix", "bool"]]
+            [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "const char *"]]
         ]
     },
     {
@@ -1180,6 +1182,7 @@
             [["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"]],
             [["DenseMatrix", "bool"]],
+            [["DenseMatrix", "const char *"]],
             [["CSRMatrix", "double"]],
             [["CSRMatrix", "float"]],
             [["CSRMatrix", "int64_t"]],
@@ -1456,7 +1459,8 @@
         "instantiations": [
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
-            [["DenseMatrix", "bool"], ["DenseMatrix", "bool"]]
+            [["DenseMatrix", "bool"], ["DenseMatrix", "bool"]],
+            [["DenseMatrix", "const char *"], ["DenseMatrix", "const char *"]]
         ]
     },
     {
@@ -1665,7 +1669,7 @@
             ["float", "float"],
             ["int64_t", "int64_t"]
         ],
-        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND"]
+        "opCodes": ["SIGN", "SQRT", "EXP", "ABS", "FLOOR", "CEIL", "ROUND", "UPPERCASE", "LOWERCASE"]
     },
     {
         "kernelTemplate": {
@@ -2871,6 +2875,35 @@
         },
         "instantiations": [
             ["Frame"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "Like.h",
+            "opName": "like",
+            "returnType": "void",
+            "templateParams": [
+            ],
+            "runtimeParams": [
+                {
+                    "type": "StringMatrix *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const StringMatrix *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const size_t",
+                    "name": "colIdx"
+                },
+                {
+                    "type": "std::string_view",
+                    "name": "pattern"
+                }
+            ]
+        },
+        "instantiations": [
         ]
     }
 ]

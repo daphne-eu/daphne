@@ -87,6 +87,7 @@ set(TEST_SOURCES
         runtime/local/kernels/HasSpecialValueTest.cpp
         runtime/local/kernels/InnerJoinTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
+        runtime/local/kernels/LikeTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/OrderTest.cpp

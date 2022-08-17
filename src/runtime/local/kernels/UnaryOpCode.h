@@ -29,6 +29,9 @@ enum class UnaryOpCode {
     FLOOR,
     CEIL,
     ROUND,
+    // String-only.
+    LOWERCASE,
+    UPPERCASE
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_UNARYOPCODE_H

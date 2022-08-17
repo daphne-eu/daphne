@@ -30,7 +30,15 @@ template<class DT>
 void checkTranspose(const DT * arg, const DT * exp) {
     DT * res = nullptr;
     transpose<DT, DT>(res, arg, nullptr);
-    CHECK(*res == *exp);
+    if constexpr(std::is_same_v<DT, DenseMatrix<const char*>>){
+        for(size_t val = 0; val < exp->getNumItems(); val++){
+            CHECK(strcmp(res->getValues()[val], exp->getValues()[val]) == 0);
+            if(val < exp->getNumItems()-1)
+                CHECK((res->getValues()[val] + strlen(res->getValues()[val]) + 1) == res->getValues()[val+1]);
+        }
+    }
+    else
+        CHECK(*res == *exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (double, uint32_t)) {
@@ -51,6 +59,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (
             3, 7, 11,
             4, 8, 12,
         });
+        checkTranspose(m, mt);
+        DataObjectFactory::destroy(m, mt);
     }
     SECTION("sparse matrix") {
         m = genGivenVals<DT>(5, {
@@ -68,6 +78,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (
             0, 0, 4, 0, 6,
             0, 0, 0, 0, 0,
         });
+        checkTranspose(m, mt);
+        DataObjectFactory::destroy(m, mt);
     }
     SECTION("empty matrix") {
         m = genGivenVals<DT>(3, {
@@ -81,10 +93,53 @@ TEMPLATE_PRODUCT_TEST_CASE("Transpose", TAG_KERNELS, (DenseMatrix, CSRMatrix), (
             0, 0, 0,
             0, 0, 0,
         });
+        checkTranspose(m, mt);
+        DataObjectFactory::destroy(m, mt);
+    }
+    SECTION("String matrix 1") {
+        auto mString = genGivenVals<DenseMatrix<const char*>>(3, {
+            "1", "2", "3", "4",
+            "5", "6", "7", "8",
+            "9", "10", "11", "12",
+        });
+        auto mtString = genGivenVals<DenseMatrix<const char*>>(4, {
+            "1", "5",  "9",
+            "2", "6", "10",
+            "3", "7", "11",
+            "4", "8", "12",
+        });
+        checkTranspose(mString, mtString);
+        DataObjectFactory::destroy(mString, mtString);
     }
 
-    checkTranspose(m, mt);
+    SECTION("String matrix 2") {
+        auto mString = genGivenVals<DenseMatrix<const char*>>(3, {
+            "1", "", "", "",
+            "", "6", "", "8",
+            "9", "", "", "",
+        });
+        auto mtString = genGivenVals<DenseMatrix<const char*>>(4, {
+            "1", "",  "9",
+            "", "6", "",
+            "", "", "",
+            "", "8", "",
+        });
+        checkTranspose(mString, mtString);
+        DataObjectFactory::destroy(mString, mtString);
+    }
 
-    DataObjectFactory::destroy(m);
-    DataObjectFactory::destroy(mt);
+    SECTION("String vector 1") {
+        auto mString = genGivenVals<DenseMatrix<const char*>>(1, {
+            "1", "2", "", "4",
+        });
+        auto mtString = genGivenVals<DenseMatrix<const char*>>(4, {
+            "1",
+            "2", 
+            "", 
+            "4", 
+        });
+        checkTranspose(mString, mtString);
+        checkTranspose(mtString, mString);
+        DataObjectFactory::destroy(mString, mtString);
+    }
 }
