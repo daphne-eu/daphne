@@ -19,6 +19,13 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
+#include <runtime/local/datastructures/ObjectMetaData.h>
+
+#include <runtime/distributed/proto/worker.pb.h>
+#include <runtime/distributed/proto/worker.grpc.pb.h>
+#include <runtime/distributed/proto/ProtoDataConverter.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -31,36 +38,40 @@ using mlir::daphne::VectorCombine;
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTArgs>
+template<ALLOCATION_TYPE AT, class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, ALLOCATION_TYPE alloc_type, DCTX(ctx)) = delete;
+    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTArgs>
-void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, ALLOCATION_TYPE alloc_type, DCTX(ctx))
+template<ALLOCATION_TYPE AT, class DTRes, class DTArgs>
+void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx))
 {
-    DistributedCompute<DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, alloc_type, ctx);
+    DistributedCompute<AT, DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, ctx);
 }
 
 // ****************************************************************************
-// (Partial) template specializations for different data/value types
+// (Partial) template specializations for different distributed backends
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// GRPC
+// ----------------------------------------------------------------------------
+
+
 template<class DTRes>
-struct DistributedCompute<DTRes, const Structure>
+struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
 {
     static void apply(DTRes **&res,
                       size_t numOutputs,
                       const Structure **args,
                       size_t numInputs,
                       const char *mlirCode,
-                      VectorCombine *vectorCombine,
-                      ALLOCATION_TYPE alloc_type,
+                      VectorCombine *vectorCombine,                      
                       DCTX(ctx))
     {
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
@@ -76,18 +87,20 @@ struct DistributedCompute<DTRes, const Structure>
         }
         workers.push_back(workersStr);
         
+        struct StoredInfo {
+            std::string addr;
+        };                
+        DistributedGRPCCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
 
         // Initialize Distributed index array, needed for results
         DistributedIndex *ix[numOutputs];
         for (size_t i = 0; i <numOutputs; i++)
-            ix[i] = new DistributedIndex(0, 0);
+            ix[i] = new DistributedIndex(0, 0);     
         
-
-        
-        
-         // Iterate over workers
+        // Iterate over workers
         // Pass all the nessecary arguments for the pipeline
         for (auto addr : workers) {
+            // Set output meta data
             for (size_t i = 0; i < numOutputs; i++){                 
                 // Get Result ranges
                 auto combineType = vectorCombine[i];
@@ -104,29 +117,11 @@ struct DistributedCompute<DTRes, const Structure>
                 else
                     assert(!"Only Rows/Cols combineType supported atm");
 
-                IAllocationDescriptor *allocationDescriptor;
                 DistributedData data;
                 data.ix = *ix[i];
                 data.vectorCombine = vectorCombine[i];
                 data.isPlacedAtWorker = true;
-                
-                // Find alloc_type
-                switch (alloc_type){
-                    case ALLOCATION_TYPE::DIST_GRPC:
-                        allocationDescriptor = new AllocationDescriptorDistributedGRPC(
-                                                ctx,
-                                                addr,
-                                                data);
-                        break;
-                    case ALLOCATION_TYPE::DIST_OPENMPI:
-                        std::runtime_error("MPI support missing");
-                        break;
-                            
-                    default:
-                        std::runtime_error("No distributed implementation found");
-                        break;
-                }  
-                
+                                
                 // Update distributed index for next iteration
                 // and set ranges for objmetadata
                 Range range;
@@ -150,53 +145,57 @@ struct DistributedCompute<DTRes, const Structure>
                 // If omd already exists for this worker, update the range and data
                 if (auto omd = (*res[i])->getObjectMetaDataByLocation(addr)) { 
                     (*res[i])->updateRangeObjectMetaDataByID(omd->omd_id, &range);
-                    dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);                    
+                    dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);                    
                 }
-                else { // else create new omd entry
-                    // TODO allocate specific implementation based on alloc_type
+                else { // else create new omd entry   
+                    AllocationDescriptorDistributedGRPC *allocationDescriptor;
                     allocationDescriptor = new AllocationDescriptorDistributedGRPC(
-                                                ctx, 
-                                                addr,
-                                                data);            
+                                            ctx,
+                                            addr,
+                                            data);                                    
                     ((*res[i]))->addObjectMetaData(allocationDescriptor, &range);                    
                 } 
             }
-        }
 
-        // Find alloc_type
-        IAllocationDescriptorDistributed *backend;
-        switch (alloc_type){
-            case ALLOCATION_TYPE::DIST_GRPC:
-                backend = new AllocationDescriptorDistributedGRPC();
-                break;
-            case ALLOCATION_TYPE::DIST_OPENMPI:
-                std::runtime_error("MPI support missing");
-                break;
-                    
-            default:
-                std::runtime_error("No distributed implementation found");
-                break;
-        }         
-        auto results = backend->Compute(args, numInputs, mlirCode);
-        size_t outputIdx = 0;
-        for (auto &output : results){ 
-            for (auto &workerResponse : output) {
-                auto worker_identifier = workerResponse.first;
-                auto resMat = *res[outputIdx];
-                auto omd_id = resMat->getObjectMetaDataByLocation(worker_identifier)->omd_id;
+            distributed::Task task;
+            for (size_t i = 0; i < numInputs; i++){
+                auto omd = args[i]->getObjectMetaDataByLocation(addr);
+                auto distrData = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();\
 
-                auto storedInfo = workerResponse.second;
-                auto omd = resMat->getObjectMetaDataByID(omd_id);
-            
-                auto data = dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).getDistributedData();
-                data.filename = storedInfo.filename;
-                data.numRows = storedInfo.numRows;
-                data.numCols = storedInfo.numCols;
-                data.isPlacedAtWorker = true;
-                dynamic_cast<IAllocationDescriptorDistributed&>(*(omd->allocation)).updateDistributedData(data);
+                distributed::StoredData protoData;
+                protoData.set_filename(distrData.filename);
+                protoData.set_num_cols(distrData.numCols);
+                protoData.set_num_rows(distrData.numRows);
+
+                *task.add_inputs()->mutable_stored() = protoData;
             }
-            outputIdx++;
-        }        
+            task.set_mlir_code(mlirCode);
+            StoredInfo storedInfo({addr});    
+            // TODO for now resuing channels seems to slow things down... 
+            // It is faster if we generate channel for each call and let gRPC handle resources internally
+            // We might need to change this in the future and re-use channels ( data.getChannel() )
+            caller.asyncComputeCall(addr, storedInfo, task);
+        }
+        
+        // Get Results
+        while (!caller.isQueueEmpty()){
+            auto response = caller.getNextResult();
+            auto addr = response.storedInfo.addr;
+            
+            auto computeResult = response.result;            
+            
+            for (int o = 0; o < computeResult.outputs_size(); o++){            
+                auto resMat = *res[o];
+                auto omd = resMat->getObjectMetaDataByLocation(addr);
+
+                auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();
+                data.filename = computeResult.outputs()[o].stored().filename();
+                data.numRows = computeResult.outputs()[o].stored().num_rows();
+                data.numCols = computeResult.outputs()[o].stored().num_cols();
+                data.isPlacedAtWorker = true;
+                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);                                                
+            }            
+        }                
     }
 };
 

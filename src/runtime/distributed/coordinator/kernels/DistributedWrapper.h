@@ -24,7 +24,6 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCollect.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
-#include <runtime/distributed/coordinator/kernels/IAllocationDescriptorDistributed.h>
 #include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
 
 
@@ -81,7 +80,7 @@ public:
         // Backend Implementation 
         // gRPC hard-coded selection
         // TODO choose implementation based on configFile/command-line argument        
-        auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
+        const auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
 
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
@@ -109,27 +108,27 @@ public:
             // (i.e. rows/cols splitted accordingly). If it does then we can skip.
             if (isBroadcast(splits[i], inputs[i])){
                 auto type = inputTypes.at(i);
-                if (type==INPUT_TYPE::Matrix) {
-                    broadcast(inputs[i], false, alloc_type, _ctx);
+                if (type==INPUT_TYPE::Matrix) {            
+                    broadcast<alloc_type>(inputs[i], false, _ctx);
                 }
                 else {
-                    broadcast(inputs[i], true, alloc_type, _ctx);
+                    broadcast<alloc_type>(inputs[i], true, _ctx);
                 }
             }
             else {
                 assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
                 // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
-                distribute(inputs[i], alloc_type, _ctx);        
+                distribute<alloc_type>(inputs[i], _ctx);        
             }
         }
 
           
-        distributedCompute(res, numOutputs, inputs, numInputs, mlirCode, combines, alloc_type, _ctx);
+        distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect(*res[o], alloc_type, _ctx);           
+            distributedCollect<alloc_type>(*res[o], _ctx);           
         }
         
         

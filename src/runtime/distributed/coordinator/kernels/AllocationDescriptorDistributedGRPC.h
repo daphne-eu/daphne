@@ -17,21 +17,77 @@
 #pragma once
 
 #include <runtime/local/datastructures/Structure.h>
-#include <runtime/distributed/coordinator/kernels/IAllocationDescriptorDistributed.h>
+#include <runtime/local/datastructures/ObjectMetaData.h>
 
-class AllocationDescriptorDistributedGRPC : public IAllocationDescriptorDistributed {
+class DistributedIndex
+{
+public:
+    DistributedIndex() : row_(0), col_(0)
+    {}
+    DistributedIndex(size_t row, size_t col) : row_(row), col_(col)
+    {}
+
+    size_t getRow() const
+    {
+        return row_;
+    }
+    size_t getCol() const
+    {
+        return col_;
+    }
+
+    bool operator<(const DistributedIndex rhs) const
+    {
+        if (row_ < rhs.row_)
+            return true;
+        else if (row_ == rhs.row_)
+            return col_ < rhs.col_;
+        return false;
+    }
+
 private:
+    size_t row_;
+    size_t col_;
+};
+
+
+struct DistributedData
+{
+    std::string filename;
+    size_t numRows, numCols;
+    mlir::daphne::VectorCombine vectorCombine;
+    bool isPlacedAtWorker = false;
+    DistributedIndex ix;
+
+};
+
+class AllocationDescriptorDistributedGRPC : public IAllocationDescriptor {
+private:
+    DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
+    std::string workerAddress;
+    DistributedData data;
 public:
     AllocationDescriptorDistributedGRPC() {} ;
     AllocationDescriptorDistributedGRPC(DaphneContext* ctx, 
-                            std::string workerAddress, 
-                            DistributedData data) : 
-                 IAllocationDescriptorDistributed(ctx, workerAddress, data) { };
+                            std::string address, 
+                            DistributedData data) : ctx(ctx), workerAddress(address), data(data) { } ;
 
+    ~AllocationDescriptorDistributedGRPC() override {};
     [[nodiscard]] ALLOCATION_TYPE getType() const override 
     { return type; };
     
+    std::string getLocation() const override 
+    {return workerAddress; };
+    void createAllocation(size_t size, bool zero) override {} ;
+    std::shared_ptr<std::byte> getData() override {} ;
+
+    bool operator==(const IAllocationDescriptor* other) const override {
+        if(getType() == other->getType())
+            return(getLocation() == dynamic_cast<const AllocationDescriptorDistributedGRPC *>(other)->getLocation());
+        return false;
+    } ;
+
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorDistributedGRPC>(*this);
     }
@@ -40,10 +96,10 @@ public:
     void transferTo(std::byte *src, size_t size) override { /* TODO */ };
     void transferFrom(std::byte *src, size_t size) override { /* TODO */ };
 
-    // Primitives
-    DistributedResult Distribute(const Structure *arg) override;
-    DistributedResult Broadcast(const Structure *arg) override;
-    DistributedResult Broadcast(const double *val, const Structure *arg) override;
-    DistributedComputeResult Compute(const Structure **args, size_t numInputs, const char *mlirCode) override;
-    void Collect(Structure *arg) override;
+    const DistributedIndex getDistributedIndex()
+    { return data.ix; }    
+    const DistributedData getDistributedData()
+    { return data; }
+    void updateDistributedData(DistributedData data_)
+    { data = data_; }
 };
