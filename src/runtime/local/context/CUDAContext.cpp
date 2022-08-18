@@ -18,7 +18,7 @@
 
 void CUDAContext::destroy() {
 #ifndef NDEBUG
-    std::cout << "Destroying CUDA context..." << std::endl;
+    std::cerr << "Destroying CUDA context..." << std::endl;
 #endif
     CHECK_CUBLAS(cublasDestroy(cublas_handle));
     CHECK_CUSPARSE(cusparseDestroy(cusparse_handle));
