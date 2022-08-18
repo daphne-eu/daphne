@@ -27,6 +27,3 @@ DenseMatrix(4x1, const char*)
 ""
 "The answer is"
 "42"
-DenseMatrix(2x2, const char*)
-"Hello" ""
-"The answer is" "42"

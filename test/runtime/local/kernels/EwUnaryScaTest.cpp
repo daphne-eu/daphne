@@ -27,6 +27,7 @@
 #define TEST_NAME(opName) "EwUnarySca (" opName ")"
 #define SI_VALUE_TYPES int8_t, int32_t, int64_t
 #define FP_VALUE_TYPES float, double
+#define STRING_TYPE const char*
 #define VALUE_TYPES SI_VALUE_TYPES, FP_VALUE_TYPES
 
 template<UnaryOpCode opCode, typename VT>
@@ -77,8 +78,8 @@ TEMPLATE_TEST_CASE(TEST_NAME("sign, floating-point-specific"), TAG_KERNELS, FP_V
 // ****************************************************************************
 // String
 // ****************************************************************************
-TEMPLATE_TEST_CASE(TEST_NAME("Lower/UpperCase"), TAG_KERNELS, VALUE_TYPES) {
-    using VT = const char* ;
+TEMPLATE_TEST_CASE(TEST_NAME("Lower/UpperCase"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
     VT arg = "hElLo";
     VT expUpper = "HELLO";
     VT expLower = "hello";

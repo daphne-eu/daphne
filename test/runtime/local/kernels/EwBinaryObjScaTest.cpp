@@ -35,11 +35,15 @@
 #define TEST_NAME(opName) "EwBinaryObjSca (" opName ")"
 #define DATA_TYPES DenseMatrix
 #define VALUE_TYPES double, uint32_t
+#define STRING_TYPE const char*
 
-template<class DT>
-void checkEwBinaryMatSca(BinaryOpCode opCode, const DT * lhs, typename DT::VT rhs, const DT * exp) {
-    DT * res = nullptr;
-    ewBinaryObjSca<DT, DT, typename DT::VT>(opCode, res, lhs, rhs, nullptr);
+template<class DTLhs, typename VTRhs, class DTRes>
+void checkEwBinaryMatSca(BinaryOpCode opCode, const DTLhs * lhs, VTRhs rhs, const DTRes * exp) {
+    DTRes * res = nullptr;
+    if constexpr(std::is_same_v<VTRhs, const char*>)
+        ewBinaryObjSca<DTRes, DTLhs, VTRhs>(opCode, res, lhs, rhs, nullptr);
+    else
+        ewBinaryObjSca<DTRes, DTLhs, typename DTLhs::VT>(opCode, res, lhs, rhs, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
@@ -509,6 +513,40 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DATA_TYPES), (VALUE_TY
     }
     
     DataObjectFactory::destroy(m1, mExp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("like"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    auto mLike = genGivenVals<DenseMatrix<const char*>>(5, {"12", "Prasliker", "51",  
+                                    "54", "Trampoler", "77",
+                                    "22", "Maxasminlike", "43",  
+                                    "98", "Phonyname", "85",
+                                    "123", "Maraslimilikes","222"});
+    SECTION("LIKE 1") {
+        const char* pattern = "%as%like_";
+        auto mExp = genGivenVals<DenseMatrix<int>>(5, {
+        0, 1, 0,  
+        0, 0, 0,
+        0, 0, 0,
+        0, 0, 0,
+        0, 1, 0});
+        checkEwBinaryMatSca(BinaryOpCode::LIKE, mLike, pattern, mExp);
+        DataObjectFactory::destroy(mExp);
+    }
+
+    DataObjectFactory::destroy(mLike);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("concat"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    auto mConcat = genGivenVals<DenseMatrix<const char*>>(2, {"12", "23", "34", "90", "as", "triple",});
+
+    SECTION("CONCAT 1") {
+        const char* suffix = "X";
+        auto mExp = genGivenVals<DenseMatrix<const char*>>(2, {"12X", "23X", "34X", "90X", "asX", "tripleX",});
+        checkEwBinaryMatSca(BinaryOpCode::CONCAT, mConcat, suffix, mExp);
+        DataObjectFactory::destroy(mExp);
+    }
+    
+    DataObjectFactory::destroy(mConcat);
 }
 
 // ****************************************************************************

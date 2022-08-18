@@ -30,11 +30,17 @@
 #define TEST_NAME(opName) "AggAll (" opName ")"
 #define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
+#define STRING_TYPE const char*
 
 template<class DT>
 void checkAggAll(AggOpCode opCode, const DT * arg, typename DT::VT exp) {
     typename DT::VT res = aggAll<DT>(opCode, arg, nullptr);
-    CHECK(res == exp);
+    if constexpr(std::is_same_v<typename DT::VT, const char*>){
+        CHECK(strcmp(res, exp) == 0);
+        delete[] res;
+    }
+    else
+        CHECK(res == exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -114,6 +120,33 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2);
 }
 
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max - string specific"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    using DT = TestType;
+    
+    auto m0 = genGivenVals<DT>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+
+    checkAggAll(AggOpCode::MAX, m0, "Zimbabwe");
+    
+    DataObjectFactory::destroy(m0);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min - string specific"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    using DT = TestType;
+    
+    auto m0 = genGivenVals<DT>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+
+    checkAggAll(AggOpCode::MIN, m0, "Australia");
+    
+    DataObjectFactory::destroy(m0);
+}
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;

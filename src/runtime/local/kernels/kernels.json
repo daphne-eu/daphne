@@ -2873,34 +2873,5 @@
         "instantiations": [
             ["Frame"]
         ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "Like.h",
-            "opName": "like",
-            "returnType": "void",
-            "templateParams": [
-            ],
-            "runtimeParams": [
-                {
-                    "type": "StringMatrix *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const StringMatrix *",
-                    "name": "arg"
-                },
-                {
-                    "type": "const size_t",
-                    "name": "colIdx"
-                },
-                {
-                    "type": "std::string_view",
-                    "name": "pattern"
-                }
-            ]
-        },
-        "instantiations": [
-        ]
     }
 ]

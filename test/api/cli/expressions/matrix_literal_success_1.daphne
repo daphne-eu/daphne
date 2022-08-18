@@ -15,5 +15,3 @@ print(checkMatBool);
 
 checkMatString= ["Hello", "", "The answer is", "42"];
 print(checkMatString);
-checkMatString = reshape(checkMatString, 2, 2);
-print(checkMatString);

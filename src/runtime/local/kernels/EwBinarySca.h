@@ -22,6 +22,7 @@
 
 #include <algorithm>
 #include <stdexcept>
+#include <regex>
 
 #include <cmath>
 #include <cstring>
@@ -72,7 +73,7 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
     } else{
         // Numeric-output ops
         if constexpr(!std::is_same_v<VTLhs, StringScalarType>){
-            // Numeric-input ops instantiation
+            // Strictly (numeric -> numeric)
             switch (opCode) {
                 // Arithmetic.
                 MAKE_CASE(BinaryOpCode::ADD)
@@ -92,7 +93,15 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
                     break;
             }
         }
-        // Mixed types (in: string, out:int) instantiation
+        else {
+            // Strictly (non-numeric -> numeric)
+            switch (opCode) {
+                MAKE_CASE(BinaryOpCode::LIKE)
+                default:
+                    break;
+            }
+        }
+        // Mixed types (numeric->numeric, string->numeric) instantiations
         switch (opCode) {
             // Comparisons.
             MAKE_CASE(BinaryOpCode::EQ)
@@ -101,7 +110,6 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
             MAKE_CASE(BinaryOpCode::LE)
             MAKE_CASE(BinaryOpCode::GT)
             MAKE_CASE(BinaryOpCode::GE)
-
             default:
                 throw std::runtime_error("unknown BinaryOpCode");
         }
@@ -148,6 +156,29 @@ struct EwBinarySca<BinaryOpCode::CONCAT, StringScalarType, StringScalarType, Str
         memcpy(temporaryStrPtr, lhs, lhsLength - 1);
         memcpy(temporaryStrPtr + lhsLength - 1, rhs, rhsLength);
         return temporaryStrPtr;
+    }
+};
+
+template<>
+struct EwBinarySca<BinaryOpCode::LIKE, int, StringScalarType, StringScalarType> {
+    static const char wildCardAnyNumberChars = '%';
+    static const char wildCardSingleChar = '_';
+
+    static std::regex createRegex(StringScalarType pattern){
+        std::string expression(pattern);
+        for(size_t charIdx = 0; charIdx < expression.size(); charIdx++){
+            if(expression[charIdx] == wildCardAnyNumberChars){
+                expression.replace(charIdx, 1, ".*", 2);
+                charIdx++;
+            }else if(expression[charIdx] == wildCardSingleChar)
+                expression[charIdx] = '.';
+        }
+        return std::regex(expression);
+    }
+
+    inline static int apply(StringScalarType stringScalar, StringScalarType pattern, DCTX(ctx)) {
+        const std::regex exprToMatch = createRegex(pattern);
+        return std::regex_match(stringScalar, exprToMatch);
     }
 };
 

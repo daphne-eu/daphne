@@ -62,8 +62,12 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
         const size_t numRowsRhs = rhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
 
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
+        if(res == nullptr){
+            if constexpr(std::is_same_v<VTres, StringScalarType>)
+                res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false, lhs->getStrBufSize() + rhs->getStrBufSize());
+            else
+                res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
+        }
         
         const VTlhs * valuesLhs = lhs->getValues();
         const VTrhs * valuesRhs = rhs->getValues();

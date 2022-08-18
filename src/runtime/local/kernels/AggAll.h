@@ -64,7 +64,10 @@ struct AggAll<DenseMatrix<VT>> {
         VT agg;
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
             func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
-            agg = AggOpCodeUtils::template getNeutral<VT>(opCode);
+            if constexpr(std::is_same_v<VT, StringScalarType>){
+                agg = valuesArg[0];
+            } else
+                agg = AggOpCodeUtils::template getNeutral<VT>(opCode);
         }
         else {
             // TODO Setting the function pointer yields the correct result.
@@ -81,16 +84,26 @@ struct AggAll<DenseMatrix<VT>> {
                 agg = func(agg, valuesArg[c], ctx);
             valuesArg += arg->getRowSkip();
         }
+        if constexpr(std::is_same_v<VT, StringScalarType>){
+            auto allocatedStr = new char[strlen(agg) + 1];
+            strcpy(allocatedStr, agg);
+            agg = allocatedStr;
+        }
+
         if (AggOpCodeUtils::isPureBinaryReduction(opCode))
             return agg;
-
-        // The op-code is either MEAN or STDDEV.
-        if (opCode == AggOpCode::MEAN) {
-            agg /= arg->getNumCols() * arg->getNumRows();
-            return agg;
+        
+        if constexpr(std::is_same_v<VT, StringScalarType>)
+            throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix of strings");
+        else{
+            // The op-code is either MEAN or STDDEV.
+            if (opCode == AggOpCode::MEAN) {
+                agg /= arg->getNumCols() * arg->getNumRows();
+                return agg;
+            }
+            // else op-code is STDDEV
+            // TODO STDDEV
         }
-        // else op-code is STDDEV
-        // TODO STDDEV
         throw std::runtime_error("unsupported AggOpCode in AggAll for DenseMatrix");
     }
 };

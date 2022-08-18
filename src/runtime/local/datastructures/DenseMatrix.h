@@ -495,6 +495,12 @@ public:
         return strBuf;
     }
 
+    size_t getStrBufSize() const{
+        if(!strBuf)
+            const_cast<DenseMatrix*>(this)->alloc_shared_strings();
+        return strBuf.get()->getSize();
+    }
+
     CharBuf* getStrBuf() const{
         if(!strBuf)
             const_cast<DenseMatrix*>(this)->alloc_shared_strings();

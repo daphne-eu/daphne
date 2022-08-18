@@ -30,6 +30,7 @@
 #define TEST_NAME(opName) "AggRow (" opName ")"
 #define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
+#define STRING_TYPE const char*
 
 template<class DTRes, class DTArg>
 void checkAggRow(AggOpCode opCode, const DTArg * arg, const DTRes * exp) {
@@ -90,19 +91,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {0, 0, 0});
-    auto m3 = genGivenVals<DenseMatrix<const char*>>(3, {
-        "Zambia", "Australia", "UAE", "India",
-        "Portugal", "Germany", "Zimbabwe", "Vatican",
-        "Austria", "Finland", "Canada", "Iceland",
-    });
-    auto m3exp = genGivenVals<DenseMatrix<const char*>>(1, {"Australia", "Germany", "Austria"});
     
     checkAggRow(AggOpCode::MIN, m0, m0exp);
     checkAggRow(AggOpCode::MIN, m1, m1exp);
     checkAggRow(AggOpCode::MIN, m2, m2exp);
-    checkAggRow(AggOpCode::MIN, m3, m3exp);
 
-    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
@@ -127,21 +121,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {9, 2, 5});
-    
-    auto m3 = genGivenVals<DenseMatrix<const char*>>(3, {
-        "Zambia", "Australia", "UAE", "India",
-        "Portugal", "Germany", "Zimbabwe", "Vatican",
-        "Austria", "Finland", "Canada", "Iceland",
-    });
-    auto m3exp = genGivenVals<DenseMatrix<const char*>>(1, {"Zambia", "Zimbabwe", "Iceland"});
-    
 
     checkAggRow(AggOpCode::MAX, m0, m0exp);
     checkAggRow(AggOpCode::MAX, m1, m1exp);
     checkAggRow(AggOpCode::MAX, m2, m2exp);
-    checkAggRow(AggOpCode::MAX, m3, m3exp);
     
-    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
@@ -166,19 +151,12 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VAL
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {1, 0, 0});
-    auto m3 = genGivenVals<DenseMatrix<const char*>>(3, {
-        "Zambia", "Australia", "UAE", "India",
-        "Portugal", "Germany", "Zimbabwe", "Vatican",
-        "Austria", "Finland", "Canada", "Iceland",
-    });
-    auto m3exp = genGivenVals<DenseMatrix<int>>(3, {1, 1, 0});
     
     checkAggRow(AggOpCode::IDXMIN, m0, m0exp);
     checkAggRow(AggOpCode::IDXMIN, m1, m1exp);
     checkAggRow(AggOpCode::IDXMIN, m2, m2exp);
-    checkAggRow(AggOpCode::IDXMIN, m3, m3exp);
 
-    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp, m3, m3exp);
+    DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
@@ -207,8 +185,65 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
     checkAggRow(AggOpCode::IDXMAX, m0, m0exp);
     checkAggRow(AggOpCode::IDXMAX, m1, m1exp);
     checkAggRow(AggOpCode::IDXMAX, m2, m2exp);
-    
     DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min - string specific"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+
+    auto m0 = genGivenVals<DTArg>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+    auto m0exp = genGivenVals<DTRes>(1, {"Australia", "Germany", "Austria"});
+    
+    checkAggRow(AggOpCode::MIN, m0, m0exp);
+    DataObjectFactory::destroy(m0, m0exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max - string specific"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    using DTArg = TestType;
+    using DTRes = DenseMatrix<typename DTArg::VT>;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+    auto m0exp = genGivenVals<DTRes>(1, {"Zambia", "Zimbabwe", "Iceland"});
+
+    checkAggRow(AggOpCode::MAX, m0, m0exp);
+    DataObjectFactory::destroy(m0, m0exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin - string specific"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    using DTArg = TestType;
+
+    auto m0 = genGivenVals<DTArg>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+    auto m0exp = genGivenVals<DenseMatrix<int>>(3, {1, 1, 0});
+    
+    checkAggRow(AggOpCode::IDXMIN, m0, m0exp);
+    DataObjectFactory::destroy(m0, m0exp);
+}
+
+TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax - string specific"), TAG_KERNELS, (DenseMatrix), (STRING_TYPE)) {
+    using DTArg = TestType;
+    
+    auto m0 = genGivenVals<DTArg>(3, {
+        "Zambia", "Australia", "UAE", "India",
+        "Portugal", "Germany", "Zimbabwe", "Vatican",
+        "Austria", "Finland", "Canada", "Iceland",
+    });
+    auto m0exp = genGivenVals<DenseMatrix<int>>(3, {0, 2, 3});
+    
+    checkAggRow(AggOpCode::IDXMAX, m0, m0exp);
+    DataObjectFactory::destroy(m0, m0exp);
 }
 
 

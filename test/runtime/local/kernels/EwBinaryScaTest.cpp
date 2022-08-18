@@ -24,10 +24,11 @@
 
 #define TEST_NAME(opName) "EwBinarySca (" opName ")"
 #define VALUE_TYPES double, uint32_t
+#define STRING_TYPE const char*
 
 template<BinaryOpCode opCode, typename VTArg, typename VTRes>
 void checkEwBinarySca(VTArg lhs, VTArg rhs, VTRes exp) {
-    if constexpr(std::is_same_v<VTRes, StringScalarType>){
+    if constexpr(std::is_same_v<VTRes, const char*>){
         CHECK(strcmp(EwBinarySca<opCode, VTRes, VTArg, VTArg>::apply(lhs, rhs, nullptr), exp) == 0);
         CHECK(strcmp(ewBinarySca<VTRes, VTArg, VTArg>(opCode, lhs, rhs, nullptr), exp) == 0);
     }else{
@@ -68,8 +69,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::EQ, VT, VT>(0, 0, 1);
     checkEwBinarySca<BinaryOpCode::EQ, VT, VT>(3, 3, 1);
     checkEwBinarySca<BinaryOpCode::EQ, VT, VT>(3, 5, 0);
-    checkEwBinarySca<BinaryOpCode::EQ, const char*, int>("hi", "hi", 1);
-    checkEwBinarySca<BinaryOpCode::EQ, const char*, int>("hi", "bye", 0);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, VALUE_TYPES) {
@@ -77,8 +76,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::NEQ, VT, VT>(0, 0, 0);
     checkEwBinarySca<BinaryOpCode::NEQ, VT, VT>(3, 3, 0);
     checkEwBinarySca<BinaryOpCode::NEQ, VT, VT>(3, 5, 1);
-    checkEwBinarySca<BinaryOpCode::NEQ, const char*, int>("hi", "hi", 0);
-    checkEwBinarySca<BinaryOpCode::NEQ, const char*, int>("hi", "bye", 1);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, VALUE_TYPES) {
@@ -86,8 +83,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::LT, VT, VT>(1, 1, 0);
     checkEwBinarySca<BinaryOpCode::LT, VT, VT>(1, 3, 1);
     checkEwBinarySca<BinaryOpCode::LT, VT, VT>(4, 2, 0);
-    checkEwBinarySca<BinaryOpCode::LT, const char*, int>("wow", "cool", 0);
-    checkEwBinarySca<BinaryOpCode::LT, const char*, int>("bye", "hi", 1);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, VALUE_TYPES) {
@@ -95,8 +90,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::LE, VT, VT>(1, 1, 1);
     checkEwBinarySca<BinaryOpCode::LE, VT, VT>(1, 3, 1);
     checkEwBinarySca<BinaryOpCode::LE, VT, VT>(4, 2, 0);
-    checkEwBinarySca<BinaryOpCode::LE, const char*, int>("wow", "what", 0);
-    checkEwBinarySca<BinaryOpCode::LE, const char*, int>("bye", "hi", 1);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, VALUE_TYPES) {
@@ -104,8 +97,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::GT, VT, VT>(1, 1, 0);
     checkEwBinarySca<BinaryOpCode::GT, VT, VT>(1, 3, 0);
     checkEwBinarySca<BinaryOpCode::GT, VT, VT>(4, 2, 1);
-    checkEwBinarySca<BinaryOpCode::GT, const char*, int>("zebra", "what", 1);
-    checkEwBinarySca<BinaryOpCode::GT, const char*, int>("bye", "hi", 0);
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, VALUE_TYPES) {
@@ -113,8 +104,42 @@ TEMPLATE_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::GE, VT, VT>(1, 1, 1);
     checkEwBinarySca<BinaryOpCode::GE, VT, VT>(1, 3, 0);
     checkEwBinarySca<BinaryOpCode::GE, VT, VT>(4, 2, 1);
-    checkEwBinarySca<BinaryOpCode::GE, const char*, int>("zebra", "zebra", 1);
-    checkEwBinarySca<BinaryOpCode::GE, const char*, int>("bye", "hi", 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("eq - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::EQ, VT, int>("hi", "hi", 1);
+    checkEwBinarySca<BinaryOpCode::EQ, VT, int>("hi", "bye", 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("neq - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::NEQ, VT, int>("hi", "hi", 0);
+    checkEwBinarySca<BinaryOpCode::NEQ, VT, int>("hi", "bye", 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("lt - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::LT, VT, int>("wow", "cool", 0);
+    checkEwBinarySca<BinaryOpCode::LT, VT, int>("bye", "hi", 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("le - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::LE, VT, int>("wow", "what", 0);
+    checkEwBinarySca<BinaryOpCode::LE, VT, int>("bye", "hi", 1);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("gt - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::GT, VT, int>("zebra", "what", 1);
+    checkEwBinarySca<BinaryOpCode::GT, VT, int>("bye", "hi", 0);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("ge - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::GE, VT, int>("zebra", "zebra", 1);
+    checkEwBinarySca<BinaryOpCode::GE, VT, int>("bye", "hi", 0);
 }
 
 // ****************************************************************************
@@ -126,7 +151,6 @@ TEMPLATE_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::MIN, VT, VT>(2, 2, 2);
     checkEwBinarySca<BinaryOpCode::MIN, VT, VT>(2, 3, 2);
     checkEwBinarySca<BinaryOpCode::MIN, VT, VT>(3, 0, 0);
-    checkEwBinarySca<BinaryOpCode::MIN, const char*, const char*>("Antony", "John", "Antony");
 }
 
 TEMPLATE_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, VALUE_TYPES) {
@@ -134,7 +158,16 @@ TEMPLATE_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, VALUE_TYPES) {
     checkEwBinarySca<BinaryOpCode::MAX, VT, VT>(2, 2, 2);
     checkEwBinarySca<BinaryOpCode::MAX, VT, VT>(2, 3, 3);
     checkEwBinarySca<BinaryOpCode::MAX, VT, VT>(3, 0, 3);
-    checkEwBinarySca<BinaryOpCode::MAX, const char*, const char*>("Antony", "John", "John");
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("min - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MIN, VT, const char*>("Antony", "John", "Antony");
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("max - string specific"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    checkEwBinarySca<BinaryOpCode::MAX, VT, const char*>("Antony", "John", "John");
 }
 
 // ****************************************************************************
@@ -172,12 +205,20 @@ TEMPLATE_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, VALUE_TYPES) {
 // ****************************************************************************
 // String
 // ****************************************************************************
-TEMPLATE_TEST_CASE(TEST_NAME("CONCAT"), TAG_KERNELS, VALUE_TYPES) {
-    using VT = const char* ;
+TEMPLATE_TEST_CASE(TEST_NAME("concat"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
     VT lhs = "Hello";
     VT rhs = "World!";
     VT exp = "HelloWorld!";
     checkEwBinarySca<BinaryOpCode::CONCAT, VT, VT>(lhs, rhs, exp);
+}
+
+TEMPLATE_TEST_CASE(TEST_NAME("like"), TAG_KERNELS, STRING_TYPE) {
+    using VT = TestType;
+    VT lhs = "Heello";
+    VT pattern = "H%l%l_";
+    int exp = 1;
+    checkEwBinarySca<BinaryOpCode::LIKE, VT, int>(lhs, pattern, exp);
 }
 
 // ****************************************************************************
