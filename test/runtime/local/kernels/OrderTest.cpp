@@ -39,7 +39,7 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     auto c1 = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.1, -2, 4.4, 2.1, 1.1, 2.3, 0.5, 4.4, -10, 0, 2.1,
                                                         10, 10, 4.4, -0.3, -15.5, 10, -2.3, 10, -1.1 });
     auto c2 = genGivenVals<DenseMatrix<VT2>>(numRows, { 0, 0, 1, 1, 0, 0, 0, 3, 0, 0, 2, 1, 2, 3, 0, 0, 3, 0, 3, 0 });
-    auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 });
+    auto c3 = genGivenVals<DenseMatrix<VT3>>(numRows, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19 });
     
     std::vector<Structure *> colsArg = {c0, c1, c2, c3};
     auto arg = DataObjectFactory::create<Frame>(colsArg, nullptr);
