@@ -84,7 +84,6 @@ add_custom_command(
 
 list(APPEND LIBS DataStructures IO ProtoDataConverter BLAS::BLAS)
 
-find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
 
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED
@@ -94,6 +93,12 @@ add_library(AllKernels SHARED
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         Pooling.cpp)
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+
+#if(USE_DUCKDB)
+    find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+    target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+    list(APPEND LIBS ${DUCKDB_LIB})
+#endif()
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
