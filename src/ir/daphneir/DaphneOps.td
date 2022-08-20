@@ -268,6 +268,16 @@ def Daphne_ConcatOp : Daphne_Op<"concat"> {
     let hasFolder = 1;
 }
 
+def Daphne_EwLikeOp : Daphne_Op<"ewLike", [DeclareOpInterfaceMethods<DistributableOpInterface>,
+    DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    ShapeEwBinary]>{
+    let arguments = (ins AnyTypeOf<[MatrixOf<[StrScalar]>, StrScalar]>:$lhs, AnyTypeOf<[MatrixOf<[StrScalar]>, StrScalar]>:$rhs);
+    let results = (outs AnyTypeOf<[MatrixOf<[NumScalar]>, NumScalar]>:$res);
+
+    let hasFolder = 1;
+}
+
 // ----------------------------------------------------------------------------
 // Comparisons
 // ----------------------------------------------------------------------------

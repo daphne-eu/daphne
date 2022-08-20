@@ -136,6 +136,7 @@ IMPL_EWBINARYOP(EwXorOp)
 
 // Strings
 IMPL_EWBINARYOP(EwConcatOp)
+IMPL_EWBINARYOP(EwLikeOp)
 
 // Comparisons
 IMPL_EWBINARYOP(EwEqOp)

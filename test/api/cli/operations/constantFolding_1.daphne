@@ -7,6 +7,8 @@ a_ui = as.ui64(899);
 b_ui = as.ui64(171);
 t = true;
 f = false;
+word = "Hello";
+word_mat = ["Hello", "this", "is", "Helsinki"];
 // TODO: string concat
 
 print(t && t);
@@ -55,3 +57,7 @@ print(a_ui <  b_ui);
 print(a_ui <= b_ui);
 print(a_ui >  b_ui);
 print(a_ui >= b_ui);
+
+print(word like "%el%");
+print(word_mat like "_el%");
+print(word_mat like ["_el%", "%hi%", "%i_", "_el%n_ki"]);

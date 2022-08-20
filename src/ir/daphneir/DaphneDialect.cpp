@@ -43,6 +43,7 @@
 #include <llvm/ADT/BitVector.h>
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APSInt.h>
+#include <regex>
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -747,6 +748,34 @@ mlir::OpFoldResult mlir::daphne::EwXorOp::fold(ArrayRef<Attribute> operands) {
     // TODO: should output bool
     if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
         return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::EwLikeOp::fold(ArrayRef<Attribute> operands) {
+    assert(operands.size() == 2 && "binary op takes two operands");
+    if(!operands[0] || !operands[1]) 
+        return {};
+    if(operands[0].getType() != operands[1].getType())
+        return {};
+
+    if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
+        auto lhs = operands[0].cast<StringAttr>();
+        auto rhs = operands[1].cast<StringAttr>();
+        static const char wildCardAnyNumberChars = '%';
+        static const char wildCardSingleChar = '_';
+        std::string expression(rhs.getValue().str());
+        for(size_t charIdx = 0; charIdx < expression.size(); charIdx++){
+            if(expression[charIdx] == wildCardAnyNumberChars){
+                expression.replace(charIdx, 1, ".*", 2);
+                charIdx++;
+            }else if(expression[charIdx] == wildCardSingleChar)
+                expression[charIdx] = '.';
+        }
+        auto toMatch = std::regex(expression);
+        mlir::Type resType = IntegerType::get(lhs.getContext(), 32 , IntegerType::Signed);
+        return IntegerAttr::get(resType, std::regex_match(lhs.getValue().str(), toMatch));
+    }
+
     return {};
 }
 

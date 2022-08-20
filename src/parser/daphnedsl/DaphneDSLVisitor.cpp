@@ -942,6 +942,22 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     throw std::runtime_error("unexpected op symbol");
 }
 
+antlrcpp::Any DaphneDSLVisitor::visitLikeExpr(DaphneDSLGrammarParser::LikeExprContext * ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = utils.getLoc(ctx->op);
+    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
+    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
+    mlir::Type resType = builder.getIntegerType(32, true);
+    if(op == "like"){
+        if(lhs.getType().isa<mlir::daphne::MatrixType>())
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLikeOp>(loc, utils.matrixOf(resType), lhs, rhs));
+        else
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLikeOp>(loc, resType, lhs, rhs));
+    }
+    
+    throw std::runtime_error("unexpected op symbol");
+}
+
 antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprContext * ctx) {
     mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
     mlir::Location loc = utils.getLoc(ctx->start);

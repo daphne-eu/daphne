@@ -344,6 +344,16 @@ void daphne::EwConcatOp::inferTypes() {
     getResult().setType(StringType::get(getContext()));
 }
 
+void daphne::EwLikeOp::inferTypes() {
+    Type lhsType = lhs().getType();
+    Type t;
+    if(auto mt = lhsType.dyn_cast<daphne::MatrixType>())
+        t = mt.withElementType(IntegerType::get(getContext(), 32));
+    else
+        t = IntegerType::get(getContext(), 32);
+    getResult().setType(t);
+}
+
 void daphne::EwDivOp::inferTypes() {
     return inferTypes_EwArithOp(this);
 }

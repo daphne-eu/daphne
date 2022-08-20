@@ -607,9 +607,10 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "int32_t"], ["DenseMatrix", "const char *"], ["DenseMatrix", "const char *"]]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "LIKE"]
             },
             {
                 "name":  ["example_for_commented_or_unimplemented"],
@@ -672,9 +673,10 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], "float"],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"],
+                    [["DenseMatrix", "int32_t"], ["DenseMatrix", "const char *"], "const char *"]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "LIKE"]
             },
             {
                 "name":  ["CPP"],
@@ -726,9 +728,10 @@
             ["float", "float", "float"],
             ["int64_t", "int64_t", "int64_t"],
             ["uint64_t", "uint64_t", "uint64_t"],
-            ["uint32_t", "uint32_t", "uint32_t"]
+            ["uint32_t", "uint32_t", "uint32_t"],
+            ["int32_t", "const char *", "const char *"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "LIKE"]
     },
     {
         "kernelTemplate": {
@@ -1180,6 +1183,7 @@
             [["DenseMatrix", "double"]],
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"]],
             [["DenseMatrix", "uint8_t"]],
             [["DenseMatrix", "bool"]],
             [["DenseMatrix", "const char *"]],
