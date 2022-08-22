@@ -50,7 +50,7 @@ struct VectorizedPipeline {
             outputs2[i] = outputs + i;
         
         if(ctx->getUserConfig().vectorized_single_queue || numFuncs == 1) {
-            wrapper->executeSingleQueue(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+            wrapper->executeCpuQueues(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
         else {
