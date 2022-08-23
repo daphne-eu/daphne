@@ -203,7 +203,7 @@ def Daphne_EwAtanOp : Daphne_EwUnaryOp<"ewAtan", FloatScalar>;
 // ****************************************************************************
 
 // TODO Temporarily commented, because otherwise it cannot handle UnknownType.
-class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
+class Daphne_EwBinaryOp<string name, Type inScalarType, Type outScalarType, list<OpTrait> traits = []>
 //: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
 : Daphne_Op<name, !listconcat(traits, [
     DeclareOpInterfaceMethods<DistributableOpInterface>,
@@ -211,8 +211,8 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     ShapeEwBinary
 ])> {
-    let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
-    let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
+    let arguments = (ins AnyTypeOf<[MatrixOf<[inScalarType]>, inScalarType]>:$lhs, AnyTypeOf<[MatrixOf<[inScalarType]>, inScalarType]>:$rhs);
+    let results = (outs AnyTypeOf<[MatrixOf<[outScalarType]>, outScalarType]>:$res);
 
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
@@ -228,36 +228,36 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
 // Arithmetic
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]> {
+def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, NumScalar, [Commutative, EwSparseIfBoth, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [EwSparseIfBoth, CUDASupport]>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [Commutative, EwSparseIfEither]>;
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [CUDASupport]>;
-def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [CUDASupport]>;
-def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar>;
-def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", FloatScalar>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, NumScalar, [EwSparseIfBoth, CUDASupport]>;
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, NumScalar, [Commutative, EwSparseIfEither]>;
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, NumScalar, [CUDASupport]>;
+def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, NumScalar, [CUDASupport]>;
+def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", IntScalar, IntScalar>;
+def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", FloatScalar, FloatScalar>;
 
 // ----------------------------------------------------------------------------
 // Min/max
 // ----------------------------------------------------------------------------
 
-def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, [Commutative]>;
-def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, [Commutative]>;
+def Daphne_EwMinOp    : Daphne_EwBinaryOp<"ewMin", AnyScalar, AnyScalar,[Commutative]>;
+def Daphne_EwMaxOp    : Daphne_EwBinaryOp<"ewMax", AnyScalar, AnyScalar, [Commutative]>;
 
 // ----------------------------------------------------------------------------
 // Logical
 // ----------------------------------------------------------------------------
 
-def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>, [Commutative]>;
-def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>, [Commutative]>;
-def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntScalar]>, [Commutative]>;
+def Daphne_EwAndOp    : Daphne_EwBinaryOp<"ewAnd", AnyTypeOf<[BoolScalar, IntScalar]>, AnyTypeOf<[BoolScalar, IntScalar]>,[Commutative]>;
+def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , AnyTypeOf<[BoolScalar, IntScalar]>, AnyTypeOf<[BoolScalar, IntScalar]>,[Commutative]>;
+def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", AnyTypeOf<[BoolScalar, IntScalar]>, AnyTypeOf<[BoolScalar, IntScalar]>,[Commutative]>;
 
 // ----------------------------------------------------------------------------
 // Strings
 // ----------------------------------------------------------------------------
 
-def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
+def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar, StrScalar>;
 
 // TODO This is just a quick and dirty solution that should be properly
 // integrated with EwConcatOp above.
@@ -268,33 +268,24 @@ def Daphne_ConcatOp : Daphne_Op<"concat"> {
     let hasFolder = 1;
 }
 
-def Daphne_EwLikeOp : Daphne_Op<"ewLike", [DeclareOpInterfaceMethods<DistributableOpInterface>,
-    DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    ShapeEwBinary]>{
-    let arguments = (ins AnyTypeOf<[MatrixOf<[StrScalar]>, StrScalar]>:$lhs, AnyTypeOf<[MatrixOf<[StrScalar]>, StrScalar]>:$rhs);
-    let results = (outs AnyTypeOf<[MatrixOf<[NumScalar]>, NumScalar]>:$res);
-
-    let hasFolder = 1;
-}
-
 // ----------------------------------------------------------------------------
 // Comparisons
 // ----------------------------------------------------------------------------
 
-class Daphne_EwCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []>
-: Daphne_EwBinaryOp<name, inputScalarType, traits> {
+class Daphne_EwCmpOp<string name, Type inputScalarType, Type outputScalarType, list<OpTrait> traits = []>
+: Daphne_EwBinaryOp<name, inputScalarType, outputScalarType, traits> {
     // TODO: We do not enforce (matrix of) boolean output any more, but should
     // think about that again.
     //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
 }
 
-def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, [Commutative]>;
-def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, [Commutative]>;
-def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
-def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
-def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
-def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
+def Daphne_EwEqOp  : Daphne_EwCmpOp<"ewEq" , AnyScalar, AnyScalar,[Commutative]>;
+def Daphne_EwNeqOp : Daphne_EwCmpOp<"ewNeq", AnyScalar, AnyScalar,[Commutative]>;
+def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar, AnyScalar>;
+def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar, AnyScalar>;
+def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar, AnyScalar>;
+def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar, AnyScalar>;
+def Daphne_EwLikeOp : Daphne_EwCmpOp<"ewLike" , StrScalar, NumScalar>;
 
 // ****************************************************************************
 // Aggregation and statistical

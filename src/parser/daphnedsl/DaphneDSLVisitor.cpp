@@ -914,6 +914,13 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if(op == ">=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+    if(op == "like"){
+        mlir::Type resType = builder.getIntegerType(32, true);
+        if(lhs.getType().isa<mlir::daphne::MatrixType>())
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLikeOp>(loc, utils.matrixOf(resType), lhs, rhs));
+        else
+            return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLikeOp>(loc, resType, lhs, rhs));
+    }
     
     throw std::runtime_error("unexpected op symbol");
 }
@@ -938,22 +945,6 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     
     if(op == "||")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
-    
-    throw std::runtime_error("unexpected op symbol");
-}
-
-antlrcpp::Any DaphneDSLVisitor::visitLikeExpr(DaphneDSLGrammarParser::LikeExprContext * ctx) {
-    std::string op = ctx->op->getText();
-    mlir::Location loc = utils.getLoc(ctx->op);
-    mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
-    mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    mlir::Type resType = builder.getIntegerType(32, true);
-    if(op == "like"){
-        if(lhs.getType().isa<mlir::daphne::MatrixType>())
-            return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLikeOp>(loc, utils.matrixOf(resType), lhs, rhs));
-        else
-            return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLikeOp>(loc, resType, lhs, rhs));
-    }
     
     throw std::runtime_error("unexpected op symbol");
 }

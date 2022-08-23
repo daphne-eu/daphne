@@ -43,6 +43,7 @@
 #include <llvm/ADT/BitVector.h>
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APSInt.h>
+#include <runtime/local/kernels/EwBinarySca.h>
 #include <regex>
 
 void mlir::daphne::DaphneDialect::initialize()
@@ -761,19 +762,9 @@ mlir::OpFoldResult mlir::daphne::EwLikeOp::fold(ArrayRef<Attribute> operands) {
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
         auto lhs = operands[0].cast<StringAttr>();
         auto rhs = operands[1].cast<StringAttr>();
-        static const char wildCardAnyNumberChars = '%';
-        static const char wildCardSingleChar = '_';
-        std::string expression(rhs.getValue().str());
-        for(size_t charIdx = 0; charIdx < expression.size(); charIdx++){
-            if(expression[charIdx] == wildCardAnyNumberChars){
-                expression.replace(charIdx, 1, ".*", 2);
-                charIdx++;
-            }else if(expression[charIdx] == wildCardSingleChar)
-                expression[charIdx] = '.';
-        }
-        auto toMatch = std::regex(expression);
         mlir::Type resType = IntegerType::get(lhs.getContext(), 32 , IntegerType::Signed);
-        return IntegerAttr::get(resType, std::regex_match(lhs.getValue().str(), toMatch));
+        return IntegerAttr::get(resType, 
+            EwBinarySca<BinaryOpCode::LIKE, int, StringScalarType, StringScalarType>::apply(lhs.getValue().str().c_str(), rhs.getValue().str().c_str(), nullptr));
     }
 
     return {};
