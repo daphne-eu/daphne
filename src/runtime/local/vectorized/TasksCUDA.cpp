@@ -38,8 +38,10 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t b
         
         // cleanup
         for (auto &localResult : localResults) {
-            DataObjectFactory::destroy(localResult);
-            localResult = nullptr;
+            if(localResult) {
+                DataObjectFactory::destroy(localResult);
+                localResult = nullptr;
+            }
         }
     }
     
