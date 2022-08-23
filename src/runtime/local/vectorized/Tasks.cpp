@@ -67,7 +67,7 @@ void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batch
 
 template<typename VT>
 uint64_t CompiledPipelineTask<DenseMatrix<VT>>::getTaskSize() {
-return _data._ru;
+    return _data._ru-_data._rl;
 }
 
 template<typename VT>

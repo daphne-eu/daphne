@@ -110,5 +110,10 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<De
     }
 }
 
+template<typename VT>
+uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
+    return _data._ru-_data._rl;
+}
+
 template class CompiledPipelineTaskCUDA<DenseMatrix<double>>;
 template class CompiledPipelineTaskCUDA<DenseMatrix<float>>;

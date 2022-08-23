@@ -16,15 +16,15 @@
 
 #pragma once
 
-#include <runtime/local/vectorized/TaskQueues.h>
-#include <runtime/local/vectorized/VectorizedDataSink.h>
-#include <runtime/local/vectorized/Workers.h>
-#include <runtime/local/vectorized/LoadPartitioning.h>
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/vectorized/VectorizedDataSink.h>
+#include <runtime/local/vectorized/WorkerCPU.h>
+#include <runtime/local/vectorized/WorkerGPU.h>
 
+#include <fstream>
 #include <functional>
 #include <queue>
-#include <fstream>
 #include <set>
 
 //TODO use the wrapper to cache threads
@@ -42,7 +42,7 @@ protected:
     std::vector<int> topologyUniqueThreads;
     std::vector<int> topologyResponsibleThreads;
     std::string _cpuinfoPath = "/proc/cpuinfo";
-    uint32_t _numThreads{};
+    size_t _numThreads{};
     uint32_t _numCPPThreads{};
     uint32_t _numCUDAThreads{};
     int _queueMode;
@@ -121,13 +121,13 @@ protected:
     void initCPPWorkers(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
         cpp_workers.resize(_numCPPThreads);
         if( numQueues == 0 ) {
-            std::cout << "numQueues is 0, this should not happen." << std::endl;
+            throw std::runtime_error("MTWrapper::initCPPWorkers: numQueues is 0, this should not happen.");
         }
-        //get_topology(topologyPhysicalIds, topologyUniqueThreads);
-        
+
         int i = 0;
         for( auto& w : cpp_workers ) {
-            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize, i, numQueues, queueMode, this->_stealLogic, pinWorkers);
+            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize,
+                    i, numQueues, queueMode, this->_stealLogic, pinWorkers);
             i++;
         }
     }
@@ -135,7 +135,7 @@ protected:
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cuda_workers.resize(_numCUDAThreads);
         for (auto& w : cuda_workers)
-            w = std::make_unique<WorkerCPU>(q, verbose, 1, batchSize);
+            w = std::make_unique<WorkerGPU>(q, verbose, 1, batchSize);
     }
 
     void cudaPrefetchInputs(Structure** inputs, uint32_t numInputs, size_t mem_required,
@@ -180,24 +180,24 @@ protected:
 
 public:
     explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
-        if( _ctx->getUserConfig().queueSetupScheme != CENTRALIZED ) {
-            get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
-        }
-        if ( ctx->config.numberOfThreads > 0 ) {
+        get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
+        if(ctx->config.numberOfThreads > 0)
             _numCPPThreads = ctx->config.numberOfThreads;
-        }
-        else {
-            //_numCPPThreads = std::thread::hardware_concurrency();
+        else
+            _numCPPThreads = std::thread::hardware_concurrency();
+
+        if(_ctx->getUserConfig().queueSetupScheme != CENTRALIZED)
             _numCPPThreads = topologyUniqueThreads.size();
-        }
+
         // If the available CPUs from Slurm is less than the configured num threads, use the value from Slurm
-        if( const char* env_m = std::getenv("SLURM_CPUS_ON_NODE") ) {
-            if( (uint32_t)std::stoi(env_m) < _numThreads ) {
+        if(const char* env_m = std::getenv("SLURM_CPUS_ON_NODE"))
+            if(std::stoul(env_m) < _numCPPThreads)
                 _numCPPThreads = std::stoi(env_m);
-            }
-        }
+
+        // this is a bit hacky: if the second function (if available) is assumed to be the one containing CUDA ops
         if(ctx && ctx->useCUDA() && numFunctions > 1)
             _numCUDAThreads = ctx->cuda_contexts.size();
+
         _queueMode = 0;
         _numQueues = 1;
         _stealLogic = _ctx->getUserConfig().victimSelection;
@@ -213,7 +213,7 @@ public:
             _queueMode = 2;
             _numQueues = _numCPPThreads;
         }
-        
+
         if( _ctx->config.debugMultiThreading ) {
             std::cout << "topologyPhysicalIds:" << std::endl;
             for(const auto & topologyEntry: topologyPhysicalIds) {
@@ -249,6 +249,11 @@ public:
 
     explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
             MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
+
+
+    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
+                            size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
+                            VectorCombine* combines, DCTX(ctx), bool verbose);
 
     void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
             size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
