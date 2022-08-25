@@ -37,7 +37,8 @@
 # Xout   Matrix  ---      Output feature matrix with K columns
 # Mout   Matrix  ---      Output dominant eigen vectors (can be used for projections)
 # ---------------------------------------------------------------------------------------------
-
+verbose = true;
+t0 = now();
 X = readMatrix($X);
 K = $K;
 
@@ -49,6 +50,9 @@ if(K > M) {
     print("PCA: invalid parameter, K should be <= ncol(X) -- setting K = ncol(X).");
     K = M;
 }
+
+//start algo
+t1 = now();
 
 # perform z-scoring (centering and scaling)
 if( $center ) {
@@ -85,6 +89,22 @@ evec_dominant = evectors[,0:K];
 Xout = X @ evec_dominant;
 Mout = evec_dominant;
 
+t2 = now();
+
 # Write out results
 writeMatrix(Xout, $Xout);
 writeMatrix(Mout, $Mout);
+
+t3 = now();
+
+
+// Print elapsed times in seconds.
+print("\n------------------------------");
+print("load time[s]: ", 0, 0);
+print((t1 - t0)*10.0^(-9)); // initialization
+print("algo time[s]: ", 0, 0);
+print((t2 - t1)*10.0^(-9)); // core algorithm
+print("write time[s]: ", 0, 0);
+print((t3 - t2)*10.0^(-9)); // write results
+print("total time[s]: ", 0, 0);
+print((t3-t0)*10.0^(-9)); // total
