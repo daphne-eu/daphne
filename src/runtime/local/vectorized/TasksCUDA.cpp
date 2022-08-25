@@ -80,15 +80,7 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<De
                 auto data = result->getValues(&alloc_desc);
                 data += result->getRowSkip() * rowStart;
                 CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValues(&alloc_desc), bufsize, cudaMemcpyDeviceToDevice));
-#ifndef NDEBUG
-                std::vector<VT> tmp(localResults[o]->getNumItems());
-                const auto& const_res_cuda = data;
-                CHECK_CUDART(cudaMemcpy(tmp.data(), const_res_cuda, bufsize, cudaMemcpyDeviceToHost));
-                std::cerr << "res task cuda:";
-                for(auto i = 0u; i < localResults[o]->getNumItems(); ++i)
-                    std::cerr << tmp[i] << " ";
-                std::cerr << "\n";
-#endif
+//                debugPrintCUDABuffer("TaskCUDA: accumulate outputs", localResults[o]->getValues(&alloc_desc), localResults[o]->getNumItems());
                 break;
             }
             case VectorCombine::COLS: {

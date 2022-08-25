@@ -327,14 +327,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
             auto data_dest = res->getValues();
             CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValues(&alloc_desc), const_res_cuda.bufferSize(),
                                     cudaMemcpyDeviceToHost));
-#ifndef NDEBUG
-        std::vector<VT> tmp(const_res_cuda.getNumItems());
-        CHECK_CUDART(cudaMemcpy(tmp.data(), const_res_cuda.getValues(&alloc_desc), const_res_cuda.bufferSize(), cudaMemcpyDeviceToHost));
-        std::cerr << "combine outputs res cuda: ";
-        for(auto i = 0u; i < const_res_cuda.getNumItems(); ++i)
-            std::cerr << tmp[i] << " ";
-        std::cerr << "\n";
-#endif
+//            debugPrintCUDABuffer("MTWrapperDense: combine outputs", const_res_cuda.getValues(&alloc_desc), const_res_cuda.getNumItems());
             DataObjectFactory::destroy(res_cuda);
         }
         else if (combines[i] == mlir::daphne::VectorCombine::COLS) {
@@ -342,6 +335,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
             auto dst_base_ptr = res->getValues();
             auto src_base_ptr = const_res_cuda.getValues(&alloc_desc);
             for(auto j = 0u; j < res_cuda->getNumRows(); ++j) {
+                //ToDo: rowSkip would be correct here if res_cuda wasn't a shallow copy
 //                auto data_src = src_base_ptr + res_cuda->getRowSkip() * j;
                 auto data_src = src_base_ptr + res_cuda->getNumCols() * j;
                 auto data_dst = dst_base_ptr + res->getRowSkip() * j;
