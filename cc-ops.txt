@@ -1,0 +1,9 @@
+    %20 = "daphne.call_kernel"(%3, %18) {callee = "_read__DenseMatrix_double__char"} : (!daphne.String, !daphne.DaphneContext) -> !daphne.Matrix<20x20xf64>
+    %23 = "daphne.call_kernel"(%2, %22, %2, %18) {callee = "_seq__DenseMatrix_double__double__double__double"} : (f64, f64, f64, !daphne.DaphneContext) -> !daphne.Matrix<?x1xf64:sp[1.000000e+00]>
+      %38 = "daphne.call_kernel"(%arg1, %18) {callee = "_transpose__DenseMatrix_double__DenseMatrix_double"} : (!daphne.Matrix<?x1xf64>, !daphne.DaphneContext) -> !daphne.Matrix<1x?xf64>
+      %39 = "daphne.call_kernel"(%20, %38, %18) {callee = "_ewMul__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double"} : (!daphne.Matrix<20x20xf64>, !daphne.Matrix<1x?xf64>, !daphne.DaphneContext) -> !daphne.Matrix<?x?xf64>
+      %40 = "daphne.call_kernel"(%39, %18) {callee = "_maxRow__DenseMatrix_double__DenseMatrix_double"} : (!daphne.Matrix<?x?xf64>, !daphne.DaphneContext) -> !daphne.Matrix<?x1xf64>
+      %41 = "daphne.call_kernel"(%40, %arg1, %18) {callee = "_ewMax__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double"} : (!daphne.Matrix<?x1xf64>, !daphne.Matrix<?x1xf64>, !daphne.DaphneContext) -> !daphne.Matrix<?x1xf64>
+      %42 = "daphne.call_kernel"(%41, %arg1, %18) {callee = "_ewNeq__DenseMatrix_double__DenseMatrix_double__DenseMatrix_double"} : (!daphne.Matrix<?x1xf64>, !daphne.Matrix<?x1xf64>, !daphne.DaphneContext) -> !daphne.Matrix<?x1xf64>
+      %43 = "daphne.call_kernel"(%42, %18) {callee = "_sumAll__double__DenseMatrix_double"} : (!daphne.Matrix<?x1xf64>, !daphne.DaphneContext) -> f64
+    "daphne.call_kernel"(%26#1, %14, %18) {callee = "_write__DenseMatrix_double__char"} : (!daphne.Matrix<?x1xf64>, !daphne.String, !daphne.DaphneContext) -> ()
