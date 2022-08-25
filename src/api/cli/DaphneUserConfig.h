@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/vectorized/LoadPartitioningDefs.h>
 
 #include <vector>
 #include <string>

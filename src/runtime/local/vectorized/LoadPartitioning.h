@@ -14,19 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
+#pragma once
+
+#include "LoadPartitioningDefs.h"
 
 #include <cmath>
 #include <cstdlib>
 #include <string>
 
-enum QueueTypeOption { CENTRALIZED=0, PERGROUP, PERCPU};
-enum victimSelectionLogic { SEQ=0, SEQPRI, RANDOM, RANDOMPRI};
-
-enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
-                            PLS, MSTATIC, MFSC, PSS,
-                            INVALID=-1 /* only for JSON enum conversion */};
 class LoadPartitioning {
 
 private:
@@ -160,5 +155,3 @@ public:
         return chunkSize;
     } 
 };
-
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
