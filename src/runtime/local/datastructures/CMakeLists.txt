@@ -13,9 +13,16 @@
 # limitations under the License.
 
 add_library(DataStructures
+        AllocationDescriptorHost.h
+        AllocationDescriptorCUDA.h
+        DataPlacement.h
+        DataPlacement.cpp
+        DenseMatrix.cpp
         Frame.cpp
-        ValueTypeUtils.cpp
-        DenseMatrix.cpp)
+        IAllocationDescriptor.h
+        MetaDataObject.h
+        MetaDataObject.cpp
+        ValueTypeUtils.cpp)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(DataStructures PUBLIC ${CUDAToolkit_INCLUDE_DIRS})

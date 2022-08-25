@@ -16,7 +16,7 @@
 
 #include "MatMul.h"
 #include "Gemv.h"
-#include "runtime/local/context/CUDAContext.h"
+#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 
 namespace CUDA {
 
@@ -46,7 +46,9 @@ namespace CUDA {
     void MatMul<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>>::apply(DenseMatrix<T> *&res, const DenseMatrix<T> *lhs,
                                                                        const DenseMatrix<T> *rhs, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
-        auto ctx = dctx->getCUDAContext(0);
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
@@ -54,12 +56,12 @@ namespace CUDA {
         assert((nc1 == rhs->getNumRows()) && "#cols of lhs and #rows of rhs must be the same");
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
-        const VT *d_lhs = lhs->getValuesCUDA();
-        const VT *d_rhs = rhs->getValuesCUDA();
-
+        const VT *d_lhs = lhs->getValues(&alloc_desc);
+        const VT *d_rhs = rhs->getValues(&alloc_desc);
+    
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<T>>(nr1, nc2, false, ALLOCATION_TYPE::CUDA_ALLOC);
-        VT *d_res = res->getValuesCUDA();
+            res = DataObjectFactory::create<DenseMatrix<T>>(nr1, nc2, false, &alloc_desc);
+        VT *d_res = res->getValues(&alloc_desc);
 
         if(nc2 == 1) {
             launch_cublas_gemv<VT>(*ctx, nc1, nr1, &blend_alpha, &blend_beta, d_lhs, d_rhs,
@@ -71,13 +73,15 @@ namespace CUDA {
         }
     }
 
+
+    //ToDo: sparse mat mult (sample code below compiles but is not usable)
 // from cusparse sample code:
 // https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spgemm/spgemm_example.c
     template<typename T>
     void MatMul<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T> *&res, const CSRMatrix<T> *lhs,
                                                                  const CSRMatrix<T> *rhs, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
-        auto ctx = dctx->getCUDAContext(0);
+        auto ctx = CUDAContext::get(dctx, 0);
         cusparseHandle_t handle = ctx->getCusparseHandle();
 
         const size_t nr1 = lhs->getNumRows();

@@ -16,6 +16,10 @@
 
 #pragma once
 
+#ifdef USE_CUDA
+#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
+#endif
+
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <runtime/local/vectorized/VectorizedDataSink.h>
@@ -65,7 +69,7 @@ protected:
         }
         return std::make_pair(len, mem_required);
     }
-    
+
     bool _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
         auto seperatorLocation = input.find(':');
         if(seperatorLocation != std::string::npos) {
@@ -140,16 +144,17 @@ protected:
 
     void cudaPrefetchInputs(Structure** inputs, uint32_t numInputs, size_t mem_required,
             mlir::daphne::VectorSplit* splits) {
-        // ToDo: multi-device support :-P
-        auto cctx = _ctx->getCUDAContext(0);
-        auto buffer_usage = static_cast<float>(mem_required) / static_cast<float>(cctx->getMemBudget());
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(_ctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(_ctx, deviceID);
+        auto buffer_usage = static_cast<float>(mem_required) / static_cast<float>(ctx->getMemBudget());
 #ifndef NDEBUG
         std::cout << "\nVect pipe total in/out buffer usage: " << buffer_usage << std::endl;
 #endif
         if(buffer_usage < 1.0) {
             for (auto i = 0u; i < numInputs; ++i) {
                 if(splits[i] == mlir::daphne::VectorSplit::ROWS) {
-                    [[maybe_unused]] auto bla = static_cast<const DT*>(inputs[i])->getValuesCUDA();
+                    [[maybe_unused]] auto unused = static_cast<const DT*>(inputs[i])->getValues(&alloc_desc);
                 }
             }
         }
@@ -169,7 +174,8 @@ protected:
         return mem_required;
     }
 
-    virtual void combineOutputs(DT***& res, DT***& res_cuda, size_t numOutputs, mlir::daphne::VectorCombine* combines) = 0;
+    virtual void combineOutputs(DT***& res, DT***& res_cuda, size_t numOutputs, mlir::daphne::VectorCombine* combines,
+            DCTX(ctx)) = 0;
 
     void joinAll() {
         for(auto& w : cpp_workers)
@@ -231,7 +237,7 @@ public:
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
 #ifndef NDEBUG
-        std::cout << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
+        std::cerr << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;
 #endif
     }
@@ -263,7 +269,7 @@ public:
             int64_t* outCols, VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
     void combineOutputs(DenseMatrix<VT>***& res, DenseMatrix<VT>***& res_cuda, size_t numOutputs,
-            mlir::daphne::VectorCombine* combines) override;
+            mlir::daphne::VectorCombine* combines, DCTX(ctx)) override;
 };
 
 template<typename VT>
@@ -291,5 +297,5 @@ public:
     }
     
     void combineOutputs(CSRMatrix<VT>***& res, CSRMatrix<VT>***& res_cuda, [[maybe_unused]] size_t numOutputs,
-                        [[maybe_unused]] mlir::daphne::VectorCombine* combines) override {}
+                        [[maybe_unused]] mlir::daphne::VectorCombine* combines, DCTX(ctx)) override {}
 };

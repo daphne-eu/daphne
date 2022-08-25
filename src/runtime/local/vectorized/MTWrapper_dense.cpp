@@ -16,6 +16,7 @@
 
 #include "MTWrapper.h"
 #include <runtime/local/vectorized/Tasks.h>
+
 #ifdef USE_CUDA
 #include <runtime/local/vectorized/TasksCUDA.h>
 #endif
@@ -207,7 +208,7 @@ template<typename VT>
     auto*** res_cuda = new DenseMatrix<VT>**[numOutputs];
     auto blksize = gpu_task_len / ctx->cuda_contexts.size();
 #ifndef NDEBUG
-    std::cout << "gpu_task_len:  " << gpu_task_len << "\ntaskRatioCUDA: " << taskRatioCUDA << "\nBlock size: "
+    std::cerr << "gpu_task_len:  " << gpu_task_len << "\ntaskRatioCUDA: " << taskRatioCUDA << "\nBlock size: "
               << blksize << std::endl;
 #endif
     for (size_t i = 0; i < numOutputs; ++i) {
@@ -301,7 +302,7 @@ template<typename VT>
     this->joinAll();
 
 #ifdef USE_CUDA
-    this->combineOutputs(res, res_cuda, numOutputs, combines);
+    this->combineOutputs(res, res_cuda, numOutputs, combines, ctx);
 #endif
 
     if(cpu_task_len > 0) {
@@ -315,26 +316,36 @@ template<typename VT>
 #ifdef USE_CUDA
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseMatrix<VT>***& res_cuda_, size_t numOutputs,
-                                                mlir::daphne::VectorCombine* combines) {
+                                                mlir::daphne::VectorCombine* combines, DCTX(ctx)) {
+    const size_t deviceID = 0; //ToDo: multi device support
+    AllocationDescriptorCUDA alloc_desc(ctx, deviceID);
     for (size_t i = 0; i < numOutputs; ++i) {
         auto* res = static_cast<DenseMatrix<VT> *>((*res_[i]));
         auto* res_cuda = static_cast<DenseMatrix<VT> *>((*res_cuda_[i]));
         if (combines[i] == mlir::daphne::VectorCombine::ROWS) {
             const auto &const_res_cuda = *res_cuda;
             auto data_dest = res->getValues();
-            CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValuesCUDA(), const_res_cuda.bufferSize(),
+            CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValues(&alloc_desc), const_res_cuda.bufferSize(),
                                     cudaMemcpyDeviceToHost));
+#ifndef NDEBUG
+        std::vector<VT> tmp(const_res_cuda.getNumItems());
+        CHECK_CUDART(cudaMemcpy(tmp.data(), const_res_cuda.getValues(&alloc_desc), const_res_cuda.bufferSize(), cudaMemcpyDeviceToHost));
+        std::cerr << "combine outputs res cuda: ";
+        for(auto i = 0u; i < const_res_cuda.getNumItems(); ++i)
+            std::cerr << tmp[i] << " ";
+        std::cerr << "\n";
+#endif
             DataObjectFactory::destroy(res_cuda);
         }
         else if (combines[i] == mlir::daphne::VectorCombine::COLS) {
             const auto &const_res_cuda = *res_cuda;
             auto dst_base_ptr = res->getValues();
-            auto src_base_ptr = const_res_cuda.getValuesCUDA();
+            auto src_base_ptr = const_res_cuda.getValues(&alloc_desc);
             for(auto j = 0u; j < res_cuda->getNumRows(); ++j) {
-                auto data_src = src_base_ptr + res_cuda->getRowSkip() * j;
+//                auto data_src = src_base_ptr + res_cuda->getRowSkip() * j;
+                auto data_src = src_base_ptr + res_cuda->getNumCols() * j;
                 auto data_dst = dst_base_ptr + res->getRowSkip() * j;
-                CHECK_CUDART(cudaMemcpy(data_dst, data_src,res_cuda->getNumCols() * sizeof(VT),
-                                        cudaMemcpyDeviceToHost));
+                CHECK_CUDART(cudaMemcpy(data_dst, data_src,res_cuda->getNumCols() * sizeof(VT), cudaMemcpyDeviceToHost));
             }
             DataObjectFactory::destroy(res_cuda);
         }
@@ -343,7 +354,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
 #else
 template<typename VT>
 void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseMatrix<VT>***& res_cuda_, size_t numOutputs,
-        mlir::daphne::VectorCombine* combines) { }
+        mlir::daphne::VectorCombine* combines, DCTX(ctx)) { }
 #endif
 
 template class MTWrapper<DenseMatrix<double>>;
