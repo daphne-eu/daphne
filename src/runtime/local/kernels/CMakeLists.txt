@@ -60,6 +60,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
         )
 
@@ -92,6 +93,7 @@ add_library(AllKernels SHARED
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_dense.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
 )
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)

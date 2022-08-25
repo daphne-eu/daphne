@@ -21,10 +21,10 @@
 #endif
 
 template<typename VT>
-void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
+[[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
         std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
-        bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
-        VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
+        const bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
+        VectorSplit *splits, VectorCombine *combines, DCTX(ctx), const bool verbose) {
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
     auto len = inputProps.first;
     auto mem_required = inputProps.second;
@@ -36,7 +36,7 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
 
     std::vector<TaskQueue*> tmp_q{q.get()};
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(tmp_q, this->topologyPhysicalIds, batchSize8M, verbose, 1, 0, 0, false);
+    this->initCPPWorkers(tmp_q, batchSize8M, verbose, 1, 0, false);
 
 #ifdef USE_CUDA
     if(this->_numCUDAThreads) {
@@ -74,9 +74,9 @@ void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
 }
 
 template<typename VT>
-void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
+[[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
         std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
-        bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
+        const bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
     auto len = inputProps.first;
@@ -88,10 +88,6 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
     std::vector<TaskQueue*> qvector;
     if (ctx->getUserConfig().pinWorkers) {
         for(int i=0; i<this->_numQueues; i++) {
-            // Ideally queues would be created as such:
-            // q.emplace_back(new BlockingTaskQueue(len));
-            // However I'm getting an error so they are created with make_unique and get now.
-            
             cpu_set_t cpuset;
             CPU_ZERO(&cpuset);
             CPU_SET(i, &cpuset);
@@ -109,8 +105,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode,
-            this->_stealLogic, ctx->getUserConfig().pinWorkers);
+    this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode, ctx->getUserConfig().pinWorkers);
 
     // lock for aggregation combine
     // TODO: multiple locks per output
@@ -120,7 +115,7 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
-    uint64_t target = 0;
+    uint64_t target;
     int method=ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if(chunkParam<=0)
@@ -186,9 +181,9 @@ void MTWrapper<DenseMatrix<VT>>::executeCpuQueues(
 }
 
 template<typename VT>
-void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
+[[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
         std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
-        bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
+        const bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
         VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
     size_t device_task_len = 0ul;
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
@@ -210,7 +205,6 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
     this->initCUDAWorkers(q_cuda.get(), batchSize8M * 4, verbose);
 
     auto*** res_cuda = new DenseMatrix<VT>**[numOutputs];
-    //    auto blksize = static_cast<size_t>(std::floor(cctx->getMemBudget() / row_mem));
     auto blksize = gpu_task_len / ctx->cuda_contexts.size();
 #ifndef NDEBUG
     std::cout << "gpu_task_len:  " << gpu_task_len << "\ntaskRatioCUDA: " << taskRatioCUDA << "\nBlock size: "
@@ -248,10 +242,6 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
         // Multiple Queues addition
         if (ctx->getUserConfig().pinWorkers) {
             for(int i=0; i<this->_numQueues; i++) {
-                // Ideally queues would be created as such:
-                // q.emplace_back(new BlockingTaskQueue(len));
-                // However I'm getting an error so they are created with make_unique and get now.
-
                 cpu_set_t cpuset;
                 CPU_ZERO(&cpuset);
                 CPU_SET(i, &cpuset);
@@ -267,8 +257,9 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
                 qvector.push_back(q[i].get());
             }
         }
-        this->initCPPWorkers(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
+        this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode, ctx->getUserConfig().pinWorkers);
 // End Multiple Queues
+
         res_cpp = new DenseMatrix<VT> **[numOutputs];
         auto offset = device_task_len;
 
@@ -288,7 +279,7 @@ void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
         uint64_t startChunk = device_task_len;
         uint64_t endChunk = device_task_len;
         uint64_t currentItr = 0;
-        uint64_t target = 0;
+        uint64_t target;
         int method=ctx->config.taskPartitioningScheme;
         int chunkParam = ctx->config.minimumTaskSize;
         if(chunkParam<=0)

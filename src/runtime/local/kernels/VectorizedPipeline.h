@@ -36,7 +36,7 @@ template<class DTRes>
 struct VectorizedPipeline {
     static void apply(DTRes ** outputs, size_t numOutputs, bool* isScalar, Structure **inputs, size_t numInputs, int64_t *outRows,
             int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)) {
-        auto wrapper = std::make_unique<MTWrapper<DTRes>>(0, numFuncs, ctx);
+        auto wrapper = std::make_unique<MTWrapper<DTRes>>(numFuncs, ctx);
 
         std::vector<std::function<void(DTRes ***, Structure **, DCTX(ctx))>> funcs;
         for (auto i = 0ul; i < numFuncs; ++i) {
@@ -45,7 +45,7 @@ struct VectorizedPipeline {
         }
 
         // TODO Do we really need *** here, isn't ** enough?
-        DTRes *** outputs2 = new DTRes**[numOutputs];
+        auto *** outputs2 = new DTRes**[numOutputs];
         for(size_t i = 0; i < numOutputs; i++)
             outputs2[i] = outputs + i;
         
@@ -53,7 +53,7 @@ struct VectorizedPipeline {
             wrapper->executeSingleQueue(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
-        else if(ctx->getUserConfig().vectorized_single_queue == false && numFuncs == 1) {
+        else if(!ctx->getUserConfig().vectorized_single_queue && numFuncs == 1) {
             wrapper->executeCpuQueues(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
@@ -71,14 +71,9 @@ struct VectorizedPipeline {
 // ****************************************************************************
 
 template<class DTRes>
-void vectorizedPipeline(DTRes ** outputs, size_t numOutputs, bool* isScalar, Structure **inputs, size_t numInputs, int64_t *outRows,
-        int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs, void** fun, DCTX(ctx)) {
-    VectorizedPipeline<DTRes>::apply(
-            outputs, numOutputs,
-            isScalar, inputs, numInputs,
-            outRows, outCols,
-            splits, combines,
-            numFuncs, fun,
-            ctx
-    );
+[[maybe_unused]] void vectorizedPipeline(DTRes ** outputs, size_t numOutputs, bool* isScalar, Structure **inputs,
+        size_t numInputs, int64_t *outRows, int64_t *outCols, int64_t *splits, int64_t *combines, size_t numFuncs,
+        void** fun, DCTX(ctx)) {
+    VectorizedPipeline<DTRes>::apply(outputs, numOutputs, isScalar, inputs, numInputs, outRows, outCols, splits,
+            combines, numFuncs, fun, ctx);
 }

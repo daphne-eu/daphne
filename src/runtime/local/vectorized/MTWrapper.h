@@ -66,16 +66,15 @@ protected:
         return std::make_pair(len, mem_required);
     }
     
-    int _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
-        std::size_t seperatorLocation = input.find(":");
-        if (seperatorLocation!=std::string::npos) {
-            if (input.find(keyword) == 0) {
-                *val = stoi(input.substr(seperatorLocation+1));
-                return 1;
+    bool _parseStringLine(const std::string& input, const std::string& keyword, int *val ) {
+        auto seperatorLocation = input.find(':');
+        if(seperatorLocation != std::string::npos) {
+            if(input.find(keyword) == 0) {
+                *val = stoi(input.substr(seperatorLocation + 1));
+                return true;
             }
-            return 0;
         }
-        return 0;
+        return false;
     }
 
     void get_topology(std::vector<int> &physicalIds, std::vector<int> &uniqueThreads, std::vector<int> &responsibleThreads) {
@@ -118,7 +117,8 @@ protected:
             cpuinfoFile.close();
         }
     }
-    void initCPPWorkers(std::vector<TaskQueue*> &qvector, std::vector<int> numaDomains, uint32_t batchSize, bool verbose = false, int numQueues = 0, int queueMode = 0, int stealLogic = 0, bool pinWorkers = 0) {
+    void initCPPWorkers(std::vector<TaskQueue *> &qvector, uint32_t batchSize, const bool verbose = false,
+            int numQueues = 0, int queueMode = 0, bool pinWorkers = false) {
         cpp_workers.resize(_numCPPThreads);
         if( numQueues == 0 ) {
             throw std::runtime_error("MTWrapper::initCPPWorkers: numQueues is 0, this should not happen.");
@@ -179,7 +179,7 @@ protected:
     }
 
 public:
-    explicit MTWrapperBase(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
+    explicit MTWrapperBase(uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
         get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
         if(ctx->config.numberOfThreads > 0)
             _numCPPThreads = ctx->config.numberOfThreads;
@@ -247,21 +247,20 @@ class MTWrapper<DenseMatrix<VT>> : public  MTWrapperBase<DenseMatrix<VT>> {
 public:
     using PipelineFunc = void(DenseMatrix<VT> ***, Structure **, DCTX(ctx));
 
-    explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
-            MTWrapperBase<DenseMatrix<VT>>(numThreads, numFunctions, ctx){}
+    explicit MTWrapper(uint32_t numFunctions, DCTX(ctx)) : MTWrapperBase<DenseMatrix<VT>>(numFunctions, ctx){}
 
 
-    void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
-                            size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
-                            VectorCombine* combines, DCTX(ctx), bool verbose);
+    [[maybe_unused]] void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
+            const bool* isScalar, Structure** inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
+            int64_t* outCols, VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar, Structure** inputs,
-            size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t* outCols, VectorSplit* splits,
-            VectorCombine* combines, DCTX(ctx), bool verbose);
+    [[maybe_unused]] void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
+            const bool* isScalar, Structure** inputs, size_t numInputs, size_t numOutputs, int64_t *outRows,
+            int64_t* outCols, VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res, bool* isScalar,
-            Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
-            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, DenseMatrix<VT>*** res,
+            const bool* isScalar,Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows,
+            int64_t* outCols, VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
     void combineOutputs(DenseMatrix<VT>***& res, DenseMatrix<VT>***& res_cuda, size_t numOutputs,
             mlir::daphne::VectorCombine* combines) override;
@@ -272,21 +271,25 @@ class MTWrapper<CSRMatrix<VT>> : public MTWrapperBase<CSRMatrix<VT>> {
 public:
     using PipelineFunc = void(CSRMatrix<VT> ***, Structure **, DCTX(ctx));
 
-    explicit MTWrapper(uint32_t numThreads, uint32_t numFunctions, DCTX(ctx)) :
-            MTWrapperBase<CSRMatrix<VT>>(numThreads, numFunctions, ctx){}
+    explicit MTWrapper(uint32_t numFunctions, DCTX(ctx)) :
+            MTWrapperBase<CSRMatrix<VT>>(numFunctions, ctx){ }
 
-    void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
-                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
-                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+    [[maybe_unused]] void executeSingleQueue(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res,
+            const bool* isScalar, Structure** inputs, size_t numInputs, size_t numOutputs, const int64_t* outRows,
+            const int64_t* outCols, VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose) {
+        throw std::runtime_error("sparse single queue vect exec not implemented");
+    }
 
-    void executeQueuePerCPU(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
-                            size_t numInputs, size_t numOutputs, const int64_t* outRows, const int64_t* outCols,
-                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
+    [[maybe_unused]] void executeCpuQueues(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res,
+            const bool* isScalar, Structure** inputs, size_t numInputs, size_t numOutputs, const int64_t* outRows,
+            const int64_t* outCols, VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
 
-    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res, bool* isScalar, Structure** inputs,
-                            size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
-                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose);
-
+    [[maybe_unused]] void executeQueuePerDeviceType(std::vector<std::function<PipelineFunc>> funcs, CSRMatrix<VT>*** res,
+            const bool* isScalar, Structure** inputs, size_t numInputs, size_t numOutputs, int64_t* outRows, int64_t* outCols,
+                            VectorSplit* splits, VectorCombine* combines, DCTX(ctx), bool verbose) {
+        throw std::runtime_error("sparse queuePerDeviceType vect exec not implemented");
+    }
+    
     void combineOutputs(CSRMatrix<VT>***& res, CSRMatrix<VT>***& res_cuda, [[maybe_unused]] size_t numOutputs,
                         [[maybe_unused]] mlir::daphne::VectorCombine* combines) override {}
 };

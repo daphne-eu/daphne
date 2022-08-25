@@ -19,9 +19,9 @@
 
 template<typename VT>
 void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
-        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
-        const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx),
-        bool verbose) {
+        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, const bool* isScalar, Structure **inputs, size_t numInputs,
+        size_t numOutputs, const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines,
+        DCTX(ctx), const bool verbose) {
 //     TODO: reduce code duplication
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
     auto len = inputProps.first;
@@ -33,10 +33,6 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     std::vector<TaskQueue*> qvector;
     if (ctx->getUserConfig().pinWorkers) {
         for(int i=0; i<this->_numQueues; i++) {
-            // Ideally queues would be created as such:
-            // q.emplace_back(new BlockingTaskQueue(len));
-            // However I'm getting an error so they are created with make_unique and get now.
-            
             cpu_set_t cpuset;
             CPU_ZERO(&cpuset);
             CPU_SET(i, &cpuset);
@@ -54,8 +50,8 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(qvector, this->topologyPhysicalIds, batchSize8M, verbose, this->_numQueues, this->_queueMode, this->_stealLogic, ctx->getUserConfig().pinWorkers);
-
+    this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode,
+            ctx->getUserConfig().pinWorkers);
 
     for(size_t i = 0; i < numOutputs; i++)
         if(*(res[i]) != nullptr)
@@ -71,7 +67,7 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
     uint64_t currentItr = 0;
-    uint64_t target = 0;
+    uint64_t target;
     int method=ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if(chunkParam<=0)
@@ -138,13 +134,6 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
         *(res[i]) = dataSinks[i]->consume();
         delete dataSinks[i];
     }
-}
-
-template<typename VT>
-[[maybe_unused]] void MTWrapper<CSRMatrix<VT>>::executeQueuePerDeviceType(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
-        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
-        int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-    throw std::runtime_error("sparse multi queue vect exec not implemented");
 }
 
 template class MTWrapper<CSRMatrix<double>>;
