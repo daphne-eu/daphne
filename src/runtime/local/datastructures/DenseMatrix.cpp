@@ -195,13 +195,7 @@ size_t DenseMatrix<ValueType>::bufferSize() {
     return this->getNumItems() * sizeof(ValueType);
 }
 
-template<typename ValueType>
-DenseMatrix<ValueType>* DenseMatrix<ValueType>::vectorTranspose() const {
-    assert((this->numRows == 1 || this->numCols == 1) && "no-op transpose for vectors only");
-    auto transposed = DataObjectFactory::create<DenseMatrix<ValueType>>(this, 0, this->getNumRows(), 0, this->getNumCols());
-    std::swap(transposed->numRows, transposed->numCols);
-    return transposed;
-}
+
 
 
 
@@ -281,14 +275,6 @@ void DenseMatrix<const char*>::alloc_shared_strings(std::shared_ptr<CharBuf> src
 
 size_t DenseMatrix<const char*>::bufferSize() {
     return this->getNumItems() * sizeof(const char*);
-}
-
-DenseMatrix<const char*>* DenseMatrix<const char*>::vectorTranspose() const {
-    assert((this->numRows == 1 || this->numCols == 1) && "no-op transpose for vectors only");
-
-    auto transposed = DataObjectFactory::create<DenseMatrix<const char*>>(this->getNumCols(), this->getNumRows(),
-                                                                        this->getValuesSharedPtr());
-    return transposed;
 }
 
 // explicitly instantiate to satisfy linker

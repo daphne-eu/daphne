@@ -53,29 +53,30 @@ namespace CUDA {
 // ----------------------------------------------------------------------------
 // DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
-
+    
     template<typename VT>
     void Transpose<DenseMatrix<VT>, DenseMatrix<VT>>::apply(DenseMatrix<VT> *&res, const DenseMatrix<VT> *arg,
             DCTX(dctx)) {
-        const size_t nr1 = arg->getNumRows();
-        const size_t nc1 = arg->getNumCols();
-
-//        if(nr1 == 1 || nc1 == 1) {
-//            res = arg->vectorTranspose();
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        const VT blend_alpha = 1.0f;
+        const VT blend_beta = 0.0f;
+        const VT *d_arg = arg->getValues(&alloc_desc);
+        
+        // ToDo: this optimization needs more work on the data placement feature [DAPHNE-191]
+        // skip data movement for vectors
+//        if ((numRows == 1 || numCols == 1) && (numCols == arg->getRowSkip())) {
+//            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg->getValuesSharedPtr());
 //        }
 //        else
         {
-            const size_t deviceID = 0; //ToDo: multi device support
-            auto ctx = CUDAContext::get(dctx, deviceID);
-            AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
-            const VT blend_alpha = 1.0f;
-            const VT blend_beta = 0.0f;
-            const VT *d_arg = arg->getValues(&alloc_desc);
-
             if (res == nullptr)
-                res = DataObjectFactory::create<DenseMatrix<VT>>(nc1, nr1, false, &alloc_desc);
+                res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false, &alloc_desc);
             VT *d_res = res->getValues(&alloc_desc);
-            launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, d_arg, d_res);
+            launch_cublas_geam<VT>(*ctx, numRows, numCols, &blend_alpha, &blend_beta, d_arg, d_res);
         }
     }
     template struct Transpose<DenseMatrix<double>, DenseMatrix<double>>;

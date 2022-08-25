@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_TRANSPOSE_H
-#define SRC_RUNTIME_LOCAL_KERNELS_TRANSPOSE_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -55,13 +54,14 @@ struct Transpose<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-
+        
         // skip data movement for vectors
-        // the additional check for rows == rowSkip guards against tiled transpose, where this shortcut does not apply
-//        if ((numRows == 1 || numCols == 1) && (numRows == arg->getRowSkip())) {
-//            res = arg->vectorTranspose();
-//        }
-//        else
+        // FIXME: The check (numCols == arg->getRowSkip()) is a hack to check if the input arg is only a "view"
+        //        on a larger matrix.
+        if ((numRows == 1 || numCols == 1) && (numCols == arg->getRowSkip())) {
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, arg->getValuesSharedPtr());
+        }
+        else
         {
             if (res == nullptr)
                 res = DataObjectFactory::create<DenseMatrix<VT>>(numCols, numRows, false);
@@ -103,7 +103,7 @@ struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
         size_t * colIdxsRes = res->getColIdxs();
         size_t * rowOffsetsRes = res->getRowOffsets();
         
-        size_t * curRowOffsets = new size_t[numRows + 1];
+        auto* curRowOffsets = new size_t[numRows + 1];
         memcpy(curRowOffsets, rowOffsetsArg, (numRows + 1) * sizeof(size_t));
         
         rowOffsetsRes[0] = 0;
@@ -120,5 +120,3 @@ struct Transpose<CSRMatrix<VT>, CSRMatrix<VT>> {
         delete[] curRowOffsets;
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_TRANSPOSE_H

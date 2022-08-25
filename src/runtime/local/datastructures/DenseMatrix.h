@@ -268,8 +268,6 @@ public:
     size_t bufferSize();
 
     [[nodiscard]] size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
-    
-    DenseMatrix<ValueType>* vectorTranspose() const;
 };
 
 template <typename ValueType>
@@ -547,8 +545,6 @@ public:
     size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
 
     float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
-
-    DenseMatrix<const char*>* vectorTranspose() const;
 
     bool operator==(const DenseMatrix<const char*> &M) const {
         assert(getNumRows() != 0 && getNumCols() != 0 && strBuf && values && "Invalid matrix");
