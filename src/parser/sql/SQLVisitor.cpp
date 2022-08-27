@@ -657,7 +657,7 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(
             )
         );
         if(ctx->havingClause()){
-            currentFrame = visit(ctx->havingClause());
+            currentFrame = utils.valueOrError(visit(ctx->havingClause()));
         }
     }
     return nullptr;

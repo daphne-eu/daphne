@@ -30,74 +30,74 @@
 
 /**
  * @brief General utilities for parsing to DaphneIR.
- * 
- * 
+ *
+ *
  */
 class ParserUtils {
     /**
      * The OpBuilder used to generate DaphneIR operations.
      */
     mlir::OpBuilder & builder;
-    
+
 public:
-    
+
     // ************************************************************************
     // `mlir::Type`s corresponsing to the types in `DaphneTypes.td`
     // ************************************************************************
-            
+
     /**
      * @brief The `mlir::Type` denoted by `Size` in DaphneIR.
      */
     const mlir::Type sizeType;
-    
+
     /**
      * @brief The `mlir::Type` denoted by `BoolScalar` in DaphneIR.
      */
     const mlir::Type boolType;
-    
+
     /**
      * @brief The `mlir::Type` denoted by `Seed` in DaphneIR.
      */
     const mlir::Type seedType;
-    
+
     /**
      * @brief The `mlir::Type` denoted by `StrScalar` in DaphneIR.
      */
     const mlir::Type strType;
-    
+
     /**
      * @brief A DaphneIR `Matrix` with value type DaphneIR `Size`.
      */
     mlir::Type matrixOfSizeType;
-    
+
     /**
      * @brief The placeholder for an unknown type.
      */
     mlir::Type unknownType;
-    
+
     /**
      * @brief Get a `daphne::MatrixType` with the given value type.
      * @param vt
-     * @return 
+     * @return
      */
     mlir::daphne::MatrixType matrixOf(mlir::Type vt) {
         return mlir::daphne::MatrixType::get(builder.getContext(), vt);
     }
-    
+
     /**
      * @brief Get a `daphne::MatrixType` with the type of the given value as
      * the value type.
      * @param vt
-     * @return 
+     * @return
      */
     mlir::daphne::MatrixType matrixOf(mlir::Value v) {
         return mlir::daphne::MatrixType::get(builder.getContext(), v.getType());
     }
-    
+
     // ************************************************************************
     // Constructor
     // ************************************************************************
-    
+
     ParserUtils(mlir::OpBuilder & builder)
     :
             builder(builder),
@@ -110,15 +110,15 @@ public:
     {
         // nothing to do
     }
-    
+
     // ************************************************************************
     // Casting if necessary
     // ************************************************************************
-    
+
     /**
      * @brief Wraps the given `Value` in a `CastOp` if it does not have the
      * given `Type`.
-     * 
+     *
      * @param loc A location.
      * @param t The expected type.
      * @param v The value.
@@ -129,19 +129,19 @@ public:
             return v;
         return builder.create<mlir::daphne::CastOp>(v.getLoc(), t, v);
     }
-    
+
     mlir::Value castSizeIf(mlir::Value v) {
         return castIf(sizeType, v);
     }
-    
+
     mlir::Value castBoolIf(mlir::Value v) {
         return castIf(boolType, v);
     }
-    
+
     mlir::Value castSeedIf(mlir::Value v) {
         return castIf(seedType, v);
     }
-    
+
     mlir::Value castStrIf(mlir::Value v) {
         return castIf(strType, v);
     }
@@ -204,11 +204,17 @@ public:
     // ************************************************************************
     // Misc
     // ************************************************************************
-    
+
     mlir::Value valueOrError(antlrcpp::Any a) {
         if(a.is<mlir::Value>())
             return a.as<mlir::Value>();
         throw std::runtime_error("something was expected to be an mlir::Value, but it was none");
+    }
+
+    mlir::Type typeOrError(antlrcpp::Any a) {
+        if(a.is<mlir::Type>())
+            return a.as<mlir::Type>();
+        throw std::runtime_error("something was expected to be an mlir::Type, but it was none");
     }
 
     /**
