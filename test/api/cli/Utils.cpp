@@ -37,17 +37,6 @@ std::string readTextFile(const std::string & filePath) {
     return stream.str();
 }
 
-[[maybe_unused]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl)
-{
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
-    workerImpl->cq_ = builder.AddCompletionQueue();
-    builder.RegisterService(&workerImpl->service_);    
-    builder.SetMaxReceiveMessageSize(INT_MAX);
-    builder.SetMaxSendMessageSize(INT_MAX);
-    
-    return builder.BuildAndStart();
-}
 
 std::string generalizeDataTypes(const std::string& str) {
     std::regex re("(DenseMatrix|CSRMatrix)");

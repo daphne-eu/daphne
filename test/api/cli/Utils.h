@@ -449,13 +449,6 @@ void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string
     }
 }
 
-/**
- * @brief Starts a distributed worker locally.
- *
- * @param addr The address (usually `0.0.0.0:<port>`) the worker should run on
- * @return The server (has to be kept around for the whole time the worker is in use)
- */
-[[maybe_unused]] [[nodiscard]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl);
 
 // TODO Ideally, we shouldn't need that. There should be a way to print data
 // objects without technical information such as their physical data

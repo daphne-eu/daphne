@@ -31,7 +31,7 @@ public:
     WorkerImpl();
     ~WorkerImpl();
     
-    virtual void Wait() = 0;
+    virtual void Wait() { };
     struct StoredInfo {
         std::string filename;
         size_t numRows, numCols;
