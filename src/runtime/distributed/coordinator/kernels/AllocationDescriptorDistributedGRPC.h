@@ -17,7 +17,6 @@
 #pragma once
 
 #include <runtime/local/datastructures/Structure.h>
-#include <runtime/local/datastructures/ObjectMetaData.h>
 
 class DistributedIndex
 {

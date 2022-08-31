@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
-#include <runtime/local/datastructures/ObjectMetaData.h>
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
@@ -142,25 +141,25 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                     range.c_len = ((data.ix.getCol() + 1) * k + std::min((data.ix.getCol() + 1), m)) - range.c_start;
                 }
 
-                // If omd already exists for this worker, update the range and data
-                if (auto omd = (*res[i])->getObjectMetaDataByLocation(addr)) { 
-                    (*res[i])->updateRangeObjectMetaDataByID(omd->omd_id, &range);
-                    dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);                    
+                // If dp already exists for this worker, update the range and data
+                if (auto dp = (*res[i])->mdo.getDataPlacementByLocation(addr)) { 
+                    (*res[i])->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);
+                    dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);                    
                 }
-                else { // else create new omd entry   
+                else { // else create new dp entry   
                     AllocationDescriptorDistributedGRPC *allocationDescriptor;
                     allocationDescriptor = new AllocationDescriptorDistributedGRPC(
                                             ctx,
                                             addr,
                                             data);                                    
-                    ((*res[i]))->addObjectMetaData(allocationDescriptor, &range);                    
+                    ((*res[i]))->mdo.addDataPlacement(allocationDescriptor, &range);                    
                 } 
             }
 
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++){
-                auto omd = args[i]->getObjectMetaDataByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();\
+                auto dp = args[i]->mdo.getDataPlacementByLocation(addr);
+                auto distrData = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();\
 
                 distributed::StoredData protoData;
                 protoData.set_filename(distrData.filename);
@@ -186,14 +185,14 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
             
             for (int o = 0; o < computeResult.outputs_size(); o++){            
                 auto resMat = *res[o];
-                auto omd = resMat->getObjectMetaDataByLocation(addr);
+                auto dp = resMat->mdo.getDataPlacementByLocation(addr);
 
-                auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();
+                auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
                 data.filename = computeResult.outputs()[o].stored().filename();
                 data.numRows = computeResult.outputs()[o].stored().num_rows();
                 data.numCols = computeResult.outputs()[o].stored().num_cols();
                 data.isPlacedAtWorker = true;
-                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);                                                
+                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);                                                
             }            
         }                
     }

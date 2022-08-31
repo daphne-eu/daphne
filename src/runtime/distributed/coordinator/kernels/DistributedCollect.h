@@ -81,17 +81,17 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         workersSize++;
 
         struct StoredInfo{
-            size_t omd_id;
+            size_t dp_id;
         };
         DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
 
-        auto omdVector = mat->getObjectMetaDataByType(ALLOCATION_TYPE::DIST_GRPC);
-        for (auto &omd : *omdVector) {
-            auto address = omd->allocation->getLocation();
+        auto dpVector = mat->mdo.getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        for (auto &dp : *dpVector) {
+            auto address = dp->allocation->getLocation();
             
-            auto distributedData = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();
-            StoredInfo storedInfo({omd->omd_id});
+            auto distributedData = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
+            StoredInfo storedInfo({dp->dp_id});
             distributed::StoredData protoData;
             protoData.set_filename(distributedData.filename);
             protoData.set_num_rows(distributedData.numRows);
@@ -104,9 +104,9 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
 
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
-            auto omd_id = response.storedInfo.omd_id;
-            auto omd = mat->getObjectMetaDataByID(omd_id);
-            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();            
+            auto dp_id = response.storedInfo.dp_id;
+            auto dp = mat->mdo.getDataPlacementByID(dp_id);
+            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();            
 
             auto matProto = response.result;
             
@@ -116,10 +116,10 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
             }        
             ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
                 matProto, denseMat,
-                omd->range->r_start, omd->range->r_start + omd->range->r_len,
-                omd->range->c_start, omd->range->c_start + omd->range->c_len);                
+                dp->range->r_start, dp->range->r_start + dp->range->r_len,
+                dp->range->c_start, dp->range->c_start + dp->range->c_len);                
             data.isPlacedAtWorker = false;
-            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);
+            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);
         } 
     };
 };

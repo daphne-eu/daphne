@@ -91,6 +91,16 @@ public:
                 *(res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
             }
         }
+
+        // Currently an input might appear twice in the inputs array of a pipeline.
+        // E.g. an input is needed both "Distributed/Scattered" and "Broadcasted".
+        // This might cause conflicts regarding the meta data of an object since 
+        // we need to represent multiple different "DataPlacements" (ways of how the data is distributed).
+        // A solution would be to support multiple meta data for a single Structure, each one representing
+        // a different way data is placed.
+        // @pdamme suggested that if an input is appearing multiple times in the input pipeline, 
+        // we can probably solve this by applying a more "aggressive" pipelining and removing duplicate inputs.
+        // For now we support only unique inputs.
         std::vector<const Structure *> vec;
         for (size_t i = 0; i < numInputs; i++)
             vec.push_back(inputs[i]);
@@ -98,6 +108,7 @@ public:
         const bool hasDuplicates = std::adjacent_find(vec.begin(), vec.end()) != vec.end();
         if(hasDuplicates)
             throw std::runtime_error("Distributed runtime only supports unique inputs for now (no duplicate inputs in a pipeline)");
+        
         // Parse mlir code fragment to determin pipeline inputs/outputs
         auto inputTypes = getPipelineInputTypes(mlirCode);
         // Distribute and broadcast inputs        

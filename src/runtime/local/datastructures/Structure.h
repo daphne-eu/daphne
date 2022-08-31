@@ -42,9 +42,9 @@ protected:
 
     Structure(size_t numRows, size_t numCols) : refCounter(1), numRows(numRows), numCols(numCols) { };
 
+public:
     mutable MetaDataObject mdo;
 
-public:
     virtual ~Structure() = default;
 
     explicit operator std::unique_ptr<Range>() const {

@@ -25,6 +25,7 @@ struct Range {
     size_t r_len;
     size_t c_len;
 
+    explicit Range() : r_start(0), c_start(0), r_len(0), c_len(0) { }
     explicit Range(size_t r1, size_t c1, size_t r2, size_t c2) : r_start(r1), c_start(c1), r_len(r2), c_len(c2) { }
 
     bool operator==(const Range* other) const {

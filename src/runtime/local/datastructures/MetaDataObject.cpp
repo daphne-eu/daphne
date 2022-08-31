@@ -27,6 +27,27 @@ auto MetaDataObject::getDataPlacementByType(ALLOCATION_TYPE type) const
     return &(data_placements[static_cast<size_t>(type)]);
 }
 
+DataPlacement *MetaDataObject::getDataPlacementByLocation(std::string location) const {
+    for (const auto &_omdType: data_placements) {
+        for (auto &_omd: _omdType) {
+            if(_omd->allocation->getLocation() == location)
+                return const_cast<DataPlacement *>(_omd.get());
+        }
+    }
+    return nullptr;
+}
+
+void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {        
+    for(auto &_omdType : data_placements) {
+        for(auto& _omd : _omdType) {
+            if(_omd->dp_id == id){
+                _omd->range = r->clone();
+                return;
+            }
+        }
+    }
+}
+
 DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
     for (const auto &_omdType: data_placements) {
         for (auto &_omd: _omdType) {

@@ -23,6 +23,8 @@
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 
 #include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
+#include <runtime/local/datastructures/DataPlacement.h>
+#include <runtime/local/datastructures/Range.h>
 
 #include <cassert>
 #include <cstddef>
@@ -61,7 +63,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
     static void apply(DT *&mat, bool isScalar, DCTX(ctx)) 
     {
         struct StoredInfo {
-            size_t omd_id;
+            size_t dp_id;
         };
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
         
@@ -109,35 +111,34 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
 
             DistributedData data;
             data.ix = DistributedIndex(0, 0);
-            // If omd already exists simply
+            // If DataPlacement dp already exists simply
             // update range (in case we have a different one) and distributed data
-            ObjectMetaData *omd;
-            if ((omd = mat->getObjectMetaDataByLocation(workerAddr))) {
-                // TODO consider declaring objectmetadata functions const and objectmetadata array as mutable
-                const_cast<typename std::remove_const<DT>::type*>(mat)->updateRangeObjectMetaDataByID(omd->omd_id, &range);
-                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);
+            DataPlacement *dp;
+            if ((dp = mat->mdo.getDataPlacementByLocation(workerAddr))) {                
+                mat->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);
+                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
-            else {  // else create new omd entry
+            else {  // else create new dp entry
                 AllocationDescriptorDistributedGRPC *allocationDescriptor;
                 allocationDescriptor = new AllocationDescriptorDistributedGRPC(
                                                 ctx, 
                                                 workerAddr,  
                                                 data);
-                omd = const_cast<typename std::remove_const<DT>::type*>(mat)->addObjectMetaData(allocationDescriptor, &range);
+                dp = mat->mdo.addDataPlacement(allocationDescriptor, &range);
             }
-            if (dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             
-            StoredInfo storedInfo({omd->omd_id});
+            StoredInfo storedInfo({dp->dp_id});
             caller.asyncStoreCall(workerAddr, storedInfo, protoMsg);
         }       
         
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();            
-            auto omd_id = response.storedInfo.omd_id;
-            auto omd = mat->getObjectMetaDataByID(omd_id);
+            auto dp_id = response.storedInfo.dp_id;
+            auto dp = mat->mdo.getDataPlacementByID(dp_id);
 
-            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();
+            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
 
             auto storedData = response.result;
             data.filename = storedData.filename();
@@ -145,7 +146,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             data.numCols = storedData.num_cols();
             data.isPlacedAtWorker = true;
 
-            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);            
+            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);            
         }                
     };           
 };

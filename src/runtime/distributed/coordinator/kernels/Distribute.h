@@ -60,7 +60,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
 {
     static void apply(DT *mat, DCTX(ctx)) {
         struct StoredInfo {
-            size_t omd_id;
+            size_t dp_id;
         }; 
         
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
@@ -95,13 +95,12 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                         
             DistributedData data;
             data.ix = DistributedIndex(workerIx, 0);
-            // If omd already exists simply
-            // update range (in case we have a different one) and distributed data
-            ObjectMetaData *omd;
-            if ((omd = mat->getObjectMetaDataByLocation(workerAddr))) {
-                // TODO consider declaring objectmetadata functions const and objectmetadata array as mutable
-                const_cast<typename std::remove_const<DT>::type*>(mat)->updateRangeObjectMetaDataByID(omd->omd_id, &range);     
-                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);
+            // If dp already exists simply
+            // update range (in case we have a different one) and distribute data
+            DataPlacement *dp;
+            if ((dp = mat->mdo.getDataPlacementByLocation(workerAddr))) {                
+                mat->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);     
+                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
                     AllocationDescriptorDistributedGRPC *allocationDescriptor;
@@ -109,11 +108,11 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                                                 ctx,
                                                 workerAddr,
                                                 data);
-                omd = const_cast<typename std::remove_const<DT>::type*>(mat)->addObjectMetaData(allocationDescriptor, &range);                    
+                dp = mat->mdo.addDataPlacement(allocationDescriptor, &range);                    
             }
             // keep track of proccessed rows
             // Skip if already placed at workers
-            if (dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             distributed::Data protoMsg;
         
@@ -130,8 +129,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                                                     range.c_start,
                                                     range.c_start + range.c_len);
 
-            StoredInfo storedInfo({omd->omd_id}); 
-            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getLocation(), storedInfo, protoMsg);
+            StoredInfo storedInfo({dp->dp_id}); 
+            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);
             r = (workerIx + 1) * k + std::min(workerIx + 1, m);
         }                
                        
@@ -139,18 +138,18 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
         // get results       
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
-            auto omd_id = response.storedInfo.omd_id;
+            auto dp_id = response.storedInfo.dp_id;
             
             auto storedData = response.result;            
 
-            auto omd = mat->getObjectMetaDataByID(omd_id);
+            auto dp = mat->mdo.getDataPlacementByID(dp_id);
             
-            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).getDistributedData();
+            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
             data.filename = storedData.filename();
             data.numRows = storedData.num_rows();
             data.numCols = storedData.num_cols();
             data.isPlacedAtWorker = true;
-            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(omd->allocation)).updateDistributedData(data);            
+            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);            
         }
 
     }
