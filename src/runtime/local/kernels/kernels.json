@@ -1049,6 +1049,14 @@
                 {
                     "type": "const DTRhs *",
                     "name": "rhs"
+                },
+                {
+                    "type": "bool",
+                    "name": "transa"
+                },
+                {
+                    "type": "bool",
+                    "name": "transb"
                 }
             ]
         },

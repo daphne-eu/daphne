@@ -1,0 +1,19 @@
+// '@' for matrix multiplication
+A=[1.0,2.0,3.0,4.0];
+B=[1.0,2.0,3.0,4.0];
+B=reshape(B, 2, 2);
+C=[1.0,2.0,3.0,4.0];
+C=reshape(C, 1, 4);
+
+print(A);
+print(B);
+print(C);
+
+print(B@B);
+print(t(B)@t(B));
+print(t(t(B))@t(t(B)));
+
+print(A@C);
+print(t(A)@A);
+print(A@t(A));
+print(t(t(A))@t(t(t(A))));

@@ -141,11 +141,12 @@ def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    NumRowsFromIthArg<0>, NumColsFromIthArg<1>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
     DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport
 ]> {
-    let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs);
+    let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************

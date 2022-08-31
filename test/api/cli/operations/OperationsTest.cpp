@@ -36,3 +36,4 @@ const std::string dirPath = "test/api/cli/operations/";
 
 MAKE_TEST_CASE("createFrame", 1)
 MAKE_TEST_CASE("operator_plus", 2)
+MAKE_TEST_CASE("operator_at", 1)
