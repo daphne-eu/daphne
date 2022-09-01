@@ -21,7 +21,7 @@ package distributed;
 option optimize_for = SPEED;
 
 message StoredData {
-  string filename = 1;
+  string identifier = 1;
   uint64 num_rows = 2;
   uint64 num_cols = 3;
 }

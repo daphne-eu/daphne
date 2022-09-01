@@ -26,6 +26,17 @@
 class WorkerImpl  
 {
 public:
+    class Status {
+        private:
+            bool ok_;
+            std::string error_message_;
+        public:
+            Status (bool ok) : ok_(ok), error_message_("") { };
+            Status(bool ok, std::string msg) : ok_(ok), error_message_(msg) { };
+            bool ok() const { return ok_; };
+            std::string error_message() const { return error_message_; }; 
+    };
+    
     const static std::string DISTRIBUTED_FUNCTION_NAME;
    
     WorkerImpl();
@@ -33,7 +44,7 @@ public:
     
     virtual void Wait() { };
     struct StoredInfo {
-        std::string filename;
+        std::string identifier;
         size_t numRows, numCols;
     };
 
@@ -41,7 +52,7 @@ public:
      * @brief Stores a matrix at worker's memory
      * 
      * @param mat Structure * obj to store
-     * @return StoredInfo Information regarding stored object (filename, numRows, numCols)
+     * @return StoredInfo Information regarding stored object (identifier, numRows, numCols)
      */
     template<class DT>
     StoredInfo Store(DT *mat) ;
@@ -49,25 +60,21 @@ public:
     /**
      * @brief Computes a pipeline
      * 
-     * @param outputs vector to populate with results of the pipeline (filename, numRows/cols, etc.)
-     * @param inputs vector with inputs of pipeline (filenames to use, etc.)
+     * @param outputs vector to populate with results of the pipeline (identifier, numRows/cols, etc.)
+     * @param inputs vector with inputs of pipeline (identifiers to use, etc.)
      * @param mlirCode mlir code fragment
-     * @return std::string Returns "OK" if everything went fine, otherwise returns an abort message
+     * @return WorkerImpl::Status contains if everything went fine, with an optional error message
      */
-    std::string Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode) ;
+    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode) ;
 
     /**
      * @brief Returns a matrix stored in worker's memory
      * 
-     * @param storedInfo Information regarding stored object (filename, numRows, numCols)
+     * @param storedInfo Information regarding stored object (identifier, numRows, numCols)
      * @return Structure* Returns object
      */
     Structure * Transfer(StoredInfo storedInfo);
 
-    // grpc::Status FreeMem(::grpc::ServerContext *context,
-    //                      const ::distributed::StoredData *request,
-    //                      ::distributed::Empty *emptyMessage);
-    
 private:
     uint64_t tmp_file_counter_ = 0;
     std::unordered_map<std::string, void *> localData_;
@@ -84,21 +91,8 @@ private:
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
     
-    Structure *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse = false, bool isFloat = false, bool isScalar = false);
-    void *loadWorkInputData(mlir::Type mlirType, StoredInfo& workInput);
-    
-
-    /**
-     * @brief Helper FreeMem function using templates in order to handle
-     * different types.
-     * 
-     * @tparam VT double/int etc.
-     */
-    // TODO this is still tied to grpc must be updated
-    // template<typename VT>
-    // grpc::Status FreeMemType(::grpc::ServerContext *context,
-    //                      const ::distributed::StoredData *request,
-    //                      ::distributed::Empty *emptyMessage);
+    Structure *readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols, bool isSparse = false, bool isFloat = false, bool isScalar = false);
+    void *loadWorkInputData(mlir::Type mlirType, StoredInfo& workInput);    
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H

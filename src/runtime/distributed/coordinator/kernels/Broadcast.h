@@ -22,7 +22,7 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 
-#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
 
@@ -114,19 +114,19 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             // If DataPlacement dp already exists simply
             // update range (in case we have a different one) and distributed data
             DataPlacement *dp;
-            if ((dp = mat->mdo.getDataPlacementByLocation(workerAddr))) {                
-                mat->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);
-                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);
+            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {  // else create new dp entry
-                AllocationDescriptorDistributedGRPC *allocationDescriptor;
-                allocationDescriptor = new AllocationDescriptorDistributedGRPC(
+                AllocationDescriptorGRPC *allocationDescriptor;
+                allocationDescriptor = new AllocationDescriptorGRPC(
                                                 ctx, 
                                                 workerAddr,  
                                                 data);
-                dp = mat->mdo.addDataPlacement(allocationDescriptor, &range);
+                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);
             }
-            if (dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             
             StoredInfo storedInfo({dp->dp_id});
@@ -136,17 +136,17 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();            
             auto dp_id = response.storedInfo.dp_id;
-            auto dp = mat->mdo.getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
 
-            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
+            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
 
             auto storedData = response.result;
-            data.filename = storedData.filename();
+            data.identifier = storedData.identifier();
             data.numRows = storedData.num_rows();
             data.numCols = storedData.num_cols();
             data.isPlacedAtWorker = true;
 
-            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);            
+            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);            
         }                
     };           
 };

@@ -21,7 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 
 #include <cassert>
@@ -98,21 +98,21 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             // If dp already exists simply
             // update range (in case we have a different one) and distribute data
             DataPlacement *dp;
-            if ((dp = mat->mdo.getDataPlacementByLocation(workerAddr))) {                
-                mat->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);     
-                dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);
+            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
-                    AllocationDescriptorDistributedGRPC *allocationDescriptor;
-                    allocationDescriptor = new AllocationDescriptorDistributedGRPC(
+                    AllocationDescriptorGRPC *allocationDescriptor;
+                    allocationDescriptor = new AllocationDescriptorGRPC(
                                                 ctx,
                                                 workerAddr,
                                                 data);
-                dp = mat->mdo.addDataPlacement(allocationDescriptor, &range);                    
+                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    
             }
             // keep track of proccessed rows
             // Skip if already placed at workers
-            if (dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             distributed::Data protoMsg;
         
@@ -130,7 +130,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                                                     range.c_start + range.c_len);
 
             StoredInfo storedInfo({dp->dp_id}); 
-            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);
+            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);
             r = (workerIx + 1) * k + std::min(workerIx + 1, m);
         }                
                        
@@ -142,14 +142,14 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             
             auto storedData = response.result;            
 
-            auto dp = mat->mdo.getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
             
-            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
-            data.filename = storedData.filename();
+            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+            data.identifier = storedData.identifier();
             data.numRows = storedData.num_rows();
             data.numCols = storedData.num_cols();
             data.isPlacedAtWorker = true;
-            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);            
+            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);            
         }
 
     }

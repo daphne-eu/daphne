@@ -52,7 +52,7 @@ private:
 
 struct DistributedData
 {
-    std::string filename;
+    std::string identifier;
     size_t numRows, numCols;
     mlir::daphne::VectorCombine vectorCombine;
     bool isPlacedAtWorker = false;
@@ -60,45 +60,65 @@ struct DistributedData
 
 };
 
-class AllocationDescriptorDistributedGRPC : public IAllocationDescriptor {
+class AllocationDescriptorGRPC : public IAllocationDescriptor {
 private:
     DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
     std::string workerAddress;
-    DistributedData data;
+    DistributedData distributedData;
+    std::shared_ptr<std::byte> data;
 public:
-    AllocationDescriptorDistributedGRPC() {} ;
-    AllocationDescriptorDistributedGRPC(DaphneContext* ctx, 
+    AllocationDescriptorGRPC() {} ;
+    AllocationDescriptorGRPC(DaphneContext* ctx, 
                             std::string address, 
-                            DistributedData data) : ctx(ctx), workerAddress(address), data(data) { } ;
+                            DistributedData data) : ctx(ctx), workerAddress(address), distributedData(data) { } ;
 
-    ~AllocationDescriptorDistributedGRPC() override {};
+    ~AllocationDescriptorGRPC() override {};
     [[nodiscard]] ALLOCATION_TYPE getType() const override 
     { return type; };
     
     std::string getLocation() const override 
     {return workerAddress; };
     void createAllocation(size_t size, bool zero) override {} ;
-    std::shared_ptr<std::byte> getData() override {} ;
+    // TODO: Implement transferTo and transferFrom functions
+    std::shared_ptr<std::byte> getData() override { 
+        throw std::runtime_error("TransferTo/From functions are not implemented yet.");
+        return data; 
+    } ;
 
     bool operator==(const IAllocationDescriptor* other) const override {
         if(getType() == other->getType())
-            return(getLocation() == dynamic_cast<const AllocationDescriptorDistributedGRPC *>(other)->getLocation());
+            return(getLocation() == dynamic_cast<const AllocationDescriptorGRPC *>(other)->getLocation());
         return false;
     } ;
 
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
-        return std::make_unique<AllocationDescriptorDistributedGRPC>(*this);
+        return std::make_unique<AllocationDescriptorGRPC>(*this);
     }
     
-
-    void transferTo(std::byte *src, size_t size) override { /* TODO */ };
-    void transferFrom(std::byte *src, size_t size) override { /* TODO */ };
+    /* 
+    TODO:
+    We curently do not support transferTo/From functions for gRPC. 
+    All communication is handled by the distributed kernels (e.g. Distribute.h).
+    In order to support these functions we need to know what data-type we
+    are sending (representation, value type, etc.) since the worker 
+    needs to store with the appropriate representation. 
+    This might not be necessary when issue #103 "(De)Serialization of data objects" is implemented.
+    For now support for these is not necessary but we need to think about this...
+    */
+    void transferTo(std::byte *src, size_t size) override { 
+        /* TODO */ 
+        throw std::runtime_error("TransferTo (gRPC) function is not implemented yet.");
+    };
+    void transferFrom(std::byte *src, size_t size) override { 
+        /* TODO */ 
+        throw std::runtime_error("TransferFrom (gRPC) function is not implemented yet.");
+    };
 
     const DistributedIndex getDistributedIndex()
-    { return data.ix; }    
+    { return distributedData.ix; }    
     const DistributedData getDistributedData()
-    { return data; }
+    { return distributedData; }
     void updateDistributedData(DistributedData data_)
-    { data = data_; }
+    { distributedData = data_; }
 };

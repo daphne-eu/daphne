@@ -72,7 +72,7 @@ public:
     void asyncStoreCall(
         std::shared_ptr<grpc::Channel> channel,
         StoredInfo storedInfo,
-        const distributed::Data arg
+        const Argument arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -103,7 +103,7 @@ public:
     void asyncComputeCall(
         std::shared_ptr<grpc::Channel> channel,
         StoredInfo storedInfo,
-        const distributed::Task arg
+        Argument arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -118,7 +118,7 @@ public:
     void asyncComputeCall(
         std::string workerAddr,
         StoredInfo storedInfo,
-        const distributed::Task arg
+        const Argument arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);
@@ -134,7 +134,7 @@ public:
     void asyncTransferCall(
         std::shared_ptr<grpc::Channel> channel,
         StoredInfo storedInfo,
-        const distributed::StoredData arg
+        const Argument arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -149,7 +149,7 @@ public:
     void asyncTransferCall(
         std::string workerAddr,
         StoredInfo storedInfo,
-        const distributed::StoredData arg
+        const Argument arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);
@@ -166,7 +166,7 @@ public:
     void asyncFreeMemCall(
         std::shared_ptr<grpc::Channel> channel,
         StoredInfo storedInfo,
-        const distributed::StoredData arg
+        const Argument arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -181,7 +181,7 @@ public:
     void asyncFreeMemCall(
         std::string workerAddr,
         StoredInfo storedInfo,
-        const distributed::StoredData arg
+        const Argument arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);

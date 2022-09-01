@@ -45,35 +45,26 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 
 WorkerImpl::~WorkerImpl() = default;
 
-// void WorkerImpl::StartHandleThread() {
-//     HandleRpcsThread = std::thread(&WorkerImpl::HandleRpcs, this);
-// }
-// void WorkerImpl::TerminateHandleThread() {
-//     cq_->Shutdown();
-//     HandleRpcsThread.join();
-// }
-
-
 
 template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat)
 {    
-    auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
-    localData_[identification] = mat;
-    return StoredInfo({identification, mat->getNumRows(), mat->getNumCols()});
+    auto identifier = "tmp_" + std::to_string(tmp_file_counter_++);
+    localData_[identifier] = mat;
+    return StoredInfo({identifier, mat->getNumRows(), mat->getNumCols()});
 }
 template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
 {    
-    auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
-    localData_[identification] = val;
-    return StoredInfo({identification, 0, 0});
+    auto identifier = "tmp_" + std::to_string(tmp_file_counter_++);
+    localData_[identifier] = val;
+    return StoredInfo({identifier, 0, 0});
 }
     
     
 
 
-std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
+WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
 {
     // ToDo: user config
     DaphneUserConfig cfg;
@@ -89,7 +80,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     if (!module) {
         auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
-        return (message);
+        return WorkerImpl::Status(false, message);
     }
 
     auto *distOp = module->lookupSymbol(DISTRIBUTED_FUNCTION_NAME);
@@ -97,7 +88,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     if (!(distFunc = llvm::dyn_cast_or_null<mlir::FuncOp>(distOp))) {
         auto message = "MLIR fragment has to contain `dist` FuncOp\n";
         llvm::errs() << message;
-        return message;
+        return WorkerImpl::Status(false, message);
     }
     auto distFuncTy = distFunc.getType();
 
@@ -132,14 +123,14 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
         ss << "Module Pass Error.\n";
         // module->print(ss, llvm::None);
         llvm::errs() << ss.str();
-        return ss.str();
+        return WorkerImpl::Status(false, ss.str());
     }
 
     mlir::registerLLVMDialectTranslation(*module->getContext());
 
     auto engine = executor.createExecutionEngine(module.get());
     if (!engine) {
-        return std::string("Failed to create JIT-Execution engine");
+        return WorkerImpl::Status(false, std::string("Failed to create JIT-Execution engine"));
     }
     auto error = engine->invokePacked(DISTRIBUTED_FUNCTION_NAME,
         llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
@@ -147,12 +138,11 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     if (error) {
         std::stringstream ss("JIT-Engine invocation failed.");
         llvm::errs() << "JIT-Engine invocation failed: " << error << '\n';
-        return ss.str();
+        return WorkerImpl::Status(false, ss.str());
     }
 
     for (auto zipped : llvm::zip(outputsObj, distFuncTy.getResults())) {
-        auto output = std::get<0>(zipped);
-        auto type = std::get<1>(zipped);
+        auto output = std::get<0>(zipped);        
 
         auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
         localData_[identification] = output;
@@ -162,7 +152,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
         outputs->push_back(StoredInfo({identification, mat->getNumRows(), mat->getNumCols()}));
     }
     // TODO: cache management (Write to file/evict matrices present as files)
-    return "OK";
+    return WorkerImpl::Status(true);
 }
 
 // distributed::WorkData::DataCase WorkerImpl::dataCaseForType(mlir::Type type)
@@ -181,7 +171,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
 
 Structure * WorkerImpl::Transfer(StoredInfo info)
 {
-    Structure *mat = readOrGetMatrix(info.filename, info.numRows, info.numCols);
+    Structure *mat = readOrGetMatrix(info.identifier, info.numRows, info.numCols);
     return mat;
 }
 
@@ -228,12 +218,12 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput)
     }
     else
         isScalar = true;
-    return readOrGetMatrix(workInput.filename, workInput.numRows, workInput.numCols, isSparse, isFloat, isScalar);
+    return readOrGetMatrix(workInput.identifier, workInput.numRows, workInput.numCols, isSparse, isFloat, isScalar);
 }
 
-Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/, bool isScalar /* = false */)
+Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/, bool isScalar /* = false */)
 {
-    auto data_it = localData_.find(filename);
+    auto data_it = localData_.find(identifier);
     if (data_it != localData_.end()) {
         // Data already cached
         if (isScalar){
@@ -251,17 +241,17 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
         if(isSparse) {        
             if (isFloat){
                 CSRMatrix<double> *m2 = nullptr;
-                read<CSRMatrix<double>>(m2, filename.c_str(), nullptr);
+                read<CSRMatrix<double>>(m2, identifier.c_str(), nullptr);
                 m = m2;
             }
             else{
                 CSRMatrix<int64_t> *m2 = nullptr;
-                read<CSRMatrix<int64_t>>(m2, filename.c_str(), nullptr);
+                read<CSRMatrix<int64_t>>(m2, identifier.c_str(), nullptr);
                 m = m2;
             }
         }
         else {
-            struct File *file = openFile(filename.c_str());
+            struct File *file = openFile(identifier.c_str());
             char delim = ',';
             // TODO use read
             if (isFloat) {
@@ -275,9 +265,9 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
             }
             closeFile(file);
         }
-//        auto result = localData_.insert({filename, m});
+//        auto result = localData_.insert({identifier, m});
 //        assert(result.second && "Value should always be inserted");
-        assert(localData_.insert({filename, m}).second && "Value should always be inserted");
+        assert(localData_.insert({identifier, m}).second && "Value should always be inserted");
         return m;    
     }
 }
@@ -307,8 +297,8 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
 //                                const ::distributed::StoredData *request,
 //                                ::distributed::Empty *emptyMessg)
 // {
-//     auto filename = request->filename();
-//     auto data_it = localData_.find(filename);
+//     auto identifier = request->identifier();
+//     auto data_it = localData_.find(identifier);
 
 //     if (data_it != localData_.end()) {
 //         auto * mat = reinterpret_cast<Matrix<VT> *>(data_it->second);
@@ -316,7 +306,7 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
 //             DataObjectFactory::destroy(m);
 //         else if(auto m = dynamic_cast<CSRMatrix<VT> *>(mat))
 //             DataObjectFactory::destroy(m);
-//         localData_.erase(filename);
+//         localData_.erase(identifier);
 //     }
 //     return grpc::Status::OK;
 // }
