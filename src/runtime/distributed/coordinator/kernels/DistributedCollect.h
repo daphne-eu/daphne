@@ -21,7 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/proto/worker.pb.h>
@@ -90,10 +90,10 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         for (auto &dp : *dpVector) {
             auto address = dp->allocation->getLocation();
             
-            auto distributedData = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();
+            auto distributedData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
             StoredInfo storedInfo({dp->dp_id});
             distributed::StoredData protoData;
-            protoData.set_filename(distributedData.filename);
+            protoData.set_identifier(distributedData.identifier);
             protoData.set_num_rows(distributedData.numRows);
             protoData.set_num_cols(distributedData.numCols);                       
 
@@ -106,7 +106,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
             auto response = caller.getNextResult();
             auto dp_id = response.storedInfo.dp_id;
             auto dp = mat->mdo.getDataPlacementByID(dp_id);
-            auto data = dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).getDistributedData();            
+            auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
 
             auto matProto = response.result;
             
@@ -119,7 +119,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
                 dp->range->r_start, dp->range->r_start + dp->range->r_len,
                 dp->range->c_start, dp->range->c_start + dp->range->c_len);                
             data.isPlacedAtWorker = false;
-            dynamic_cast<AllocationDescriptorDistributedGRPC&>(*(dp->allocation)).updateDistributedData(data);
+            dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
         } 
     };
 };

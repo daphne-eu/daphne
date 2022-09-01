@@ -24,7 +24,7 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCollect.h>
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
-#include <runtime/distributed/coordinator/kernels/AllocationDescriptorDistributedGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 
 
 

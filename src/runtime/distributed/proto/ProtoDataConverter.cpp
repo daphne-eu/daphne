@@ -30,7 +30,6 @@ void ProtoDataConverter<DenseMatrix<VT>>::convertToProto(const DenseMatrix<VT> *
                                         size_t colBegin,
                                         size_t colEnd)
 {
-    auto denseMatProto = matProto->mutable_dense_matrix();
     matProto->set_num_rows(rowEnd - rowBegin);
     matProto->set_num_cols(colEnd - colBegin);
 

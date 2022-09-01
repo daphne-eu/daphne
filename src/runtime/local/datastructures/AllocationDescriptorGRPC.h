@@ -52,7 +52,7 @@ private:
 
 struct DistributedData
 {
-    std::string filename;
+    std::string identifier;
     size_t numRows, numCols;
     mlir::daphne::VectorCombine vectorCombine;
     bool isPlacedAtWorker = false;
@@ -60,19 +60,19 @@ struct DistributedData
 
 };
 
-class AllocationDescriptorDistributedGRPC : public IAllocationDescriptor {
+class AllocationDescriptorGRPC : public IAllocationDescriptor {
 private:
     DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
     std::string workerAddress;
     DistributedData data;
 public:
-    AllocationDescriptorDistributedGRPC() {} ;
-    AllocationDescriptorDistributedGRPC(DaphneContext* ctx, 
+    AllocationDescriptorGRPC() {} ;
+    AllocationDescriptorGRPC(DaphneContext* ctx, 
                             std::string address, 
                             DistributedData data) : ctx(ctx), workerAddress(address), data(data) { } ;
 
-    ~AllocationDescriptorDistributedGRPC() override {};
+    ~AllocationDescriptorGRPC() override {};
     [[nodiscard]] ALLOCATION_TYPE getType() const override 
     { return type; };
     
@@ -83,12 +83,12 @@ public:
 
     bool operator==(const IAllocationDescriptor* other) const override {
         if(getType() == other->getType())
-            return(getLocation() == dynamic_cast<const AllocationDescriptorDistributedGRPC *>(other)->getLocation());
+            return(getLocation() == dynamic_cast<const AllocationDescriptorGRPC *>(other)->getLocation());
         return false;
     } ;
 
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
-        return std::make_unique<AllocationDescriptorDistributedGRPC>(*this);
+        return std::make_unique<AllocationDescriptorGRPC>(*this);
     }
     
 

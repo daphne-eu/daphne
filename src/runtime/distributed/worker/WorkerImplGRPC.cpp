@@ -82,17 +82,21 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
     StoredInfo storedInfo;
     switch (request->data_case()){
         case distributed::Data::DataCase::kMatrix: {
-            Structure *mat;
+            Structure *mat = nullptr;
             auto matrix = &request->matrix();
             switch (matrix->matrix_case()) {
                 case distributed::Matrix::MatrixCase::kDenseMatrix:
                     switch (matrix->dense_matrix().cells_case())
                     {
                     case distributed::DenseMatrix::CellsCase::kCellsI64:
+                    // TODO: initialize different type if VT is I32
+                    case distributed::DenseMatrix::CellsCase::kCellsI32:
                         mat = CreateMatrix<DenseMatrix<int64_t>>(matrix);
                         ProtoDataConverter<DenseMatrix<int64_t>>::convertFromProto(*matrix, dynamic_cast<DenseMatrix<int64_t>*>(mat));
                         break;
                     case distributed::DenseMatrix::CellsCase::kCellsF64:
+                    // TODO: initialize different type if VT is F32
+                    case distributed::DenseMatrix::CellsCase::kCellsF32:
                         mat = CreateMatrix<DenseMatrix<double>>(matrix);
                         ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*matrix, dynamic_cast<DenseMatrix<double>*>(mat));
                         break;    
@@ -104,16 +108,27 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
                     switch (matrix->csr_matrix().values_case())
                     {
                     case distributed::CSRMatrix::ValuesCase::kValuesI64:
+                    // TODO: initialize different type if VT is I32
+                    case distributed::CSRMatrix::ValuesCase::kValuesI32:
                         mat = CreateMatrix<CSRMatrix<int64_t>>(matrix);
                         ProtoDataConverter<CSRMatrix<int64_t>>::convertFromProto(*matrix, dynamic_cast<CSRMatrix<int64_t>*>(mat));
                         break;
                     case distributed::CSRMatrix::ValuesCase::kValuesF64:
+                    // TODO: initialize different type if VT is F32
+                    case distributed::CSRMatrix::ValuesCase::kValuesF32:
                         mat = CreateMatrix<CSRMatrix<double>>(matrix);
                         ProtoDataConverter<CSRMatrix<double>>::convertFromProto(*matrix, dynamic_cast<CSRMatrix<double>*>(mat));
                         break;
+                    case distributed::CSRMatrix::ValuesCase::VALUES_NOT_SET:
+                    default:
+                        throw std::runtime_error("GRPC: Proto message 'Matrix': cell values not set");
                     }
                     break;
+                case distributed::Matrix::MatrixCase::MATRIX_NOT_SET:
+                default:
+                    throw std::runtime_error("GRPC: Proto message 'Matrix': matrix not set");
             }
+            assert(mat != nullptr && "GRPC: proto message was not converted to Daphne Structure");
             storedInfo = Store<Structure>(mat);
             break; 
         }
@@ -140,7 +155,7 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
         break;
     };
 
-    response->set_filename(storedInfo.filename);
+    response->set_identifier(storedInfo.identifier);
     response->set_num_rows(storedInfo.numRows);
     response->set_num_cols(storedInfo.numCols);
     return ::grpc::Status::OK;
@@ -156,12 +171,12 @@ grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context,
     std::vector<StoredInfo> *outputs = new std::vector<StoredInfo>();
     for (auto input : request->inputs()){
         auto stored = input.stored();
-        inputs.push_back(StoredInfo({stored.filename(), stored.num_rows(), stored.num_cols()}));
+        inputs.push_back(StoredInfo({stored.identifier(), stored.num_rows(), stored.num_cols()}));
     }
     auto respMsg = Compute(outputs, inputs, request->mlir_code());
     for (auto output : *outputs){        
         distributed::WorkData workData;        
-        workData.mutable_stored()->set_filename(output.filename);
+        workData.mutable_stored()->set_identifier(output.identifier);
         workData.mutable_stored()->set_num_rows(output.numRows);
         workData.mutable_stored()->set_num_cols(output.numCols);
         *response->add_outputs() = workData;
@@ -176,7 +191,7 @@ grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
                          ::distributed::Matrix *response)
 {
-    StoredInfo info({request->filename(), request->num_rows(), request->num_cols()});
+    StoredInfo info({request->identifier(), request->num_rows(), request->num_cols()});
     Structure *mat = Transfer(info);
     if(auto matDT = dynamic_cast<DenseMatrix<double>*>(mat))        
         ProtoDataConverter<DenseMatrix<double>>::convertToProto(matDT, response);

@@ -58,16 +58,16 @@ WorkerImpl::~WorkerImpl() = default;
 template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat)
 {    
-    auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
-    localData_[identification] = mat;
-    return StoredInfo({identification, mat->getNumRows(), mat->getNumCols()});
+    auto identifier = "tmp_" + std::to_string(tmp_file_counter_++);
+    localData_[identifier] = mat;
+    return StoredInfo({identifier, mat->getNumRows(), mat->getNumCols()});
 }
 template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
 {    
-    auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
-    localData_[identification] = val;
-    return StoredInfo({identification, 0, 0});
+    auto identifier = "tmp_" + std::to_string(tmp_file_counter_++);
+    localData_[identifier] = val;
+    return StoredInfo({identifier, 0, 0});
 }
     
     
@@ -151,8 +151,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     }
 
     for (auto zipped : llvm::zip(outputsObj, distFuncTy.getResults())) {
-        auto output = std::get<0>(zipped);
-        auto type = std::get<1>(zipped);
+        auto output = std::get<0>(zipped);        
 
         auto identification = "tmp_" + std::to_string(tmp_file_counter_++);
         localData_[identification] = output;
@@ -181,7 +180,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
 
 Structure * WorkerImpl::Transfer(StoredInfo info)
 {
-    Structure *mat = readOrGetMatrix(info.filename, info.numRows, info.numCols);
+    Structure *mat = readOrGetMatrix(info.identifier, info.numRows, info.numCols);
     return mat;
 }
 
@@ -228,12 +227,12 @@ void *WorkerImpl::loadWorkInputData(mlir::Type mlirType, StoredInfo &workInput)
     }
     else
         isScalar = true;
-    return readOrGetMatrix(workInput.filename, workInput.numRows, workInput.numCols, isSparse, isFloat, isScalar);
+    return readOrGetMatrix(workInput.identifier, workInput.numRows, workInput.numCols, isSparse, isFloat, isScalar);
 }
 
-Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/, bool isScalar /* = false */)
+Structure *WorkerImpl::readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols, bool isSparse /*= false */, bool isFloat /* = false*/, bool isScalar /* = false */)
 {
-    auto data_it = localData_.find(filename);
+    auto data_it = localData_.find(identifier);
     if (data_it != localData_.end()) {
         // Data already cached
         if (isScalar){
@@ -251,17 +250,17 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
         if(isSparse) {        
             if (isFloat){
                 CSRMatrix<double> *m2 = nullptr;
-                read<CSRMatrix<double>>(m2, filename.c_str(), nullptr);
+                read<CSRMatrix<double>>(m2, identifier.c_str(), nullptr);
                 m = m2;
             }
             else{
                 CSRMatrix<int64_t> *m2 = nullptr;
-                read<CSRMatrix<int64_t>>(m2, filename.c_str(), nullptr);
+                read<CSRMatrix<int64_t>>(m2, identifier.c_str(), nullptr);
                 m = m2;
             }
         }
         else {
-            struct File *file = openFile(filename.c_str());
+            struct File *file = openFile(identifier.c_str());
             char delim = ',';
             // TODO use read
             if (isFloat) {
@@ -275,9 +274,9 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
             }
             closeFile(file);
         }
-//        auto result = localData_.insert({filename, m});
+//        auto result = localData_.insert({identifier, m});
 //        assert(result.second && "Value should always be inserted");
-        assert(localData_.insert({filename, m}).second && "Value should always be inserted");
+        assert(localData_.insert({identifier, m}).second && "Value should always be inserted");
         return m;    
     }
 }
@@ -307,8 +306,8 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
 //                                const ::distributed::StoredData *request,
 //                                ::distributed::Empty *emptyMessg)
 // {
-//     auto filename = request->filename();
-//     auto data_it = localData_.find(filename);
+//     auto identifier = request->identifier();
+//     auto data_it = localData_.find(identifier);
 
 //     if (data_it != localData_.end()) {
 //         auto * mat = reinterpret_cast<Matrix<VT> *>(data_it->second);
@@ -316,7 +315,7 @@ Structure *WorkerImpl::readOrGetMatrix(const std::string &filename, size_t numRo
 //             DataObjectFactory::destroy(m);
 //         else if(auto m = dynamic_cast<CSRMatrix<VT> *>(mat))
 //             DataObjectFactory::destroy(m);
-//         localData_.erase(filename);
+//         localData_.erase(identifier);
 //     }
 //     return grpc::Status::OK;
 // }
