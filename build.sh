@@ -603,6 +603,31 @@ fi
 
 
 #------------------------------------------------------------------------------
+# MPI (Default is MPI library is OpenMPI but cut can be any)
+#------------------------------------------------------------------------------
+MPIDirName="OpenMPI"
+MPIVersion="4.1.3"
+MPIZipName=openmpi-$MPIVersion.tar.gz
+MPIInstDirName=$installPrefix
+if ! is_dependency_downloaded "openmpi_v${MPIVersion}"; then
+    daphne_msg "Get openmpi version ${MPIVersion}"
+    wget "https://download.open-mpi.org/release/open-mpi/v4.1/$MPIZipName" -qO "${cacheDir}/${MPIZipName}"
+    tar -xf "$cacheDir/$MPIZipName" --directory "$sourcePrefix"
+    dependency_download_success "openmpi_v${MPIVersion}"
+    mkdir --parents $MPIInstDirName
+fi
+if ! is_dependency_installed "openmpi_v${MPIVersion}"; then
+    cd "$sourcePrefix/openmpi-$MPIVersion"
+    ./configure --with-slurm --prefix="$MPIInstDirName"
+    make all install
+    cd -
+    dependency_install_success "openmpi_v${MPIVersion}"
+else
+    daphne_msg "No need to build OpenMPI again"
+fi    
+export PATH=$MPIInstDirName/bin/:$PATH
+export LD_LIBRARY_PATH=$MPIInstDirName/lib/:$LD_LIBRARY_PATH
+#-----------------------------------------------------------------------------
 # gRPC
 #------------------------------------------------------------------------------
 grpcDirName="grpc"
@@ -709,6 +734,8 @@ fi
 daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_DEBUG \
+  -DMPI_INST_DIR=$MPIInstDirName \
+  -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++ \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"

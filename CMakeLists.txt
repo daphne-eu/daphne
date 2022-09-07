@@ -99,6 +99,11 @@ endif()
 # check <package>_ROOT env var
 cmake_policy(SET CMP0074 NEW)
 
+###### MPI
+include_directories(${MPI_INST_DIR}/include)
+SET(OPENMPI_LIBRARIES ${MPI_INST_DIR}/lib/)
+##########
+
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)
