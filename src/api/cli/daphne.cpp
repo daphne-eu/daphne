@@ -15,6 +15,7 @@
  */
 
 #include <mpi.h>
+#include "runtime/local/datastructures/IAllocationDescriptor.h"
 #include "runtime/distributed/worker/MPIWorker.h"
 #include <api/cli/StatusCode.h>
 #include <api/cli/DaphneUserConfig.h>
@@ -73,9 +74,21 @@ int startCoordinator(int argc, char** argv){
     // TODO We will probably subdivide the options into multiple groups later.
     OptionCategory daphneOptions("DAPHNE Options");
     OptionCategory schedulingOptions("Advanced Scheduling Knobs");
+    OptionCategory distributedBackEndSetupOptions("Distributed Backend Knobs");
 
 
     // Options ----------------------------------------------------------------
+
+    // Distributed backend Knobs
+    opt<ALLOCATION_TYPE> distributedBackEndSetup(cat(distributedBackEndSetupOptions), 
+                                            desc("Choose the options for the distribution backend:"),
+                                            values(
+                                                    clEnumVal( DIST_MPI, "Use message passing interface for internode data exchange"),
+                                                    clEnumVal(DIST_GRPC, "Use remote procedure call for internode data exchange")
+                                                )
+                                            );
+
+
     
     // Scheduling options
 
@@ -104,7 +117,7 @@ int startCoordinator(int argc, char** argv){
                 clEnumVal(PERCPU, "One queue per CPU core")
             )
     );
-	opt<victimSelectionLogic> victimSelection(
+	opt<VictimSelectionLogic> victimSelection(
             cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
             values(
                 clEnumVal(SEQ, "Steal from next adjacent worker"),
@@ -232,6 +245,7 @@ int startCoordinator(int argc, char** argv){
     std::vector<const llvm::cl::OptionCategory *> visibleCategories;
     visibleCategories.push_back(&daphneOptions);
     visibleCategories.push_back(&schedulingOptions);
+    visibleCategories.push_back(&distributedBackEndSetupOptions);
     
     HideUnrelatedOptions(visibleCategories);
 
@@ -277,6 +291,7 @@ int startCoordinator(int argc, char** argv){
     user_config.hyperthreadingEnabled = hyperthreadingEnabled;
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
+    user_config.distributedBackEndSetup = distributedBackEndSetup;
 
     for (auto explain : explainArgList) {
         switch (explain) {

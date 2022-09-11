@@ -20,9 +20,9 @@
 
 // An alphabetically sorted wishlist of supported allocation types ;-)
 // Supporting all of that is probably unmaintainable :-/
-enum class ALLOCATION_TYPE {
-    DIST_GRPC,
-    DIST_OPENMPI,
+enum ALLOCATION_TYPE {
+    DIST_GRPC=0,
+    DIST_MPI,
     DIST_SPARK,
     GPU_CUDA,
     GPU_HIP,
