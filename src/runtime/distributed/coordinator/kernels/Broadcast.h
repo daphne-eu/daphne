@@ -167,8 +167,8 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             // If DataPlacement dp already exists simply
             // update range (in case we have a different one) and distributed data
             DataPlacement *dp;
-            if ((dp = mat->mdo.getDataPlacementByLocation(workerAddr))) {                
-                mat->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);
+            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {  // else create new dp entry
@@ -177,7 +177,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
                                                 ctx, 
                                                 workerAddr,  
                                                 data);
-                dp = mat->mdo.addDataPlacement(allocationDescriptor, &range);
+                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
@@ -189,7 +189,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();            
             auto dp_id = response.storedInfo.dp_id;
-            auto dp = mat->mdo.getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
 
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
 

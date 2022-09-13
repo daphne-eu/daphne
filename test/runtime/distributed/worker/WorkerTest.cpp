@@ -49,7 +49,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
 
         THEN ("No filenames are returned")
         {
-            REQUIRE(status == "OK");
+            REQUIRE(status.ok());
             REQUIRE(outputs.size() == 0);
         }
     }
@@ -75,7 +75,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
 
         THEN ("The filename of the matrix is returned")
         {
-            REQUIRE(status == "OK");
+            REQUIRE(status.ok());
             REQUIRE(outputs.size() == 1);
         }
     }
@@ -94,7 +94,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
         auto status = workerImpl.Compute(&outputs, inputs, task);
 
         THEN ("A Matrix is returned") {
-            REQUIRE(status == "OK");
+            REQUIRE(status.ok());
             REQUIRE(outputs.size() == 1);
         }
     }
@@ -118,13 +118,13 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
         auto status = workerImpl.Compute(&outputs, inputs, task);        
 
         THEN ("A Matrix is returned with all elements doubled") {
-            REQUIRE(status == "OK");
+            REQUIRE(status.ok());
             REQUIRE(outputs.size() == 1);
             
             Structure *structure;
             
             structure = workerImpl.Transfer(outputs[0]);
-            REQUIRE(status == "OK");
+            REQUIRE(status.ok());
             
             DT *mat = dynamic_cast<DT*>(structure);
             REQUIRE(mat != nullptr);

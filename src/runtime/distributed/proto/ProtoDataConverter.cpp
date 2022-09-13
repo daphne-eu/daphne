@@ -114,19 +114,30 @@ void ProtoDataConverter<CSRMatrix<VT>>::convertToProto(const CSRMatrix<VT> *mat,
     matProto->set_num_rows(rowEnd - rowBegin);
     matProto->set_num_cols(colEnd - colBegin);
 
-    auto *cells = getMutableCells(matProto);
+    auto *values = getMutableCells(matProto);    
     auto *colIdxsProto = csrMatProto->mutable_colidx()->mutable_cells();
-    auto *rowIdxsProto = csrMatProto->mutable_row_offsets()->mutable_cells();
-    // TODO we can do this much more efficiently
-    cells->Reserve(mat->getNumNonZeros());
-    for (auto r = rowBegin; r < rowEnd; ++r) {
-        for (auto c = colBegin; c < colEnd; ++c) {
-            auto value = mat->get(r, c);
-            if(value != 0){
-                cells->Add(value);
-                colIdxsProto->Add(c);
-                rowIdxsProto->Add(r);
-            }
+    auto *rowOffsetsProto = csrMatProto->mutable_row_offsets()->mutable_cells();
+        
+    // Allocate memory only for the values within the given range.
+    size_t numNonZeros = 0;
+    for (size_t r = rowBegin; r < rowEnd; r++)
+        numNonZeros += mat->getNumNonZeros(r);
+    values->Reserve(numNonZeros);
+    colIdxsProto->Reserve(numNonZeros);
+
+    rowOffsetsProto->Reserve(rowEnd - rowBegin + 1);
+    
+    rowOffsetsProto->Add(0);
+    auto lastOffset = 0;
+    for (auto r = rowBegin; r < rowEnd; r++) {
+        const size_t rowNumNonZeros = mat->getNumNonZeros(r);
+        const size_t * rowColIdxs = mat->getColIdxs(r);
+        const VT *rowValues = mat->getValues(r);
+        rowOffsetsProto->Add(lastOffset + rowNumNonZeros);
+        lastOffset += rowNumNonZeros;
+        for(size_t i = 0; i < rowNumNonZeros; i++) {
+            values->Add(rowValues[i]);
+            colIdxsProto->Add(rowColIdxs[i]);
         }
     }
 }
@@ -137,17 +148,32 @@ void ProtoDataConverter<CSRMatrix<VT>>::convertFromProto(const distributed::Matr
                                           size_t rowEnd,
                                           size_t colBegin,
                                           size_t colEnd)
-{
-    // TODO we can do this much more efficiently
+{    
     auto csrMatProto = matProto.csr_matrix();
-    auto cells = getCells(&matProto);    
+ 
+    auto valuesProto = getCells(&matProto);    
     auto colIdxsProto = csrMatProto.colidx().cells();
-    auto rowIdxsProto = csrMatProto.row_offsets().cells();
-    for (auto idx = 0; idx < cells.size(); idx++){
-        // Casting to size_t (compiler warnings)
-        if((size_t)colIdxsProto[idx] >= colBegin && (size_t)colIdxsProto[idx] < colEnd &&
-            (size_t)rowIdxsProto[idx] >= rowBegin && (size_t)rowIdxsProto[idx] < rowEnd)
-            mat->set(rowIdxsProto[idx], colIdxsProto[idx], cells[idx]);
+    auto rowOffsetsProto = csrMatProto.row_offsets().cells();
+
+    assert (rowBegin < rowEnd && "ProtoDataConverter: rowBegin must be lower than rowEnd");
+    if (rowBegin == 0)
+        mat->getRowOffsets()[0] = 0;
+    // Else rowOffset[rowBegin] is already set.
+
+    size_t protoValColIdx = 0;
+    size_t protoRow = 0;
+    for (size_t r = rowBegin; r < rowEnd; r++) {
+        size_t rowNumNonZeros = rowOffsetsProto[protoRow + 1] - rowOffsetsProto[protoRow];
+        protoRow++;
+        mat->getRowOffsets()[r + 1] = mat->getRowOffsets()[r] + rowNumNonZeros;
+
+        size_t * rowColIdxs = mat->getColIdxs(r);
+        VT *rowValues = mat->getValues(r);
+        for (size_t i = 0; i < rowNumNonZeros; i++) {
+            rowValues[i] = valuesProto[protoValColIdx];
+            rowColIdxs[i] = colIdxsProto[protoValColIdx];
+            protoValColIdx++;
+        }
     }
 }
 template<typename VT>

@@ -181,10 +181,10 @@ grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context,
         workData.mutable_stored()->set_num_cols(output.numCols);
         *response->add_outputs() = workData;
     }
-    if (respMsg == std::string("OK"))
+    if (respMsg.ok())
         return ::grpc::Status::OK;
     else
-        return ::grpc::Status(grpc::StatusCode::ABORTED, respMsg);
+        return ::grpc::Status(grpc::StatusCode::ABORTED, respMsg.error_message());        
 }
 
 grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,

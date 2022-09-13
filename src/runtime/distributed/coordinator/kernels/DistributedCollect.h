@@ -86,7 +86,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
 
-        auto dpVector = mat->mdo.getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        auto dpVector = mat->getMetaDataObject().getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
             auto address = dp->allocation->getLocation();
             
@@ -105,7 +105,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto dp_id = response.storedInfo.dp_id;
-            auto dp = mat->mdo.getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
 
             auto matProto = response.result;

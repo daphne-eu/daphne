@@ -98,8 +98,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             // If dp already exists simply
             // update range (in case we have a different one) and distribute data
             DataPlacement *dp;
-            if ((dp = mat->mdo.getDataPlacementByLocation(workerAddr))) {                
-                mat->mdo.updateRangeDataPlacementByID(dp->dp_id, &range);     
+            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
@@ -108,7 +108,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                                                 ctx,
                                                 workerAddr,
                                                 data);
-                dp = mat->mdo.addDataPlacement(allocationDescriptor, &range);                    
+                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    
             }
             // keep track of proccessed rows
             // Skip if already placed at workers
@@ -142,7 +142,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             
             auto storedData = response.result;            
 
-            auto dp = mat->mdo.getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
             
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
             data.identifier = storedData.identifier();

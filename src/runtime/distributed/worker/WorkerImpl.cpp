@@ -45,15 +45,6 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 
 WorkerImpl::~WorkerImpl() = default;
 
-// void WorkerImpl::StartHandleThread() {
-//     HandleRpcsThread = std::thread(&WorkerImpl::HandleRpcs, this);
-// }
-// void WorkerImpl::TerminateHandleThread() {
-//     cq_->Shutdown();
-//     HandleRpcsThread.join();
-// }
-
-
 
 template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat)
@@ -73,7 +64,7 @@ WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
     
 
 
-std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
+WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
 {
     // ToDo: user config
     DaphneUserConfig cfg;
@@ -89,7 +80,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     if (!module) {
         auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
-        return (message);
+        return WorkerImpl::Status(false, message);
     }
 
     auto *distOp = module->lookupSymbol(DISTRIBUTED_FUNCTION_NAME);
@@ -97,7 +88,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     if (!(distFunc = llvm::dyn_cast_or_null<mlir::FuncOp>(distOp))) {
         auto message = "MLIR fragment has to contain `dist` FuncOp\n";
         llvm::errs() << message;
-        return message;
+        return WorkerImpl::Status(false, message);
     }
     auto distFuncTy = distFunc.getType();
 
@@ -132,14 +123,14 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
         ss << "Module Pass Error.\n";
         // module->print(ss, llvm::None);
         llvm::errs() << ss.str();
-        return ss.str();
+        return WorkerImpl::Status(false, ss.str());
     }
 
     mlir::registerLLVMDialectTranslation(*module->getContext());
 
     auto engine = executor.createExecutionEngine(module.get());
     if (!engine) {
-        return std::string("Failed to create JIT-Execution engine");
+        return WorkerImpl::Status(false, std::string("Failed to create JIT-Execution engine"));
     }
     auto error = engine->invokePacked(DISTRIBUTED_FUNCTION_NAME,
         llvm::MutableArrayRef<void *>{&packedInputsOutputs[0], (size_t)0});
@@ -147,7 +138,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
     if (error) {
         std::stringstream ss("JIT-Engine invocation failed.");
         llvm::errs() << "JIT-Engine invocation failed: " << error << '\n';
-        return ss.str();
+        return WorkerImpl::Status(false, ss.str());
     }
 
     for (auto zipped : llvm::zip(outputsObj, distFuncTy.getResults())) {
@@ -161,7 +152,7 @@ std::string WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, st
         outputs->push_back(StoredInfo({identification, mat->getNumRows(), mat->getNumCols()}));
     }
     // TODO: cache management (Write to file/evict matrices present as files)
-    return "OK";
+    return WorkerImpl::Status(true);
 }
 
 // distributed::WorkData::DataCase WorkerImpl::dataCaseForType(mlir::Type type)
