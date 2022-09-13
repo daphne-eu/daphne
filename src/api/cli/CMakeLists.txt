@@ -41,5 +41,6 @@ set_target_properties(daphne PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURC
 
 llvm_update_compile_flags(daphne)
 target_link_libraries(daphne PRIVATE ${LIBS})
+target_add_morphstore(daphne)
 
 mlir_check_all_link_libraries(daphne)

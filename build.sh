@@ -384,6 +384,7 @@ par_clean="0"
 par_acceptAll="0"
 unknown_options=""
 BUILD_CUDA="-DUSE_CUDA=OFF"
+BUILD_MORPHSTORE="-DUSE_MORPHSTORE=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
@@ -414,6 +415,10 @@ while [[ $# -gt 0 ]]; do
         --cuda)
             echo using CUDA
             export BUILD_CUDA="-DUSE_CUDA=ON"
+            ;;
+        --morphstore)
+            echo using MORPHSTORE
+            export BUILD_MORPHSTORE="-DUSE_MORPHSTORE=ON"
             ;;
         --arrow)
             echo using ARROW
@@ -745,7 +750,7 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_MORPHSTORE $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"

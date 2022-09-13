@@ -31,7 +31,7 @@
 #include <runtime/local/kernels/CheckEq.h>
 
 
-#include <runtime/local/kernels/MorphStore/select.h>
+#include <runtime/local/kernels/MorphStore/selectBinary.h>
 #include <runtime/local/kernels/MorphStore/between.h>
 
 TEST_CASE("Morphstore Between: Test the operator with empty input", TAG_KERNELS) {
@@ -100,7 +100,7 @@ TEST_CASE("Morphstore Between: Test the operator with empty output", TAG_KERNELS
     /// test execution
     Frame * resultFrame = nullptr;
 
-    between(resultFrame, f, "R.a", lowerBound, CompareOperation::GreaterThan, upperBound, CompareOperation::LessThan);
+    between<Frame, Frame, vectorlib::avx512<vectorlib::v512<uint64_t>>>(resultFrame, f, "R.a", lowerBound, CompareOperation::GreaterThan, upperBound, CompareOperation::LessThan);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);

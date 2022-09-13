@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 #include <parser/sql/SQLParser.h>
+#include <parser/sql/morphstore/MorphStoreSQLParser.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -56,6 +57,8 @@ namespace
                 rewriter.eraseOp(op);
                 return success();
             }else if(auto sqlop = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
+
+#ifndef USE_MORPHSTORE
                 std::stringstream sql_query;
                 sql_query << sqlop.sql().str();
 
@@ -68,6 +71,20 @@ namespace
 
                 rewriter.replaceOp(op, result_op);
                 return success();
+#else
+                std::stringstream sql_query;
+                sql_query << sqlop.sql().str();
+
+                MorphStoreSQLParser parser;
+                parser.setView(tables);
+                std::string sourceName;
+                llvm::raw_string_ostream ss(sourceName);
+                ss << "[sql query @ " << sqlop->getLoc() << ']';
+                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
+
+                rewriter.replaceOp(op, result_op);
+                return success();
+#endif
             }
             return failure();
         }

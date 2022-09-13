@@ -240,6 +240,32 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
     let hasFolder = 1;
 }
 
+// ****************************************************************************
+// Elementwise binary morphstore
+// ****************************************************************************
+
+// TODO Temporarily commented, because otherwise it cannot handle UnknownType.
+class Daphne_MorphstoreBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
+//: Daphne_Op<name, !listconcat([TypesMatchOrOneIsMatrixOfOther<"lhs", "rhs">], traits)> {
+: Daphne_Op<name, !listconcat(traits, [
+    DeclareOpInterfaceMethods<DistributableOpInterface>,
+    DeclareOpInterfaceMethods<VectorizableOpInterface>,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    ShapeEwBinary
+])> {
+    let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$rhs);
+    let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType]>:$res);
+
+    let builders = [
+        OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
+        // TODO This is wrong if lhs is a scalar and rhs is a matrix.
+        $_state.addTypes(lhs.getType());
+        $_state.addOperands({lhs, rhs});
+        }]>
+    ];
+    let hasFolder = 1;
+}
+
 // ----------------------------------------------------------------------------
 // Arithmetic
 // ----------------------------------------------------------------------------
@@ -302,6 +328,24 @@ def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
 def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
 def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
 def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
+
+// ----------------------------------------------------------------------------
+// Comparisons Morphstore
+// ----------------------------------------------------------------------------
+
+class Daphne_MorphStoreCmpOp<string name, Type inputScalarType, list<OpTrait> traits = []>
+: Daphne_EwBinaryOp<name, inputScalarType, traits> {
+// TODO: We do not enforce (matrix of) boolean output any more, but should
+// think about that again.
+//let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar]>:$res);
+}
+
+def Daphne_MorphStoreSelectEqOp  : Daphne_MorphStoreCmpOp<"selectEq" , AnyScalar, [Commutative]>;
+def Daphne_MorphStoreSelectNeqOp : Daphne_MorphStoreCmpOp<"selectNeq", AnyScalar, [Commutative]>;
+def Daphne_MorphStoreSelectLtOp  : Daphne_MorphStoreCmpOp<"selectLt" , AnyScalar>;
+def Daphne_MorphStoreSelectLeOp  : Daphne_MorphStoreCmpOp<"selectLe" , AnyScalar>;
+def Daphne_MorphStoreSelectGtOp  : Daphne_MorphStoreCmpOp<"selectGt" , AnyScalar>;
+def Daphne_MorphStoreSelectGeOp  : Daphne_MorphStoreCmpOp<"selectGe" , AnyScalar>;
 
 // ****************************************************************************
 // Aggregation and statistical
