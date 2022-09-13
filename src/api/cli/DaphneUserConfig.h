@@ -53,7 +53,7 @@ struct DaphneUserConfig {
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;
-    ALLOCATION_TYPE distributedBackEndSetup= DIST_MPI;
+    ALLOCATION_TYPE distributedBackEndSetup= ALLOCATION_TYPE::DIST_MPI;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     

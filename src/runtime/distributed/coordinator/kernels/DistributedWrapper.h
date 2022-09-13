@@ -80,7 +80,7 @@ public:
         // Backend Implementation 
         // gRPC hard-coded selection
         // TODO choose implementation based on configFile/command-line argument        
-        const auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
+        const auto alloc_type = ALLOCATION_TYPE::DIST_MPI;
 
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {

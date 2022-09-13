@@ -83,8 +83,8 @@ int startCoordinator(int argc, char** argv){
     opt<ALLOCATION_TYPE> distributedBackEndSetup(cat(distributedBackEndSetupOptions), 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
-                                                    clEnumVal( DIST_MPI, "Use message passing interface for internode data exchange"),
-                                                    clEnumVal(DIST_GRPC, "Use remote procedure call for internode data exchange")
+                                                    clEnumVal(ALLOCATION_TYPE::DIST_MPI, "Use message passing interface for internode data exchange"),
+                                                    clEnumVal(ALLOCATION_TYPE::DIST_GRPC, "Use remote procedure call for internode data exchange")
                                                 )
                                             );
 
