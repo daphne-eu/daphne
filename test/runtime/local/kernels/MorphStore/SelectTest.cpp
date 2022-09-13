@@ -31,7 +31,7 @@
 #include <runtime/local/kernels/CheckEq.h>
 
 
-#include <runtime/local/kernels/MorphStore/select.h>
+#include <runtime/local/kernels/MorphStore/selectBinary.h>
 
 TEST_CASE("Morphstore Select: Test the operator with empty input", TAG_KERNELS) {
     /// Data generation

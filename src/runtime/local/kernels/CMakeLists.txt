@@ -102,6 +102,7 @@ else()
 endif()
 
 target_link_libraries(AllKernels PUBLIC ${LIBS})
+target_add_morphstore(AllKernels)
 
 # @todo remove before push to main.
 add_executable(ssb_query ./MorphStore/SSBQuery.cpp)

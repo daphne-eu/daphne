@@ -26,6 +26,7 @@
 #include "core/operators/otfly_derecompr/project.h"
 #include "core/operators/otfly_derecompr/merge.h"
 #include "core/morphing/uncompr.h"
+#include <runtime/local/kernels/BinaryOpCode.h>
 
 #include <ir/daphneir/Daphne.h>
 
@@ -42,35 +43,35 @@
 //using mlir::daphne::CompareOperation;
 
 
-template<class DTRes, class DTIn>
-class Select {
+template<class DTRes, class DTLhs, typename VTRhs=uint64_t>
+class SelectBinary {
   public:
-    static void apply(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation cmp, uint64_t selValue) = delete;
-    static void apply(DTRes * & res, const DTIn * in, CompareOperation cmp, uint64_t selValue) = delete;
+    static void apply(DTRes * & res, const DTLhs * in, const char * inOn, BinaryOpCode cmp, VTRhs selValue) = delete;
+    static void apply(BinaryOpCode cmp, DTRes * & res, const DTLhs * in, VTRhs selValue, DCTX(ctx)) = delete;
 };
 
-template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
-void select(DTRes * & res, const DTIn * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
-    Select<DTRes, DTIn>::apply(res, in, inOn, cmp, selValue);
+template<class DTRes, class DTIn, typename VTRhs=uint64_t, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
+void selectBinary(DTRes * & res, const DTIn * in, const char * inOn, BinaryOpCode cmp, VTRhs selValue) {
+    SelectBinary<DTRes, DTIn, VTRhs>::apply(res, in, inOn, cmp, selValue);
 }
 
-template<class DTRes, class DTIn, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
-void select(DTRes * & res, const DTIn * in, CompareOperation cmp, uint64_t selValue) {
-    Select<DTRes, DTIn>::apply(res, in, cmp, selValue);
+template<class DTRes, class DTIn, typename VTRhs=uint64_t, typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
+void selectBinary(BinaryOpCode cmp, DTRes * & res, const DTIn * in, VTRhs selValue, DCTX(ctx)) {
+    SelectBinary<DTRes, DTIn, VTRhs>::apply(cmp, res, in, selValue, ctx);
 }
 
 template<>
-class Select<Frame, Frame> {
+class SelectBinary<Frame, Frame> {
     public:
         template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
-        static void apply(Frame * & res, const Frame * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
+        static void apply(Frame * & res, const Frame * in, const char * inOn, BinaryOpCode cmp, uint64_t selValue) {
             auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(inOn)));
             const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), colData);
 
             const morphstore::column<morphstore::uncompr_f> * selectPos;
 
             switch (cmp) {
-                case CompareOperation::Equal:
+                case BinaryOpCode::EQ:
 
                     selectPos = morphstore::select<
                             ve,
@@ -79,7 +80,7 @@ class Select<Frame, Frame> {
                             morphstore::uncompr_f
                     >(selectCol, selValue);
                     break;
-                case CompareOperation::LessThan:
+                case BinaryOpCode::LT:
                     selectPos = morphstore::select<
                             ve,
                             vectorlib::less,
@@ -87,7 +88,7 @@ class Select<Frame, Frame> {
                             morphstore::uncompr_f
                     >(selectCol, selValue);
                     break;
-                case CompareOperation::LessEqual:
+                case BinaryOpCode::LE:
                     selectPos = morphstore::select<
                             ve,
                             vectorlib::lessequal,
@@ -95,7 +96,7 @@ class Select<Frame, Frame> {
                             morphstore::uncompr_f
                     >(selectCol, selValue);
                     break;
-                case CompareOperation::GreaterThan:
+                case BinaryOpCode::GT:
                     selectPos = morphstore::select<
                             ve,
                             vectorlib::greater,
@@ -103,7 +104,7 @@ class Select<Frame, Frame> {
                             morphstore::uncompr_f
                     >(selectCol, selValue);
                     break;
-                case CompareOperation::GreaterEqual:
+                case BinaryOpCode::GE:
                     selectPos = morphstore::select<
                             ve,
                             vectorlib::greaterequal,
@@ -111,7 +112,7 @@ class Select<Frame, Frame> {
                             morphstore::uncompr_f
                     >(selectCol, selValue);
                     break;
-                case CompareOperation::NotEqual:
+                case BinaryOpCode::NEQ:
                     auto smallerPos = morphstore::select<
                             ve,
                             vectorlib::less,
@@ -165,17 +166,17 @@ class Select<Frame, Frame> {
     };
 
 template<>
-class Select<DenseMatrix<uint64_t>, Frame> {
+class SelectBinary<DenseMatrix<uint64_t>, Frame> {
 public:
     template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
-    static void apply(DenseMatrix<uint64_t> * & res, const Frame * in, const char * inOn, CompareOperation cmp, uint64_t selValue) {
+    static void apply(DenseMatrix<uint64_t> * & res, const Frame * in, const char * inOn, BinaryOpCode cmp, uint64_t selValue) {
         auto colData = static_cast<uint64_t const *>(in->getColumnRaw(in->getColumnIdx(inOn)));
         const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), colData);
 
         const morphstore::column<morphstore::uncompr_f> * selectPos;
 
         switch (cmp) {
-            case CompareOperation::Equal:
+            case BinaryOpCode::EQ:
 
                 selectPos = morphstore::select<
                         ve,
@@ -184,7 +185,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::LessThan:
+            case BinaryOpCode::LT:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::less,
@@ -192,7 +193,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::LessEqual:
+            case BinaryOpCode::LE:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::lessequal,
@@ -200,7 +201,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::GreaterThan:
+            case BinaryOpCode::GT:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::greater,
@@ -208,7 +209,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::GreaterEqual:
+            case BinaryOpCode::GE:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::greaterequal,
@@ -216,7 +217,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::NotEqual:
+            case BinaryOpCode::NEQ:
                 auto smallerPos = morphstore::select<
                         ve,
                         vectorlib::less,
@@ -253,17 +254,17 @@ public:
 
 };
 
-template<>
-class Select<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>> {
+template<typename VT>
+class SelectBinary<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 public:
     template<typename ve=vectorlib::scalar<vectorlib::v64<uint64_t>>>
-    static void apply(DenseMatrix<uint64_t> * & res, const DenseMatrix<uint64_t> * in, CompareOperation cmp, uint64_t selValue) {
-        const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), in->getValues());
+    static void apply(BinaryOpCode cmp, DenseMatrix<VT> * & res, const DenseMatrix<VT> * in, VT selValue, DCTX(ctx)) {
+        const morphstore::column<morphstore::uncompr_f> * const selectCol = new morphstore::column<morphstore::uncompr_f>(sizeof(uint64_t) * in->getNumRows(), reinterpret_cast<const uint64_t*>(in->getValues()));
 
         const morphstore::column<morphstore::uncompr_f> * selectPos;
 
         switch (cmp) {
-            case CompareOperation::Equal:
+            case BinaryOpCode::EQ:
 
                 selectPos = morphstore::select<
                         ve,
@@ -272,7 +273,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::LessThan:
+            case BinaryOpCode::LT:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::less,
@@ -280,7 +281,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::LessEqual:
+            case BinaryOpCode::LE:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::lessequal,
@@ -288,7 +289,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::GreaterThan:
+            case BinaryOpCode::GT:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::greater,
@@ -296,7 +297,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::GreaterEqual:
+            case BinaryOpCode::GE:
                 selectPos = morphstore::select<
                         ve,
                         vectorlib::greaterequal,
@@ -304,7 +305,7 @@ public:
                         morphstore::uncompr_f
                 >(selectCol, selValue);
                 break;
-            case CompareOperation::NotEqual:
+            case BinaryOpCode::NEQ:
                 auto smallerPos = morphstore::select<
                         ve,
                         vectorlib::less,
@@ -326,7 +327,7 @@ public:
                 break;
         }
 
-        DenseMatrix<uint64_t> * bitmap = DataObjectFactory::create<DenseMatrix<uint64_t>>(in->getNumRows(), 1, true);
+        DenseMatrix<VT> * bitmap = DataObjectFactory::create<DenseMatrix<VT>>(in->getNumRows(), 1, true);
 
         const uint64_t * const data = selectPos->get_data();
 

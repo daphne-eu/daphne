@@ -33,6 +33,8 @@
 
 class SQLVisitor : public SQLGrammarVisitor {
 
+    friend class MorphStoreSQLVisitor;
+
     ParserUtils utils;
     mlir::OpBuilder builder;
     ScopedSymbolTable symbolTable;

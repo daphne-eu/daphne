@@ -196,6 +196,30 @@ void daphne::EwGeOp::inferTypes() {
     return inferTypes_EwCmpOp(this);
 }
 
+void daphne::MorphStoreSelectEqOp::inferTypes() {
+    return inferTypes_EwCmpOp(this);
+}
+
+void daphne::MorphStoreSelectNeqOp::inferTypes() {
+    return inferTypes_EwCmpOp(this);
+}
+
+void daphne::MorphStoreSelectLtOp::inferTypes() {
+    return inferTypes_EwCmpOp(this);
+}
+
+void daphne::MorphStoreSelectLeOp::inferTypes() {
+    return inferTypes_EwCmpOp(this);
+}
+
+void daphne::MorphStoreSelectGtOp::inferTypes() {
+    return inferTypes_EwCmpOp(this);
+}
+
+void daphne::MorphStoreSelectGeOp::inferTypes() {
+    return inferTypes_EwCmpOp(this);
+}
+
 void daphne::ExtractRowOp::inferTypes() {
     Type srcType = source().getType();
     Type t;

@@ -880,6 +880,100 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectEqOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectNeqOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
+    auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, intOp))
+        return res;
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectLtOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a < b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectLeOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a <= b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectGtOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a > b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectGeOp::fold(ArrayRef<Attribute> operands) {
+    auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a >= b; };
+    auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
+    auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
+    // TODO: fix bool return
+    if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
+        return res;
+    if(getType().isSignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, sintOp))
+            return res;
+    }
+    else if(getType().isUnsignedInteger()) {
+        if(auto res = constFoldBinaryOp<IntegerAttr>(getType(), operands, uintOp))
+            return res;
+    }
+    return {};
+}
+
 /**
  * @brief Replaces NumRowsOp by a constant, if the #rows of the input is known
  * (e.g., due to shape inference).

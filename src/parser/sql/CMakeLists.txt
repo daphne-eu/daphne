@@ -26,6 +26,8 @@ message(STATUS "ANTLR4_SQL_DIR is ${ANTLR4_INCLUDE_DIR_SQLGrammar}")
 add_library(SQLParser STATIC
         SQLParser.cpp
         SQLVisitor.cpp
+        morphstore/MorphStoreSQLParser.cpp
+        morphstore/MorphStoreSQLVisitor.cpp
         ${ANTLR4_SRC_FILES_SQLGrammar}
 )
 
