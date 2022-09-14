@@ -60,7 +60,7 @@ TEST_CASE("Morphstore Select: Test the operator with empty input", TAG_KERNELS) 
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::LessThan, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::LT, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -97,7 +97,7 @@ TEST_CASE("Morphstore Select: Test the operator with empty output", TAG_KERNELS)
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::LessThan, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::LT, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -143,7 +143,7 @@ TEST_CASE("Morphstore Select: Test the LessThan (<) operation", TAG_KERNELS) {
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::LessThan, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::LT, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -190,7 +190,7 @@ TEST_CASE("Morphstore Select: Test the LessEqual (<=) operation", TAG_KERNELS) {
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::LessEqual, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::LE, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -237,7 +237,7 @@ TEST_CASE("Morphstore Select: Test the GreaterThan (>) operation", TAG_KERNELS) 
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::GreaterThan, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::GT, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -284,7 +284,7 @@ TEST_CASE("Morphstore Select: Test the GreaterEqual (>=) operation", TAG_KERNELS
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::GreaterEqual, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::GE, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -331,7 +331,7 @@ TEST_CASE("Morphstore Select: Test the Equal (==) operation", TAG_KERNELS) {
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::Equal, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::EQ, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
@@ -378,7 +378,7 @@ TEST_CASE("Morphstore Select: Test the NotEqual (!=) operation", TAG_KERNELS) {
     /// test execution
     Frame * resultFrame = nullptr;
 
-    select(resultFrame, f, "R.a", CompareOperation::NotEqual, selectValue);
+    selectBinary(resultFrame, f, "R.a", BinaryOpCode::NEQ, selectValue);
 
     /// test if result matches expected result
     CHECK(*resultFrame == *expectedResult);
