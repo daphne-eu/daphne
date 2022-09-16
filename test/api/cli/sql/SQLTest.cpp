@@ -61,6 +61,16 @@ const std::string dirPath = "test/api/cli/sql/";
         } \
     }
 
+#define MAKE_TEST_CASE(name, count) \
+    TEST_CASE(name, TAG_SQL) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
+                compareDaphneToRefSimple(dirPath, name, i); \
+            } \
+        } \
+    }
+
+
 MAKE_SUCCESS_TEST_CASE("basic", 4);
 MAKE_PASS_FAILURE_TEST_CASE("basic", 3);
 MAKE_EXEC_FAILURE_TEST_CASE("basic", 1);
@@ -73,5 +83,16 @@ MAKE_SUCCESS_TEST_CASE("join", 1);
 
 MAKE_SUCCESS_TEST_CASE("group", 3);
 MAKE_PASS_FAILURE_TEST_CASE("group", 1);
+
+
+
+MAKE_TEST_CASE("thetaJoin_equal", 4)
+MAKE_TEST_CASE("thetaJoin_greaterThan", 2)
+MAKE_TEST_CASE("thetaJoin_greaterEqual", 2)
+MAKE_TEST_CASE("thetaJoin_lessThan", 2)
+MAKE_TEST_CASE("thetaJoin_lessEqual", 2)
+MAKE_TEST_CASE("thetaJoin_notEqual", 2)
+MAKE_TEST_CASE("thetaJoin_combinedCompare", 2)
+
 
 // TODO Use the scripts testing failure cases.
