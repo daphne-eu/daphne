@@ -1023,18 +1023,31 @@
     		"header": "ThetaJoin.h",
     		"opName": "thetaJoin",
     		"returnType": "void",
-    		"templateParams": [],
+    		"templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
     		"runtimeParams": [
     			{
-    				"type": "Frame *&",
+    				"type": "DTRes *&",
     				"name": "res"
     			},
     			{
-    				"type": "const Frame *",
+    				"type": "const DTLhs *",
     				"name": "lhs"
     			},
     			{
-    				"type": "const Frame *",
+    				"type": "const DTRhs *",
     				"name": "rhs"
     			},
     			{
@@ -1064,7 +1077,7 @@
     		]
     	},
     	"instantiations": [
-    		[]
+    		["Frame", "Frame", "Frame"]
     	]
     },
     {
