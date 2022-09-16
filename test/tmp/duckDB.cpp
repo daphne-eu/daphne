@@ -65,17 +65,56 @@ uint32_t noise(int32_t position, int32_t mod = 10, int32_t seed = 0){
 
 
 TEST_CASE("DuckDB integration test", TAG_KERNELS) {
-    std::cout << "" << std::endl;
+    std::cout << "\nDuckDB Integration stuff" << std::endl;
     using namespace duckdb;
-    int32_t count = 100;
+    int32_t count = 10;
     int32_t mod = 10;
     int32_t seed = 0;
 
 
+    //--having data in arrays (in this case creating it)
+    int dfdc_i[count];
+    int dfdc_d[count];
+    std::vector<duckdb::LogicalType> types;
+    types.push_back(duckdb::LogicalType(duckdb::LogicalTypeId::INTEGER));
+    types.push_back(duckdb::LogicalType(duckdb::LogicalTypeId::INTEGER));
+    for(int i = 0; i < count; i++){
+        dfdc_i[i] = noise(i, mod*mod, seed+1);
+        dfdc_d[i] = noise(i, mod*mod, seed+2);
+        std::cout << "\t" << dfdc_i[i] << "\t" << dfdc_d[i]<<std::endl;
+
+    }
+
+    duckdb::DataChunk dc_own; // Creating an DataChunk Obj.
+    dc_own.InitializeEmpty(types); // Intializing Empty with the given Types of the Arrays
+    duckdb::Vector vec_own_i(types[0], (duckdb::data_ptr_t)dfdc_i); // creating Vector with data
+    duckdb::Vector vec_own_d(types[1], (duckdb::data_ptr_t)dfdc_d); // creating Vector with data
+    dc_own.data[0].Reference(vec_own_i); // "Filling" Data Chunk Vector with data
+    dc_own.data[1].Reference(vec_own_d); // "Filling" Data Chunk Vector with data
+    dc_own.SetCardinality(count); // Setting the #Tuple
+    std::cout << dc_own.ToString() << std::endl;
+
+    /*
+    std::cout << "4" << std::endl;
+    std::cout << "5" << std::endl;
+    std::cout << "6" << std::endl;
+    std::cout << "7" << std::endl;
+    std::cout << "8" << std::endl;
+    std::cout << "9" << std::endl;
+    std::cout << "10" << std::endl;
+    //*/
+
+    unique_ptr<MaterializedQueryResult> result;
     DuckDB db(nullptr);
+
     Connection con(db);
 
     con.Query("CREATE TABLE integers(i INTEGER, j INTEGER)");
+
+
+    std::cout << "0" << std::endl;
+    result = con.Query("SELECT * FROM integers");
+    std::cout << result->ToString() << std::endl;
 
 
     Appender appender(con, "integers");
@@ -85,6 +124,13 @@ TEST_CASE("DuckDB integration test", TAG_KERNELS) {
     appender.Append(1002);
     appender.EndRow();
     appender.Close();
+
+
+    std::cout << "1" << std::endl;
+    result = con.Query("SELECT * FROM integers");
+    std::cout << result->ToString() << std::endl;
+
+
     //Creating random data
     std::stringstream s_stream;
     s_stream << "INSERT INTO integers VALUES";
@@ -98,9 +144,22 @@ TEST_CASE("DuckDB integration test", TAG_KERNELS) {
 
 
     con.Query(insert);
-    //TODO: LOOK AT MaterializedQueryResult. the ToString results in 100 entries but it should be 1 mil..
 
-    unique_ptr<MaterializedQueryResult> result = con.Query("SELECT * FROM integers WHERE i > 1000");
+    std::cout << "2" << std::endl;
+    result = con.Query("SELECT * FROM integers");
+    std::cout << result->ToString() << std::endl;
+
+
+    unique_ptr<TableDescription> table =  con.TableInfo("integers");
+    con.Append(*table, dc_own);
+
+
+    std::cout << "3" << std::endl;
+    result = con.Query("SELECT * FROM integers");
+    std::cout << result->ToString() << std::endl;
+
+
+    //TODO: LOOK AT MaterializedQueryResult. the ToString results in 100 entries but it should be 1 mil..
     //
     // unique_ptr<DataChunk> mainChunk = result->Fetch();
     // unique_ptr<DataChunk> nextChunk = result->Fetch();
