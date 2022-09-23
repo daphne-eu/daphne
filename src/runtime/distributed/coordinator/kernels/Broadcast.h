@@ -25,6 +25,7 @@
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -77,7 +78,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
-            // Need matrix for metadata
+            // Need matrix for metadata, type of matrix does not really matter..
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
             auto protoVal = protoMsg.mutable_value();
             protoVal->set_f64(*val);
@@ -108,12 +109,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {  // else create new dp entry
-                AllocationDescriptorGRPC *allocationDescriptor;
-                allocationDescriptor = new AllocationDescriptorGRPC(
-                                                dctx, 
-                                                workerAddr,  
-                                                data);
-                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);
+                AllocationDescriptorGRPC allocationDescriptor (dctx, 
+                                                                workerAddr,  
+                                                                data);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;

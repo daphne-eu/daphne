@@ -93,12 +93,11 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
-                    AllocationDescriptorGRPC *allocationDescriptor;
-                    allocationDescriptor = new AllocationDescriptorGRPC(
+                    AllocationDescriptorGRPC allocationDescriptor(
                                                 dctx,
                                                 workerAddr,
                                                 data);
-                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
             // keep track of proccessed rows
             // Skip if already placed at workers
