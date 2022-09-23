@@ -37,7 +37,7 @@
 
 template<ALLOCATION_TYPE AT, class DT>
 struct DistributedCollect {
-    static void apply(DT *&mat, DCTX(ctx)) = delete;
+    static void apply(DT *&mat, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,9 +45,9 @@ struct DistributedCollect {
 // ****************************************************************************
 
 template<ALLOCATION_TYPE AT, class DT>
-void distributedCollect(DT *&mat, DCTX(ctx))
+void distributedCollect(DT *&mat, DCTX(dctx))
 {
-    DistributedCollect<AT, DT>::apply(mat, ctx);
+    DistributedCollect<AT, DT>::apply(mat, dctx);
 }
 
 
@@ -63,22 +63,9 @@ void distributedCollect(DT *&mat, DCTX(ctx))
 template<class DT>
 struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
 {
-    static void apply(DT *&mat, DCTX(ctx)) 
+    static void apply(DT *&mat, DCTX(dctx)) 
     {
-        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");
-        // Get num workers
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        auto workersSize = 0;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workersSize++;
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workersSize++;
+        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
 
         struct StoredInfo{
             size_t dp_id;

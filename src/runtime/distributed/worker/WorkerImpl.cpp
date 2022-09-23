@@ -69,12 +69,13 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     // ToDo: user config
     DaphneUserConfig cfg;
     cfg.use_vectorized_exec = true;
+    cfg.use_distributed = false;
     // TODO Decide if vectorized pipelines should be used on this worker.
     // TODO Decide if selectMatrixReprs should be used on this worker.
     // TODO Once we hand over longer pipelines to the workers, we might not
     // want to hardcode insertFreeOp to false anymore. But maybe we will insert
     // the FreeOps at the coordinator already.
-    DaphneIrExecutor executor(false, false, cfg);
+    DaphneIrExecutor executor(false, cfg);
 
     mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {
@@ -181,7 +182,7 @@ std::vector<void *> WorkerImpl::createPackedCInterfaceInputsOutputs(mlir::Functi
                                                                     std::vector<void *> &outputs,
                                                                     std::vector<void *> &inputs)
 {
-    assert(static_cast<int>(functionType.getNumInputs()) == workInputs.size()
+    assert(static_cast<size_t>(functionType.getNumInputs()) == workInputs.size()
         && "Number of inputs received have to match number of MLIR fragment inputs");
     std::vector<void *> inputsAndOutputs;
 
