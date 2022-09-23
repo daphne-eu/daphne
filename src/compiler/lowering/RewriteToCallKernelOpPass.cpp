@@ -363,7 +363,7 @@ namespace
                 );
             // Constants for #inputs.
             auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
-            auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
+            [[maybe_unused]] auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
             // Variadic pack for out_rows.
             auto cvpOutRows = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
             for(size_t i = 0; i < numOutputs; i++)

@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <runtime/local/context/IContext.h>
+#include <runtime/local/context/DaphneContext.h>
 
 #include <vector>
 #include <cstdlib>
@@ -24,15 +24,15 @@
 #include <stdexcept>
 #include <memory>
 
-// TODO: Seperate implementation in a .cpp file?
-class DistributedContext : public IContext {
+// TODO: Separate implementation in a .cpp file?
+class DistributedContext final : public IContext {
 private:
     std::vector<std::string> workers;
 public:
     DistributedContext() {
 
         // TODO: Get the list of distributed workers from daphne user config/cli arguments and
-        // keep enviromental variables optional.
+        // keep environmental variables optional.
         auto envVar = std::getenv("DISTRIBUTED_WORKERS");
 
         if (envVar == nullptr) {

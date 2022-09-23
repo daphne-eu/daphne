@@ -20,7 +20,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/utils.h>

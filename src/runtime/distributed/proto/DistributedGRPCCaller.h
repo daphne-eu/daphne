@@ -37,9 +37,12 @@ class DistributedGRPCCaller {
 private:
     
     /**
-     * @brief Map to keep channels
+     * @brief   Map to keep channels.
+     *          We declare channels as inline static in order to reuse them
+     *          across different Distributed kernels. 
+     *          TODO: Move channels map to DistributedContext.
      */
-    std::map<std::string, std::shared_ptr<grpc::Channel>> channels;
+    inline static std::map<std::string, std::shared_ptr<grpc::Channel>> channels;
     struct ResultData 
     {
         // Contains struct StoredInfo, that was passed when call was made
@@ -70,9 +73,9 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncStoreCall(
-        std::shared_ptr<grpc::Channel> channel,
-        StoredInfo storedInfo,
-        const Argument arg
+        const std::shared_ptr<grpc::Channel> &channel,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -85,9 +88,9 @@ public:
         callCounter++;
     }
     void asyncStoreCall(
-        std::string workerAddr,
-        StoredInfo storedInfo,
-        const distributed::Data arg
+        const std::string &workerAddr,
+        const StoredInfo &storedInfo,
+        const distributed::Data &arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);
@@ -101,9 +104,9 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncComputeCall(
-        std::shared_ptr<grpc::Channel> channel,
-        StoredInfo storedInfo,
-        Argument arg
+        const std::shared_ptr<grpc::Channel> &channel,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -116,9 +119,9 @@ public:
         callCounter++;
     }
     void asyncComputeCall(
-        std::string workerAddr,
-        StoredInfo storedInfo,
-        const Argument arg
+        const std::string &workerAddr,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);
@@ -132,9 +135,9 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncTransferCall(
-        std::shared_ptr<grpc::Channel> channel,
-        StoredInfo storedInfo,
-        const Argument arg
+        const std::shared_ptr<grpc::Channel> &channel,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -147,9 +150,9 @@ public:
         callCounter++;
     }
     void asyncTransferCall(
-        std::string workerAddr,
-        StoredInfo storedInfo,
-        const Argument arg
+        const std::string &workerAddr,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);
@@ -164,9 +167,9 @@ public:
     * @param  arg Argument passed to the asynchronous call
     */
     void asyncFreeMemCall(
-        std::shared_ptr<grpc::Channel> channel,
-        StoredInfo storedInfo,
-        const Argument arg
+        const std::shared_ptr<grpc::Channel> &channel,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
@@ -179,9 +182,9 @@ public:
         callCounter++;
     }
     void asyncFreeMemCall(
-        std::string workerAddr,
-        StoredInfo storedInfo,
-        const Argument arg
+        const std::string &workerAddr,
+        const StoredInfo &storedInfo,
+        const Argument &arg
         )
     {
         auto channel = GetOrCreateChannel(workerAddr);
@@ -202,8 +205,10 @@ public:
             throw std::runtime_error(
                 call->status.error_message()
             );
-        }                
-        return ResultData({call->storedInfo, call->result});
+        }
+        ResultData ret({call->storedInfo, call->result});
+        delete call;
+        return ret;
     };
 
     /**
@@ -218,7 +223,7 @@ public:
     * 
     * @param workerAddr The address to get the channel for
     */
-    std::shared_ptr<grpc::Channel> GetOrCreateChannel(std::string workerAddr) {
+    std::shared_ptr<grpc::Channel> GetOrCreateChannel(const std::string &workerAddr) {
         if (channels.count(workerAddr))
             return channels.at(workerAddr);
         else { 

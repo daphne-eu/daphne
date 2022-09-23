@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "IContext.h"
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/kernels/CUDA/HostUtils.h"
 
@@ -25,7 +24,7 @@
 #include <memory>
 #include <map>
 
-class CUDAContext : public IContext {
+class CUDAContext final : public IContext {
     int device_id = -1;
     size_t mem_budget = 0;
 
@@ -85,7 +84,6 @@ public:
     cudnnFilterDescriptor_t filter_desc{};
     cudnnActivationDescriptor_t  activation_desc{};
     cudnnConvolutionDescriptor_t conv_desc{};
-    cudnnFilterDescriptor_t filterDesc{};
     cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
     static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }

@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/datastructures/Structure.h>
+#include <ir/daphneir/Daphne.h>
 
 class DistributedIndex
 {
@@ -64,14 +65,14 @@ class AllocationDescriptorGRPC : public IAllocationDescriptor {
 private:
     DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
-    std::string workerAddress;
+    const std::string workerAddress;
     DistributedData distributedData;
     std::shared_ptr<std::byte> data;
 public:
     AllocationDescriptorGRPC() {} ;
     AllocationDescriptorGRPC(DaphneContext* ctx, 
-                            std::string address, 
-                            DistributedData data) : ctx(ctx), workerAddress(address), distributedData(data) { } ;
+                            const std::string &address, 
+                            const DistributedData &data) : ctx(ctx), workerAddress(address), distributedData(data) { } ;
 
     ~AllocationDescriptorGRPC() override {};
     [[nodiscard]] ALLOCATION_TYPE getType() const override 
@@ -79,18 +80,17 @@ public:
     
     std::string getLocation() const override 
     {return workerAddress; };
-    void createAllocation(size_t size, bool zero) override {} ;
+    void createAllocation(size_t size, bool zero) override {}
     // TODO: Implement transferTo and transferFrom functions
     std::shared_ptr<std::byte> getData() override { 
         throw std::runtime_error("TransferTo/From functions are not implemented yet.");
-        return data; 
-    } ;
+    }
 
     bool operator==(const IAllocationDescriptor* other) const override {
         if(getType() == other->getType())
             return(getLocation() == dynamic_cast<const AllocationDescriptorGRPC *>(other)->getLocation());
         return false;
-    } ;
+    }
 
     [[nodiscard]] std::unique_ptr<IAllocationDescriptor> clone() const override {
         return std::make_unique<AllocationDescriptorGRPC>(*this);
@@ -98,7 +98,7 @@ public:
     
     /* 
     TODO:
-    We curently do not support transferTo/From functions for gRPC. 
+    We currently do not support transferTo/From functions for gRPC.
     All communication is handled by the distributed kernels (e.g. Distribute.h).
     In order to support these functions we need to know what data-type we
     are sending (representation, value type, etc.) since the worker 

@@ -19,7 +19,6 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/distributed/coordinator/datastructures/Handle.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/FileMetaData.h>

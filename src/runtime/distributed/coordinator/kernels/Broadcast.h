@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H
+#pragma once
 
-#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
@@ -25,6 +24,7 @@
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -77,10 +77,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
-            // Need matrix for metadata
-            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
             auto protoVal = protoMsg.mutable_value();
             protoVal->set_f64(*val);
+            // Need matrix for metadata, type of matrix does not really matter.
+            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
         } 
         else { // Not scalar
             auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
@@ -98,22 +98,22 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
 
-            DistributedData data;
-            data.ix = DistributedIndex(0, 0);
             // If DataPlacement dp already exists simply
             // update range (in case we have a different one) and distributed data
             DataPlacement *dp;
             if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                data.ix = DistributedIndex(0, 0);
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {  // else create new dp entry
-                AllocationDescriptorGRPC *allocationDescriptor;
-                allocationDescriptor = new AllocationDescriptorGRPC(
-                                                dctx, 
-                                                workerAddr,  
-                                                data);
-                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);
+                DistributedData data;
+                data.ix = DistributedIndex(0, 0);
+                AllocationDescriptorGRPC allocationDescriptor (dctx, 
+                                                                workerAddr,  
+                                                                data);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
@@ -139,6 +139,3 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         }                
     };           
 };
-
-
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H

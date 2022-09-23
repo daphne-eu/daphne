@@ -139,8 +139,8 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
             {
                 case distributed::Value::ValueCase::kF64:
                 {
-                    double * val = new double(protoVal->f64());
-                    storedInfo = Store(val);
+                    double val = double(protoVal->f64());
+                    storedInfo = Store(&val);
                     break;
                 }
                 default:
@@ -168,13 +168,13 @@ grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context,
     std::vector<StoredInfo> inputs;
     inputs.reserve(request->inputs().size());
 
-    std::vector<StoredInfo> *outputs = new std::vector<StoredInfo>();
+    std::vector<StoredInfo> outputs = std::vector<StoredInfo>();
     for (auto input : request->inputs()){
         auto stored = input.stored();
         inputs.push_back(StoredInfo({stored.identifier(), stored.num_rows(), stored.num_cols()}));
     }
-    auto respMsg = Compute(outputs, inputs, request->mlir_code());
-    for (auto output : *outputs){        
+    auto respMsg = Compute(&outputs, inputs, request->mlir_code());
+    for (auto output : outputs){        
         distributed::WorkData workData;        
         workData.mutable_stored()->set_identifier(output.identifier);
         workData.mutable_stored()->set_num_rows(output.numRows);
