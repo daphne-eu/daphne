@@ -435,6 +435,18 @@
     },
     {
         "kernelTemplate": {
+            "header": "CreateDistributedContext.h",
+            "opName": "createDistributedContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateFrame.h",
             "opName": "createFrame",
             "returnType": "void",

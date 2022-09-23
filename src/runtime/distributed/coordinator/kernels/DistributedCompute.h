@@ -40,7 +40,7 @@ using mlir::daphne::VectorCombine;
 template<ALLOCATION_TYPE AT, class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx)) = delete;
+    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -48,9 +48,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<ALLOCATION_TYPE AT, class DTRes, class DTArgs>
-void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx))
+void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(dctx))
 {
-    DistributedCompute<AT, DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, ctx);
+    DistributedCompute<AT, DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, dctx);
 }
 
 // ****************************************************************************
@@ -71,20 +71,10 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                       size_t numInputs,
                       const char *mlirCode,
                       VectorCombine *vectorCombine,                      
-                      DCTX(ctx))
+                      DCTX(dctx))
     {
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        std::vector<std::string> workers;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workers.push_back(workersStr.substr(0, pos));
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workers.push_back(workersStr);
+        auto ctx = DistributedContext::get(dctx);
+        auto workers = ctx->getWorkers();
         
         struct StoredInfo {
             std::string addr;
@@ -149,7 +139,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                 else { // else create new dp entry   
                     AllocationDescriptorGRPC *allocationDescriptor;
                     allocationDescriptor = new AllocationDescriptorGRPC(
-                                            ctx,
+                                            dctx,
                                             addr,
                                             data);                                    
                     ((*res[i]))->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    

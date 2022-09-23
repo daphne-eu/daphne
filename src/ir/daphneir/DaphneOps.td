@@ -1207,6 +1207,11 @@ def Daphne_CreateCUDAContextOp : Daphne_Op<"createCUDAContext", [CUDASupport]> {
     let results = (outs);
 }
 
+def Daphne_CreateDistributedContextOp : Daphne_Op<"createDistributedContext", []> {
+    let arguments = (ins);
+    let results = (outs);
+}
+
 // ****************************************************************************
 // Vectorized operations
 // ****************************************************************************

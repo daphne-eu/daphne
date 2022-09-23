@@ -60,7 +60,9 @@ void InsertDaphneContextPass::runOnFunction()
         builder.create<daphne::CreateCUDAContextOp>(loc);
     }
 #endif
-
+    if (user_config.use_distributed){
+        builder.create<daphne::CreateDistributedContextOp>(loc);
+    }
     // Insert a DestroyDaphneContextOp as the last operation in the block, but
     // before the block's terminator.
     builder.setInsertionPoint(b.getTerminator());
