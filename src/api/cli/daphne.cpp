@@ -80,11 +80,11 @@ int startCoordinator(int argc, char** argv){
     // Options ----------------------------------------------------------------
 
     // Distributed backend Knobs
-    opt<ALLOCATION_TYPE> distributedBackEndSetup(cat(distributedBackEndSetupOptions), 
+    opt<ALLOCATION_TYPE> distributedBackEndSetup("dist_backend", cat(distributedBackEndSetupOptions), 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
-                                                    clEnumVal(ALLOCATION_TYPE::DIST_MPI, "Use message passing interface for internode data exchange"),
-                                                    clEnumVal(ALLOCATION_TYPE::DIST_GRPC, "Use remote procedure call for internode data exchange")
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC, "gRPC", "Use remote procedure call for internode data exchange")
                                                 )
                                             );
 
@@ -92,7 +92,7 @@ int startCoordinator(int argc, char** argv){
     
     // Scheduling options
 
-    opt<SelfSchedulingScheme> taskPartitioningScheme(
+    opt<SelfSchedulingScheme> taskPartitioningScheme("partitioning",
             cat(schedulingOptions), desc("Choose task partitioning scheme:"),
             values(
                 clEnumVal(STATIC , "Static (default)"),
@@ -109,7 +109,7 @@ int startCoordinator(int argc, char** argv){
                 clEnumVal(PSS, "Probabilistic self-scheduling")
             )
     );
-    opt<QueueTypeOption> queueSetupScheme(
+    opt<QueueTypeOption> queueSetupScheme("queue_layout",
             cat(schedulingOptions), desc("Choose queue setup scheme:"),
             values(
                 clEnumVal(CENTRALIZED, "One queue (default)"),
@@ -117,7 +117,7 @@ int startCoordinator(int argc, char** argv){
                 clEnumVal(PERCPU, "One queue per CPU core")
             )
     );
-	opt<VictimSelectionLogic> victimSelection(
+	opt<VictimSelectionLogic> victimSelection("victim_selection",
             cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
             values(
                 clEnumVal(SEQ, "Steal from next adjacent worker"),

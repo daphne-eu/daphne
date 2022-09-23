@@ -25,7 +25,7 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
-
+#include <runtime/local/datastructures/IAllocationDescriptor.h>
 
 
 #include <mlir/InitAllDialects.h>
@@ -133,7 +133,6 @@ public:
             }
         }
 
-          
         distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
 
         // Collect

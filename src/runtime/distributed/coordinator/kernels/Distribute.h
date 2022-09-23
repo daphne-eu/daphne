@@ -24,6 +24,8 @@
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 
+#include <runtime/distributed/worker/MPISerializer.h>
+
 #include <cassert>
 #include <cstddef>
 
@@ -50,6 +52,35 @@ void distribute(DT *mat, DCTX(ctx))
 // ****************************************************************************
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************
+
+
+// ----------------------------------------------------------------------------
+// MPI
+// ----------------------------------------------------------------------------
+template<class DT>
+struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
+{
+    static void apply(DT *mat, DCTX(ctx)) {
+        std::cout<<"MPI distribute dense"<<std::endl;
+        int worldSize;
+        MPI_Comm_size(MPI_COMM_WORLD,&worldSize);
+        size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainRowCount=0;
+        auto partitionSize =  mat->getNumRows()/worldSize;
+        size_t messageLengths [worldSize];
+        remainRowCount= mat->getNumRows();
+        colCount= mat->getNumCols();
+        rowCount= partitionSize;
+        for(int rank=1;rank<worldSize;rank++)
+        {
+            remainRowCount-=partitionSize;
+            startRow= (rank-1) * partitionSize; // coordinator takes whatever left
+            void *dataToSend= MPISerializer<DT>::serialize(mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
+            MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
+        }
+        std::cout<<"Coordinator will work on rows from " << (worldSize-1)*partitionSize << " to "  << (worldSize-1)*partitionSize + remainRowCount<<std::endl;
+
+    }
+};
 
 // ----------------------------------------------------------------------------
 // GRPC

@@ -26,7 +26,8 @@
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
 #include <mpi.h>
-
+#include <runtime/distributed/worker/MPIWorker.h>
+#include <runtime/distributed/worker/MPISerializer.h>
 #include <cassert>
 #include <cstddef>
 
@@ -58,51 +59,14 @@ void broadcast(DT *&mat, bool isScalar, DCTX(ctx))
 // MPI
 // ----------------------------------------------------------------------------
 template<class DT>
-struct Broadcast<ALLOCATION_TYPE::DIST_MPI,DT>
+struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
-       static void apply(DT *&mat, bool isScalar, DCTX(ctx)){ 
+    static void apply(DT *&mat, bool isScalar, DCTX(ctx))
+    { 
         std::cout<<"MPI broadcast dense"<<std::endl;
-        MPI_Datatype dataType;
-        int messageSize;
-        void * dataToSend;
-        if (isScalar){
-            messageSize=1;
-            dataType= dataType;
-            dataToSend = (double*)(&mat);
-        }
-        else
-        {
-            int numRows=mat->getNumRows();
-            int numColums=mat->getNumCols();
-
-            if(auto denseMatDouble = dynamic_cast<const DenseMatrix<double>*>(mat)){
-                dataType= MPI_DOUBLE;
-            }
-            else if(auto denseMatFloat = dynamic_cast<const DenseMatrix<float>*>(mat)){
-                dataType= MPI_FLOAT;
-            }
-            else if(auto denseMatInt = dynamic_cast<const DenseMatrix<int>*>(mat)){
-                dataType= MPI_INT;
-            }
-            else if(auto denseMatLong = dynamic_cast<const DenseMatrix<long>*>(mat)){
-                dataType= MPI_LONG;
-            }
-            else{
-                throw std::runtime_error("MPI-based beackedn only supports DenseMatrix for now");
-            }
-        }
-        sendData(messageSize,dataType, dataToSend, isScalar );
-    }
-    static void sendData(int messageSize, MPI_Datatype type, void * data, bool isScaler){
-        if(isScaler)
-        {
-            double value = *((double *)data); 
-            std::cout<<"value " << value <<" is to be sent" <<std::endl;
-        }
-        else
-        {
-            
-        }
+        size_t messageLength;
+        void * dataToSend= MPISerializer<DT>::serialize(mat, isScalar, &messageLength);
+        MPIWorker::sendData(messageLength, dataToSend);
     }
 };
 

@@ -41,13 +41,35 @@ public:
                                size_t rowEnd,
                                size_t colBegin,
                                size_t colEnd);
-    static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<VT> *mat);
+    /*static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<VT> *mat);
     static void convertFromProto(const distributed::Matrix &matProto,
                                  DenseMatrix<VT> *mat,
                                  size_t rowBegin,
                                  size_t rowEnd,
                                  size_t colBegin,
-                                 size_t colEnd);
+                                 size_t colEnd);*/
+    
+    static void convertFromProto(const distributed::Matrix &matProto,
+                                            DenseMatrix<VT> *mat,
+                                            size_t rowBegin,
+                                            size_t rowEnd,
+                                            size_t colBegin,
+                                            size_t colEnd)
+    {
+        auto denseMatProto = matProto.dense_matrix();
+        auto cells = getCells(&matProto);
+        for (auto r = rowBegin; r < rowEnd; ++r) {
+            for (auto c = colBegin; c < colEnd; ++c) {
+                auto val = cells.Get((r - rowBegin) * matProto.num_cols() + (c - colBegin));
+                mat->set(r, c, val);
+            }
+        }
+    }
+
+    static void convertFromProto(const distributed::Matrix &matProto, DenseMatrix<VT> *mat)
+    {
+        convertFromProto(matProto, mat, 0, mat->getNumRows(), 0, mat->getNumCols());
+    }                             
 };
 
 /* Cover const DenseMatrix case with the same implementation */

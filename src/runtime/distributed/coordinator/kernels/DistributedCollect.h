@@ -50,11 +50,24 @@ void distributedCollect(DT *&mat, DCTX(ctx))
     DistributedCollect<AT, DT>::apply(mat, ctx);
 }
 
-
-
 // ****************************************************************************
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************
+
+
+// ----------------------------------------------------------------------------
+// MPI
+// ----------------------------------------------------------------------------
+
+template<class DT>
+struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
+{
+    static void apply(DT *&mat, DCTX(ctx)) 
+        {
+
+        }
+};
+
 
 // ----------------------------------------------------------------------------
 // GRPC

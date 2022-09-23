@@ -58,6 +58,25 @@ void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t n
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
+// MPI
+// ----------------------------------------------------------------------------
+
+template<class DTRes>
+struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
+{
+    static void apply(DTRes **&res,
+                      size_t numOutputs,
+                      const Structure **args,
+                      size_t numInputs,
+                      const char *mlirCode,
+                      VectorCombine *vectorCombine,                      
+                      DCTX(ctx))
+    {
+
+    }
+};
+
+// ----------------------------------------------------------------------------
 // GRPC
 // ----------------------------------------------------------------------------
 
