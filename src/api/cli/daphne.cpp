@@ -144,6 +144,10 @@ int startCoordinator(int argc, char** argv){
             "vec", cat(schedulingOptions),
             desc("Enable vectorized execution engine")
     );
+    opt<bool> useDistributedRuntime(
+        "distributed", cat(daphneOptions),
+        desc("Enable distributed runtime")
+    );
     opt<bool> prePartitionRows(
             "pre-partition", cat(schedulingOptions),
             desc("Partition rows into the number of queues before applying scheduling technique")
@@ -279,6 +283,7 @@ int startCoordinator(int argc, char** argv){
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.use_distributed = useDistributedRuntime; 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
@@ -355,7 +360,7 @@ int startCoordinator(int argc, char** argv){
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepr, user_config);
+        executor(selectMatrixRepr, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

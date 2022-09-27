@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/datastructures/Structure.h>
+#include <ir/daphneir/Daphne.h>
 
 class DistributedIndex
 {
@@ -64,14 +65,14 @@ class AllocationDescriptorGRPC : public IAllocationDescriptor {
 private:
     DaphneContext *ctx;
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_GRPC;
-    std::string workerAddress;
+    const std::string workerAddress;
     DistributedData distributedData;
     std::shared_ptr<std::byte> data;
 public:
     AllocationDescriptorGRPC() {} ;
     AllocationDescriptorGRPC(DaphneContext* ctx, 
-                            std::string address, 
-                            DistributedData data) : ctx(ctx), workerAddress(address), distributedData(data) { } ;
+                            const std::string &address, 
+                            const DistributedData &data) : ctx(ctx), workerAddress(address), distributedData(data) { } ;
 
     ~AllocationDescriptorGRPC() override {};
     [[nodiscard]] ALLOCATION_TYPE getType() const override 

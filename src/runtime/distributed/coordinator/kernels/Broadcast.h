@@ -28,6 +28,8 @@
 #include <mpi.h>
 #include <runtime/distributed/worker/MPIWorker.h>
 #include <runtime/distributed/worker/MPISerializer.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
+
 #include <cassert>
 #include <cstddef>
 
@@ -37,7 +39,7 @@
 
 template<ALLOCATION_TYPE AT, class DT>
 struct Broadcast {
-    static void apply(DT *mat, bool isScalar, DCTX(ctx)) = delete;
+    static void apply(DT *mat, bool isScalar, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -45,9 +47,9 @@ struct Broadcast {
 // ****************************************************************************
 
 template<ALLOCATION_TYPE AT, class DT>
-void broadcast(DT *&mat, bool isScalar, DCTX(ctx))
+void broadcast(DT *&mat, bool isScalar, DCTX(dctx))
 {
-    Broadcast<AT, DT>::apply(mat, isScalar, ctx);
+    Broadcast<AT, DT>::apply(mat, isScalar, dctx);
 }
 
 
@@ -77,27 +79,16 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 template<class DT>
 struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
 {
-    static void apply(DT *&mat, bool isScalar, DCTX(ctx)) 
+    static void apply(DT *&mat, bool isScalar, DCTX(dctx)) 
     {
         struct StoredInfo {
             size_t dp_id;
         };
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
         
+        auto ctx = DistributedContext::get(dctx);
+        auto workers = ctx->getWorkers();
         
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        std::vector<std::string> workers;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workers.push_back(workersStr.substr(0, pos));
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workers.push_back(workersStr);
-
         distributed::Data protoMsg;
 
         assert(mat != nullptr && "Matrix to broadcast is nullptr");
@@ -105,7 +96,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
-            // Need matrix for metadata
+            // Need matrix for metadata, type of matrix does not really matter..
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
             auto protoVal = protoMsg.mutable_value();
             protoVal->set_f64(*val);
@@ -136,12 +127,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {  // else create new dp entry
-                AllocationDescriptorGRPC *allocationDescriptor;
-                allocationDescriptor = new AllocationDescriptorGRPC(
-                                                ctx, 
-                                                workerAddr,  
-                                                data);
-                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);
+                AllocationDescriptorGRPC allocationDescriptor (dctx, 
+                                                                workerAddr,  
+                                                                data);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;

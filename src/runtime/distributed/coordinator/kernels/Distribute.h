@@ -35,7 +35,7 @@
 
 template<ALLOCATION_TYPE AT, class DT>
 struct Distribute {
-    static void apply(DT *mat, DCTX(ctx)) = delete;
+    static void apply(DT *mat, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -43,9 +43,9 @@ struct Distribute {
 // ****************************************************************************
 
 template<ALLOCATION_TYPE AT, class DT>
-void distribute(DT *mat, DCTX(ctx))
+void distribute(DT *mat, DCTX(dctx))
 {
-    Distribute<AT, DT>::apply(mat, ctx);
+    Distribute<AT, DT>::apply(mat, dctx);
 }
 
 
@@ -89,25 +89,15 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 template<class DT>
 struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
 {
-    static void apply(DT *mat, DCTX(ctx)) {
+    static void apply(DT *mat, DCTX(dctx)) {
         struct StoredInfo {
             size_t dp_id;
         }; 
         
         DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
         
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        std::vector<std::string> workers;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workers.push_back(workersStr.substr(0, pos));
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workers.push_back(workersStr);
+        auto ctx = DistributedContext::get(dctx);
+        auto workers = ctx->getWorkers();
     
         assert(mat != nullptr);
 
@@ -134,12 +124,11 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
-                    AllocationDescriptorGRPC *allocationDescriptor;
-                    allocationDescriptor = new AllocationDescriptorGRPC(
-                                                ctx,
+                    AllocationDescriptorGRPC allocationDescriptor(
+                                                dctx,
                                                 workerAddr,
                                                 data);
-                dp = mat->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
             // keep track of proccessed rows
             // Skip if already placed at workers

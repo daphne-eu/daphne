@@ -40,7 +40,7 @@ using mlir::daphne::VectorCombine;
 template<ALLOCATION_TYPE AT, class DTRes, class DTArgs>
 struct DistributedCompute
 {
-    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx)) = delete;
+    static void apply(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(dctx)) = delete;
 };
 
 // ****************************************************************************
@@ -48,9 +48,9 @@ struct DistributedCompute
 // ****************************************************************************
 
 template<ALLOCATION_TYPE AT, class DTRes, class DTArgs>
-void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(ctx))
+void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t numInputs, const char *mlirCode, VectorCombine *vectorCombine, DCTX(dctx))
 {
-    DistributedCompute<AT, DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, ctx);
+    DistributedCompute<AT, DTRes, DTArgs>::apply(res, numOutputs, args, numInputs, mlirCode, vectorCombine, dctx);
 }
 
 // ****************************************************************************
@@ -90,20 +90,10 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                       size_t numInputs,
                       const char *mlirCode,
                       VectorCombine *vectorCombine,                      
-                      DCTX(ctx))
+                      DCTX(dctx))
     {
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        std::vector<std::string> workers;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workers.push_back(workersStr.substr(0, pos));
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workers.push_back(workersStr);
+        auto ctx = DistributedContext::get(dctx);
+        auto workers = ctx->getWorkers();
         
         struct StoredInfo {
             std::string addr;
@@ -111,9 +101,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
         DistributedGRPCCaller<StoredInfo, distributed::Task, distributed::ComputeResult> caller;
 
         // Initialize Distributed index array, needed for results
-        DistributedIndex *ix[numOutputs];
-        for (size_t i = 0; i <numOutputs; i++)
-            ix[i] = new DistributedIndex(0, 0);     
+        std::vector<DistributedIndex> ix(numOutputs, DistributedIndex(0, 0));
         
         // Iterate over workers
         // Pass all the nessecary arguments for the pipeline
@@ -136,7 +124,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                     assert(!"Only Rows/Cols combineType supported atm");
 
                 DistributedData data;
-                data.ix = *ix[i];
+                data.ix = ix[i];
                 data.vectorCombine = vectorCombine[i];
                 data.isPlacedAtWorker = true;
                                 
@@ -144,7 +132,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                 // and set ranges for objmetadata
                 Range range;
                 if (vectorCombine[i] == VectorCombine::ROWS) {
-                    ix[i] = new DistributedIndex(ix[i]->getRow() + 1, ix[i]->getCol());            
+                    ix[i] = DistributedIndex(ix[i].getRow() + 1, ix[i].getCol());            
                     
                     range.r_start = data.ix.getRow() * k + std::min(data.ix.getRow(), m);
                     range.r_len = ((data.ix.getRow() + 1) * k + std::min((data.ix.getRow() + 1), m)) - range.r_start;
@@ -152,7 +140,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                     range.c_len = (*res[i])->getNumCols();
                 }
                 if (vectorCombine[i] == VectorCombine::COLS) {
-                    ix[i] = new DistributedIndex(ix[i]->getRow(), ix[i]->getCol() + 1);
+                    ix[i] = DistributedIndex(ix[i].getRow(), ix[i].getCol() + 1);
                     
                     range.r_start = 0; 
                     range.r_len = (*res[i])->getNumRows(); 
@@ -166,12 +154,11 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                     dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);                    
                 }
                 else { // else create new dp entry   
-                    AllocationDescriptorGRPC *allocationDescriptor;
-                    allocationDescriptor = new AllocationDescriptorGRPC(
-                                            ctx,
+                    AllocationDescriptorGRPC allocationDescriptor(
+                                            dctx,
                                             addr,
                                             data);                                    
-                    ((*res[i]))->getMetaDataObject().addDataPlacement(allocationDescriptor, &range);                    
+                    ((*res[i]))->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
                 } 
             }
 

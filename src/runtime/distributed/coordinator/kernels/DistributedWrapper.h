@@ -41,14 +41,14 @@ using mlir::daphne::VectorCombine;
 template <class DT>
 class DistributedWrapper {
 private:
-    DCTX(_ctx);
+    DCTX(_dctx);
 
 protected:
     bool isBroadcast(mlir::daphne::VectorSplit splitMethod, const Structure *input) {
         return splitMethod == VectorSplit::NONE || (splitMethod == VectorSplit::ROWS && input->getNumRows() == 1);
     }
 public:
-    DistributedWrapper(DCTX(ctx)) : _ctx(ctx) {
+    DistributedWrapper(DCTX(dctx)) : _dctx(dctx) {
         //TODO start workers from here instead of manually (e.g. resource manager) ? 
 
     }
@@ -64,18 +64,8 @@ public:
                  VectorSplit *splits,
                  VectorCombine *combines)                 
     {        
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
-        // assert(envVar && "Environment variable has to be set");
-        std::string workersStr(envVar);        
-        std::string delimiter(",");
-
-        size_t pos;
-        std::vector<std::string> workers;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workers.push_back(workersStr.substr(0, pos));
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workers.push_back(workersStr);
+        auto ctx = DistributedContext::get(_dctx);
+        auto workers = ctx->getWorkers();
         
         // Backend Implementation 
         // gRPC hard-coded selection
@@ -120,25 +110,26 @@ public:
             if (isBroadcast(splits[i], inputs[i])){
                 auto type = inputTypes.at(i);
                 if (type==INPUT_TYPE::Matrix) {            
-                    broadcast<alloc_type>(inputs[i], false, _ctx);
+                    broadcast<alloc_type>(inputs[i], false, _dctx);
                 }
                 else {
-                    broadcast<alloc_type>(inputs[i], true, _ctx);
+                    broadcast<alloc_type>(inputs[i], true, _dctx);
                 }
             }
             else {
                 assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
                 // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
-                distribute<alloc_type>(inputs[i], _ctx);        
+                distribute<alloc_type>(inputs[i], _dctx);        
             }
         }
 
-        distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _ctx);
+          
+        distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect<alloc_type>(*res[o], _ctx);           
+            distributedCollect<alloc_type>(*res[o], _dctx);           
         }
         
         

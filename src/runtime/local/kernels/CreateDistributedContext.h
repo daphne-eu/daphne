@@ -14,31 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDREAD_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDREAD_H
+#pragma once
 
-#include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
-#include <runtime/local/io/ReadCsv.h>
-#include <runtime/local/io/File.h>
-#include <runtime/local/io/FileMetaData.h>
-
-#include <cassert>
-#include <cstddef>
-
-
+#include "runtime/local/context/DaphneContext.h"
+#include "runtime/local/context/DistributedContext.h"
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DT>
-void distributedRead(Handle<DT> *&res, const char * filename, DCTX(ctx))
-{
-    FileMetaData fmd = FileMetaData::ofFile(filename);    
-
-    readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
+static void createDistributedContext(DCTX(ctx)) {
+    ctx->distributed_context = DistributedContext::createDistributedContext();
 }
-
-
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDREAD_H
