@@ -21,8 +21,9 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
-
+#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
 #include <mpi.h>
@@ -63,12 +64,47 @@ void broadcast(DT *&mat, bool isScalar, DCTX(dctx))
 template<class DT>
 struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
-    static void apply(DT *&mat, bool isScalar, DCTX(ctx))
+    static void apply(DT *&mat, bool isScalar, DCTX(dctx))
     { 
-        std::cout<<"MPI broadcast dense"<<std::endl;
-        size_t messageLength;
-        void * dataToSend= MPISerializer<DT>::serialize(mat, isScalar, &messageLength);
-        MPIWorker::sendData(messageLength, dataToSend);
+        size_t messageLength=0;
+        void * dataToSend;
+        MPISerializer<DT>::serialize(&dataToSend, mat, isScalar, &messageLength); 
+        std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if we some mpi process have the data
+        int worldSize = MPIWorker::getCommSize();
+        Range range;
+        range.r_start = 0;
+        range.c_start = 0;
+        range.r_len = mat->getNumRows();
+        range.c_len = mat->getNumCols();
+        for (int rank=0;rank<worldSize;rank++)
+        {   
+            DistributedData data;
+            data.ix = DistributedIndex(0, 0);
+            DataPlacement *dp;
+            std::string address=std::to_string(rank);
+            
+            dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            if (dp!=nullptr) {         
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            }
+            else { 
+                AllocationDescriptorMPI allocationDescriptor(dctx, rank,  data);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
+            }
+            if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+                continue;
+            targetGroup.push_back(rank);      
+        }
+        if(targetGroup.size()==worldSize){
+            MPIWorker::sendData(messageLength, dataToSend);
+        }
+        else{
+            for(int i=0;i<targetGroup.size();i++){
+                    MPIWorker::distributeData(messageLength, dataToSend, targetGroup.at(i));
+                } 
+        }
+        free(dataToSend);
     }
 };
 

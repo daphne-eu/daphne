@@ -35,54 +35,30 @@ enum WorkerStatus{
 class MPIWorker{
     public:
         //Utility functions will be used by the coordinator
-        static void sendData(size_t messageLength, void * data){
+        static int getCommSize(){
             int worldSize;
             MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+            return worldSize;    
+        }
+        static void sendData(size_t messageLength, void * data){
+            return;
+            int worldSize=getCommSize();
             int  message= messageLength;
             for(int rank=0; rank<worldSize;rank++)
             {
                 if(rank==COORDINATOR)
-                    continue;     
+                    continue;          
                 MPI_Send(&message,1, MPI_INT, rank, BROADCAST, MPI_COMM_WORLD);                    
             }
-            MPI_Bcast(data, message, MPI_BYTE, COORDINATOR, MPI_COMM_WORLD);
-            /*int messageSize = rows*columns;
-            void * buffer = (void *) data;
-            int worldSize;
-            MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-            for(int rank=0; rank<worldSize;rank++)
-            {
-                if(rank==COORDINATOR)
-                    continue;   
-                int buf [] = {rows, columns};    
-                MPI_Send(buf,2, MPI_INT, rank, BROADCAST, MPI_COMM_WORLD);                    
-            }
-            MPI_Bcast(buffer, messageSize, dataType, COORDINATOR, MPI_COMM_WORLD);
-            */
+            MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
         }
         
         static void distributeData(size_t messageLength, void * data, int rank){
+            if(rank == COORDINATOR)
+                return;
             int message = messageLength;
             MPI_Send(&message,1, MPI_INT, rank, DISTRIBUTE, MPI_COMM_WORLD);                    
-            MPI_Send(data, message, MPI_BYTE, rank, DISTRIBUTEDATA ,MPI_COMM_WORLD);
-
-            /*std::cout<<"coordinator will send data "<<std::endl;
-            int worldSize;
-            MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-            int workerPartition = (rows/worldSize) * columns; // row partition
-            MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-            for(int rank=1; rank<worldSize;rank++)
-            {  
-                int buf [] = {rows/worldSize, columns};    
-                MPI_Send(buf,2, MPI_INT, rank, DISTRIBUTE, MPI_COMM_WORLD);                    
-            }
-            MPI_Request requests[worldSize-1];
-            MPI_Status statuses [worldSize-1];
-            for(int rank=1;rank<worldSize;rank++)
-            {
-                MPI_Isend(data, workerPartition, MPI_DOUBLE, rank, DISTRIBUTEDATA ,MPI_COMM_WORLD, &requests[rank-1]);
-            }
-            MPI_Waitall(worldSize-1, requests, statuses);*/
+            MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, DISTRIBUTEDATA ,MPI_COMM_WORLD);
         }
         
         MPIWorker(){//TODO
@@ -110,7 +86,7 @@ class MPIWorker{
         int myState=LISTENING;
         int temp=0;
         std::vector<distributed::Data> protoMsgs;
-        //std::vector<DenseMatrix<double>*> inputs;
+
         void detachFromComputingTeam(){
             myState = DETACHED;
             std::cout<<"I am " << id <<". I got detach message... " << std::endl;
@@ -120,6 +96,7 @@ class MPIWorker{
             std::cout<<"I am worker " << id << ". I'll rest in peace" << std::endl;
         }
         void continueComputing(){
+            myState=TERMINATED;
         }
         void handleInCommingMessages(MPI_Status status){
             int source = status.MPI_SOURCE;
@@ -129,7 +106,7 @@ class MPIWorker{
             int codeSize; 
             MPI_Status messageStatus;
             unsigned char  * info;
-            double * data;
+            unsigned char * data;
             char * mlirCode;
             int messageLength;
             DenseMatrix<double> *mat=nullptr;
@@ -137,8 +114,10 @@ class MPIWorker{
             switch(tag){
                 case BROADCAST:
                     MPI_Recv(&messageLength, 1, MPI_INT, source, tag, MPI_COMM_WORLD, &messageStatus);
-                    data = (double*) malloc(messageLength * sizeof(double));
-                    MPI_Bcast(data, messageLength, MPI_BYTE, COORDINATOR, MPI_COMM_WORLD);
+                    std::cout<<"in broadcast received "<< messageLength <<std::endl; 
+                    data = (unsigned char*) malloc(messageLength * sizeof(unsigned char));
+                    MPI_Bcast(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
+                    std::cout<<"in broadcast received data "<<std::endl;
                     protoMsg.ParseFromArray(data, messageLength);
                     mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);
                     std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
@@ -148,9 +127,9 @@ class MPIWorker{
 
                 case DISTRIBUTE:
                     MPI_Recv(&messageLength, 1, MPI_INT, source, tag, MPI_COMM_WORLD, &messageStatus);
-                    data = (double*) malloc(messageLength * sizeof(double));
+                    data = (unsigned char*) malloc(messageLength * sizeof(unsigned char));
                     MPI_Status status;
-                    MPI_Recv(data, messageLength, MPI_BYTE, COORDINATOR, DISTRIBUTEDATA,MPI_COMM_WORLD, &status);
+                    MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DISTRIBUTEDATA,MPI_COMM_WORLD, &status);
                     protoMsg.ParseFromArray(data, messageLength);
                     protoMsgs.push_back(protoMsg);
                     mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);

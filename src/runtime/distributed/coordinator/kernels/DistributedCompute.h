@@ -72,7 +72,10 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                       VectorCombine *vectorCombine,                      
                       DCTX(ctx))
     {
-
+        int worldSize= MPIWorker::getCommSize();
+        for(int i=1; i<worldSize;i++){
+            
+        }
     }
 };
 
@@ -102,7 +105,6 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
 
         // Initialize Distributed index array, needed for results
         std::vector<DistributedIndex> ix(numOutputs, DistributedIndex(0, 0));
-        
         // Iterate over workers
         // Pass all the nessecary arguments for the pipeline
         for (auto addr : workers) {

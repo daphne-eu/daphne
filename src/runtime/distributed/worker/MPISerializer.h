@@ -7,11 +7,17 @@
 template<class DT>
 class MPISerializer{
     public:
-    static void * serialize(DT *&mat, bool isScalar, size_t * length)
+    static void serialize(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
     {
-        return serialize(mat, isScalar, length, 0, mat->getNumRows(), 0, mat->getNumCols());   
+       if(isScalar){
+            serialize(dataToSend, mat, isScalar, length,  0, 0, 0, 0);
+       }
+       else{
+            serialize(dataToSend, mat, isScalar, length, 0, mat->getNumRows(), 0, mat->getNumCols()); 
+       }
+   
     }
-    static void * serialize(DT *&mat, bool isScalar, size_t * length, size_t startRow, size_t rowCount, size_t startCol, size_t colCount){
+    static void serialize(void ** dataToSend, DT *&mat, bool isScalar, size_t * length, size_t startRow, size_t rowCount, size_t startCol, size_t colCount){
         distributed::Data protoMsg;
         if (isScalar) {
             auto ptr = (double*)(&mat);
@@ -29,9 +35,8 @@ class MPISerializer{
             ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix(), startRow, rowCount, startCol, colCount);
         }
         *length = protoMsg.ByteSizeLong();
-        void * data = malloc(*length * sizeof(char));
-        protoMsg.SerializeToArray(data,*length);
-        return data;
+        *dataToSend  = (void *) malloc(*length * sizeof(unsigned char));
+        protoMsg.SerializeToArray(*dataToSend,*length);
     }
     static DT* deserialize(void * data, size_t length){
         distributed::Data protoMsg;

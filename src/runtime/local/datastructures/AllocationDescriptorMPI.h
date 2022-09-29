@@ -14,30 +14,35 @@
  * limitations under the License.
  */
 
-#pragma once
+#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
+#define SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
 
-#include <cstdint>
-#include "DataPlacement.h"
-#include <string>
+#include <runtime/local/datastructures/Structure.h>
+#include <ir/daphneir/Daphne.h>
+
+#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
+#include <memory>
 
 class AllocationDescriptorMPI : public IAllocationDescriptor {
     ALLOCATION_TYPE type = ALLOCATION_TYPE::DIST_MPI;
     int processRankID;
     DaphneContext* ctx;
-    std::shared_ptr<std::byte> data{};
+    DistributedData distributedData;
+    std::shared_ptr<std::byte> data;
 
 public:
-    AllocationDescriptorMPI() = delete;
+    AllocationDescriptorMPI() {} ;
     AllocationDescriptorMPI(DaphneContext* ctx, 
-                            std::string address, 
-                            DistributedData data) : ctx(ctx), workerAddress(address), data(data) { } ;
+                            int id, 
+                            DistributedData data) : ctx(ctx), processRankID(id), distributedData(data) {} ;
 
     ~AllocationDescriptorMPI() override {};
-    [nodiscard]] ALLOCATION_TYPE getType() const override 
+
+    [[nodiscard]] ALLOCATION_TYPE getType() const override 
     { return type; };
     
     std::string getLocation() const override {
-        return to_string(processRankID); 
+        return std::to_string(processRankID); 
     };
     
     void createAllocation(size_t size, bool zero) override {} ;
@@ -56,10 +61,12 @@ public:
     void transferTo(std::byte *src, size_t size) override { /* TODO */ };
     void transferFrom(std::byte *src, size_t size) override { /* TODO */ };
 
-    //const DistributedIndex getDistributedIndex()
-    //{ return data.ix; }    
-    //const DistributedData getDistributedData()
-    //{ return data; }
-    //void updateDistributedData(DistributedData data_)
-    //{ data = data_; }
+    const DistributedIndex getDistributedIndex()
+    { return distributedData.ix; }    
+    const DistributedData getDistributedData()
+    { return distributedData; }
+    void updateDistributedData(DistributedData data_)
+    { distributedData = data_; }
 };
+
+#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H

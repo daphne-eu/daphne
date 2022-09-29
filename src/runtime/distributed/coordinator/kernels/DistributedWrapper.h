@@ -71,7 +71,7 @@ public:
         // gRPC hard-coded selection
         // TODO choose implementation based on configFile/command-line argument        
         const auto alloc_type = ALLOCATION_TYPE::DIST_MPI;
-
+        std::cout<<"Distributed wrapper " <<std::endl;
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
             if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
@@ -123,7 +123,6 @@ public:
             }
         }
 
-          
         distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
 
         // Collect

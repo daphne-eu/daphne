@@ -60,8 +60,7 @@ void distribute(DT *mat, DCTX(dctx))
 template<class DT>
 struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 {
-    static void apply(DT *mat, DCTX(ctx)) {
-        std::cout<<"MPI distribute dense"<<std::endl;
+    static void apply(DT *mat, DCTX(dctx)) {
         int worldSize;
         MPI_Comm_size(MPI_COMM_WORLD,&worldSize);
         size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainRowCount=0;
@@ -70,12 +69,40 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
         remainRowCount= mat->getNumRows();
         colCount= mat->getNumCols();
         rowCount= partitionSize;
+        void *dataToSend; 
         for(int rank=1;rank<worldSize;rank++)
         {
             remainRowCount-=partitionSize;
             startRow= (rank-1) * partitionSize; // coordinator takes whatever left
-            void *dataToSend= MPISerializer<DT>::serialize(mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
+            Range range;
+            range.r_start = startRow;
+            range.r_len = rowCount;
+            range.c_start = startCol;
+            range.c_len = colCount;
+            DistributedData data;
+            data.ix = DistributedIndex(startRow, 0);
+            DataPlacement *dp;
+            std::string address=std::to_string(rank);
+            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(address))) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            }
+            else {
+                    AllocationDescriptorMPI allocationDescriptor(
+                                                dctx,
+                                                rank,
+                                                data);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
+            }
+            if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            {
+                std::cout<<"worker already has the data"<<std::endl;
+                continue;
+            }
+
+            MPISerializer<DT>::serialize(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
             MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
+            free(dataToSend);
         }
         std::cout<<"Coordinator will work on rows from " << (worldSize-1)*partitionSize << " to "  << (worldSize-1)*partitionSize + remainRowCount<<std::endl;
 
