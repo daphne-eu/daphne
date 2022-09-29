@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H
+#pragma once
 
-#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
@@ -78,7 +77,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
-            // Need matrix for metadata, type of matrix does not really matter..
+            // Need matrix for metadata, type of matrix does not really matter.
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
             auto protoVal = protoMsg.mutable_value();
             protoVal->set_f64(*val);
@@ -138,6 +137,3 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         }                
     };           
 };
-
-
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_BROADCAST_H

@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
+#pragma once
 
-#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <cassert>
 #include <cstddef>
@@ -99,7 +99,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                                                 data);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
-            // keep track of proccessed rows
+            // keep track of processed rows
             // Skip if already placed at workers
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
@@ -144,6 +144,3 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
     }
 };
 
-
-
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
