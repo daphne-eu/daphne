@@ -146,7 +146,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++){
                 auto dp = args[i]->getMetaDataObject().getDataPlacementByLocation(addr);
-                auto distrData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();\
+                auto distrData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
 
                 distributed::StoredData protoData;
                 protoData.set_identifier(distrData.identifier);

@@ -98,16 +98,18 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         for (auto i=0ul; i < workers.size(); i++){
             auto workerAddr = workers.at(i);
 
-            DistributedData data;
-            data.ix = DistributedIndex(0, 0);
             // If DataPlacement dp already exists simply
             // update range (in case we have a different one) and distributed data
             DataPlacement *dp;
             if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                data.ix = DistributedIndex(0, 0);
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {  // else create new dp entry
+                DistributedData data;
+                data.ix = DistributedIndex(0, 0);
                 AllocationDescriptorGRPC allocationDescriptor (dctx, 
                                                                 workerAddr,  
                                                                 data);

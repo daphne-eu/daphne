@@ -83,20 +83,26 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             range.c_start = 0;
             range.c_len = mat->getNumCols();
                         
-            DistributedData data;
-            data.ix = DistributedIndex(workerIx, 0);
             // If dp already exists simply
             // update range (in case we have a different one) and distribute data
             DataPlacement *dp;
             if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                // TODO Currently we do not support distributing/splitting 
+                // by columns. When we do, this should be changed (e.g. Index(0, workerIx))
+                data.ix = DistributedIndex(workerIx, 0);
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
-                    AllocationDescriptorGRPC allocationDescriptor(
-                                                dctx,
-                                                workerAddr,
-                                                data);
+                DistributedData data;
+                // TODO Currently we do not support distributing/splitting 
+                // by columns. When we do, this should be changed (e.g. Index(0, workerIx))
+                data.ix = DistributedIndex(workerIx, 0);
+                AllocationDescriptorGRPC allocationDescriptor(
+                                            dctx,
+                                            workerAddr,
+                                            data);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
             // keep track of processed rows
