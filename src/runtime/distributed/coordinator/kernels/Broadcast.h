@@ -77,10 +77,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
-            // Need matrix for metadata, type of matrix does not really matter.
-            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
             auto protoVal = protoMsg.mutable_value();
             protoVal->set_f64(*val);
+            // Need matrix for metadata, type of matrix does not really matter.
+            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
         } 
         else { // Not scalar
             auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
