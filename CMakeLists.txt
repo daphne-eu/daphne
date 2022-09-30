@@ -18,7 +18,7 @@ cmake_minimum_required(VERSION 3.17)
 # This needs to be set *before* the project() command
 set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build.")
 
-project(daphne-prototype LANGUAGES CXX C)
+project(daphne-main LANGUAGES CXX C)
 
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
@@ -128,6 +128,9 @@ endif()
 option(USE_DUCKDB "Whether to use DuckDB as sql feature" OFF)
 if(USE_DUCKDB)
     add_definitions(-DUSE_DUCKDB)
+    ### all header files lie in this directory
+    include_directories(${PROJECT_SOURCE_DIR}/thirdparty/sources/duckdb/src/include)
+#    link_directories(${PROJECT_SOURCE_DIR}/thirdparty/installed/lib)
 endif()
 
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)

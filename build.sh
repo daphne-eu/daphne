@@ -347,6 +347,7 @@ abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
 arrowVersion=d9d78946607f36e25e9d812a5cc956bd00ab2bc9
+duckdbVersion=0.5.0
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -383,6 +384,7 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_DUCKDB="-DUSE_DUCKDB=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
+installDuckDB=0
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -412,8 +414,8 @@ while [[ $# -gt 0 ]]; do
             export BUILD_CUDA="-DUSE_CUDA=ON"
             ;;
         --duckdb)
-            echo using CUDA
             export BUILD_DUCKDB="-DUSE_DUCKDB=ON"
+            installDuckDB=1
             ;;
         --arrow)
             echo using ARROW
@@ -610,17 +612,35 @@ fi
 # DuckDB
 #------------------------------------------------------------------------------
 duckdbDirName=duckdb
-duckdbVersion=0.3.3
+# @todo we assume Linux 64bit for now
 duckdbZipName=libduckdb-linux-amd64.zip
-if ! is_dependency_installed "duckdb_v${duckdbVersion}"; then
-    daphne_msg "Get duckdb version ${duckdbVersion}"
-    mkdir --parents "${thirdpartyPath}/${duckdbDirName}"
-    cd "${thirdpartyPath}/${duckdbDirName}"
-    wget "https://github.com/duckdb/duckdb/releases/download/v${duckdbVersion}/${duckdbZipName}"
-    unzip "${duckdbZipName}" -d .
-    dependency_install_success "duckdb_v${duckdbVersion}"
-fi
 
+if [ ${installDuckDB} == 1 ]; then
+    if ! is_dependency_downloaded "duckdb_v${duckdbVersion}"; then
+        daphne_msg "Get DuckDB version ${duckdbVersion}"
+    #    wget "https://github.com/duckdb/duckdb/releases/download/v${duckdbVersion}/${duckdbZipName}" \
+    #        -qO "${cacheDir}/${duckdbZipName}"
+    #
+    #    unzip -q "$cacheDir/${duckdbZipName}" -d "$sourcePrefix"
+        rm -rf "${sourcePrefix}/duckdb"
+        git clone "git@github.com:duckdb/duckdb.git" "${sourcePrefix}/duckdb"
+        cd "${sourcePrefix}/duckdb"
+        git checkout tags/v0.5.0 -b duckdb
+        dependency_download_success "duckdb_v${duckdbVersion}"
+    fi
+    if ! is_dependency_installed "duckdb_v${duckdbVersion}"; then
+        daphne_msg "Get duckdb version ${duckdbVersion}"
+        mkdir --parents "${thirdpartyPath}/${duckdbDirName}"
+        cd "${thirdpartyPath}/${duckdbDirName}"
+        wget "https://github.com/duckdb/duckdb/releases/download/v${duckdbVersion}/${duckdbZipName}"\
+            -qO "${cacheDir}/${duckdbZipName}"
+        unzip -q "$cacheDir/${duckdbZipName}" -d "$cacheDir/duckdb_${duckdbVersion}"
+        cp "$cacheDir/duckdb_${duckdbVersion}/libduckdb.so" "${installPrefix}/lib/libduckdb.so"
+        cp "$cacheDir/duckdb_${duckdbVersion}/duckdb.h" "${installPrefix}/include/duckdb.h"
+        cp "$cacheDir/duckdb_${duckdbVersion}/duckdb.hpp" "${installPrefix}/include/duckdb.hpp"
+        dependency_install_success "duckdb_v${duckdbVersion}"
+    fi
+fi
 #------------------------------------------------------------------------------
 # gRPC
 #------------------------------------------------------------------------------
