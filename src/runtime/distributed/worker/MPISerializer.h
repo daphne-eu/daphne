@@ -49,7 +49,7 @@ class MPISerializer{
         //ProtoDataConverter<DenseMatrix<double>>::test1(mat);
         //ProtoDataConverter<DenseMatrix<double>>::test2(res);
        // ProtoDataConverter<DenseMatrix<double>>::convertFromProto<>(mat, res);
-        //ProtoDataConverter<DT>::convertFromProto(mat, res);
+        ProtoDataConverter<DT>::convertFromProto(mat, res);
         return res;
     }
 };

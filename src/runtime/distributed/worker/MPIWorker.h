@@ -60,7 +60,22 @@ class MPIWorker{
             MPI_Send(&message,1, MPI_INT, rank, DISTRIBUTE, MPI_COMM_WORLD);                    
             MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, DISTRIBUTEDATA ,MPI_COMM_WORLD);
         }
-        
+        void displayData(DenseMatrix<double> * mat)
+        {
+            std::string dataToDisplay="rank "+ std::to_string(id) + " got:\n";
+            size_t numRows = mat->getNumRows();
+            size_t numCols = mat->getNumCols();
+
+            double * allValues = mat->getValues();
+            for(size_t r = 0; r < numRows; r++){
+                for(size_t c = 0; c < numCols; c++){
+                    dataToDisplay += std::to_string(allValues[c]) + " , " ;
+                }
+                dataToDisplay+= "\n";
+                allValues += mat->getRowSkip();
+            }
+            std::cout<<dataToDisplay<<std::endl;
+        }
         MPIWorker(){//TODO
             MPI_Comm_rank(MPI_COMM_WORLD, &id);
         }
@@ -96,7 +111,8 @@ class MPIWorker{
             std::cout<<"I am worker " << id << ". I'll rest in peace" << std::endl;
         }
         void continueComputing(){
-            myState=TERMINATED;
+            if(myState==DETACHED)
+                myState=TERMINATED;
         }
         void handleInCommingMessages(MPI_Status status){
             int source = status.MPI_SOURCE;
@@ -121,6 +137,7 @@ class MPIWorker{
                     protoMsg.ParseFromArray(data, messageLength);
                     mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);
                     std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
+                    //displayData(mat);
                     protoMsgs.push_back(protoMsg);
                     free(data);
                 break;
@@ -133,6 +150,7 @@ class MPIWorker{
                     protoMsg.ParseFromArray(data, messageLength);
                     protoMsgs.push_back(protoMsg);
                     mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);
+                    displayData(mat);
                     std::cout<<"rank "  << id << " distribute message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     free(data);
                 break;
