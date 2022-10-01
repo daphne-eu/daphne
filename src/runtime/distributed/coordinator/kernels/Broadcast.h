@@ -65,6 +65,9 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *&mat, bool isScalar, DCTX(dctx))
     { 
+        struct StoredInfo {
+            size_t dp_id;
+        };
         size_t messageLength=0;
         void * dataToSend;
         MPISerializer<DT>::serialize(&dataToSend, mat, isScalar, &messageLength); 
@@ -75,35 +78,59 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         range.c_start = 0;
         range.r_len = mat->getNumRows();
         range.c_len = mat->getNumCols();
-        for (int rank=0;rank<worldSize;rank++)
-        {   
-            DistributedData data;
-            data.ix = DistributedIndex(0, 0);
-            DataPlacement *dp;
-            std::string address=std::to_string(rank);
-            
-            dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
-            if (dp!=nullptr) {         
+        for (int rank=0;rank<worldSize;rank++){   
+            std::string address=std::to_string(rank);  
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            if (dp!=nullptr) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                data.ix = DistributedIndex(0, 0);
                 dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
             }
-            else { 
-                AllocationDescriptorMPI allocationDescriptor(dctx, rank,  data);
+            else {  // else create new dp entry
+                DistributedData data;
+                data.ix = DistributedIndex(0, 0);
+                AllocationDescriptorMPI allocationDescriptor (dctx, 
+                                                                rank,  
+                                                                data);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            {
+                std::cout<<"data is already placed at rank "<<rank<<std::endl;
                 continue;
-            targetGroup.push_back(rank);      
+            }
+            targetGroup.push_back(rank);
+            StoredInfo storedInfo({dp->dp_id});    
         }
         if(targetGroup.size()==worldSize){
             MPIWorker::sendData(messageLength, dataToSend);
+            std::cout<<"data has been send to all "<<std::endl;
         }
         else{
             for(int i=0;i<targetGroup.size();i++){
                     MPIWorker::distributeData(messageLength, dataToSend, targetGroup.at(i));
+                    std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
                 } 
         }
         free(dataToSend);
+        long * dataAcknowledgement = (long *) malloc (sizeof(long) * 3);
+        for(int i=0;i<targetGroup.size()-1;i++)
+        { 
+            std::cout<<"waiting for ack " << std::endl;
+            int rank=MPIWorker::getDataAcknowledgement(dataAcknowledgement);
+            std::cout<<"received ack form worker " << rank<<std::endl;
+            std::string address=std::to_string(rank);
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+            data.identifier = dataAcknowledgement[0];
+            data.numRows = dataAcknowledgement[1];
+            data.numCols = dataAcknowledgement[2];
+            data.isPlacedAtWorker = true;
+            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+
+        }
+        free(dataAcknowledgement);
     }
 };
 

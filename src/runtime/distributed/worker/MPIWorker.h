@@ -27,7 +27,7 @@
 #define COORDINATOR 0
 
 enum TypesOfMessages{
-    BROADCAST=0, DISTRIBUTE, DETACH, DATA, MLIR, DISTRIBUTEDATA
+    BROADCAST=0, DISTRIBUTE, DETACH, DATA, MLIR, DISTRIBUTEDATA, DATAACK
 };
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
@@ -40,8 +40,22 @@ class MPIWorker{
             MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
             return worldSize;    
         }
+        static int getDataAcknowledgementFrom (long * dataAcknowledgement, int rank){
+            MPI_Status status;
+            if(rank==COORDINATOR)
+            {
+                std::cout<<"coordinator does not need to ack receive it owns the data" <<std::endl;
+                return 0;
+            }
+            if(rank==-1)
+                rank = MPI_ANY_SOURCE;
+            MPI_Recv(dataAcknowledgement,3, MPI_LONG, MPI_ANY_SOURCE , DATAACK, MPI_COMM_WORLD, &status);
+            return status.MPI_SOURCE;
+        }
+        static int getDataAcknowledgement (long * dataAcknowledgement){
+            getDataAcknowledgementFrom(dataAcknowledgement, -1);
+        }
         static void sendData(size_t messageLength, void * data){
-            return;
             int worldSize=getCommSize();
             int  message= messageLength;
             for(int rank=0; rank<worldSize;rank++)
@@ -101,7 +115,14 @@ class MPIWorker{
         int myState=LISTENING;
         int temp=0;
         std::vector<distributed::Data> protoMsgs;
-
+        void sendDataACK(long index, long rows, long cols)
+        {
+            long dataAcknowledgement [3];
+            dataAcknowledgement[0]= index;
+            dataAcknowledgement[1] = rows;
+            dataAcknowledgement[2] = cols;
+            MPI_Send(dataAcknowledgement, 3, MPI_LONG, COORDINATOR, DATAACK, MPI_COMM_WORLD);
+        }
         void detachFromComputingTeam(){
             myState = DETACHED;
             std::cout<<"I am " << id <<". I got detach message... " << std::endl;
@@ -136,14 +157,16 @@ class MPIWorker{
                     std::cout<<"in broadcast received data "<<std::endl;
                     protoMsg.ParseFromArray(data, messageLength);
                     mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);
-                    std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
+                    //std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     //displayData(mat);
                     protoMsgs.push_back(protoMsg);
                     free(data);
+                    sendDataACK(protoMsgs.size()-1, mat->getNumRows(), mat->getNumCols());
                 break;
 
                 case DISTRIBUTE:
                     MPI_Recv(&messageLength, 1, MPI_INT, source, tag, MPI_COMM_WORLD, &messageStatus);
+                    //std::cout<<"allocated size " <<messageLength;
                     data = (unsigned char*) malloc(messageLength * sizeof(unsigned char));
                     MPI_Status status;
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DISTRIBUTEDATA,MPI_COMM_WORLD, &status);
@@ -153,6 +176,7 @@ class MPIWorker{
                     displayData(mat);
                     std::cout<<"rank "  << id << " distribute message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     free(data);
+                    sendDataACK(protoMsgs.size()-1, mat->getNumRows(), mat->getNumCols());
                 break;
 
                 case MLIR:

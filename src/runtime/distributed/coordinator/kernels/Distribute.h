@@ -63,48 +63,65 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
     static void apply(DT *mat, DCTX(dctx)) {
         int worldSize;
         MPI_Comm_size(MPI_COMM_WORLD,&worldSize);
-        size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainRowCount=0;
+        size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainingRows=0;
         auto partitionSize =  mat->getNumRows()/worldSize;
+        remainingRows=mat->getNumRows();
         size_t messageLengths [worldSize];
-        remainRowCount= mat->getNumRows();
-        colCount= mat->getNumCols();
-        rowCount= partitionSize;
-        void *dataToSend; 
-        for(int rank=1;rank<worldSize;rank++)
+        void *dataToSend;  
+        for(int rank=0;rank<worldSize;rank++)
         {
-            remainRowCount-=partitionSize;
-            startRow= (rank-1) * partitionSize; // coordinator takes whatever left
+            startRow= (rank * partitionSize);
+            if(rank==worldSize-1){
+                    rowCount= remainingRows;
+            }
+            else{
+                rowCount = partitionSize;
+            }
+            remainingRows-=partitionSize;
+            colCount= mat->getNumCols();
+            startCol=0;
             Range range;
             range.r_start = startRow;
             range.r_len = rowCount;
             range.c_start = startCol;
             range.c_len = colCount;
-            DistributedData data;
-            data.ix = DistributedIndex(startRow, 0);
-            DataPlacement *dp;
             std::string address=std::to_string(rank);
-            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(address))) {                
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            if (dp!=nullptr) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                data.ix = DistributedIndex(rank, 0);     
                 dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
             }
             else {
-                    AllocationDescriptorMPI allocationDescriptor(
+                DistributedData data;
+                AllocationDescriptorMPI allocationDescriptor(
                                                 dctx,
                                                 rank,
                                                 data);
+                data.ix = DistributedIndex(rank, 0);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
+            std::cout<<"rank "<< rank<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                 std::cout<<"worker already has the data"<<std::endl;
                 continue;
             }
-
             MPISerializer<DT>::serialize(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
             MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
             free(dataToSend);
+            long * dataAcknowledgement = (long *) malloc (sizeof(long) * 3);
+            std::cout<<"waiting for acknowledgement from "<<rank<<std::endl;
+            MPIWorker::getDataAcknowledgementFrom(dataAcknowledgement,rank);
+            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+            data.identifier = dataAcknowledgement[0];
+            data.numRows = dataAcknowledgement[1];
+            data.numCols = dataAcknowledgement[2];
+            data.isPlacedAtWorker = true;
+            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            free(dataAcknowledgement);     
         }
-        std::cout<<"Coordinator will work on rows from " << (worldSize-1)*partitionSize << " to "  << (worldSize-1)*partitionSize + remainRowCount<<std::endl;
 
     }
 };
