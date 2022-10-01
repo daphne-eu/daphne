@@ -32,7 +32,7 @@ class MPISerializer{
             if (!denseMat){
                 throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
             }
-            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix(), startRow, rowCount, startCol, colCount);
+            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix(), startRow, startRow+rowCount, startCol, startCol+colCount);
         }
         *length = protoMsg.ByteSizeLong();
         *dataToSend  = (void *) malloc(*length * sizeof(unsigned char));
