@@ -22,6 +22,7 @@ set(LIBS
         DaphneIrExecutor
         DaphneConfigParser
         DaphneMetaDataParser
+        ProtoDataConverter
 )
 
 # These dependencies are linked at runtime
