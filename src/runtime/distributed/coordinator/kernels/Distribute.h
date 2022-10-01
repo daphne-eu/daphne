@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
+#pragma once
 
-#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <runtime/distributed/worker/MPISerializer.h>
 
@@ -141,23 +141,29 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             range.c_start = 0;
             range.c_len = mat->getNumCols();
                         
-            DistributedData data;
-            data.ix = DistributedIndex(workerIx, 0);
             // If dp already exists simply
             // update range (in case we have a different one) and distribute data
             DataPlacement *dp;
             if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
+                // TODO Currently we do not support distributing/splitting 
+                // by columns. When we do, this should be changed (e.g. Index(0, workerIx))
+                data.ix = DistributedIndex(workerIx, 0);
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
             }
             else { // Else, create new object metadata entry
-                    AllocationDescriptorGRPC allocationDescriptor(
-                                                dctx,
-                                                workerAddr,
-                                                data);
+                DistributedData data;
+                // TODO Currently we do not support distributing/splitting 
+                // by columns. When we do, this should be changed (e.g. Index(0, workerIx))
+                data.ix = DistributedIndex(workerIx, 0);
+                AllocationDescriptorGRPC allocationDescriptor(
+                                            dctx,
+                                            workerAddr,
+                                            data);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
-            // keep track of proccessed rows
+            // keep track of processed rows
             // Skip if already placed at workers
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
@@ -202,6 +208,3 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
     }
 };
 
-
-
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTE_H
