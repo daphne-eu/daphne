@@ -45,10 +45,6 @@ class MPISerializer{
         
         auto temp= DataObjectFactory::create<DT>(protoMsg.mutable_matrix()->num_rows(), protoMsg.mutable_matrix()->num_cols(), false);
         DT *res =  dynamic_cast<DT *>(temp);
-        //ProtoDataConverter<DenseMatrix<double>>::test();
-        //ProtoDataConverter<DenseMatrix<double>>::test1(mat);
-        //ProtoDataConverter<DenseMatrix<double>>::test2(res);
-       // ProtoDataConverter<DenseMatrix<double>>::convertFromProto<>(mat, res);
         ProtoDataConverter<DT>::convertFromProto(mat, res);
         return res;
     }
