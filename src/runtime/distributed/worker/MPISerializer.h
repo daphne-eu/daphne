@@ -4,20 +4,21 @@
 
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <mpi.h>
-template<class DT>
 class MPISerializer{
     public:
-    static void serialize(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
+    template<class DT>
+    static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
     {
        if(isScalar){
-            serialize(dataToSend, mat, isScalar, length,  0, 0, 0, 0);
+            serializeStructure(dataToSend, mat, isScalar, length,  0, 0, 0, 0);
        }
        else{
-            serialize(dataToSend, mat, isScalar, length, 0, mat->getNumRows(), 0, mat->getNumCols()); 
+            serializeStructure(dataToSend, mat, isScalar, length, 0, mat->getNumRows(), 0, mat->getNumCols()); 
        }
    
     }
-    static void serialize(void ** dataToSend, DT *&mat, bool isScalar, size_t * length, size_t startRow, size_t rowCount, size_t startCol, size_t colCount){
+    template<class DT>
+    static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length, size_t startRow, size_t rowCount, size_t startCol, size_t colCount){
         distributed::Data protoMsg;
         if (isScalar) {
             auto ptr = (double*)(&mat);
@@ -38,7 +39,8 @@ class MPISerializer{
         *dataToSend  = (void *) malloc(*length * sizeof(unsigned char));
         protoMsg.SerializeToArray(*dataToSend,*length);
     }
-    static DT* deserialize(void * data, size_t length){
+    template<class DT>
+    static DT* deserializeStructure(void * data, size_t length){
         distributed::Data protoMsg;
         protoMsg.ParseFromArray(data,length);
         const distributed::Matrix& mat = protoMsg.matrix();

@@ -156,7 +156,7 @@ class MPIWorker{
                     MPI_Bcast(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
                     std::cout<<"in broadcast received data "<<std::endl;
                     protoMsg.ParseFromArray(data, messageLength);
-                    mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);
+                    mat= MPISerializer::deserializeStructure<DenseMatrix<double>>(data, messageLength);
                     //std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     //displayData(mat);
                     protoMsgs.push_back(protoMsg);
@@ -172,7 +172,7 @@ class MPIWorker{
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DISTRIBUTEDATA,MPI_COMM_WORLD, &status);
                     protoMsg.ParseFromArray(data, messageLength);
                     protoMsgs.push_back(protoMsg);
-                    mat= MPISerializer<DenseMatrix<double>>::deserialize(data, messageLength);
+                    mat= MPISerializer::deserializeStructure<DenseMatrix<double>>(data, messageLength);
                     displayData(mat);
                     std::cout<<"rank "  << id << " distribute message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     free(data);

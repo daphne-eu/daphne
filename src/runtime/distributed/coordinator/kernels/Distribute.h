@@ -108,7 +108,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 std::cout<<"worker already has the data"<<std::endl;
                 continue;
             }
-            MPISerializer<DT>::serialize(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
+            MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
             MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
             free(dataToSend);
             long * dataAcknowledgement = (long *) malloc (sizeof(long) * 3);
