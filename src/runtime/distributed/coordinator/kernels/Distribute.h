@@ -102,23 +102,24 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 data.ix = DistributedIndex(rank, 0);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
-            std::cout<<"rank "<< rank<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
+           // std::cout<<"rank "<< rank<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
-                std::cout<<"worker already has the data"<<std::endl;
+               // std::cout<<"worker already has the data"<<std::endl;
                 continue;
             }
             MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
             MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
             free(dataToSend);
-            long * dataAcknowledgement = (long *) malloc (sizeof(long) * 3);
-            std::cout<<"waiting for acknowledgement from "<<rank<<std::endl;
+            size_t * dataAcknowledgement = (size_t *) malloc (sizeof(size_t) * 3);
+            //std::cout<<"waiting for acknowledgement from "<<rank<<std::endl;
             MPIWorker::getDataAcknowledgementFrom(dataAcknowledgement,rank);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-            data.identifier = dataAcknowledgement[0];
+            data.identifier = std::to_string(dataAcknowledgement[0]);
             data.numRows = dataAcknowledgement[1];
             data.numCols = dataAcknowledgement[2];
             data.isPlacedAtWorker = true;
+          //  std::cout<<"from distribute identifier " << data.identifier<<std::endl;
             dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
             free(dataAcknowledgement);     
         }

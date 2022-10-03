@@ -150,18 +150,18 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             {
                 auto dp = args[i]->getMetaDataObject().getDataPlacementByLocation(addr);
                 auto distrData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-
                 distributed::StoredData protoData;
-                protoData.set_identifier(distrData.identifier);
+                //std::cout<<"identifier " << distrData.identifier<<std::endl;
+                protoData.set_identifier(distrData.identifier); 
                 protoData.set_num_cols(distrData.numCols);
                 protoData.set_num_rows(distrData.numRows);
 
                 *task.add_inputs()->mutable_stored() = protoData;
             }
             task.set_mlir_code(mlirCode);
-            //MPISerializer::serializeTask(&taskToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
-            //MPIWorker::distributeTask(messageLengths[rank], taskToSend,rank);
-            //free()
+            MPISerializer::serializeTask(&taskToSend, &messageLengths[rank], &task);
+            MPIWorker::distributeTask(messageLengths[rank], taskToSend,rank);
+            free(taskToSend);
         }
 
 

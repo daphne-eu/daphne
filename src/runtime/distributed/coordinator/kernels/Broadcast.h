@@ -97,7 +97,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             }
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
-                std::cout<<"data is already placed at rank "<<rank<<std::endl;
+                //std::cout<<"data is already placed at rank "<<rank<<std::endl;
                 continue;
             }
             targetGroup.push_back(rank);
@@ -105,21 +105,21 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         }
         if(targetGroup.size()==worldSize){
             MPIWorker::sendData(messageLength, dataToSend);
-            std::cout<<"data has been send to all "<<std::endl;
+           // std::cout<<"data has been send to all "<<std::endl;
         }
         else{
             for(int i=0;i<targetGroup.size();i++){
                     MPIWorker::distributeData(messageLength, dataToSend, targetGroup.at(i));
-                    std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
+                    //std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
                 } 
         }
         free(dataToSend);
-        long * dataAcknowledgement = (long *) malloc (sizeof(long) * 3);
+        size_t * dataAcknowledgement = (size_t *) malloc (sizeof(size_t) * 3);
         for(int i=0;i<targetGroup.size()-1;i++)
         { 
-            std::cout<<"waiting for ack " << std::endl;
+           // std::cout<<"waiting for ack " << std::endl;
             int rank=MPIWorker::getDataAcknowledgement(dataAcknowledgement);
-            std::cout<<"received ack form worker " << rank<<std::endl;
+            //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();

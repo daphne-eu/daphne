@@ -27,7 +27,7 @@
 #define COORDINATOR 0
 
 enum TypesOfMessages{
-    BROADCAST=0, DISTRIBUTE, DETACH, DATA, MLIR, DISTRIBUTEDATA, DATAACK
+    BROADCAST=0, DATASIZE=1, DATA=2, DATAACK=3, MLIRSIZE=4, MLIR=5, DETACH=6
 };
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
@@ -40,19 +40,22 @@ class MPIWorker{
             MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
             return worldSize;    
         }
-        static int getDataAcknowledgementFrom (long * dataAcknowledgement, int rank){
+        static int getDataAcknowledgementFrom (size_t * dataAcknowledgement, int rank){
             MPI_Status status;
             if(rank==COORDINATOR)
             {
                 std::cout<<"coordinator does not need to ack receive it owns the data" <<std::endl;
+                dataAcknowledgement[0]=0;
+                dataAcknowledgement[1]=0;
+                dataAcknowledgement[2]=0;
                 return 0;
             }
             if(rank==-1)
                 rank = MPI_ANY_SOURCE;
-            MPI_Recv(dataAcknowledgement,3, MPI_LONG, MPI_ANY_SOURCE , DATAACK, MPI_COMM_WORLD, &status);
+            MPI_Recv(dataAcknowledgement,3, MPI_UNSIGNED_LONG, MPI_ANY_SOURCE , DATAACK, MPI_COMM_WORLD, &status);
             return status.MPI_SOURCE;
         }
-        static int getDataAcknowledgement (long * dataAcknowledgement){
+        static int getDataAcknowledgement (size_t * dataAcknowledgement){
             getDataAcknowledgementFrom(dataAcknowledgement, -1);
         }
         static void sendData(size_t messageLength, void * data){
@@ -66,13 +69,11 @@ class MPIWorker{
             }
             MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
         }
-        
         static void distributeData(size_t messageLength, void * data, int rank){
-            if(rank == COORDINATOR)
-                return;
-            int message = messageLength;
-            MPI_Send(&message,1, MPI_INT, rank, DISTRIBUTE, MPI_COMM_WORLD);                    
-            MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, DISTRIBUTEDATA ,MPI_COMM_WORLD);
+            distributeWithTag(DATA, messageLength, data, rank);
+        }
+        static void distributeTask(size_t messageLength, void * data, int rank){
+            distributeWithTag(MLIR, messageLength, data, rank);
         }
         void displayData(DenseMatrix<double> * mat)
         {
@@ -115,13 +116,44 @@ class MPIWorker{
         int myState=LISTENING;
         int temp=0;
         std::vector<distributed::Data> protoMsgs;
-        void sendDataACK(long index, long rows, long cols)
+        void prepareBufferForMessage(void ** data, int * messageLength, MPI_Datatype type, int source, int tag)
         {
-            long dataAcknowledgement [3];
+            MPI_Status messageStatus;
+            MPI_Recv(messageLength, 1, type, source, tag, MPI_COMM_WORLD, &messageStatus);
+           // std::cout<< id<<" in distribute size " <<*messageLength << " tag " << tag <<std::endl;
+            *data = malloc(*messageLength * sizeof(unsigned char));
+        } 
+        static void distributeWithTag (TypesOfMessages tag, size_t messageLength, void * data, int rank)
+        {
+            if(rank == COORDINATOR)
+                return;
+            int message = messageLength;
+            int sizeTag=-1, dataTag=-1;
+           // std::cout<<"message size is "<< message << " tag "<< tag <<std::endl;
+            switch(tag)
+            {
+                case DATA:
+                    sizeTag = DATASIZE;
+                    dataTag = DATA;
+                break;
+                case MLIR:
+                    sizeTag = MLIRSIZE;
+                    dataTag = MLIR;
+                default:
+                break;
+            }
+           // std::cout<<"message size is "<< message << " tag "<< sizeTag <<std::endl;
+            MPI_Send(&message,1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);                    
+            MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag ,MPI_COMM_WORLD);
+        }
+        void sendDataACK(size_t index, size_t rows, size_t cols)
+        {
+            size_t *dataAcknowledgement = (size_t *)malloc(sizeof(size_t)*3);
             dataAcknowledgement[0]= index;
             dataAcknowledgement[1] = rows;
             dataAcknowledgement[2] = cols;
-            MPI_Send(dataAcknowledgement, 3, MPI_LONG, COORDINATOR, DATAACK, MPI_COMM_WORLD);
+            MPI_Send(dataAcknowledgement, 3, MPI_UNSIGNED_LONG, COORDINATOR, DATAACK, MPI_COMM_WORLD);
+            free(dataAcknowledgement);
         }
         void detachFromComputingTeam(){
             myState = DETACHED;
@@ -138,61 +170,61 @@ class MPIWorker{
         void handleInCommingMessages(MPI_Status status){
             int source = status.MPI_SOURCE;
             int tag = status.MPI_TAG;
-            int size;
-            int dataSize;
-            int codeSize; 
             MPI_Status messageStatus;
-            unsigned char  * info;
-            unsigned char * data;
+            void * data;
             char * mlirCode;
             int messageLength;
             DenseMatrix<double> *mat=nullptr;
-            distributed::Data protoMsg;
+            distributed::Data protoMsgData;
+            distributed::Task protoMsgTask;
+            std::string printData="";
+            size_t index=0, rows=0, cols=0;
             switch(tag){
                 case BROADCAST:
-                    MPI_Recv(&messageLength, 1, MPI_INT, source, tag, MPI_COMM_WORLD, &messageStatus);
-                    std::cout<<"in broadcast received "<< messageLength <<std::endl; 
-                    data = (unsigned char*) malloc(messageLength * sizeof(unsigned char));
+                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, BROADCAST);
                     MPI_Bcast(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
-                    std::cout<<"in broadcast received data "<<std::endl;
-                    protoMsg.ParseFromArray(data, messageLength);
+                    //std::cout<<"in broadcast received data "<<std::endl;
+                    protoMsgData.ParseFromArray(data, messageLength);
                     mat= MPISerializer::deserializeStructure<DenseMatrix<double>>(data, messageLength);
                     //std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     //displayData(mat);
-                    protoMsgs.push_back(protoMsg);
+                    index= protoMsgs.size();
+                    rows=mat->getNumRows();
+                    cols= mat->getNumCols();
+                   // std::cout<<"rank "<<id<<" stored messages " <<index <<std::endl;
+                    protoMsgs.push_back(protoMsgData);
                     free(data);
-                    sendDataACK(protoMsgs.size()-1, mat->getNumRows(), mat->getNumCols());
+                    sendDataACK(index,rows ,cols );
                 break;
 
-                case DISTRIBUTE:
-                    MPI_Recv(&messageLength, 1, MPI_INT, source, tag, MPI_COMM_WORLD, &messageStatus);
-                    //std::cout<<"allocated size " <<messageLength;
-                    data = (unsigned char*) malloc(messageLength * sizeof(unsigned char));
-                    MPI_Status status;
-                    MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DISTRIBUTEDATA,MPI_COMM_WORLD, &status);
-                    protoMsg.ParseFromArray(data, messageLength);
-                    protoMsgs.push_back(protoMsg);
+                case DATASIZE:
+                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, DATASIZE);
+                    MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA,MPI_COMM_WORLD, &messageStatus);
+                    protoMsgData.ParseFromArray(data, messageLength);
+                    protoMsgs.push_back(protoMsgData);
                     mat= MPISerializer::deserializeStructure<DenseMatrix<double>>(data, messageLength);
+                    index= protoMsgs.size();
+                    rows=mat->getNumRows();
+                    cols= mat->getNumCols();
+                   // std::cout<<"rank "<<id<<" stored messages " <<index <<std::endl;
                     displayData(mat);
-                    std::cout<<"rank "  << id << " distribute message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
+                  //  std::cout<<"rank "  << id << " distribute message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
                     free(data);
-                    sendDataACK(protoMsgs.size()-1, mat->getNumRows(), mat->getNumCols());
+                    sendDataACK(index,rows, cols);
                 break;
 
-                case MLIR:
-                   /* info = (unsigned char *) malloc(size * sizeof(unsigned char));
-                    MPI_Recv(info, size, MPI_UNSIGNED_CHAR, source, tag, MPI_COMM_WORLD, &messageStatus);
-                    MPISerializer::getSizeOfCode(info, &codeSize);
-                    mlirCode = (char *) malloc(codeSize * sizeof(char));
-                    MPI_Bcast(mlirCode, codeSize, MPI_CHAR, COORDINATOR, MPI_COMM_WORLD);
-                    printf("=======\nI am %d got the following MLIR code\n%s\n", id, mlirCode);
-                    free(info);
-                    free(mlirCode);*/
+                case MLIRSIZE:
+                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, MLIRSIZE);
+                    MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
+                    protoMsgTask.ParseFromArray(data, messageLength);
+                    printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
+                    std::cout<<printData<<std::endl;
+                    free(data);
                 break;
 
                 case DETACH:
                     unsigned char terminateMessage;
-                    MPI_Recv(&terminateMessage, 1, MPI_UNSIGNED_CHAR, source, tag, MPI_COMM_WORLD, &messageStatus);
+                    MPI_Recv(&terminateMessage, 1, MPI_UNSIGNED_CHAR, source, DETACH, MPI_COMM_WORLD, &messageStatus);
                     detachFromComputingTeam();
                 break;
 

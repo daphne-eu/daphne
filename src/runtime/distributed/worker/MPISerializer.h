@@ -6,6 +6,17 @@
 #include <mpi.h>
 class MPISerializer{
     public:
+
+    static void serializeTask (void **taskToSend, size_t * length, distributed::Task * task)
+    {
+        *length = task->ByteSizeLong();
+        *taskToSend  = (void *) malloc(*length * sizeof(unsigned char));
+        task->SerializeToArray(*taskToSend,*length);
+    }
+    static void deserializeTask (distributed::Task * task, void * data, size_t length)
+    {
+        task->ParseFromArray(data,length);
+    }
     template<class DT>
     static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
     {
