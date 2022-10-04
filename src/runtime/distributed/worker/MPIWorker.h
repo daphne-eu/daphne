@@ -163,17 +163,6 @@ class MPIWorker: WorkerImpl {
             else
             {
                 double val= message->value().f64();
-                std::cout<<" scalar value is f64 " <<std::to_string(val)<<std::endl;
-
-                auto val1= message->value().i64();
-                std::cout<<" scalar value is int64 " <<std::to_string(val1)<<std::endl;
-
-                auto val2= message->value().f32();
-                std::cout<<" scalar value is f32 " <<std::to_string(val2)<<std::endl;
-
-                auto val3= message->value().i32();
-                std::cout<<" scalar value is int32 " <<std::to_string(val3)<<std::endl;
-
                 info= this->Store(&val);
             }
             inputs.push_back(info);

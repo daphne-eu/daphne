@@ -21,8 +21,6 @@ class MPISerializer{
     static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
     {
        if(isScalar){
-            auto ptr = (double*)(&mat);
-            std::cout<<"in serialize " <<*ptr<<std::endl;
             serializeStructure(dataToSend, mat, isScalar, length,  0, 0, 0, 0);
        }
        else{
