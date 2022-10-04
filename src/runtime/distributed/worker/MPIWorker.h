@@ -154,9 +154,11 @@ class MPIWorker: WorkerImpl {
             StoredInfo info;
             MPISerializer::deserializeStructure(message, data, messageLength);
             if(message->matrix().matrix_case()){
-                auto temp= DataObjectFactory::create<DenseMatrix<double>>(message->mutable_matrix()->num_rows(), message->mutable_matrix()->num_cols(), false);
-                Structure *res =  dynamic_cast<DenseMatrix<double> *>(temp);
-                info = this->Store(res);
+                auto matrix = &message->matrix();
+                DenseMatrix<double> *mat= DataObjectFactory::create<DenseMatrix<double>>(message->mutable_matrix()->num_rows(), message->mutable_matrix()->num_cols(), false);
+                //Structure *res =  dynamic_cast<DenseMatrix<double> *>(temp);
+                ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*matrix, mat);
+                info = this->Store<Structure>(mat);
             }
             else
             {
