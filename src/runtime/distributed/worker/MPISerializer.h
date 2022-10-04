@@ -34,9 +34,11 @@ class MPISerializer{
         if (isScalar) {
             auto ptr = (double*)(&mat);
             double* val = ptr;
-            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
+            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false);
+            std::cout<<"from MPISerialize val is "<<*val<<std::endl; 
             auto protoVal = protoMsg.mutable_value();
             protoVal->set_f64(*val);
+            std::cout<<"from MPISerialize val is "<<protoVal->f64()<<std::endl;
         } 
         else 
         {

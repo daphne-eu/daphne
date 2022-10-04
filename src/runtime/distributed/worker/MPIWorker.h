@@ -91,6 +91,19 @@ class MPIWorker: WorkerImpl {
         static void distributeTask(size_t messageLength, void * data, int rank){
             distributeWithTag(MLIR, messageLength, data, rank);
         }
+        void displayDataStructure(Structure * inputStruct, std::string dataToDisplay)
+        {
+            DenseMatrix<double> *res= dynamic_cast<DenseMatrix<double>*>(inputStruct);
+            double * allValues = res->getValues();
+                for(size_t r = 0; r < res->getNumRows(); r++){
+                    for(size_t c = 0; c < res->getNumCols(); c++){
+                        dataToDisplay += std::to_string(allValues[c]) + " , " ;
+                    }
+                    dataToDisplay+= "\n";
+                    allValues += res->getRowSkip();
+                }
+                std::cout<<dataToDisplay<<std::endl;
+        }
         void displayData(distributed::Data data)
         {
             std::string dataToDisplay="rank "+ std::to_string(id) + " got ";
@@ -100,22 +113,16 @@ class MPIWorker: WorkerImpl {
                 auto temp= DataObjectFactory::create<DenseMatrix<double>>(data.mutable_matrix()->num_rows(), data.mutable_matrix()->num_cols(), false);
                 DenseMatrix<double> *res =  dynamic_cast<DenseMatrix<double> *>(temp);
                 ProtoDataConverter<DenseMatrix<double>>::convertFromProto(mat, res);
-
-                double * allValues = res->getValues();
-                for(size_t r = 0; r < res->getNumRows(); r++){
-                    for(size_t c = 0; c < res->getNumCols(); c++){
-                        dataToDisplay += std::to_string(allValues[c]) + " , " ;
-                    }
-                    dataToDisplay+= "\n";
-                    allValues += res->getRowSkip();
-                }
+                displayDataStructure(res, dataToDisplay);
+                
             }
             else
             {
-                dataToDisplay += "scalar :";
+                dataToDisplay += " scalar  lf:";
                 dataToDisplay += std::to_string(data.value().f64());
+                std::cout<<dataToDisplay<<std::endl;
+
             }
-            std::cout<<dataToDisplay<<std::endl;
         }
         MPIWorker(){//TODO
             MPI_Comm_rank(MPI_COMM_WORLD, &id);
@@ -154,7 +161,17 @@ class MPIWorker: WorkerImpl {
             else
             {
                 double val= message->value().f64();
-                std::cout<<" scalar value is " <<std::to_string(val)<<std::endl;
+                std::cout<<" scalar value is f64 " <<std::to_string(val)<<std::endl;
+
+                auto val1= message->value().i64();
+                std::cout<<" scalar value is int64 " <<std::to_string(val1)<<std::endl;
+
+                auto val2= message->value().f32();
+                std::cout<<" scalar value is f32 " <<std::to_string(val2)<<std::endl;
+
+                auto val3= message->value().i32();
+                std::cout<<" scalar value is int32 " <<std::to_string(val3)<<std::endl;
+
                 info= this->Store(&val);
             }
             inputs.push_back(info);
@@ -224,7 +241,7 @@ class MPIWorker: WorkerImpl {
             std::string printData="";
             size_t index=0, rows=0, cols=0;
             StoredInfo info;
-            std::vector< StoredInfo> outputs;
+            std::vector<StoredInfo> outputs;
             switch(tag){
                 case BROADCAST:
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, BROADCAST);
@@ -252,8 +269,16 @@ class MPIWorker: WorkerImpl {
                     protoMsgTask.ParseFromArray(data, messageLength);
                     printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
                     std::cout<<printData<<std::endl;
-                    this->Compute(&outputs, inputs, protoMsgTask.mlir_code());
+                    if( !(this->Compute(&outputs, inputs, protoMsgTask.mlir_code()).ok()) )
+                        std::cout<<"error!";    
                     std::cout<<"computation is done"<<std::endl;
+                    for(int i=0;i<outputs.size();i++)
+                    {
+                        StoredInfo tempInfo=outputs.at(i);
+                        std::cout<<"results "<<tempInfo.identifier<<std::endl;
+                        Structure * res =Transfer(tempInfo);
+                        displayDataStructure(res, "result is:\n");
+                    }
                     free(data);
                 break;
 
