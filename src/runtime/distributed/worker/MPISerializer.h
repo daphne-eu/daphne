@@ -21,6 +21,8 @@ class MPISerializer{
     static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
     {
        if(isScalar){
+            auto ptr = (double*)(&mat);
+            std::cout<<"in serialize " <<*ptr<<std::endl;
             serializeStructure(dataToSend, mat, isScalar, length,  0, 0, 0, 0);
        }
        else{
@@ -33,11 +35,11 @@ class MPISerializer{
         distributed::Data protoMsg;
         if (isScalar) {
             auto ptr = (double*)(&mat);
-            double* val = ptr;
+            double val = *ptr;
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false);
-            std::cout<<"from MPISerialize val is "<<*val<<std::endl; 
+            std::cout<<"from MPISerialize val is "<<val<<std::endl; 
             auto protoVal = protoMsg.mutable_value();
-            protoVal->set_f64(*val);
+            protoVal->set_f64(val);
             std::cout<<"from MPISerialize val is "<<protoVal->f64()<<std::endl;
         } 
         else 

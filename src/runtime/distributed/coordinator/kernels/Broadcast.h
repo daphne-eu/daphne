@@ -70,8 +70,9 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         };
         size_t messageLength=0;
         void * dataToSend;
+        auto ptr = (double*)(&mat);
         MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
-        std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if we some mpi process have the data
+        std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
         int worldSize = MPIWorker::getCommSize();
         Range range;
         range.r_start = 0;
