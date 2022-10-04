@@ -14,6 +14,10 @@
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 get_property(conversion_libs GLOBAL PROPERTY MLIR_CONVERSION_LIBS)
+
+#set(SOURCES ProtoDataConverter.cpp)
+#add_library(WorkerImpl ${SOURCES})
+
 set(LIBS
         ${dialect_libs}
         ${conversion_libs}
@@ -23,10 +27,11 @@ set(LIBS
         DaphneConfigParser
         DaphneMetaDataParser
         ProtoDataConverter
+        WorkerImpl
 )
 
 # These dependencies are linked at runtime
-set(LIB_DEPS MLIRDaphneOpsIncGen AllKernels)
+set(LIB_DEPS  MLIRDaphneOpsIncGen AllKernels)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND LIBS CUDA::cudart)

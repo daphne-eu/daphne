@@ -114,23 +114,29 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                 } 
         }
         free(dataToSend);
-        size_t * dataAcknowledgement = (size_t *) malloc (sizeof(size_t) * 3);
-        for(int i=0;i<targetGroup.size()-1;i++)
+        for(int i=0;i<targetGroup.size();i++)
         { 
-           // std::cout<<"waiting for ack " << std::endl;
-            int rank=MPIWorker::getDataAcknowledgement(dataAcknowledgement);
+            //std::cout<<"From broadcast waiting for ack " << std::endl;
+           
+            int rank=targetGroup.at(i);
+            if (rank==COORDINATOR)
+            {
+
+               // std::cout<<"coordinator doe not need ack from itself" << std::endl;
+                continue;
+            }
+            WorkerImpl::StoredInfo dataAcknowledgement=MPIWorker::getDataAcknowledgement(&rank);
             //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-            data.identifier = dataAcknowledgement[0];
-            data.numRows = dataAcknowledgement[1];
-            data.numCols = dataAcknowledgement[2];
+            data.identifier = dataAcknowledgement.identifier;
+            data.numRows = dataAcknowledgement.numRows;
+            data.numCols = dataAcknowledgement.numCols;
             data.isPlacedAtWorker = true;
             dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
 
         }
-        free(dataAcknowledgement);
     }
 };
 

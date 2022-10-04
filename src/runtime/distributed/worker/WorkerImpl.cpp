@@ -57,15 +57,7 @@ template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
 {    
     auto identifier = "tmp_" + std::to_string(tmp_file_counter_++);
-    // The vectorized engine expects as input, a pointer value
-    // to the memory holding a value. Therefore we need to allocate memory
-    // and save the value of the pointer to that address.
-    
-    // TODO: We need to implement a free operation (this applies to objects/matrices too). 
-    // It's probably best that coordinator decides when
-    // memory should be freed, (either when requesting data or by specifing a "FreeMemory" RPC call).
-    double * valPtr = new double(*val);
-    localData_[identifier] = valPtr;
+    localData_[identifier] = val;
     return StoredInfo({identifier, 0, 0});
 }
     

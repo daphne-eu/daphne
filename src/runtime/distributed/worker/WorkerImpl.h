@@ -46,6 +46,9 @@ public:
     struct StoredInfo {
         std::string identifier;
         size_t numRows, numCols;
+        std::string toString(){
+            return identifier+","+std::to_string(numRows)+","+std::to_string(numCols);
+        }
     };
 
     /**

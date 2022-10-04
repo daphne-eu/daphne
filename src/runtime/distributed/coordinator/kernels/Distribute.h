@@ -67,7 +67,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
         auto partitionSize =  mat->getNumRows()/worldSize;
         remainingRows=mat->getNumRows();
         size_t messageLengths [worldSize];
-        void *dataToSend;  
+        void *dataToSend;
+        std::vector<int> targetGroup;  
         for(int rank=0;rank<worldSize;rank++)
         {
             startRow= (rank * partitionSize);
@@ -110,18 +111,29 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             }
             MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
             MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
-            free(dataToSend);
-            size_t * dataAcknowledgement = (size_t *) malloc (sizeof(size_t) * 3);
-            //std::cout<<"waiting for acknowledgement from "<<rank<<std::endl;
-            MPIWorker::getDataAcknowledgementFrom(dataAcknowledgement,rank);
+            targetGroup.push_back(rank);
+            free(dataToSend);  
+        }
+        for(size_t i=0;i<targetGroup.size();i++)
+        {
+            int rank=targetGroup.at(i);
+           // std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
+            if (rank==COORDINATOR)
+            {
+
+                std::cout<<"coordinator doe not need ack from itself" << std::endl;
+                continue;
+            }
+            WorkerImpl::StoredInfo dataAcknowledgement = MPIWorker::getDataAcknowledgement(&rank);
+            std::string address = std::to_string(rank);
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-            data.identifier = std::to_string(dataAcknowledgement[0]);
-            data.numRows = dataAcknowledgement[1];
-            data.numCols = dataAcknowledgement[2];
+            data.identifier = dataAcknowledgement.identifier ;
+            data.numRows = dataAcknowledgement.numRows;
+            data.numCols = dataAcknowledgement.numCols;
             data.isPlacedAtWorker = true;
-          //  std::cout<<"from distribute identifier " << data.identifier<<std::endl;
+            //std::cout<<"acknowledgement received with distribute identifier " << data.identifier<<std::endl;
             dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
-            free(dataAcknowledgement);     
         }
 
     }

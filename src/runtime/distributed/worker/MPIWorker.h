@@ -21,9 +21,10 @@
 //#include "runtime/distributed/worker/MPISerializer.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
 #include "runtime/distributed/worker/MPISerializer.h"
+#include <runtime/distributed/worker/WorkerImpl.h>
 #include <unistd.h>
 #include  <iostream>
-
+#include<sstream>
 #define COORDINATOR 0
 
 enum TypesOfMessages{
@@ -32,7 +33,7 @@ enum TypesOfMessages{
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
 };
-class MPIWorker{
+class MPIWorker: WorkerImpl {
     public:
         //Utility functions will be used by the coordinator
         static int getCommSize(){
@@ -40,23 +41,38 @@ class MPIWorker{
             MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
             return worldSize;    
         }
-        static int getDataAcknowledgementFrom (size_t * dataAcknowledgement, int rank){
-            MPI_Status status;
-            if(rank==COORDINATOR)
-            {
-                std::cout<<"coordinator does not need to ack receive it owns the data" <<std::endl;
-                dataAcknowledgement[0]=0;
-                dataAcknowledgement[1]=0;
-                dataAcknowledgement[2]=0;
-                return 0;
+        static StoredInfo constructStoredInfo(std::string input)
+        {
+            StoredInfo info;
+            std::stringstream s_stream(input);
+            std::vector<std::string> results;
+            while(s_stream.good()) {
+                std::string substr;
+                getline(s_stream, substr, ','); //get first string delimited by comma
+                results.push_back(substr);
             }
-            if(rank==-1)
-                rank = MPI_ANY_SOURCE;
-            MPI_Recv(dataAcknowledgement,3, MPI_UNSIGNED_LONG, MPI_ANY_SOURCE , DATAACK, MPI_COMM_WORLD, &status);
-            return status.MPI_SOURCE;
+            info.identifier=results.at(0);
+            sscanf(results.at(1).c_str() , "%zu", &info.numRows);
+            sscanf(results.at(2).c_str() , "%zu", &info.numCols);
+            return info; 
         }
-        static int getDataAcknowledgement (size_t * dataAcknowledgement){
-            getDataAcknowledgementFrom(dataAcknowledgement, -1);
+
+        static StoredInfo getDataAcknowledgement(int *rank){
+            MPI_Status status;
+            int len;
+            MPI_Probe(MPI_ANY_SOURCE, DATAACK, MPI_COMM_WORLD, &status);
+            MPI_Get_count(&status, MPI_CHAR, &len);
+            //std::cout<<"there is ack message coming in len "<<len <<std::endl;
+            char * dataAcknowledgement = (char *) malloc(len); 
+            MPI_Recv(dataAcknowledgement,len, MPI_CHAR, status.MPI_SOURCE , DATAACK, MPI_COMM_WORLD, &status);
+            std::string incomeAck = std::string(dataAcknowledgement);
+            StoredInfo info=constructStoredInfo(incomeAck);
+            //std::cout<<info.numRows<<std::endl;
+            //std::cout<<info.numCols<<std::endl;
+            //std::cout<<info.identifier<<std::endl;
+            *rank=status.MPI_SOURCE;
+            free(dataAcknowledgement);
+            return info;  
         }
         static void sendData(size_t messageLength, void * data){
             int worldSize=getCommSize();
@@ -75,19 +91,29 @@ class MPIWorker{
         static void distributeTask(size_t messageLength, void * data, int rank){
             distributeWithTag(MLIR, messageLength, data, rank);
         }
-        void displayData(DenseMatrix<double> * mat)
+        void displayData(distributed::Data data)
         {
-            std::string dataToDisplay="rank "+ std::to_string(id) + " got:\n";
-            size_t numRows = mat->getNumRows();
-            size_t numCols = mat->getNumCols();
+            std::string dataToDisplay="rank "+ std::to_string(id) + " got ";
+            if(data.matrix().matrix_case()){
+                const distributed::Matrix& mat = data.matrix();
+                dataToDisplay += "matrix :";
+                auto temp= DataObjectFactory::create<DenseMatrix<double>>(data.mutable_matrix()->num_rows(), data.mutable_matrix()->num_cols(), false);
+                DenseMatrix<double> *res =  dynamic_cast<DenseMatrix<double> *>(temp);
+                ProtoDataConverter<DenseMatrix<double>>::convertFromProto(mat, res);
 
-            double * allValues = mat->getValues();
-            for(size_t r = 0; r < numRows; r++){
-                for(size_t c = 0; c < numCols; c++){
-                    dataToDisplay += std::to_string(allValues[c]) + " , " ;
+                double * allValues = res->getValues();
+                for(size_t r = 0; r < res->getNumRows(); r++){
+                    for(size_t c = 0; c < res->getNumCols(); c++){
+                        dataToDisplay += std::to_string(allValues[c]) + " , " ;
+                    }
+                    dataToDisplay+= "\n";
+                    allValues += res->getRowSkip();
                 }
-                dataToDisplay+= "\n";
-                allValues += mat->getRowSkip();
+            }
+            else
+            {
+                dataToDisplay += "scalar :";
+                dataToDisplay += std::to_string(data.value().f64());
             }
             std::cout<<dataToDisplay<<std::endl;
         }
@@ -115,7 +141,26 @@ class MPIWorker{
         int id;
         int myState=LISTENING;
         int temp=0;
-        std::vector<distributed::Data> protoMsgs;
+        std::vector<StoredInfo> inputs;
+        StoredInfo updateInputs (distributed::Data * message, void * data, int messageLength)
+        {
+            StoredInfo info;
+            MPISerializer::deserializeStructure(message, data, messageLength);
+            if(message->matrix().matrix_case()){
+                auto temp= DataObjectFactory::create<DenseMatrix<double>>(message->mutable_matrix()->num_rows(), message->mutable_matrix()->num_cols(), false);
+                Structure *res =  dynamic_cast<DenseMatrix<double> *>(temp);
+                info = this->Store(res);
+            }
+            else
+            {
+                double val= message->value().f64();
+                std::cout<<" scalar value is " <<std::to_string(val)<<std::endl;
+                info= this->Store(&val);
+            }
+            inputs.push_back(info);
+            std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
+            return info; 
+        }
         void prepareBufferForMessage(void ** data, int * messageLength, MPI_Datatype type, int source, int tag)
         {
             MPI_Status messageStatus;
@@ -146,14 +191,12 @@ class MPIWorker{
             MPI_Send(&message,1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);                    
             MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag ,MPI_COMM_WORLD);
         }
-        void sendDataACK(size_t index, size_t rows, size_t cols)
+        void sendDataACK(StoredInfo info)
         {
-            size_t *dataAcknowledgement = (size_t *)malloc(sizeof(size_t)*3);
-            dataAcknowledgement[0]= index;
-            dataAcknowledgement[1] = rows;
-            dataAcknowledgement[2] = cols;
-            MPI_Send(dataAcknowledgement, 3, MPI_UNSIGNED_LONG, COORDINATOR, DATAACK, MPI_COMM_WORLD);
-            free(dataAcknowledgement);
+            //std::cout<< "ack from " << id << " will have " << info.identifier << " , " << std::to_string(info.numRows) << " , " <<std::to_string(info.numCols)<<std::endl;
+            std::string toSend= info.toString();
+            MPI_Send(toSend.c_str(), sizeof(toSend), MPI_CHAR, COORDINATOR, DATAACK, MPI_COMM_WORLD);
+            //std::cout<<"rank " << id <<" acknowledging" <<std::endl;
         }
         void detachFromComputingTeam(){
             myState = DETACHED;
@@ -175,42 +218,32 @@ class MPIWorker{
             char * mlirCode;
             int messageLength;
             DenseMatrix<double> *mat=nullptr;
+            double val;
             distributed::Data protoMsgData;
             distributed::Task protoMsgTask;
             std::string printData="";
             size_t index=0, rows=0, cols=0;
+            StoredInfo info;
+            std::vector< StoredInfo> outputs;
             switch(tag){
                 case BROADCAST:
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, BROADCAST);
                     MPI_Bcast(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
-                    //std::cout<<"in broadcast received data "<<std::endl;
-                    protoMsgData.ParseFromArray(data, messageLength);
-                    mat= MPISerializer::deserializeStructure<DenseMatrix<double>>(data, messageLength);
-                    //std::cout<<"rank "  << id << " broadcast message message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
-                    //displayData(mat);
-                    index= protoMsgs.size();
-                    rows=mat->getNumRows();
-                    cols= mat->getNumCols();
-                   // std::cout<<"rank "<<id<<" stored messages " <<index <<std::endl;
-                    protoMsgs.push_back(protoMsgData);
+                    info=updateInputs(&protoMsgData, data, messageLength);
+                    displayData(protoMsgData);
                     free(data);
-                    sendDataACK(index,rows ,cols );
+                    sendDataACK(info);
                 break;
 
                 case DATASIZE:
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, DATASIZE);
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA,MPI_COMM_WORLD, &messageStatus);
-                    protoMsgData.ParseFromArray(data, messageLength);
-                    protoMsgs.push_back(protoMsgData);
-                    mat= MPISerializer::deserializeStructure<DenseMatrix<double>>(data, messageLength);
-                    index= protoMsgs.size();
-                    rows=mat->getNumRows();
-                    cols= mat->getNumCols();
-                   // std::cout<<"rank "<<id<<" stored messages " <<index <<std::endl;
-                    displayData(mat);
-                  //  std::cout<<"rank "  << id << " distribute message size "<<messageLength<< " got rows "<< mat->getNumRows()  << " got cols "<< mat->getNumCols()<<std::endl ;
+                    info=updateInputs(&protoMsgData, data, messageLength);
+                    //std::cout<<"rank " << id <<"will send ack" <<std::endl;
+                    displayData(protoMsgData);
                     free(data);
-                    sendDataACK(index,rows, cols);
+                    sendDataACK(info);
+                    //std::cout<<"rank " << id <<" sent ack" <<std::endl;
                 break;
 
                 case MLIRSIZE:
@@ -219,6 +252,8 @@ class MPIWorker{
                     protoMsgTask.ParseFromArray(data, messageLength);
                     printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
                     std::cout<<printData<<std::endl;
+                    this->Compute(&outputs, inputs, protoMsgTask.mlir_code());
+                    std::cout<<"computation is done"<<std::endl;
                     free(data);
                 break;
 

@@ -50,16 +50,18 @@ class MPISerializer{
         *dataToSend  = (void *) malloc(*length * sizeof(unsigned char));
         protoMsg.SerializeToArray(*dataToSend,*length);
     }
-    template<class DT>
-    static DT* deserializeStructure(void * data, size_t length){
-        distributed::Data protoMsg;
+    static void deserializeStructure(distributed::Data * protoMsgData, void * data, size_t length){
+        
+        protoMsgData->ParseFromArray(data, length);
+        
+        /*distributed::Data protoMsg;
         protoMsg.ParseFromArray(data,length);
         const distributed::Matrix& mat = protoMsg.matrix();
         
         auto temp= DataObjectFactory::create<DT>(protoMsg.mutable_matrix()->num_rows(), protoMsg.mutable_matrix()->num_cols(), false);
         DT *res =  dynamic_cast<DT *>(temp);
         ProtoDataConverter<DT>::convertFromProto(mat, res);
-        return res;
+        return res;*/
     }
 };
 #endif
