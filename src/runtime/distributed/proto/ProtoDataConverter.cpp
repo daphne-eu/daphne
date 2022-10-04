@@ -47,6 +47,7 @@ void ProtoDataConverter<DenseMatrix<VT>>::convertToProto(const DenseMatrix<VT> *
 {
     convertToProto(mat, matProto, 0, mat->getNumRows(), 0, mat->getNumCols());
 }
+
 template<typename VT>
 void ProtoDataConverter<DenseMatrix<VT>>::convertFromProto(const distributed::Matrix &matProto,
                                           DenseMatrix<VT> *mat,
@@ -70,6 +71,7 @@ void ProtoDataConverter<DenseMatrix<VT>>::convertFromProto(const distributed::Ma
 {
     convertFromProto(matProto, mat, 0, mat->getNumRows(), 0, mat->getNumCols());
 }
+
 template<>
 google::protobuf::RepeatedField<int64_t> *ProtoDataConverter<DenseMatrix<int64_t>>::getMutableCells(distributed::Matrix *matProto)
 {

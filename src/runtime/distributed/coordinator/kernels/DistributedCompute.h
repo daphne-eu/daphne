@@ -194,6 +194,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
 
         // Initialize Distributed index array, needed for results
         std::vector<DistributedIndex> ix(numOutputs, DistributedIndex(0, 0));
+        
         // Iterate over workers
         // Pass all the nessecary arguments for the pipeline
         for (auto addr : workers) {

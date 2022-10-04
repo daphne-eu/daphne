@@ -50,6 +50,8 @@ void distributedCollect(DT *&mat, DCTX(dctx))
     DistributedCollect<AT, DT>::apply(mat, dctx);
 }
 
+
+
 // ****************************************************************************
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************

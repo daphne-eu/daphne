@@ -269,7 +269,7 @@ class MPIWorker: WorkerImpl {
                     protoMsgTask.ParseFromArray(data, messageLength);
                     printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
                     std::cout<<printData<<std::endl;
-                    if( !(this->Compute(&outputs, inputs, protoMsgTask.mlir_code()).ok()) )
+                    if( !(this->Compute(&outputs, inputs, protoMsgTask.mlir_code()).ok()))
                         std::cout<<"error!";    
                     std::cout<<"computation is done"<<std::endl;
                     for(int i=0;i<outputs.size();i++)
