@@ -128,7 +128,7 @@ public:
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect<alloc_type>(*res[o], _dctx);           
+            distributedCollect<alloc_type>(*res[o], _dctx);      
         }
         
         

@@ -28,7 +28,7 @@
 #define COORDINATOR 0
 
 enum TypesOfMessages{
-    BROADCAST=0, DATASIZE=1, DATA=2, DATAACK=3, MLIRSIZE=4, MLIR=5, DETACH=6
+    BROADCAST=0, DATASIZE, DATA, DATAACK, MLIRSIZE, MLIR, INPUTKEYS, OUTPUT, OUTPUTKEY,  DETACH
 };
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
@@ -41,6 +41,7 @@ class MPIWorker: WorkerImpl {
             MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
             return worldSize;    
         }
+      
         static StoredInfo constructStoredInfo(std::string input)
         {
             StoredInfo info;
@@ -56,24 +57,28 @@ class MPIWorker: WorkerImpl {
             sscanf(results.at(2).c_str() , "%zu", &info.numCols);
             return info; 
         }
-
+       
+        static distributed::Data getResults(int *rank){
+            size_t resultsLen=0;
+            void * results;
+            distributed::Data matProto;
+            getMessage(rank, OUTPUT, MPI_UNSIGNED_CHAR ,&results, &resultsLen);
+            MPISerializer::deserializeStructure(&matProto, results , resultsLen);
+            std::cout<<"got results from "<<*rank<<std::endl;     
+            free(results);
+            return matProto;
+        }
+       
         static StoredInfo getDataAcknowledgement(int *rank){
-            MPI_Status status;
-            int len;
-            MPI_Probe(MPI_ANY_SOURCE, DATAACK, MPI_COMM_WORLD, &status);
-            MPI_Get_count(&status, MPI_CHAR, &len);
-            //std::cout<<"there is ack message coming in len "<<len <<std::endl;
-            char * dataAcknowledgement = (char *) malloc(len); 
-            MPI_Recv(dataAcknowledgement,len, MPI_CHAR, status.MPI_SOURCE , DATAACK, MPI_COMM_WORLD, &status);
+            char * dataAcknowledgement;
+            size_t len;
+            getMessage(rank, DATAACK, MPI_CHAR, (void **)&dataAcknowledgement, &len);
             std::string incomeAck = std::string(dataAcknowledgement);
             StoredInfo info=constructStoredInfo(incomeAck);
-            //std::cout<<info.numRows<<std::endl;
-            //std::cout<<info.numCols<<std::endl;
-            //std::cout<<info.identifier<<std::endl;
-            *rank=status.MPI_SOURCE;
             free(dataAcknowledgement);
             return info;  
         }
+       
         static void sendData(size_t messageLength, void * data){
             int worldSize=getCommSize();
             int  message= messageLength;
@@ -85,12 +90,15 @@ class MPIWorker: WorkerImpl {
             }
             MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
         }
+       
         static void distributeData(size_t messageLength, void * data, int rank){
             distributeWithTag(DATA, messageLength, data, rank);
         }
+       
         static void distributeTask(size_t messageLength, void * data, int rank){
             distributeWithTag(MLIR, messageLength, data, rank);
         }
+       
         void displayDataStructure(Structure * inputStruct, std::string dataToDisplay)
         {
             DenseMatrix<double> *res= dynamic_cast<DenseMatrix<double>*>(inputStruct);
@@ -104,6 +112,7 @@ class MPIWorker: WorkerImpl {
                 }
                 std::cout<<dataToDisplay<<std::endl;
         }
+        
         void displayData(distributed::Data data)
         {
             std::string dataToDisplay="rank "+ std::to_string(id) + " got ";
@@ -124,6 +133,7 @@ class MPIWorker: WorkerImpl {
 
             }
         }
+        
         MPIWorker(){//TODO
             MPI_Comm_rank(MPI_COMM_WORLD, &id);
         }
@@ -144,11 +154,51 @@ class MPIWorker: WorkerImpl {
                     continueComputing(); // takes form a queue // hocks for scheuling
             }
         }
+   
     private:
         int id;
         int myState=LISTENING;
         int temp=0;
         std::vector<StoredInfo> inputs;
+        
+        static void getMessage(int * rank, int tag, MPI_Datatype type, void ** data, size_t * len)
+        {
+            int size;
+            MPI_Status status;
+            MPI_Probe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
+            MPI_Get_count(&status, type, &size);
+            *rank=status.MPI_SOURCE;
+            if(type==MPI_UNSIGNED_CHAR)
+            {
+                *data = malloc(size * sizeof(unsigned char)); 
+            }
+            else if(type==MPI_CHAR)
+            {
+                *data = malloc(size * sizeof(char)); 
+            }
+            MPI_Recv(*data, size, type, status.MPI_SOURCE , tag, MPI_COMM_WORLD, &status);
+            *len=size;
+        }
+       
+        static void getMessageFrom(int rank, int tag, MPI_Datatype type, void ** data, size_t * len)
+        {
+            int size;
+            MPI_Status status;
+            MPI_Probe(rank, tag, MPI_COMM_WORLD, &status);
+            MPI_Get_count(&status, type, &size);
+            if(type==MPI_UNSIGNED_CHAR)
+            {
+                *data = malloc(size * sizeof(unsigned char)); 
+            }
+            else if(type==MPI_CHAR)
+            {
+                *data = malloc(size * sizeof(char)); 
+            }
+
+            MPI_Recv(*data,size, type, status.MPI_SOURCE , tag, MPI_COMM_WORLD, &status);
+            *len=size;
+        }
+        
         StoredInfo updateInputs (distributed::Data * message, void * data, int messageLength)
         {
             StoredInfo info;
@@ -169,6 +219,24 @@ class MPIWorker: WorkerImpl {
             std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
             return info; 
         }
+        
+        void sendResult(std::vector<StoredInfo> outputs)
+        {
+            for(int i=0;i<outputs.size();i++)
+            {
+                StoredInfo tempInfo=outputs.at(i);
+                Structure * res =Transfer(tempInfo);
+                void * dataToSend;
+                size_t messageLength;
+                MPISerializer::serializeStructure<Structure>(&dataToSend, res, false, &messageLength); 
+                int  len= messageLength;
+                MPI_Send(dataToSend, len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);
+                std::cout<<"results "<<tempInfo.identifier<<std::endl;
+                displayDataStructure(res, "result is:\n");
+                free(dataToSend);
+            }
+
+        }
         void prepareBufferForMessage(void ** data, int * messageLength, MPI_Datatype type, int source, int tag)
         {
             MPI_Status messageStatus;
@@ -176,6 +244,7 @@ class MPIWorker: WorkerImpl {
            // std::cout<< id<<" in distribute size " <<*messageLength << " tag " << tag <<std::endl;
             *data = malloc(*messageLength * sizeof(unsigned char));
         } 
+        
         static void distributeWithTag (TypesOfMessages tag, size_t messageLength, void * data, int rank)
         {
             if(rank == COORDINATOR)
@@ -199,6 +268,7 @@ class MPIWorker: WorkerImpl {
             MPI_Send(&message,1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);                    
             MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag ,MPI_COMM_WORLD);
         }
+        
         void sendDataACK(StoredInfo info)
         {
             //std::cout<< "ack from " << id << " will have " << info.identifier << " , " << std::to_string(info.numRows) << " , " <<std::to_string(info.numCols)<<std::endl;
@@ -206,18 +276,22 @@ class MPIWorker: WorkerImpl {
             MPI_Send(toSend.c_str(), sizeof(toSend), MPI_CHAR, COORDINATOR, DATAACK, MPI_COMM_WORLD);
             //std::cout<<"rank " << id <<" acknowledging" <<std::endl;
         }
+        
         void detachFromComputingTeam(){
             myState = DETACHED;
             std::cout<<"I am " << id <<". I got detach message... " << std::endl;
         }
+        
         void terminate(){
             myState = TERMINATED;
             std::cout<<"I am worker " << id << ". I'll rest in peace" << std::endl;
         }
+        
         void continueComputing(){
             if(myState==DETACHED)
                 myState=TERMINATED;
         }
+        
         void handleInCommingMessages(MPI_Status status){
             int source = status.MPI_SOURCE;
             int tag = status.MPI_TAG;
@@ -263,13 +337,7 @@ class MPIWorker: WorkerImpl {
                     if( !(this->Compute(&outputs, inputs, protoMsgTask.mlir_code()).ok()))
                         std::cout<<"error!";    
                     std::cout<<"computation is done"<<std::endl;
-                    for(int i=0;i<outputs.size();i++)
-                    {
-                        StoredInfo tempInfo=outputs.at(i);
-                        std::cout<<"results "<<tempInfo.identifier<<std::endl;
-                        Structure * res =Transfer(tempInfo);
-                        displayDataStructure(res, "result is:\n");
-                    }
+                    sendResult(outputs);
                     free(data);
                 break;
 

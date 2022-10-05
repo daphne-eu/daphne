@@ -26,6 +26,7 @@
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
+#include <runtime/distributed/worker/MPIWorker.h>
 
 #include <cassert>
 #include <cstddef>
@@ -64,10 +65,37 @@ void distributedCollect(DT *&mat, DCTX(dctx))
 template<class DT>
 struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
 {
-    static void apply(DT *&mat, DCTX(ctx)) 
-        {
+    static void apply(DT *&mat, DCTX(dctx)) 
+    {
+        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
 
+        struct StoredInfo{
+            size_t dp_id;
+        };
+
+        auto dpVector = mat->getMetaDataObject().getDataPlacementByType(ALLOCATION_TYPE::DIST_MPI);
+        for (auto &dp : *dpVector) {
+            auto address = dp->allocation->getLocation();  
+            auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
+            if(std::stoi(address)==COORDINATOR)
+                continue;
+            std::cout<<"from distributed compute identifier "<<distributedData.identifier<< " address " <<address<<std::endl;
+            int rank;
+            distributed::Data protoMessage=MPIWorker::getResults(&rank);
+
+            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();                  
+            auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
+            if (!denseMat){
+                throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            }
+            ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
+                protoMessage.matrix(), denseMat,
+                dp->range->r_start, dp->range->r_start + dp->range->r_len,
+                dp->range->r_start, dp->range->c_start + dp->range->c_len);                
+            data.isPlacedAtWorker = false;
+            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
         }
+    };
 };
 
 
