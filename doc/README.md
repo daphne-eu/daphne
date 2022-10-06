@@ -26,6 +26,7 @@ limitations under the License.
 
 ### How-tos and Guidelines
 
+- [Handling a Pull Request](/doc/development/HandlingPRs.md)
 - [Implementing a Built-in Kernel](/doc/ImplementBuiltinKernel.md)
 - [Binary Data Format](/doc/BinaryFormat.md)
 - [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
