@@ -43,6 +43,7 @@ public:
     ~WorkerImpl();
     
     virtual void Wait() { };
+   
     struct StoredInfo {
         std::string identifier;
         size_t numRows, numCols;

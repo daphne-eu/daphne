@@ -152,7 +152,6 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             free(taskToSend);
         }
 
-
     }
 };
 

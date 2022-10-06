@@ -125,6 +125,10 @@ public:
           
         distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
 
+        //handle my part as coordinator
+        if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
+         MPIWorker::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");

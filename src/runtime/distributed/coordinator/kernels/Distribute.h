@@ -121,7 +121,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             if (rank==COORDINATOR)
             {
 
-                std::cout<<"coordinator doe not need ack from itself" << std::endl;
+               // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
             }
             WorkerImpl::StoredInfo dataAcknowledgement = MPIWorker::getDataAcknowledgement(&rank);

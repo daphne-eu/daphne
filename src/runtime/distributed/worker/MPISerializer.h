@@ -13,10 +13,12 @@ class MPISerializer{
         *taskToSend  = (void *) malloc(*length * sizeof(unsigned char));
         task->SerializeToArray(*taskToSend,*length);
     }
+    
     static void deserializeTask (distributed::Task * task, void * data, size_t length)
     {
         task->ParseFromArray(data,length);
     }
+    
     template<class DT>
     static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length)
     {
@@ -28,6 +30,7 @@ class MPISerializer{
        }
    
     }
+    
     template<class DT>
     static void serializeStructure(void ** dataToSend, DT *&mat, bool isScalar, size_t * length, size_t startRow, size_t rowCount, size_t startCol, size_t colCount){
         distributed::Data protoMsg;
@@ -50,18 +53,10 @@ class MPISerializer{
         *dataToSend  = (void *) malloc(*length * sizeof(unsigned char));
         protoMsg.SerializeToArray(*dataToSend,*length);
     }
+    
     static void deserializeStructure(distributed::Data * protoMsgData, void * data, size_t length){
         
         protoMsgData->ParseFromArray(data, length);
-        
-        /*distributed::Data protoMsg;
-        protoMsg.ParseFromArray(data,length);
-        const distributed::Matrix& mat = protoMsg.matrix();
-        
-        auto temp= DataObjectFactory::create<DT>(protoMsg.mutable_matrix()->num_rows(), protoMsg.mutable_matrix()->num_cols(), false);
-        DT *res =  dynamic_cast<DT *>(temp);
-        ProtoDataConverter<DT>::convertFromProto(mat, res);
-        return res;*/
     }
 };
 #endif
