@@ -128,7 +128,16 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
         git checkout -b akroviakov-415-densemat-strings-kernels main
         git pull git@github.com:akroviakov/daphne.git 415-densemat-strings-kernels
         ```
-      - Once you have resolved all potential merge conflicts, you will have to do a merge commit. To get rid of this and ensure a linear history, start an interactive rebase from the last commit in main. 
+      - Once you have resolved all potential merge conflicts, you will have to do a merge commit. To get rid of this and ensure a linear history, start an interactive rebase from the last commit in main. In that process all non-relevant commits can be squashed and meaningful commit messages created if necessary. 
+        ``` bash
+        git rebase -i <commit hash of last commit in main> 
+        ```
+      - Once everything is cleaned up in the local PR branch, switch back to main and merge from the PR branch. This should yield clean commits on top of main because of the prior rebasing.
+        ``` bash 
+        git checkout main
+        git merge akroviakov-415-densemat-strings-kernels
+        git push origin main
+        ```
   - check if the code builds at all (should be checked automatically)
   - check if there are compiler warnings (should be fixed) (should be checked automatically)
   - check if the test cases pass (should be checked automatically)
@@ -179,12 +188,12 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
 
 ### 4. Once the contribution is ready, a collaborator merges the PR
 
-- **TODO:** provide commands for doing this on the command line
 - can be done by the reviewer or any collaborator
 - we want to keep a clean history on the main branch (and remember never to force-push to main)
   - makes it easier for others to keep track of the changes that happen
   - PR's branch might have untidy history with lots of commits for implementing the contribution and addressing reviewer comments; that should not end up on main
 - typically, we want to rebase the PR branch on main, which may require resolving conflicts
+- an example of how to use git on the command line is given in **try out the code in section 3.1** above 
 - **case A) if PR is conceptually one contribution**
   - on GitHub:
     - "Conversation"-tab: use "Squash and merge"-button (select this mode if necessary)
@@ -211,7 +220,7 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
     - in case of squashing (case A above): please remove the unnecessarily long generated commit message)
     - **TODO:** commit messages should be a separate item in the developer documentation
   - *authorship*
-    - if multiple authors edited the branch: choose one of them as the main author (after squashing in GitHub it should be the person who opened the PR); more authors can be added by [`Co-authored-by:`](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/creating-a-commit-with-multiple-authors)
+    - if multiple authors edited the branch: choose one of them as the main author (after squashing in GitHub it should be the person who opened the PR); more authors can be added by adding [`Co-authored-by:  NAME NAME@EXAMPLE.COM`](https://docs.github.com/en/pull-requests/committing-changes-to-your-project/creating-and-editing-commits/creating-a-commit-with-multiple-authors) after two blank lines at the end of the commit message (one for each co-author).
     - very often, reviewers may have made minor fixes, but should refrain from adding themselves as co-authors (prefer to give full credit for the contribution to the initial contributor, unless the reviewer's contribution was significant)
 
 ### 5. Creation of follow-up issues (optional)
