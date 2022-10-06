@@ -72,22 +72,30 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
         struct StoredInfo{
             size_t dp_id;
         };
-
-        auto dpVector = mat->getMetaDataObject().getDataPlacementByType(ALLOCATION_TYPE::DIST_MPI);
-        for (auto &dp : *dpVector) {
-            auto address = dp->allocation->getLocation();  
+        int worldSize= MPIWorker::getCommSize();
+        for(int rank=0; rank<worldSize ; rank++)
+        {
+            if(rank==COORDINATOR)
+                continue;
+            int target_rank;    
+            distributed::Data protoMessage=MPIWorker::getResults(&target_rank);    
+            std::string address = std::to_string(target_rank);  
+            auto dp=mat->getMetaDataObject().getDataPlacementByLocation(address);   
             auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
             if(std::stoi(address)==COORDINATOR)
                 continue;
-            std::cout<<"from distributed compute address " <<address<< " rows from "<< dp->range->r_start<< " cols from " <<  dp->range->c_start<<std::endl;
-            int rank;
-            distributed::Data protoMessage=MPIWorker::getResults(&rank);
-
+            //std::cout<<"from distributed collect address " <<address<< " rows from "<< dp->range->r_start<< " to "<< (dp->range->r_start + dp->range->r_len) <<" cols from " <<  dp->range->c_start << " to " << (dp->range->c_start + dp->range->c_len)  <<std::endl;
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();                  
             auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
+            auto toDisplay = DataObjectFactory::create<DenseMatrix<double>>(dp->range->r_len, dp->range->c_len, false);
             if (!denseMat){
                 throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
             }
+            
+            //ProtoDataConverter<DenseMatrix<double>>::convertFromProto(protoMessage.matrix(),toDisplay);
+            //std::string message="coordinator got the following from (" + address +") ";
+            //MPIWorker::displayDataStructure(toDisplay,message);
+
             ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
                 protoMessage.matrix(), denseMat,
                 dp->range->r_start, dp->range->r_start + dp->range->r_len,
