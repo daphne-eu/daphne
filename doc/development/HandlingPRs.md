@@ -117,7 +117,18 @@ If necessary, the reviewer(s) and the contributor prepare the contribution for a
       - lots of commented out lines (especially artifacts from development/debugging)
 - **try out the code**
   - check out the branch
-    - **TODO:** add guidelines on handling PRs from forks
+    - If the contribution originates from a github fork, these steps will help to clone the PR's state into a branch of your working copy (example taken from PR #415):
+      - Make sure your local copy of the main branch is up to date 
+        ``` bash
+        git checkout main
+        git pull
+        ```
+      - Create a branch for the PR changes and pull them on top of that local branch
+        ``` bash
+        git checkout -b akroviakov-415-densemat-strings-kernels main
+        git pull git@github.com:akroviakov/daphne.git 415-densemat-strings-kernels
+        ```
+      - Once you have resolved all potential merge conflicts, you will have to do a merge commit. To get rid of this and ensure a linear history, start an interactive rebase from the last commit in main. 
   - check if the code builds at all (should be checked automatically)
   - check if there are compiler warnings (should be fixed) (should be checked automatically)
   - check if the test cases pass (should be checked automatically)
