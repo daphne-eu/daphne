@@ -79,7 +79,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
             if(std::stoi(address)==COORDINATOR)
                 continue;
-            std::cout<<"from distributed compute identifier "<<distributedData.identifier<< " address " <<address<<std::endl;
+            std::cout<<"from distributed compute address " <<address<< " rows from "<< dp->range->r_start<< " cols from " <<  dp->range->c_start<<std::endl;
             int rank;
             distributed::Data protoMessage=MPIWorker::getResults(&rank);
 
@@ -91,7 +91,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
                 protoMessage.matrix(), denseMat,
                 dp->range->r_start, dp->range->r_start + dp->range->r_len,
-                dp->range->r_start, dp->range->c_start + dp->range->c_len);                
+                dp->range->c_start, dp->range->c_start + dp->range->c_len);                
             data.isPlacedAtWorker = false;
             dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
         }

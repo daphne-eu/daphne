@@ -74,34 +74,18 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
     {
         int worldSize= MPIWorker::getCommSize();
         // Initialize Distributed index array, needed for results
-        std::vector<DistributedIndex> ix(numOutputs, DistributedIndex(0, 0));
         for (size_t i = 0; i < numOutputs; i++)
         {
             size_t partitionSize=0, remainingSize=0, startRow=0, rowCount=0, startCol=0, colCount=0;
-            auto combineType = vectorCombine[i];       
-            DistributedData data;
-            data.ix = ix[i];
-            data.vectorCombine = combineType;
-            data.isPlacedAtWorker = true;
-            Range range;
-            if (combineType == VectorCombine::ROWS) 
-            {
-                partitionSize = (*res[i])->getNumRows() / worldSize;
-                remainingSize= (*res[i])->getNumRows();
-                ix[i] = DistributedIndex(ix[i].getRow() + 1, ix[i].getCol()); 
-            }
-            else if (combineType == VectorCombine::COLS){
-                partitionSize = (*res[i])->getNumCols() / worldSize;
-                remainingSize= (*res[i])->getNumCols();
-                ix[i] = DistributedIndex(ix[i].getRow(), ix[i].getCol() + 1);
-            }
-            else
-            {
-                assert(!"Only Rows/Cols combineType supported atm"); 
-            }
-            
+            auto combineType = vectorCombine[i];
+            remainingSize = (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows(): (*res[i])->getNumCols();
+            partitionSize = (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows()/worldSize: (*res[i])->getNumCols()/worldSize;
             for(int rank=0; rank<worldSize;rank++)
-            {   
+            {      
+                DistributedData data;
+                data.vectorCombine = combineType;
+                data.isPlacedAtWorker = true;
+                Range range;
                 if(rank==worldSize-1 ){
                     rowCount= remainingSize;
                     colCount = remainingSize;
@@ -110,7 +94,8 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                     rowCount=partitionSize;
                     colCount=partitionSize;
                 }                                
-                if (combineType== VectorCombine::ROWS) {             
+                if (combineType== VectorCombine::ROWS) {
+                    data.ix  = DistributedIndex(rank, 0);              
                     colCount=(*res[i])->getNumCols();       
                     range.r_start = data.ix.getRow() * partitionSize;
                     range.r_len = rowCount;
@@ -118,12 +103,15 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                     range.c_len = colCount;
                 }
                 if (vectorCombine[i] == VectorCombine::COLS) {
+                    data.ix  = DistributedIndex(0, rank);  
                     rowCount= (*res[i])->getNumRows();
                     range.r_start = 0; 
                     range.r_len = rowCount; 
-                    range.c_start = data.ix.getRow() * partitionSize;
+                    range.c_start = data.ix.getCol() * partitionSize;
                     range.c_len = colCount;
                 }
+                std::cout<<"rank "<< rank <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
+                remainingSize-=partitionSize;
                 std::string addr= std::to_string(rank);
                 // If dp already exists for this worker, update the range and data
                 if (auto dp = (*res[i])->getMetaDataObject().getDataPlacementByLocation(addr)) { 

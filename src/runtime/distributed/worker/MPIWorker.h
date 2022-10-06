@@ -64,7 +64,7 @@ class MPIWorker: WorkerImpl {
             distributed::Data matProto;
             getMessage(rank, OUTPUT, MPI_UNSIGNED_CHAR ,&results, &resultsLen);
             MPISerializer::deserializeStructure(&matProto, results , resultsLen);
-            std::cout<<"got results from "<<*rank<<std::endl;     
+           // std::cout<<"got results from "<<*rank<<std::endl;     
             free(results);
             return matProto;
         }
@@ -216,7 +216,7 @@ class MPIWorker: WorkerImpl {
                 info= this->Store(&val);
             }
             inputs.push_back(info);
-            std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
+           // std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
             return info; 
         }
         
@@ -231,8 +231,8 @@ class MPIWorker: WorkerImpl {
                 MPISerializer::serializeStructure<Structure>(&dataToSend, res, false, &messageLength); 
                 int  len= messageLength;
                 MPI_Send(dataToSend, len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);
-                std::cout<<"results "<<tempInfo.identifier<<std::endl;
-                displayDataStructure(res, "result is:\n");
+              //  std::cout<<"results "<<tempInfo.identifier<<std::endl;
+              //  displayDataStructure(res, "result is:\n");
                 free(dataToSend);
             }
 
@@ -279,12 +279,12 @@ class MPIWorker: WorkerImpl {
         
         void detachFromComputingTeam(){
             myState = DETACHED;
-            std::cout<<"I am " << id <<". I got detach message... " << std::endl;
+            //std::cout<<"I am " << id <<". I got detach message... " << std::endl;
         }
         
         void terminate(){
             myState = TERMINATED;
-            std::cout<<"I am worker " << id << ". I'll rest in peace" << std::endl;
+           // std::cout<<"I am worker " << id << ". I'll rest in peace" << std::endl;
         }
         
         void continueComputing(){
@@ -307,6 +307,7 @@ class MPIWorker: WorkerImpl {
             size_t index=0, rows=0, cols=0;
             StoredInfo info;
             std::vector<StoredInfo> outputs;
+            WorkerImpl::Status exStatus(true);
             switch(tag){
                 case BROADCAST:
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, BROADCAST);
@@ -332,11 +333,12 @@ class MPIWorker: WorkerImpl {
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, MLIRSIZE);
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
                     protoMsgTask.ParseFromArray(data, messageLength);
-                    printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
-                    std::cout<<printData<<std::endl;
-                    if( !(this->Compute(&outputs, inputs, protoMsgTask.mlir_code()).ok()))
+                    //printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
+                    exStatus=this->Compute(&outputs, inputs, protoMsgTask.mlir_code());
+                    //std::cout<<printData<<std::endl;
+                    if(!(exStatus.ok()))
                         std::cout<<"error!";    
-                    std::cout<<"computation is done"<<std::endl;
+                    //std::cout<<"computation is done"<<std::endl;
                     sendResult(outputs);
                     free(data);
                 break;
