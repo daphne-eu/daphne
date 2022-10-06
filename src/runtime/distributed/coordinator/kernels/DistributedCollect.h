@@ -26,7 +26,7 @@
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/MPIWorker.h>
+#include <runtime/distributed/worker/MPIHelper.h>
 
 #include <cassert>
 #include <cstddef>
@@ -72,13 +72,13 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
         struct StoredInfo{
             size_t dp_id;
         };
-        int worldSize= MPIWorker::getCommSize();
+        int worldSize= MPIHelper::getCommSize();
         for(int rank=0; rank<worldSize ; rank++)
         {
             if(rank==COORDINATOR)
                 continue;
             int target_rank;    
-            distributed::Data protoMessage=MPIWorker::getResults(&target_rank);    
+            distributed::Data protoMessage=MPIHelper::getResults(&target_rank);    
             std::string address = std::to_string(target_rank);  
             auto dp=mat->getMetaDataObject().getDataPlacementByLocation(address);   
             auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
@@ -94,7 +94,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             
             //ProtoDataConverter<DenseMatrix<double>>::convertFromProto(protoMessage.matrix(),toDisplay);
             //std::string message="coordinator got the following from (" + address +") ";
-            //MPIWorker::displayDataStructure(toDisplay,message);
+            //MPIHelper::displayDataStructure(toDisplay,message);
 
             ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
                 protoMessage.matrix(), denseMat,

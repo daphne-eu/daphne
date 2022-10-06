@@ -25,6 +25,7 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 
 
 #include <mlir/InitAllDialects.h>
@@ -127,7 +128,7 @@ public:
 
         //handle my part as coordinator
         if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
-         MPIWorker::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+            MPIHelper::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){

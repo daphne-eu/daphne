@@ -25,6 +25,7 @@
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 
 #include <runtime/distributed/worker/MPISerializer.h>
+#include <runtime/distributed/worker/MPIHelper.h>
 
 #include <cassert>
 #include <cstddef>
@@ -110,7 +111,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 continue;
             }
             MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
-            MPIWorker::distributeData(messageLengths[rank], dataToSend,rank);
+            MPIHelper::distributeData(messageLengths[rank], dataToSend,rank);
             targetGroup.push_back(rank);
             free(dataToSend);  
         }
@@ -124,7 +125,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
             }
-            WorkerImpl::StoredInfo dataAcknowledgement = MPIWorker::getDataAcknowledgement(&rank);
+            StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             std::string address = std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();

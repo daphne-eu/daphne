@@ -29,6 +29,7 @@
 #include <runtime/distributed/worker/MPIWorker.h>
 #include <runtime/distributed/worker/MPISerializer.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
+#include <runtime/distributed/worker/MPIHelper.h>
 
 #include <cassert>
 #include <cstddef>
@@ -65,15 +66,15 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *&mat, bool isScalar, DCTX(dctx))
     { 
-        struct StoredInfo {
-            size_t dp_id;
-        };
+        //struct StoredInfo {
+        //    size_t dp_id;
+        //};
         size_t messageLength=0;
         void * dataToSend;
         auto ptr = (double*)(&mat);
         MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
         std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
-        int worldSize = MPIWorker::getCommSize();
+        int worldSize = MPIHelper::getCommSize();
         Range range;
         range.r_start = 0;
         range.c_start = 0;
@@ -102,15 +103,15 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                 continue;
             }
             targetGroup.push_back(rank);
-            StoredInfo storedInfo({dp->dp_id});    
+            //StoredInfo storedInfo({dp->dp_id});    
         }
         if(targetGroup.size()==worldSize){
-            MPIWorker::sendData(messageLength, dataToSend);
+            MPIHelper::sendData(messageLength, dataToSend);
            // std::cout<<"data has been send to all "<<std::endl;
         }
         else{
             for(int i=0;i<targetGroup.size();i++){
-                    MPIWorker::distributeData(messageLength, dataToSend, targetGroup.at(i));
+                    MPIHelper::distributeData(messageLength, dataToSend, targetGroup.at(i));
                     //std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
                 } 
         }
@@ -126,7 +127,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
             }
-            WorkerImpl::StoredInfo dataAcknowledgement=MPIWorker::getDataAcknowledgement(&rank);
+            StoredInfo dataAcknowledgement=MPIHelper::getDataAcknowledgement(&rank);
             //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);

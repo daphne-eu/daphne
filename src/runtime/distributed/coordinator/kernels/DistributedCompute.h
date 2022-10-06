@@ -25,6 +25,7 @@
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
+#include <runtime/distributed/worker/MPIHelper.h>
 
 #include <cassert>
 #include <cstddef>
@@ -72,7 +73,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                       VectorCombine *vectorCombine,                      
                       DCTX(dctx))
     {
-        int worldSize= MPIWorker::getCommSize();
+        int worldSize= MPIHelper::getCommSize();
         // Initialize Distributed index array, needed for results
         for (size_t i = 0; i < numOutputs; i++)
         {
@@ -110,7 +111,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                     range.c_start = data.ix.getCol() * partitionSize;
                     range.c_len = colCount;
                 }
-                std::cout<<"rank "<< rank <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
+                //std::cout<<"rank "<< rank <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
                 remainingSize-=partitionSize;
                 std::string addr= std::to_string(rank);
                 // If dp already exists for this worker, update the range and data
@@ -148,7 +149,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             }
             task.set_mlir_code(mlirCode);
             MPISerializer::serializeTask(&taskToSend, &messageLengths[rank], &task);
-            MPIWorker::distributeTask(messageLengths[rank], taskToSend,rank);
+            MPIHelper::distributeTask(messageLengths[rank], taskToSend,rank);
             free(taskToSend);
         }
 
