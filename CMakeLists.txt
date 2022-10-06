@@ -145,6 +145,19 @@ if(USE_ARROW)
     message(STATUS "Arrow/Parquet enabled")
 endif()
 
+option(USE_FPGAOPENCL "Whether to activate compilation of FPGA OpenCL features" OFF)
+if(USE_FPGAOPENCL)
+	if(NOT DEFINED ENV{QUARTUSDIR})
+		message(SEND_ERROR "Intel(R) Quartus installation directory should be defined by QUARTUSDIR varaiable (e.g. /opt/intel/intelFPGA_pro/21.4/)")
+		execute_process(COMMAND sleep 10)
+	endif()
+	include_directories($ENV{QUARTUSDIR}/hld/examples_aoc/common/inc/ $ENV{QUARTUSDIR}/hld/host/include/)
+	message(STATUS "cmake: using FPGA")
+	add_definitions(-DUSE_FPGAOPENCL)
+endif()
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # *****************************************************************************
 # Project-specific include directories
 # *****************************************************************************
@@ -170,6 +183,10 @@ add_subdirectory(src/runtime/distributed/worker)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/io)
 add_subdirectory(src/runtime/local/kernels)
+if(USE_FPGAOPENCL)
+    add_subdirectory(src/runtime/local/kernels/FPGAOPENCL)
+endif() 
 add_subdirectory(src/util)
+
 
 add_subdirectory(test)

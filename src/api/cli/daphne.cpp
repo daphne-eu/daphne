@@ -176,6 +176,10 @@ main(int argc, char** argv)
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
     );
+    opt<bool> fpgaopencl(
+            "fpgaopencl", cat(daphneOptions),
+            desc("Use FPGAOPENCL")
+    );
     opt<string> libDir(
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
@@ -323,6 +327,11 @@ main(int argc, char** argv)
             user_config.use_cuda = true;
         }
     }
+
+    if(fpgaopencl) {
+        user_config.use_fpgaopencl = true;
+    }
+
 
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)

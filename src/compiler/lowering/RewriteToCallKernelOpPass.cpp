@@ -153,6 +153,10 @@ namespace
 //                else
 //                    std::cout << "attr = null: " << op->getName().getStringRef().str() << std::endl;
             }
+	    else if(op->hasAttr("fpgaopencl_device")) {
+		 callee << "FPGAOPENCL";
+	    }
+		    
 
             callee << '_' << op->getName().stripDialect().data();
 

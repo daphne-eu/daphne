@@ -435,6 +435,21 @@
     },
     {
         "kernelTemplate": {
+            "header": "CreateFPGAContext.h",
+            "opName": "createFPGAContext",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "api": [
+            {
+                "name":  ["FPGAOPENCL"],
+                "instantiations": [[]]
+
+            }]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateDistributedContext.h",
             "opName": "createDistributedContext",
             "returnType": "void",
@@ -1078,6 +1093,12 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            },
+             {
+                "name":  ["FPGAOPENCL"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]]
                 ]
             }
         ]
@@ -2812,7 +2833,7 @@
             {
                 "name":  ["CPP"],
                 "instantiations": [
-                    [["DenseMatrix", "double"]]                    
+                    [["DenseMatrix", "double"]]
                 ]
             }
         ]

@@ -47,6 +47,12 @@
 #include <utility>
 #include <vector>
 
+namespace mlir::OpTrait {
+    template<class ConcreteOp>
+    class FPGAOPENCLSupport : public TraitBase<ConcreteOp, FPGAOPENCLSupport> {
+    };
+}
+
 namespace mlir::daphne {
     enum class MatrixRepresentation {
         Dense = 0,
