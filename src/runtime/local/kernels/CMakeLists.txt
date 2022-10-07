@@ -94,11 +94,11 @@ add_library(AllKernels SHARED
         Pooling.cpp)
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
-#if(USE_DUCKDB)
-    find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
-    target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+if(USE_DUCKDB)
+    find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/installed/lib)
     list(APPEND LIBS ${DUCKDB_LIB})
-#endif()
+#    target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
+endif()
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
@@ -107,5 +107,7 @@ else()
     # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
     list(APPEND LIBS LLVMSupport)
 endif()
+
+message("Libs: ${LIBS}")
 
 target_link_libraries(AllKernels PUBLIC ${LIBS})

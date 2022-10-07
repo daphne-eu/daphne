@@ -156,6 +156,6 @@ target_compile_options(theta_join_test PUBLIC -g -O0)
 add_executable(duckDB_test run_tests.cpp tmp/duckDB.cpp)
 
 #target_include_directories(duckDB_test PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
-target_link_libraries(duckDB_test PRIVATE ${LIBS} ${PROJECT_SOURCE_DIR}/thirdparty/installed/lib/libduckdb.so)
+#target_link_libraries(duckDB_test PRIVATE ${LIBS} ${PROJECT_SOURCE_DIR}/thirdparty/installed/lib/libduckdb.so)
 #target_include_directories(duckDB_test PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/sources/duckdb/src ${PROJECT_SOURCE_DIR}/thirdparty/sources/duckdb/src/include)
 target_compile_options(duckDB_test PUBLIC -g -O0)
