@@ -28,6 +28,7 @@ include "ir/daphneir/DaphneInferTypesOpInterface.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
+include "ir/daphneir/FPGAOPENCLSupport.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -142,7 +143,7 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
-    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
@@ -1211,6 +1212,12 @@ def Daphne_CreateDistributedContextOp : Daphne_Op<"createDistributedContext", []
     let arguments = (ins);
     let results = (outs);
 }
+
+def Daphne_CreateFPGAContextOp : Daphne_Op<"createFPGAContext", [FPGAOPENCLSupport]> {
+    let arguments = (ins);
+    let results = (outs);
+}
+
 
 // ****************************************************************************
 // Vectorized operations

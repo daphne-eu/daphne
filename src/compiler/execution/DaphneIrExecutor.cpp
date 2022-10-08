@@ -135,6 +135,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkCUDAOpsPass(userConfig_));
 #endif
 
+#ifdef USE_FPGAOPENCL
+        if(userConfig_.use_fpgaopencl)
+            pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createMarkFPGAOPENCLOpsPass(userConfig_));
+#endif
+
+
         if(userConfig_.use_obj_ref_mgnt)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createManageObjRefsPass());
         if(userConfig_.explain_obj_ref_mgnt)
@@ -179,6 +185,14 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         if(userConfig_.use_cuda) {
             if(userConfig_.libdir.empty()) {
                 sharedLibRefs.push_back("build/src/runtime/local/kernels/libCUDAKernels.so");
+            }
+        }
+#endif
+ 
+#ifdef USE_FPGAOPENCL
+        if(userConfig_.use_fpgaopencl) {
+            if(userConfig_.libdir.empty()) {
+                sharedLibRefs.push_back("build/src/runtime/local/kernels/libFPGAOPENCLKernels.so");
             }
         }
 #endif
