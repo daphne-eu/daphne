@@ -68,15 +68,11 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
     static void apply(DT *&mat, DCTX(dctx)) 
     {
         assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
-
-        struct StoredInfo{
-            size_t dp_id;
-        };
-        int worldSize= MPIHelper::getCommSize();
-        for(int rank=0; rank<worldSize ; rank++)
+        int worldSize= MPIHelper::getCommSize()-1;
+        for(int rank=0; rank<worldSize ; rank++) // we currently exclude the coordinator
         {
-            if(rank==COORDINATOR)
-                continue;
+            //if(rank==COORDINATOR)
+            //    continue;
             int target_rank;    
             distributed::Data protoMessage=MPIHelper::getResults(&target_rank);    
             std::string address = std::to_string(target_rank);  
@@ -84,7 +80,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
             if(std::stoi(address)==COORDINATOR)
                 continue;
-            //std::cout<<"from distributed collect address " <<address<< " rows from "<< dp->range->r_start<< " to "<< (dp->range->r_start + dp->range->r_len) <<" cols from " <<  dp->range->c_start << " to " << (dp->range->c_start + dp->range->c_len)  <<std::endl;
+            std::cout<<"from distributed collect address " <<address<< " rows from "<< dp->range->r_start<< " to "<< (dp->range->r_start + dp->range->r_len) <<" cols from " <<  dp->range->c_start << " to " << (dp->range->c_start + dp->range->c_len)  <<std::endl;
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();                  
             auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
             auto toDisplay = DataObjectFactory::create<DenseMatrix<double>>(dp->range->r_len, dp->range->c_len, false);

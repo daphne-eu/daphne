@@ -30,6 +30,7 @@
 #include <runtime/distributed/worker/MPISerializer.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/worker/MPIHelper.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
 
 #include <cassert>
 #include <cstddef>
@@ -66,22 +67,20 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *&mat, bool isScalar, DCTX(dctx))
     { 
-        //struct StoredInfo {
-        //    size_t dp_id;
-        //};
         size_t messageLength=0;
         void * dataToSend;
         auto ptr = (double*)(&mat);
         MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
         std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
         int worldSize = MPIHelper::getCommSize();
+        worldSize--; // to exclude coordinator
         Range range;
         range.r_start = 0;
         range.c_start = 0;
         range.r_len = mat->getNumRows();
         range.c_len = mat->getNumCols();
-        for (int rank=0;rank<worldSize;rank++){   
-            std::string address=std::to_string(rank);  
+        for (int rank=0;rank<worldSize;rank++){   // we currently exclude the coordinator
+            std::string address=std::to_string(rank+1); // to skip coordinator  
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             if (dp!=nullptr) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
@@ -93,7 +92,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                 DistributedData data;
                 data.ix = DistributedIndex(0, 0);
                 AllocationDescriptorMPI allocationDescriptor (dctx, 
-                                                                rank,  
+                                                                rank+1, /* to exclude coordinator*/  
                                                                 data);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
             }
@@ -102,8 +101,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                 //std::cout<<"data is already placed at rank "<<rank<<std::endl;
                 continue;
             }
-            targetGroup.push_back(rank);
-            //StoredInfo storedInfo({dp->dp_id});    
+            targetGroup.push_back(rank+1);  
         }
         if(targetGroup.size()==worldSize){
             MPIHelper::sendData(messageLength, dataToSend);
@@ -127,7 +125,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
             }
-            StoredInfo dataAcknowledgement=MPIHelper::getDataAcknowledgement(&rank);
+            WorkerImpl::StoredInfo dataAcknowledgement=MPIHelper::getDataAcknowledgement(&rank);
             //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);

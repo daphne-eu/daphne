@@ -26,6 +26,8 @@
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#include <runtime/distributed/worker/MPICoordinator.h>
+
 
 
 #include <mlir/InitAllDialects.h>
@@ -101,6 +103,11 @@ public:
         
         // Parse mlir code fragment to determin pipeline inputs/outputs
         auto inputTypes = getPipelineInputTypes(mlirCode);
+        std::vector<bool> scalars;
+        for(auto t : inputTypes)
+        {
+            scalars.push_back(t!=INPUT_TYPE::Matrix);
+        }
         // Distribute and broadcast inputs        
         // Each primitive sends information to workers and changes the Structures' metadata information 
         for (auto i = 0u; i < numInputs; ++i) {
@@ -126,9 +133,12 @@ public:
           
         distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
 
-        //handle my part as coordinator
-        if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
-            MPIHelper::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+        //handle my part as coordinator we currently exclude the coordinator
+        /*if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
+        {
+            bool isScalar=true;
+            MPICoordinator::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, scalars , combines, _dctx);
+        }*/
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){

@@ -26,6 +26,7 @@
 
 #include <runtime/distributed/worker/MPISerializer.h>
 #include <runtime/distributed/worker/MPIHelper.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
 
 #include <cassert>
 #include <cstddef>
@@ -62,15 +63,14 @@ template<class DT>
 struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *mat, DCTX(dctx)) {
-        int worldSize;
-        MPI_Comm_size(MPI_COMM_WORLD,&worldSize);
+        int worldSize= MPIHelper::getCommSize()-1; // exclude coordinator
         size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainingRows=0;
         auto partitionSize =  mat->getNumRows()/worldSize;
         remainingRows=mat->getNumRows();
         size_t messageLengths [worldSize];
         void *dataToSend;
         std::vector<int> targetGroup;  
-        for(int rank=0;rank<worldSize;rank++)
+        for(int rank=0;rank<worldSize;rank++) //we currently exclude the coordinator
         {
             startRow= (rank * partitionSize);
             if(rank==worldSize-1){
@@ -87,7 +87,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             range.r_len = rowCount;
             range.c_start = startCol;
             range.c_len = colCount;
-            std::string address=std::to_string(rank);
+            std::string address=std::to_string(rank+1);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             if (dp!=nullptr) {                
                 mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
@@ -99,33 +99,33 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 DistributedData data;
                 AllocationDescriptorMPI allocationDescriptor(
                                                 dctx,
-                                                rank,
+                                                rank+1,/*exclude coordinator*/
                                                 data);
                 data.ix = DistributedIndex(rank, 0);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
-           // std::cout<<"rank "<< rank<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
+            std::cout<<"rank "<< rank+1<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                // std::cout<<"worker already has the data"<<std::endl;
                 continue;
             }
             MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
-            MPIHelper::distributeData(messageLengths[rank], dataToSend,rank);
-            targetGroup.push_back(rank);
+            MPIHelper::distributeData(messageLengths[rank], dataToSend,rank+1);
+            targetGroup.push_back(rank+1);
             free(dataToSend);  
         }
         for(size_t i=0;i<targetGroup.size();i++)
         {
             int rank=targetGroup.at(i);
-           // std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
+            std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
             if (rank==COORDINATOR)
             {
 
                // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
             }
-            StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
+            WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             std::string address = std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();

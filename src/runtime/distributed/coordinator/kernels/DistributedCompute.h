@@ -73,7 +73,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                       VectorCombine *vectorCombine,                      
                       DCTX(dctx))
     {
-        int worldSize= MPIHelper::getCommSize();
+        int worldSize= MPIHelper::getCommSize()-1; // exclude coordinator
         // Initialize Distributed index array, needed for results
         for (size_t i = 0; i < numOutputs; i++)
         {
@@ -81,7 +81,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             auto combineType = vectorCombine[i];
             remainingSize = (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows(): (*res[i])->getNumCols();
             partitionSize = (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows()/worldSize: (*res[i])->getNumCols()/worldSize;
-            for(int rank=0; rank<worldSize;rank++)
+            for(int rank=0; rank<worldSize;rank++) // we currently exclude the coordinator
             {      
                 DistributedData data;
                 data.vectorCombine = combineType;
@@ -111,9 +111,9 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                     range.c_start = data.ix.getCol() * partitionSize;
                     range.c_len = colCount;
                 }
-                //std::cout<<"rank "<< rank <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
+                std::cout<<"rank "<< rank+1 <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
                 remainingSize-=partitionSize;
-                std::string addr= std::to_string(rank);
+                std::string addr= std::to_string(rank+1);
                 // If dp already exists for this worker, update the range and data
                 if (auto dp = (*res[i])->getMetaDataObject().getDataPlacementByLocation(addr)) { 
                     (*res[i])->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
@@ -122,7 +122,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                 else { // else create new dp entry   
                     AllocationDescriptorMPI allocationDescriptor(
                                             dctx,
-                                            rank,
+                                            rank+1,
                                             data);                                    
                     ((*res[i]))->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
                 } 
@@ -130,11 +130,11 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
         }
         void *taskToSend;
         size_t messageLengths[worldSize]; 
-        for (int rank=0;rank<worldSize;rank++)
+        for (int rank=0;rank<worldSize;rank++) // we currently exclude the coordinator
         {
 
             distributed::Task task;
-            std::string addr= std::to_string(rank);
+            std::string addr= std::to_string(rank+1);
             for (size_t i = 0; i < numOutputs; i++)
             {
                 auto dp = args[i]->getMetaDataObject().getDataPlacementByLocation(addr);
@@ -149,7 +149,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             }
             task.set_mlir_code(mlirCode);
             MPISerializer::serializeTask(&taskToSend, &messageLengths[rank], &task);
-            MPIHelper::distributeTask(messageLengths[rank], taskToSend,rank);
+            MPIHelper::distributeTask(messageLengths[rank], taskToSend,rank+1);
             free(taskToSend);
         }
 

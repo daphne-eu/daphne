@@ -18,17 +18,17 @@
 #define SRC_RUNTIME_DISTRIBUTED_MPIWORKER_H
 
 #include <mpi.h>
-//#include "runtime/distributed/worker/MPISerializer.h"
-#include "runtime/local/datastructures/DenseMatrix.h"
-#include "runtime/distributed/worker/MPISerializer.h"
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/distributed/worker/MPISerializer.h>
+
 #include <runtime/distributed/worker/WorkerImpl.h>
-#include <unistd.h>
-#include  <iostream>
-#include<sstream>
-#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
-#include <runtime/local/datastructures/IAllocationDescriptor.h>
 #include <runtime/distributed/worker/MPIHelper.h>
 
+#include <unistd.h>
+#include <iostream>
+#include <sstream>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#include <runtime/local/datastructures/IAllocationDescriptor.h>
 
 class MPIWorker: WorkerImpl {
     public:
@@ -52,7 +52,19 @@ class MPIWorker: WorkerImpl {
                     continueComputing(); // takes form a queue // hocks for scheuling
             }
         }
-   
+        
+        WorkerImpl::Status doCompute(std::vector<StoredInfo> * outputsStoredInfo, std::vector<StoredInfo> inputsStoredInfo, std::string mlirCode)
+        {
+            return this->Compute(outputsStoredInfo, inputsStoredInfo, mlirCode);
+        }
+        StoredInfo doStore(Structure *mat)
+        {
+                return this->Store(mat);
+        }
+        StoredInfo doStore(double *val)
+        {
+              return  this->Store(val);
+        }
     private:
         int id;
         int myState=LISTENING;
@@ -68,12 +80,12 @@ class MPIWorker: WorkerImpl {
                 DenseMatrix<double> *mat= DataObjectFactory::create<DenseMatrix<double>>(message->mutable_matrix()->num_rows(), message->mutable_matrix()->num_cols(), false);
                 //Structure *res =  dynamic_cast<DenseMatrix<double> *>(temp);
                 ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*matrix, mat);
-                info = this->Store<Structure>(mat);
+                info = this->doStore(mat);
             }
             else
             {
                 double val= message->value().f64();
-                info= this->Store(&val);
+                info= this->doStore(&val);
             }
             inputs.push_back(info);
            // std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
@@ -171,7 +183,7 @@ class MPIWorker: WorkerImpl {
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
                     protoMsgTask.ParseFromArray(data, messageLength);
                     //printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
-                    exStatus=this->Compute(&outputs, inputs, protoMsgTask.mlir_code());
+                    exStatus=this->doCompute(&outputs, inputs, protoMsgTask.mlir_code());
                     //std::cout<<printData<<std::endl;
                     if(!(exStatus.ok()))
                         std::cout<<"error!";    

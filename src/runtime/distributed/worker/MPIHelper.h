@@ -2,27 +2,14 @@
 #define SRC_RUNTIME_DISTRIBUTED_MPIHELPER_H
 
 #include <mpi.h>
-//#include "runtime/distributed/worker/MPISerializer.h"
-#include "runtime/local/datastructures/DenseMatrix.h"
-#include "runtime/distributed/worker/MPISerializer.h"
-#include <runtime/distributed/worker/WorkerImpl.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/distributed/worker/MPISerializer.h>
 #include <unistd.h>
-#include  <iostream>
-#include<sstream>
+#include <iostream>
+#include <sstream>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
-#include <runtime/distributed/worker/MPIWorker.h>
-#include <runtime/distributed/worker/WorkerImpl.h>
 
-#include <ir/daphneir/Daphne.h>
-#include <mlir/InitAllDialects.h>
-#include <mlir/IR/AsmState.h>
-#include <mlir/Parser.h>
-#include <llvm/Support/SourceMgr.h>
-#include <mlir/IR/BuiltinTypes.h>
-
-using mlir::daphne::VectorSplit;
-using mlir::daphne::VectorCombine;
 
 #include <vector>
 
@@ -35,77 +22,19 @@ enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
 };
 
-struct StoredInfo {
-    std::string identifier;
-    size_t numRows, numCols;
-    std::string toString(){
-        return identifier+","+std::to_string(numRows)+","+std::to_string(numCols);
-    }
-};
 
 class MPIHelper{
-    public:
-        //Utility functions will be used by the coordinator
+
+        public:
         static int getCommSize(){
             int worldSize;
             MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
             return worldSize;    
         }
-       
-        template<class DT>
-        static void handleCoordinationPart(DT ***res, size_t numOutputs, const Structure **inputs, size_t numInputs, const char *mlirCode, VectorCombine *combines, DaphneContext *dctx)
+        
+        static WorkerImpl::StoredInfo constructStoredInfo(std::string input)
         {
-            size_t partitionSize;
-            int worldSize= getCommSize();    
-            for (size_t i = 0; i < numOutputs; i++)
-            {
-                auto combineType = combines[i];   
-                DistributedData data;
-                data.vectorCombine = combineType;
-                data.isPlacedAtWorker = true;
-                Range range;                                
-                if (combineType== VectorCombine::ROWS) {
-                    partitionSize = (*res[i])->getNumRows()/worldSize;
-                    data.ix  = DistributedIndex(COORDINATOR, 0);                
-                    range.r_start = data.ix.getRow() * partitionSize;
-                    range.r_len = partitionSize;
-                    range.c_start = 0;
-                    range.c_len = (*res[i])->getNumCols();
-                }
-                else if (combineType == VectorCombine::COLS) {
-                    partitionSize = (*res[i])->getNumCols()/worldSize;
-                    data.ix  = DistributedIndex(0, COORDINATOR);  
-                    range.r_start = 0; 
-                    range.r_len = (*res[i])->getNumRows(); 
-                    range.c_start = data.ix.getCol() * partitionSize;
-                    range.c_len = partitionSize;
-                }
-                std::cout<<"rank "<< COORDINATOR <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
-                std::string addr= std::to_string(COORDINATOR);
-                // If dp already exists for this worker, update the range and data
-                if (auto dp = (*res[i])->getMetaDataObject().getDataPlacementByLocation(addr)) { 
-                    (*res[i])->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
-                    dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);                    
-                }
-                else { // else create new dp entry   
-                    AllocationDescriptorMPI allocationDescriptor(
-                                            dctx,
-                                            COORDINATOR,
-                                            data);                                    
-                    ((*res[i]))->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
-                } 
-               // solver.Compute()
-                //task.set_mlir_code(mlirCode);
-                //MPISerializer::serializeTask(&taskToSend, &messageLengths[rank], &task);
-                //MPIWorker::distributeTask(messageLengths[rank], taskToSend,rank);
-                //free(taskToSend);
-            }
-
-        }
-      
-        static StoredInfo constructStoredInfo(std::string input)
-        {
-            StoredInfo info;
+            WorkerImpl::StoredInfo info;
             std::stringstream s_stream(input);
             std::vector<std::string> results;
             while(s_stream.good()) {
@@ -130,12 +59,12 @@ class MPIHelper{
             return matProto;
         }
        
-        static StoredInfo getDataAcknowledgement(int *rank){
+        static WorkerImpl::StoredInfo getDataAcknowledgement(int *rank){
             char * dataAcknowledgement;
             size_t len;
             getMessage(rank, DATAACK, MPI_CHAR, (void **)&dataAcknowledgement, &len);
             std::string incomeAck = std::string(dataAcknowledgement);
-            StoredInfo info=constructStoredInfo(incomeAck);
+            WorkerImpl::StoredInfo info=constructStoredInfo(incomeAck);
             free(dataAcknowledgement);
             return info;  
         }
@@ -256,7 +185,7 @@ class MPIHelper{
             MPI_Send(&message,1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);                    
             MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag ,MPI_COMM_WORLD);
         }
-        
 };
+
 
 #endif
