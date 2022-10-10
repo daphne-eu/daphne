@@ -14,14 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Running DAPHNE on the distributed runtime
+# Running DAPHNE on the Distributed Runtime
 
 ## Background
 
 Daphne supports execution in a distributed fashion. Similar to the local vectorized engine, the distributed runtime
 uses multiple distributed nodes (workers) that work on their local data, while a main node, the coordinator, is responsible
 for transferring the data and code to be executed. The user is required to start the workers, either manually or using an 
-HPC tool as SLURM (scripts that start the workers locally or remotely, natively or not, can be found [here](https://github.com/daphne-eu/daphne/tree/main/deploy)). 
+HPC tool as SLURM (scripts that start the workers locally or remotely, natively or not, can be found [here](/deploy)). 
 <!-- TODO: add link to documentation. -->
 
 ##  Scope
@@ -34,7 +34,7 @@ This document focuses on:
 ## Build the daphne prototype
 
 First you need to build the Daphne prototype. This doc assumes that you already built Daphne and can run it locally. If 
-you need help building or running Daphne see [here](https://github.com/daphne-eu/daphne/blob/main/doc/GettingStarted.md).
+you need help building or running Daphne see [here](/doc/GettingStarted.md).
 
 ## Start distributed workers
 
@@ -45,7 +45,7 @@ Before executing Daphne on the distributed runtime, worker nodes must first be u
 ./build/src/runtime/distributed/worker/DistributedWorker IP:PORT 
 ```
 
-There are [scripts](https://github.com/daphne-eu/daphne/tree/main/deploy) that automate this task and can help running multiple workers at once 
+There are [scripts](/deploy) that automate this task and can help running multiple workers at once 
 locally or even utilizing tools (like SLURM) in HPC environments.
 
 ## Set up environmental variables
