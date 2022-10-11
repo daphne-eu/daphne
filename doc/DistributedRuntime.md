@@ -18,9 +18,14 @@ limitations under the License.
 
 ## Background
 
-Daphne supports execution in a distributed fashion. Similar to the local vectorized engine, the distributed runtime
+Daphne supports execution in a distributed fashion. Utilizing the Daphne Distributed Runtime 
+does not require any changes to the DaphneDSL script.
+Similar to the local vectorized engine ([here, section 4](https://daphne-eu.eu/wp-content/uploads/2022/08/D2.2-Refined-System-Architecture.pdf)), the compiler automatically fuses operations and 
+creates pipelines for the distributed runtime, which then 
 uses multiple distributed nodes (workers) that work on their local data, while a main node, the coordinator, is responsible
-for transferring the data and code to be executed. The user is required to start the workers, either manually or using an 
+for transferring the data and code to be executed. As mentioned above, changes at DaphneDSL 
+code are not needed, however the user is required to start the workers, either manually or 
+using an 
 HPC tool as SLURM (scripts that start the workers locally or remotely, natively or not, can be found [here](/deploy)). 
 <!-- TODO: add link to documentation. -->
 
@@ -31,10 +36,17 @@ This document focuses on:
 - executing Daphne scripts on the distributed runtime
 
 
-## Build the daphne prototype
+## Build the Daphne prototype
 
 First you need to build the Daphne prototype. This doc assumes that you already built Daphne and can run it locally. If 
 you need help building or running Daphne see [here](/doc/GettingStarted.md).
+
+## Building the Distributed Worker
+
+The Daphne distributed worker is a different executable which can be build using the build-script and providing the `--target` argument:
+```bash
+./build.sh --target DistributedWorker
+```
 
 ## Start distributed workers
 
@@ -47,6 +59,10 @@ Before executing Daphne on the distributed runtime, worker nodes must first be u
 
 There are [scripts](/deploy) that automate this task and can help running multiple workers at once 
 locally or even utilizing tools (like SLURM) in HPC environments.
+
+Each worker can be left running and reused for multiple scripts and pipeline executions (however, for now they might run into memory issues, see **Limitations** section below).
+
+Each worker can be terminated by sending a `SIGINT` (Ctrl+C) or by using the scripts mentioned above.
 
 ## Set up environmental variables
 
@@ -71,7 +87,36 @@ Now that we have all workers up and running and the environmental variable is se
 ./build/bin/daphne --distributed ./example.script
 ```
 
-### What Next?
+For now only asynchronous-gRPC is implemented as a distributed backend and selection is hardcoded [here](/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73). 
+<!-- 
+TODO: PR #436 provides support for MPI and implements a cli argument for selecting a distributed backend. This section will be updated once #436 is merged.
+ -->
+
+## Example
+
+On one terminal with start up a Distributed Worker:
+```bash
+$./build/src/runtime/distributed/worker/DistributedWorklocalhost:5000
+Started Distributed Worker on `localhost:5000`
+```
+
+On another terminal we set the environment variable and execute script [`distributed.daph`](/scripts/examples/distributed.daph):
+```bash
+$ export DISTRIBUTED_WORKERS=localhost:5000
+$ ./build/bin/daphne --distributed ./scripts/example/distributed.daph
+```
+
+## Limitations
+
+- Distributed runtime for now heavily depends on the vectorized engine of Daphne and how pipelines are
+created and multiple operations are fused together (more [here - section 4](https://daphne-eu.eu/wp-content/uploads/2022/08/D2.2-Refined-System-Architecture.pdf)). This causes some limitations related to pipeline creation (e.g. [not supporting pipelines with different result outputs](/issues/397) or pipelines with no outputs).
+- For now distributed runtime only supports `DenseMatrix` types and value types `double` - `DenseMatrix<double>` (issue [#194](/issues/194)).
+- A Daphne pipeline input might exist multiple times in the input array. For now this is not supported. In the future similar pipelines will simply omit multiple pipeline inputs and each one will be provided only once.
+- Garbage collection at worker (node) level is not implemented yet. This means that after some time 
+the workers can fill up their memory completely, requiring a restart. 
+
+
+## What Next?
 
 You might want to have a look at
 - the [distributed runtime development guideline](/doc/development/ExtendingDistributedRuntime.md)

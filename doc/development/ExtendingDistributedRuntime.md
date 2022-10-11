@@ -88,6 +88,8 @@ all Daphne objects (e.g. matrices) require tracking where their data is stored. 
 Daphne object contains meta data providing that information. Below you can see a list of all the different
 devices a Daphne object can be allocated to.
 
+Please note that not all of them are supported yet and we might add more in the future.
+
 ```C++
 enum class ALLOCATION_TYPE {
     DIST_GRPC,
@@ -174,6 +176,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
     ...
 ```
 
+For now selection of a distributed backend is hardcoded [here](/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73). 
+<!-- 
+TODO: PR #436 provides support for MPI and implements a cli argument for selecting a distributed backend. This section will be updated once #436 is merged.
+ -->
 # Distributed Worker
 
 Worker code can be found here:
