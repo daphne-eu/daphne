@@ -77,6 +77,8 @@ struct CastObjSca<VTRes, Frame> {
         const void * resVal = arg->getColumnRaw(0);
         // Cast void* to the largest column type width (split integer and floating point interpretations) 
         // and then final cast to VTRes. This way we avoid DenseMatrix creation in Frame::getColumn().
+        // TODO It is dangerous to treat the value type code as an integer here,
+        // since this can easily break if we change the value type codes.
         if(colType >= 0U && colType <= 5U)
             res = static_cast<VTRes>(*reinterpret_cast<const int64_t*>(resVal));
         else if(colType >= 6U && colType <= 7U)

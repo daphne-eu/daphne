@@ -19,10 +19,10 @@ set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
-        api/cli/expressions/CastTest.cpp
         api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
+        api/cli/expressions/CastTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
         api/cli/expressions/TernaryTest.cpp
         api/cli/functions/FunctionsTest.cpp

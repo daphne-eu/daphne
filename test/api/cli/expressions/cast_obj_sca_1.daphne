@@ -5,8 +5,7 @@ m0 = [2.5];
 print(as.scalar(m0));
 
 //frame->scalar
-c0 = seq(3, 3, 1);
-f0 = createFrame(c0);
+f0 = createFrame([3]);
 print(as.scalar(f0));
 
 //-- Specify DataType and ValueType
@@ -15,5 +14,5 @@ m1 = [2.5];
 print(as.scalar<si64>(m1));
 
 //frame->scalar<f64>
-f1 = createFrame(c0);
+f1 = createFrame([3]);
 print(as.scalar<f64>(f1));

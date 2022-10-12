@@ -48,8 +48,8 @@ TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to matrix", TAG_KERNELS, (DenseMa
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, (DenseMatrix), (double, float, int64_t, uint64_t, int32_t, uint32_t)) {
-    using VTRes = typename TestType::VT;
+TEMPLATE_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
     Frame* exp = nullptr;
     std::vector<Structure *> cols;
     SECTION("double to Frame[VTRes]") {
@@ -63,8 +63,7 @@ TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, (DenseMat
         castScaObj<Frame, VTRes>(res, val, nullptr);
         CHECK(*res == *exp);
 
-        DataObjectFactory::destroy(m0);
-        DataObjectFactory::destroy(exp);
+        DataObjectFactory::destroy(m0, exp, res);
     }
 
     SECTION("int64_t to Frame[VTRes]") {
@@ -78,7 +77,6 @@ TEMPLATE_PRODUCT_TEST_CASE("castScaObj, scalar to frame", TAG_KERNELS, (DenseMat
         castScaObj<Frame, VTRes>(res, val, nullptr);
         CHECK(*res == *exp);
         
-        DataObjectFactory::destroy(m0);
-        DataObjectFactory::destroy(exp);
+        DataObjectFactory::destroy(m0, exp, res);
     }
 }

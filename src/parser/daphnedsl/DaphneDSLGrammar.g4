@@ -82,7 +82,7 @@ expr:
     | (( IDENTIFIER '.' )* IDENTIFIER) # identifierExpr
     | '(' expr ')' # paranthesesExpr
     | (( IDENTIFIER '.' )* IDENTIFIER) '(' (expr (',' expr)*)? ')' # callExpr
-    | KW_AS (('.' DATA_TYPE) | ('.' VALUE_TYPE) | ('.' DATA_TYPE '<' VALUE_TYPE'>')) '(' expr ')' # castExpr
+    | KW_AS (('.' DATA_TYPE) | ('.' VALUE_TYPE) | ('.' DATA_TYPE '<' VALUE_TYPE '>')) '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
     | obj=expr idx=indexing # rightIdxExtractExpr
     | lhs=expr op='@' rhs=expr # matmulExpr

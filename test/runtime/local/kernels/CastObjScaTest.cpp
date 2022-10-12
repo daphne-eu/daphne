@@ -25,8 +25,8 @@
 #include <vector>
 #include <cstdint>
 
-TEMPLATE_PRODUCT_TEST_CASE("castObjSca, matrix to scalar", TAG_KERNELS, (DenseMatrix), (double, float, int64_t, uint64_t, int32_t, uint32_t)) {
-    using VTRes = typename TestType::VT;
+TEMPLATE_TEST_CASE("castObjSca, matrix to scalar", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
 
     VTRes res = VTRes(0);
     SECTION("DenseMatrix<int64_t> to VTRes") {
@@ -46,8 +46,8 @@ TEMPLATE_PRODUCT_TEST_CASE("castObjSca, matrix to scalar", TAG_KERNELS, (DenseMa
     }
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("castObjSca, frame to scalar", TAG_KERNELS, (DenseMatrix), (double, float, int64_t, uint64_t, int32_t, uint32_t)) {
-    using VTRes = typename TestType::VT;
+TEMPLATE_TEST_CASE("castObjSca, frame to scalar", TAG_KERNELS, double, float, int64_t, uint64_t, int32_t, uint32_t) {
+    using VTRes = TestType;
 
     Frame* arg = nullptr;
     SECTION("Frame[double] to VTRes") {
