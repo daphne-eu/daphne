@@ -1,0 +1,18 @@
+//-- Specify DataType Only
+
+//matrix->scalar
+m0 = [2.5];
+print(as.scalar(m0));
+
+//frame->scalar
+f0 = createFrame([3]);
+print(as.scalar(f0));
+
+//-- Specify DataType and ValueType
+//matrix->scalar<si64>
+m1 = [2.5];
+print(as.scalar<si64>(m1));
+
+//frame->scalar<f64>
+f1 = createFrame([3]);
+print(as.scalar<f64>(f1));
