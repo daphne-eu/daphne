@@ -27,6 +27,7 @@
 #include <cassert>
 #include <cstddef>
 #include "gemm_interface.h"
+#include "sgemv_interface.h"
 
 namespace FPGAOPENCL {
 // ****************************************************************************
@@ -62,89 +63,140 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nc2 = rhs->getNumCols();
-#ifndef NDEBUG
         const size_t nr2 = rhs->getNumRows();
         assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");        
-#endif
-//	printf("\ntest MatMul f32 \n");
+
 // Parameters of the systolic array in the bitstream. Do not change.
 
-#define II   32
-#define JJ   32
-#define KK   32
-#define III  14
-#define JJJ  16
-#define KKK  16
+	//GEMM
+#define II_gemm   32
+#define JJ_gemm   32
+#define KK_gemm   32
+#define III_gemm  14
+#define JJJ_gemm  16
+#define KKK_gemm  16
+	//GEMV
+#define II_gemv   32
+#define KK_gemv   32
+#define III_gemv  64
+#define KKK_gemv  1
 
-#ifndef NDEBUG
-	assert((nr1%(II*III)==0) && "lhs #rows number must be a multiple of 448");        
-	assert((nc1%(JJ*JJJ)==0 && nc1>512 && nr2%(JJ*JJJ)==0 && nc1>512) && "#cols of lhs and #rows of rhs must be a multiple of 512 (and minimum 1024)");        
-	assert((nc2%(KK*KKK)==0) && "#cols of rhs must be a multiple of 512");        
-#endif       
-// Testing purpose only: help define the sizes of test inputs
-// Can be arbitrarily set.
-// matrix a: 10K * 2K
-// matrix b: 2K * 8K
 
-//#define OUTERMOST_I 1//32
-//#define OUTERMOST_J 1//32
-//#define OUTERMOST_K 2//4
+//#ifndef NDEBUG
+//	assert((nr1%(II*III)==0) && "lhs #rows number must be a multiple of 448");        
+//	assert((nc1%(JJ*JJJ)==0 && nc1>512 && nr2%(JJ*JJJ)==0 && nc1>512) && "#cols of lhs and #rows of rhs must be a multiple of 512 (and minimum 1024)");        
+//	assert((nc2%(KK*KKK)==0) && "#cols of rhs must be a multiple of 512");        
+//#endif       
+
+//	printf("\ntest MatMul f32 \n");
+// Parameters of the systolic array in the bitstream. Do not change.
 
 //#define TYPE float
 
 #define ACL_ALIGNMENT 64
-//void *acl_aligned_malloc(size_t size) {
-//    void *result = NULL;
-//    posix_memalign(&result, ACL_ALIGNMENT, size);
-//    return result;
-//}
-    const int OUTERMOST_I = ceil(nr1/448);
-    const int OUTERMOST_J = ceil(nc2/512);
-    const int OUTERMOST_K = ceil(nc1/512);
+    int OUTERMOST_I; //= ceil(nr1/448);
+    int OUTERMOST_J; //= ceil(nc2/512);
+    int OUTERMOST_K; //= ceil(nc1/512);
 
     float *A, *B, *C;
     void *aa=NULL,*bb=NULL,*cc=NULL;
-    const int TOTAL_I = III * II * OUTERMOST_I;
-    const int TOTAL_J = JJJ * JJ * OUTERMOST_J;
-    const int TOTAL_K = KKK * KK * OUTERMOST_K;
+ 
+ 
+    int TOTAL_I; //= III * II * OUTERMOST_I;
+    int TOTAL_J; //= JJJ * JJ * OUTERMOST_J;
+    int TOTAL_K; //= KKK * KK * OUTERMOST_K;
     
-    long int num_elem_A = (long int)TOTAL_I*TOTAL_K;
-    long int num_elem_B = (long int)TOTAL_K*TOTAL_J;
-    long int num_elem_C = (long int)TOTAL_I*TOTAL_J;
+    long int num_elem_A; // = (long int)TOTAL_I*TOTAL_K;
+    long int num_elem_B; // = (long int)TOTAL_K*TOTAL_J;
+    long int num_elem_C; // = (long int)TOTAL_I*TOTAL_J;
     
-    posix_memalign(&aa,ACL_ALIGNMENT,num_elem_A * sizeof(float));
-    A=(float*)aa;
-    if (A==NULL)
-       perror("Failed malloc of matrix A");
-    posix_memalign(&bb,ACL_ALIGNMENT,num_elem_B * sizeof(float));
-    B=(float*)bb;
-    if (B==NULL)
-       perror("Failed malloc of matrix B");
-    posix_memalign(&cc,ACL_ALIGNMENT,num_elem_C * sizeof(float));
-    C=(float*)cc;
-    if (C==NULL)
-       perror("Failed malloc of matrix C");
+#ifndef NDEBUG
+    printf("\nA rows %ld\n",nr1);
+    printf("\nA cols %ld\n",nc1);
+    printf("\nX rows %ld\n",nr2);
+    printf("\nX cols %ld\n",nc2);
+#endif 
 
+    
+    if(nc2==1)//gemv kernel
+    {
+#ifndef NDEBUG
+	printf("\nrunning GEMV kernel \n");
+#endif    
+        OUTERMOST_I = ceil(nr1/2048);
+    	OUTERMOST_K = ceil(nc1/32);
+ 
+    	TOTAL_I = III_gemv * II_gemv * OUTERMOST_I;
+    	TOTAL_K = KKK_gemv * KK_gemv * OUTERMOST_K;
+    
+    	num_elem_A = (long int)TOTAL_I*TOTAL_K;
+    	num_elem_B = (long int)TOTAL_K;
+    	num_elem_C = (long int)TOTAL_I;
+    
+    	posix_memalign(&aa,ACL_ALIGNMENT,num_elem_A * sizeof(float));
+    	A=(float*)aa;
+    	if (A==NULL)
+       	    perror("Failed malloc of matrix A");
+    	posix_memalign(&bb,ACL_ALIGNMENT,num_elem_B * sizeof(float));
+    	B=(float*)bb;
+    	if (B==NULL)
+           perror("Failed malloc of matrix B");
+    	posix_memalign(&cc,ACL_ALIGNMENT,num_elem_C * sizeof(float));
+    	C=(float*)cc;
+    	if (C==NULL)
+            perror("Failed malloc of matrix C");
 
-    // printf("\nbefore memcpy()\n");
+    	memcpy(A,lhs->getValues(),num_elem_A * sizeof(float));//sizeof(lhs));
+    	memcpy(B,rhs->getValues(),num_elem_B * sizeof(float));//sizeof(rhs));
+    	
+	sgemv(A, B, C, OUTERMOST_I, OUTERMOST_K, ctx);
+
+   	 if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
    
-    memcpy(A,lhs->getValues(),num_elem_A * sizeof(float));//sizeof(lhs));
-    memcpy(B,rhs->getValues(),num_elem_B * sizeof(float));//sizeof(rhs));
+    	memcpy(res->getValues(),C,num_elem_C * sizeof(float));//sizeof(C)
+ 
+    }
+    else //gemm kernel
+    {   
+#ifndef NDEBUG
+	printf("\nrunning GEMM kernel \n");
+#endif    
+    	OUTERMOST_I = ceil(nr1/448);
+    	OUTERMOST_J = ceil(nc2/512);
+    	OUTERMOST_K = ceil(nc1/512);
+ 
+    	TOTAL_I = III_gemm * II_gemm * OUTERMOST_I;
+    	TOTAL_J = JJJ_gemm * JJ_gemm * OUTERMOST_J;
+    	TOTAL_K = KKK_gemm * KK_gemm * OUTERMOST_K;
+    
+    	num_elem_A = (long int)TOTAL_I*TOTAL_K;
+    	num_elem_B = (long int)TOTAL_K*TOTAL_J;
+    	num_elem_C = (long int)TOTAL_I*TOTAL_J;
+    
+    	posix_memalign(&aa,ACL_ALIGNMENT,num_elem_A * sizeof(float));
+    	A=(float*)aa;
+    	if (A==NULL)
+            perror("Failed malloc of matrix A");
+    	posix_memalign(&bb,ACL_ALIGNMENT,num_elem_B * sizeof(float));
+    	B=(float*)bb;
+    	if (B==NULL)
+            perror("Failed malloc of matrix B");
+    	posix_memalign(&cc,ACL_ALIGNMENT,num_elem_C * sizeof(float));
+    	C=(float*)cc;
+    	if (C==NULL)
+            perror("Failed malloc of matrix C");
+
+    	memcpy(A,lhs->getValues(),num_elem_A * sizeof(float));
+    	memcpy(B,rhs->getValues(),num_elem_B * sizeof(float));
      
-    //printf("\nA values %f\n",*A);
-    //printf("\nB values %f\n",*B);
-    sgemm(A, B, C, OUTERMOST_I, OUTERMOST_J, OUTERMOST_K, ctx);
+    	sgemm(A, B, C, OUTERMOST_I, OUTERMOST_J, OUTERMOST_K, ctx);
  
-  //  printf("\nC values %f\n",*C);
- 
-    if(res == nullptr)
-       res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
-
-
-    //printf("\nres: %p\n", res);
-    //printf("\nres->getValues(): %p\n", res->getValues());
-    memcpy(res->getValues(),C,num_elem_C * sizeof(float));//sizeof(C)
-   // printf("\nres memcpy2\n");
+    	if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
+   
+    	memcpy(res->getValues(),C,num_elem_C * sizeof(float));
+   }
 
    }
 };

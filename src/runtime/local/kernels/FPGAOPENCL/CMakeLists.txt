@@ -38,9 +38,13 @@ set(FPGAOPENCLKernels_SRC
 	${PREFIX}/../../context/FPGAContext.cpp
  	${PREFIX}/../../context/FPGAContext.h
 	${PREFIX}/CreateFPGAContext.h
+        ${PREFIX}/kernel_utils.h
+        ${PREFIX}/kernel_utils.cpp
         ${PREFIX}/MatMul.h
 	${PREFIX}/gemm_interface.cpp
 	${PREFIX}/gemm_interface.h
+	${PREFIX}/sgemv_interface.cpp
+	${PREFIX}/sgemv_interface.h
 	${PROJECT_BINARY_DIR}/FPGAOPENCLkernels.cpp
 )
 

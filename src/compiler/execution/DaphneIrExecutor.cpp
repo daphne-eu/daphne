@@ -200,10 +200,8 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
  
 #ifdef USE_FPGAOPENCL
         if(userConfig_.use_fpgaopencl) {
-            if(userConfig_.libdir.empty()) {
-                std::string fpgaKernelsPath(std::string(daphne_executable_dir + "/../lib/libFPGAOPENCLKernels.so"));
-                sharedLibRefs.push_back(fpgaKernelsPath);
-            }
+            sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libFPGAOPENCLKernels.so"));
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
         }
 #endif
         registerLLVMDialectTranslation(context_);

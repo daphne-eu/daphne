@@ -24,6 +24,7 @@
 
 #include "AOCLUtils/aocl_utils.h"
 #include "CL/opencl.h"
+#include "CL/cl_ext_intelfpga.h"
 #include <cassert>
 #include <cstdio>
 #include <cstdlib>
@@ -41,19 +42,16 @@
 #include <time.h>
 #include <runtime/local/context/FPGAContext.h>
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/kernels/FPGAOPENCL/gemm_interface.h>
 #include <runtime/local/kernels/FPGAOPENCL/kernel_utils.h>
+#include <runtime/local/kernels/FPGAOPENCL/sgemv_interface.h>
 
-
-
-
-// Parameters of the systolic array
-#define II   32
-#define JJ   32
-#define KK   32
-#define III  14
-#define JJJ  16
-#define KKK  16
+//defines for S10
+#define KKK	        1
+#define III	        64
+#define II	        32
+#define KK	        32
+//#define I   64
+//#define K   64
 
 using namespace aocl_utils;
 
@@ -66,8 +64,8 @@ using namespace aocl_utils;
     printf(__VA_ARGS__); \
     fflush(stdout);
 
-#define NUM_QUEUES_TO_CREATE    6
-#define NUM_KERNELS_TO_CREATE   6
+#define NUM_QUEUES_TO_CREATE    5
+#define NUM_KERNELS_TO_CREATE   5
 
 #define CHECK(status)                                       \
     if (status != CL_SUCCESS) {                             \
@@ -76,46 +74,61 @@ using namespace aocl_utils;
     }
 
 #define ACL_ALIGNMENT 64
-
-const char *sgemm_kernel_name[] = {
-    "kernel_A_loader",
-    "kernel_B_loader",
-    "kernel_unloader_WAIT_FINISH",
-    "kernel_A_feeder",
-    "kernel_B_feeder",
-    "kernel_Out"
+const char *sgemv_kernel_name[] = {
+    "kernel_aLoader",
+    "kernel_xLoader",
+    "kernel_xFeeder",
+    "kernel_V",
+    "kernel_unloader"
 };
 
-int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const int OUTERMOST_J, const int OUTERMOST_K, DCTX(ctx)) {
-    const int TOTAL_I = III * II * OUTERMOST_I;
-    const int TOTAL_J = JJJ * JJ * OUTERMOST_J;
-    const int TOTAL_K = KKK * KK * OUTERMOST_K;
+int sgemv(const float *A, const float *B, float *C, const int I, const int K, DCTX(ctx)){
+    const int TOTAL_I = III * II * I;
+    const int TOTAL_K = KKK * KK * K;
     
-    long int num_elem_A = (long int)TOTAL_I*TOTAL_K;
-    long int num_elem_B = (long int)TOTAL_K*TOTAL_J;
-    long int num_elem_C = (long int)TOTAL_I*TOTAL_J;
-
-    float *serialized_A, *serialized_B;
-    if ((serialized_A = (float *)acl_aligned_malloc(num_elem_A * sizeof(float))) == NULL) {
+    float *serialized_A_1, *serialized_A_2, *serialized_A_3, *serialized_A_4, *serialized_B;
+    if ((serialized_A_1 = (float *)acl_aligned_malloc(TOTAL_I*TOTAL_K/4 * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_A");
     }
-    if ((serialized_B = (float *)acl_aligned_malloc(num_elem_B * sizeof(float))) == NULL) {
+    if ((serialized_A_2 = (float *)acl_aligned_malloc(TOTAL_I*TOTAL_K/4 * sizeof(float))) == NULL) {
+        perror("Failed malloc of matrix serialized_A");
+    }
+    if ((serialized_A_3 = (float *)acl_aligned_malloc(TOTAL_I*TOTAL_K/4 * sizeof(float))) == NULL) {
+        perror("Failed malloc of matrix serialized_A");
+    }
+    if ((serialized_A_4 = (float *)acl_aligned_malloc(TOTAL_I*TOTAL_K/4 * sizeof(float))) == NULL) {
+        perror("Failed malloc of matrix serialized_A");
+    }
+    if ((serialized_B = (float *)acl_aligned_malloc(TOTAL_K*I * sizeof(float))) == NULL) {
         perror("Failed malloc of matrix serialized_A");
     }
 
     // Serialize A
     long int addr = 0;
-    for (int i = 0; i < TOTAL_I; i++)
-        for (int k = 0; k < TOTAL_K; k++) {
-            serialized_A[addr++] = A[k + i*TOTAL_K];
-        }
+    for (int i = 0; i < I; i++)
+    for (int k = 0; k < K; k++)
+    for (int kk = 0; kk < KK; kk++)
+    for (int ii = 0; ii < II; ii++)
+    for (int iii = 0; iii < III/4; iii++)
+    for (int kkk = 0; kkk < KKK; kkk++) {
+        int total_k = kkk + KKK*kk + KKK*KK*k;
+        int total_i = iii + III*ii + III*II*i;
+        serialized_A_1[addr] = A[total_k + TOTAL_K*total_i];
+        //printf("\n index A_2 %d",total_k + TOTAL_K*(total_i+III/4));
+	serialized_A_2[addr] = A[total_k + TOTAL_K*(total_i+III/4)];
+        serialized_A_3[addr] = A[total_k + TOTAL_K*(total_i+III/2)];
+        serialized_A_4[addr] = A[total_k + TOTAL_K*(total_i+3*III/4)];
+        addr++;
+    }
     // Serialize B
     addr = 0;
-    for (int j = 0; j < TOTAL_J; j++)
-        for (int k = 0; k < TOTAL_K; k++) {
-            serialized_B[addr++] = B[j+k*TOTAL_J];
-        }
-
+    for (int i = 0; i < I; i++)
+    for (int k = 0; k < K; k++)
+    for (int kk = 0; kk < KK; kk++)
+    for (int kkk = 0; kkk < KKK; kkk++) {
+        int total_k = kkk + KKK*kk + KKK*KK*k;
+        serialized_B[addr++] = B[total_k];
+    }
 
     cl_int status;
     auto fctx = ctx->getFPGAContext(0);    
@@ -149,32 +162,57 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     //----------------------------------------------
     // Create device buffers
     //----------------------------------------------
-    cl_mem input_A_buf;
+
+    cl_mem input_A_buf_1, input_A_buf_2, input_A_buf_3, input_A_buf_4;
     cl_mem input_B_buf;
     cl_mem output_C_buf;
 #ifndef NDEBUG
-    DPRINTF("\n===== Host-CPU transferring W and X to the FPGA device global memory (DDR4) via PCIe ======\n\n");
+    DPRINTF("\n=====[SGEMV] Host-CPU transferring W and X to the FPGA device global memory (DDR4 ) via PCIe ======\n\n");
 #endif
-    input_A_buf = clCreateBuffer(
+    input_A_buf_1 = clCreateBuffer(
         fctx->context,
-        CL_MEM_READ_ONLY,
-        num_elem_A * sizeof(cl_float),
+        CL_CHANNEL_1_INTELFPGA,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        NULL,
+        &status);
+    CHECK(status);
+
+    input_A_buf_2 = clCreateBuffer(
+        fctx->context,
+        CL_CHANNEL_2_INTELFPGA,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        NULL,
+        &status);
+    CHECK(status);
+
+    input_A_buf_3 = clCreateBuffer(
+        fctx->context,
+        CL_CHANNEL_3_INTELFPGA,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        NULL,
+        &status);
+    CHECK(status);
+
+    input_A_buf_4 = clCreateBuffer(
+        fctx->context,
+        CL_CHANNEL_4_INTELFPGA,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
         NULL,
         &status);
     CHECK(status);
 
     input_B_buf = clCreateBuffer(
         fctx->context,
-        CL_MEM_READ_ONLY,
-        num_elem_B * sizeof(cl_float),
+        CL_CHANNEL_1_INTELFPGA,
+        TOTAL_K * sizeof(cl_float),
         NULL,
         &status);
     CHECK(status);
 
     output_C_buf = clCreateBuffer(
         fctx->context,
-        CL_MEM_WRITE_ONLY,
-        num_elem_C * sizeof(cl_float),
+        CL_CHANNEL_2_INTELFPGA,
+        TOTAL_I * sizeof(cl_float),
         NULL,
         &status);
     CHECK(status);
@@ -182,14 +220,51 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     //----------------------------------------------
     // Write host data to device buffers
     //----------------------------------------------
+
     // blocking writes
     status = clEnqueueWriteBuffer(
         cmdQueue[0],
-        input_A_buf,
+        input_A_buf_1,
         CL_TRUE,
         0,
-        num_elem_A * sizeof(cl_float),
-        serialized_A,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        serialized_A_1,
+        0,
+        NULL,
+        NULL);
+    CHECK(status);
+
+    status = clEnqueueWriteBuffer(
+        cmdQueue[0],
+        input_A_buf_2,
+        CL_TRUE,
+        0,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        serialized_A_2,
+        0,
+        NULL,
+        NULL);
+    CHECK(status);
+
+    status = clEnqueueWriteBuffer(
+        cmdQueue[0],
+        input_A_buf_3,
+        CL_TRUE,
+        0,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        serialized_A_3,
+        0,
+        NULL,
+        NULL);
+    CHECK(status);
+
+    status = clEnqueueWriteBuffer(
+        cmdQueue[0],
+        input_A_buf_4,
+        CL_TRUE,
+        0,
+        TOTAL_K * TOTAL_I / 4 * sizeof(cl_float),
+        serialized_A_4,
         0,
         NULL,
         NULL);
@@ -200,7 +275,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
         input_B_buf,
         CL_TRUE,
         0,
-        num_elem_B * sizeof(cl_float),
+        TOTAL_K * sizeof(cl_float),
         serialized_B,
         0,
         NULL,
@@ -210,9 +285,11 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     //----------------------------------------------
     // Create the program from binaries
     //----------------------------------------------
-    //DPRINTF("\n===== Host-CPU setting up OpenCL program and kernels ======\n\n");
-
+#ifndef NDEBUG
+    DPRINTF("\n===== Host-CPU setting up OpenCL program and kernels ======\n\n");
+#endif
     cl_program program;
+
     size_t binary_length;
     const unsigned char *binary;
 
@@ -238,7 +315,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     }
     fclose(fp);
 
-    //DPRINTF("Create program with binary\n");
+//    DPRINTF("Create program with binary\n");
     // Create a program using clCreateProgramWithBinary()
     program = clCreateProgramWithBinary(
         fctx->context,
@@ -253,20 +330,18 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     //----------------------------------------------
     // Create the kernel
     //----------------------------------------------
+
     status = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
     if (status != CL_SUCCESS) {
         char log[128 * 1024] = {0};
-        clGetProgramBuildInfo(
-		program, 
-		fctx->devices[0], 
-		CL_PROGRAM_BUILD_LOG, 128 * 1024, log, NULL);
+        clGetProgramBuildInfo(program, fctx->devices[0], CL_PROGRAM_BUILD_LOG, 128 * 1024, log, NULL);
         CHECK(status);
     }
 
     cl_kernel kernel[NUM_KERNELS_TO_CREATE];
 
     for (int j = 0; j < NUM_KERNELS_TO_CREATE; j++) {
-        kernel[j] = clCreateKernel(program, (const char *)sgemm_kernel_name[j], &status);
+        kernel[j] = clCreateKernel(program, (const char *)sgemv_kernel_name[j], &status);
         CHECK(status);
     }
 #ifndef NDEBUG
@@ -277,126 +352,95 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
         kernel[0],
         0,
         sizeof(int),
-	&TOTAL_K);
+        &TOTAL_K);
     CHECK(status);
     status = clSetKernelArg(
         kernel[0],
         1,
         sizeof(int),
-	&TOTAL_I);
+        &TOTAL_I);
     CHECK(status);
     status = clSetKernelArg(
         kernel[0],
         2,
-        sizeof(int),
-	&TOTAL_J);
+        sizeof(cl_mem),
+        &input_A_buf_1);
     CHECK(status);
     status = clSetKernelArg(
         kernel[0],
         3,
         sizeof(cl_mem),
-	&input_A_buf);
+        &input_A_buf_2);
     CHECK(status);
-    // B_loader
+    status = clSetKernelArg(
+        kernel[0],
+        4,
+        sizeof(cl_mem),
+        &input_A_buf_3);
+    CHECK(status);
+    status = clSetKernelArg(
+        kernel[0],
+        5,
+        sizeof(cl_mem),
+        &input_A_buf_4);
+    CHECK(status);
+    // X_loader
     status = clSetKernelArg(
         kernel[1],
         0,
         sizeof(int),
-	&TOTAL_K);
+        &TOTAL_K);
     CHECK(status);
     status = clSetKernelArg(
         kernel[1],
         1,
         sizeof(int),
-	&TOTAL_I);
+        &TOTAL_I);
     CHECK(status);
     status = clSetKernelArg(
         kernel[1],
         2,
+        sizeof(cl_mem),
+        &input_B_buf);
+    CHECK(status);
+    // X_feeder
+    status = clSetKernelArg(
+        kernel[2],
+        0,
         sizeof(int),
-	&TOTAL_J);
+        &TOTAL_K);
     CHECK(status);
     status = clSetKernelArg(
-        kernel[1],
-        3,
-        sizeof(cl_mem),
-	&input_B_buf);
+        kernel[2],
+        1,
+        sizeof(int),
+        &TOTAL_I);
+    CHECK(status);
+    // kernel_V
+    status = clSetKernelArg(
+        kernel[3],
+        0,
+        sizeof(int),
+        &TOTAL_K);
+    CHECK(status);
+    status = clSetKernelArg(
+        kernel[3],
+        1,
+        sizeof(int),
+        &TOTAL_I);
     CHECK(status);
     // unloader
     status = clSetKernelArg(
-        kernel[2],
+        kernel[4],
         0,
         sizeof(int),
-	&TOTAL_I);
+        &TOTAL_I);
     CHECK(status);
     status = clSetKernelArg(
-        kernel[2],
+        kernel[4],
         1,
-        sizeof(int),
-	&TOTAL_J);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[2],
-        2,
         sizeof(cl_mem),
-	&output_C_buf);
-    CHECK(status);
-    // A_feeder
-    status = clSetKernelArg(
-        kernel[3],
-        0,
-        sizeof(int),
-	&TOTAL_K);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[3],
-        1,
-        sizeof(int),
-	&TOTAL_I);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[3],
-        2,
-        sizeof(int),
-	&TOTAL_J);
-    CHECK(status);
-    // B_feeder
-    status = clSetKernelArg(
-        kernel[4],
-        0,
-        sizeof(int),
-	&TOTAL_K);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[4],
-        1,
-        sizeof(int),
-	&TOTAL_I);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[4],
-        2,
-        sizeof(int),
-	&TOTAL_J);
-    CHECK(status);
-    // Out
-    status = clSetKernelArg(
-        kernel[5],
-        0,
-        sizeof(int),
-	&TOTAL_K);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[5],
-        1,
-        sizeof(int),
-	&TOTAL_I);
-    CHECK(status);
-    status = clSetKernelArg(
-        kernel[5],
-        2,
-        sizeof(int),
-	&TOTAL_J);
+        &output_C_buf);
     CHECK(status);
 
     //----------------------------------------------
@@ -417,16 +461,15 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     localWorkSize[0] = 1;
 
     cl_event kernel_exec_event[NUM_KERNELS_TO_CREATE];
-
 #ifndef NDEBUG
     DPRINTF("\n===== Host-CPU enqeuing the OpenCL kernels to the FPGA device ======\n\n");
-#endif
+#endif    
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
         // Alternatively, can use clEnqueueTaskKernel
 #ifndef NDEBUG
-        DPRINTF("clEnqueueNDRangeKernel[%d]: %s!\n", i, sgemm_kernel_name[i]);
+    	    DPRINTF("clEnqueueNDRangeKernel[%d]: %s!\n", i, sgemv_kernel_name[i]);
 #endif
-	status = clEnqueueNDRangeKernel(
+        status = clEnqueueNDRangeKernel(
             cmdQueue[i],
             kernel[i],
             1,
@@ -440,7 +483,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     }
 #ifndef NDEBUG
     DPRINTF(" *** FPGA execution started!\n");
-#endif    
+#endif
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
         status = clFlush(cmdQueue[i]);
         CHECK(status);
@@ -449,7 +492,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     for (int i = 0; i < NUM_QUEUES_TO_CREATE; i++) {
 #ifndef NDEBUG
         DPRINTF("cmd queue: %d\n", i);
-#endif    
+#endif
         fflush(stdout);
         status = clFinish(cmdQueue[i]);
         CHECK(status);
@@ -457,8 +500,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
 #ifndef NDEBUG
     DPRINTF(" *** FPGA execution finished!\n");
     DPRINTF("\n\n");
-//#endif    
- 
+
     double k_start_time[NUM_KERNELS_TO_CREATE];
     double k_end_time[NUM_KERNELS_TO_CREATE];
     double k_exec_time[NUM_KERNELS_TO_CREATE];
@@ -469,14 +511,12 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
             max_time = k_exec_time[i];
         }
     }
-//#ifndef NDEBUG
     DPRINTF("Time taken: %lf sec\n\n", max_time);
 
     printf("\n===== Reporting measured throughput ======\n\n");
-//#endif    
     double k_earliest_start_time = k_start_time[0];
     double k_latest_end_time = k_end_time[0];
-    
+
     for (int i = 1; i < NUM_KERNELS_TO_CREATE; i++) {
         if (k_start_time[i] < k_earliest_start_time)
             k_earliest_start_time = k_start_time[i];
@@ -489,12 +529,11 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     k_latest_end_time = k_end_time[NUM_KERNELS_TO_CREATE - 1];
 
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
-        printf("  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec time = %.5f s, start=%.5f s, end=%.5f s\n", sgemm_kernel_name[i], k_exec_time[i], k_start_time[i], k_end_time[i]);
+        printf("  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec time = %.5f s, start=%.5f s, end=%.5f s\n", sgemv_kernel_name[i], k_exec_time[i], k_start_time[i], k_end_time[i]);
     }
-//#endif
- 
+
     double k_overall_exec_time = k_latest_end_time - k_earliest_start_time;
-//#ifndef NDEBUG
+
     printf("\n");
     printf("  Loader kernels start time\t\t= %.5f s\n", k_earliest_start_time);
     printf("  Unloader kernels end time\t\t= %.5f s\n", k_latest_end_time);
@@ -503,7 +542,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     // multiplied by 1.0e-9 to get G-FLOPs
     printf("\n");
 
-    double num_operations = (double)2.0 * (TOTAL_K) * (double)(TOTAL_I) * (double)(TOTAL_J);
+    double num_operations = (double)2.0 * (TOTAL_K) * (double)(TOTAL_I);
 
     printf("  # operations = %.0f\n", num_operations );
     printf("  Throughput: %.5f GFLOPS\n", (double)1.0e-9 * num_operations / k_overall_exec_time);
@@ -511,10 +550,10 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     DPRINTF("\n===== Host-CPU transferring result matrix C from the FPGA device global memory (DDR4) via PCIe ======\n\n");
 #endif
     // Read the results back from the device, blocking read
-    float *serialized_Z;
-    if ((serialized_Z = (float *)acl_aligned_malloc(num_elem_C * sizeof(float))) == NULL) {
-        perror("Failed malloc of matrix serialized_Z");
-    }
+ //   float *C;
+ //   if ((C = (float *)acl_aligned_malloc(TOTAL_I * sizeof(float))) == NULL) {
+ //       perror("Failed malloc of matrix C");
+ //   }
 
     clEnqueueReadBuffer(
         //cmdQueue[KID_DRAIN_MAT_C],
@@ -522,19 +561,33 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
         output_C_buf,
         CL_TRUE,
         0,
-        num_elem_C * sizeof(cl_float),
-        serialized_Z,
+        TOTAL_I * sizeof(cl_float),
+        C,
         0,
         NULL,
         NULL);
     CHECK(status);
 
-    // Deserialize Z
-    addr = 0;
-    for (int i = 0; i < TOTAL_I; i++)
-        for (int j = 0; j < TOTAL_J; j++) {
-            C[j + i*TOTAL_J] = serialized_Z[addr++];
+#ifndef NDEBUG
+    bool passed = 1;
+    for (size_t i = 0; i < I; i++)
+    for (size_t ii = 0; ii < II; ii++)
+    for (size_t iii = 0; iii < III; iii++) {
+        size_t total_i = iii + III * ii + III * II * i;
+        float golden = 0.0f;
+        for (size_t k = 0; k < TOTAL_K; k++) {
+            golden += A[k+TOTAL_K*total_i] * B[k];
         }
-    return 0;
+        passed &= fabs(golden - C[total_i]) < 0.005*fabs(golden);
+    } 
+
+    if (passed) {
+        printf("[PASSED]\n");
+    } else {
+        printf("[FAILED]\n");
+    }
+#endif
+
+return 0;
 }
 

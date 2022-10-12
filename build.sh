@@ -722,6 +722,7 @@ if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
     mkdir -p $FPGAOPENCL_BISTREAM_DIR
     cd $FPGAOPENCL_BISTREAM_DIR
     wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
+    wget $FPGAOPENCL_BISTREAM_URL/sgemv.aocx
     cd - > /dev/null
   fi
 fi
