@@ -605,7 +605,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         auto op = builder.create<ColBindOp>(
                 loc, args[0].getType(), args[0], args[1]
         );
-        op.inferTypes();
+        op.getResult().setType(tryInferType(op.getOperation())[0]);
         return static_cast<mlir::Value>(op);
 #endif
     }

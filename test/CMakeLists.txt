@@ -48,6 +48,8 @@ set(TEST_SOURCES
     
         api/python/DaphneLibTest.cpp
         
+        ir/daphneir/InferTypesTest.cpp
+        
         parser/config/ConfigParserTest.cpp
     
         runtime/distributed/worker/WorkerTest.cpp
