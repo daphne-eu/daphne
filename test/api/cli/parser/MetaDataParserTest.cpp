@@ -19,6 +19,8 @@
 #include <catch.hpp>
 
 #include <parser/metadata/MetaDataParser.h>
+#include <runtime/local/datagen/GenGivenVals.h>
+#include <runtime/local/datastructures/Frame.h>
 
 #include <iostream>
 
@@ -70,4 +72,46 @@ TEST_CASE("Frame meta data file without \"label\" keys", TAG_PARSER)
 {
     const std::string metaDataFile = dirPath + "MetaData7";
     REQUIRE_THROWS(MetaDataParser::readMetaData(metaDataFile));
+}
+
+TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER,(DenseMatrix, CSRMatrix), (double))
+{
+    using DT = TestType;
+    
+    const std::filesystem::path metaDataFile(dirPath + "WriteMatrixMetaData.meta");
+    
+    auto m = genGivenVals<DT>(3, {
+            0, 0, 1, 0,
+            0, 0, 0, 0,
+            0, 2, 0, 0,
+    });
+    
+    FileMetaData metaData(m->getNumRows(), m->getNumCols(), true, ValueTypeUtils::codeFor<typename DT::VT>);
+    MetaDataParser::writeMetaData(metaDataFile, metaData);
+    
+    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
+
+    // cleanup
+    if(std::filesystem::exists(metaDataFile)) {
+        std::filesystem::remove(metaDataFile);
+    }
+}
+
+TEST_CASE("Write proper meta data file for Frame", TAG_PARSER)
+{
+    const std::filesystem::path metaDataFile(dirPath + "WriteFrameMetaData.meta");
+    
+    std::vector<ValueTypeCode> schema = {ValueTypeCode::SI64, ValueTypeCode::F64};
+    std::vector<std::string> labels = {"foo", "bar"};
+    auto f = DataObjectFactory::create<Frame>(4, 2, schema.data(), labels.data(), false);
+    FileMetaData metaData(f->getNumRows(), f->getNumCols(), false, schema, labels, -1);
+    
+    MetaDataParser::writeMetaData(metaDataFile, metaData);
+    
+    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
+
+    // cleanup
+    if(std::filesystem::exists(metaDataFile)) {
+        std::filesystem::remove(metaDataFile);
+    }
 }

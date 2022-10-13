@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_IO_FILEMETADATA_H
-#define SRC_RUNTIME_LOCAL_IO_FILEMETADATA_H
+#pragma once
 
 #include <runtime/local/datastructures/ValueTypeCode.h>
 
+#include <utility>
 #include <vector>
 #include <string>
 
@@ -36,7 +36,7 @@ struct FileMetaData {
     const ssize_t numNonZeros;
     
     /**
-     * @brief Construct a new File Meta Data object for Matrix
+     * @brief Construct a new File Meta Data object for Frames
      */
     FileMetaData(
         size_t numRows,
@@ -48,12 +48,12 @@ struct FileMetaData {
     ) :
         numRows(numRows), numCols(numCols),
         isSingleValueType(isSingleValueType),
-        schema(schema),
-        labels(labels),
+        schema(std::move(schema)),
+        labels(std::move(labels)),
         numNonZeros(numNonZeros) {}
 
     /**
-     * @brief Construct a new File Meta Data object for Frame
+     * @brief Construct a new File Meta Data object for Matrix
      */
     FileMetaData(
         size_t numRows,
@@ -69,5 +69,3 @@ struct FileMetaData {
         schema.emplace_back(valueType);
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_IO_FILEMETADATA_H

@@ -19,46 +19,56 @@
 
 #include <fstream>
 
-FileMetaData MetaDataParser::readMetaData(const std::string& filename) {
-    std::ifstream ifs(filename + ".meta", std::ios::in);
+FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
+    std::string filename = (filename_.find(".meta") == std::string::npos) ? filename_ + ".meta" : filename_;
+    std::ifstream ifs(filename, std::ios::in);
     if (!ifs.good())
         throw std::runtime_error("Could not open file '" + filename + ".meta' for reading meta data.");
 
     nlohmann::basic_json jf = nlohmann::json::parse(ifs);
 
-    if (!keyExists(jf, JsonKeys::NUM_ROWS) || !keyExists(jf, JsonKeys::NUM_COLS))
-        throw std::invalid_argument("A meta data JSON file should always contain \"" + JsonKeys::NUM_ROWS + "\" and \"" + JsonKeys::NUM_COLS + "\" keys.");
+    if (!keyExists(jf, JsonKeys::NUM_ROWS) || !keyExists(jf, JsonKeys::NUM_COLS)) {
+        throw std::invalid_argument("A meta data JSON file should always contain \"" + JsonKeys::NUM_ROWS + "\" and \""
+                                    + JsonKeys::NUM_COLS + "\" keys.");
+    }
 
     const size_t numRows = jf.at(JsonKeys::NUM_ROWS).get<size_t>();
     const size_t numCols = jf.at(JsonKeys::NUM_COLS).get<size_t>();
-
     const bool isSingleValueType = !(keyExists(jf, JsonKeys::SCHEMA));
-
-    std::vector<ValueTypeCode> schema;
-    std::vector<std::string> labels;
-
+    const ssize_t numNonZeros = (keyExists(jf, JsonKeys::NUM_NON_ZEROS)) ? jf.at(JsonKeys::NUM_NON_ZEROS).get<ssize_t>()
+            : -1;
+    
     if (isSingleValueType) {
         if (keyExists(jf, JsonKeys::VALUE_TYPE)) {
             ValueTypeCode vtc = jf.at(JsonKeys::VALUE_TYPE).get<ValueTypeCode>();
-            schema.emplace_back(vtc);
-        } else throw std::invalid_argument("A (matrix) meta data JSON file should contain the \"" + JsonKeys::VALUE_TYPE + "\" key.");
-    } else {
+            return {numRows, numCols, isSingleValueType, vtc, numNonZeros};
+        }
+        else {
+            throw std::invalid_argument("A (matrix) meta data JSON file should contain the \"" + JsonKeys::VALUE_TYPE
+                    + "\" key.");
+        }
+    }
+    else {
         if (keyExists(jf, JsonKeys::SCHEMA)) {
+            std::vector<ValueTypeCode> schema;
+            std::vector<std::string> labels;
             auto schemaColumn = jf.at(JsonKeys::SCHEMA).get<std::vector<SchemaColumn>>();
             for (const auto& column: schemaColumn) {
                 schema.emplace_back(column.getValueType());
                 labels.emplace_back(column.getLabel());
             }
-        } else throw std::invalid_argument("A (frame) meta data JSON file should contain the \"" + JsonKeys::SCHEMA + "\" key.");
+            return {numRows, numCols, isSingleValueType, schema, labels, numNonZeros};
+        }
+        else {
+            throw std::invalid_argument("A (frame) meta data JSON file should contain the \"" + JsonKeys::SCHEMA
+                    + "\" key.");
+        }
     }
-
-    const ssize_t numNonZeros = (keyExists(jf, JsonKeys::NUM_NON_ZEROS)) ? jf.at(JsonKeys::NUM_NON_ZEROS).get<ssize_t>() : -1;
-
-    return FileMetaData(numRows, numCols, isSingleValueType, schema, labels, numNonZeros);
 }
 
-void MetaDataParser::writeMetaData(const std::string& filename, const FileMetaData& metaData) {
-    std::ofstream ofs(filename + ".meta", std::ios::out);
+void MetaDataParser::writeMetaData(const std::string& filename_, const FileMetaData& metaData) {
+    std::string filename = (filename_.find(".meta") == std::string::npos) ? filename_ + ".meta" : filename_;
+    std::ofstream ofs(filename, std::ios::out);
     if (!ofs.good())
         throw std::runtime_error("could not open file '" + filename + "'.meta for writing meta data");
 
@@ -69,9 +79,11 @@ void MetaDataParser::writeMetaData(const std::string& filename, const FileMetaDa
         json[JsonKeys::NUM_COLS] = metaData.numCols;
 
         if (metaData.isSingleValueType) {
-            if (metaData.schema.size() != 1) throw std::runtime_error("inappropriate meta data tried to be written to file");
+            if (metaData.schema.size() != 1)
+                throw std::runtime_error("inappropriate meta data tried to be written to file");
             json[JsonKeys::VALUE_TYPE] = metaData.schema[0];
-        } else {
+        }
+        else {
             std::vector<SchemaColumn> schemaColumns;
             // assume that the schema and labels are the same lengths
             for (unsigned int i = 0; i < metaData.schema.size(); i++) {
@@ -87,7 +99,9 @@ void MetaDataParser::writeMetaData(const std::string& filename, const FileMetaDa
             json[JsonKeys::NUM_NON_ZEROS] = metaData.numNonZeros;
 
         ofs << json.dump();
-    } else throw std::runtime_error("could not open file '" + filename + "'.json for writing meta data");
+    }
+    else
+        throw std::runtime_error("could not open file '" + filename + "'.meta for writing meta data");
 }
 
 bool MetaDataParser::keyExists(const nlohmann::json& j, const std::string& key) { return j.find(key) != j.end(); }

@@ -45,8 +45,8 @@ public:
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(SchemaColumn, label, valueType)
     [[nodiscard]] const std::string& getLabel() const { return label; }
     [[nodiscard]] ValueTypeCode getValueType() const { return valueType; }
-    void setLabel(const std::string& label) { this->label = label; }
-    void setValueType(ValueTypeCode valueType) { this->valueType = valueType; }
+    void setLabel(const std::string& label_) { this->label = label_; }
+    void setValueType(ValueTypeCode valueType_) { this->valueType = valueType_; }
 
 private:
     std::string label;
