@@ -53,6 +53,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_llvm = jf.at(DaphneConfigJsonParams::EXPLAIN_LLVM).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING))
         config.explain_parsing = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED))
+        config.explain_parsing_simplified = jf.at(DaphneConfigJsonParams::EXPLAIN_PARSING_SIMPLIFIED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE))
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
@@ -79,6 +81,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.libdir = jf.at(DaphneConfigJsonParams::LIB_DIR).get<std::string>();
     if (keyExists(jf, DaphneConfigJsonParams::LIBRARY_PATHS))
         config.library_paths = jf.at(DaphneConfigJsonParams::LIBRARY_PATHS).get<std::vector<std::string>>();
+    if (keyExists(jf, DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS))
+        config.daphnedsl_import_paths = jf.at(DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS).get<std::map<std::string, std::vector<std::string>>>();
 //} catch (const nlohmann::detail::type_error& ex) {
 //    std::cerr << ex.what() << std::endl;
 //} catch (const nlohmann::detail::out_of_range& ex) {

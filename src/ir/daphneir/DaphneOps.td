@@ -28,6 +28,7 @@ include "ir/daphneir/DaphneInferTypesOpInterface.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
+include "ir/daphneir/FPGAOPENCLSupport.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -140,11 +141,13 @@ def Daphne_NumCellsOp : Daphne_NumOp<"numCells">;
 
 def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromIthArg<0>, NumColsFromIthArg<1>,
-    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport
 ]> {
-    let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs);
+    let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
+    let hasCanonicalizeMethod = 1;
 }
 
 // ****************************************************************************
@@ -563,7 +566,7 @@ def Daphne_OrderOp : Daphne_Op<"order", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     SameVariadicOperandSize,
-    ShapeFromArg
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     // TODO Maybe colIdxs and ascs should be attributes.
     let arguments = (ins MatrixOrFrame:$arg, Variadic<Size>:$colIdxs, Variadic<BoolScalar>:$ascs, BoolScalar:$returnIdxs);
@@ -1242,6 +1245,17 @@ def Daphne_CreateCUDAContextOp : Daphne_Op<"createCUDAContext", [CUDASupport]> {
     let results = (outs);
 }
 
+def Daphne_CreateDistributedContextOp : Daphne_Op<"createDistributedContext", []> {
+    let arguments = (ins);
+    let results = (outs);
+}
+
+def Daphne_CreateFPGAContextOp : Daphne_Op<"createFPGAContext", [FPGAOPENCLSupport]> {
+    let arguments = (ins);
+    let results = (outs);
+}
+
+
 // ****************************************************************************
 // Vectorized operations
 // ****************************************************************************
@@ -1262,6 +1276,21 @@ def Daphne_VectorizedPipelineOp : Daphne_Op<"vectorizedPipeline", [AttrSizedOper
     let regions = (region SizedRegion<1>:$body, AnyRegion:$cuda);
 
     let hasCanonicalizeMethod = 1;
+}
+
+def Daphne_DistributedPipelineOp : Daphne_Op<"distributedPipeline", [AttrSizedOperandSegments]> {
+    let summary = "...";
+
+    let arguments = (ins
+            StrScalar:$ir,
+            Variadic<AnyTypeOf<[AnyScalar, MatrixOrFrame]>>:$inputs,
+            // TODO: both types should be SIZE, but we require `-1` for dynamic/unknown
+            Variadic<AnyTypeOf<[SIntScalar, Size]>>:$out_rows,
+            Variadic<AnyTypeOf<[SIntScalar, Size]>>:$out_cols,
+            TypedArrayAttrBase<VectorSplitAttr, "Vector-Splits">:$splits,
+            TypedArrayAttrBase<VectorCombineAttr, "Vector-Combines">:$combines
+    );
+    let results = (outs Variadic<MatrixOrFrame>:$outputs);
 }
 
 // ****************************************************************************

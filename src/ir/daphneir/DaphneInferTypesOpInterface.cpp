@@ -206,6 +206,10 @@ void daphne::ExtractRowOp::inferTypes() {
     getResult().setType(t);
 }
 
+void daphne::MatMulOp::inferTypes() {
+    getResult().setType(lhs().getType().dyn_cast<daphne::MatrixType>().withSameElementType());
+}
+
 void daphne::FilterRowOp::inferTypes() {
     Type srcType = source().getType();
     Type t;

@@ -18,23 +18,40 @@
 #include <runtime/local/vectorized/Tasks.h>
 
 template<typename VT>
-void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
-        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
-        const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx),
-        bool verbose) {
+void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
+        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, const bool* isScalar, Structure **inputs, size_t numInputs,
+        size_t numOutputs, const int64_t *outRows, const int64_t *outCols, VectorSplit *splits, VectorCombine *combines,
+        DCTX(ctx), const bool verbose) {
 //     TODO: reduce code duplication
     auto inputProps = this->getInputProperties(inputs, numInputs, splits);
     auto len = inputProps.first;
     auto mem_required = inputProps.second;
-    // ToDo: sparse output mem requirements
+    // TODO: sparse output mem requirements
     auto row_mem = mem_required / len;
 
-    // create task queue (w/o size-based blocking)
-    std::unique_ptr<TaskQueue> q = std::make_unique<BlockingTaskQueue>(len);
+    std::vector<std::unique_ptr<TaskQueue>> q;
+    std::vector<TaskQueue*> qvector;
+    if (ctx->getUserConfig().pinWorkers) {
+        for(int i=0; i<this->_numQueues; i++) {
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            CPU_SET(i, &cpuset);
+            sched_setaffinity(0, sizeof(cpu_set_t), &cpuset);
+            std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
+            q.push_back(std::move(tmp));
+            qvector.push_back(q[i].get());
+        }
+    } else {
+        for(int i=0; i<this->_numQueues; i++) {
+            std::unique_ptr<TaskQueue> tmp = std::make_unique<BlockingTaskQueue>(len);
+            q.push_back(std::move(tmp));
+            qvector.push_back(q[i].get());
+        }
+    }
 
     auto batchSize8M = std::max(100ul, static_cast<size_t>(std::ceil(8388608 / row_mem)));
-    this->initCPPWorkers(q.get(), batchSize8M, verbose);
-
+    this->initCPPWorkers(qvector, batchSize8M, verbose, this->_numQueues, this->_queueMode,
+            ctx->getUserConfig().pinWorkers);
 
     for(size_t i = 0; i < numOutputs; i++)
         if(*(res[i]) != nullptr)
@@ -46,36 +63,77 @@ void MTWrapper<CSRMatrix<VT>>::executeSingleQueue(std::vector<std::function<void
 
     // lock for aggregation combine
     // TODO: multiple locks per output
-
     // create tasks and close input
     uint64_t startChunk = 0;
     uint64_t endChunk = 0;
+    uint64_t currentItr = 0;
+    uint64_t target;
     int method=ctx->config.taskPartitioningScheme;
     int chunkParam = ctx->config.minimumTaskSize;
     if(chunkParam<=0)
         chunkParam=1;
-    LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
-    while (lp.hasNextChunk()) {
-        endChunk += lp.getNextChunk();
-        q->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
-                inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
-                outCols, 0, ctx}, dataSinks));
-        startChunk = endChunk;
+    if (ctx->getUserConfig().prePartitionRows) {
+        uint64_t oneChunk = len/this->_numQueues;
+        int remainder = len - (oneChunk * this->_numQueues);
+        std::vector<LoadPartitioning> lps;
+        lps.emplace_back(method, oneChunk+remainder, chunkParam, this->_numThreads, false);
+        for(int i=1; i<this->_numQueues; i++) {
+            lps.emplace_back(method, oneChunk, chunkParam, this->_numThreads, false);
+        }
+        if (ctx->getUserConfig().pinWorkers) {
+            for(int i=0; i<this->_numQueues; i++) {
+                while (lps[i].hasNextChunk()) {
+                    endChunk += lps[i].getNextChunk();
+                    qvector[i]->enqueueTaskPinned(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
+                            inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                            outCols, 0, ctx}, dataSinks), this->topologyResponsibleThreads[i]);
+                    startChunk = endChunk;
+                }
+            }
+        } else {
+            for(int i=0; i<this->_numQueues; i++) {
+                while (lps[i].hasNextChunk()) {
+                    endChunk += lps[i].getNextChunk();
+                    qvector[i]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
+                            inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                            outCols, 0, ctx}, dataSinks));
+                    startChunk = endChunk;
+                }
+            }
+        }
+    } else {
+        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
+        if (ctx->getUserConfig().pinWorkers) {
+            while (lp.hasNextChunk()) {
+                endChunk += lp.getNextChunk();
+                target = currentItr % this->_numQueues;
+                qvector[target]->enqueueTaskPinned(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
+                        inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                        outCols, 0, ctx}, dataSinks), target);
+                startChunk = endChunk;
+		currentItr++;
+            }
+        } else {
+            while (lp.hasNextChunk()) {
+                endChunk += lp.getNextChunk();
+                target = currentItr % this->_numQueues;
+                qvector[target]->enqueueTask(new CompiledPipelineTask<CSRMatrix<VT>>(CompiledPipelineTaskData<CSRMatrix<VT>>{funcs, isScalar,
+                        inputs, numInputs, numOutputs, outRows, outCols, splits, combines, startChunk, endChunk, outRows,
+                        outCols, 0, ctx}, dataSinks));
+                startChunk = endChunk;
+		currentItr++;
+            }
+        }
     }
-    q->closeInput();
+    for(int i=0; i<this->_numQueues; i++) {
+        qvector[i]->closeInput();
+    }
 
     this->joinAll();
     for(size_t i = 0; i < numOutputs; i++) {
         *(res[i]) = dataSinks[i]->consume();
         delete dataSinks[i];
     }
-}
-
-template<typename VT>
-[[maybe_unused]] void MTWrapper<CSRMatrix<VT>>::executeQueuePerDeviceType(std::vector<std::function<void(CSRMatrix<VT> ***, Structure **,
-        DCTX(ctx))>> funcs, CSRMatrix<VT> ***res, bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs,
-        int64_t *outRows, int64_t *outCols, VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-    throw std::runtime_error("sparse multi queue vect exec not implemented");
 }
 
 template class MTWrapper<CSRMatrix<double>>;

@@ -1,0 +1,3 @@
+import "z.daphne";
+
+sbox = 111 + z.z;

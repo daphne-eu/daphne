@@ -93,6 +93,22 @@ struct GenGivenVals<DenseMatrix<VT>> {
     }
 };
 
+template<>
+struct GenGivenVals<DenseMatrix<const char*>> {
+    static DenseMatrix<const char*> * generate(size_t numRows, const std::vector<const char*> & elements, size_t minNumNonZeros = 0) {
+        const size_t numCells = elements.size();
+        assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
+        const size_t numCols = numCells / numRows;
+        auto res = DataObjectFactory::create<DenseMatrix<const char*>>(numRows, numCols, false);
+        res->prepareAppend();
+        for(size_t r = 0; r < numRows; r++)
+            for(size_t c = 0; c < numCols; c++)
+                res->append(r, c, elements[r * res->getRowSkip() + c]);
+        res->finishAppend();
+        return res;
+    }
+};
+
 // ----------------------------------------------------------------------------
 // CSRMatrix
 // ----------------------------------------------------------------------------

@@ -1,2 +1,5 @@
-m = rand(1500, 1200, 10.0, 20.0, 1.0, 0);
-print(m + m);
+// TODO: For now distributed runtime support only unique inputs, for a pipeline.
+// Therefore we create two different matrices instead of one & using it twice for the binary op.
+m1 = rand(1500, 1200, 10.0, 20.0, 1.0, 0);
+m2 = rand(1500, 1200, 10.0, 20.0, 1.0, 0);
+print(m1 + m2);

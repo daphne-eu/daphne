@@ -15,18 +15,6 @@
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
 
-
-# *****************************************************************************
-# DistributedCommunication library
-# *****************************************************************************
-
-set(SOURCES DistributedCaller.h)
-set(LIBS Proto)
-
-add_library(DistributedCaller ${SOURCES})
-target_link_libraries(DistributedCaller PRIVATE ${LIBS})
-
-
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_custom_command(
@@ -60,6 +48,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
         )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
@@ -87,10 +77,13 @@ list(APPEND LIBS DataStructures IO ProtoDataConverter BLAS::BLAS)
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_dense.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
-        Pooling.cpp)
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
+)
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -101,4 +94,8 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
+list(APPEND LIBS 
+        MLIRDaphne
+        MLIRDaphneTransforms
+        )
 target_link_libraries(AllKernels PUBLIC ${LIBS})

@@ -1,0 +1,36 @@
+DenseMatrix(4x1, double)
+1
+2
+3
+4
+DenseMatrix(2x2, double)
+1 2
+3 4
+DenseMatrix(1x4, double)
+1 2 3 4
+DenseMatrix(2x2, double)
+7 10
+15 22
+DenseMatrix(2x2, double)
+7 15
+10 22
+DenseMatrix(2x2, double)
+7 10
+15 22
+DenseMatrix(4x4, double)
+1 2 3 4
+2 4 6 8
+3 6 9 12
+4 8 12 16
+DenseMatrix(1x1, double)
+30
+DenseMatrix(4x4, double)
+1 2 3 4
+2 4 6 8
+3 6 9 12
+4 8 12 16
+DenseMatrix(4x4, double)
+1 2 3 4
+2 4 6 8
+3 6 9 12
+4 8 12 16

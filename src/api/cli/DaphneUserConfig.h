@@ -17,12 +17,12 @@
 
 #pragma once
 
-#include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/vectorized/LoadPartitioningDefs.h>
 
 #include <vector>
 #include <string>
 #include <memory>
-#include <vector>
+#include <map>
 
 /*
  * Container to pass around user configuration
@@ -32,19 +32,28 @@ struct DaphneUserConfig {
 
     bool use_cuda = false;
     bool use_vectorized_exec = false;
+    bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
+    bool prePartitionRows = false;
+    bool pinWorkers = false;
+    bool hyperthreadingEnabled = false;
+    bool debugMultiThreading = false;
+    bool use_fpgaopencl = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;
     bool explain_llvm = false;
     bool explain_parsing = false;
+    bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_sql = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
+    QueueTypeOption queueSetupScheme = CENTRALIZED;
+	victimSelectionLogic victimSelection = SEQPRI;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     
@@ -57,6 +66,12 @@ struct DaphneUserConfig {
     // ToDo: This is an arbitrary default taken from sample code
 //    int cublas_workspace_size = 1024 * 1024 * 4;
 #endif
+#ifdef USE_FPGAOPENCL
+    std::vector<int> fpga_devices;
+#endif
+    
+    
     std::string libdir;
     std::vector<std::string> library_paths;
+    std::map<std::string, std::vector<std::string>> daphnedsl_import_paths;
 };

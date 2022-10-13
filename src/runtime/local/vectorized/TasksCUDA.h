@@ -32,6 +32,8 @@ public:
     
     void execute(uint32_t fid, uint32_t batchSize) override;
 
+    uint64_t getTaskSize() override;
+
 private:
     void accumulateOutputs(std::vector<DenseMatrix<VT>*>& localResults, std::vector<DenseMatrix<VT> *> &localAddRes,
             uint64_t rowStart, uint64_t rowEnd);

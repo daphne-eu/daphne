@@ -12,33 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# *****************************************************************************
-# CallData library
-# *****************************************************************************
-
-set(SOURCES CallData.cpp)
-set(LIBS Proto)
-
-add_library(CallData ${SOURCES})
-target_link_libraries(CallData PRIVATE ${LIBS})
-
-
-# *****************************************************************************
-# ProtoDataConverter library
-# *****************************************************************************
-
-set(SOURCES ProtoDataConverter.cpp)
-set(LIBS DataStructures Proto)
-
-add_library(ProtoDataConverter ${SOURCES})
-target_link_libraries(ProtoDataConverter PRIVATE ${LIBS})
 
 # *****************************************************************************
 # WorkerImpl library
 # *****************************************************************************
 
 # FIXME: use DaphneIrExecutor target instead
-set(SOURCES WorkerImpl.cpp ../../../compiler/execution/DaphneIrExecutor.cpp)
+set(SOURCES 
+        WorkerImpl.cpp 
+        WorkerImplGRPC.cpp
+        ../../../compiler/execution/DaphneIrExecutor.cpp)
 
 #source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
 

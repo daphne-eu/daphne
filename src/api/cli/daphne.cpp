@@ -72,13 +72,15 @@ main(int argc, char** argv)
     
     // TODO We will probably subdivide the options into multiple groups later.
     OptionCategory daphneOptions("DAPHNE Options");
+    OptionCategory schedulingOptions("Advanced Scheduling Knobs");
+
 
     // Options ----------------------------------------------------------------
     
     // Scheduling options
 
     opt<SelfSchedulingScheme> taskPartitioningScheme(
-            cat(daphneOptions), desc("Choose task partitioning scheme:"),
+            cat(schedulingOptions), desc("Choose task partitioning scheme:"),
             values(
                 clEnumVal(STATIC , "Static (default)"),
                 clEnumVal(SS, "Self-scheduling"),
@@ -94,23 +96,60 @@ main(int argc, char** argv)
                 clEnumVal(PSS, "Probabilistic self-scheduling")
             )
     );
+    opt<QueueTypeOption> queueSetupScheme(
+            cat(schedulingOptions), desc("Choose queue setup scheme:"),
+            values(
+                clEnumVal(CENTRALIZED, "One queue (default)"),
+                clEnumVal(PERGROUP, "One queue per CPU group"),
+                clEnumVal(PERCPU, "One queue per CPU core")
+            )
+    );
+	opt<victimSelectionLogic> victimSelection(
+            cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
+            values(
+                clEnumVal(SEQ, "Steal from next adjacent worker"),
+                clEnumVal(SEQPRI, "Steal from next adjacent worker, prioritize same NUMA domain"),
+                clEnumVal(RANDOM, "Steal from random worker"),
+				clEnumVal(RANDOMPRI, "Steal from random worker, prioritize same NUMA domain")
+            )
+    );
 
     opt<int> numberOfThreads(
-            "num-threads", cat(daphneOptions),
+            "num-threads", cat(schedulingOptions),
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
                 "(default is equal to the number of physcial cores on the target node that executes the code)"
             )
     );
     opt<int> minimumTaskSize(
-            "grain-size", cat(daphneOptions),
+            "grain-size", cat(schedulingOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
             )
     );
     opt<bool> useVectorizedPipelines(
-            "vec", cat(daphneOptions),
+            "vec", cat(schedulingOptions),
             desc("Enable vectorized execution engine")
+    );
+    opt<bool> useDistributedRuntime(
+        "distributed", cat(daphneOptions),
+        desc("Enable distributed runtime")
+    );
+    opt<bool> prePartitionRows(
+            "pre-partition", cat(schedulingOptions),
+            desc("Partition rows into the number of queues before applying scheduling technique")
+    );
+    opt<bool> pinWorkers(
+            "pin-workers", cat(schedulingOptions),
+            desc("Pin workers to CPU cores")
+    );
+    opt<bool> hyperthreadingEnabled(
+            "hyperthreading", cat(schedulingOptions),
+            desc("Utilize multiple logical CPUs located on the same physical CPU")
+    );
+    opt<bool> debugMultiThreading(
+            "debug-mt", cat(schedulingOptions),
+            desc("Prints debug information about the Multithreading Wrapper")
     );
     
     // Other options
@@ -137,6 +176,10 @@ main(int argc, char** argv)
             "cuda", cat(daphneOptions),
             desc("Use CUDA")
     );
+    opt<bool> fpgaopencl(
+            "fpgaopencl", cat(daphneOptions),
+            desc("Use FPGAOPENCL")
+    );
     opt<string> libDir(
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
@@ -146,6 +189,7 @@ main(int argc, char** argv)
       kernels,
       llvm,
       parsing,
+      parsing_simplified,
       property_inference,
       sql,
       vectorized,
@@ -158,6 +202,7 @@ main(int argc, char** argv)
                        "multiple values by comma, the order is irrelevant)"),
         llvm::cl::values(
             clEnumVal(parsing, "Show DaphneIR after parsing"),
+            clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
@@ -192,7 +237,12 @@ main(int argc, char** argv)
     // Parse arguments
     // ------------------------------------------------------------------------
     
-    HideUnrelatedOptions(daphneOptions);
+    std::vector<const llvm::cl::OptionCategory *> visibleCategories;
+    visibleCategories.push_back(&daphneOptions);
+    visibleCategories.push_back(&schedulingOptions);
+    
+    HideUnrelatedOptions(visibleCategories);
+
     extrahelp(
             "\nEXAMPLES:\n\n"
             "  daphne example.daphne\n"
@@ -223,12 +273,19 @@ main(int argc, char** argv)
     
 //    user_config.debug_llvm = true;
     user_config.use_vectorized_exec = useVectorizedPipelines;
+    user_config.use_distributed = useDistributedRuntime; 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
-    user_config.numberOfThreads = numberOfThreads;
-    user_config.minimumTaskSize = minimumTaskSize;
+    user_config.queueSetupScheme = queueSetupScheme;
+	user_config.victimSelection = victimSelection;
+    user_config.numberOfThreads = numberOfThreads; 
+    user_config.minimumTaskSize = minimumTaskSize; 
+    user_config.pinWorkers = pinWorkers;
+    user_config.hyperthreadingEnabled = hyperthreadingEnabled;
+    user_config.debugMultiThreading = debugMultiThreading;
+    user_config.prePartitionRows = prePartitionRows;
 
     for (auto explain : explainArgList) {
         switch (explain) {
@@ -240,6 +297,9 @@ main(int argc, char** argv)
                 break;
             case parsing:
                 user_config.explain_parsing = true;
+                break;
+            case parsing_simplified:
+                user_config.explain_parsing_simplified = true;
                 break;
             case property_inference:
                 user_config.explain_property_inference = true;
@@ -268,6 +328,11 @@ main(int argc, char** argv)
         }
     }
 
+    if(fpgaopencl) {
+        user_config.use_fpgaopencl = true;
+    }
+
+
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)
             user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
@@ -289,7 +354,7 @@ main(int argc, char** argv)
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor
-        executor(std::getenv("DISTRIBUTED_WORKERS"), selectMatrixRepr, user_config);
+        executor(selectMatrixRepr, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR
@@ -302,7 +367,7 @@ main(int argc, char** argv)
 
     // Parse the input file and generate the corresponding DaphneIR operations
     // inside the module, assuming DaphneDSL as the input format.
-    DaphneDSLParser parser(scriptArgsFinal);
+    DaphneDSLParser parser(scriptArgsFinal, user_config);
     try {
         parser.parseFile(builder, inputFile);
     }
