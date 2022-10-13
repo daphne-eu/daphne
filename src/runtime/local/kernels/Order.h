@@ -154,9 +154,6 @@ struct OrderFrame {
             DeduceValueTypeAndExecute<ColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups, ascending[numColIdxs-1], colIdx, ctx);
         } else {
             DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups, ascending[numColIdxs-1], colIdx, ctx);
-            if (groups.front().first == 0 && groups.front().second == numRows) {
-                groups.clear();
-            }
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
     }
@@ -228,9 +225,6 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             columnIDSort(idx, arg, colIdxs[numColIdxs-1], groups, ascending[numColIdxs-1], ctx);
         } else {
             multiColumnIDSort(idx, arg, colIdxs[numColIdxs-1], groups, ascending[numColIdxs-1], ctx);
-            if (groups.front().first == 0 && groups.front().second == numRows) {
-                groups.clear();
-            }
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
 

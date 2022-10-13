@@ -40,6 +40,7 @@ set(TEST_SOURCES
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/sql/SQLTest.cpp
+        api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
