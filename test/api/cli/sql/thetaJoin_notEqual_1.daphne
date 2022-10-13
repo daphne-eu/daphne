@@ -12,6 +12,6 @@ rhs = createFrame(
 registerView("lhs", lhs);
 registerView("rhs", rhs);
 
-res = sql("SELECT lhs.a, lhs.b, rhs.a, rhs.b FROM lhs JOIN rhs ON lhs.a <> rhs.a;");
+res = sql("SELECT lhs.a, lhs.b, rhs.a, rhs.b FROM lhs JOIN rhs ON lhs.a != rhs.a;");
 
 print(res);

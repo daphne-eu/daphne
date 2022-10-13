@@ -376,7 +376,7 @@ mlir::Attribute SQLVisitor::getCompareEnum(const std::string & op){
             mlir::daphne::CompareOperation::GreaterEqual)
         );
     }
-    if(op == "<>"){
+    if(op == "<>" or op == "!="){
         return static_cast<mlir::Attribute>(
             mlir::daphne::CompareOperationAttr::get(builder.getContext(),
             mlir::daphne::CompareOperation::NotEqual)

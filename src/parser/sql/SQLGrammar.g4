@@ -175,7 +175,7 @@ IDENTIFIER:
     (LETTER | '_')(LETTER | '_' | DIGIT)* ;
 
 CMP_OP:
-    ('='|'<>'|'<='|'>='|'<'|'>');
+    ('='|'<>'|'!='|'<='|'>='|'<'|'>');
 
 INT_LITERAL:
     '-'? DIGIT+;
