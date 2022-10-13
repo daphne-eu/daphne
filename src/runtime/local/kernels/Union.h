@@ -1,5 +1,5 @@
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_DUCKDBSQL_H
-#define SRC_RUNTIME_LOCAL_KERNELS_DUCKDBSQL_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_UNION_H
+#define SRC_RUNTIME_LOCAL_KERNELS_UNION_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -45,7 +45,7 @@ VTCol getValueFromFrame(
     return getValue<VTCol>(arg->getColumn<VTCol>(col), row);
 }
 
-
+//TODO! we have a better way of doing it now!
 void fillDuckDbTable(
     duckdb::Connection &con,
     const Frame *arg,
@@ -151,6 +151,47 @@ void createDuckDbTable(
 }
 
 
+ValueTypeCode getDaphneType(duckdb::PhysicalType phys){
+    std::stringstream error("");
+    switch(phys){
+        case duckdb::PhysicalType::BOOL:
+            error << "duckDbSql(...) does not yet support bool Types.\n";
+            throw std::runtime_error(error.str());
+            break;
+        case duckdb::PhysicalType::INT8:
+            return ValueTypeUtils::codeFor<int8_t>;
+        case duckdb::PhysicalType::INT16: //todo
+            return ValueTypeUtils::codeFor<int32_t>;
+        case duckdb::PhysicalType::INT32:
+            return ValueTypeUtils::codeFor<int32_t>;
+        case duckdb::PhysicalType::INT64:
+            return ValueTypeUtils::codeFor<int64_t>;
+        case duckdb::PhysicalType::INT128:  //todo
+            return ValueTypeUtils::codeFor<int64_t>;
+        case duckdb::PhysicalType::UINT8:
+            return ValueTypeUtils::codeFor<uint8_t>;
+        case duckdb::PhysicalType::UINT16:
+            return ValueTypeUtils::codeFor<uint32_t>;
+        case duckdb::PhysicalType::UINT32:
+            return ValueTypeUtils::codeFor<uint32_t>;
+        case duckdb::PhysicalType::UINT64:
+            return ValueTypeUtils::codeFor<uint64_t>;
+        case duckdb::PhysicalType::FLOAT:
+            return ValueTypeUtils::codeFor<float>;
+        case duckdb::PhysicalType::DOUBLE:
+            return ValueTypeUtils::codeFor<double>;
+        case duckdb::PhysicalType::VARCHAR:
+            error << "duckDbSql(...) does not yet support String Types.\n";
+            throw std::runtime_error(error.str());
+        default:
+            error << "duckDbSql(...). The physical return type from the "
+                << " DuckDB Query is not supported. The LogicalType is: ";
+            error << duckdb::LogicalTypeIdToString(logi.id()) << "\n";
+            throw std::runtime_error(error.str());
+    }
+}
+
+
 template<typename VTCol>
 void SetValues(
     DenseMatrix<VTCol> * res,
@@ -223,116 +264,90 @@ void fillResultFrame(
 
 }
 
+// void createAndFillDuckDBTable(duckdb::Connection con, Frame frame, const char* name){
+//     createDuckDbTable(con, frame, name);
+//     fillDuckDbTable(con, frame, name);
+// }
 
-void duckDbSql(
+//We use the innerjoin method to input datachunk via the connection. than get the table via relations and use union. IMPORTANT! tables need to have the same types and lengths. otherwise empty.
+void Union(
     // results
     Frame *& res,
-    // query
-    const char * query,
     //Frames (Tables)
-    Frame ** tables,
+    Frame ** frames,
     size_t numTables,
-    //Frame Names (Table Names)
-    const char ** tableNames,
-    size_t numTableNames,
     // context
     DCTX(ctx)
 ) {
-
+//OPEN CONNECTION AND
     duckdb::DuckDB db(nullptr);
     duckdb::Connection con(db);
-
+    duckdb::shared_ptr<duckdb::Relation> tables[numTables];
+    duckdb::shared_ptr<duckdb::Relation> unionR;
     std::cout<<std::endl << query << std::endl;
-    for(size_t i = 0; i < numTableNames && i < numTables; i++){
-        createDuckDbTable(con, tables[i], tableNames[i]);
-        fillDuckDbTable(con, tables[i], tableNames[i]);
-    }
-    duckdb::unique_ptr<duckdb::MaterializedQueryResult> result = con.Query(query);
 
+//CHECKING FRAMES
+    for(size_t i = 1; i < numTables; i++){
+        if(frame[0]->getNumCols() != frame[i]->getNumCols()){
+            std::stringstream error;
+            error << "Union(...): Frames have unequal column count.";
+            throw std::runtime_error(error.str());
+        }
+        for(size_t k = 1; k < frame[0]->getNumCols()){
+            ValueTypeCode type1 = frames[0]->getColumnType(x);
+            ValueTypeCode type2 = frames[i]->getColumnType(x);
+            if(type1 != type2){
+                std::stringstream error;
+                error << "Union(...): Frames have different column types.";
+                throw std::runtime_error(error.str());
+            }
+        }
+    }
+
+//LOAD DATA INTO DUCKDB
+    for(size_t i = 0; i < numTables; i++){
+        std::string table_name = "table_" + (int8_t)('a' + i);
+        createDuckDbTable(con, frames[i], table_name);
+        fillDuckDbTable(con, frames[i], table_name);
+        tables[i] = con.Table(table_name);
+    }
+
+//BUILD EXECUTION
+    unionR = tables[0];
+    for(size_t i = 1; i < numTables; i++){
+        unionR = unionR->Union(tables[i]);
+    }
+    duckdb::unique_ptr<duckdb::QueryResult> result = unionR->Execute();
+
+
+//CHECK EXECUTION FOR ERRORS
     if(result->HasError()){
         std::stringstream error;
-        error << "duckDbSql(...): DuckDB query execution unsuccessful: " << query;
+        error << "duckDbSql(...): DuckDB Union execution unsuccessful: " << query;
         error << "\nDuckDB reports: " << result->GetError();
         throw std::runtime_error(error.str());
     }
 
-    std::cout << result->ToString() << std::endl;
-
-    //TODO: MaterializedQueryResult -> Frame
-
-
+//GET TYPES AND CONVERT THEM BACK TO DAPHNE
     std::vector<duckdb::LogicalType> ret_types = result->types;
     std::vector<std::string> ret_names = result->names;
 
-
     const size_t totalCols = ret_types.size() == ret_names.size()? ret_types.size(): 0;
-
 
     ValueTypeCode schema[totalCols];
     std::string newlabels[totalCols];
 
-    std::stringstream error("");
-    bool error_raised = false;
+
     for(size_t i = 0; i < totalCols; i++){
         newlabels[i] = ret_names[i];
-        duckdb::LogicalType logi = ret_types[i];
-        duckdb::PhysicalType phys = logi.InternalType();
-        switch(phys){
-            case duckdb::PhysicalType::BOOL:
-                error << "duckDbSql(...) does not yet support bool Types.\n";
-                error_raised = true;
-                break;
-            case duckdb::PhysicalType::INT8:
-                schema[i] = ValueTypeUtils::codeFor<int8_t>;
-                break;
-            case duckdb::PhysicalType::INT16: //todo
-                schema[i] = ValueTypeUtils::codeFor<int32_t>;
-                break;
-            case duckdb::PhysicalType::INT32:
-                schema[i] = ValueTypeUtils::codeFor<int32_t>;
-                break;
-            case duckdb::PhysicalType::INT64:
-                schema[i] = ValueTypeUtils::codeFor<int64_t>;
-                break;
-            case duckdb::PhysicalType::INT128:  //todo
-                schema[i] = ValueTypeUtils::codeFor<int64_t>;
-                break;
-            case duckdb::PhysicalType::UINT8:
-                schema[i] = ValueTypeUtils::codeFor<uint8_t>;
-                break;
-            case duckdb::PhysicalType::UINT16:
-                schema[i] = ValueTypeUtils::codeFor<uint32_t>;
-                break;
-            case duckdb::PhysicalType::UINT32:
-                schema[i] = ValueTypeUtils::codeFor<uint32_t>;
-                break;
-            case duckdb::PhysicalType::UINT64:
-                schema[i] = ValueTypeUtils::codeFor<uint64_t>;
-                break;
-            case duckdb::PhysicalType::FLOAT:
-                schema[i] = ValueTypeUtils::codeFor<float>;
-                break;
-            case duckdb::PhysicalType::DOUBLE:
-                schema[i] = ValueTypeUtils::codeFor<double>;
-                break;
-            //TODO: STRING IS NOT SUPPORTED BY DUCKDB ANYMORE? So now VARCHAR
-            // case duckdb::PhysicalType::STRING:  //todo
-            //     error << "duckDbSql(...) does not yet support String Types.\n";
-            //     error_raised = true;
-            //     break;
-            default:
-                error << "duckDbSql(...). The physical return type from the "
-                    << " DuckDB Query is not supported. The LogicalType is: ";
-                error << duckdb::LogicalTypeIdToString(logi.id()) << "\n";
-                error_raised = true;
-        }
-    }
-    if(error_raised){
-        throw std::runtime_error(error.str());
+        duckdb::PhysicalType phys = ret_types[i].InternalType();
+        schema[i] = getDaphneType(phys);
     }
 
+//GET DATA FROM DUCKDB TO DAPHNE
     duckdb::unique_ptr<duckdb::DataChunk> mainChunk = result->Fetch();
     duckdb::unique_ptr<duckdb::DataChunk> nextChunk = result->Fetch();
+
     while(nextChunk != nullptr){
         mainChunk->Append((const_cast<duckdb::DataChunk&>(*nextChunk)), true);
         nextChunk = result->Fetch();
@@ -341,7 +356,6 @@ void duckDbSql(
     const size_t totalRows = mainChunk->size();
     res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
 
-
     fillResultFrame(
         res,
         move(mainChunk),
@@ -349,30 +363,20 @@ void duckDbSql(
         totalCols,
         totalRows
     );
-
-
-
-
-    // schema[0] = ValueTypeCode::SI64;
-    // newlabels[0] = "res";
-    // Creating Result Frame
 }
+
+
 #else //NO DUCKDB
-void duckDbSql(
+void Union(
     // results
     Frame *& res,
-    // query
-    const char * query,
     //Frames (Tables)
     Frame ** tables,
     size_t numTables,
-    //Frame Names (Table Names)
-    const char ** tableNames,
-    size_t numTableNames,
     // context
     DCTX(ctx)
 ) {
-    throw std::runtime_error("Use of duckDbSql(...) without DuckDB (--duckdb).");
+    throw std::runtime_error("Use of Union(...) without DuckDB (--duckdb). At the moment only a DuckDB implementation exists.");
 }
 #endif
 

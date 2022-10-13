@@ -97,6 +97,7 @@ add_library(AllKernels SHARED
 if(USE_DUCKDB)
     find_library(DUCKDB_LIB duckdb PATHS ${PROJECT_SOURCE_DIR}/thirdparty/installed/lib)
     list(APPEND LIBS ${DUCKDB_LIB})
+    message('Foo ${DUCKDB_LIB}')
 #    target_include_directories(AllKernels PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/duckdb)
 endif()
 
