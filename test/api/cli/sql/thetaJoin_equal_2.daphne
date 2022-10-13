@@ -1,10 +1,10 @@
 # Tests Join with equal comparison
-lhs = frame(
+lhs = createFrame(
     [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
     [100,400,500,100,700,800,200,300,500,900],
     "a", "b");
 
-rhs = frame(
+rhs = createFrame(
     [  0,   5, 10],
     [750, 450, 50],
     "a", "b");
