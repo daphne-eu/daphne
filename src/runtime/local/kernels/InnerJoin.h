@@ -44,7 +44,7 @@ duckdb::LogicalType getDuckType(ValueTypeCode type){
             return duckdb::LogicalType(duckdb::LogicalTypeId::DOUBLE);
         default:
             std::stringstream error;
-            error << "innerJoin(...) with DuckDB support doesn't "
+            error << "innerJoin.h with DuckDB support doesn't "
                 << "support the given ValueType belonging to cpp type name: "
                 << ValueTypeUtils::cppNameForCode(type)
                 << ". Error in Function getDuckType()";

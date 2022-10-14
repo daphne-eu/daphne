@@ -26,130 +26,33 @@
 #include <duckdb/main/appender.hpp>
 
 
-
-template<typename VTCol>
-VTCol getValue(
-    const DenseMatrix<VTCol> *arg,
-    const size_t row
-){
-    const VTCol value = arg->get(row, 0);
-    return value;
-}
-
-template <typename VTCol>
-VTCol getValueFromFrame(
-    const Frame * arg,
-    const size_t row,
-    const size_t col
-){
-    return getValue<VTCol>(arg->getColumn<VTCol>(col), row);
-}
-
-//TODO! we have a better way of doing it now!
-void fillDuckDbTable(
-    duckdb::Connection &con,
-    const Frame *arg,
-    const char * name
-) {
-    const size_t numCols = arg->getNumCols();
-    const size_t numRows = arg->getNumRows();
-    duckdb::Appender appender(con, name);
-    for(size_t row = 0; row < numRows; row++){
-
-        appender.BeginRow();
-        for(size_t col = 0; col < numCols; col++){
-            const ValueTypeCode type = arg->getColumnType(col);
-            switch (type) {
-                case ValueTypeCode::SI8:
-                    appender.Append(getValueFromFrame<int8_t>(arg, row, col));
-                    break;
-                case ValueTypeCode::SI32:
-                    appender.Append(getValueFromFrame<int32_t>(arg, row, col));
-                    break;
-                case ValueTypeCode::SI64:
-                    appender.Append(getValueFromFrame<int64_t>(arg, row, col));
-                    break;
-                case ValueTypeCode::UI8:
-                    appender.Append(getValueFromFrame<uint8_t>(arg, row, col));
-                    break;
-                case ValueTypeCode::UI32:
-                    appender.Append(getValueFromFrame<uint32_t>(arg, row, col));
-                    break;
-                case ValueTypeCode::UI64:
-                    appender.Append(getValueFromFrame<uint64_t>(arg, row, col));
-                    break;
-                case ValueTypeCode::F32:
-                    appender.Append(getValueFromFrame<float>(arg, row, col));
-                    break;
-                case ValueTypeCode::F64:
-                    appender.Append(getValueFromFrame<double>(arg, row, col));
-                    break;
-                default:
-                    std::stringstream error;
-                    error << "duckDbSql(...) doesn't support the given"
-                        << "ValueType belonging to cpp type name: "
-                        << ValueTypeUtils::cppNameForCode(type);
-                    throw std::runtime_error(error.str());
-            }
-        }
-        appender.EndRow();
-
+duckdb::LogicalType getDuckType(ValueTypeCode type){
+    switch(type){
+        case ValueTypeCode::SI8:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::TINYINT);
+        case ValueTypeCode::SI32:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::INTEGER);
+        case ValueTypeCode::SI64:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::BIGINT);
+        case ValueTypeCode::UI8:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::UTINYINT);
+        case ValueTypeCode::UI32:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::UINTEGER);
+        case ValueTypeCode::UI64:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::UBIGINT);
+        case ValueTypeCode::F32:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::FLOAT);
+        case ValueTypeCode::F64:
+            return duckdb::LogicalType(duckdb::LogicalTypeId::DOUBLE);
+        default:
+            std::stringstream error;
+            error << "Union.h with DuckDB support doesn't "
+                << "support the given ValueType belonging to cpp type name: "
+                << ValueTypeUtils::cppNameForCode(type)
+                << ". Error in Function getDuckType()";
+            throw std::runtime_error(error.str());
     }
 }
-
-void createDuckDbTable(
-    duckdb::Connection &con,
-    const Frame *arg,
-    const char * name
-) {
-    const size_t numCols = arg->getNumCols();
-    std::stringstream s_stream;
-    s_stream << "CREATE TABLE " << name << "(";
-
-    for(size_t i = 0; i < numCols; i++){
-        ValueTypeCode type = arg->getColumnType(i);
-        std::string label = arg->getLabels()[i];
-        switch (type) {
-            case ValueTypeCode::SI8:
-                s_stream << label << " TINYINT";
-                break;
-            case ValueTypeCode::SI32:
-                s_stream << label << " INTEGER";
-                break;
-            case ValueTypeCode::SI64:
-                s_stream << label << " BIGINT";
-                break;
-            case ValueTypeCode::UI8:
-                s_stream << label << " UTINYINT";
-                break;
-            case ValueTypeCode::UI32:
-                s_stream << label << " UINTEGER";
-                break;
-            case ValueTypeCode::UI64:
-                s_stream << label << " UBIGINT";
-                break;
-            case ValueTypeCode::F32:
-                s_stream << label << " REAL";
-                break;
-            case ValueTypeCode::F64:
-                s_stream << label << " DOUBLE";
-                break;
-            default:
-                std::stringstream error;
-                error << "duckDbSql(...) doesn't support the given"
-                    << "ValueType belonging to cpp type name: "
-                    << ValueTypeUtils::cppNameForCode(type);
-                throw std::runtime_error(error.str());
-        }
-        if(i < numCols - 1){
-            s_stream << ", ";
-        }
-    }
-    s_stream << ")";
-    con.Query(s_stream.str());
-    std::cout << s_stream.str() << std::endl;
-}
-
 
 ValueTypeCode getDaphneType(duckdb::PhysicalType phys){
     std::stringstream error("");
@@ -191,6 +94,61 @@ ValueTypeCode getDaphneType(duckdb::PhysicalType phys){
     }
 }
 
+void createDataChunk(
+    duckdb::DataChunk &dc,
+    const Frame* arg
+){
+    const size_t numCols = arg->getNumCols();
+    const size_t numRows = arg->getNumRows();
+
+    std::vector<duckdb::LogicalType> types_ddb;
+    for(size_t i = 0; i < numCols; i++){
+        ValueTypeCode type = arg->getColumnType(i);
+        types_ddb.push_back(getDuckType(type));
+    }
+    dc.InitializeEmpty(types_ddb);
+    for(size_t i = 0; i < numCols; i++){
+        duckdb::Vector temp(types_ddb[i], (duckdb::data_ptr_t)arg->getColumnRaw(i));
+        dc.data[i].Reference(temp);
+    }
+    dc.SetCardinality(numRows);
+}
+
+//TODO! we have a better way of doing it now!
+void fillDuckDbTable(
+    duckdb::Connection &con,
+    const Frame *arg,
+    const char * name
+) {
+    duckdb::DataChunk dc_append;
+    createDataChunk(dc_append, arg);
+
+    con.Append(con.TableInfo(name), dc_append);
+}
+
+
+void createDuckDbTable(
+    duckdb::Connection &con,
+    const Frame *arg,
+    const char * name
+) {
+    const size_t numCols = arg->getNumCols();
+    std::stringstream s_stream;
+    s_stream << "CREATE TABLE " << name << "(";
+
+    for(size_t i = 0; i < numCols; i++){
+        ValueTypeCode type = arg->getColumnType(i);
+        std::string label = arg->getLabels()[i];
+        duckdb::LogicalType ddb_type = getDuckType(type);
+        s_stream << label << " " << ddb_type.ToString();
+        if(i < numCols - 1){
+            s_stream << ", ";
+        }
+    }
+    s_stream << ")";
+    std::cout << s_stream.str() << std::endl;
+    con.Query(s_stream.str());
+}
 
 template<typename VTCol>
 void SetValues(
@@ -202,6 +160,7 @@ void SetValues(
         const VTCol argValue = arg.GetValue(row).GetValue<VTCol>();
         res->set(row, 0, argValue);
     }
+    free(arg); //MAYBE?!
 }
 
 template<typename VTCol>
@@ -264,6 +223,29 @@ void fillResultFrame(
 
 }
 
+void checkFrames(
+    Frame ** frames,
+    size_t numTables
+){
+    for(size_t i = 1; i < numTables; i++){
+        if(frame[0]->getNumCols() != frame[i]->getNumCols()){
+            std::stringstream error;
+            error << "Union(...): Frames have unequal column count.";
+            throw std::runtime_error(error.str());
+        }
+        for(size_t k = 1; k < frame[0]->getNumCols()){
+            ValueTypeCode type1 = frames[0]->getColumnType(x);
+            ValueTypeCode type2 = frames[i]->getColumnType(x);
+            if(type1 != type2){
+                std::stringstream error;
+                error << "Union(...): Frames have different column types.";
+                throw std::runtime_error(error.str());
+            }
+        }
+    }
+}
+
+
 // void createAndFillDuckDBTable(duckdb::Connection con, Frame frame, const char* name){
 //     createDuckDbTable(con, frame, name);
 //     fillDuckDbTable(con, frame, name);
@@ -287,22 +269,7 @@ void Union(
     std::cout<<std::endl << query << std::endl;
 
 //CHECKING FRAMES
-    for(size_t i = 1; i < numTables; i++){
-        if(frame[0]->getNumCols() != frame[i]->getNumCols()){
-            std::stringstream error;
-            error << "Union(...): Frames have unequal column count.";
-            throw std::runtime_error(error.str());
-        }
-        for(size_t k = 1; k < frame[0]->getNumCols()){
-            ValueTypeCode type1 = frames[0]->getColumnType(x);
-            ValueTypeCode type2 = frames[i]->getColumnType(x);
-            if(type1 != type2){
-                std::stringstream error;
-                error << "Union(...): Frames have different column types.";
-                throw std::runtime_error(error.str());
-            }
-        }
-    }
+    checkFrames(frames, numTables);
 
 //LOAD DATA INTO DUCKDB
     for(size_t i = 0; i < numTables; i++){
@@ -319,7 +286,6 @@ void Union(
     }
     duckdb::unique_ptr<duckdb::QueryResult> result = unionR->Execute();
 
-
 //CHECK EXECUTION FOR ERRORS
     if(result->HasError()){
         std::stringstream error;
@@ -328,7 +294,7 @@ void Union(
         throw std::runtime_error(error.str());
     }
 
-//GET TYPES AND CONVERT THEM BACK TO DAPHNE
+//GET DATA AND TRANSFER IT BACK INTO DAPHNE
     std::vector<duckdb::LogicalType> ret_types = result->types;
     std::vector<std::string> ret_names = result->names;
 
@@ -336,7 +302,6 @@ void Union(
 
     ValueTypeCode schema[totalCols];
     std::string newlabels[totalCols];
-
 
     for(size_t i = 0; i < totalCols; i++){
         newlabels[i] = ret_names[i];
