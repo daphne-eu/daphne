@@ -29,6 +29,7 @@ include "ir/daphneir/DaphneInferSparsityTraits.td"
 include "ir/daphneir/DaphneInferTypesOpInterface.td"
 include "ir/daphneir/DaphneVectorizableOpInterface.td"
 include "ir/daphneir/DaphneShapeInferenceTraits.td"
+include "ir/daphneir/DaphneTypeAdaptationTraits.td"
 include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
@@ -106,7 +107,7 @@ def Daphne_DiagMatrixOp : Daphne_Op<"diagMatrix", [
 def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     TypesMatchWith<"min and max arguments must be of the same type", "min", "max", "$_self">,
     NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    SparsityFromIthScalar<4>
+    SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp
 ]> {
     //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
@@ -124,7 +125,8 @@ def Daphne_SampleOp : Daphne_Op<"sample", [
 def Daphne_SeqOp : Daphne_Op<"seq", [
     DataTypeMat, ValueTypeFromArgs,
     OneCol, DeclareOpInterfaceMethods<InferNumRowsOpInterface>,
-    CompletelyDense
+    CompletelyDense,
+    CastArgsToResType
 ]> {
     let arguments = (ins NumScalar:$from, NumScalar:$to, NumScalar:$inc);
     let results = (outs MatrixOf<[NumScalar]>);
@@ -153,7 +155,8 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     DataTypeMat, ValueTypeFromArgs,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
-    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport
+    DeclareOpInterfaceMethods<InferSparsityOpInterface>, CUDASupport, FPGAOPENCLSupport,
+    CastFirstTwoArgsToResType
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
@@ -166,7 +169,8 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
 
 class Daphne_EwUnaryOp<string name, Type scalarType, list<OpTrait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeFromFirstArg,
-    ShapeFromArg
+    ShapeFromArg,
+    CastArgsToResType
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
@@ -220,7 +224,8 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<OpTrait> traits = []>
     DataTypeFromArgs,
     DeclareOpInterfaceMethods<DistributableOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    ShapeEwBinary
+    ShapeEwBinary,
+    CastArgsToResType
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
@@ -310,7 +315,7 @@ class Daphne_AggOp<string name, Type inScalarType, list<OpTrait> traits = []> : 
 // ----------------------------------------------------------------------------
 
 class Daphne_AllAggOp<string name, Type scalarType, list<OpTrait> traits = []>
-: Daphne_AggOp<name, scalarType, !listconcat(traits, [DataTypeSca])> {
+: Daphne_AggOp<name, scalarType, !listconcat(traits, [DataTypeSca, CastArgsToResType])> {
     let results = (outs scalarType:$res);
 }
 
@@ -326,7 +331,7 @@ def Daphne_AllAggStddevOp : Daphne_AllAggOp<"stddevAll", NumScalar, [ValueTypeFr
 // ----------------------------------------------------------------------------
 
 class Daphne_DimAggOp<string name, Type inScalarType, Type outScalarType = inScalarType, list<OpTrait> traits = []>
-: Daphne_AggOp<name, inScalarType, !listconcat(traits, [DataTypeMat])> {
+: Daphne_AggOp<name, inScalarType, !listconcat(traits, [DataTypeMat, CastArgsToResType])> {
     let results = (outs MatrixOf<[outScalarType]>:$res);
 }
 
@@ -561,7 +566,8 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [
 }
 
 class Daphne_BindOp<string name, list<OpTrait> traits = []> : Daphne_Op<name, !listconcat(traits, [
-    DataTypeFromArgs
+    DataTypeFromArgs,
+    CastArgsToResType
 ])> {
     let arguments = (ins MatrixOrFrame:$lhs, MatrixOrFrame:$rhs);
     let results = (outs MatrixOrFrame:$res);
@@ -759,21 +765,22 @@ def Daphne_TriOp : Daphne_Op<"tri", [
 }
 
 def Daphne_SolveOp : Daphne_Op<"solve", [
-    DataTypeMat, ValueTypeFromArgs, NumRowsFromArg, OneCol, CUDASupport
+    DataTypeMat, ValueTypeFromArgs, NumRowsFromArg, OneCol, CUDASupport, CastArgsToResType
 ]> {
     let arguments = (ins MatrixOf<[NumScalar]>:$a, MatrixOf<[NumScalar]>:$b);
     let results = (outs MatrixOf<[NumScalar]>:$x);
 }
 
 def Daphne_ReplaceOp : Daphne_Op<"replace", [
-    DataTypeFromFirstArg, ValueTypeFromArgs, ShapeFromArg
+    DataTypeFromFirstArg, ValueTypeFromArgs, ShapeFromArg, CastArgsToResType
 ]> {
     let arguments = (ins MatrixOrU:$arg, AnyScalar:$pattern, AnyScalar:$replacement);
     let results = (outs MatrixOrU:$res);
 }
 
 def Daphne_CTableOp : Daphne_Op<"ctable", [
-    DataTypeMat, ValueTypeFromArgs // inference of value type is debatable
+    DataTypeMat, ValueTypeFromArgs, // inference of value type is debatable
+    CastArgsToResType
 ]> {
     //// TODO The last three arguments should be optional.
     //let arguments = (ins MatrixOrU:$lhs, AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$rhs, AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$weights, Size:$outHeight, Size:$outWidth);
@@ -784,7 +791,8 @@ def Daphne_CTableOp : Daphne_Op<"ctable", [
 def Daphne_SyrkOp : Daphne_Op<"syrk", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, NumColsFromArg, CUDASupport
+    NumRowsFromArgNumCols, NumColsFromArg, CUDASupport,
+    CastArgsToResType
 ]> {
     // TODO: support `A @ t(A)` operation
     let summary = [{Performs the operation `t(A) @ A`}];
@@ -796,6 +804,7 @@ def Daphne_GemvOp : Daphne_Op<"gemv", [
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
     DataTypeMat, ValueTypeFromArgs,
     NumRowsFromArgNumCols, OneCol, CUDASupport,
+    CastArgsToResType
 ]> {
     // TODO: support `A @ x` operation
     let summary = [{Performs the operation `t(A) @ x`}];

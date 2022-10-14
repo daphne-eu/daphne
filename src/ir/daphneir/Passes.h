@@ -40,6 +40,7 @@ namespace mlir::daphne {
     };
 
     // alphabetically sorted list of passes
+    std::unique_ptr<Pass> createAdaptTypesToKernelsPass();
     std::unique_ptr<Pass> createDistributeComputationsPass();
     std::unique_ptr<Pass> createDistributePipelinesPass();
     std::unique_ptr<Pass> createInferencePass(InferenceConfig cfg = {false, true, true, true, true});

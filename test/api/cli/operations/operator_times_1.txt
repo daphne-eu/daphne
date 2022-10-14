@@ -1,23 +1,23 @@
-3
-3.3
-3.3
+2
+2.25
+2.5
 
 DenseMatrix(2x1, int64_t)
-4
+3
+8
+DenseMatrix(2x1, double)
+4.5
+10
+DenseMatrix(2x1, double)
+3.5
+9
+
+DenseMatrix(2x1, int64_t)
+3
 6
 DenseMatrix(2x1, double)
-4.4
-6.6
+4.5
+7.5
 DenseMatrix(2x1, double)
-4.4
-6.6
-
-DenseMatrix(2x1, int64_t)
-4
-5
-DenseMatrix(2x1, double)
-4.4
-5.5
-DenseMatrix(2x1, double)
-4.3
-5.3
+3.5
+7

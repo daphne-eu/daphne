@@ -78,30 +78,8 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
 
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         // Type inference.
-        if(returnsUnknownType(op)) {
-            // Try to infer the types of all results of this operation.
-            std::vector<Type> types = daphne::tryInferType(op);
-            const size_t numRes = op->getNumResults();
-            if(types.size() != numRes)
-                throw std::runtime_error(
-                        "type inference for op " +
-                        op->getName().getStringRef().str() + " returned " +
-                        std::to_string(types.size()) + " types, but the op has " +
-                        std::to_string(numRes) + " results"
-                );
-            // Set the infered types on all results of this operation.
-            for(size_t i = 0; i < numRes; i++) {
-                if (types[i].isa<daphne::UnknownType>() && !cfg.partialInferenceAllowed)
-                    // TODO As soon as the run-time can handle unknown
-                    // data/value types, we do not need to throw here anymore.
-                    throw std::runtime_error(
-                            "type inference returned an unknown result type "
-                            "for some op, but partial inference is not allowed "
-                            "at this point: " + op->getName().getStringRef().str()
-                );
-                op->getResult(i).setType(types[i]);
-            }
-        }
+        if(returnsUnknownType(op))
+            daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
 
         // Frame label inference.
         if(cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {

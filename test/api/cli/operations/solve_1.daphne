@@ -1,0 +1,5 @@
+# Focus on type inference.
+# print(solve([2], [1])); # TODO We don't have a kernel for solve on integers yet.
+print(solve([2.0], [3.0]));
+print(solve([2], [3.0]));
+print(solve([2.0], [3]));

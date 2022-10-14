@@ -102,6 +102,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_property_inference)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after property inference"));
 
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createAdaptTypesToKernelsPass());
+
 #if 0
         if (userConfig_.use_distributed) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
