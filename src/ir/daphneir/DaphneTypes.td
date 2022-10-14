@@ -210,7 +210,7 @@ def SIntScalar : AnyTypeOf<[SI8, SI32, SI64, Unknown], "signed integer">;
 def UIntScalar : AnyTypeOf<[UI8, UI32, UI64, Unknown], "unsigned integer">;
 def IntScalar : AnyTypeOf<[SIntScalar, UIntScalar], "integer">;
 def FloatScalar : AnyTypeOf<[F32, F64, Unknown], "float">;
-def NumScalar : AnyTypeOf<[IntScalar, FloatScalar], "numeric">;
+def NumScalar : AnyTypeOf<[IntScalar, FloatScalar, Index], "numeric">;
 def BoolScalar : TypeAlias<I1, "boolean">;
 
 // TODO Exclude Index again.
