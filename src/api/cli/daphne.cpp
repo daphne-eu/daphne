@@ -192,6 +192,7 @@ main(int argc, char** argv)
       parsing_simplified,
       property_inference,
       sql,
+      type_adaptation,
       vectorized,
       obj_ref_mgnt
     };
@@ -205,6 +206,7 @@ main(int argc, char** argv)
             clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
+            clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
@@ -306,6 +308,9 @@ main(int argc, char** argv)
                 break;
             case sql:
                 user_config.explain_sql = true;
+                break;
+            case type_adaptation:
+                user_config.explain_type_adaptation = true;
                 break;
             case vectorized:
                 user_config.explain_vectorized = true;

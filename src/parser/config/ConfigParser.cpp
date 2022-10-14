@@ -59,6 +59,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_property_inference = jf.at(DaphneConfigJsonParams::EXPLAIN_PROPERTY_INFERENCE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
         config.explain_sql = jf.at(DaphneConfigJsonParams::EXPLAIN_SQL).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_TYPE_ADAPTATION))
+        config.explain_type_adaptation = jf.at(DaphneConfigJsonParams::EXPLAIN_TYPE_ADAPTATION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_VECTORIZED))
         config.explain_vectorized = jf.at(DaphneConfigJsonParams::EXPLAIN_VECTORIZED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT))
