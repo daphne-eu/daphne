@@ -176,6 +176,12 @@ class ValueTypeFromArgsInt : public TraitBase<ConcreteOp, ValueTypeFromArgsInt> 
  */
 template<class ConcreteOp>
 class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
+
+/**
+ * @brief The value type (of the single result) is `Size`.
+ */
+template<class ConcreteOp>
+class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
     
 // ============================================================================
 // Traits determining data type and value type together

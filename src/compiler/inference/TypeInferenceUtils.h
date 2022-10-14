@@ -267,6 +267,8 @@ mlir::Type inferTypeByTraits(O * op) {
                 break;
         }
     }
+    else if(op->template hasTrait<ValueTypeSize>())
+        resVts = {IndexType::get(ctx)};
 
     // --------------------------------------------------------------------
     // Create the result type
