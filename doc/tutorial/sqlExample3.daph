@@ -1,0 +1,30 @@
+
+//TCP-H Query 3 Shipping Priority Query
+//IMPORTANT NOTICE: DAPHNE doesn't support Dates and Strings right now. Therefore we use for this Query integers.
+//For more information on reading csv files read: FileMetaDataFormat (/doc/FileMetaDataFormat.md)
+customer = readFrame("customer.csv");
+orders = readFrame("orders.csv");
+lineitem = readFrame("lineitem.csv");
+
+registerView(customer);
+registerView(orders);
+registerView(lineitem);
+
+result = sql(
+	"SELECT l.l_orderkey,
+		sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,
+		o.o_orderkey,
+		o.o_shippriority
+	FROM customer c,
+		orders o,
+		lineitem l
+	WHERE c.c_mktsegment = 2
+		AND c.c_custkey = o.o_custkey
+		AND l.l_orderkey = o.o_orderkey
+		AND o.o_orderdate < 9204
+		AND l.l_shipdate > 9204
+	GROUP BY l.l_orderkey,
+		o.o_orderdate,
+		o.o_shippriority;
+		"
+);
