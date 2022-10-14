@@ -39,9 +39,9 @@ DAPHNE Deployment encompases the following HPC Computer Architecture Framework:
 - Deployment Platform (e.g. an HPC with SLURM support)
   - Runtime System(s)
     - Runtime System for the Main Target or
-      - Main Target
-    - Runtime System for the DistributedWorker Target
-      - Distributed Worker Target
+      - `daphne` Target
+    - Runtime System for the Distributed Worker Target
+      - `DistributedWorker` Target
 
 ```
                     DAPHNE Deployment
