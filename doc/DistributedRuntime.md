@@ -106,7 +106,9 @@ $ export DISTRIBUTED_WORKERS=localhost:5000
 $ ./build/bin/daphne --distributed ./scripts/example/distributed.daph
 ```
 
-## Limitations
+## Current limitations
+
+Distributed Runtime is still under development and currently there are various limitations. Most of these limitations will be fixed in the future.
 
 - Distributed runtime for now heavily depends on the vectorized engine of Daphne and how pipelines are
 created and multiple operations are fused together (more [here - section 4](https://daphne-eu.eu/wp-content/uploads/2022/08/D2.2-Refined-System-Architecture.pdf)). This causes some limitations related to pipeline creation (e.g. [not supporting pipelines with different result outputs](/issues/397) or pipelines with no outputs).
