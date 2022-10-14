@@ -1015,7 +1015,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
 
     if(op == "@") {
         mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, builder.getBoolAttr(false));
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(
+        return utils.retValWithInferedType(builder.create<mlir::daphne::MatMulOp>(
                 loc, lhs.getType(), lhs, rhs, f, f
         ));
     }
@@ -1030,7 +1030,7 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "^")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1042,7 +1042,7 @@ antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "%")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1054,9 +1054,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "*")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
     if(op == "/")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1074,9 +1074,9 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
         // might not be known at this point in time. Thus, we always create an
         // EwAddOp here. Note that EwAddOp has a canonicalize method rewriting
         // it to ConcatOp if necessary.
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1088,17 +1088,17 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "==")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if(op == "!=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
     if(op == "<")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
     if(op == "<=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
     if(op == ">")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if(op == ">=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1110,7 +1110,7 @@ antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprCo
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "&&")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1122,7 +1122,7 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "||")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }

@@ -221,6 +221,15 @@ namespace mlir::daphne {
  * `mlir::daphne::UnknownType` indicates that this type is not known (yet).
  */
 std::vector<mlir::Type> tryInferType(mlir::Operation* op);
+
+/**
+ * @brief Infers and sets the types of all results of the given operation.
+ * 
+ * @param op The operation whose results' types shall be infered and set.
+ * @param partialInferenceAllowed If `true`, unknown will be allowed as an
+ * infered type; if `false`, infering unknown will throw an exception.
+*/
+void setInferedTypes(mlir::Operation* op, bool partialInferenceAllowed = true);
 }
 
 #endif // SRC_IR_DAPHNEIR_DAPHNEINFERTYPESOPINTERFACE_H
