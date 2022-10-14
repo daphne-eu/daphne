@@ -101,8 +101,12 @@ namespace CompilerUtils {
             return "Descriptor";
         else if(t.isa<mlir::daphne::TargetType>())
             return "Target";
+
+        std::string typeName;
+        llvm::raw_string_ostream rsos(typeName);
+        t.print(rsos);
         throw std::runtime_error(
-            "no C++ type name known for the given MLIR type"
+            "no C++ type name known for the given MLIR type: " + typeName
         );
     }
 
