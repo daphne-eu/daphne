@@ -33,7 +33,7 @@ This file ([doc/Deploy.md](Deploy.md)) explains deployment of **Daphne system** 
 
 DaphneDSL runs within Runtimes, which consist of main worker and other distributed workers connected to it.
 To establish such Runtime with connections, a deployment of the Runtimes is necessary. Such deployment is described below.
-Running on the DAPHNE Distributed Runtime does not require any changes to the DaphneDSL code, but just to prepare the environment of the Deployment Platform beforehand since `daphne` figures out automatically what to run in a distributed fashion.
+Running on the DAPHNE Distributed Runtime does not require any changes to the DaphneDSL code, but it expects to have deployed Distributed Workers.
 
 The [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne system on a target HPC platform, and is tailored to the communication required with SLURM and the target HPC platform.
 While the packaging and transfer script [deployDistributed.sh](../deploy/deployDistributed.sh) already provides some functionality, the specific upgraded functionalities in the extended [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) compared to [deployDistributed.sh](../deploy/deployDistributed.sh) are:
