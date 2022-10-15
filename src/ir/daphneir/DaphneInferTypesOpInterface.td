@@ -27,7 +27,7 @@ def InferTypesOpInterface : OpInterface<"InferTypes"> {
     let methods = [
         InterfaceMethod<
                 "Infer the result types of the operation.",
-                "void", "inferTypes", (ins)
+                "std::vector<mlir::Type>", "inferTypes", (ins)
         >
     ];
 }

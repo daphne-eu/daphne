@@ -1,0 +1,5 @@
+# Focus on type inference.
+print(rbind([1], [2]));
+print(rbind([1.1], [2.2]));
+print(rbind([1], [2.2]));
+print(rbind([1.1], [2]));

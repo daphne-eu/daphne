@@ -31,7 +31,7 @@ limitations under the License.
 - [Implementing a Built-in Kernel](/doc/ImplementBuiltinKernel.md)
 - [Binary Data Format](/doc/BinaryFormat.md)
 - [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
-- [Extending DAPHNE with more scheduling knobs](/doc/ExtendingSchedulingKnobs.md)
+- [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
 
 ### Source Code Documentation
 

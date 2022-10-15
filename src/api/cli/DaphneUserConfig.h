@@ -49,6 +49,7 @@ struct DaphneUserConfig {
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_sql = false;
+    bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
