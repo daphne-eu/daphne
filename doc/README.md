@@ -21,7 +21,9 @@ limitations under the License.
 ## User Documentation
 
 - Command-line interface API: see `build/bin/daphne --help`
-- [FileMetaData format (reading and writing data)](/doc/FileMetaDataFormat.md)
+- [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
+- [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
+- [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
 
 ## Developer Documentation
 
