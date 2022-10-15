@@ -38,7 +38,7 @@ DAPHNE Deployment Scheme encompasses the following:
 
 - Deployment Platform (e.g. an HPC with SLURM support)
   - Runtime System(s)
-    - Runtime System for the Main Target or
+    - Runtime System for the Main Target
       - `daphne` Target
     - Runtime System for the Distributed Worker Target
       - `DistributedWorker` Target
