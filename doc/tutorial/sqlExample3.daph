@@ -2,9 +2,10 @@
 //TCP-H Query 3 Shipping Priority Query
 //IMPORTANT NOTICE: DAPHNE doesn't support Dates and Strings right now. Therefore we use for this Query integers.
 //For more information on reading csv files read: FileMetaDataFormat (/doc/FileMetaDataFormat.md)
-customer = readFrame("customer.csv");
-orders = readFrame("orders.csv");
-lineitem = readFrame("lineitem.csv");
+
+customer = readFrame("customer");
+orders = readFrame("orders");
+lineitem = readFrame("lineitem");
 
 registerView(customer);
 registerView(orders);
@@ -18,7 +19,7 @@ result = sql(
 	FROM customer c,
 		orders o,
 		lineitem l
-	WHERE c.c_mktsegment = 2
+	WHERE c.c_mktsegment = 0
 		AND c.c_custkey = o.o_custkey
 		AND l.l_orderkey = o.o_orderkey
 		AND o.o_orderdate < 9204

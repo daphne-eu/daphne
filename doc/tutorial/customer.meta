@@ -1,0 +1,30 @@
+{
+	"numRows": 150,
+	"numCols": 8,
+	"schema": [
+		{
+			"label": "c_custkey",
+			"valueType": "UI64",
+		}
+		,
+		{
+			"label": "c_name",
+			"valueType": "UI64",
+		}
+		,
+		{
+			"label": "c_nationkey",
+			"valueType": "UI64",
+		}
+		,
+		{
+			"label": "c_acctbal",
+			"valueType": "F64",
+		}
+		,
+		{
+			"label": "c_mktsegment",
+			"valueType": "UI64",
+		}
+	]
+}
