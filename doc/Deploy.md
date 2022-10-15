@@ -16,37 +16,55 @@ limitations under the License.
 
 # DAPHNE Packaging, Distributed Deployment, and Management
 
-### Overview
+## Overview
 
-This file ([doc/Deploy.md](Deploy.md)) explains deployment of **Daphne system** on HPC (e.g. w/ Slurm), and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory, mainly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh):
+This file explains the deployment of the **Daphne system**, on HPC with SLURM or manually through SSH, and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory (mostly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh)):
 - compilation of the Singularity image,
 - compilation of Daphne (and the Daphne DistributedWorker) within the Singularity image,
-- packaging compiled daphne targets,
-- packaging compiled daphne targets with user payload as a payload package,
+- packaging compiled Daphne,
+- packaging compiled Daphne with user payload as a payload package,
 - uploading the payload package to an HPC platform,
-- obtaining the connection setup (list of `PEERS` as an environmental variable) from executing Daphne using the Slurm Workload Manager,
-- executing daphne main and worker binaries on Slurm `PEERS`,
+- starting and managing DAPHNE workers on HPC platforms using SLURM,
+- executing DAPHNE on HPC using SLURM,
 - collection of logs from daphne execution, and
 - cleanup of worker environments and payload deployment.
 
-### Deployment Functionalities
+## Background
 
-Daphne's distributed system consists of a single coordinator and multiple DistributedWorkers. To execute Daphne in a distributed fashion, first we need to instantiate DistributedWorkers and connect them to the coordinator.
-The connection of DistributedWorkers to the coordinator in the Daphne system is achieved through the `PEERS` environmental variable, passed during the deployment. Such deployment is described below. The default ports for worker peers begin at 50000 (`PORTRANGE_BEGIN`) and the list of `PEERS` is generated as `PEERS = ( WORKER1_IP:PORTRANGE_BEGIN, WORKER1_IP:PORTRANGE_BEGIN+1, ..., WORKER2_IP:PORTRANGE_BEGIN, WORKER2_IP:PORTRANGE_BEGIN+1, ... )`.
+Daphne's distributed system consists of a single coordinator and multiple DistributedWorkers (you can read more about Distributed DAPHNE [here](DistributedRuntime.md#Background)).  For now, in order to execute Daphne in a distributed fashion, we need to deploy DistributedWorkers manually. Coordinator gets the worker's addresses
+through an environmental variable.
 
-The DaphneDSL are then run within the Daphne distributed system. Running on the Daphne distributed system does not require any changes to the DaphneDSL code, but it expects to have deployed DistributedWorkers.
+`deployDistributed.sh` manually connects to machines with SSH and starts up DistributedWorker processes. On the other hand the [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.
 
-The [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne system on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.
+## Deploying without Slurm support
 
-#### Deploying without Slurm support
-The packaging and transfer script [deployDistributed.sh](../deploy/deployDistributed.sh) already provides some initial functionality.
-Additional specifically upgraded functionalities (with Slurm support and HPC with shared home directory) are in the extended [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh).
+**`deployDistributed.sh`** can be used to manually connect to a list of machines and remotely start up workers, get status of running workers or terminate distributed worker processes. This script depends only on an SSH client/server and does not require any use of a resource management tool (e.g. SLURM). With this script you can:
+- build and deploy DistributedWorkers to remote machines
+- start workers
+- check status of running workers
+- kill workers
 
-The building of the Daphne system to be later started on distributed nodes, can be run through a Singularity container. The Singularity container can be built on the utilized HPC. As the function `deploy` in [deployDistributed.sh](../deploy/deployDistributed.sh) sends and builds executables on each node, which might cause overwrite if the workers use same mounted user storage (e.g. distributed storage attached as home directory), [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) should be used for such deployments. The latter also automatically generates the environmental variable `PEERS` from Slurm, while for [deployDistributed.sh](../deploy/deployDistributed.sh) the specification of `PEERS` needs to be provided manually.
+Workers' own IPs and ports to listen to, can be specified inside the script, or with `--peers [IP[:PORT]],[IP[:PORT]],...`. Default port for all workers is 50000, but this can also be specified inside the script or with `-p,--port PORT`. If running on same machine (e.g. localhost), different ports must be specified.
 
-### How to use DAPHNE Packaging, Distributed Deployment, and Management of Runtime Systems (command deploy-distributed-on-slurm.sh)
+With `--deploy` the script builds `DistributedWorker` executable (`./build.sh --target DistributedWorker`), compresses the `build` folder and uses `scp` and `ssh` to send and decompress at remote machines, inside the directory specified by `--pathToBuild` (default `~/DaphneDistributedWorker/`). If running workers on localhost, `PATH_TO_BUILD` can be set `/path/to/prototype` and provided `DistributedWorker` is built, `--deploy` is not nessecary.
 
-This explains how to set up the Distributed Workers on a Deployment Platform, and it also briefly comments on what to do afterwards (how to run, analyse, stop, and clean it).
+Ssh username must be specified inside the script. For now the script assumes all remote machines can be accessed with the same `username`, `id_rsa` key and ssh port (default 22).
+
+Usage example:
+
+```bash
+$ ./deployDistributed.sh --help
+$ ./deployDistributed.sh --deploy --pathToBuild /path/to/dir --peers localhost:5000,localhost:5001
+$ ./deployDistributed.sh -r # (Uses default peers and path/to/build/ to start workers)
+```  
+
+## Deploying with Slurm support
+
+Building the Daphne system (to be later deployed on distributed nodes) can be done with a Singularity container. The Singularity container can be built on the utilized HPC. [deployDistributed.sh](../deploy/deployDistributed.sh) sends executables on each node, assuming there are different storages for each node. This might cause unnecessary overwrites if the workers use same mounted user storage (e.g. HPC environments with distributed storages). Instead [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) should be used for such cases. The latter also automatically generates the environmental variable `PEERS` from Slurm.
+
+### How to use `deploy-distributed-on-slurm.sh` for DAPHNE Packaging, Distributed Deployment, and Management using Slurm
+
+This explains how to set up the Distributed Workers on a HPC platform, and it also briefly comments on what to do afterwards (how to run, manage, stop, and clean it).
 Commands, with their parameters and arguments, are hence described below for deployment with [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh).
 
 
