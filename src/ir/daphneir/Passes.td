@@ -35,6 +35,10 @@ def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
     let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
 }
 
+def AdaptTypesToKernels: FunctionPass<"adapt-types-to-kernels"> {
+    let constructor = "mlir::daphne::createAdaptTypesToKernelsPass()";
+}
+
 def ManageObjRefs : FunctionPass<"manage-obj-refs"> {
     let constructor = "mlir::daphne::createManageObjRefsPass()";
 }

@@ -48,6 +48,8 @@ set(TEST_SOURCES
     
         api/python/DaphneLibTest.cpp
         
+        ir/daphneir/InferTypesTest.cpp
+        
         parser/config/ConfigParserTest.cpp
     
         runtime/distributed/worker/WorkerTest.cpp
@@ -58,7 +60,6 @@ set(TEST_SOURCES
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
 
-        runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
 	runtime/local/io/ReadParquetTest.cpp
 	runtime/local/io/ReadMMTest.cpp

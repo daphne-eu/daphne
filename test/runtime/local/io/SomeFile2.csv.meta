@@ -1,1 +1,18 @@
-5,3,0,si64,f64,ui32
+ {
+     "numRows": 5,
+     "numCols": 3,
+     "schema": [
+         {
+             "label": "",
+             "valueType": "si64"
+         },
+         {
+             "label": "",
+             "valueType": "f64"
+         },
+         {
+             "label": "",
+             "valueType": "ui32"
+         }
+     ]
+ }

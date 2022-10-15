@@ -17,7 +17,7 @@
 #pragma once
 
 #include <ir/daphneir/Daphne.h>
-#include <runtime/local/io/FileMetaData.h>
+#include <parser/metadata/MetaDataParser.h>
 
 #include <mlir/IR/Value.h>
 
@@ -36,10 +36,20 @@ namespace CompilerUtils {
     }
 
     [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename) {
-        return FileMetaData::ofFile(getConstantString2(filename));
+        return MetaDataParser::readMetaData(getConstantString2(filename));
     }
 
-    [[maybe_unused]] static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) {
+    /**
+     * @brief Produces a string containing the C++ type name of the corresponding MLIR type. Mainly used to
+     * generate function names for generated kernel libraries. This function is defined recursively to also print
+     * the value types of templated containers (e.g., DenseMatrix<float>). A pragma is added to silence clang-tidy which
+     * might complain about recursion.
+     *
+     * @param t MLIR type name
+     * @param generalizeToStructure If true, "Structure" is used instead of derived types DenseMatrix et al.
+     * @return string representation of the C++ type names
+     */
+    static std::string mlirTypeToCppTypeName(mlir::Type t, bool generalizeToStructure = false) { // NOLINT(misc-no-recursion)
         if(t.isF64())
             return "double";
         else if(t.isF32())
@@ -91,8 +101,12 @@ namespace CompilerUtils {
             return "Descriptor";
         else if(t.isa<mlir::daphne::TargetType>())
             return "Target";
+
+        std::string typeName;
+        llvm::raw_string_ostream rsos(typeName);
+        t.print(rsos);
         throw std::runtime_error(
-            "no C++ type name known for the given MLIR type"
+            "no C++ type name known for the given MLIR type: " + typeName
         );
     }
 

@@ -83,15 +83,15 @@ mlir::Value DaphneDSLBuiltins::createNumOp(mlir::Location loc, const std::string
 template<class EwUnaryOp>
 mlir::Value DaphneDSLBuiltins::createEwUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 1);
-    return static_cast<mlir::Value>(builder.create<EwUnaryOp>(
-            loc, args[0].getType(), args[0]
+    return utils.retValWithInferedType(builder.create<EwUnaryOp>(
+            loc, utils.unknownType, args[0]
     ));
 }
 
 template<class EwBinaryOp>
 mlir::Value DaphneDSLBuiltins::createEwBinaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 2);
-    return static_cast<mlir::Value>(builder.create<EwBinaryOp>(
+    return utils.retValWithInferedType(builder.create<EwBinaryOp>(
             loc, args[0], args[1]
     ));
 }
@@ -102,15 +102,15 @@ mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std
     if(auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>()) {
         llvm::APInt axis = co.value().dyn_cast<mlir::IntegerAttr>().getValue();
         if(axis == 0)
-            return static_cast<mlir::Value>(
+            return utils.retValWithInferedType(
                     builder.create<RowAggOp>(
-                            loc, args[0].getType(), args[0]
+                            loc, utils.unknownType, args[0]
                     )
             );
         else if(axis == 1)
-            return static_cast<mlir::Value>(
+            return utils.retValWithInferedType(
                     builder.create<ColAggOp>(
-                            loc, args[0].getType(), args[0]
+                            loc, utils.unknownType, args[0]
                     )
             );
         else
@@ -135,17 +135,8 @@ template<class AllAggOp, class RowAggOp, class ColAggOp, class GrpAggOp>
 mlir::Value DaphneDSLBuiltins::createAnyAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     const size_t numArgs = args.size();
     checkNumArgsBetween(func, numArgs, 1, 3);
-    if(args.size() == 1) {
-        if(args[0].getType() == utils.unknownType) {
-            return static_cast<mlir::Value>(builder.create<AllAggOp>(loc, utils.unknownType, args[0]));
-        }
-        return static_cast<mlir::Value>(
-            builder.create<AllAggOp>(
-                // TODO this crashes if the input is not a matrix
-                loc, args[0].getType().dyn_cast<mlir::daphne::MatrixType>().getElementType(), args[0]
-            )
-        );
-    }
+    if(args.size() == 1)
+        return utils.retValWithInferedType(builder.create<AllAggOp>(loc, utils.unknownType, args[0]));
     else if(numArgs == 2)
         return createRowOrColAggOp<RowAggOp, ColAggOp>(loc, func, args);
     else // numArgs == 3
@@ -160,23 +151,19 @@ mlir::Value DaphneDSLBuiltins::createCumAggOp(mlir::Location loc, const std::str
     ));
 }
 
-#if 0
 template<class BindOp>
 mlir::Value DaphneDSLBuiltins::createBindOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 2);
-    return static_cast<mlir::Value>(builder.create<BindOp>(
-            // TODO This is not Frame-aware (for ColBindOp, we need to concat
-            // the column types.
-            loc, args[0].getType(), args[0], args[1]
+    return utils.retValWithInferedType(builder.create<BindOp>(
+            loc, utils.unknownType, args[0], args[1]
     ));
 }
-#endif
 
 template<class TheOp>
 mlir::Value DaphneDSLBuiltins::createSameTypeUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 1);
-    return static_cast<mlir::Value>(builder.create<TheOp>(
-            loc, args[0].getType(), args[0]
+    return utils.retValWithInferedType(builder.create<TheOp>(
+            loc, utils.unknownType, args[0]
     ));
 }
 
@@ -424,9 +411,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value from = args[0];
         mlir::Value to = args[1];
         mlir::Value inc= args[2];
-        return static_cast<mlir::Value>(
+        return utils.retValWithInferedType(
                 builder.create<SeqOp>(
-                        loc, utils.matrixOf(from), from, to, inc
+                        loc, utils.unknownType, from, to, inc
                 )
         );
     }
@@ -597,28 +584,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, args[0]
         ));
     }
-    if(func == "cbind") {
-#if 0
+    if(func == "cbind")
         return createBindOp<ColBindOp>(loc, func, args);
-#else
-        checkNumArgsExact(func, numArgs, 2);
-        auto op = builder.create<ColBindOp>(
-                loc, args[0].getType(), args[0], args[1]
-        );
-        op.inferTypes();
-        return static_cast<mlir::Value>(op);
-#endif
-    }
-    if(func == "rbind") {
-#if 0
+    if(func == "rbind")
         return createBindOp<RowBindOp>(loc, func, args);
-#else
-        checkNumArgsExact(func, numArgs, 2);
-        return static_cast<mlir::Value>(builder.create<RowBindOp>(
-                loc, args[0].getType(), args[0], args[1]
-        ));
-#endif
-    }
     if(func == "reverse")
         return createSameTypeUnaryOp<ReverseOp>(loc, func, args);
     if(func == "order") {
@@ -718,8 +687,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value a = args[0];
         mlir::Value b = args[1];
-        return static_cast<mlir::Value>(builder.create<SolveOp>(
-                loc, b.getType(), a, b
+        return utils.retValWithInferedType(builder.create<SolveOp>(
+                loc, utils.unknownType, a, b
         ));
     }
     if(func == "replace") {
@@ -727,8 +696,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         mlir::Value pattern = args[1];
         mlir::Value replacement = args[2];
-        return static_cast<mlir::Value>(builder.create<ReplaceOp>(
-                loc, arg.getType(), arg, pattern, replacement
+        return utils.retValWithInferedType(builder.create<ReplaceOp>(
+                loc, utils.unknownType, arg, pattern, replacement
         ));
     }
     if(func == "ctable") {
@@ -739,9 +708,9 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 //        mlir::Value weights = args[2];
 //        mlir::Value outHeight = utils.castSizeIf(args[3]);
 //        mlir::Value outWidth = utils.castSizeIf(args[4]);
-        return static_cast<mlir::Value>(builder.create<CTableOp>(
-//                loc, lhs.getType(), lhs, rhs, weights, outHeight, outWidth
-                loc, lhs.getType(), lhs, rhs
+        return utils.retValWithInferedType(builder.create<CTableOp>(
+//                loc, utils.unknownType, lhs, rhs, weights, outHeight, outWidth
+                loc, utils.unknownType, lhs, rhs
         ));
     }
     if(func == "syrk") {
@@ -751,8 +720,8 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsExact(func, numArgs, 2);
         mlir::Value mat = args[0];
         mlir::Value vec = args[1];
-        return static_cast<mlir::Value>(builder.create<GemvOp>(
-                loc, mat.getType(), mat, vec
+        return utils.retValWithInferedType(builder.create<GemvOp>(
+                loc, utils.unknownType, mat, vec
         ));
     }
 

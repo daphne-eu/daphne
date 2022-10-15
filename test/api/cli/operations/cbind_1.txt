@@ -1,0 +1,8 @@
+DenseMatrix(1x2, int64_t)
+1 2
+DenseMatrix(1x2, double)
+1.1 2.2
+DenseMatrix(1x2, double)
+1 2.2
+DenseMatrix(1x2, double)
+1.1 2

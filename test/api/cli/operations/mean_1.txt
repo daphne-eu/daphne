@@ -1,0 +1,14 @@
+3.5
+3.85
+
+DenseMatrix(1x2, double)
+3.5 3.5
+DenseMatrix(1x2, double)
+3.85 3.85
+
+DenseMatrix(2x1, double)
+3.5
+3.5
+DenseMatrix(2x1, double)
+3.85
+3.85
