@@ -41,6 +41,8 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
+            if(llvm::isa<daphne::ThetaJoinOp>(op))
+                return 4;
             if(llvm::isa<daphne::OrderOp>(op))
                 return 4;
             if(llvm::isa<daphne::GroupOp>(op))
@@ -91,6 +93,15 @@ namespace
             if(auto concreteOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {false, true, true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, false, true, true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -241,15 +252,15 @@ namespace
                     callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[i], generalizeInputTypes);
                     newOperands.push_back(op->getOperand(i));
                 }
-            
+
             if(auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
                 // GroupOp carries the aggregation functions to apply as an
                 // attribute. Since attributes to not automatically become
                 // inputs to the kernel call, we need to add them explicitly
                 // here.
-                
+
                 callee << "__GroupEnum_variadic__size_t";
-                
+
                 ArrayAttr aggFuncs = groupOp.aggFuncs();
                 const size_t numAggFuncs = aggFuncs.size();
                 const Type t = rewriter.getIntegerType(32, false);
@@ -277,6 +288,51 @@ namespace
                 newOperands.push_back(cvpOp);
                 newOperands.push_back(rewriter.create<daphne::ConstantOp>(
                         loc, rewriter.getIndexAttr(numAggFuncs))
+                );
+            }
+            
+            
+            if(auto thetaJoinOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
+                // ThetaJoinOp carries multiple CompareOperation as an
+                // attribute. Since attributes to not automatically become
+                // inputs to the kernel call, we need to add them explicitly
+                // here.
+
+                // manual mapping of attributes to function header
+                callee << "__CompareOperation__size_t";
+
+                // get array of CompareOperations
+                ArrayAttr compareOperations = thetaJoinOp.cmp();
+                const size_t numCompareOperations = compareOperations.size();
+                const Type t = rewriter.getIntegerType(32, false);
+                // create Variadic Pack
+                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                        loc,
+                        daphne::VariadicPackType::get(rewriter.getContext(), t),
+                        rewriter.getIndexAttr(numCompareOperations)
+                );
+                // fill variadic pack
+                size_t k = 0;
+                for(Attribute compareOperation : compareOperations.getValue())
+                    rewriter.create<daphne::StoreVariadicPackOp>(
+                            loc,
+                            cvpOp,
+                            rewriter.create<daphne::ConstantOp>(
+                                    loc,
+                                    rewriter.getIntegerAttr(
+                                            t,
+                                            static_cast<uint32_t>(
+                                                    compareOperation.dyn_cast<daphne::CompareOperationAttr>().getValue()
+                                            )
+                                    )
+                            ),
+                            rewriter.getIndexAttr(k++)
+                    );
+                // add created variadic pack and size of this pack as
+                // new operands / parameters of the ThetaJoin-Kernel call
+                newOperands.push_back(cvpOp);
+                newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                        loc, rewriter.getIndexAttr(numCompareOperations))
                 );
             }
 

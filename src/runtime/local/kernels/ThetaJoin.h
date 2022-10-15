@@ -18,21 +18,12 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
 #define SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
 
+#include <ir/daphneir/Daphne.h>
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <util/DeduceType.h>
 
-#include <cassert>
-#include <cstddef>
-
-enum CompareOperation {
-    Equal,
-    LessThan,
-    LessEqual,
-    GreaterThan,
-    GreaterEqual,
-    NotEqual
-};
-
+using mlir::daphne::CompareOperation;
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -51,9 +42,10 @@ class ThetaJoin {
 
 template<class DTRes, class DTLhs, class DTRhs>
 void thetaJoin(DTRes*& res, const DTLhs* lhs, const DTRhs* rhs, const char** lhsOn, size_t numLhsOn,
-               const char** rhsOn, size_t numRhsOn, CompareOperation* cmp, size_t numCmp){
+               const char** rhsOn, size_t numRhsOn, CompareOperation* cmp, size_t numCmp, DCTX(ctx)){
     ThetaJoin<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, lhsOn, numLhsOn, rhsOn, numRhsOn, cmp, numCmp);
 }
+
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -266,32 +258,32 @@ class ThetaJoin<Frame, Frame, Frame> {
 //        } else { ...
         if constexpr (std::is_same_v<VTLhs, VTRhs>){
             switch ( cmp ){
-                case Equal:
+                case CompareOperation::Equal:
                     return lhs == rhs;
-                case LessThan:
+                case CompareOperation::LessThan:
                     return lhs < rhs;
-                case LessEqual:
+                case CompareOperation::LessEqual:
                     return lhs <= rhs;
-                case GreaterThan:
+                case CompareOperation::GreaterThan:
                     return lhs > rhs;
-                case GreaterEqual:
+                case CompareOperation::GreaterEqual:
                     return lhs >= rhs;
-                case NotEqual:
+                case CompareOperation::NotEqual:
                     return lhs != rhs;
             }
         } else {
             switch (cmp) {
-                case Equal:
+                case CompareOperation::Equal:
                     return lhs == static_cast<VTLhs>(rhs);
-                case LessThan:
+                case CompareOperation::LessThan:
                     return lhs < static_cast<VTLhs>(rhs);
-                case LessEqual:
+                case CompareOperation::LessEqual:
                     return lhs <= static_cast<VTLhs>(rhs);
-                case GreaterThan:
+                case CompareOperation::GreaterThan:
                     return lhs > static_cast<VTLhs>(rhs);
-                case GreaterEqual:
+                case CompareOperation::GreaterEqual:
                     return lhs >= static_cast<VTLhs>(rhs);
-                case NotEqual:
+                case CompareOperation::NotEqual:
                     return lhs != static_cast<VTLhs>(rhs);
             }
         }
@@ -368,13 +360,13 @@ class ThetaJoin<Frame, Frame, Frame> {
         /// iterate over equations
         for(size_t i = 0; i < numCmp; ++i){
             DeduceValueTypeAndExecute<CompareColumnPair>::apply(
-                /// lhs value type
+              /// lhs value type
                 container.getVTLhs(i),
-                /// rhs value type
+              /// rhs value type
                 container.getVTRhs(i),
-                /// parameter of TraverseColumnWise
-                container, resultPositions, i
-            );
+              /// parameter of TraverseColumnWise
+              container, resultPositions, i
+              );
         }
         
         /// write result
@@ -394,4 +386,9 @@ class ThetaJoin<Frame, Frame, Frame> {
     }
 };
 
+
+void thetaJoin(Frame*& res, const Frame* lhs, const Frame* rhs, const char** lhsOn, size_t numLhsOn,
+               const char** rhsOn, size_t numRhsOn, CompareOperation* cmp, size_t numCmp, DCTX(ctx)){
+    ThetaJoin<Frame, Frame, Frame>::apply(res, lhs, rhs, lhsOn, numLhsOn, rhsOn, numRhsOn, cmp, numCmp);
+}
 #endif //SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H

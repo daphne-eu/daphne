@@ -190,7 +190,14 @@ std::vector<Type> daphne::OneHotOp::inferTypes() {
 }
 
 std::vector<Type> daphne::OrderOp::inferTypes() {
-    throw std::runtime_error("type inference not implemented for OrderOp"); // TODO
+    // TODO Take into accout if indexes or data shall be returned.
+    Type srcType = arg().getType();
+    Type t;
+    if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
+        t = mt.withSameElementType();
+    else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
+        t = ft.withSameColumnTypes();
+    return {t};
 }
 
 std::vector<Type> daphne::SliceColOp::inferTypes() {

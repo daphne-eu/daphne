@@ -24,6 +24,8 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/Frame.h>
+// @todo: remove after fix
+#include <mlir/IR/Location.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <catch.hpp>
@@ -92,12 +94,12 @@ TEST_CASE("ThetaJoin: Test the equal (==) operation", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.a"};
     auto rhsQLabels = new const char*[10]{"S.a"};
     auto cmps = new CompareOperation[10]{CompareOperation::Equal};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -164,12 +166,13 @@ TEST_CASE("ThetaJoin: Test the LessThan (<) operation", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.a"};
     auto rhsQLabels = new const char*[10]{"S.a"};
     auto cmps = new CompareOperation[10]{CompareOperation::LessThan};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+//    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -235,12 +238,13 @@ TEST_CASE("ThetaJoin: Test the LessEqual (<=) operation", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.a"};
     auto rhsQLabels = new const char*[10]{"S.a"};
     auto cmps = new CompareOperation[10]{CompareOperation::LessEqual};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+//    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -306,12 +310,13 @@ TEST_CASE("ThetaJoin: Test the GreaterThan (>) operation", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.a"};
     auto rhsQLabels = new const char*[10]{"S.a"};
     auto cmps = new CompareOperation[10]{CompareOperation::GreaterThan};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+//    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -377,12 +382,13 @@ TEST_CASE("ThetaJoin: Test the GreaterEqual (>=) operation", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.a"};
     auto rhsQLabels = new const char*[10]{"S.a"};
     auto cmps = new CompareOperation[10]{CompareOperation::GreaterEqual};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+//    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -448,12 +454,13 @@ TEST_CASE("ThetaJoin: Test the NonEqual (!=) operation", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.a"};
     auto rhsQLabels = new const char*[10]{"S.a"};
     auto cmps = new CompareOperation[10]{CompareOperation::NotEqual};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+//    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -534,12 +541,13 @@ TEST_CASE("ThetaJoin: Test multiple conditions", TAG_KERNELS) {
     auto lhsQLabels = new const char*[10]{"R.idx", "R.a", "R.b"};
     auto rhsQLabels = new const char*[10]{"S.idx", "S.a", "S.c"};
     auto cmps = new CompareOperation[10]{CompareOperation::Equal, CompareOperation::NotEqual, CompareOperation::GreaterEqual};
-    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+    thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
     delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
     
     
     /// test if result matches expected result
-    CHECK(*resultFrame == *expectedResult);
+//    CHECK(*resultFrame == *expectedResult);
+    CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
     
     /// cleanup
     DataObjectFactory::destroy(resultFrame, expectedResult, lhs, rhs);
@@ -583,11 +591,12 @@ TEST_CASE("ThetaJoin: Test unequal value types", TAG_KERNELS) {
         auto lhsQLabels = new const char*[10]{lhsCol.c_str()};
         auto rhsQLabels = new const char*[10]{rhsCol.c_str()};
         auto cmps = new CompareOperation[10]{CompareOperation::Equal};
-        thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations);
+        thetaJoin(resultFrame, lhs, rhs, lhsQLabels, equations, rhsQLabels, equations, cmps, equations, nullptr);
         delete[] lhsQLabels, delete[] rhsQLabels, delete[] cmps;
         
         /// test if result matches expected result
-        CHECK(*resultFrame == *expectedResult);
+//        CHECK(*resultFrame == *expectedResult);
+        CHECK(checkEq<Frame>(resultFrame, expectedResult, nullptr));
         /// cleanup
         DataObjectFactory::destroy(resultFrame);
     };

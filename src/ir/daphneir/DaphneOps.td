@@ -593,6 +593,7 @@ def Daphne_ReverseOp : Daphne_Op<"reverse", [
 }
 
 def Daphne_OrderOp : Daphne_Op<"order", [
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>, // due to possibility of returning indexes
     SameVariadicOperandSize,
     DeclareOpInterfaceMethods<InferShapeOpInterface>
@@ -880,6 +881,37 @@ def Daphne_InnerJoinOp : Daphne_Op<"innerJoin", [
     let arguments = (ins FrameOrU:$lhs, FrameOrU:$rhs, StrScalar:$lhsOn, StrScalar:$rhsOn);
     let results = (outs FrameOrU:$res);
 }
+
+
+def Daphne_CompareOperation_Equal : I32EnumAttrCase<"Equal", 1>;
+def Daphne_CompareOperation_LessThan : I32EnumAttrCase<"LessThan", 2>;
+def Daphne_CompareOperation_LessEqual : I32EnumAttrCase<"LessEqual", 3>;
+def Daphne_CompareOperation_GreaterThan : I32EnumAttrCase<"GreaterThan", 4>;
+def Daphne_CompareOperation_GreaterEqual : I32EnumAttrCase<"GreaterEqual", 5>;
+def Daphne_CompareOperation_NotEqual : I32EnumAttrCase<"NotEqual", 6>;
+
+def Daphne_CompareEnum : I32EnumAttr<"CompareOperation", "", [
+   Daphne_CompareOperation_Equal, Daphne_CompareOperation_LessThan, Daphne_CompareOperation_LessEqual,
+   Daphne_CompareOperation_GreaterThan, Daphne_CompareOperation_GreaterEqual, Daphne_CompareOperation_NotEqual
+   ]>{
+    let cppNamespace = "::mlir::daphne";
+}
+
+def Daphne_ThetaJoinOp : Daphne_Op<"thetaJoin", [
+    AttrSizedOperandSegments,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
+    DataTypeFrm, ValueTypesConcat
+]> {
+    let arguments = (
+        ins Frame:$lhs,
+        Frame:$rhs,
+        Variadic<StrScalar>:$lhsOn,
+        Variadic<StrScalar>:$rhsOn,
+        TypedArrayAttrBase<Daphne_CompareEnum, "enum">:$cmp);
+    let results = (outs Frame:$res);
+}
+
+
 def Daphne_FullOuterJoinOp : Daphne_JoinOp<"fullOuterJoin">;
 def Daphne_LeftOuterJoinOp : Daphne_JoinOp<"leftOuterJoin">;
 def Daphne_AntiJoinOp : Daphne_JoinOp<"antiJoin">;
@@ -1077,6 +1109,10 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
     let results = (outs MatrixOrU:$res);
 }
 
+def Daphne_GetColIdxOp : Daphne_Op<"getColIdx">{
+    let arguments = (ins Frame:$frame, StrScalar:$columnName);
+    let results = (outs Size:$res);
+}
 // ****************************************************************************
 // Distributed Operations
 // ****************************************************************************
