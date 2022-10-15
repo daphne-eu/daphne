@@ -37,18 +37,13 @@ Assuming this script is stored in the file `hello.daphne`, it can be executed by
 build/bin/daphne hello.daphne
 ```
 
-The remainder of this document discusses in detail how to write a DaphneDSL script and how to run it.
+The remainder of this document discusses the language features of DaphneDSL in detail *as they are right now*, but *note that DaphneDSL is still evolving*.
 
-
-## Writing a DaphneDSL script
-
-This section presents the various language features of DaphneDSL *as they are right now*, but *note that DaphneDSL is still evolving*.
-Furthermore, the reader is assumed to be familiar with programming in general.
-
-### Variables
+## Variables
 
 Variables are used to refer to values.
-Valid identifiers start with a letter (`a-z`, `A-Z`) or an underscore (`_`) that can be followed by any number of letters (`a-z`, `A-Z`), underscores (`_`), and decimal digits (`0-9`).
+**Valid identifiers** start with a letter (`a-z`, `A-Z`) or an underscore (`_`) that can be followed by any number of letters (`a-z`, `A-Z`), underscores (`_`), and decimal digits (`0-9`).
+The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
 
 *Examples*
 ```
@@ -62,21 +57,25 @@ Variables do not need to be (and cannot be) declared.
 Instead, simply assign a value to a variable and its type will be inferred.
 Variables must have been assigned to before they are used in an expression.
 
-### Types
+## Types
 
 DaphneDSL differentiates *data types* and *value types*.
 
 Currently, DaphneDSL supports the following *abstract* **data types**:
-- *matrix*: homogeneous value type for all cells
-- *frame*: a table with columns of potentially different value types // individual value type for each column
-- *scalar*: a single value
+- `matrix`: homogeneous value type for all cells
+- `frame`: a table with columns of potentially different value types
+- `scalar`: a single value
 
-The currently supported **value types** are:
+**Value types** specify the representatin of individual values. We currently support:
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
-- booleans `bool` and strings `str` *(currently only for scalars)*
+- strings `str` *(currently only for scalars, support for matrix elements is still experimental)*
+- booleans `bool` *(currently only for scalars)*
 
-### Comments
+Data types and value types can be combined, e.g.:
+- `matrix<f64>` is a matrix of double-precision floating point values
+
+## Comments
 
 DaphneDSL supports single-line comments (starting with `#` or `//`) and multi-line comments (everything enclosed in `/*` and `*/`).
 
@@ -89,15 +88,17 @@ span multiple
 lines */
 ```
 
-### Expressions
+## Expressions
 
-#### Simple Expressions
+### Simple Expressions
 
-Simple expressions constitute the basis of all expressions, and DaphneDSL knows three kinds:
+Simple expressions constitute the basis of all expressions, and DaphneDSL offers three kinds:
 
-##### Literals
+#### Literals
 
-Literals represent hard-coded values and can be of different types:
+Literals represent hard-coded values and can be of various data and value types:
+
+##### Scalar literals
 
 **Integer literals** are specified in decimal notation and have the type `si64`.
 
@@ -127,7 +128,21 @@ Special characters must be escaped using a backslash:
 "This is \"hello.daphne\"."
 ```
 
-##### Variables
+##### Matrix literals
+
+A matrix literal consists of a comma-separated list of scalar literals, enclosed in square braces.
+All scalars specified for the elements must be of the same type. <!--TODO relax this, infer the most general type-->
+Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet. <!--TODO support expressions for the elements (both compile-time constant and know-only-at-runtime-->
+The resulting matrix is always a column matrix, i.e., if *n* elements are specified, its shape is *(n x 1)*.
+Note that the built-in function `reshape` can be used to modify the shape.
+
+*Examples:*
+```
+[1.0, 0.0, -4.0]            # matrix<f64> with shape (3 x 1)
+reshape([1, 2, 3, 4], 1, 4) # matrix<si64> with shape (1 x 4)
+```
+
+#### Variables
 
 Variables are referenced by their name.
 
@@ -136,7 +151,7 @@ Variables are referenced by their name.
 x
 ```
 
-##### Script arguments
+#### Script arguments
 
 Script arguments are named *literals* that can be passed to a DaphneDSL script.
 They are referenced by a dollar sign `$` followed by the argument's name.
@@ -146,11 +161,13 @@ They are referenced by a dollar sign `$` followed by the argument's name.
 $x
 ```
 
-#### Complex Expressions
+Note that matrix literals are not supported as script arguments yet.
+
+### Complex Expressions
 
 DaphneDSL offers several ways to build more complex expressions.
 
-##### Operators
+#### Operators
 
 DaphneDSL currently supports the following binary operators:
 
@@ -181,13 +198,15 @@ The following table shows which combinations of inputs are allowed and which res
 | matrix (n x m) | matrix (1 x m) | matrix (n x m) | broadcasting of row-vector |
 | matrix (n x m) | matrix (n x 1) | matrix (n x m) | broadcasting of column-vector |
 
+In the future, we will also support broadcasting of scalars and row/column-matrices as the left-hand-side operands.
+
 *Examples*
 ```
 1.5 * X @ y + 0.001
 x == 1 && y < 3.5
 ```
 
-##### Parantheses
+#### Parantheses
 
 Parantheses can be used to manually control operator precedence.
 
@@ -196,14 +215,14 @@ Parantheses can be used to manually control operator precedence.
 1 * (2 + 3)
 ```
 
-##### Indexing
+#### Indexing
 
 (Right) indexing enables the extraction of a part of the rows and/or columns of a data object (matrix/frame) into a new data object.
-The result is always a data object of the same type as the input (even *1 x 1* results need to be casted to scalars explicitly).
+The result is always a data object of the same data type as the input (even *1 x 1* results need to be casted to scalars explicitly, if needed).
 
 The rows and columns to extract can be specified independently in any of the following ways:
 
-**Omit indexing**
+##### Omit indexing
 
 Omiting the specification of rows/columns means extracting all rows/columns.
 
@@ -212,7 +231,7 @@ Omiting the specification of rows/columns means extracting all rows/columns.
 X[, ] # same as X (all rows and columns)
 ```
 
-**Indexing by position**
+##### Indexing by position
 
 This is supported for addressing rows and columns in matrices and frames.
 
@@ -265,7 +284,7 @@ X[1.9, ]              # same as X[1, ]
 X[i, (j + 2*sum(Y)):] # expressions
 ```
 
-**Indexing by label**
+##### Indexing by label
 
 So far, this is only supported for addressing columns of frames.
 
@@ -278,7 +297,7 @@ So far, this is only supported for addressing columns of frames.
   X[100:200, "revenue"] # extracts rows 100 through 199 of the column labeled "revenue"
   ```
 
-**Indexing by bit vector (filtering)**
+##### Indexing by bit vector (filtering)
 
 So far, this is only supported for addressing rows of frames.
 
@@ -297,36 +316,37 @@ X[[bv, ]]               # extracts rows 0, 1, 2
 Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
 Furthermore, the specification of columns must be omited here.
 
-##### Casts
+#### Casts
 
 Values can be casted to a particular type explicitly.
 Currently, it is possible to cast:
 - between scalars of different types
 - between matrices of different value types
-- from matrix to frame
-- from frame to matrix
+- between matrix and frame
+- between scalar and *1x1* matrix/frame
+
+Casts can either fully specify the target data *and* value type, or specify only the target data type *or* the target value type.
+In the latter case, the unspecified part of the type will be retained from the argument.
 
 *Examples*
 ```
-as.f32(x)        # casts x to f32 scalar
-as.ui8(x)        # casts x to ui8 scalar
-as.matrix.f32(x) # casts x to matrix with value type f32
-as.matrix(x)     # casts x to matrix with value type infered from x
-as.frame(x)      # casts x to frame
+as.scalar<f64>(x)  # casts x to f64 scalar
+as.matrix<ui32>(x) # casts x to a matrix of ui32
+
+as.scalar(x) # casts x to a scalar of the same value type as x
+as.matrix(x) # casts x to a matrix of the same value type as x
+as.frame(x)  # casts x to a frame whose column types are the value type of x
+
+as.f32(x) # casts x to the same data type as x, but with value type f32
+as.ui8(x) # casts x to the same data type as x, but with value type ui8
 ```
 
-TODO: We should have a scalar data type for casts (with specified or infered value type).
+Note that casting to frames does not support changing the value/column type yet, i.e., expressions like `as.frame<f64, si32, f32>(x)` and `as.f64(x)` (on a frame `x`) do not work yet.
 
-TODO: Elaborate on casts between scalars and data objects, once we support that.
+#### Function calls
 
-##### Function calls
-
-Function calls can address *built-in* functions as well as *user-defined* functions, but the syntax is the same in both cases:
+Function calls can address [*built-in* functions]()**TODO** as well as *user-defined* functions, but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parantheses.
-
-TODO: Create separate reference of all built-in functions and DaphneDSL standard lib functions and link them here.
-
-TODO: Elaborate on types of given vs expected args.
 
 *Examples*
 ```
@@ -335,12 +355,24 @@ t(myMatrix);
 seq(0, 10, 2);
 ```
 
-### Statements
+#### Conditional expression
+
+DaphneDSL supports the conditional expression with the general syntax:
+```
+condition ? then-value : else-value
+```
+
+*Examples*
+```
+(i > 5) ? 42.0 : -42.0s
+```
+
+## Statements
 
 At the highest level, a DaphneDSL script is a sequence of statements.
 Statements comprise assignments, various forms of control flow, and declarations of user-defined functions.
 
-#### Expression statement
+### Expression statement
 
 Every expression followed by a semicolon `;` can be used as a statement.
 This is useful for expressions (especially function calls) which do not return a value.
@@ -354,7 +386,7 @@ doSomething();  # possible return values are ignored, but the execution
                 # of the user-defined function could have side effects
 ```
 
-#### Assignment statement
+### Assignment statement
 
 The return value(s) of an expression can be assigned to one (or more) variable(s).
 
@@ -374,7 +406,7 @@ evals, evecs = eigen(A); # eigen() returns two values, the (n x 1)-matrix of
                          # of the input matrix A.
 ```
 
-##### Indexing
+#### Indexing
 
 The value of an expression can also be assigned to a *partition* of an *existing data object*.
 This is done by (left) indexing, whose syntax is similar to (right) indexing in expressions.
@@ -382,18 +414,18 @@ This is done by (left) indexing, whose syntax is similar to (right) indexing in 
 Currently, left indexing is supported only for matrices.
 Furthermore, the rows/columns cannot be addressed by arbitrary positions lists or bit vectors (yet).
 
-The following conditions must be fulfilled:
-- The left-hand-side variable must have been initialized.
-- The left-hand-side variable must represent a matrix.
-- The right-hand-side expression must return a matrix.
-- The shapes of the partition addressed on the left-hand side and the return value of the right-hand-side expression must match.
-- The value type of the left-hand-side and right-hand-side matrices must match.
-
 *Examples*
 ```
-X[5, 2] = fill(123, 1, 1);        # insert (1 x 1)-matrix
+X[5, 2]       = [123];            # insert (1 x 1)-matrix
 X[10:20, 2:5] = fill(123, 10, 3); # insert (10 x 3)-matrix
 ```
+
+The following conditions must be fulfilled:
+- The left-hand-side variable must have been initialized.
+- The left-hand-side variable must be of data type matrix.
+- The right-hand-side expression must return a matrix.
+- The shapes of the partition addressed on the left-hand side and the return value of the right-hand-side expression must match.
+- The value type of the left-hand-side and right-hand-side matrices must match.<!--TODO this should be relaxed-->
 
 Left indexing can be used with both single and multi-assignments.
 With the latter, it can be used with each variable on the left-hand side individually and independently.
@@ -406,7 +438,7 @@ x, Y[3, :], Z = calculateSomething();
 **Copy-on-write semantics**
 
 Left indexing enables the modification of existing data objects, whereby the semantics is *copy-on-write*.
-That is, if two different variables represent the same runtime data object, then left indexing on one of these variables does not have any effects on the others.
+That is, if two different variables represent the same runtime data object, then left indexing on one of these variables does not have any effects on the other one.
 This is achieved by transparently copying the data as necessary.
 
 *Examples*
@@ -416,6 +448,11 @@ B = A;             # copy-by-reference
 B[..., ...] = ...; # copy-on-write: changes B, but no effect on A
 A[..., ...] = ...; # copy-on-write: changes A, but no effect on B
 ```
+
+### Control Flow statements
+
+DaphneDSL supports block statements, conditional branching, and various kinds of loops.
+These control flow constructs can be nested arbitrarily.
 
 #### Block statement
 
@@ -446,13 +483,7 @@ print(x);     # prints 2
 print(y);     # error
 ```
 
-#### Control Flow statements
-
-TODO: Maybe move block statement here, for consistency as ease of explanation.
-TODO: Mention that control flow statements (including block statements) can be nested arbitrarily.
-TODO: Indentations are optional, but are recommended for readability.
-
-##### If-then-else
+#### If-then-else
 
 The syntax of an if-then-else statement is as follows:
 ```
@@ -489,9 +520,12 @@ else
     print("neither a nor b");
 ```
 
-##### Loops
+#### Loops
 
-**For-Loops**
+DaphneDSL supports for-loops, while-loops, and do-while-loops.
+In the future we plan to support also parfor-loops as well as `break` and `continue` statements.
+
+##### For-Loops
 
 For-loops are used to iterate over the elements of a sequence of integers.
 The syntax of a for-loop is as follows:
@@ -503,7 +537,7 @@ for (var in start:end[:step])
 *start*, *end*, and *step* are expressions evaluating to a single number.
 *step* is optional and defaults to 1 if *end* is greater than *start*, or -1 otherwise.
 In that sense, for-loops can also be used to count backwards by setting *start* greater than *end*.
-The *body-statement* is executed for each value in the sequence, and within the *body-statement, this value is accessible via the read-only variable `var`.
+The *body-statement* is executed for each value in the sequence, and within the *body-statement*, this value is accessible via the read-only variable `var`.
 Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
 
 *Examples:*
@@ -521,7 +555,7 @@ print(x); # 22
 print(y); #  4
 ```
 
-**While-Loops**
+##### While-Loops
 
 While loops are used to execute a (block of) statement(s) as long as an arbitrary condition holds true.
 The syntax of a while-loop is as follows:
@@ -544,7 +578,7 @@ while(i < 10 && !converged) {
 }
 ```
 
-**Do-While-Loops**
+##### Do-While-Loops
 
 Do-while-loops are a variant of while-loops, which checks the condition after each iteration.
 Consequently, a do-while-loop always executes at least one iteration.
@@ -566,41 +600,99 @@ do {
 } while (mean(A) > 100 && i > 0);
 ```
 
-### User-defined Functions
+## User-defined Functions (UDFs)
 
-only at top level (not nested into sth else)
-typed and untyped
-body is a block statement, curly braces, even if just one statement
-
+DaphneDSL allows users to define their own functions.
 The syntax of a function definition looks as follows:
 
 ```
-def funcName(param1[:type1], param2[:type2], ...) [-> return-type] {
+def funcName(paramName1[:paramType1], paramName2[:paramType2], ...) [-> returnType] {
     statement1
     statement2
     ...
 }
 ```
 
-DaphneDSL supports both, typed and untyped functions.
+The function name must be a valid and unique identifier.
+A function can have zero or more parameters, and their names must be valid and unique identifiers.
+Furthermore, a function may return zero or more values.
+Specifying the types of parameters and return values is optional (see *typed and untyped functions* below).
+The body of a function definition is always a block statement, i.e., it must be enclosed in curly braces `{}` even if it is just a single statement.
+<!--TODO Overloading is allowed-->
 
+So far, DaphneDSL supports only positional parameters to functions, but in the future, we plan to support named keyword arguments as well.
 
-**Calling user-defined functions**
-- see expressions above
+Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a function definition must not be nested within a control-flow statement or within another function defintion.
 
-### Selected Aspects
+### Returning Values
 
-#### Using SQL inside DaphneDSL
+User-defined functions can return zero or more values.
+Values are returned by a `return`-statement with the following syntax:
+```
+return x;       # returns a single value
+return x, y, z; # returns multiple values
+```
 
-#### File I/O
+Currently, the return statement must be the last statement of a function.
+Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function.
+Note that multi-value returns are not fully supported yet.
 
-### Planned Features
+*Examples:*
+```
+def greet(name: str) {
+    print("Hello " + name + "!");
+}
 
-- loops
-  - parfor-loops
-  - break and continue not supported yet
-- functions
-  - keyword arguments
-  - return multiple values
+def timesTwo(val: f64) -> f64 {
+    return 2.0 * val;
+}
 
-## Running a DaphneDSL script
+def fib(n: si64) -> si64 {
+    if (n <= 0)
+        return 0;
+    if (n <= 1)
+        return 1;
+    return fib(n - 1) + fib(n - 2);
+}
+```
+
+### Calling User-defined Functions
+
+A user-defined function can be called like any other (built-in) function (see *function-call expressions* above).
+Note that user-defined functions returning multiple values are not fully supported yet.
+
+*Examples:*
+```
+greet("Daphne");             # prints "Hello Daphne!"
+print(timesTwo(42.0) + 1.0); # prints 85.0
+```
+
+### Typed and Untyped Functions
+
+DaphneDSL supports both typed and untyped functions.
+
+The definition of a *typed function* specifies the data and value types of all parameters and return values.
+Hence, a typed function can only be called with inputs of the specified types (if a provided input has an unexpected type, it is automatically casted to the expected type, if possible), and always return outputs of the specified types.
+A typed function is compiled exactly once and specialized to the specified parameter and return types.
+
+*Examples:*
+```
+def timesTwo(val:f64) -> f64 {
+    return 2.0 * val;
+}
+```
+
+In contrast to that, the definition of an *untyped function* leaves the data and value type, or just the value type, of one or more parameters and/or return values unspecified.
+At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
+As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
+Consistently, the types of untyped return values are infered from the parameter types and operations.
+
+*Examples:*
+```
+def timesTwo(val:matrix) {
+    return 2.0 * val;
+}
+def timesTwo(val) {
+    return 2.0 * val;
+}
+```
