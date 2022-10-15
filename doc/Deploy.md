@@ -43,7 +43,7 @@ While the packaging and transfer script [deployDistributed.sh](../deploy/deployD
 - Specifying Slurm running time for single DAPHNE main target duration is provided (with `RunOneRequest`).
 - Cleanup support is added.
     
-### How to use DAPHNE Packaging, Distributed Deployment, and Management of Runtime Systems
+### How to use DAPHNE Packaging, Distributed Deployment, and Management of Runtime Systems (command deploy-distributed-on-slurm.sh)
 
 This explains how to set up the Distributed Workers on a Deployment Platform, and it also briefly comments on what to do afterwards (how to run, analyse, stop, and clean it).
 Commands, with their parameters and arguments, are hence described below for deployment with [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh).
