@@ -22,7 +22,7 @@ At some point, we should gather the crucial pieces of information and gerate suc
 # DaphneDSL Built-in Functions
 
 DaphneDSL offers numerous built-in functions, which can be used in every DaphneDSL script without requiring any imports.
-The general syntax for calling a built-in function is `func(param1, param2, ...)` (see [DaphneDSL]()**TODO**).
+The general syntax for calling a built-in function is `func(param1, param2, ...)` (see the [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)).
 
 This document provides an overview of the DaphneDSL built-in functions.
 Note that we are still extending this set of built-in functions.
@@ -141,7 +141,7 @@ The following built-in functions all follow the same scheme:
 - ***`binaryFunc`***`(lhs:scalar/matrix, rhs:scalar/matrix)`
   
   Applies the respective binary function (see table below) to the corresponding pairs of a value in the left-hand-side argument `lhs` and the right-hand-side argument `rhs`.
-  Regarding the combinations of scalars and matrices, the same broadcasting semantics apply as for binary operations like `+`, `*`, etc. (see [DaphneDSL]())**TODO**.
+  Regarding the combinations of scalars and matrices, the same broadcasting semantics apply as for binary operations like `+`, `*`, etc. (see the [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)).
   
 Note that DaphneDSL support various other elementwise binary functions via operators in infix notation (see [DaphneDSL]()), e.g., `^`, `%`, `*`, `/`, `+`, `-`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`.
 
@@ -307,7 +307,7 @@ We plan to support various matrix decompositions like **`eigen`**, **`lu`**, **`
 
 DaphneDSL supports relational algebra on frames in two ways:
 On the one hand, entire SQL queries can be executed over previously registered *views*.
-**TODO:** This aspect is described in detail in a [separate tutorial]().
+This aspect is described in detail in a [separate tutorial]()**TODO**.
 On the other hand, built-in functions for individual operations of extended relational algebra can be used on frames in DaphneDSL.
 
 ### Entire SQL query
@@ -372,7 +372,7 @@ We will support more variants of joins, including (left/right) outer joins, thet
 ## Conversions, casts and copying
 
 Note that DaphneDSL offers casts in form of the `as.()`-expression.
-See the documentation on [DaphneDSL]() for details. **TODO**
+See the [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md) for details.
 
 - **`copy`**`(arg:matrix/frame)`
 

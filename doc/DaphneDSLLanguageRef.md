@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# DaphneDSL
+# DaphneDSL Language Reference
 
 DaphneDSL is DAPHNE's domain-specific language (DSL).
 DaphneDSL is written in plain text files, typically ending with `.daphne`.
@@ -345,7 +345,7 @@ Note that casting to frames does not support changing the value/column type yet,
 
 #### Function calls
 
-Function calls can address [*built-in* functions]()**TODO** as well as *user-defined* functions, but the syntax is the same in both cases:
+Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as *user-defined* functions, but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parantheses.
 
 *Examples*
