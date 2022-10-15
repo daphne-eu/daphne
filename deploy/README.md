@@ -98,7 +98,7 @@ This directory includes a set of **shell files** regarding deployment aspects li
 - virtualized installation,
 - managed deployment,
 - deployment of the ˙daphne˙ executable,
-- distributed starting of the Target Runtimes within Runtime Systems, and
+- distributed starting of the Daphne system's processes within containerized environments (starting using scheduled and remotely executed SLURM tasks), and
 - stopping and cleaning of a deployment.
 
 ### List of Files in this Directory
