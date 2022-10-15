@@ -565,7 +565,9 @@ if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
 fi
 if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
     cd "$sourcePrefix/$openBlasDirName"
-    make -j"$(nproc)"
+    make clean
+    # optimizes for multiple x86_64 architectures
+    make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
     make PREFIX="$openBlasInstDirName" install
     cd - > /dev/null
     dependency_install_success "openBlas_v${openBlasVersion}"
