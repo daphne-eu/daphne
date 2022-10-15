@@ -30,7 +30,7 @@ Deploying allows the [source code](../src/) to be:
 - run on the Resources of a set of distributed components.
 It can also be used to just try out DAPHNE on a single machine.
 
-Once a deployment is running, the Distributed Workers (running `DistributedWorker` processes) are running in their Runtime Systems and the main Target Runtimes use them to execute Daphne scripts in a Distributed Deployment.
+Once deployment is in a running state, the Daphne system consists of multiple `DistributedWorker`s and a single coordinator who is responsible for handling the distributed execution.
 
 ### Deployment Scheme
 
