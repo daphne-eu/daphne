@@ -127,7 +127,7 @@ Some associated files in [doc/](../doc/) directory for further reading:
 2. [doc/GettingStarted.md](../doc/GettingStarted.md)
   - Explanation of the switches from comment of PR #335.
 3. [doc/development/BuildingDaphne.md](../doc/development/BuildingDaphne.md)
-  - The script for full-fledged source code ([src/](../src/)) building - cloning, dependency setup (w/ download), compilation, generation (linking) of the Rarget Runtime(s), and compilation cleanup.
+  - The script for full-fledged source code ([src/](../src/)) building - cloning, dependency setup (w/ download), compilation, generation (linking) of the Daphne System, and compilation cleanup.
 
 ### More Documentation
 
