@@ -30,18 +30,24 @@ Deploying allows the [source code](../src/) to be:
 - run on the Resources of a set of distributed components.
 It can also be used to just try out DAPHNE on a single machine.
 
-Once deployment is in a running state, the Daphne system consists of multiple `DistributedWorker`s and a single coordinator who is responsible for handling the distributed execution.
+Once deployment is in a running state, the Daphne system consists of multiple `DistributedWorker`s and a single `coordinator` who is responsible for handling the distributed execution.
 
 ### Deployment Scheme
 
 DAPHNE Deployment Scheme encompasses the following:
 
+- A Compilation node (where the Daphne System will be compiled)
+  - OpenSSH connection to the Deployment Platform
+  - (optional) Internet connection to fetch the source code and dependencies
 - Deployment Platform (e.g. an HPC with SLURM support)
-  - Runtime System(s)
-    - Runtime System for the Main Target
-      - `daphne` Target
-    - Runtime System for the Distributed Worker Target
-      - `DistributedWorker` Target
+  - Login Node (or, other type of access)
+    - HPC Task Submission interface (e.g. SLURM)
+  - Compute Node(s)
+    - Interface for provisioned tasks from SLURM
+    - Task: `coordinator` of a Daphne system
+      - from `daphne` file 
+    - Tasks: `DistributedWorker`s
+      - from `DistributedWorker` file
 
 ```
                     DAPHNE Deployment Scheme
