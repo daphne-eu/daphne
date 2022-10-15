@@ -18,20 +18,10 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
 #define SRC_RUNTIME_LOCAL_KERNELS_THETAJOIN_H
 
-#include <runtime/local/context/DaphneContext.h>
-#include <util/DeduceType.h>
-
 #include <ir/daphneir/Daphne.h>
-#include "runtime/local/datastructures/Frame.h"
-
-//enum CompareOperation {
-//    Equal,
-//    LessThan,
-//    LessEqual,
-//    GreaterThan,
-//    GreaterEqual,
-//    NotEqual
-//};
+#include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/datastructures/Frame.h>
+#include <util/DeduceType.h>
 
 using mlir::daphne::CompareOperation;
 

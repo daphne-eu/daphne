@@ -41,9 +41,8 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
-            if(llvm::isa<daphne::ThetaJoinOp>(op)){ //seg faults. for what ever reason.
+            if(llvm::isa<daphne::ThetaJoinOp>(op))
                 return 4;
-            }
             if(llvm::isa<daphne::OrderOp>(op))
                 return 4;
             if(llvm::isa<daphne::GroupOp>(op))

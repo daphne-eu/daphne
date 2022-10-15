@@ -385,7 +385,6 @@ mlir::Attribute SQLVisitor::getCompareEnum(const std::string & op){
     std::stringstream x;
     x << "Error: " << op << " does not name a compare operation\n";
     throw std::runtime_error(x.str());
-    return nullptr;
 }
 
 
@@ -806,16 +805,7 @@ antlrcpp::Any SQLVisitor::visitOrderByClause(
     for(auto i = 0ul; i < ctx->selectIdent().size(); i++){
         mlir::Value boolean = utils.valueOrError(visit(ctx->orderInformation(i)));
         mlir::Value columnName = utils.valueOrError(visit(ctx->selectIdent(i)));
-        //TODO: make a function that generates this Op for future use.
         mlir::Value idx = getColIdx(currentFrame, columnName);
-        // static_cast<mlir::Value>(
-        //     builder.create<mlir::daphne::GetColIdxOp>(
-        //         loc,
-        //         utils.sizeType,
-        //         currentFrame,
-        //         columnName
-        //     )
-        // );
         columnIdxs.push_back(utils.castSizeIf(idx));
         asc.push_back(utils.castBoolIf(boolean));
     }

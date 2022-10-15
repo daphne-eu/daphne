@@ -1557,7 +1557,7 @@
             "templateParams": [],
             "runtimeParams": [
                 {
-                    "type": "Frame *",
+                    "type": "const Frame *",
                     "name": "arg"
                 },
                 {
