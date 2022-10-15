@@ -986,7 +986,7 @@
                 }
             ]
         },
-        
+
         "instantiations": [
             [["DenseMatrix", "float"]],
             [["DenseMatrix", "double"]],
@@ -1158,6 +1158,68 @@
     	},
     	"instantiations": [
     		[]
+    	]
+    },
+    {
+    	"kernelTemplate": {
+    		"header": "ThetaJoin.h",
+    		"opName": "thetaJoin",
+    		"returnType": "void",
+    		"templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+    		"runtimeParams": [
+    			{
+    				"type": "DTRes *&",
+    				"name": "res"
+    			},
+    			{
+    				"type": "const DTLhs *",
+    				"name": "lhs"
+    			},
+    			{
+    				"type": "const DTRhs *",
+    				"name": "rhs"
+    			},
+    			{
+    				"type": "const char **",
+    				"name": "lhsOn"
+    			},
+    			{
+    				"type": "size_t",
+    				"name": "numLhsOn"
+    			},
+    			{
+    				"type": "const char **",
+    				"name": "rhsOn"
+    			},
+    			{
+    				"type": "size_t",
+    				"name": "numRhsOn"
+    			},
+    			{
+    				"type": "CompareOperation *",
+    				"name": "cmp"
+    			},
+    			{
+    				"type": "size_t",
+    				"name": "numCmp"
+    			}
+    		]
+    	},
+    	"instantiations": [
+    		["Frame", "Frame", "Frame"]
     	]
     },
     {
@@ -1507,6 +1569,25 @@
             [["CSRMatrix", "double"]],
             ["Frame"]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "GetColIdx.h",
+            "opName": "getColIdx",
+            "returnType": "size_t",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "const Frame *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "colName"
+                }
+            ]
+        },
+        "instantiations": [[]]
     },
     {
         "kernelTemplate": {
@@ -2215,7 +2296,7 @@
             ["Frame", "Frame"]
         ]
     },
-    
+
     {
         "kernelTemplate": {
             "header": "SliceCol.h",
