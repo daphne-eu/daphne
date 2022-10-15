@@ -26,8 +26,40 @@
 # Stop immediately if any command fails.
 set -e
 
+catch2_options=""
+BUILD_CUDA=""
+BUILD_ARROW=""
+BUILD_FPGAOPENCL=""
+BUILD_DEBUG=""
+
+while [[ $# -gt 0 ]]; do
+    key=$1
+    shift
+    case $key in
+        --cuda)
+            echo using CUDA
+            export BUILD_CUDA="--cuda"
+            ;;
+        --arrow)
+            echo using ARROW
+            BUILD_ARROW="--arrow"
+            ;;
+        --fpgaopencl)
+            echo using FPGAOPENCL
+            export BUILD_FPGAOPENCL="--fpgaopencl"
+            ;;
+        --debug)
+            echo building DEBUG version
+            export BUILD_DEBUG="--debug"
+            ;;
+        *)
+            catch2_options="${catch2_options} ${key}"
+            ;;
+    esac
+done
+
 # Build tests.
-./build.sh --target run_tests
+./build.sh $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
 
 # Preparations for running DaphneLib (Python API) tests.
 export PYTHONPATH="$PYTHONPATH:$PWD/src/"
