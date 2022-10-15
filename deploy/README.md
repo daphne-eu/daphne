@@ -45,9 +45,9 @@ DAPHNE Deployment Scheme encompasses the following:
   - Compute Node(s)
     - Interface for provisioned tasks from SLURM
     - Task: `coordinator` of a Daphne system
-      - from `daphne` file 
+      - a process instantiated from the `daphne` file 
     - Tasks: `DistributedWorker`s
-      - from `DistributedWorker` file
+      - a process instantiated from the `DistributedWorker` file
 
 ```
                     DAPHNE Deployment Scheme
@@ -80,8 +80,8 @@ DAPHNE Deployment Scheme encompasses the following:
 | |  | Node 1                   |     | Node 2                   |     | Node n    | | |
 | |  | - Resources              | ... |                          | ... |           | | |
 | |  |   - CPU/GPU/FPGA         |     | CPU/GPU/FPGAs            |     | Resources | | |
-| |  | - Runtime Systems        |     |   (e.g. 128+)            |     |           | | |
-| |  |   - Main Target (MT) 1   |     | {DistributedWorker (DW)} |     | DWs       | | |
+| |  | - Running Tasks          |     |   (e.g. 128+)            |     |           | | |
+| |  |   - `coordinator`        |     | {DistributedWorker (DW)} |     | DWs       | | |
 | |  |   - (optional: more DWs) |     |   (e.g. DWs 1..128)      |     |           | | |
 | |  +--------------------------+     +--------------------------+     +-----------+ | |
 | |                                                                                  | |
