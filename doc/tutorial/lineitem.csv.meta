@@ -1,80 +1,80 @@
 {
 	"numRows": 6005,
-	"numCols": 16,
+	"numCols": 15,
 	"schema": [
 		{
 			"label": "l_orderkey",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_partkey",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_suppkey",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_linenumber",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_quantity",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_extendedprice",
-			"valueType": "F64",
+			"valueType": "f64"
 		}
 		,
 		{
 			"label": "l_discount",
-			"valueType": "F64",
+			"valueType": "f64"
 		}
 		,
 		{
 			"label": "l_tax",
-			"valueType": "F64",
+			"valueType": "f64"
 		}
 		,
 		{
 			"label": "l_returnflag",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_linestatus",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_shipdate",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_commitdate",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_receiptdate",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_shipinstruct",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "l_shipmode",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 	]
 }

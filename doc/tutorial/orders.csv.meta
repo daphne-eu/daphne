@@ -1,40 +1,40 @@
 {
 	"numRows": 1500,
-	"numCols": 9,
+	"numCols": 7,
 	"schema": [
 		{
 			"label": "o_orderkey",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "o_custkey",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "o_orderstatus",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "o_totalprice",
-			"valueType": "F64",
+			"valueType": "f64"
 		}
 		,
 		{
 			"label": "o_orderdate",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "o_orderpriority",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 		,
 		{
 			"label": "o_shippriority",
-			"valueType": "UI64",
+			"valueType": "ui64"
 		}
 	]
 }
