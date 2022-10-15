@@ -22,7 +22,7 @@ Use [deploy/deploy-distributed-on-slurm.sh](./deploy-distributed-on-slurm.sh) to
 
 ### Overview
 
-This directory [deploy/](../deploy/) can be used to **deploy DAPHNE** Runtime Systems.
+This directory [deploy/](../deploy/) can be used to **deploy a Daphne System**.
 Deploying allows the [source code](../src/) to be:
 - used for building of the Daphne System using [build.sh](../build.sh),
 - packaged,
