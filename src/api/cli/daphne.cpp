@@ -57,6 +57,14 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
     }
 }
 
+void printVersion(llvm::raw_ostream& os) {
+    // TODO Include some of the important build flags into the version string.
+    os
+        << "DAPHNE Version 0.1\n"
+        << "An Open and Extensible System Infrastructure for Integrated Data Analysis Pipelines\n"
+        << "https://github.com/daphne-eu/daphne\n";
+}
+
 int
 main(int argc, char** argv)
 {
@@ -252,6 +260,7 @@ main(int argc, char** argv)
             "  daphne --vec --args x=1,y=2.2,z=\"foo\" example.daphne\n"
             "  daphne --vec --args x=1,y=2.2 example.daphne z=\"foo\"\n"
     );
+    SetVersionPrinter(&printVersion);
     ParseCommandLineOptions(
             argc, argv,
             "The DAPHNE Prototype.\n\nThis program compiles and executes a DaphneDSL script.\n"
