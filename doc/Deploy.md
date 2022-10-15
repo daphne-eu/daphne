@@ -18,28 +18,29 @@ limitations under the License.
 
 ### Overview
 
-This file ([doc/Deploy.md](Deploy.md)) explains deployment of **Daphne system** on HPC (e.g. w/ SLURM), and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory, mainly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh):
+This file ([doc/Deploy.md](Deploy.md)) explains deployment of **Daphne system** on HPC (e.g. w/ Slurm), and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory, mainly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh):
 - compilation of the Singularity image,
 - compilation of Daphne (and the Daphne DistributedWorker) within the Singularity image,
 - packaging compiled daphne targets,
 - packaging compiled daphne targets with user payload as a payload package,
 - uploading the payload package to an HPC platform,
-- obtaining the list of `PEERS`from SLURM,
-- executing daphne main and worker binaries on SLURM `PEERS`,
+- obtaining the connection setup (list of `PEERS` as an environmental variable) from executing Daphne using the Slurm Workload Manager,
+- executing daphne main and worker binaries on Slurm `PEERS`,
 - collection of logs from daphne execution, and
 - cleanup of worker environments and payload deployment.
 
-### Deployment Functionalities for SLURM
+### Deployment Functionalities for Slurm
 
 Daphne's distributed system consists of a single coordinator and multiple DistributedWorkers. To execute Daphne in a distributed fashion, first we need to instantiate DistributedWorkers and connect them to the coordinator.
-The connection of DistributedWorkers to the coordinator in the Daphne system is achieved through the `PEERS` environmental variable, passed during the deployment. Such deployment is described below.
+The connection of DistributedWorkers to the coordinator in the Daphne system is achieved through the `PEERS` environmental variable, passed during the deployment. Such deployment is described below. The default ports for worker peers begin at 50000 (`PORTRANGE_BEGIN`) and the list of `PEERS` is generated as `PEERS = ( WORKER1_IP:PORTRANGE_BEGIN, WORKER1_IP:PORTRANGE_BEGIN+1, ..., WORKER2_IP:PORTRANGE_BEGIN, WORKER2_IP:PORTRANGE_BEGIN+1, ... )`.
+
 The DaphneDSL are then run within the Daphne distributed system. Running on the Daphne distributed system does not require any changes to the DaphneDSL code, but it expects to have deployed DistributedWorkers.
 
-The [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne system on a target HPC platform, and is tailored to the communication required with SLURM and the target HPC platform.
+The [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne system on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.
 While the packaging and transfer script [deployDistributed.sh](../deploy/deployDistributed.sh) already provides some functionality, the specific upgraded functionalities in the extended [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) compared to [deployDistributed.sh](../deploy/deployDistributed.sh) are:
 - The building of the `daphne` main and worker targets to be later started on distributed nodes, can be run through a Singularity container. The Singularity container can be built on the utilized HPC. Otherwise, the function `deploy` in [deployDistributed.sh](../deploy/deployDistributed.sh) sends and builds executables on each node, which might cause overwrite if the workers use same mounted user storage (e.g. distributed storage attached as home directory).
-- The list of `PEERS` is not defined by the user but obtained from SLURM (in `deployDistributed.sh`, the user supplies `PEERS` as an argument).
-- Specifying `SLURM` running time for single DAPHNE main target duration is provided (with `RunOneRequest`).
+- The list of `PEERS` is not defined by the user but obtained from Slurm (in `deployDistributed.sh`, the user supplies `PEERS` as an argument).
+- Specifying Slurm running time for single DAPHNE main target duration is provided (with `RunOneRequest`).
 - Cleanup support is added.
     
 ### How to use DAPHNE Packaging, Distributed Deployment, and Management of Runtime Systems
@@ -51,7 +52,7 @@ Commands, with their parameters and arguments, are hence described below for dep
 ```
 Usage: deploy-distributed-on-slurm.sh <options> <command>
 
-Start the DAPHNE distributed deployment on remote machines using SLURM.
+Start the DAPHNE distributed deployment on remote machines using Slurm.
 
 These are the options (short and long formats available):
   -h, --help              Print this help message and exit.
@@ -75,7 +76,7 @@ These are the commands that can be executed:
   package                 Create the package image with *.daphne scripts and a compressed build/ directory.
   transfer                Transfers (uploads) a package to the target platform.
   start                   Run workers on remote machines through login node (deploys this script and runs workers).
-  workers                 Run workers on current login node through SLURM.
+  workers                 Run workers on current login node through Slurm.
   status                  Get distributed workers' status.
   wait                    Waits until all workers are up.
   stop                    Stops all distributed workers.
@@ -174,7 +175,7 @@ compile
 ```
 
 
-3. Transfer the packet file `daphne-package.tgz` to `HPC` (SLURM) with OpenSSH key `~/.ssh/hpc.pub` and unpack it.
+3. Transfer the packet file `daphne-package.tgz` to `HPC` (Slurm) with OpenSSH key `~/.ssh/hpc.pub` and unpack it.
 ```shell
 ./deploy-distributed-on-slurm.sh --login HPC --user $USER -i ~/.ssh/hpc.pub transfer 
 ```
@@ -190,19 +191,19 @@ E.g., for EuroHPC Vega, use the instance, if your username matches the one at Ve
 ```
 
 
-5. Starting a main target on the HPC (SLURM) and connecting it with the started workers, to execute payload from the stream.
+5. Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from the stream.
 ```shell
 cat ../scripts/examples/hello-world.daph | ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub run 
 ```
 
 
-6. Starting a main target on the HPC (SLURM) and connecting it with the started workers, to execute payload from a file.
+6. Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from a file.
 ```shell
 ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub run example-time.daphne
 ```
 
 
-7. Stopping all workers on the HPC (SLURM).
+7. Stopping all workers on the HPC (Slurm).
 ```shell
 ./deploy-distributed-on-slurm.sh --login login.vega.izum.si --user $USER -i ~/.ssh/hpc.pub stop
 ```
