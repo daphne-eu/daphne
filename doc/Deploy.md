@@ -29,7 +29,7 @@ This file ([doc/Deploy.md](Deploy.md)) explains deployment of **Daphne system** 
 - collection of logs from daphne execution, and
 - cleanup of worker environments and payload deployment.
 
-### Deployment Functionalities for Slurm
+### Deployment Functionalities
 
 Daphne's distributed system consists of a single coordinator and multiple DistributedWorkers. To execute Daphne in a distributed fashion, first we need to instantiate DistributedWorkers and connect them to the coordinator.
 The connection of DistributedWorkers to the coordinator in the Daphne system is achieved through the `PEERS` environmental variable, passed during the deployment. Such deployment is described below. The default ports for worker peers begin at 50000 (`PORTRANGE_BEGIN`) and the list of `PEERS` is generated as `PEERS = ( WORKER1_IP:PORTRANGE_BEGIN, WORKER1_IP:PORTRANGE_BEGIN+1, ..., WORKER2_IP:PORTRANGE_BEGIN, WORKER2_IP:PORTRANGE_BEGIN+1, ... )`.
@@ -37,12 +37,13 @@ The connection of DistributedWorkers to the coordinator in the Daphne system is 
 The DaphneDSL are then run within the Daphne distributed system. Running on the Daphne distributed system does not require any changes to the DaphneDSL code, but it expects to have deployed DistributedWorkers.
 
 The [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne system on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.
-While the packaging and transfer script [deployDistributed.sh](../deploy/deployDistributed.sh) already provides some functionality, the specific upgraded functionalities in the extended [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) compared to [deployDistributed.sh](../deploy/deployDistributed.sh) are:
-- The building of the `daphne` main and worker targets to be later started on distributed nodes, can be run through a Singularity container. The Singularity container can be built on the utilized HPC. Otherwise, the function `deploy` in [deployDistributed.sh](../deploy/deployDistributed.sh) sends and builds executables on each node, which might cause overwrite if the workers use same mounted user storage (e.g. distributed storage attached as home directory).
-- The list of `PEERS` is not defined by the user but obtained from Slurm (in `deployDistributed.sh`, the user supplies `PEERS` as an argument).
-- Specifying Slurm running time for single DAPHNE main target duration is provided (with `RunOneRequest`).
-- Cleanup support is added.
-    
+
+#### Deploying without Slurm support
+The packaging and transfer script [deployDistributed.sh](../deploy/deployDistributed.sh) already provides some initial functionality.
+Additional specifically upgraded functionalities (with Slurm support and HPC with shared home directory) are in the extended [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh).
+
+The building of the Daphne system to be later started on distributed nodes, can be run through a Singularity container. The Singularity container can be built on the utilized HPC. As the function `deploy` in [deployDistributed.sh](../deploy/deployDistributed.sh) sends and builds executables on each node, which might cause overwrite if the workers use same mounted user storage (e.g. distributed storage attached as home directory), [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) should be used for such deployments. The latter also automatically generates the environmental variable `PEERS` from Slurm, while for [deployDistributed.sh](../deploy/deployDistributed.sh) the specification of `PEERS` needs to be provided manually.
+
 ### How to use DAPHNE Packaging, Distributed Deployment, and Management of Runtime Systems (command deploy-distributed-on-slurm.sh)
 
 This explains how to set up the Distributed Workers on a Deployment Platform, and it also briefly comments on what to do afterwards (how to run, analyse, stop, and clean it).
