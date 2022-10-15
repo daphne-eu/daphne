@@ -3,18 +3,18 @@
 //IMPORTANT NOTICE: DAPHNE doesn't support Dates and Strings right now. Therefore we use for this Query integers.
 //For more information on reading csv files read: FileMetaDataFormat (/doc/FileMetaDataFormat.md)
 
-customer = readFrame("customer");
-orders = readFrame("orders");
-lineitem = readFrame("lineitem");
+customer = readFrame("doc/tutorial/customer.csv");
+orders = readFrame("doc/tutorial/orders.csv");
+lineitem = readFrame("doc/tutorial/lineitem.csv");
 
-registerView(customer);
-registerView(orders);
-registerView(lineitem);
+registerView("customer", customer);
+registerView("orders", orders);
+registerView("lineitem", lineitem);
 
 result = sql(
 	"SELECT l.l_orderkey,
-		sum(l.l_extendedprice * (1 - l.l_discount)) as revenue,
-		o.o_orderkey,
+		sum(l.l_extendedprice * (l.l_discount * -1 + 1)) as revenue,
+		l.l_orderkey,
 		o.o_shippriority
 	FROM customer c,
 		orders o,
