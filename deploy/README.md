@@ -24,17 +24,17 @@ Use [deploy/deploy-distributed-on-slurm.sh](./deploy-distributed-on-slurm.sh) to
 
 This directory [deploy/](../deploy/) can be used to **deploy DAPHNE** Runtime Systems.
 Deploying allows the [source code](../src/) to be:
-- built as Target Runtime(s) using [build.sh](../build.sh),
+- used for building of the Daphne System using [build.sh](../build.sh),
 - packaged,
 - delivered and installed on to the Deployment Platform (e.g. HPC) as a unifying Deployment Platform of these Runtime Systems, and 
 - run on the Resources of a set of distributed components.
-It can also be used to just try out DAPHNE on a single Runtime System setup.
+It can also be used to just try out DAPHNE on a single machine.
 
-Once a deployment is running, the Distributed Workers (started `DistributedWorker` Target Runtime(s) executables) are running in their Runtime Systems and the main Target Runtimes use them to execute Daphne scripts in a Distributed Deployment.
+Once a deployment is running, the Distributed Workers (running `DistributedWorker` processes) are running in their Runtime Systems and the main Target Runtimes use them to execute Daphne scripts in a Distributed Deployment.
 
-### Computer Architecture Framework
+### Deployment Scheme
 
-DAPHNE Deployment encompases the following HPC Computer Architecture Framework:
+DAPHNE Deployment Scheme encompasses the following:
 
 - Deployment Platform (e.g. an HPC with SLURM support)
   - Runtime System(s)
@@ -44,8 +44,7 @@ DAPHNE Deployment encompases the following HPC Computer Architecture Framework:
       - `DistributedWorker` Target
 
 ```
-                    DAPHNE Deployment
-            a Computer Architecture Framework
+                    DAPHNE Deployment Scheme
 
 +--------------------------------------------------------------------------------------+
 |                                                                                      |
@@ -59,7 +58,7 @@ DAPHNE Deployment encompases the following HPC Computer Architecture Framework:
 |       |                                                                              |
 |       |                                                                              |
 | +----------------------------------------------------------------------------------+ |
-| |Deployment Platform (e.g. an HPC with SLURM support)                              | |
+| | Deployment Platform (e.g. an HPC with SLURM support)                             | |
 | |                                                                                  | |
 | |  +------------------------------+                                                | |
 | |  | Access/Submission/Login Node |                                                | |
