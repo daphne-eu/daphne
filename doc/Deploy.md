@@ -18,7 +18,7 @@ limitations under the License.
 
 ### Overview
 
-This file ([doc/Deploy.md](Deploy.md)) explains deployment of **DAPHNE runtime systems** on HPC (e.g. w/ SLURM), and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory, mainly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh):
+This file ([doc/Deploy.md](Deploy.md)) explains deployment of **Daphne system** on HPC (e.g. w/ SLURM), and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory, mainly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh):
 - compilation of the Singularity image,
 - compilation within the Singularity image, of the codes for `daphne` main target and worker target,
 - packaging compiled daphne targets,
