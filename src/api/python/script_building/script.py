@@ -72,7 +72,7 @@ class DaphneDSLScript:
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
-        os.system("build/bin/daphne tmpdaphne.daphne")
+        os.system("bin/daphne tmpdaphne.daphne")
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """depth first search to create code from DAG

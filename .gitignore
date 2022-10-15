@@ -2,6 +2,9 @@
 build/
 build-*/
 build_*/
+/bin
+/lib
+/tmp
 
 # dependencies
 thirdparty/*

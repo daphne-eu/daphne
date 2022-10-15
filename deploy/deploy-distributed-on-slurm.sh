@@ -245,7 +245,7 @@ function RunOneRequest {
     WORKERS=$(cd logs; echo OUTPUT.* | sed -e 's/OUTPUT.//g' -e 's/ /,/g')
     time srun $SRUN_ARG \
         singularity $SINGULARITY_ARG exec daphne.sif bash -c \
-            "DISTRIBUTED_WORKERS=${WORKERS} build/bin/daphne $ARGS_CS $DAPHNE_SCRIPT_AND_PARAMS"
+            "DISTRIBUTED_WORKERS=${WORKERS} bin/daphne $ARGS_CS $DAPHNE_SCRIPT_AND_PARAMS"
 }
 
 

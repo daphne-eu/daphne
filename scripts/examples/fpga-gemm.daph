@@ -17,7 +17,7 @@
 ############## IMPORTANT #################
 # EXAMPLE command to run the script: 
 # 
-# env BITSTREAM=../../src/runtime/local/kernels/FPGAOPENCL/bistreams/sgemm.aocx  ./build/bin/daphne -fpgaopencl scripts/examples/fpga-gemm.daph
+# env BITSTREAM=../../src/runtime/local/kernels/FPGAOPENCL/bistreams/sgemm.aocx  ./bin/daphne -fpgaopencl scripts/examples/fpga-gemm.daph
 # 
 # WHERE: 
 # -fpgaopencl is a flag required for FPGA usage

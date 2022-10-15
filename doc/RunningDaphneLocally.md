@@ -20,17 +20,17 @@ This document explains how to run DAPHNE on a local machine.
 For more details on running DAPHNE in a distributed setup, please see the documentation on the [distributed runtime](/doc/DistributedRuntime.md) and [distributed deployment](/doc/Deploy.md).
 
 Before DAPHNE can be executed, the system must be built using `./build.sh` (for more details see [Getting Started](/doc/GettingStarted.md)).
-The main executable of the DAPHNE system is `build/bin/daphne`.
+The main executable of the DAPHNE system is `bin/daphne`.
 The general scheme of an invocation of DAPHNE looks as follows:
 ```
-build/bin/daphne [options] script [arguments]
+bin/daphne [options] script [arguments]
 ```
 
 Where `script` is a [DaphneDSL](/doc/DaphneDSLLanguageRef.md) file.
 
 *Example:*
 ```
-build/bin/daphne scripts/examples/hello-world.daph
+bin/daphne scripts/examples/hello-world.daph
 ```
 
 Note that the present working directory should be the root directory `daphne/` when invoking the system (this requirement will be relaxed in the future).
@@ -42,7 +42,7 @@ These can the accessed as `$key` in the DaphneDSL script.
 
 *Example:*
 ```
-build/bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
+bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
 ```
 *This example executes a simplified variant of the k-means clustering algorithm on random data with 1000 rows and 20 features using 5 centroids and a fixed number of 10 iterations.*
 
@@ -52,7 +52,7 @@ Note that the quotation marks `"` are part of the string literal, so they must b
 ## Command-Line Arguments
 
 The behavior of `daphne` can be influenced by numerous command-line arguments (the `options` mentioned above).
-To see the full list of available options, invoke `build/bin/daphne --help`.
+To see the full list of available options, invoke `bin/daphne --help`.
 
 In the following, a few noteworthy general options are mentioned.
 Note that some of the more specific options are described in the documentation pages on the respective topics, e.g., [distributed execution](/doc/DistributedRuntime.md), [scheduling](/doc/SchedulingOptions.md), [configuration](/doc/Config.md), [FPGA configuration](/doc/FPGAconfiguration.md), etc.
@@ -62,7 +62,7 @@ Note that some of the more specific options are described in the documentation p
   Prints the MLIR-based intermediate representation (IR), the so-called *DaphneIR*, after the specified compiler passes.
   For instance, to see the IR after parsing (and some initial simplifications) and after property inference, invoke
   ```
-  build/bin/daphne --explain parsing_simplified,property_inference test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
+  bin/daphne --explain parsing_simplified,property_inference test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
   ```
 
 - **`--vec`**
@@ -128,7 +128,7 @@ Aborted (core dumped)
 
 ### `Failed to create MemoryBuffer for: ...`
 
-This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `build/bin/daphne`. 
+This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `bin/daphne`. 
 It will be fixed in the future (see issue #445).
 In the meantime, please always invoke `daphne` from the repository's root directory `daphne/`.
 

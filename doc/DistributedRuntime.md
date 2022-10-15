@@ -84,7 +84,7 @@ Now that we have all workers up and running and the environmental variable is se
 **(*)** Note that we execute Daphne from the same bash shell we've set up the environmental variable  `DISTRIBUTED_WORKERS`.
 
 ```bash
-./build/bin/daphne --distributed ./example.script
+./bin/daphne --distributed ./example.script
 ```
 
 For now only asynchronous-gRPC is implemented as a distributed backend and selection is hardcoded [here](/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73). 
@@ -103,7 +103,7 @@ Started Distributed Worker on `localhost:5000`
 On another terminal we set the environment variable and execute script [`distributed.daph`](/scripts/examples/distributed.daph):
 ```bash
 $ export DISTRIBUTED_WORKERS=localhost:5000
-$ ./build/bin/daphne --distributed ./scripts/example/distributed.daph
+$ ./bin/daphne --distributed ./scripts/example/distributed.daph
 ```
 
 ## Current limitations

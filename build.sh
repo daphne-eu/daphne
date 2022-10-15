@@ -42,6 +42,9 @@ function printHelp {
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
     echo "  --arrow           Compile with support for Arrow/Parquet files"
+    echo "  --cuda            Compile with support for CUDA ops"
+    echo "  --debug           Compile with support for debug mode"
+    echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
 }
 
 #******************************************************************************
@@ -274,7 +277,7 @@ function clean() {
 function cleanBuildDirs() {
     echo "-- Cleanup of build directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}" "${projectRoot}/bin" "${projectRoot}/lib")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/antlr_v"*".install.success" \
@@ -293,7 +296,8 @@ function cleanBuildDirs() {
 function cleanAll() {
     echo "-- Cleanup of build and library directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}"
+                "${projectRoot}/bin" "${projectRoot}/lib")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/absl_v"*".download.success" \
@@ -563,7 +567,7 @@ if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
     cd "$sourcePrefix/$openBlasDirName"
     make -j"$(nproc)"
     make PREFIX="$openBlasInstDirName" install
-    cd -
+    cd - > /dev/null
     dependency_install_success "openBlas_v${openBlasVersion}"
 else
     daphne_msg "No need to build OpenBlas again."
@@ -685,6 +689,7 @@ if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit="$(git log -1 --format=%H)"
 fi
+cd - > /dev/null
 
 if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
     daphne_msg "Build llvm version ${llvmCommit}"
@@ -701,6 +706,7 @@ if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFile
        -DCMAKE_INSTALL_PREFIX="$installPrefix"
     cmake --build "$buildPrefix/$llvmName" --target check-mlir
     echo "$llvmCommit" > "$llvmCommitFilePath"
+    cd - > /dev/null
     dependency_install_success "llvm_v${llvmCommit}"
 else
     daphne_msg "No need to build MLIR/LLVM again."
@@ -714,7 +720,7 @@ if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
     mkdir -p $FPGAOPENCL_BISTREAM_DIR
     cd $FPGAOPENCL_BISTREAM_DIR
     wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
-    cd -
+    cd - > /dev/null
   fi
 fi
 

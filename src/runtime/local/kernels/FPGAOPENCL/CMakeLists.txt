@@ -45,7 +45,7 @@ set(FPGAOPENCLKernels_SRC
 )
 
 add_library(FPGAOPENCLKernels SHARED ${FPGAOPENCLKernels_SRC})
-set_target_properties(FPGAOPENCLKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/src/runtime/local/kernels)
+set_target_properties(FPGAOPENCLKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 target_include_directories(FPGAOPENCLKernels PUBLIC ${PROJECT_SOURCE_DIR}/src/)
 

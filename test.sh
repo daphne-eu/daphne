@@ -30,10 +30,11 @@ set -e
 ./build.sh --target run_tests
 
 # Preparations for running DaphneLib (Python API) tests.
-export PYTHONPATH=$PYTHONPATH:$(pwd)/src/
+export PYTHONPATH="$PYTHONPATH:$PWD/src/"
 mkdir --parents src/api/python/tmp
 
 # Run tests.
-build/test/run_tests $@
+# shellcheck disable=SC2086
+./bin/run_tests $catch2_options
 
 set +e
