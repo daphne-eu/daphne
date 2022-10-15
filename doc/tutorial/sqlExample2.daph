@@ -10,7 +10,8 @@ registerView("employee", employee_frame);
 res = sql(
 	"SELECT  e.age as age, avg(e.salary) as salary
 	FROM employee as e
-	GROUP BY e.age;");
+	GROUP BY e.age
+	ORDER BY e.age");
 
 print(employee_frame);
 print(res);
