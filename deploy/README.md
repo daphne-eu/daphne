@@ -99,7 +99,7 @@ This directory includes a set of **shell files** regarding deployment aspects li
 - managed deployment,
 - deployment of the ˙daphne˙ executable,
 - distributed starting of the Target Runtimes within Runtime Systems, and
-- collection and analysis of experimental data obtained through running of a deployment.
+- stopping and cleaning of a deployment.
 
 ### List of Files in this Directory
 
