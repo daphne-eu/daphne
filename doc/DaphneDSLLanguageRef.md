@@ -17,7 +17,7 @@ limitations under the License.
 # DaphneDSL Language Reference
 
 DaphneDSL is DAPHNE's domain-specific language (DSL).
-DaphneDSL is written in plain text files, typically ending with `.daphne`.
+DaphneDSL is written in plain text files, typically ending with `.daphne` or `.daph`.
 It is a case-sensitive language inspired by ML systems as well as
 languages and libraries for numerical computation like Julia, Python NumPy,
 R, and SystemDS DML.
@@ -42,7 +42,9 @@ The remainder of this document discusses the language features of DaphneDSL in d
 ## Variables
 
 Variables are used to refer to values.
+
 **Valid identifiers** start with a letter (`a-z`, `A-Z`) or an underscore (`_`) that can be followed by any number of letters (`a-z`, `A-Z`), underscores (`_`), and decimal digits (`0-9`).
+
 The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
 
 *Examples*
@@ -66,7 +68,7 @@ Currently, DaphneDSL supports the following *abstract* **data types**:
 - `frame`: a table with columns of potentially different value types
 - `scalar`: a single value
 
-**Value types** specify the representatin of individual values. We currently support:
+**Value types** specify the representation of individual values. We currently support:
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
 - strings `str` *(currently only for scalars, support for matrix elements is still experimental)*
@@ -132,9 +134,9 @@ Special characters must be escaped using a backslash:
 
 A matrix literal consists of a comma-separated list of scalar literals, enclosed in square braces.
 All scalars specified for the elements must be of the same type. <!--TODO relax this, infer the most general type-->
-Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet. <!--TODO support expressions for the elements (both compile-time constant and know-only-at-runtime-->
+Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet. <!--TODO support expressions for the elements (both compile-time constant and known-only-at-runtime-->
 The resulting matrix is always a column matrix, i.e., if *n* elements are specified, its shape is *(n x 1)*.
-Note that the built-in function `reshape` can be used to modify the shape.
+Note that the [built-in function](/doc/DaphneDSLBuiltins.md) `reshape` can be used to modify the shape.
 
 *Examples:*
 ```
@@ -206,9 +208,9 @@ In the future, we will also support broadcasting of scalars and row/column-matri
 x == 1 && y < 3.5
 ```
 
-#### Parantheses
+#### Parentheses
 
-Parantheses can be used to manually control operator precedence.
+Parentheses can be used to manually control operator precedence.
 
 *Examples*
 ```
@@ -224,7 +226,7 @@ The rows and columns to extract can be specified independently in any of the fol
 
 ##### Omit indexing
 
-Omiting the specification of rows/columns means extracting all rows/columns.
+Omitting the specification of rows/columns means extracting all rows/columns.
 
 *Examples*
 ```
@@ -245,13 +247,13 @@ This is supported for addressing rows and columns in matrices and frames.
 
 - *Row/column range:*
   Extracts all rows/columns between a lower bound (inclusive) and an upper bound (exclusive).
-  The lower and upper bounds can be omited independently of each other.
+  The lower and upper bounds can be omitted independently of each other.
   In that case, they are replaced by zero and the number of rows/columns, respectively.
   
   *Examples*
   ```
   X[2:5, 3] # extracts rows 2, 3, 4 of column 3
-  X[2, 3:]  # extracts row 2 of all columns from column 3 onwards
+  X[2, 3:]  # extracts row 2 of all columns from column 3 onward
   X[:5, 3]  # extracts rows 0, 1, 2, 3, 4 of column 3
   X[:, 3]   # extracts all rows of column 3, same as X[, 3]
   ```
@@ -314,7 +316,7 @@ X[[bv, ]]               # extracts rows 0, 1, 2
 ```
 
 Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
-Furthermore, the specification of columns must be omited here.
+Furthermore, the specification of columns must be omitted here.
 
 #### Casts
 
@@ -346,7 +348,7 @@ Note that casting to frames does not support changing the value/column type yet,
 #### Function calls
 
 Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as *user-defined* functions, but the syntax is the same in both cases:
-The name of the function followed by a comma-separated list of positional parameters in parantheses.
+The name of the function followed by a comma-separated list of positional parameters in parentheses.
 
 *Examples*
 ```
@@ -364,7 +366,7 @@ condition ? then-value : else-value
 
 *Examples*
 ```
-(i > 5) ? 42.0 : -42.0s
+(i > 5) ? 42.0 : -42.0
 ```
 
 ## Statements
@@ -622,31 +624,22 @@ The body of a function definition is always a block statement, i.e., it must be 
 
 So far, DaphneDSL supports only positional parameters to functions, but in the future, we plan to support named keyword arguments as well.
 
-Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a function definition must not be nested within a control-flow statement or within another function defintion.
+Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a function definition must not be nested within a control-flow statement or within another function definition.
 
 ### Returning Values
 
 User-defined functions can return zero or more values.
 Values are returned by a `return`-statement with the following syntax:
 ```
-return x;       # returns a single value
-return x, y, z; # returns multiple values
+return x;
 ```
 
 Currently, the return statement must be the last statement of a function.
-Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function.
+Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function (experimental).
 Note that multi-value returns are not fully supported yet.
 
 *Examples:*
 ```
-def greet(name: str) {
-    print("Hello " + name + "!");
-}
-
-def timesTwo(val: f64) -> f64 {
-    return 2.0 * val;
-}
-
 def fib(n: si64) -> si64 {
     if (n <= 0)
         return 0;
@@ -663,11 +656,10 @@ Note that user-defined functions returning multiple values are not fully support
 
 *Examples:*
 ```
-greet("Daphne");             # prints "Hello Daphne!"
-print(timesTwo(42.0) + 1.0); # prints 85.0
+fib(5);
 ```
 
-### Typed and Untyped Functions
+### Typed and Untyped Functions (experimental)
 
 DaphneDSL supports both typed and untyped functions.
 
@@ -675,24 +667,7 @@ The definition of a *typed function* specifies the data and value types of all p
 Hence, a typed function can only be called with inputs of the specified types (if a provided input has an unexpected type, it is automatically casted to the expected type, if possible), and always return outputs of the specified types.
 A typed function is compiled exactly once and specialized to the specified parameter and return types.
 
-*Examples:*
-```
-def timesTwo(val:f64) -> f64 {
-    return 2.0 * val;
-}
-```
-
 In contrast to that, the definition of an *untyped function* leaves the data and value type, or just the value type, of one or more parameters and/or return values unspecified.
 At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
 As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
 Consistently, the types of untyped return values are infered from the parameter types and operations.
-
-*Examples:*
-```
-def timesTwo(val:matrix) {
-    return 2.0 * val;
-}
-def timesTwo(val) {
-    return 2.0 * val;
-}
-```
