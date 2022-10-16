@@ -21,7 +21,7 @@ limitations under the License.
 ## User Documentation
 
 - For the `daphne` command-line interface API: see `build/bin/daphne --help`
-- [Running DAPHNE in a Local Environment](/doc/RunningDAPHNELocally.md)
+- [Running DAPHNE in a Local Environment](/doc/RunningDaphneLocally.md)
 - [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
 - [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
 - [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
