@@ -73,7 +73,7 @@ Finally, `DistributedCollect.h` kernel collects the final results (pipeline outp
 
 **`Distribute.h`**, **`Broadcast.h`**, **`DistributedCompute.h`** and **`DistributedCollect.h`** 
 similar to local runtime kernels
-use C++ template meta programming (more on how we utilize C++ templates on the local runtime [here](/doc/ImplementBuiltinKernel.md)). Since Daphne supports many different distributed 
+use C++ template meta programming (more on how we utilize C++ templates on the local runtime [here](/doc/development/ImplementBuiltinKernel.md)). Since Daphne supports many different distributed 
 backends (e.g. gRPC, MPI, etc.) we can not provide a fully generic code that would work for
 all implementations. Thus we specialize each template for each distributed backend we want to 
 support. 
