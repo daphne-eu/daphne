@@ -25,6 +25,7 @@ limitations under the License.
 - [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
 - [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
 - [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
+- [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
 
 ## Developer Documentation
 
