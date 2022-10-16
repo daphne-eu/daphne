@@ -21,7 +21,10 @@ limitations under the License.
 ## User Documentation
 
 - Command-line interface API: see `build/bin/daphne --help`
-- [FileMetaData format (reading and writing data)](/doc/FileMetaDataFormat.md)
+- [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
+- [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
+- [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
+- [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
 
 ## Developer Documentation
 
@@ -32,6 +35,7 @@ limitations under the License.
 - [Binary Data Format](/doc/BinaryFormat.md)
 - [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
 - [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
+- [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
 
 ### Source Code Documentation
 
