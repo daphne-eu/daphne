@@ -161,7 +161,7 @@ Singularity> ./build.sh #or ./test.sh
 - Because the container instance works on the same folder, if one already built the system outside the container, it is recommended to clean all build files to avoid conflicts.
 - One may also do the commits from within the containers as normal.
 
-For more about building and running with containers, refer to the directory `deploy/` and its [README.md](../deploy/README.md) and further documentation in [Deploy.md](Deploy.md).
+For more about building and running with containers, refer to the directory `deploy/` and its [README.md](/deploy/README.md) and further documentation in [Deploy.md](/doc/Deploy.md).
 
 ### Exploring the Source Code
 

@@ -19,9 +19,9 @@ limitations under the License.
 
 ## Overview
 
-This directory [deploy/](../deploy/) can be used to deploy the Daphne System.
+This directory [deploy/](/deploy/) can be used to deploy the Daphne System.
 With these scripts one can:
-- build  the Daphne System (using [build.sh](../build.sh)),
+- build  the Daphne System (using [build.sh](/build.sh)),
 - package,
 - deliver and install to a deployment platform (e.g. HPC) and
 - utilize the resources of multiple machines/nodes.
@@ -31,8 +31,8 @@ Once deployed, Daphne system consists of multiple `DistributedWorker`s and a sin
 
 ### Where to Start
 
-- [deployDistributed.sh](./deployDistributed.sh) can be used to manually deploy using only SSH. When executed without parameters, it prints out the help message. 
-- [deploy-distributed-on-slurm.sh](./deploy-distributed-on-slurm.sh) can be used for environments with Slurm tool. When executed without parameters, it prints out the help message.
+- [deployDistributed.sh](deployDistributed.sh) can be used to manually deploy using only SSH. When executed without parameters, it prints out the help message. 
+- [deploy-distributed-on-slurm.sh](deploy-distributed-on-slurm.sh) can be used for environments with Slurm tool. When executed without parameters, it prints out the help message.
 ## Deployment Scheme
 
 DAPHNE Deployment Scheme encompasses the following:
@@ -102,7 +102,7 @@ This directory includes a set of **bash scripts** providing support for:
 
 ## List of Files in this Directory
 
-1. This short [README](README.md) file to explain directory structure and point to more documentation at [Deploy](../doc/Deploy.md).
+1. This short [README](README.md) file to explain directory structure and point to more documentation at [Deploy](/doc/Deploy.md).
 2. A [script](build-daphne-singularity-image.sh) that builds the "daphne.sif" singularity image from the Docker image ahmedeleliemy/test-workflow (image also contained in this folder).
 3. [deploy-distributed-on-slurm](deploy-distributed-on-slurm.sh) script allows the user to deploy DAPHNE with SLURM.
 4. [deployDistributed](deployDistributed.sh) script builds and sends DAPHNE to remote machines manually with SSH (no tools like Slurm needed).
@@ -112,6 +112,6 @@ This directory includes a set of **bash scripts** providing support for:
 
 ### More Documentation
 
-1. [Documentation about deployment](../doc/Deploy.md), including tutorial-like explanation examples about how to package, distributively deploy, manage, and execute workloads using DAPHNE.
-2. [Getting started guide](../doc/GettingStarted.md)
-3. [Bulding the Daphne System](../doc/development/BuildingDaphne.md)
+1. [Documentation about deployment](/doc/Deploy.md), including tutorial-like explanation examples about how to package, distributively deploy, manage, and execute workloads using DAPHNE.
+2. [Getting started guide](/doc/GettingStarted.md)
+3. [Bulding the Daphne System](/doc/development/BuildingDaphne.md)

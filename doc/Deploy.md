@@ -18,7 +18,7 @@ limitations under the License.
 
 ## Overview
 
-This file explains the deployment of the **Daphne system**, on HPC with SLURM or manually through SSH, and highlights the excerpts from descriptions of functionalities in [deploy/](../deploy/) directory (mostly [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh)):
+This file explains the deployment of the **Daphne system**, on HPC with SLURM or manually through SSH, and highlights the excerpts from descriptions of functionalities in [deploy/](/deploy/) directory (mostly [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh)):
 - compilation of the Singularity image,
 - compilation of Daphne (and the Daphne DistributedWorker) within the Singularity image,
 - packaging compiled Daphne,
@@ -34,7 +34,7 @@ This file explains the deployment of the **Daphne system**, on HPC with SLURM or
 Daphne's distributed system consists of a single coordinator and multiple DistributedWorkers (you can read more about Distributed DAPHNE [here](DistributedRuntime.md#Background)).  For now, in order to execute Daphne in a distributed fashion, we need to deploy DistributedWorkers manually. Coordinator gets the worker's addresses
 through an environmental variable.
 
-`deployDistributed.sh` manually connects to machines with SSH and starts up DistributedWorker processes. On the other hand the [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.
+`deployDistributed.sh` manually connects to machines with SSH and starts up DistributedWorker processes. On the other hand the [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh) packages and starts Daphne on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.
 
 ## Deploying without Slurm support
 
@@ -46,7 +46,7 @@ through an environmental variable.
 
 Workers' own IPs and ports to listen to, can be specified inside the script, or with `--peers [IP[:PORT]],[IP[:PORT]],...`. Default port for all workers is 50000, but this can also be specified inside the script or with `-p,--port PORT`. If running on same machine (e.g. localhost), different ports must be specified.
 
-With `--deploy` the script builds `DistributedWorker` executable (`./build.sh --target DistributedWorker`), compresses the `build` folder and uses `scp` and `ssh` to send and decompress at remote machines, inside the directory specified by `--pathToBuild` (default `~/DaphneDistributedWorker/`). If running workers on localhost, `PATH_TO_BUILD` can be set `/path/to/prototype` and provided `DistributedWorker` is built, `--deploy` is not nessecary.
+With `--deploy` the script builds `DistributedWorker` executable (`./build.sh --target DistributedWorker`), compresses the `build` folder and uses `scp` and `ssh` to send and decompress at remote machines, inside the directory specified by `--pathToBuild` (default `~/DaphneDistributedWorker/`). If running workers on localhost, `PATH_TO_BUILD` can be set `/path/to/daphne` and provided `DistributedWorker` is built, `--deploy` is not nessecary.
 
 Ssh username must be specified inside the script. For now the script assumes all remote machines can be accessed with the same `username`, `id_rsa` key and ssh port (default 22).
 
@@ -60,12 +60,12 @@ $ ./deployDistributed.sh -r # (Uses default peers and path/to/build/ to start wo
 
 ## Deploying with Slurm support
 
-Building the Daphne system (to be later deployed on distributed nodes) can be done with a Singularity container. The Singularity container can be built on the utilized HPC. [deployDistributed.sh](../deploy/deployDistributed.sh) sends executables on each node, assuming there are different storages for each node. This might cause unnecessary overwrites if the workers use same mounted user storage (e.g. HPC environments with distributed storages). Instead [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) should be used for such cases. The latter also automatically generates the environmental variable `PEERS` from Slurm.
+Building the Daphne system (to be later deployed on distributed nodes) can be done with a Singularity container. The Singularity container can be built on the utilized HPC. [deployDistributed.sh](/deploy/deployDistributed.sh) sends executables on each node, assuming there are different storages for each node. This might cause unnecessary overwrites if the workers use same mounted user storage (e.g. HPC environments with distributed storages). Instead [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh) should be used for such cases. The latter also automatically generates the environmental variable `PEERS` from Slurm.
 
 ### How to use `deploy-distributed-on-slurm.sh` for DAPHNE Packaging, Distributed Deployment, and Management using Slurm
 
 This explains how to set up the Distributed Workers on a HPC platform, and it also briefly comments on what to do afterwards (how to run, manage, stop, and clean it).
-Commands, with their parameters and arguments, are hence described below for deployment with [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh).
+Commands, with their parameters and arguments, are hence described below for deployment with [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh).
 
 
 ```
@@ -81,7 +81,7 @@ These are the options (short and long formats available):
   -d, --pathToBuild       A path to deploy or where the build is already deployed (default ~/DaphneDistributedWorker can be specified in the script).
   -n, --numcores          Specify number of workers (cores) to use to deploy DAPHNE workers (default: 128).
   -p, --port              Specify DAPHNE deployed port range begin (default: 50000).
-  --args ARGS_CS          Specify arguments of a DAPHNE SCRIPT in a comma-separated format.
+  --args ARGS_CS          Specify arguments of a DaphneDSL SCRIPT in a comma-separated format.
   -S, --ssh-arg=S         Specify additional arguments S for ssh client (default command: $SSH_COMMAND).
   -C, --scp-arg=C         Specify additional arguments C for scp client (default command: $SCP_COMMAND).
   -R, --srun-arg=R        Specify additional arguments R for srun client.
@@ -99,7 +99,7 @@ These are the commands that can be executed:
   status                  Get distributed workers' status.
   wait                    Waits until all workers are up.
   stop                    Stops all distributed workers.
-  run [SCRIPT [ARGs]]     Run one request on the deployed platform by processing one DAPHNE SCRIPT file (default: /dev/stdin)
+  run [SCRIPT [ARGs]]     Run one request on the deployed platform by processing one DaphneDSL SCRIPT file (default: /dev/stdin)
                           using optional arguments (ARGs in script format).
   clean                   Cleans (deletes) the package on the target platform.
   deploy                  Deploys everything in one sweep: singularity=>build=>package=>transfer=>start=>wait=>run=>clean.
@@ -114,8 +114,8 @@ Logs can be found at [pathToBuild]/logs.
 ```
 
 ### Short Examples
+The following list presents few examples about how to use the [deploy-distributed-on-slurm.sh](/deploy/deploy-distributed-on-slurm.sh) command.
 
-The following list presents few examples about how to use the [deploy-distributed-on-slurm.sh](../deploy/deploy-distributed-on-slurm.sh) command.
 These comprise more hands-on documentation about deployment, including tutorial-like explanation examples about how to package, distributively deploy, manage, and execute workloads using DAPHNE.
 
 1. Builds the Singularity image and uses it to compile the build directory codes, then packages it.
@@ -142,7 +142,7 @@ These comprise more hands-on documentation about deployment, including tutorial-
 ```
 
 
-5. Executes one request (DAPHNE script input from standard input) at a running deployed platform, using default singularity/srun configurations.
+5. Executes one request (DaphneDSL script input from standard input) at a running deployed platform, using default singularity/srun configurations.
 ```shell
 ./deploy-distributed-on-slurm.sh run
 ```
