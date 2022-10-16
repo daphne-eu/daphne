@@ -307,7 +307,7 @@ We plan to support various matrix decompositions like **`eigen`**, **`lu`**, **`
 
 DaphneDSL supports relational algebra on frames in two ways:
 On the one hand, entire SQL queries can be executed over previously registered *views*.
-This aspect is described in detail in a [separate tutorial]()**TODO**.
+This aspect is described in detail in a [separate tutorial](/doc/tutorial/sqlTutorial.md).
 On the other hand, built-in functions for individual operations of extended relational algebra can be used on frames in DaphneDSL.
 
 ### Entire SQL query

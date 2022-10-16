@@ -30,7 +30,7 @@ sql:
     query  EOF;
 
 query:
-    select ';';
+    select ';'?;
 
 select:
     SQL_SELECT selectExpr (',' selectExpr)*
