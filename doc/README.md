@@ -26,6 +26,7 @@ limitations under the License.
 - [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
 - [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
 - [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
+- [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
 
 ## Developer Documentation
