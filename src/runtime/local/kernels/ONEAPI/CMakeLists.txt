@@ -38,5 +38,7 @@ set(ONEAPIKernels_SRC
 
 add_library(ONEAPIKernels SHARED ${ONEAPIKernels_SRC})
 
-target_include_directories(ONEAPIKernels PUBLIC ${PROJECT_SOURCE_DIR}/../../../../)
+target_include_directories(ONEAPIKernels PUBLIC
+		${PROJECT_SOURCE_DIR}/../../../../
+		$ENV{ONEAPI_ROOT}/compiler/2022.2.0/linux/include/sycl)
 
