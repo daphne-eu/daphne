@@ -671,3 +671,10 @@ In contrast to that, the definition of an *untyped function* leaves the data and
 At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
 As a consequence, an untyped function is compiled and specialized on demand according to the types at a call site.
 Consistently, the types of untyped return values are infered from the parameter types and operations.
+
+## Example Scripts
+
+A few example DaphneDSL scripts can be found in:
+- [scripts/algorithms/](/scripts/algorithms/)
+- [scripts/examples/](/scripts/examples/)
+- [test/api/cli/algorithms/](/test/api/cli/algorithms/)
