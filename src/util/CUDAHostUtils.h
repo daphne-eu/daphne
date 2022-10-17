@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <memory>
+#include <vector>
 
 #define CHECK_CUDART(call)                                                   \
   do {                                                                    \

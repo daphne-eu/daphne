@@ -14,15 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
-
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/context/DaphneContext.h>
 
 #include <cstdint>
+
+#ifdef USE_CUDA
+#include <util/ILibCUDA.h>
+#include <dlfcn.h>
+#endif
+
+#include <iostream>
+#include <string>
 
 // ****************************************************************************
 // Convenience function
@@ -31,6 +36,52 @@
 void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
     res = new DaphneContext(*config);
-}
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
+#ifdef USE_CUDA
+    void* handle_libCUDAKernels = dlopen("libCUDAKernels.so", RTLD_LAZY);
+    if (!handle_libCUDAKernels) {
+        throw std::runtime_error("Cannot load libCUDAKernels: " + std::string(dlerror()));
+
+    }
+    //reset errors
+    dlerror();
+
+    create_cuda_vectorized_executor = reinterpret_cast<fptr_createCUDAvexec>(dlsym(handle_libCUDAKernels,
+            "cuda_create_vectorized_executor"));
+
+//    auto dlsym_error = std::string(dlerror());
+
+    const char* dlsym_error_cstr = dlerror();
+    if (dlsym_error_cstr) {
+        auto dlsym_error = std::string(dlsym_error_cstr);
+        dlclose(handle_libCUDAKernels);
+        throw std::runtime_error("Cannot load symbol cuda_create_vectorized_executor: " + dlsym_error);
+    }
+
+    destroy_cuda_vectorized_executor = reinterpret_cast<fptr_destroyCUDAvexec>(dlsym(handle_libCUDAKernels,
+            "cuda_destroy_vectorized_executor"));
+
+    dlsym_error_cstr = dlerror();
+    if (dlsym_error_cstr) {
+        auto dlsym_error = std::string(dlsym_error_cstr);
+        dlclose(handle_libCUDAKernels);
+        throw std::runtime_error("Cannot load symbol cuda_destroy_vectorized_executor: " + dlsym_error);
+    }
+
+    cuda_get_device_count = reinterpret_cast<fptr_cudaGetDevCount>(dlsym(handle_libCUDAKernels, "cuda_get_device_count"));
+    dlsym_error_cstr = dlerror();
+    if (dlsym_error_cstr) {
+        auto dlsym_error = std::string(dlsym_error_cstr);
+        dlclose(handle_libCUDAKernels);
+        throw std::runtime_error("Cannot load symbol cuda_get_device_count: " + dlsym_error);
+    }
+
+    cuda_get_mem_info = reinterpret_cast<fptr_cudaGetMemInfo>(dlsym(handle_libCUDAKernels, "cuda_get_mem_info"));
+    dlsym_error_cstr = dlerror();
+    if (dlsym_error_cstr) {
+        auto dlsym_error = std::string(dlsym_error_cstr);
+        dlclose(handle_libCUDAKernels);
+        throw std::runtime_error("Cannot load symbol cuda_get_mem_info: " + dlsym_error);
+    }
+#endif
+}

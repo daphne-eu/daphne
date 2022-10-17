@@ -15,7 +15,7 @@
  */
 
 #include "AggCol.h"
-#include "HostUtils.h"
+#include "util/CUDAHostUtils.h"
 
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 

@@ -20,7 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
-#include <runtime/local/kernels/CUDA/HostUtils.h>
+#include "util/CUDAHostUtils.h"
 #include <runtime/local/context/DaphneContext.h>
 
 namespace CUDA {

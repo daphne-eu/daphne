@@ -20,6 +20,9 @@
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <parser/config/ConfigParser.h>
+#ifdef USE_CUDA
+#include <util/ILibCUDA.h>
+#endif
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -27,17 +30,12 @@
 #include "mlir/Pass/PassManager.h"
 #include "llvm/Support/CommandLine.h"
 
-#ifdef USE_CUDA
-    #include <runtime/local/kernels/CUDA/HostUtils.h>
-#endif
+#include <dlfcn.h>
 
 #include <exception>
 #include <iostream>
 #include <string>
 #include <unordered_map>
-
-#include <cstdlib>
-#include <cstring>
 
 using namespace std;
 using namespace mlir;
@@ -332,7 +330,51 @@ main(int argc, char** argv)
     if(cuda) {
         int device_count = 0;
 #ifdef USE_CUDA
-        CHECK_CUDART(cudaGetDeviceCount(&device_count));
+        void* handle_libCUDAKernels = dlopen("lib/libCUDAKernels.so", RTLD_LAZY);
+        if (!handle_libCUDAKernels) {
+            cerr << "Cannot load libCUDAKernels: " << dlerror() << '\n';
+            return StatusCode::EXECUTION_ERROR;
+        }
+        //reset errors
+        dlerror();
+
+        create_cuda_vectorized_executor = reinterpret_cast<fptr_createCUDAvexec>(dlsym(handle_libCUDAKernels,
+                "cuda_create_vectorized_executor"));
+
+        const char* dlsym_error = dlerror();
+        if (dlsym_error) {
+            cerr << "Cannot load symbol cuda_create_vectorized_executor: " << dlsym_error << '\n';
+            dlclose(handle_libCUDAKernels);
+            return StatusCode::EXECUTION_ERROR;
+        }
+
+        destroy_cuda_vectorized_executor = reinterpret_cast<fptr_destroyCUDAvexec>(dlsym(handle_libCUDAKernels,
+                "cuda_destroy_vectorized_executor"));
+        dlsym_error = dlerror();
+        if (dlsym_error) {
+            cerr << "Cannot load symbol cuda_destroy_vectorized_executor: " << dlsym_error << '\n';
+            dlclose(handle_libCUDAKernels);
+            return StatusCode::EXECUTION_ERROR;
+        }
+
+        cuda_get_device_count = reinterpret_cast<fptr_cudaGetDevCount>(dlsym(handle_libCUDAKernels,
+                "cuda_get_device_count"));
+        dlsym_error = dlerror();
+        if (dlsym_error) {
+            cerr << "Cannot load symbol cuda_get_device_count: " << dlsym_error << '\n';
+            dlclose(handle_libCUDAKernels);
+            return StatusCode::EXECUTION_ERROR;
+        }
+
+        cuda_get_mem_info = reinterpret_cast<fptr_cudaGetMemInfo>(dlsym(handle_libCUDAKernels, "cuda_get_mem_info"));
+        dlsym_error = dlerror();
+        if (dlsym_error) {
+            cerr << "Cannot load symbol cuda_get_mem_info: " << dlsym_error << '\n';
+            dlclose(handle_libCUDAKernels);
+            return StatusCode::EXECUTION_ERROR;
+        }
+
+        cuda_get_device_count(&device_count);
 #endif
         if(device_count < 1)
             std::cerr << "WARNING: CUDA ops requested by user option but no suitable device found" << std::endl;

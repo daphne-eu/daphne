@@ -15,7 +15,7 @@
  */
 
 #include "EwBinaryMat.h"
-#include "HostUtils.h"
+#include "util/CUDAHostUtils.h"
 #include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/kernels/CUDA/bin_ops.cuh"
 #include <cstdint>

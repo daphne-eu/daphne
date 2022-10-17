@@ -22,7 +22,7 @@
 #include "runtime/local/context/DaphneContext.h"
 #include "runtime/local/datastructures/DataObjectFactory.h"
 #include "runtime/local/datastructures/DenseMatrix.h"
-#include "HostUtils.h"
+#include "util/CUDAHostUtils.h"
 
 namespace CUDA::Activation {
     struct ReLU {

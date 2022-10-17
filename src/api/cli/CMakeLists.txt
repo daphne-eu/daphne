@@ -22,13 +22,13 @@ set(LIBS
         DaphneIrExecutor
         DaphneConfigParser
         DaphneMetaDataParser
+        ${CMAKE_DL_LIBS}
 )
 
 # These dependencies are linked at runtime
 set(LIB_DEPS MLIRDaphneOpsIncGen AllKernels)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    list(APPEND LIBS CUDA::cudart)
     list(APPEND LIB_DEPS CUDAKernels)
 endif()
 
@@ -43,3 +43,7 @@ llvm_update_compile_flags(daphne)
 target_link_libraries(daphne PRIVATE ${LIBS})
 
 mlir_check_all_link_libraries(daphne)
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    target_include_directories(daphne PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+endif()
