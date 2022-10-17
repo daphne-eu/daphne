@@ -552,7 +552,8 @@ def Daphne_ReshapeOp : Daphne_Op<"reshape", [
 def Daphne_TransposeOp : Daphne_Op<"transpose", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport
+    NumRowsFromArgNumCols, NumColsFromArgNumRows, SparsityFromArg, CUDASupport,
+    NoSideEffect
 ]> {
     let arguments = (ins MatrixOrU:$arg);
     let results = (outs MatrixOrU:$res);
