@@ -285,7 +285,7 @@ function cleanBuildDirs() {
       "${thirdpartyPath}/llvm_v"*".install.success" \
       "${thirdpartyPath}/arrow_v"*".install.success" \
       "${llvmCommitFilePath}")
-    
+
     clean dirs files
 }
 
@@ -383,6 +383,7 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
+BUILD_ONEAPI="-DUSE_ONEAPI=OFF"
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -422,6 +423,10 @@ while [[ $# -gt 0 ]]; do
         --debug)
             echo building DEBUG version
             export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
+            ;;
+        --oneapi)
+            echo using OneAPI
+            export BUILD_ONEAPI="-DUSE_ONEAPI=ON"
             ;;
         *)
             unknown_options="${unknown_options} ${key}"
@@ -493,7 +498,7 @@ fi
 if ! is_dependency_installed "antlr_v${antlrVersion}"; then
     mkdir -p "$installPrefix"/share/antlr4/
     cp "$cacheDir/$antlrJarName" "$installPrefix/share/antlr4/$antlrJarName"
-    
+
     daphne_msg "Applying 0000-antlr-silence-compiler-warnings.patch"
     # disable fail on error as first build might fail and patches might be rejected
     set +e
@@ -724,12 +729,20 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL  $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja \
+   $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_ONEAPI \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
 
 cmake --build "$daphneBuildDir" --target "$target"
+
+# build OneAPI library in a separate step because of the changed CXX compiler
+if [[ $BUILD_ONEAPI = *"ON"* ]]; then
+  CXX=dpcpp cmake -S $projectRoot/src/runtime/local/kernels/ONEAPI -B "$daphneBuildDir"/oneapi-kernels -G Ninja \
+  -DCMAKE_PREFIX_PATH="$daphneBuildDir" $BUILD_ONEAPI
+  cmake --build "$daphneBuildDir"/oneapi-kernels
+fi
 
 build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"

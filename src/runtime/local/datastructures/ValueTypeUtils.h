@@ -70,6 +70,7 @@ template<> const std::string ValueTypeUtils::cppNameFor<uint64_t>;
 template<> const std::string ValueTypeUtils::cppNameFor<float>;
 template<> const std::string ValueTypeUtils::cppNameFor<double>;
 template<> const std::string ValueTypeUtils::cppNameFor<bool>;
+template<> const std::string ValueTypeUtils::cppNameFor<const char*>;
 
 template<> const std::string ValueTypeUtils::irNameFor<int8_t>;
 template<> const std::string ValueTypeUtils::irNameFor<int32_t>;
