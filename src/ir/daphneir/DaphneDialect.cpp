@@ -912,17 +912,21 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
     }
 
 
-    mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();
+    // TODO Turn on the transposition-awareness for the left-hand-side argument again (see #447).
+    // mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();
     mlir::daphne::TransposeOp rhsTransposeOp = rhs.getDefiningOp<mlir::daphne::TransposeOp>();
 
-    if (!lhsTransposeOp && !rhsTransposeOp){
+    //if (!lhsTransposeOp && !rhsTransposeOp){
+    if (!rhsTransposeOp){
         return mlir::failure();
     }
 
+#if 0
     if(lhsTransposeOp) {
         lhs = lhsTransposeOp.arg();
         ta = !ta;
     }
+#endif
     if(rhsTransposeOp) {
         rhs = rhsTransposeOp.arg();
         tb = !tb;
