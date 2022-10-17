@@ -109,3 +109,17 @@ JIT-Engine invocation failed: Failed to materialize symbols: { (main, { _mlir_ci
 Failed to materialize symbols: { (main, { _mlir_ciface_main, _mlir_main, _mlir__mlir_ciface_main, main }) }
 Aborted (core dumped)
 ```
+
+### `Failed to create MemoryBuffer for: ...`
+
+This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `build/bin/daphne`. 
+It will be fixed in the future (see issue #445).
+In the meantime, please always invoke `daphne` from the repository's root directory `daphne/`.
+
+*Example:*
+
+```
+Failed to create MemoryBuffer for: build/src/runtime/local/kernels/libAllKernels.so
+Error: No such file or directory
+```
+*Typically followed by an error or the type `JIT session error: Symbols not found: ...`, which is described above.*
