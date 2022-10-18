@@ -162,5 +162,4 @@ As an example, the following command uses --SEQPRI as a victim selection strateg
 
 [D4.1](https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-4.1-fin.pdf) DAPHNE: D4.1 DSL Runtime Design, 11/2021 
 
-[D5.1](https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-5.1-fin.pdf) DAPHNE: D5.1 Scheduler Design for Pipelines and Tasks, 11/202
-.
+[D5.1](https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-5.1-fin.pdf) DAPHNE: D5.1 Scheduler Design for Pipelines and Tasks, 11/2021
