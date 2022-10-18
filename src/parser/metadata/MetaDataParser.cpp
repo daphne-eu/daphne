@@ -20,10 +20,10 @@
 #include <fstream>
 
 FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
-    std::string filename = (filename_.find(".meta") == std::string::npos) ? filename_ + ".meta" : filename_;
-    std::ifstream ifs(filename, std::ios::in);
+    std::string metaFilename = filename_ + ".meta";
+    std::ifstream ifs(metaFilename, std::ios::in);
     if (!ifs.good())
-        throw std::runtime_error("Could not open file '" + filename + ".meta' for reading meta data.");
+        throw std::runtime_error("Could not open file '" + metaFilename + "' for reading meta data.");
 
     nlohmann::basic_json jf = nlohmann::json::parse(ifs);
 
@@ -67,10 +67,10 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
 }
 
 void MetaDataParser::writeMetaData(const std::string& filename_, const FileMetaData& metaData) {
-    std::string filename = (filename_.find(".meta") == std::string::npos) ? filename_ + ".meta" : filename_;
-    std::ofstream ofs(filename, std::ios::out);
+    std::string metaFilename = filename_ + ".meta";
+    std::ofstream ofs(metaFilename, std::ios::out);
     if (!ofs.good())
-        throw std::runtime_error("could not open file '" + filename + "'.meta for writing meta data");
+        throw std::runtime_error("could not open file '" + metaFilename + "' for writing meta data");
 
     if(ofs.is_open()) {
         nlohmann::json json;
@@ -101,7 +101,7 @@ void MetaDataParser::writeMetaData(const std::string& filename_, const FileMetaD
         ofs << json.dump();
     }
     else
-        throw std::runtime_error("could not open file '" + filename + "'.meta for writing meta data");
+        throw std::runtime_error("could not open file '" + metaFilename + "' for writing meta data");
 }
 
 bool MetaDataParser::keyExists(const nlohmann::json& j, const std::string& key) { return j.find(key) != j.end(); }
