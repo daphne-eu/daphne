@@ -52,6 +52,171 @@ duckdb::LogicalType getDuckType(ValueTypeCode type){
     }
 }
 
+ValueTypeCode getDaphneType(duckdb::PhysicalType phys){
+    std::stringstream error("");
+    switch(phys){
+        case duckdb::PhysicalType::BOOL:
+            error << "duckDbSql(...) does not yet support bool Types.\n";
+            throw std::runtime_error(error.str());
+            break;
+        case duckdb::PhysicalType::INT8:
+            return ValueTypeUtils::codeFor<int8_t>;
+        case duckdb::PhysicalType::INT16: //todo
+            return ValueTypeUtils::codeFor<int32_t>;
+        case duckdb::PhysicalType::INT32:
+            return ValueTypeUtils::codeFor<int32_t>;
+        case duckdb::PhysicalType::INT64:
+            return ValueTypeUtils::codeFor<int64_t>;
+        case duckdb::PhysicalType::INT128:  //todo
+            return ValueTypeUtils::codeFor<int64_t>;
+        case duckdb::PhysicalType::UINT8:
+            return ValueTypeUtils::codeFor<uint8_t>;
+        case duckdb::PhysicalType::UINT16:
+            return ValueTypeUtils::codeFor<uint32_t>;
+        case duckdb::PhysicalType::UINT32:
+            return ValueTypeUtils::codeFor<uint32_t>;
+        case duckdb::PhysicalType::UINT64:
+            return ValueTypeUtils::codeFor<uint64_t>;
+        case duckdb::PhysicalType::FLOAT:
+            return ValueTypeUtils::codeFor<float>;
+        case duckdb::PhysicalType::DOUBLE:
+            return ValueTypeUtils::codeFor<double>;
+        case duckdb::PhysicalType::VARCHAR:
+            error << "innerJoin(...) does not yet support String Types.\n";
+            throw std::runtime_error(error.str());
+        default:
+            error << "innerJoin(...). The physical return type from the "
+                << " DuckDB Query is not supported. The Type is: ";
+            error << duckdb::TypeIdToString(phys) << "\n";
+            throw std::runtime_error(error.str());
+    }
+}
+
+
+void createDataChunk(
+    duckdb::DataChunk &dc,
+    const Frame* arg
+){
+    const size_t numCols = arg->getNumCols();
+    const size_t numRows = arg->getNumRows();
+
+    std::vector<duckdb::LogicalType> types_ddb;
+    for(size_t i = 0; i < numCols; i++){
+        ValueTypeCode type = arg->getColumnType(i);
+        types_ddb.push_back(getDuckType(type));
+    }
+    dc.InitializeEmpty(types_ddb);
+    for(size_t i = 0; i < numCols; i++){
+        duckdb::Vector temp(types_ddb[i], (duckdb::data_ptr_t)arg->getColumnRaw(i));
+        dc.data[i].Reference(temp);
+    }
+    dc.SetCardinality(numRows);
+}
+
+
+template<typename VTCol1, typename VTCol2>
+void fillResultFrameColumn(
+    Frame *& res,
+    uint8_t * data,
+    const size_t column,
+    const size_t r_f_s,
+    const size_t r_f_e,
+    const size_t r_dc_s,
+    const size_t r_dc_e,
+    const size_t offset = 0
+){
+    const size_t add = 1 + offset;
+
+    VTCol1* res_c = res->getColumn<VTCol1>(column)->getValues();
+    VTCol2* data_c = (VTCol2*) data;
+
+    size_t r_f = r_f_s;
+    size_t r_dc = r_dc_s;
+    while(r_f < r_f_e && r_dc < r_dc_e){
+        res_c[r_f] = (VTCol1)data_c[r_dc];
+        r_f++;
+        r_dc+= add;
+    }
+}
+
+
+void fillFrame(Frame*& res, duckdb::DataChunk data, size_t row = 0, size_t column = 0){
+    size_t col_max_dc = column + data.size();
+    size_t row_max_dc = data.ColumnCount();
+    size_t col_max_f = res->getNumCols();
+    size_t row_max_f = res->getNumRows();
+
+    size_t c_dc = 0;
+    size_t c_f = column;
+    while(c_dc < col_max_dc && c_f < col_max_f){
+        duckdb::Vector dc_vec = move(data.data[c_dc]);
+        duckdb::data_ptr_t dc_raw = dc_vec.GetData();
+
+        duckdb::PhysicalType phys = dc_vec.GetType().InternalType();
+
+        switch(phys){
+            case duckdb::PhysicalType::INT8:
+                fillResultFrameColumn<int8_t, int8_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::INT16: //todo
+                fillResultFrameColumn<int32_t, int16_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::INT32:
+                fillResultFrameColumn<int32_t, int32_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::INT64:
+                fillResultFrameColumn<int64_t, int64_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::INT128:
+                fillResultFrameColumn<int64_t, int64_t>(
+                    res, dc_raw, c_f, row, row_max_f, 1, row_max_dc*2, 1
+                );  //todo
+                break;
+            case duckdb::PhysicalType::UINT8:
+                fillResultFrameColumn<uint8_t, uint8_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::UINT16:
+                fillResultFrameColumn<uint32_t, uint16_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::UINT32:
+                fillResultFrameColumn<uint32_t, int32_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::UINT64:
+                fillResultFrameColumn<int64_t, int64_t>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::FLOAT:
+                fillResultFrameColumn<float, float>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+            case duckdb::PhysicalType::DOUBLE:
+                fillResultFrameColumn<double, double>(
+                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
+                );
+                break;
+        }
+
+        c_dc++;
+        c_f++;
+    }
+}
+
 
 void innerJoin(
     // results
@@ -92,27 +257,9 @@ void innerJoin(
     duckdb::DataChunk dc_l;
     duckdb::DataChunk dc_r;
 
-    for(size_t i = 0; i < numCols_l; i++){
-        ValueTypeCode type = lhs->getColumnType(i);
-        types_l.push_back(getDuckType(type));
-    }
-    for(size_t i = 0; i < numCols_r; i++){
-        ValueTypeCode type = rhs->getColumnType(i);
-        types_r.push_back(getDuckType(type));
-    }
-    dc_l.InitializeEmpty(types_l);
-    dc_r.InitializeEmpty(types_r);
+    createDataChunk(dc_l, lhs);
+    createDataChunk(dc_r, rhs);
 
-    for(size_t i = 0; i < numCols_l; i++){
-        duckdb::Vector temp(types_l[i], (duckdb::data_ptr_t)lhs->getColumnRaw(i));
-        dc_l.data[i].Reference(temp);
-    }
-    for(size_t i = 0; i < numCols_r; i++){
-        duckdb::Vector temp(types_r[i], (duckdb::data_ptr_t)rhs->getColumnRaw(i));
-        dc_r.data[i].Reference(temp);
-    }
-    dc_l.SetCardinality(numRow_l);
-    dc_r.SetCardinality(numRow_r);
 //Data transfer finished
     //For the InnerJoin we need 5(?) DataChunks. two with the data. two for the Join Condition. one for the results
 
@@ -131,10 +278,10 @@ void innerJoin(
 
     duckdb::idx_t l_t = 0, r_t = 0;
 //join
-    std::vector<duckdb::JoinCondition> condition;
+    std::vector<duckdb::JoinCondition> condition ;
     duckdb::JoinCondition equal;//This innerJoin is always an Equi-Join
     equal.comparison = duckdb::ExpressionType::COMPARE_EQUAL;
-    condition.push_back(equal);
+    condition.push_back(move(equal));
     size_t match_count = duckdb::NestedLoopJoinInner::Perform(l_t, r_t, dc_join_l, dc_join_r, sel_l, sel_r, condition);
 //Result
     dc_l.Slice(sel_l, match_count);
@@ -145,11 +292,11 @@ void innerJoin(
 
     col_idx_res = 0;
     for(size_t i = 0; i < numCols_l; i++){
-        res->column[col_idx_res] = (int8_t*) dc_l.data[i];
+        // res->column[col_idx_res] = (int8_t*) dc_l.data[i];
         col_idx_res++;
     }
     for(size_t i = 0; i < numCols_r; i++){
-        res->column[col_idx_res] = (int8_t*) dc_r.data[i];
+        // res->column[col_idx_res] = (int8_t*) dc_r.data[i];
         col_idx_res++;
     }
 
