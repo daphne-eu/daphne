@@ -91,6 +91,22 @@ If `daphne` terminates normally, one of the following status codes is returned:
 One of the three types of errors mentioned above occured.
 In many (but not yet all) cases, there will be an error message indicating what went wrong.
 
+*Examples:*
+
+- **Wrong way of passing string literals as DaphneDSL script arguments.**
+  ```
+  line 1:0 mismatched input 'foo' expecting {'true', 'false', INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL}
+  Parser error: unexpected literal
+  ```
+  Maybe you tried to pass a string as an argument to a DaphneDSL script and forgot the quotation marks or they got lost.
+  Pass strings as `build/bin/daphne script.daphne foo=\"abc\"` (not `foo=abc` or `foo="abc"`) on a terminal.
+
+- **Missing metadata file.**
+  ```
+  Parser error: Could not open file 'data/foo.csv.meta' for reading meta data.
+  ```
+  Maybe you try to read a dataset called `data/foo.csv`, but the required [metadata file](/doc/FileMetaDataFormat.md) `data/foo.csv.meta` does not exist.
+
 ### `JIT session error: Symbols not found: ...`
 
 This error occurs when the execution of a DaphneDSL script requires invoking a kernel with an input/output type combination that was not pre-compiled.
