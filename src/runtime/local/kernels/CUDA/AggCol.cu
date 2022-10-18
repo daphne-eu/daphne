@@ -15,6 +15,10 @@
  */
 
 #include "AggCol.h"
+#include "HostUtils.h"
+
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
+
 #include "bin_ops.cuh"
 
 namespace CUDA {
@@ -40,15 +44,18 @@ namespace CUDA {
 
     template<typename VT>
     void AggCol<DenseMatrix<VT>, DenseMatrix<VT>>::apply(AggOpCode opCode, DenseMatrix<VT> *&res,
-            const DenseMatrix<VT> *arg, DCTX(ctx)) {
+            const DenseMatrix<VT> *arg, DCTX(dctx)) {
         const size_t numCols = arg->getNumCols();
-
+        
+        const size_t deviceID = 0; //ToDo: multi device support
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        
         int blockSize;
         int minGridSize; // The minimum grid size needed to achieve the maximum occupancy for a full device launch
         size_t gridSize;
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, false,  ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(1, numCols, false,  &alloc_desc);
 
         auto N = arg->getNumItems();
 
@@ -57,21 +64,21 @@ namespace CUDA {
 
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, agg_col<VT, SumOp<VT>>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            agg_col<<<gridSize, blockSize>>>(res->getValuesCUDA(), arg->getValuesCUDA(), N, numCols, op);
+            agg_col<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), arg->getValues(&alloc_desc), N, numCols, op);
         }
         else if (opCode == AggOpCode::MAX) {
             MaxOp<VT> op;
 
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, agg_col<VT, MaxOp<VT>>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            agg_col<<<gridSize, blockSize>>>(res->getValuesCUDA(), arg->getValuesCUDA(), N, numCols, op);
+            agg_col<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), arg->getValues(&alloc_desc), N, numCols, op);
         }
         else if (opCode == AggOpCode::MIN) {
             MinOp<VT> op;
 
             CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, agg_col<VT, MinOp<VT>>, 0, 0));
             gridSize = (N + blockSize - 1) / blockSize;
-            agg_col<<<gridSize, blockSize>>>(res->getValuesCUDA(), arg->getValuesCUDA(), N, numCols, op);
+            agg_col<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), arg->getValues(&alloc_desc), N, numCols, op);
         }
         else {
             std::cerr << "opCode=" << static_cast<uint32_t>(opCode) << std::endl;

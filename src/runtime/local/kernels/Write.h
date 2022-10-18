@@ -23,6 +23,9 @@
 #include <runtime/local/io/File.h>
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/WriteCsv.h>
+#include <runtime/local/io/WriteDaphne.h>
+#include <parser/metadata/MetaDataParser.h>
+
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -53,10 +56,18 @@ void write(const DTArg * arg, const char * filename, DCTX(ctx)) {
 template<typename VT>
 struct Write<DenseMatrix<VT>> {
     static void apply(const DenseMatrix<VT> * arg, const char * filename, DCTX(ctx)) {
-        File * file = openFileForWrite(filename);
-        FileMetaData::toFile(filename, arg->getNumRows(), arg->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
-        writeCsv(arg, file);
-        closeFile(file);
+	std::string fn(filename);
+	auto pos = fn.find_last_of('.');
+	std::string ext(fn.substr(pos+1)) ;
+	if (ext == "csv") {
+		File * file = openFileForWrite(filename);
+		FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
+		MetaDataParser::writeMetaData(filename, metaData);
+		writeCsv(arg, file);
+		closeFile(file);
+	} else if (ext == "dbdf") {
+		writeDaphne(arg, filename);
+	}
     }
 };
 

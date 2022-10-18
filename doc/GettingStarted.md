@@ -28,29 +28,41 @@ Newer versions should work as well, older versions might work as well.
 
 ##### Operating system
 
-| OS | distribution/version known to work (*) |
-| --- | --- |
-| GNU/Linux | Ubuntu 20.04.1 with kernel 5.8.0-43-generic |
+| OS        | distribution/version known to work (*)      | Comment                           |
+|-----------|---------------------------------------------|-----------------------------------|
+| GNU/Linux | Ubuntu 20.04.1 with kernel 5.8.0-43-generic ||
+| GNU/Linux | Ubuntu 18.04  | If used with Intel PAC D5005 FPGA |
 
 ##### Software
 
-| tool/lib | version known to work (*) | comment |
-| ----------- | ----------- | ----------- |
-| clang | 10.0.0 | |
-| cmake | 3.17 | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
-| git | 2.25.1 | |
-| lld | 10.0.0 | |
-| ninja | 1.10.0 | |
-| pkg-config | 0.29.1 | |
-| python3 | 3.8.5 | |
-| numpy | 1.19.5 | |
-| java (e.g. openjdk) | 11 (1.7 should be fine) | |
-| gfortran | 9.3.0 | |
-| uuid-dev |  | |
+| tool/lib                           | version known to work (*) | comment                                                                                                                                 |
+|------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| clang                              | 10.0.0                    |                                                                                                                                         |
+| cmake                              | 3.17                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
+| git                                | 2.25.1                    |                                                                                                                                         |
+| libssl-dev                         | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
+| lld                                | 10.0.0                    |                                                                                                                                         |
+| ninja                              | 1.10.0                    |                                                                                                                                         |
+| pkg-config                         | 0.29.1                    |                                                                                                                                         |
+| python3                            | 3.8.5                     |                                                                                                                                         |
+| numpy                              | 1.19.5                    |                                                                                                                                         |
+| java (e.g. openjdk)                | 11 (1.7 should be fine)   |                                                                                                                                         |
+| gfortran                           | 9.3.0                     |                                                                                                                                         |
+| uuid-dev                           |                           |                                                                                                                                         |
+| libboost-dev                       | 1.71.0.0                  | Only required when building with support for Arrow (`--arrow`)                                                                          |
+| wget                               |                           | Used to fetch additional dependencies and other artefacts                                                                               |
+| ***                                | ***                       | ***                                                                                                                                     |
+| CUDA SDK                           | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
+| OneAPI SDK                         | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
+| Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                    | Optional for FPGAOPENCL ops                                                                                                             |
 
 ##### Hardware
 
-  - about 2.1 GB of free disk space (mostly due to MLIR/LLVM)
+  - about 7.5 GB of free disk space to build from source (mostly due to dependencies)
+  * Optional:
+    * NVidia GPU for CUDA ops (tested on Pascal and newer architectures); 8GB for CUDA SDK
+    * Intel GPU for OneAPI ops (tested on Coffeelake graphics); 23 GB for OneAPI
+    * Intel FPGA for FPGAOPENCL ops (tested on PAC D5005 accelerator); 23 GB for OneAPI
 
 ### Obtaining the Source Code
 
@@ -93,6 +105,8 @@ If the build fails in between (e.g., due to missing packages), multiple build di
 ./build.sh --clean
 ```
 
+See [this page](/doc/development/BuildingDaphne.md) for more information.
+
 ### Running the Tests
 
 ```bash
@@ -103,7 +117,7 @@ We use [catch2](https://github.com/catchorg/Catch2) as the unit test framework. 
 
 ### Running the DAPHNE system
 
-Write a little DaphneDSL script or use `example.daphne`...
+Write a little DaphneDSL script or use [`scripts/examples/hello-world.daph`](../scripts/examples/hello-world.daph)...
 
 ```
 x = 1;
@@ -116,14 +130,19 @@ print(m + m);
 print(t(m));
 ```
 
-... and execute it as follows: `build/bin/daphne example.daphne`.
+... and execute it as follows: `build/bin/daphne scripts/examples/hello-world.daph` (This command works if Daphne is run 
+after building from source. Omit "build" in the path to the Daphne binary if executed from the binary distribution).
+
+Optionally flags like ``--cuda`` can be added after the daphne command and before the script file to activate support 
+for accelerated ops (see [software requirements](#software) above and [build instructions](/doc/development/BuildingDaphne.md)). 
+For further flags that can be set at runtime to activate additional functionality, run ``daphne --help``.
 
 ### Building and running with containers [Alternative path for building and running the system and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
 - you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or higher are sufficient
 - you can use the provided docker file to create an image that contains all dependencies as follows:
 ```bash
-cd daphne
+cd daphne/deploy
 docker build -t <ImageTag> .
 #the image can be built from the dockerhub docker://ahmedeleliemy/test-workflow:latest as well
 docker run -v absolute_path_to_daphne/:absolute_path_to_daphne_in_the_container -it <ImageTag> bash
@@ -141,6 +160,8 @@ Singularity> ./build.sh #or ./test.sh
 ```
 - Because the container instance works on the same folder, if one already built the system outside the container, it is recommended to clean all build files to avoid conflicts.
 - One may also do the commits from within the containers as normal.
+
+For more about building and running with containers, refer to the directory `deploy/` and its [README.md](/deploy/README.md) and further documentation in [Deploy.md](/doc/Deploy.md).
 
 ### Exploring the Source Code
 

@@ -13,17 +13,22 @@
 # limitations under the License.
 
 include_directories(${PROJECT_SOURCE_DIR}/test)
-include_directories(${PROJECT_SOURCE_DIR}/thirdparty/catch2) # for "catch.hpp"
+include_directories(${THIRDPARTY_DIR}/catch2) # for "catch.hpp"
 
 set(TEST_SOURCES
         run_tests.cpp
 
         api/cli/algorithms/AlgorithmsTest.cpp
+        api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
+        api/cli/expressions/CastTest.cpp
+        api/cli/expressions/MatrixLiteralTest.cpp
+        api/cli/expressions/TernaryTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/SparsityTest.cpp
         api/cli/io/ReadTest.cpp
@@ -31,44 +36,60 @@ set(TEST_SOURCES
         api/cli/operations/ConstantFoldingTest.cpp
         api/cli/operations/OperationsTest.cpp
         api/cli/parser/ParserTest.cpp
+        api/cli/parser/MetaDataParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/sql/SQLTest.cpp
+        api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
+        api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
-        
+    
         api/python/DaphneLibTest.cpp
         
-        runtime/distributed/worker/WorkerTest.cpp
+        ir/daphneir/InferTypesTest.cpp
         
+        parser/config/ConfigParserTest.cpp
+    
+        runtime/distributed/worker/WorkerTest.cpp
+    
         runtime/local/datastructures/CSRMatrixTest.cpp
         runtime/local/datastructures/DenseMatrixTest.cpp
         runtime/local/datastructures/FrameTest.cpp
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
 
-        runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
+	runtime/local/io/ReadParquetTest.cpp
+	runtime/local/io/ReadMMTest.cpp
+	runtime/local/io/WriteDaphneTest.cpp
+	runtime/local/io/ReadDaphneTest.cpp
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
+        runtime/local/kernels/CastObjScaTest.cpp
         runtime/local/kernels/CastScaTest.cpp
+        runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
+        runtime/local/kernels/CTableTest.cpp
+        runtime/local/kernels/DiagMatrixTest.cpp
         runtime/local/kernels/DiagVectorTest.cpp
         runtime/local/kernels/DNNPoolingTest.cpp
         runtime/local/kernels/EwBinaryMatTest.cpp
         runtime/local/kernels/EwBinaryObjScaTest.cpp
         runtime/local/kernels/EwBinaryScaTest.cpp
         runtime/local/kernels/EwUnaryScaTest.cpp
+        runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
+        runtime/local/kernels/GroupTest.cpp
         runtime/local/kernels/HasSpecialValueTest.cpp
         runtime/local/kernels/InnerJoinTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
@@ -95,8 +116,14 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
-
-#        runtime/local/kernels/Morphstore/ProjectTest.cpp
+        #runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
+        #runtime/local/kernels/MorphStore/SemiJoinTest.cpp
+        #runtime/local/kernels/MorphStore/CalcTest.cpp
+        #runtime/local/kernels/MorphStore/SelectTest.cpp
+        #runtime/local/kernels/MorphStore/SumTest.cpp
+        #runtime/local/kernels/MorphStore/BetweenTest.cpp
+        #runtime/local/kernels/MorphStore/GroupByTest.cpp
+        #runtime/local/kernels/MorphStore/GroupSumTest.cpp
 )
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
@@ -116,7 +143,7 @@ add_executable(run_tests
 add_dependencies(run_tests daphne DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
-set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES})
+set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES} DaphneConfigParser DaphneMetaDataParser)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     target_include_directories(run_tests PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
@@ -135,3 +162,25 @@ add_executable(theta_join_test run_tests.cpp runtime/local/kernels/ThetaJoinTest
 add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)
+
+# *****************************************************************************
+# Morphstore-specific tests
+# *****************************************************************************
+# @todo: include tests into run_tests
+set(MORPHSTORE_SOURCES
+        run_tests.cpp
+        runtime/local/kernels/MorphStore/SelectTest.cpp
+        runtime/local/kernels/MorphStore/SemiJoinTest.cpp
+        runtime/local/kernels/MorphStore/CalcTest.cpp
+        runtime/local/kernels/MorphStore/BetweenTest.cpp
+        runtime/local/kernels/MorphStore/SumTest.cpp
+        runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
+        runtime/local/kernels/MorphStore/GroupByTest.cpp
+        runtime/local/kernels/MorphStore/GroupSumTest.cpp
+)
+
+add_executable(morphstore_test ${MORPHSTORE_SOURCES})
+#add_dependencies(morphstore_test daphne DistributedWorker)
+target_link_libraries(morphstore_test PRIVATE ${LIBS})
+target_compile_options(morphstore_test PUBLIC -g -O0)
+target_add_morphstore(morphstore_test)

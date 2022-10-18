@@ -35,6 +35,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Support/TypeID.h"
 
+#include <ir/daphneir/DaphneAdaptTypesToKernelsTraits.h>
 #include <ir/daphneir/DaphneOpsEnums.h.inc>
 #include <ir/daphneir/DaphneDistributableOpInterface.h>
 #include <ir/daphneir/DaphneInferFrameLabelsOpInterface.h>
@@ -46,6 +47,12 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+namespace mlir::OpTrait {
+    template<class ConcreteOp>
+    class FPGAOPENCLSupport : public TraitBase<ConcreteOp, FPGAOPENCLSupport> {
+    };
+}
 
 namespace mlir::daphne {
     enum class MatrixRepresentation {

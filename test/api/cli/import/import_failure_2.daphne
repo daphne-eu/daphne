@@ -1,0 +1,2 @@
+// Import wrong path
+import "sandbox/ba.daphne"; 

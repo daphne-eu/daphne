@@ -17,7 +17,10 @@
 #include <compiler/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
+#include <parser/daphnedsl/DaphneDSLParser.h>
+#include <parser/CancelingErrorListener.h>
 #include <parser/ScopedSymbolTable.h>
+#include <runtime/local/datastructures/DenseMatrix.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarLexer.h"
@@ -35,6 +38,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <filesystem>
 
 // ****************************************************************************
 // Utilities
@@ -48,7 +52,7 @@ void DaphneDSLVisitor::handleAssignmentPart(
 ) {
     if(symbolTable.has(var) && symbolTable.get(var).isReadOnly)
         throw std::runtime_error("trying to assign read-only variable " + var);
-    
+
     if(idxCtx) { // left indexing `var[idxCtx] = val;`
         if(!symbolTable.has(var))
             throw std::runtime_error(
@@ -56,7 +60,7 @@ void DaphneDSLVisitor::handleAssignmentPart(
                     " before a value has been assigned to it"
             );
         mlir::Value obj = symbolTable.get(var).value;
-        
+
         auto indexing = visit(idxCtx).as<std::pair<
                 std::pair<bool, antlrcpp::Any>,
                 std::pair<bool, antlrcpp::Any>
@@ -92,7 +96,7 @@ void DaphneDSLVisitor::handleAssignmentPart(
             >(utils.getLoc(idxCtx->start), obj, val, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
         else
             obj = val;
-        
+
         symbolTable.put(var, ScopedSymbolTable::SymbolInfo(obj, false));
     }
     else // no left indexing `var = val;`
@@ -114,7 +118,7 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
     else
         throw std::runtime_error("right indexing is only allowed on matrices and frames");
-        
+
     if(ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
         mlir::Value axVal = ax.as<mlir::Value>();
         if(CompilerUtils::hasObjType(axVal)) // data object
@@ -152,13 +156,13 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         auto axPair = ax.as<std::pair<mlir::Value, mlir::Value>>();
         auto axLowerIncl = axPair.first;
         auto axUpperExcl = axPair.second;
-        
+
         // Use defaults if lower or upper bound not specified.
         if(axLowerIncl == nullptr)
             axLowerIncl = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<int64_t>(0));
         if(axUpperExcl == nullptr)
             axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
-        
+
         return static_cast<mlir::Value>(
                 builder.create<SliceAxOp>(
                         loc, argType, arg,
@@ -174,7 +178,7 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
 template<class InsertAxOp, class NumAxOp>
 mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax, bool allowLabel) {
     mlir::Type argType = arg.getType();
-        
+
     if(ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
         mlir::Value axVal = ax.as<mlir::Value>();
         if(CompilerUtils::hasObjType(axVal)) // data object
@@ -214,13 +218,13 @@ mlir::Value DaphneDSLVisitor::applyLeftIndexing(mlir::Location loc, mlir::Value 
         auto axPair = ax.as<std::pair<mlir::Value, mlir::Value>>();
         auto axLowerIncl = axPair.first;
         auto axUpperExcl = axPair.second;
-        
+
         // Use defaults if lower or upper bound not specified.
         if(axLowerIncl == nullptr)
             axLowerIncl = builder.create<mlir::daphne::ConstantOp>(loc, static_cast<int64_t>(0));
         if(axUpperExcl == nullptr)
             axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
-        
+
         return static_cast<mlir::Value>(
                 builder.create<InsertAxOp>(
                         loc, argType, arg, ins,
@@ -249,6 +253,152 @@ antlrcpp::Any DaphneDSLVisitor::visitBlockStatement(DaphneDSLGrammarParser::Bloc
     symbolTable.pushScope();
     antlrcpp::Any res = visitChildren(ctx);
     symbolTable.put(symbolTable.popScope());
+    return res;
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::ImportStatementContext * ctx) {
+    if(symbolTable.getNumScopes() != 1)
+        throw std::runtime_error("Imports can only be done in the main scope");
+
+    const char prefixDelim = '.';
+    std::string prefix;
+    std::vector<std::string> importPaths;
+    std::string path = ctx->filePath->getText();
+    // Remove quotes
+    path = path.substr(1, path.size() - 2);
+    
+    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top()).parent_path());
+    std::filesystem::path importingPath = path;
+
+    //Determine the prefix from alias/filename
+    if(ctx->alias)
+    {
+        prefix = ctx->alias->getText();
+        prefix = prefix.substr(1, prefix.size() - 2);
+    }
+    else
+        prefix = importingPath.stem().string(); 
+
+    prefix += prefixDelim;
+
+    // Absolute path can be used as is, we have to handle relative paths and config paths
+    if(importingPath.is_relative())
+    {
+        std::filesystem::path absolutePath = importerDirPath /  importingPath;
+        if(std::filesystem::exists(absolutePath))
+            absolutePath = std::filesystem::canonical(absolutePath);
+
+        // Check directories in UserConfig (if provided)
+        if(!userConf.daphnedsl_import_paths.empty())
+        {
+            const auto& configPaths = userConf.daphnedsl_import_paths;
+            // User specified _default_ paths.
+            if(importingPath.has_extension() && (configPaths.find("default_dirs") != configPaths.end()))
+            {
+                for(std::filesystem::path defaultPath: configPaths.at("default_dirs"))
+                {
+                    std::filesystem::path libFile = defaultPath / path;
+                    if(std::filesystem::exists(libFile))
+                    {
+                        if(std::filesystem::exists(absolutePath) && std::filesystem::canonical(libFile) != absolutePath)
+                            throw std::runtime_error(std::string("Ambiguous import: ").append(importingPath)
+                                .append(", found another file with the same name in default paths of UserConfig: ").append(libFile));
+                        absolutePath = libFile;
+                    }
+                }
+            }
+
+            // User specified "libraries" -> import all files
+            if(!importingPath.has_extension() && (configPaths.find(path) != configPaths.end()))
+                for (std::filesystem::path const& dir_entry : std::filesystem::directory_iterator{configPaths.at(path)[0]})
+                    importPaths.push_back(dir_entry.string());
+        }
+        path = absolutePath.string();
+    }
+
+    if(importPaths.empty())
+        importPaths.push_back(path);
+
+    if(std::filesystem::absolute(scriptPaths.top()).string() == path)
+        throw std::runtime_error(std::string("You cannot import the file you are currently in: ").append(path));
+
+    for(const auto& somePath: importPaths)
+    {
+        for(const auto& imported: importedFiles)
+            if(std::filesystem::equivalent(somePath, imported))
+                throw std::runtime_error(std::string("You cannot import the same file twice: ").append(somePath));
+
+        importedFiles.push_back(somePath);
+    }
+
+    antlrcpp::Any res;
+    for(const auto& importPath : importPaths)
+    {
+        if(!std::filesystem::exists(importPath))
+            throw std::runtime_error(std::string("The import path doesn't exist: ").append(importPath));
+
+        std::string finalPrefix = prefix;
+        auto origScope = symbolTable.extractScope();
+
+        // If we import a library, we insert a filename (e.g., "algorithms/kmeans.daphne" -> algorithms.kmeans.km)
+        if(!importingPath.has_extension())
+            finalPrefix += std::filesystem::path(importPath).stem().string() + prefixDelim;
+        else 
+        {
+            // If the prefix is already occupied (and is not part of some other prefix), we append a parent directory name
+            for(const auto& symbol : origScope)
+                if(symbol.first.find(finalPrefix) == 0 && std::count(symbol.first.begin(), symbol.first.end(), '.') == 1)
+                {
+                    // Throw error when we want to use an explicit alias that results in a prefix clash
+                    if(ctx->alias)
+                    {
+                        throw std::runtime_error(std::string("Alias ").append(ctx->alias->getText())
+                        .append(" results in a name clash with another prefix"));
+                    }
+//                    finalPrefix = importingPath.parent_path().filename().string() + prefixDelim + finalPrefix;
+                    finalPrefix.insert(0, importingPath.parent_path().filename().string() + prefixDelim);
+                    break;
+                }
+        }
+        
+        CancelingErrorListener errorListener;
+        std::ifstream ifs(importPath, std::ios::in);
+        antlr4::ANTLRInputStream input(ifs);
+        input.name = importPath;
+
+        DaphneDSLGrammarLexer lexer(&input);
+        lexer.removeErrorListeners();
+        lexer.addErrorListener(&errorListener);
+        antlr4::CommonTokenStream tokens(&lexer);
+
+        DaphneDSLGrammarParser parser(&tokens);
+        parser.removeErrorListeners();
+        parser.addErrorListener(&errorListener);
+        DaphneDSLGrammarParser::ScriptContext * importCtx = parser.script();
+        
+        std::multimap<std::string, mlir::FuncOp> origFuncMap = functionsSymbolMap;
+        functionsSymbolMap.clear();
+
+        symbolTable.pushScope();
+        scriptPaths.push(path);
+        res = visitScript(importCtx);
+        scriptPaths.pop();
+
+        ScopedSymbolTable::SymbolTable symbTable = symbolTable.extractScope();
+
+        // If the current import file also imported something, we discard it
+        for(const auto& symbol : symbTable)
+            if(symbol.first.find('.') == std::string::npos)
+                origScope[finalPrefix + symbol.first] = symbol.second;
+
+        symbolTable.put(origScope);
+        
+        for(std::pair<std::string, mlir::FuncOp> funcSymbol : functionsSymbolMap)
+            if(funcSymbol.first.find('.') == std::string::npos)
+                origFuncMap.insert({finalPrefix + funcSymbol.first, funcSymbol.second});
+        functionsSymbolMap.clear();
+        functionsSymbolMap = origFuncMap;
+    }
     return res;
 }
 
@@ -302,20 +452,20 @@ antlrcpp::Any DaphneDSLVisitor::visitAssignStatement(DaphneDSLGrammarParser::Ass
 
 antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfStatementContext * ctx) {
     mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
-    
+
     mlir::Location loc = utils.getLoc(ctx->start);
 
     // Save the current state of the builder.
     mlir::OpBuilder oldBuilder = builder;
-    
+
     // Generate the operations for the then-block.
     mlir::Block thenBlock;
     builder.setInsertionPointToEnd(&thenBlock);
     symbolTable.pushScope();
     visit(ctx->thenStmt);
     ScopedSymbolTable::SymbolTable owThen = symbolTable.popScope();
-    
-    // Generate the operations for the else-block, if it is present. Otherwise
+
+    // Generate the operations for the else-block, if it is present. Otherwise,
     // leave it empty; we might need to insert a yield-operation.
     mlir::Block elseBlock;
     ScopedSymbolTable::SymbolTable owElse;
@@ -325,7 +475,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         visit(ctx->elseStmt);
         owElse = symbolTable.popScope();
     }
-    
+
     // Determine the result type(s) of the if-operation as well as the operands
     // to the yield-operation of both branches.
     std::set<std::string> owUnion = ScopedSymbolTable::mergeSymbols(owThen, owElse);
@@ -348,10 +498,10 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     builder.create<mlir::scf::YieldOp>(loc, resultsThen);
     builder.setInsertionPointToEnd(&elseBlock);
     builder.create<mlir::scf::YieldOp>(loc, resultsElse);
-    
+
     // Restore the old state of the builder.
     builder = oldBuilder;
-    
+
     // Helper functions to move the operations in the two blocks created above
     // into the actual branches of the if-operation.
     auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
@@ -361,7 +511,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
     };
     llvm::function_ref<void(mlir::OpBuilder &, mlir::Location)> insertElseBlockNo = nullptr;
-    
+
     // Create the actual if-operation. Generate the else-block only if it was
     // explicitly given in the DSL script, or when it is needed to yield values.
     auto ifOp = builder.create<mlir::scf::IfOp>(
@@ -371,35 +521,35 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
             insertThenBlockDo,
             (ctx->elseStmt || !owUnion.empty()) ? insertElseBlockDo : insertElseBlockNo
     );
-    
+
     // Rewire the results of the if-operation to their variable names.
     size_t i = 0;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++)
         symbolTable.put(*it, ifOp.results()[i++]);
-    
+
     return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::WhileStatementContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
-    
+
     auto ip = builder.saveInsertionPoint();
-    
+
     // The two blocks for the SCF WhileOp.
     auto beforeBlock = new mlir::Block;
     auto afterBlock = new mlir::Block;
-    
+
     const bool isDoWhile = ctx->KW_DO();
-    
+
     mlir::Value cond;
     ScopedSymbolTable::SymbolTable ow;
     if(isDoWhile) { // It's a do-while loop.
         builder.setInsertionPointToEnd(beforeBlock);
-        
+
         // Scope for body and condition, such that condition can see the body's
         // updates to variables existing before the loop.
         symbolTable.pushScope();
-        
+
         // The body gets its own scope to not expose variables created inside
         // the body to the condition. While this is unnecessary if the body is
         // a block statement, there are nasty cases if no block statement is
@@ -407,12 +557,12 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         symbolTable.pushScope();
         visit(ctx->bodyStmt);
         ow = symbolTable.popScope();
-        
+
         // Make the body's updates visible to the condition.
         symbolTable.put(ow);
-        
+
         cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
-        
+
         symbolTable.popScope();
     }
     else { // It's a while loop.
@@ -424,7 +574,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         visit(ctx->bodyStmt);
         ow = symbolTable.popScope();
     }
-    
+
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the WhileOp and
     // its "before" and "after" region.
@@ -434,38 +584,38 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
     for(auto it = ow.begin(); it != ow.end(); it++) {
         mlir::Value owVal = it->second.value;
         mlir::Type type = owVal.getType();
-        
+
         owVals.push_back(owVal);
         resultTypes.push_back(type);
-        
+
         mlir::Value oldVal = symbolTable.get(it->first).value;
         whileOperands.push_back(oldVal);
-        
+
         beforeBlock->addArgument(type);
         afterBlock->addArgument(type);
     }
-    
+
     // Create the ConditionOp of the "before" block.
     builder.setInsertionPointToEnd(beforeBlock);
     if(isDoWhile)
         builder.create<mlir::scf::ConditionOp>(loc, cond, owVals);
     else
         builder.create<mlir::scf::ConditionOp>(loc, cond, beforeBlock->getArguments());
-    
+
     // Create the YieldOp of the "after" block.
     builder.setInsertionPointToEnd(afterBlock);
     if(isDoWhile)
         builder.create<mlir::scf::YieldOp>(loc, afterBlock->getArguments());
     else
         builder.create<mlir::scf::YieldOp>(loc, owVals);
-    
+
     builder.restoreInsertionPoint(ip);
-    
+
     // Create the SCF WhileOp and insert the "before" and "after" blocks.
     auto whileOp = builder.create<mlir::scf::WhileOp>(loc, resultTypes, whileOperands);
     whileOp.before().push_back(beforeBlock);
     whileOp.after().push_back(afterBlock);
-    
+
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
@@ -478,20 +628,20 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && whileOp.after().isAncestor(parentRegion);
         });
-        
+
         // Rewire the results of the WhileOp to their variable names.
         symbolTable.put(it->first, whileOp.results()[i++]);
     }
-    
+
     return nullptr;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForStatementContext * ctx) {
     mlir::Location loc = utils.getLoc(ctx->start);
-    
+
     // The type we assume for from, to, and step.
     mlir::Type t = builder.getIntegerType(64, true);
-    
+
     // Parse from, to, and step.
     mlir::Value from = utils.castIf(t, utils.valueOrError(visit(ctx->from)));
     mlir::Value to = utils.castIf(t, utils.valueOrError(visit(ctx->to)));
@@ -529,14 +679,14 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
     from = utils.castIf(idxType, from);
     to   = utils.castIf(idxType, to);
     step = utils.castIf(idxType, step);
-    
+
     auto ip = builder.saveInsertionPoint();
 
     // A block for the body of the for-loop.
     mlir::Block bodyBlock;
     builder.setInsertionPointToEnd(&bodyBlock);
     symbolTable.pushScope();
-    
+
     // A placeholder for the loop's induction variable, since we do not know it
     // yet; will be replaced later.
     mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexAttr(123));
@@ -554,7 +704,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
 
     // Parse the loop's body.
     visit(ctx->bodyStmt);
-    
+
     // Determine which variables created before the loop are updated in the
     // loop's body. These become the arguments and results of the ForOp.
     ScopedSymbolTable::SymbolTable ow = symbolTable.popScope();
@@ -564,23 +714,23 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         resVals.push_back(it->second.value);
         forOperands.push_back(symbolTable.get(it->first).value);
     }
-    
+
     builder.create<mlir::scf::YieldOp>(loc, resVals);
-    
+
     builder.restoreInsertionPoint(ip);
-    
+
     // Helper function for moving the operations in the block created above
     // into the actual body of the ForOp.
     auto insertBodyBlock = [&](mlir::OpBuilder & nested, mlir::Location loc, mlir::Value iv, mlir::ValueRange lcv) {
         nested.getBlock()->getOperations().splice(nested.getBlock()->end(), bodyBlock.getOperations());
     };
-    
+
     // Create the actual ForOp.
     auto forOp = builder.create<mlir::scf::ForOp>(loc, from, to, step, forOperands, insertBodyBlock);
 
     // Substitute the induction variable, now that we know it.
     ph.replaceAllUsesWith(forOp.getInductionVar());
-    
+
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
         // Replace usages of the variables updated in the loop's body by the
@@ -589,13 +739,13 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
             return parentRegion != nullptr && forOp.getLoopBody().isAncestor(parentRegion);
         });
-        
+
         // Rewire the results of the ForOp to their variable names.
         symbolTable.put(it->first, forOp.results()[i]);
-        
+
         i++;
     }
-    
+
     return nullptr;
 }
 
@@ -606,8 +756,8 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteralExpr(DaphneDSLGrammarParser::Literal
 antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprContext * ctx) {
     // Retrieve the name of the referenced CLI argument.
     std::string arg = ctx->arg->getText();
-    
-    // Find out if this argument was specified on the comman line.
+
+    // Find out if this argument was specified on the command line.
     auto it = args.find(arg);
     if(it == args.end())
         throw std::runtime_error(
@@ -629,7 +779,10 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
-    std::string var = ctx->var->getText();
+    std::string var;
+    const auto& identifierVec = ctx->IDENTIFIER();
+    for(size_t s = 0; s < identifierVec.size(); s++)
+        var += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
     try {
         return symbolTable.get(var).value;
     }
@@ -643,13 +796,16 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
-    std::string func = ctx->func->getText();
+    std::string func;
+    const auto& identifierVec = ctx->IDENTIFIER();
+    for(size_t s = 0; s < identifierVec.size(); s++)
+        func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
     mlir::Location loc = utils.getLoc(ctx->start);
- 
+
     // Parse arguments.
-    std::vector<mlir::Value> args;
+    std::vector<mlir::Value> args_vec;
     for(unsigned i = 0; i < ctx->expr().size(); i++)
-        args.push_back(utils.valueOrError(visit(ctx->expr(i))));
+        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
 
     // search user defined functions
     auto range = functionsSymbolMap.equal_range(func);
@@ -659,10 +815,10 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
         auto funcTy = userDefinedFunc.getType();
         auto compatible = true;
 
-        if (funcTy.getInputs().size() != args.size()) {
+        if (funcTy.getInputs().size() != args_vec.size()) {
             continue;
         }
-        for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
+        for (auto compIt : llvm::zip(funcTy.getInputs(), args_vec)) {
             auto funcInputType = std::get<0>(compIt);
             auto argVal = std::get<1>(compIt);
 
@@ -679,9 +835,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
             // TODO: variable results
             return builder
                 .create<mlir::daphne::GenericCallOp>(loc,
-                    userDefinedFunc.sym_name(),
-                    args,
-                    userDefinedFunc.getType().getResults())
+                                                     userDefinedFunc.sym_name(),
+                                                     args_vec,
+                                                     userDefinedFunc.getType().getResults())
                 .getResult(0);
         }
     }
@@ -691,12 +847,12 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     }
 
     // Create DaphneIR operation for the built-in function.
-    return builtins.build(loc, func, args);
+    return builtins.build(loc, func, args_vec);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprContext * ctx) {
     mlir::Type resType;
-    
+
     if(ctx->DATA_TYPE()) {
         std::string dtStr = ctx->DATA_TYPE()->getText();
         if(dtStr == "matrix") {
@@ -704,24 +860,88 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             if(ctx->VALUE_TYPE())
                 vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
             else
-                vt = utils.unknownType;
+            {
+                vt = utils.valueOrError(visit(ctx->expr())).getType();
+                if(vt.isa<mlir::daphne::FrameType>())
+                    // TODO Instead of using the value type of the first frame
+                    // column as the value type of the matrix, we should better
+                    // use the most general of all column types.
+                    vt = vt.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                if(vt.isa<mlir::daphne::MatrixType>())
+                    vt = vt.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+            }
             resType = utils.matrixOf(vt);
         }
-        else if(dtStr == "frame")
-            throw std::runtime_error("casting to a frame is not supported yet");
+        else if(dtStr == "frame") {
+            // Currently does not support casts of type "Specify value type only" (e.g., as.si64(x)) 
+            // and "Specify data type and value type" (e.g., as.frame<[si64, f64]>(x)) 
+            std::vector<mlir::Type> colTypes;
+            // TODO Take the number of columns into account.
+            if(ctx->VALUE_TYPE())
+                throw std::runtime_error("casting to a frame with particular column types is not supported yet");
+                //colTypes = {utils.getValueTypeByName(ctx->VALUE_TYPE()->getText())};
+            else {
+                // TODO This fragment should be factored out, such that we can
+                // reuse it for matrix/frame/scalar.
+                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                if(argType.isa<mlir::daphne::MatrixType>())
+                    colTypes = {argType.dyn_cast<mlir::daphne::MatrixType>().getElementType()};
+                else if(argType.isa<mlir::daphne::FrameType>())
+                    // TODO Instead of using the value type of the first frame
+                    // column as the value type of the matrix, we should better
+                    // use the most general of all column types.
+                    colTypes = {argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0]};
+                else
+                    colTypes = {argType};
+            }
+            resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        }
+        else if(dtStr == "scalar") {
+            if(ctx->VALUE_TYPE())
+                resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+            else
+            {
+                // TODO This fragment should be factored out, such that we can
+                // reuse it for matrix/frame/scalar.
+                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                if(argType.isa<mlir::daphne::MatrixType>())
+                    resType = argType.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+                else if(argType.isa<mlir::daphne::FrameType>())
+                    // TODO Instead of using the value type of the first frame
+                    // column as the value type of the matrix, we should better
+                    // use the most general of all column types.
+                    resType = argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                else
+                    resType = argType;
+            }
+        }
         else
             throw std::runtime_error(
                     "unsupported data type in cast expression: " + dtStr
             );
     }
     else if(ctx->VALUE_TYPE())
-        resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+    { // Data type shall be retained
+        mlir::Type vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+        mlir::Type argTy = utils.valueOrError(visit(ctx->expr())).getType();
+        if(argTy.isa<mlir::daphne::MatrixType>())
+            resType = utils.matrixOf(vt);
+        else if(argTy.isa<mlir::daphne::FrameType>())
+        {
+            throw std::runtime_error("casting to a frame with particular column types is not supported yet");
+            //size_t numCols = argTy.dyn_cast<mlir::daphne::FrameType>().getColumnTypes().size();
+            //std::vector<mlir::Type> colTypes(numCols, vt);
+            //resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        }
+        else
+            resType = vt;
+    }
     else
         throw std::runtime_error(
                 "casting requires the specification of the target data and/or "
                 "value type"
         );
-    
+
     return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
             utils.getLoc(ctx->start),
             resType,
@@ -754,14 +974,14 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
-    
+
     auto indexing = visit(ctx->idx).as<std::pair<
             std::pair<bool, antlrcpp::Any>,
             std::pair<bool, antlrcpp::Any>
     >>();
     auto rows = indexing.first;
     auto cols = indexing.second;
-    
+
     // TODO Use location of rows/cols in utils.getLoc(...) for better
     // error messages.
     if(rows.first) // rows specified
@@ -776,14 +996,14 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser:
                 mlir::daphne::SliceColOp,
                 mlir::daphne::NumColsOp
         >(utils.getLoc(ctx->idx->start), obj, cols.second, obj.getType().isa<mlir::daphne::FrameType>());
-    
+
     // Note: If rows and cols are specified, we create two extraction steps.
     // This can be inefficient, but it is simpler for now.
     // TODO Create a combined ExtractOp/SliceOp.
-    
+
     // Note: If neither rows nor cols are specified, we simply return the
     // object.
-    
+
     return obj;
 }
 
@@ -792,9 +1012,13 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
-    if(op == "@")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(loc, lhs.getType(), lhs, rhs));
+
+    if(op == "@") {
+        mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, builder.getBoolAttr(false));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::MatMulOp>(
+                loc, lhs.getType(), lhs, rhs, f, f
+        ));
+    }
     
     throw std::runtime_error("unexpected op symbol");
 }
@@ -804,10 +1028,10 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
+
     if(op == "^")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
-    
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -818,7 +1042,7 @@ antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "%")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -828,12 +1052,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
+
     if(op == "*")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
     if(op == "/")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
-    
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -842,7 +1066,7 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
+
     if(op == "+")
         // Note that we use '+' for both addition (EwAddOp) and concatenation
         // (ConcatOp). The choice is made based on the types of the operands
@@ -850,10 +1074,10 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
         // might not be known at this point in time. Thus, we always create an
         // EwAddOp here. Note that EwAddOp has a canonicalize method rewriting
         // it to ConcatOp if necessary.
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
-    
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -862,20 +1086,20 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
+
     if(op == "==")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if(op == "!=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
     if(op == "<")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
     if(op == "<=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
     if(op == ">")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if(op == ">=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
-    
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -884,10 +1108,10 @@ antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprCo
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
+
     if(op == "&&")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
-    
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+
     throw std::runtime_error("unexpected op symbol");
 }
 
@@ -896,11 +1120,142 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     mlir::Location loc = utils.getLoc(ctx->op);
     mlir::Value lhs = utils.valueOrError(visit(ctx->lhs));
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
-    
+
     if(op == "||")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
-    
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+
     throw std::runtime_error("unexpected op symbol");
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprContext * ctx) {
+    mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    mlir::OpBuilder oldBuilder = builder;
+
+    // Generate the operations for the then-block.
+    mlir::Block thenBlock;
+    builder.setInsertionPointToEnd(&thenBlock);
+    mlir::Value valThen = utils.valueOrError(visit(ctx->thenExpr));
+
+    // Generate the operations for the else-block
+    mlir::Block elseBlock;
+    builder.setInsertionPointToEnd(&elseBlock);
+    mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
+
+    mlir::Type resultType;
+    if(valThen.getType() != valElse.getType())
+        // TODO We could try to cast the types.
+        throw std::runtime_error("type missmatch");
+
+    resultType = valThen.getType();
+
+    // Create yield-operations in both branches.
+    builder.setInsertionPointToEnd(&thenBlock);
+    builder.create<mlir::scf::YieldOp>(loc, valThen);
+    builder.setInsertionPointToEnd(&elseBlock);
+    builder.create<mlir::scf::YieldOp>(loc, valElse);
+
+    // Restore the old state of the builder.
+    builder = oldBuilder;
+
+    // Helper functions to move the operations in the two blocks created above
+    // into the actual branches of the if-operation.
+    auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), thenBlock.getOperations());
+    };
+    auto insertElseBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
+    };
+
+    auto ifOp = builder.create<mlir::scf::IfOp>(
+        loc,
+        resultType,
+        cond,
+        insertThenBlockDo,
+        insertElseBlockDo
+    );
+
+    return static_cast<mlir::Value>(ifOp.results()[0]);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
+    if(!ctx->literal().size())
+        throw std::runtime_error("can't infer type from an empty matrix");
+
+    mlir::Location loc = utils.getLoc(ctx->start);
+    mlir::Value currentValue = utils.valueOrError(visitLiteral(ctx->literal(0)));
+    mlir::Value result;
+    mlir::Type valueType = currentValue.getType();
+
+    // TODO: extracting primitives is borrowed from getConstantInt()/getConstantFloat()/.. in DaphneInferShapeOpInterface.cpp, which
+    // is itself a workaround to later become a central utility. Do not forget to change it here as well.
+
+    // TODO Reduce the code duplication in these cases.
+    if(currentValue.getType().isSignedInteger(64)){
+        std::shared_ptr<int64_t[]> vals = std::shared_ptr<int64_t[]>(new int64_t[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != valueType)
+                throw std::runtime_error("matrix of elements of different types");
+
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto intAttr = co.value().dyn_cast<mlir::IntegerAttr>())
+                    vals.get()[i] = intAttr.getValue().getLimitedValue();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(
+                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+                        builder.create<mlir::daphne::ConstantOp>(loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                )
+        );
+    }
+    else if(currentValue.getType().isF64()){
+        std::shared_ptr<double[]> vals = std::shared_ptr<double[]>(new double[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != valueType)
+                throw std::runtime_error("matrix of elements of different types");
+
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto floatAttr = co.value().dyn_cast<mlir::FloatAttr>())
+                    vals.get()[i] = floatAttr.getValue().convertToDouble();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(
+                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+                        builder.create<mlir::daphne::ConstantOp>(loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                )
+        );
+    }
+    else if(currentValue.getType().isSignlessInteger()){
+        std::shared_ptr<bool[]> vals = std::shared_ptr<bool[]>(new bool[ctx->literal().size()]);
+        for(unsigned i = 0; i < ctx->literal().size(); i++)
+        {
+            currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
+            if(currentValue.getType() != valueType)
+                throw std::runtime_error("matrix of elements of different types");
+
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+                if(auto boolAttr = co.value().dyn_cast<mlir::BoolAttr>())
+                    vals.get()[i] = boolAttr.getValue();
+        }
+        auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
+        result = static_cast<mlir::Value>(
+                builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
+                        builder.create<mlir::daphne::ConstantOp>(loc,
+                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                )
+        );
+    }
+    else
+        throw std::runtime_error("invalid value type for matrix literal");
+
+    return result;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIndexing(DaphneDSLGrammarParser::IndexingContext * ctx) {
@@ -962,10 +1317,10 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         return visit(ctx->bl);
     if(auto lit = ctx->STRING_LITERAL()) {
         std::string val = lit->getText();
-        
+
         // Remove quotation marks.
         val = val.substr(1, val.size() - 2);
-        
+
         // Replace escape sequences.
         val = std::regex_replace(val, std::regex(R"(\\b)"), "\b");
         val = std::regex_replace(val, std::regex(R"(\\f)"), "\f");
@@ -974,7 +1329,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         val = std::regex_replace(val, std::regex(R"(\\t)"), "\t");
         val = std::regex_replace(val, std::regex(R"(\\\")"), "\"");
         val = std::regex_replace(val, std::regex(R"(\\\\)"), "\\");
-        
+
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(loc, val)
         );
@@ -1229,7 +1584,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     std::vector<std::string> funcArgNames;
     std::vector<mlir::Type> funcArgTypes;
     if(ctx->args) {
-        auto functionArguments = static_cast<std::vector<std::pair<std::string, mlir::Type>>>(visit(ctx->args));
+        auto functionArguments = static_cast<std::vector<std::pair<std::string, mlir::Type>>>((visit(ctx->args)).as<std::vector<std::pair<std::string, mlir::Type>>>());
         for(const auto &pair : functionArguments) {
             if(std::find(funcArgNames.begin(), funcArgNames.end(), pair.first) != funcArgNames.end()) {
                 throw std::runtime_error("Function argument name `" + pair.first + "` is used twice.");
@@ -1249,7 +1604,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
     mlir::FuncOp functionOperation;
     if(ctx->retTy) {
         // early creation of FuncOp for recursion
-        returnType = visit(ctx->retTy);
+        returnType = utils.typeOrError(visit(ctx->retTy));
         functionOperation = createUserDefinedFuncOp(loc,
             builder.getFunctionType(funcArgTypes, {returnType}),
             functionName);
@@ -1298,7 +1653,7 @@ mlir::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Location &loc
 antlrcpp::Any DaphneDSLVisitor::visitFunctionArgs(DaphneDSLGrammarParser::FunctionArgsContext *ctx) {
     std::vector<std::pair<std::string, mlir::Type>> functionArguments;
     for(auto funcArgCtx: ctx->functionArg()) {
-        functionArguments.push_back(visitFunctionArg(funcArgCtx));
+        functionArguments.push_back(visitFunctionArg(funcArgCtx).as<std::pair<std::string, mlir::Type>>());
     }
     return functionArguments;
 }
@@ -1306,7 +1661,7 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionArgs(DaphneDSLGrammarParser::Functi
 antlrcpp::Any DaphneDSLVisitor::visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) {
     auto ty = utils.unknownType;
     if(ctx->ty) {
-        ty = visitFuncTypeDef(ctx->ty);
+        ty = utils.typeOrError(visitFuncTypeDef(ctx->ty));
     }
     return std::make_pair(ctx->var->getText(), ty);
 }

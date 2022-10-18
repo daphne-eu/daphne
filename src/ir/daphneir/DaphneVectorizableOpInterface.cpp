@@ -117,7 +117,12 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_ColAggOp(ColAggOp *op,
 // Matrix multiplication
 std::vector<daphne::VectorSplit> daphne::MatMulOp::getVectorSplits()
 {
-    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
+    return {
+        daphne::VectorSplit::ROWS, // lhs
+        daphne::VectorSplit::NONE, // rhs
+        daphne::VectorSplit::NONE, // transa
+        daphne::VectorSplit::NONE  // transb
+    };
 }
 std::vector<daphne::VectorCombine> daphne::MatMulOp::getVectorCombines()
 {
@@ -127,8 +132,33 @@ std::vector<std::pair<Value, Value>> daphne::MatMulOp::createOpsOutputSizes(OpBu
 {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, lhs());
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, rhs());
+
+    Value rows;
+    if(auto co = transa().getDefiningOp<mlir::daphne::ConstantOp>()) {
+        bool ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+        rows = ta
+                ? builder.create<daphne::NumColsOp>(loc, sizeTy, lhs()).getResult()
+                : builder.create<daphne::NumRowsOp>(loc, sizeTy, lhs()).getResult();
+    }
+    else
+        throw std::runtime_error(
+                "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
+                "of rows of the result, because it is not known if the lhs input is transposed"
+        );
+    
+    Value cols;
+    if(auto co = transb().getDefiningOp<mlir::daphne::ConstantOp>()) {
+        bool tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+        cols = tb
+                ? builder.create<daphne::NumRowsOp>(loc, sizeTy, rhs()).getResult()
+                : builder.create<daphne::NumColsOp>(loc, sizeTy, rhs()).getResult();
+    }
+    else
+        throw std::runtime_error(
+                "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
+                "of columns of the result, because it is not known if the rhs input is transposed"
+        );
+
     return {{rows, cols}};
 }
 // ----------------------------------------------------------------------------
@@ -174,6 +204,12 @@ IMPL_SPLIT_COMBINE_EWBINARYOP(EwLtOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwLeOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwGtOp)
 IMPL_SPLIT_COMBINE_EWBINARYOP(EwGeOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(MorphStoreSelectEqOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(MorphStoreSelectNeqOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(MorphStoreSelectLtOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(MorphStoreSelectLeOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(MorphStoreSelectGtOp)
+IMPL_SPLIT_COMBINE_EWBINARYOP(MorphStoreSelectGeOp)
 #undef IMPL_SPLIT_COMBINE_EWBINARYOP
 // ----------------------------------------------------------------------------
 

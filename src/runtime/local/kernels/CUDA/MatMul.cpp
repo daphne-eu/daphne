@@ -15,69 +15,84 @@
  */
 
 #include "MatMul.h"
-#include "Gemv.h"
-#include "runtime/local/context/CUDAContext.h"
+//#include "Gemv.h"
+#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 
 namespace CUDA {
-
     template<typename T>
-    void launch_cublas_gemm(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2, const T *alpha, const T *beta,
-                            const T *d_lhs, const T *d_rhs, T *d_res);
+    void
+    launch_cublas_gemm(cublasHandle_t handle, cublasOperation_t transa, cublasOperation_t transb, const int32_t m, int32_t n,
+                       int32_t k, const T *alpha, const T *A, int32_t lda, const T *B, int32_t ldb, const T *beta, T *C,
+                       int32_t ldc);
 
     template<>
-    [[maybe_unused]] void launch_cublas_gemm<float>(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2,
-                                                    const float *alpha, const float *beta, const float *d_lhs,
-                                                    const float *d_rhs, float *d_res) {
-        CHECK_CUBLAS(
-                cublasSgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
-                            nc1, beta, d_res, nc2));
+    [[maybe_unused]] void launch_cublas_gemm<float>(cublasHandle_t handle, const cublasOperation_t transa, const
+            cublasOperation_t transb, const int32_t m, const int32_t n, const int32_t k, const float *alpha, const float
+            *A, const int32_t lda, const float *B, const int32_t ldb, const float *beta, float *C, const int32_t ldc) {
+        CHECK_CUBLAS(cublasSgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc));
     }
 
     template<>
-    [[maybe_unused]] void launch_cublas_gemm<double>(const CUDAContext &ctx, size_t nr1, size_t nc1, size_t nc2,
-                                                     const double *alpha, const double *beta, const double *d_lhs,
-                                                     const double *d_rhs, double *d_res) {
-        CHECK_CUBLAS(
-                cublasDgemm(ctx.getCublasHandle(), CUBLAS_OP_N, CUBLAS_OP_N, nc2, nr1, nc1, alpha, d_rhs, nc2, d_lhs,
-                            nc1, beta, d_res, nc2));
+    [[maybe_unused]] void launch_cublas_gemm<double>(cublasHandle_t handle, const cublasOperation_t transa, const
+            cublasOperation_t transb, const int32_t m, const int32_t n, const int32_t k, const double *alpha, const double
+            *A, const int32_t lda, const double *B, const int32_t ldb, const double *beta, double *C, const int32_t ldc) {
+        CHECK_CUBLAS(cublasDgemm(handle, transa, transb, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc));
     }
 
     template<typename T>
     void MatMul<DenseMatrix<T>, DenseMatrix<T>, DenseMatrix<T>>::apply(DenseMatrix<T> *&res, const DenseMatrix<T> *lhs,
-                                                                       const DenseMatrix<T> *rhs, DCTX(dctx)) {
+            const DenseMatrix<T> *rhs, bool transa, bool transb, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
-        auto ctx = dctx->getCUDAContext(0);
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
 
-        const size_t nr1 = lhs->getNumRows();
-        const size_t nc1 = lhs->getNumCols();
-        const size_t nc2 = rhs->getNumCols();
-        assert((nc1 == rhs->getNumRows()) && "#cols of lhs and #rows of rhs must be the same");
-        const VT blend_alpha = 1.0f;
-        const VT blend_beta = 0.0f;
-        const VT *d_lhs = lhs->getValuesCUDA();
-        const VT *d_rhs = rhs->getValuesCUDA();
+        const VT alpha = 1.0f;
+        const VT beta = 0.0f;
 
+        // swapping left and right input to fix row->col major format
+        auto nc2 = static_cast< int32_t>(lhs->getNumRows());
+        auto nr2 = static_cast< int32_t>(lhs->getNumCols());
+        auto nc1 = static_cast< int32_t>(rhs->getNumRows());
+        auto nr1 = static_cast< int32_t>(rhs->getNumCols());
+        auto B = lhs->getValues(&alloc_desc);
+        auto A = rhs->getValues(&alloc_desc);
+        std::swap(transa, transb);
+
+        // adjusting inputs to gemm according to transpose values
+        auto m = transa ? nc1 : nr1;
+        auto n = transb ? nr2 : nc2;
+        auto k = transa ? nr1 : nc1;
+
+        int32_t lda = transa ? k : m;
+        int32_t ldb = transb ? n : k;
+        int32_t ldc = m;
+
+        // output will be n x m because of column major format of cublas
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<T>>(nr1, nc2, false, ALLOCATION_TYPE::CUDA_ALLOC);
-        VT *d_res = res->getValuesCUDA();
+            res = DataObjectFactory::create<DenseMatrix<T>>(n, m, false, &alloc_desc);
 
-        if(nc2 == 1) {
-            launch_cublas_gemv<VT>(*ctx, nc1, nr1, &blend_alpha, &blend_beta, d_lhs, d_rhs,
-                                   d_res, CUBLAS_OP_T);
-        }
-        else {
-//             reverse order to accommodate cublas' col major format (-> res = rhs * lhs)
-            launch_cublas_gemm<VT>(*ctx, nr1, nc1, nc2, &blend_alpha, &blend_beta, d_lhs, d_rhs, d_res);
+        auto C =  res->getValues(&alloc_desc);
+
+        // ToDo: fix gemv for transpose operation
+//        if(nc2 == 1) {
+//            launch_cublas_gemv<VT>(*ctx, m, n, &blend_alpha, &blend_beta, A, B, C, CUBLAS_OP_T);
+//        }
+//        else
+        {
+            launch_cublas_gemm<VT>(ctx->getCublasHandle(), transa ? CUBLAS_OP_T : CUBLAS_OP_N, transb ? CUBLAS_OP_T :
+                    CUBLAS_OP_N, m, n, k, &alpha, A, lda, B, ldb, &beta, C, ldc);
         }
     }
 
-// from cusparse sample code:
-// https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spgemm/spgemm_example.c
+    // ToDo: sparse mat mult (sample code below compiles but is not usable)
+    // from cusparse sample code:
+    // https://github.com/NVIDIA/CUDALibrarySamples/blob/master/cuSPARSE/spgemm/spgemm_example.c
     template<typename T>
     void MatMul<CSRMatrix<T>, CSRMatrix<T>, CSRMatrix<T>>::apply(CSRMatrix<T> *&res, const CSRMatrix<T> *lhs,
-                                                                 const CSRMatrix<T> *rhs, DCTX(dctx)) {
+            const CSRMatrix<T> *rhs, bool transa, bool transb, DCTX(dctx)) {
         using VT = typename DenseMatrix<T>::VT;
-        auto ctx = dctx->getCUDAContext(0);
+        auto ctx = CUDAContext::get(dctx, 0);
         cusparseHandle_t handle = ctx->getCusparseHandle();
 
         const size_t nr1 = lhs->getNumRows();
@@ -89,8 +104,8 @@ namespace CUDA {
         assert((nc1 == nr2) && "#cols of lhs and #rows of rhs must be the same");
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
-        cusparseOperation_t opA = CUSPARSE_OPERATION_NON_TRANSPOSE;
-        cusparseOperation_t opB = CUSPARSE_OPERATION_NON_TRANSPOSE;
+        cusparseOperation_t opA = transa ? CUSPARSE_OPERATION_TRANSPOSE : CUSPARSE_OPERATION_NON_TRANSPOSE;
+        cusparseOperation_t opB = transb ? CUSPARSE_OPERATION_TRANSPOSE: CUSPARSE_OPERATION_NON_TRANSPOSE;
         cudaDataType computeType = ctx->template getCUSparseDataType<VT>();
 
         //--------------------------------------------------------------------------

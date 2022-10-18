@@ -1,0 +1,173 @@
+#-------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
+#-------------------------------------------------------------
+
+# The lmDC function solves linear regression using the direct solve method
+# (this script has been ported from Apache SystemDS to DaphneDSL)
+#
+# INPUT PARAMETERS:
+# ----------------------------------------------------------------------------------------------------------------------
+# NAME          TYPE              DEFAULT  MEANING
+# ----------------------------------------------------------------------------------------------------------------------
+# X             Matrix[Double]    ---      Matrix of feature vectors.
+# y             Matrix[Double]    ---      1-column matrix of response values.
+# icpt          Integer           0        Intercept presence, shifting and rescaling the columns of X
+# reg           Double            1e-7     Regularization constant (lambda) for L2-regularization. set to nonzero
+#                                          for highly dependant/sparse/numerous features
+# verbose       Boolean           TRUE     If TRUE print messages are activated
+# ----------------------------------------------------------------------------------------------------------------------
+# OUTPUT
+# ----------------------------------------------------------------------------------------------------------------------
+# NAME          TYPE             MEANING
+# ----------------------------------------------------------------------------------------------------------------------
+# B             Matrix[Double]   The model fit
+# ----------------------------------------------------------------------------------------------------------------------
+
+# read and split data
+XY = readMatrix($XY);
+n0 = as.si64(ncol(XY));
+X = XY[, 0:(n0 - 2)];
+y = XY[, n0 - 1];
+
+intercept_status = $icpt; # 0
+regularization = $reg;    # 1e-7
+verbose = $verbose;       # true
+
+n = nrow(X);
+m = ncol(X);
+ones_n = fill(1.0, n, 1);
+zero_cell = fill(0.0, 1, 1);
+
+if( verbose ) {
+    print("REGRESSION (direct solve):");
+    print("-- Data X:     rows=",0,0); print(n,0,0);
+    print(", cols=",0,0); print(m,1,0);
+    print("-- Parameters: icpt=",0,0); print($icpt,0,0);
+    print(", reg=",0,0); print($reg,0,0);
+    print(", verbose=",0,0); print($verbose,1,0);
+}
+
+# Introduce the intercept, shift and rescale the columns of X if needed
+m_ext = m;
+scale_lambda = fill(1.0, m_ext, 1);
+# TODO shape inference (branches)
+#if (intercept_status == 1 || intercept_status == 2) {
+    X = cbind(X, ones_n);
+    m_ext = ncol(X);
+# TODO shape inference (rbind)
+    scale_lambda = t(cbind(t(scale_lambda),fill(0.0,1,1)));
+#}
+
+#if (intercept_status == 2)  # scale-&-shift X columns to mean 0, variance 1
+#{                           # Important assumption: X [, m_ext] = ones_n
+#    avg_X_cols = t(colSums(X)) / n;
+#    var_X_cols = (t(colSums (X ^ 2)) - n * (avg_X_cols ^ 2)) / (n - 1);
+#    is_unsafe = (var_X_cols <= 0);
+#    scale_X = 1.0 / sqrt (var_X_cols * (1 - is_unsafe) + is_unsafe);
+#    scale_X [m_ext, 1] = 1;
+#    shift_X = - avg_X_cols * scale_X;
+#    shift_X [m_ext, 1] = 0;
+#} else {
+#    scale_X = fill(1, m_ext, 1);
+#    shift_X = fill(0, m_ext, 1);
+#}
+
+# Henceforth, if intercept_status == 2, we use "X %*% (SHIFT/SCALE TRANSFORM)"
+# instead of "X".  However, in order to preserve the sparsity of X,
+# we apply the transform associatively to some other part of the expression
+# in which it occurs.  To avoid materializing a large matrix, we rewrite it:
+#
+# ssX_A  = (SHIFT/SCALE TRANSFORM) @ A    --- is rewritten as:
+# ssX_A  = diag (scale_X) @ A;
+# ssX_A [m_ext, ] = ssX_A [m_ext, ] + t(shift_X) %*% A;
+#
+# tssX_A = t(SHIFT/SCALE TRANSFORM) @ A   --- is rewritten as:
+# tssX_A = diag (scale_X) @ A + shift_X @ A [m_ext, ];
+
+lambda = scale_lambda * regularization;
+
+# THE DIRECT SOLVE ALGORITHM
+A = t(X) @ X;
+b = t(t(y) @ X); #TODO t(X) @ y (--vec issue)
+if (intercept_status == 2) {
+#    A = t(diag (scale_X) @ A + shift_X @ A [m_ext, ]);
+#    A =   diag (scale_X) @ A + shift_X @ A [m_ext, ];
+#    b =   diag (scale_X) @ b + shift_X @ b [m_ext, ];
+}
+A = A + diagMatrix(lambda);
+beta_unscaled = solve (A, b);
+
+#if (intercept_status == 2) {
+#    beta = scale_X * beta_unscaled;
+#    beta [m_ext, ] = beta [m_ext, ] + t(shift_X) %*% beta_unscaled;
+#} else {
+    beta = beta_unscaled;
+#}
+
+if (verbose) {
+    n64 = as.f64(n);
+    avg_tot = sum(y) / n64;
+    ss_tot = sum(y ^ 2.0);
+    ss_avg_tot = ss_tot - n64 * avg_tot ^ 2.0;
+    var_tot = ss_avg_tot / (n64 - 1.0);
+    y_residual = y - X @ beta;
+    avg_res = sum(y_residual) / n64;
+    ss_res = sum(y_residual ^ 2.0);
+    ss_avg_res = ss_res - n64 * avg_res ^ 2.0;
+
+    RMSE = sqrt(ss_res / n64);
+
+    R2 = 1.0 - ss_res / ss_avg_tot;
+    #dispersion = ifelse(n > m_ext, ss_res / (n - m_ext), nan);
+    #adjusted_R2 = ifelse(n > m_ext, 1 - dispersion / (ss_avg_tot / (n - 1.0)), nan);
+    R2_nobias = 1.0 - ss_avg_res / ss_avg_tot;
+
+    deg_freedom = n64 - as.f64(m) - 1.0;
+
+    #if (deg_freedom > 0.0) {
+        var_res = ss_avg_res / deg_freedom;
+        adjusted_R2_nobias = 1.0 - var_res / (ss_avg_tot / (n64 - 1.0));
+    #} else {
+    #    var_res = nan;
+    #    adjusted_R2_nobias = nan;
+    #    print ("Warning: zero or negative number of degrees of freedom.");
+    #}
+
+    R2_vs_0 = 1.0 - ss_res / ss_tot;
+    #adjusted_R2_vs_0 = ifelse(n > m, 1 - (ss_res / (n - m)) / (ss_tot / n), nan);
+    adjusted_R2_vs_0 = 1.0 - (ss_res / (n64 - as.f64(m))) / (ss_tot / n64);
+
+    print("-- Summary:");
+    print("---- AVG_Response_Y:       ",0,0); print(avg_tot,1,0);             # Average of the response value Y
+    print("---- STDEV_Response_Y:     ",0,0); print(sqrt(var_tot),1,0);       # Standard Deviation of the response value Y
+    print("---- AVG_Residuals_Yhat:   ",0,0); print(avg_res,1,0);             # Average of the residual Y - pred(Y|X), i.e. residual bias
+    print("---- STDEV_Residuals_Yhat: ",0,0); print(sqrt(var_res),1,0);       # Standard Deviation of the residual Y - pred(Y|X)
+    print("---- RMSE:                 ",0,0); print(RMSE,1,0);                # RMSE
+    print("---- R2:                   ",0,0); print(R2,1,0);                  # R^2 of residual with bias included vs. total average
+    print("---- R2 (nobias):          ",0,0); print(R2_nobias,1,0);           # R^2 of residual with bias subtracted vs. total average<Paste>
+    print("---- R2 (adj, nobias):     ",0,0); print(adjusted_R2_nobias,1,0);  # Adjusted R^2 of residual with bias subtracted vs. total average
+
+    #if (intercept_status == 0) {
+    #  print ("R2_VS_0, " + R2_vs_0 +               #  R^2 of residual with bias included vs. zero constant
+    #    "\nADJUSTED_R2_VS_0, " + adjusted_R2_vs_0);  #  Adjusted R^2 of residual with bias included vs. zero constant
+    #}
+}

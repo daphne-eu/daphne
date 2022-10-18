@@ -1,6 +1,6 @@
 c1 = fill(123, 5, 1);
 
-f = frame(c1, "c");
+f = createFrame(c1, "c");
 
 registerView("x", f);
 

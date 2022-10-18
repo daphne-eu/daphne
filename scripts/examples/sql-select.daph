@@ -1,0 +1,33 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+m1 = rand(4, 1, 100.0, 200.0, 1.0, -1);
+m2 = rand(4, 1, 0, 100, 1.0, -1);
+f = frame(m1, m2, "a", "b");
+
+m3 = rand(3, 1, 0, 2, 1.0, -1);
+m4 = rand(3, 1, 100.0, 200.0, 1.0, -1);
+h = frame(m3, m4, "c", "d");
+
+print(f);
+print(h);
+
+registerView("x", f);
+registerView("y", h);
+
+k = sql("SELECT x.a, y.c, x.b FroM x, y as k;");
+
+print(k);

@@ -26,7 +26,7 @@
 class DaphneIrExecutor
 {
 public:
-    DaphneIrExecutor(bool distributed, bool selectMatrixRepresentations, DaphneUserConfig cfg);
+    DaphneIrExecutor(bool selectMatrixRepresentations, DaphneUserConfig cfg);
 
     bool runPasses(mlir::ModuleOp module);
     std::unique_ptr<mlir::ExecutionEngine> createExecutionEngine(mlir::ModuleOp module);
@@ -35,7 +35,6 @@ public:
     { return &context_; }
 private:
     mlir::MLIRContext context_;
-    bool distributed_;
     bool selectMatrixRepresentations_;
     bool insertFreeOp_{};
     DaphneUserConfig userConfig_;

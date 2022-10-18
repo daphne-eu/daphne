@@ -57,10 +57,10 @@ TEMPLATE_PRODUCT_TEST_CASE("Solve", TAG_KERNELS, (DenseMatrix), (float, double))
     });
 
     DT *y = nullptr, *tX = nullptr, *A = nullptr, *b = nullptr;
-    matMul(y, X, w, nullptr);
+    matMul(y, X, w, false, false, nullptr);
     transpose<DT, DT>(tX, X, nullptr);
-    matMul(A, tX, X, nullptr);
-    matMul(b, tX, y, nullptr);
+    matMul(A, tX, X, false, false, nullptr);
+    matMul(b, tX, y, false, false, nullptr);
 
     // check solve A x = b for x
     checkSolve(A, b, w);

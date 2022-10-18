@@ -14,14 +14,15 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H
+#pragma once
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
-
-#include <mutex>
+#include <runtime/local/datastructures/MetaDataObject.h>
 
 #include <cstddef>
+#include <map>
+#include <mutex>
+#include <array>
 
 /**
  * @brief The base class of all data structure implementations.
@@ -34,24 +35,34 @@ private:
     
     template<class DataType>
     friend void DataObjectFactory::destroy(const DataType * obj);
-    
+
 protected:
     size_t numRows;
     size_t numCols;
 
-    Structure(size_t numRows, size_t numCols) :
-            refCounter(1), numRows(numRows), numCols(numCols)
-    {
-        // nothing to do
-    };
+    Structure(size_t numRows, size_t numCols) : refCounter(1), numRows(numRows), numCols(numCols) { };
+
+    mutable MetaDataObject mdo;
 
 public:
     virtual ~Structure() = default;
-    
+
+    explicit operator std::unique_ptr<Range>() const {
+        return std::make_unique<Range>(Range(0ul, 0ul, this->getNumRows(), this->getNumCols()));
+    }
+
+     explicit operator Range() const {
+        return Range(0, 0, this->getNumRows(), this->getNumCols());
+    }
+
     size_t getRefCounter() const {
         return refCounter;
     }
     
+    MetaDataObject& getMetaDataObject() const {
+        return mdo;
+    }
+
     /**
      * @brief Increases the reference counter of this data object.
      * 
@@ -131,5 +142,3 @@ public:
      */
     virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
 };
-
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_STRUCTURE_H

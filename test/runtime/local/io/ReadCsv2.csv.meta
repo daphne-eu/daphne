@@ -1,0 +1,38 @@
+{
+    "numRows": 2,
+    "numCols": 4,
+    "schema": [
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "si8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        },
+        {
+            "label": "",
+            "valueType": "ui8"
+        }
+    ]
+}

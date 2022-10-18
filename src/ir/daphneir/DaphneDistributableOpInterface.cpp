@@ -145,6 +145,13 @@ IMPL_EWBINARYOP(EwLeOp)
 IMPL_EWBINARYOP(EwGtOp)
 IMPL_EWBINARYOP(EwGeOp)
 
+IMPL_EWBINARYOP(MorphStoreSelectEqOp)
+IMPL_EWBINARYOP(MorphStoreSelectNeqOp)
+IMPL_EWBINARYOP(MorphStoreSelectLtOp)
+IMPL_EWBINARYOP(MorphStoreSelectLeOp)
+IMPL_EWBINARYOP(MorphStoreSelectGtOp)
+IMPL_EWBINARYOP(MorphStoreSelectGeOp)
+
 std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(
         OpBuilder &builder, ValueRange distributedInputs
 ) {

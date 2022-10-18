@@ -95,9 +95,16 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
             }
         }
         else {
-            assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
-
-            EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            EwBinaryScaFuncPtr<VT, VT, VT> func;    
+            if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+                func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            else
+                // TODO Setting the function pointer yields the correct result.
+                // However, since MEAN and STDDEV are not sparse-safe, the program
+                // does not take the same path for doing the summation, and is less
+                // efficient.
+                // for MEAN and STDDDEV, we need to sum
+                func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
 
             for(size_t r = 0; r < numRows; r++) {
                 VT agg = *valuesArg;
@@ -107,6 +114,22 @@ struct AggRow<DenseMatrix<VT>, DenseMatrix<VT>> {
                 valuesArg += arg->getRowSkip();
                 valuesRes += res->getRowSkip();
             }
+
+            if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+                return;
+
+            // The op-code is either MEAN or STDDEV
+            valuesRes = res->getValues();
+            for(size_t r = 0; r < numRows; r++) {
+                *valuesRes = (*valuesRes) / numCols;
+                valuesRes += res->getRowSkip();
+            }
+            if(opCode == AggOpCode::MEAN)
+                return;
+            
+            // else op-code is STDDEV
+            // TODO STDDEV
+            throw std::runtime_error("unsupported AggOpCode in AggRow for DenseMatrix");
         }
     }
 };
@@ -126,15 +149,33 @@ struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
         
         VT * valuesRes = res->getValues();
         
-        assert(AggOpCodeUtils::isPureBinaryReduction(opCode));
+        if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
         
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
+            EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(opCode));
 
-        const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
-        const VT neutral = AggOpCodeUtils::template getNeutral<VT>(opCode);
+            const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
+            const VT neutral = AggOpCodeUtils::template getNeutral<VT>(opCode);
         
-        for(size_t r = 0; r < numRows; r++) {
-            *valuesRes = AggAll<CSRMatrix<VT>>::aggArray(
+            for(size_t r = 0; r < numRows; r++) {
+                *valuesRes = AggAll<CSRMatrix<VT>>::aggArray(
+                        arg->getValues(r),
+                        arg->getNumNonZeros(r),
+                        numCols,
+                        func,
+                        isSparseSafe,
+                        neutral,
+                        ctx
+                );
+                valuesRes += res->getRowSkip();
+            }
+        }
+        else { // The op-code is either MEAN or STDDEV
+            // get sum for each row
+            const VT neutral = VT(0);
+            const bool isSparseSafe = true;
+            EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+            for (size_t r = 0; r < numRows; r++){
+                *valuesRes = AggAll<CSRMatrix<VT>>::aggArray(
                     arg->getValues(r),
                     arg->getNumNonZeros(r),
                     numCols,
@@ -142,8 +183,13 @@ struct AggRow<DenseMatrix<VT>, CSRMatrix<VT>> {
                     isSparseSafe,
                     neutral,
                     ctx
-            );
-            valuesRes += res->getRowSkip();
+                );
+                if (opCode == AggOpCode::MEAN)
+                    *valuesRes = *valuesRes / numCols;
+                else
+                    throw std::runtime_error("unsupported AggOpCode in AggRow for CSRMatrix");
+                valuesRes += res->getRowSkip();
+            }
         }
     }
 };

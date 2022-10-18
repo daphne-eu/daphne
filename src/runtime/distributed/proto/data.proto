@@ -21,20 +21,30 @@ package distributed;
 option optimize_for = SPEED;
 
 message StoredData {
-  string filename = 1;
+  string identifier = 1;
   uint64 num_rows = 2;
   uint64 num_cols = 3;
 }
 
-message Matrix {
+message DenseMatrix {
   oneof cells {
     CellsF64 cells_f64 = 1;
     CellsF32 cells_f32 = 2;
     CellsI64 cells_i64 = 3;
     CellsI32 cells_i32 = 4;
   }
-  uint64 num_rows = 5;
-  uint64 num_cols = 6;
+}
+
+message CSRMatrix {
+  
+  CellsI64 row_offsets = 1;
+  CellsI64 colIdx = 2;
+  oneof values {
+    CellsF64 values_f64 = 3;
+    CellsF32 values_f32 = 4;
+    CellsI64 values_i64 = 5;
+    CellsI32 values_i32 = 6;
+  }
 }
 
 message CellsF64 {
@@ -49,4 +59,13 @@ message CellsI64 {
 }
 message CellsI32 {
   repeated sint32 cells = 1;
+}
+
+message Value {
+  oneof value {
+    double f64 = 1;
+    int64 i64 = 2;
+    float f32 = 3;
+    int32 i32 = 4;
+  }
 }

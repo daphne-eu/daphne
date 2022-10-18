@@ -14,12 +14,11 @@
  *  limitations under the License.
  */
 
-#include <grpcpp/grpcpp.h>
-#include <grpcpp/server_builder.h>
 
 #include <iostream>
 
 #include "WorkerImpl.h"
+#include "WorkerImplGRPC.h"
 
 int main(int argc, char *argv[])
 {
@@ -28,21 +27,12 @@ int main(int argc, char *argv[])
         exit(1);
     }
     auto addr = argv[1];
-    grpc::ServerBuilder builder;
-    builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
 
-    WorkerImpl my_service;
-    my_service.cq_ = builder.AddCompletionQueue();
-    builder.RegisterService(&my_service.service_);
-    builder.SetMaxReceiveMessageSize(INT_MAX);
-    builder.SetMaxSendMessageSize(INT_MAX);
-    std::unique_ptr<grpc::Server> server(builder.BuildAndStart());
-
+    // TODO choose specific implementation based on arguments or config file
+    WorkerImpl *service = new WorkerImplGRPC(addr);
+    
     std::cout << "Started Distributed Worker on `" << addr << "`\n";
-    my_service.HandleRpcs();
-    // TODO shutdown handling
-    // server->Shutdown();
-    // my_service.cq_->Shutdown();
+    service->Wait();
 
     return 0;
 }

@@ -109,12 +109,12 @@ ssize_t inferNumColsFromArgs(ValueRange vs) {
     // infered #cols. If the known #cols of any two arguments mismatch, an
     // exception is thrown. Otherwise, if the #cols of any argument is unknown,
     // the infered #cols is unknown.
-    ssize_t numCols = getShape(vs[0]).first;
+    ssize_t numCols = getShape(vs[0]).second;
     bool someUnknown = false;
     if(numCols == -1)
         someUnknown = true;
     for(size_t i = 1; i < vs.size(); i++) {
-        const ssize_t nextNumCols = getShape(vs[i]).first;
+        const ssize_t nextNumCols = getShape(vs[i]).second;
         if(nextNumCols == -1)
             someUnknown = true;
         else if(numCols == -1)
@@ -220,9 +220,49 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     return {{numRows, numCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
+    auto shapeLhs = getShape(lhs());
+    auto shapeRhs = getShape(rhs());
+
+    ssize_t numRows = -1;
+    if(auto co = transa().getDefiningOp<mlir::daphne::ConstantOp>()) {
+        bool ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+        numRows = ta ? shapeLhs.second : shapeLhs.first;
+    }
+    
+    ssize_t numCols = -1;
+    if(auto co = transb().getDefiningOp<mlir::daphne::ConstantOp>()) {
+        bool tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+        numCols = tb ? shapeRhs.first : shapeRhs.second;
+    }
+
+    return {{numRows, numCols}};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
     FileMetaData fmd = CompilerUtils::getFileMetaData(fileName());
     return {{fmd.numRows, fmd.numCols}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
+    size_t numRows = -1;
+    size_t numCols = -1;
+    bool idxs = false;
+
+    Type t = arg().getType();
+    if(auto mt = t.dyn_cast<daphne::MatrixType>()){
+        numRows = mt.getNumRows();
+        numCols = mt.getNumCols();
+    }
+    if(auto ft = t.dyn_cast<daphne::FrameType>()){
+        numRows = ft.getNumRows();
+        numCols = ft.getNumCols();
+    }
+    if(auto co = returnIdxs().getDefiningOp<mlir::daphne::ConstantOp>()) 
+        idxs = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    if (idxs)
+        numCols = 1;
+    return {{numRows, numCols}};
 }
 
 // ****************************************************************************

@@ -1,0 +1,12 @@
+# Focus on type inference.
+# AllAgg
+print(aggMax([3, 4]));
+print(aggMax([3.3, 4.4]));
+print("");
+# ColAgg
+print(aggMax(reshape([3, 4, 4, 3], 2, 2), 1));
+print(aggMax(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 1));
+print("");
+# RowAgg
+print(aggMax(reshape([3, 4, 4, 3], 2, 2), 0));
+print(aggMax(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 0));

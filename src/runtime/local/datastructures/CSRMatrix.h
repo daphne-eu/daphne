@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_CSRMATRIX_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_CSRMATRIX_H
+#pragma once
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
@@ -97,9 +96,9 @@ class CSRMatrix : public Matrix<ValueType> {
             numRowsAllocated(maxNumRows),
             isRowAllocatedBefore(false),
             maxNumNonZeros(maxNumNonZeros),
-            values(new ValueType[maxNumNonZeros]),
-            colIdxs(new size_t[maxNumNonZeros]),
-            rowOffsets(new size_t[numRows + 1]),
+            values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
+            colIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
+            rowOffsets(new size_t[numRows + 1], std::default_delete<size_t[]>()),
             lastAppendedRowIdx(0)
     {
         if(zero) {
@@ -312,6 +311,10 @@ public:
     void finishAppend() override {
         fillNextPosUntil(rowOffsets.get()[lastAppendedRowIdx + 1], numRows - 1);
     }
+
+    bool isView() const {
+        return (numRowsAllocated > numRows || isRowAllocatedBefore);
+    }
     
     void printValue(std::ostream & os, ValueType val) const {
       switch (ValueTypeUtils::codeFor<ValueType>) {
@@ -394,5 +397,3 @@ std::ostream & operator<<(std::ostream & os, const CSRMatrix<ValueType> & obj)
     obj.print(os);
     return os;
 }
-
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H

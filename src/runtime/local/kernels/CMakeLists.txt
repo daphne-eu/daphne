@@ -15,18 +15,6 @@
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
 
-
-# *****************************************************************************
-# DistributedCommunication library
-# *****************************************************************************
-
-set(SOURCES DistributedCaller.h)
-set(LIBS Proto)
-
-add_library(DistributedCaller ${SOURCES})
-target_link_libraries(DistributedCaller PRIVATE ${LIBS})
-
-
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_custom_command(
@@ -60,6 +48,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
         )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
@@ -82,16 +72,20 @@ add_custom_command(
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
 )
 
-list(APPEND LIBS DataStructures IO ProtoDataConverter ${OPENBLAS_LIBRARIES})
+list(APPEND LIBS DataStructures IO ProtoDataConverter BLAS::BLAS)
 
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_dense.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
-        Pooling.cpp)
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
+)
 #set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
     list(APPEND LIBS CUDAKernels)
@@ -100,4 +94,43 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
+list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 target_link_libraries(AllKernels PUBLIC ${LIBS})
+target_add_morphstore(AllKernels)
+
+# @todo remove before push to main.
+add_executable(ssb_query ./MorphStore/SSBQuery.cpp)
+#add_dependencies(ssb_query daphne DistributedWorker)
+target_link_libraries(ssb_query PRIVATE ${LIBS})
+target_compile_options(ssb_query PUBLIC -g -O0)
+target_add_morphstore(ssb_query)
+
+add_executable(morphstore_perf_ref ./MorphStore/MorphstorePerformanceAligned.cpp)
+#add_dependencies(morphstore_perf daphne DistributedWorker)
+target_link_libraries(morphstore_perf_ref PRIVATE ${LIBS})
+target_compile_options(morphstore_perf_ref PUBLIC -g -O0)
+target_add_morphstore(morphstore_perf_ref)
+
+add_executable(morphstore_perf_otfly ./MorphStore/MorphStorePerformanceAlignedOtfly.cpp)
+#add_dependencies(morphstore_perf daphne DistributedWorker)
+target_link_libraries(morphstore_perf_otfly PRIVATE ${LIBS})
+target_compile_options(morphstore_perf_otfly PUBLIC -g -O0)
+target_add_morphstore(morphstore_perf_otfly)
+
+add_executable(ssb_query11_kernel ./MorphStore/SSBQuery11Kernels.cpp)
+#add_dependencies(morphstore_perf daphne DistributedWorker)
+target_link_libraries(ssb_query11_kernel PRIVATE ${LIBS})
+target_compile_options(ssb_query11_kernel PUBLIC -g -O0)
+target_add_morphstore(ssb_query11_kernel)
+
+add_executable(test_file ./MorphStore/test.cpp)
+#add_dependencies(morphstore_perf daphne DistributedWorker)
+target_link_libraries(test_file PRIVATE ${LIBS})
+target_compile_options(test_file PUBLIC -g -O0)
+target_add_morphstore(test_file)
+
+add_executable(ssb_query11_daphne ./MorphStore/SSBQuery11DAPHNE.cpp)
+#add_dependencies(morphstore_perf daphne DistributedWorker)
+target_link_libraries(ssb_query11_daphne PRIVATE ${LIBS})
+target_compile_options(ssb_query11_daphne PUBLIC -g -O0)
+target_add_morphstore(ssb_query11_daphne)

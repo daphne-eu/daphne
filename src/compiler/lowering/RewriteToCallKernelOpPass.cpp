@@ -30,6 +30,7 @@
 #include <stdexcept>
 #include <string_view>
 #include <tuple>
+#include <vector>
 
 using namespace mlir;
 
@@ -40,6 +41,10 @@ namespace
         // TODO This method is only required since MLIR does not seem to
         // provide a means to get this information.
         static size_t getNumODSOperands(Operation * op) {
+            if(llvm::isa<daphne::ThetaJoinOp>(op))
+                return 4;
+            if(llvm::isa<daphne::OrderOp>(op))
+                return 4;
             if(llvm::isa<daphne::GroupOp>(op))
                 return 3;
             if(llvm::isa<daphne::CreateFrameOp, daphne::SetColLabelsOp>(op))
@@ -47,7 +52,8 @@ namespace
             if(llvm::isa<daphne::DistributedComputeOp>(op))
                 return 1;
             throw std::runtime_error(
-                    "unsupported operation: " + op->getName().getStringRef().str()
+                    "lowering to kernel call not yet supported for this variadic operation: "
+                    + op->getName().getStringRef().str()
             );
         }
 
@@ -56,6 +62,7 @@ namespace
         // isVariadic boolean array is automatically generated *within* the
         // getODSOperandIndexAndLength method.
         static std::tuple<unsigned, unsigned, bool> getODSOperandInfo(Operation * op, unsigned index) {
+            // TODO Simplify those by a macro.
             if(auto concreteOp = llvm::dyn_cast<daphne::CreateFrameOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
                 static bool isVariadic[] = {true, true};
@@ -92,8 +99,27 @@ namespace
                         isVariadic[index]
                 );
             }
+            if(auto concreteOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, false, true, true};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
+            if(auto concreteOp = llvm::dyn_cast<daphne::OrderOp>(op)) {
+                auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
+                static bool isVariadic[] = {false, true, true, false};
+                return std::make_tuple(
+                        idxAndLen.first,
+                        idxAndLen.second,
+                        isVariadic[index]
+                );
+            }
             throw std::runtime_error(
-                    "unsupported operation: " + op->getName().getStringRef().str()
+                    "lowering to kernel call not yet supported for this variadic operation: "
+                    + op->getName().getStringRef().str()
             );
         }
 
@@ -138,6 +164,10 @@ namespace
 //                else
 //                    std::cout << "attr = null: " << op->getName().getStringRef().str() << std::endl;
             }
+	    else if(op->hasAttr("fpgaopencl_device")) {
+		 callee << "FPGAOPENCL";
+	    }
+		    
 
             callee << '_' << op->getName().stripDialect().data();
 
@@ -168,9 +198,10 @@ namespace
             if(
                 // TODO Unfortunately, one needs to know the exact N for
                 // AtLeastNOperands... There seems to be no simple way to
-                // detect if an operation has variadic ODS operands.
+                // detect if an operation has variadic ODS operands with any N.
                 op->hasTrait<OpTrait::VariadicOperands>() ||
-                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>()
+                op->hasTrait<OpTrait::AtLeastNOperands<1>::Impl>() ||
+                op->hasTrait<OpTrait::AtLeastNOperands<2>::Impl>()
             ) {
                 // For operations with variadic operands, we replace all
                 // occurrences of a variadic operand by a single operand of
@@ -222,6 +253,89 @@ namespace
                     newOperands.push_back(op->getOperand(i));
                 }
 
+            if(auto groupOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
+                // GroupOp carries the aggregation functions to apply as an
+                // attribute. Since attributes to not automatically become
+                // inputs to the kernel call, we need to add them explicitly
+                // here.
+
+                callee << "__GroupEnum_variadic__size_t";
+
+                ArrayAttr aggFuncs = groupOp.aggFuncs();
+                const size_t numAggFuncs = aggFuncs.size();
+                const Type t = rewriter.getIntegerType(32, false);
+                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                        loc,
+                        daphne::VariadicPackType::get(rewriter.getContext(), t),
+                        rewriter.getIndexAttr(numAggFuncs)
+                );
+                size_t k = 0;
+                for(Attribute aggFunc : aggFuncs.getValue())
+                    rewriter.create<daphne::StoreVariadicPackOp>(
+                            loc,
+                            cvpOp,
+                            rewriter.create<daphne::ConstantOp>(
+                                    loc,
+                                    rewriter.getIntegerAttr(
+                                            t,
+                                            static_cast<uint32_t>(
+                                                    aggFunc.dyn_cast<daphne::GroupEnumAttr>().getValue()
+                                            )
+                                    )
+                            ),
+                            rewriter.getIndexAttr(k++)
+                    );
+                newOperands.push_back(cvpOp);
+                newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                        loc, rewriter.getIndexAttr(numAggFuncs))
+                );
+            }
+            
+            
+            if(auto thetaJoinOp = llvm::dyn_cast<daphne::ThetaJoinOp>(op)) {
+                // ThetaJoinOp carries multiple CompareOperation as an
+                // attribute. Since attributes to not automatically become
+                // inputs to the kernel call, we need to add them explicitly
+                // here.
+
+                // manual mapping of attributes to function header
+                callee << "__CompareOperation__size_t";
+
+                // get array of CompareOperations
+                ArrayAttr compareOperations = thetaJoinOp.cmp();
+                const size_t numCompareOperations = compareOperations.size();
+                const Type t = rewriter.getIntegerType(32, false);
+                // create Variadic Pack
+                auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                        loc,
+                        daphne::VariadicPackType::get(rewriter.getContext(), t),
+                        rewriter.getIndexAttr(numCompareOperations)
+                );
+                // fill variadic pack
+                size_t k = 0;
+                for(Attribute compareOperation : compareOperations.getValue())
+                    rewriter.create<daphne::StoreVariadicPackOp>(
+                            loc,
+                            cvpOp,
+                            rewriter.create<daphne::ConstantOp>(
+                                    loc,
+                                    rewriter.getIntegerAttr(
+                                            t,
+                                            static_cast<uint32_t>(
+                                                    compareOperation.dyn_cast<daphne::CompareOperationAttr>().getValue()
+                                            )
+                                    )
+                            ),
+                            rewriter.getIndexAttr(k++)
+                    );
+                // add created variadic pack and size of this pack as
+                // new operands / parameters of the ThetaJoin-Kernel call
+                newOperands.push_back(cvpOp);
+                newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                        loc, rewriter.getIndexAttr(numCompareOperations))
+                );
+            }
+
             if(auto distCompOp = llvm::dyn_cast<daphne::DistributedComputeOp>(op)) {
                 MLIRContext newContext;
                 OpBuilder tempBuilder(&newContext);
@@ -261,6 +375,103 @@ namespace
                     op->getResultTypes()
                     );
             rewriter.replaceOp(op, kernel.getResults());
+            return success();
+        }
+    };
+    
+    class DistributedPipelineKernelReplacement : public OpConversionPattern<daphne::DistributedPipelineOp> {
+        Value dctx;
+        
+    public:
+        using OpConversionPattern::OpConversionPattern;
+        DistributedPipelineKernelReplacement(MLIRContext * mctx, Value dctx, PatternBenefit benefit = 2)
+        : OpConversionPattern(mctx, benefit), dctx(dctx)
+        {
+        }
+
+        LogicalResult matchAndRewrite(daphne::DistributedPipelineOp op, ArrayRef<Value> operands,
+                                      ConversionPatternRewriter &rewriter) const override
+        {
+            size_t numOutputs = op.outputs().size();
+            size_t numInputs = op.inputs().size();
+                     
+            
+            std::stringstream callee;
+            callee << "_distributedPipeline"; // kernel name
+            callee << "__DenseMatrix_double_variadic" // outputs
+                << "__size_t" // numOutputs
+                << "__Structure_variadic" // inputs
+                << "__size_t" // numInputs
+                << "__int64_t" // outRows
+                << "__int64_t" // outCols
+                << "__int64_t" // splits
+                << "__int64_t" // combines
+                << "__char"; // irCode
+            
+            MLIRContext* mctx = rewriter.getContext();
+            
+            Location loc = op.getLoc();
+            Type vptObj = daphne::VariadicPackType::get(mctx, daphne::MatrixType::get(mctx, rewriter.getF64Type()));
+            Type vptSize = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, false));
+            Type vptInt64 = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, true));
+            
+            // Variadic pack for inputs.
+            auto cvpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptObj, rewriter.getIndexAttr(numInputs));
+            for(size_t i = 0; i < numInputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc, cvpInputs, op.inputs()[i], rewriter.getIndexAttr(i)
+                );
+            // Constants for #inputs.
+            auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
+            [[maybe_unused]] auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
+            // Variadic pack for out_rows.
+            auto cvpOutRows = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
+            for(size_t i = 0; i < numOutputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc, cvpOutRows, op.out_rows()[i], rewriter.getIndexAttr(i)
+                );
+            // Variadic pack for out_cols.
+            auto cvpOutCols = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
+            for(size_t i = 0; i < numOutputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc, cvpOutCols, op.out_cols()[i], rewriter.getIndexAttr(i)
+                );
+            // Variadic pack for splits.
+            auto cvpSplits = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getIndexAttr(numInputs));
+            for(size_t i = 0; i < numInputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc,
+                        cvpSplits,
+                        rewriter.create<daphne::ConstantOp>(
+                                loc, static_cast<int64_t>(op.splits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())
+                        ),
+                        rewriter.getIndexAttr(i)
+                );
+            // Variadic pack for combines.
+            auto cvpCombines = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getIndexAttr(numOutputs));
+            for(size_t i = 0; i < numOutputs; i++)
+                rewriter.create<daphne::StoreVariadicPackOp>(
+                        loc,
+                        cvpCombines,
+                        rewriter.create<daphne::ConstantOp>(
+                                loc, static_cast<int64_t>(op.combines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())
+                        ),
+                        rewriter.getIndexAttr(i)
+                );
+            
+            // Create CallKernelOp.
+            std::vector<Value> newOperands = {
+                cvpInputs, coNumInputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.ir(), dctx
+            };
+            auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(
+                    op.getOperation(),
+                    callee.str(),
+                    newOperands,
+                    op.outputs().getTypes()
+            );
+            // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
+            cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
+      
             return success();
         }
     };
@@ -306,7 +517,10 @@ void RewriteToCallKernelOpPass::runOnFunction()
     });
 
     // Apply conversion to CallKernelOps.
-    patterns.insert<KernelReplacement>(&getContext(), dctx);
+    patterns.insert<
+            KernelReplacement,
+            DistributedPipelineKernelReplacement
+    >(&getContext(), dctx);
     if (failed(applyPartialConversion(func, target, std::move(patterns))))
         signalPassFailure();
 

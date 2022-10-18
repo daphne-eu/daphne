@@ -1,0 +1,12 @@
+# Focus on type inference.
+# AllAgg
+print(mean([3, 4]));
+print(mean([3.3, 4.4]));
+print("");
+# ColAgg
+print(mean(reshape([3, 4, 4, 3], 2, 2), 1));
+print(mean(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 1));
+print("");
+# RowAgg
+print(mean(reshape([3, 4, 4, 3], 2, 2), 0));
+print(mean(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 0));

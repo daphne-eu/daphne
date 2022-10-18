@@ -1,5 +1,21 @@
+# build output
 build/
+build-*/
+build_*/
+
+# dependencies
 thirdparty/*
 !thirdparty/llvm-project/
+!thirdparty/patches/
+
+# Visual Studio Code
+.vscode/
+
+# Python
 __pycache__/
+
+# Jetbrains IDE
+.idea/
+cmake-*/
+
 tmpdaphne.daphne

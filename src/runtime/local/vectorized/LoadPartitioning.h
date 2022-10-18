@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
-#define SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
+#pragma once
+
+#include "LoadPartitioningDefs.h"
 
 #include <cmath>
 #include <cstdlib>
 #include <string>
 
-enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, 
-                            PLS, MSTATIC, MFSC, PSS};
 class LoadPartitioning {
 
 private:
@@ -45,7 +44,7 @@ private:
         int scheduled=0;
         int step=0;
         while (scheduled < tasks){
-            int actual_step=step/workers;
+            actual_step=step/workers;
             double chunk = pow(0.5,actual_step+1)*tasks/float(workers);
             scheduled+=ceil(chunk);
             step+=1;
@@ -139,7 +138,7 @@ public:
                 //TODO
                 break;
             }
-            case MFSC:{//modifed fixed self-scheduling (MFSC)
+            case MFSC:{//modifed fixed-size chunk self-scheduling (MFSC)
                 chunkSize=mfscChunk;
                 break;
             }
@@ -156,5 +155,3 @@ public:
         return chunkSize;
     } 
 };
-
-#endif //SRC_RUNTIME_LOCAL_VECTORIZED_LOADPARTITIONING_H
