@@ -23,10 +23,27 @@ option optimize_for = SPEED;
 import "data.proto";
 
 service Worker {
-  rpc Store (Matrix) returns (StoredData) {}
+  rpc Store (Data) returns (StoredData) {}
   rpc Compute (Task) returns (ComputeResult) {}
   rpc Transfer (StoredData) returns (Matrix) {}
   rpc FreeMem (StoredData) returns (Empty) {}
+}
+
+message Data {
+  oneof data {
+    Matrix matrix = 1;
+    Value value = 2;
+  }
+}
+
+
+message Matrix {
+  oneof matrix {
+    DenseMatrix dense_Matrix = 1;
+    CSRMatrix csr_Matrix = 2;
+  }
+  uint64 num_rows = 3;
+  uint64 num_cols = 4;
 }
 
 message WorkData {

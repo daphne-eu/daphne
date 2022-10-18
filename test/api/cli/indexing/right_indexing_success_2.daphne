@@ -20,7 +20,7 @@ c2 = seq(2  , 56  , 6  );
 c3 = seq(3.0, 57.0, 6.0);
 c4 = seq(4  , 58  , 6  );
 c5 = seq(5.0, 59.0, 6.0);
-X = frame(c0, c1, c2, c3, c4, c5, "a", "b", "c", "d", "e", "f");
+X = createFrame(c0, c1, c2, c3, c4, c5, "a", "b", "c", "d", "e", "f");
 
 print("input");
 print("X");

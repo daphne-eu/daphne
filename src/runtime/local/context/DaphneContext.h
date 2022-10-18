@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
-#define SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H
-
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
@@ -27,9 +24,12 @@
 
 #include "IContext.h"
 
-#ifdef USE_CUDA
-    #include "CUDAContext.h"
+#ifdef USE_FPGAOPENCL
+    #include "FPGAContext.h"
 #endif
+
+
+
 
 // This macro is intended to be used in kernel function signatures, such that
 // we can change the ubiquitous DaphneContext parameter in a single place, if
@@ -54,6 +54,10 @@ struct DaphneContext {
 
 
     std::vector<std::unique_ptr<IContext>> cuda_contexts;
+    std::vector<std::unique_ptr<IContext>> fpga_contexts;
+
+
+    std::unique_ptr<IContext> distributed_context;
 
     /**
      * @brief The user configuration (including information passed via CLI
@@ -72,19 +76,38 @@ struct DaphneContext {
         for (auto& ctx : cuda_contexts) {
             ctx->destroy();
         }
+        for (auto& ctx : fpga_contexts) {
+            ctx->destroy();
+        }
         cuda_contexts.clear();
+        fpga_contexts.clear();
+
+
     }
 
 #ifdef USE_CUDA
     // ToDo: in a multi device setting this should use a find call instead of a direct [] access
-    [[nodiscard]] CUDAContext* getCUDAContext(int dev_id) const {
-        return dynamic_cast<CUDAContext*>(cuda_contexts[dev_id].get());
+    [[nodiscard]] IContext* getCUDAContext(size_t dev_id) const {
+        return cuda_contexts[dev_id].get();
     }
 #endif
+#ifdef USE_FPGAOPENCL
+    // ToDo: in a multi device setting this should use a find call instead of a direct [] access
+    [[nodiscard]] FPGAContext* getFPGAContext(int dev_id) const {
+ //	std::cout<<"inside getFPGAContext"<<std::endl;
+       return dynamic_cast<FPGAContext*>(fpga_contexts[dev_id].get());
+    }
+#endif
+ 
+
+
 
     [[nodiscard]] bool useCUDA() const { return !cuda_contexts.empty(); }
+    [[nodiscard]] bool useFPGA() const { return !fpga_contexts.empty(); }
+
+    [[nodiscard]] IContext *getDistributedContext() const {
+        return distributed_context.get();
+    }
     
     [[maybe_unused]] [[nodiscard]] DaphneUserConfig getUserConfig() const { return config; }
 };
-
-#endif //SRC_RUNTIME_LOCAL_CONTEXT_DAPHNECONTEXT_H

@@ -38,6 +38,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_PARSING_SIMPLIFIED = "explain_parsing_simplified";
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
+    inline static const std::string EXPLAIN_TYPE_ADAPTATION = "explain_type_adaptation";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
@@ -48,6 +49,7 @@ struct DaphneConfigJsonParams {
 
     inline static const std::string LIB_DIR = "libdir";
     inline static const std::string LIBRARY_PATHS = "library_paths";
+    inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
 
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
@@ -62,6 +64,7 @@ struct DaphneConfigJsonParams {
             EXPLAIN_PARSING_SIMPLIFIED,
             EXPLAIN_PROPERTY_INFERENCE,
             EXPLAIN_SQL,
+            EXPLAIN_TYPE_ADAPTATION,
             EXPLAIN_VECTORIZED,
             EXPLAIN_OBJ_REF_MGNT,
             TASK_PARTITIONING_SCHEME,
@@ -69,7 +72,8 @@ struct DaphneConfigJsonParams {
             MINIMUM_TASK_SIZE,
             CUDA_DEVICES,
             LIB_DIR,
-            LIBRARY_PATHS
+            LIBRARY_PATHS,
+            DAPHNEDSL_IMPORT_PATHS
     };
 };
 

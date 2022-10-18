@@ -382,6 +382,7 @@ unknown_options=""
 BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_MORPHSTORE="-DUSE_MORPHSTORE=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
+BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 
 while [[ $# -gt 0 ]]; do
@@ -418,6 +419,10 @@ while [[ $# -gt 0 ]]; do
         --arrow)
             echo using ARROW
             BUILD_ARROW="-DUSE_ARROW=ON"
+            ;;
+        --fpgaopencl)
+            echo using FPGAOPENCL
+            export BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=ON"
             ;;
         --debug)
             echo building DEBUG version
@@ -706,6 +711,17 @@ else
     daphne_msg "No need to build MLIR/LLVM again."
 fi
 
+if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
+  FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
+  FPGAOPENCL_BISTREAM_URL="https://github.com/daphne-eu/supplemental-binaries/raw/main/fpga_bitstreams/"
+  if [ ! -d $FPGAOPENCL_BISTREAM_DIR ]; then
+    echo fetching FPGA bitstreams
+    mkdir -p $FPGAOPENCL_BISTREAM_DIR
+    cd $FPGAOPENCL_BISTREAM_DIR
+    wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
+    cd -
+  fi
+fi
 
 # *****************************************************************************
 # Build DAPHNE target.
@@ -713,7 +729,7 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_MORPHSTORE $BUILD_ARROW $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_MORPHSTORE $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"

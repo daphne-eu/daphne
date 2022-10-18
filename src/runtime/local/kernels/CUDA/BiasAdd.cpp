@@ -15,19 +15,22 @@
  */
 
 #include "BiasAdd.h"
+#include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
 namespace CUDA::BiasAdd {
     template<typename DTRes, typename DTArg>
     void Forward<DTRes, DTArg>::apply(DTRes *&res, const DTArg *data, const DTArg *bias, DCTX(dctx)) {
-        auto ctx = dctx->getCUDAContext(0);
-
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        
         using VT = typename DTRes::VT;
         const size_t nr1 = data->getNumRows();
         const size_t nc1 = data->getNumCols();
         const VT blend_alpha = 1;
         const VT blend_beta = 1;
-        const VT* d_input = data->getValuesCUDA();
-        const VT* d_bias = bias->getValuesCUDA();
+        const VT* d_input = data->getValues(&alloc_desc);
+        const VT* d_bias = bias->getValues(&alloc_desc);
         res = const_cast<DTArg*>(data);
         VT* d_res = const_cast<VT*>(d_input);
 

@@ -204,7 +204,6 @@ if __name__ == "__main__":
         print()
         printHelp()
         sys.exit(1)
-
     # Parse arguments.
     inFilePath = sys.argv[1]
     outFilePath = sys.argv[2]

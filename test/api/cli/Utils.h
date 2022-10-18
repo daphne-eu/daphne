@@ -377,7 +377,7 @@ void compareDaphneToDaphneLibScalar(const std::string & pythonScriptFilePath, co
 template<typename... Args>
 void compareDaphneToRefSimple(const std::string & dirPath, const std::string & name, unsigned idx, Args ... args) {
     const std::string filePath = dirPath + name + '_' + std::to_string(idx);
-    compareDaphneToRef(filePath + ".txt", args..., filePath + ".daphne");
+    compareDaphneToRef(filePath + ".txt",  filePath + ".daphne", args...);
 }
 
 template<typename... Args>
@@ -449,13 +449,6 @@ void compareDaphneToSomeRefSimple(const std::string & dirPath, const std::string
     }
 }
 
-/**
- * @brief Starts a distributed worker locally.
- *
- * @param addr The address (usually `0.0.0.0:<port>`) the worker should run on
- * @return The server (has to be kept around for the whole time the worker is in use)
- */
-[[maybe_unused]] [[nodiscard]] std::unique_ptr<grpc::Server> startDistributedWorker(const char *addr, WorkerImpl *workerImpl);
 
 // TODO Ideally, we shouldn't need that. There should be a way to print data
 // objects without technical information such as their physical data

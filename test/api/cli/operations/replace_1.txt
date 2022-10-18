@@ -1,0 +1,15 @@
+DenseMatrix(4x1, int64_t)
+1
+4
+3
+4
+DenseMatrix(4x1, double)
+1.1
+4.4
+3.3
+4.4
+DenseMatrix(4x1, double)
+1
+4
+3
+4

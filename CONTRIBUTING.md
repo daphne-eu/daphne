@@ -100,7 +100,7 @@ At the same time, this freedom comes with certain responsibilities, which are ro
    - But **never force push to the main branch**, since it can lead to severe inconsistencies in the Git history.
    - Even *collaborators may still use pull requests* (just like new contributors) to suggest larger changes.
      This is also suitable whenever you feel unsure about a change or want to get feedback first.
-2. Please **engage in the handling of pull requests**; especially those affecting the components you are working on.
+2. Please **engage in the [handling of pull requests](/doc/development/HandlingPRs.md)**; especially those affecting the components you are working on.
    This includes:
    - reading the code others suggest for integration
    - trying if it works

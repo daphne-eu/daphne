@@ -78,16 +78,25 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
         double sparsity = -1.0;
         MatrixRepresentation representation = MatrixRepresentation::Default; // default is dense
         mlir::Type elementType;
-        if (
-            parser.parseLess() ||
-            parser.parseOptionalQuestion() ||
-            // TODO Parse #rows if there was no '?'.
-            //parser.parseInteger<ssize_t>(numRows) ||
-            parser.parseXInDimensionList() ||
-            parser.parseOptionalQuestion() ||
-            // TODO Parse #cols if there was no '?'.
-            //parser.parseInteger<ssize_t>(numCols) ||
-            parser.parseXInDimensionList() ||
+        if (parser.parseLess()) {
+            return nullptr;
+        }
+        if (parser.parseOptionalQuestion()) {
+            // Parse #rows if there was no '?'.
+            if (parser.parseInteger<ssize_t>(numRows)) {
+                return nullptr;
+            }
+        }
+        if (parser.parseXInDimensionList()) {
+            return nullptr;
+        }
+        if (parser.parseOptionalQuestion()) {
+            // Parse #cols if there was no '?'.
+            if (parser.parseInteger<ssize_t>(numCols)) {
+                return nullptr;
+            }
+        }
+        if (parser.parseXInDimensionList() ||
             parser.parseType(elementType)
         ) {
             return nullptr;
@@ -972,6 +981,53 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectGeOp::fold(ArrayRef<Attribute> 
             return res;
     }
     return {};
+}
+
+/**
+ * @brief Transposition-aware matrix multiplication
+ * Identifies if an input to a MatMulOp is the result of a TransposeOp; Rewrites the Operation,
+ * passing transposition info as a flag, instead of transposing the matrix before multiplication
+ */
+mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
+        mlir::daphne::MatMulOp op, PatternRewriter &rewriter
+) {    
+    mlir::Value lhs = op.lhs();
+    mlir::Value rhs = op.rhs();
+    mlir::Value transa = op.transa();
+    mlir::Value transb = op.transb();
+    bool ta = false;
+    bool tb = false;
+
+    if(auto co = transa.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    }
+    if(auto co = transb.getDefiningOp<mlir::daphne::ConstantOp>()) {
+        tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
+    }
+
+
+    mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();
+    mlir::daphne::TransposeOp rhsTransposeOp = rhs.getDefiningOp<mlir::daphne::TransposeOp>();
+
+    if (!lhsTransposeOp && !rhsTransposeOp){
+        return mlir::failure();
+    }
+
+    if(lhsTransposeOp) {
+        lhs = lhsTransposeOp.arg();
+        ta = !ta;
+    }
+    if(rhsTransposeOp) {
+        rhs = rhsTransposeOp.arg();
+        tb = !tb;
+    }
+
+    rewriter.replaceOpWithNewOp<mlir::daphne::MatMulOp>(
+        op, op.getType(), lhs, rhs,
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), rewriter.getBoolAttr(ta))),
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), rewriter.getBoolAttr(tb)))
+    );
+    return mlir::success();
 }
 
 /**

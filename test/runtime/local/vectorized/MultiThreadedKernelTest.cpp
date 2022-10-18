@@ -61,7 +61,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
 
-    auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());
+    auto wrapper = std::make_unique<MTWrapper<DT>>(1, ctx.get());
 
     DT **outputs[] = {&r2};
     bool isScalar[] = {false, false};
@@ -74,7 +74,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded-scheduling", TAG_VECTORIZED, (DATA_TY
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **, 
             DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
-    wrapper->executeSingleQueue(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
@@ -98,7 +98,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::ADD, r1, m1, m2, nullptr); //single-threaded
 
-    auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());
+    auto wrapper = std::make_unique<MTWrapper<DT>>(1, ctx.get());
 
     DT **outputs[] = {&r2};
     bool isScalar[] = {false, false};
@@ -111,7 +111,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X+Y", TAG_VECTORIZED, (DATA_TYPES), (
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
             DCTX(ctx))>(reinterpret_cast<void*>(&funAdd<DT>))));
-    wrapper->executeSingleQueue(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 
@@ -135,7 +135,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     DT *r1 = nullptr, *r2 = nullptr;
     ewBinaryMat<DT, DT, DT>(BinaryOpCode::MUL, r1, m1, m2, nullptr); //single-threaded
 
-    auto wrapper = std::make_unique<MTWrapper<DT>>(4, 1, ctx.get());    DT **outputs[] = {&r2};
+    auto wrapper = std::make_unique<MTWrapper<DT>>(1, ctx.get());    DT **outputs[] = {&r2};
 
     bool isScalar[] = {false, false};
     Structure *inputs[] = {m1, m2};
@@ -147,7 +147,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Multi-threaded X*Y", TAG_VECTORIZED, (DATA_TYPES), (
     std::vector<std::function<void(DT ***, Structure **, DCTX(ctx))>> funcs;
     funcs.push_back(std::function<void(DT***, Structure**, DCTX(ctx))>(reinterpret_cast<void (*)(DT***, Structure **,
             DCTX(ctx))>(reinterpret_cast<void*>(&funMul<DT>))));
-    wrapper->executeSingleQueue(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
+    wrapper->executeCpuQueues(funcs, outputs, isScalar, inputs, 2, 1, outRows, outCols, splits, combines, ctx.get(), false);
 
     CHECK(checkEqApprox(r1, r2, 1e-6, nullptr));
 

@@ -20,6 +20,7 @@
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <parser/ParserUtils.h>
 #include <parser/ScopedSymbolTable.h>
+#include <parser/config/ConfigParser.h>
 
 #include "antlr4-runtime.h"
 #include "DaphneDSLGrammarParser.h"
@@ -31,6 +32,7 @@
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <stack>
 
 class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     // By inheriting from DaphneDSLGrammarVisitor (as opposed to
@@ -72,6 +74,9 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
 
     std::unordered_map<std::string, std::string> args;
 
+    std::stack<std::string> scriptPaths;
+    std::vector<std::string> importedFiles;
+    DaphneUserConfig userConf;
     /**
      * @brief Creates a `FuncOp` for a UDF.
      * @param loc The source code location
@@ -100,14 +105,19 @@ public:
     DaphneDSLVisitor(
             mlir::ModuleOp & module,
             mlir::OpBuilder & builder,
-            std::unordered_map<std::string, std::string> args
+            std::unordered_map<std::string, std::string> args,
+            const std::string & rootScriptPath,
+            DaphneUserConfig userConf_
     ) : module(module), builder(builder), utils(builder), builtins(builder), args(std::move(args)) {
-        //
+        scriptPaths.push(rootScriptPath);
+        userConf = std::move(userConf_);
     };
     
     antlrcpp::Any visitScript(DaphneDSLGrammarParser::ScriptContext * ctx) override;
 
     antlrcpp::Any visitStatement(DaphneDSLGrammarParser::StatementContext * ctx) override;
+    
+    antlrcpp::Any visitImportStatement(DaphneDSLGrammarParser::ImportStatementContext * ctx) override;
 
     antlrcpp::Any visitBlockStatement(DaphneDSLGrammarParser::BlockStatementContext * ctx) override;
 

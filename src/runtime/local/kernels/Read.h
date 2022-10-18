@@ -22,11 +22,11 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/io/File.h>
-#include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/ReadMM.h>
 #include <runtime/local/io/ReadParquet.h>
 #include <runtime/local/io/ReadDaphne.h>
+#include <parser/metadata/MetaDataParser.h>
 
 #include <string>
 #include <regex>
@@ -78,7 +78,7 @@ template<typename VT>
 struct Read<DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const char * filename, DCTX(ctx)) {
 
-	FileMetaData fmd = FileMetaData::ofFile(filename);
+	FileMetaData fmd = MetaDataParser::readMetaData(filename);
 	int extv = extValue(filename);
 	switch(extv) {
 	case 0:
@@ -117,7 +117,7 @@ template<typename VT>
 struct Read<CSRMatrix<VT>> {
     static void apply(CSRMatrix<VT> *& res, const char * filename, DCTX(ctx)) {
 
-	FileMetaData fmd = FileMetaData::ofFile(filename);
+	FileMetaData fmd = MetaDataParser::readMetaData(filename);
 	int extv = extValue(filename);
 	switch(extv) {
 	case 0:
@@ -160,7 +160,7 @@ struct Read<CSRMatrix<VT>> {
 template<>
 struct Read<Frame> {
     static void apply(Frame *& res, const char * filename, DCTX(ctx)) {
-        FileMetaData fmd = FileMetaData::ofFile(filename);
+        FileMetaData fmd = MetaDataParser::readMetaData(filename);
         
         ValueTypeCode * schema;
         if(fmd.isSingleValueType) {

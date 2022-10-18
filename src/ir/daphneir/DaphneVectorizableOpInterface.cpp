@@ -117,7 +117,12 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_ColAggOp(ColAggOp *op,
 // Matrix multiplication
 std::vector<daphne::VectorSplit> daphne::MatMulOp::getVectorSplits()
 {
-    return {daphne::VectorSplit::ROWS, daphne::VectorSplit::NONE};
+    return {
+        daphne::VectorSplit::ROWS, // lhs
+        daphne::VectorSplit::NONE, // rhs
+        daphne::VectorSplit::NONE, // transa
+        daphne::VectorSplit::NONE  // transb
+    };
 }
 std::vector<daphne::VectorCombine> daphne::MatMulOp::getVectorCombines()
 {

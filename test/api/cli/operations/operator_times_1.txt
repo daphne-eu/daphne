@@ -1,0 +1,23 @@
+2
+2.25
+2.5
+
+DenseMatrix(2x1, int64_t)
+3
+8
+DenseMatrix(2x1, double)
+4.5
+10
+DenseMatrix(2x1, double)
+3.5
+9
+
+DenseMatrix(2x1, int64_t)
+3
+6
+DenseMatrix(2x1, double)
+4.5
+7.5
+DenseMatrix(2x1, double)
+3.5
+7

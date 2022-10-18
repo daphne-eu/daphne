@@ -1,0 +1,29 @@
+// Relative path
+import "sandbox/c.daphne";
+import "sandbox/a.daphne"; 
+import "sandbox/b.daphne" as "B";
+
+//Conflict name resolution
+import "cascade/c.daphne";
+
+// Using a default directory from config
+import "d.daphne"; 
+
+// Import whole library
+import "algorithms"; 
+
+// Cascade import (call_sandbox <- z <- y <- x)
+import "cascade/call_sandbox.daphne" as "sandbox"; 
+
+print(a.x);
+print(B.x);
+print(c.x);
+print(d.x);
+res = algorithms.kmeans1.km(2);
+print(res);
+
+print(algorithms.kmeans2.km(2));
+
+print(sandbox.sbox);
+
+print(cascade.c.some_var);

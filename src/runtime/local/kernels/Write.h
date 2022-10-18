@@ -24,6 +24,7 @@
 #include <runtime/local/io/FileMetaData.h>
 #include <runtime/local/io/WriteCsv.h>
 #include <runtime/local/io/WriteDaphne.h>
+#include <parser/metadata/MetaDataParser.h>
 
 
 // ****************************************************************************
@@ -60,7 +61,8 @@ struct Write<DenseMatrix<VT>> {
 	std::string ext(fn.substr(pos+1)) ;
 	if (ext == "csv") {
 		File * file = openFileForWrite(filename);
-		FileMetaData::toFile(filename, arg->getNumRows(), arg->getNumCols(), 1, ValueTypeUtils::codeFor<VT>);
+		FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
+		MetaDataParser::writeMetaData(filename, metaData);
 		writeCsv(arg, file);
 		closeFile(file);
 	} else if (ext == "dbdf") {

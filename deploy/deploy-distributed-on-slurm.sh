@@ -32,12 +32,12 @@
 #
 # - the build of the daphne main and worker node executables is executed
 #   through a Singularity container that is built on the utilized HPC,
-#   while the function "deploy" in deployDistriuted.sh sends and builds
+#   while the function "deploy" in deployDistributed.sh sends and builds
 #   executables on each node, which might cause overwrite if the workers use same
 #   mounted user storage (e.g. distributed storage attached as home directory)
 #
 # - the list of PEERS is not defined by the user but obtained from SLURM
-#   (in deployDistriuted.sh, the user supplies PEERS as an argument)
+#   (in deployDistributed.sh, the user supplies PEERS as an argument)
 #
 # - the support for single request deployment, run, and cleanup is provided
 #
@@ -340,7 +340,7 @@ function PrintHelp {
     echo "  start                   Run workers on remote machines through login node (deploys this script and runs workers)."
     echo "  workers                 Run workers on current login node through SLURM."
     echo "  status                  Get distributed workers' status."
-    echo "  wait                    Waits untill all workers are up."
+    echo "  wait                    Waits until all workers are up."
     echo "  stop                    Stops all distributed workers."
     echo "  run [SCRIPT [ARGs]]     Run one request on the deployed platform by processing one DAPHNE SCRIPT file (default: /dev/stdin)"
     echo "                          using optional arguments (ARGs in script format)."

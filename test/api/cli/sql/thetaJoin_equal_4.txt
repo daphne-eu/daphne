@@ -1,0 +1,4 @@
+Frame(3x2, [lhs.a:int64_t, rhs.a:int64_t])
+0 0
+46 46
+404 404

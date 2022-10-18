@@ -23,12 +23,20 @@ def DistributeComputations : FunctionPass<"distribute-computations"> {
     let constructor = "mlir::daphne::createDistributeComputationsPass()";
 }
 
+def DistributePipelines : FunctionPass<"distribute-pipelines"> {
+    let constructor = "mlir::daphne::createDistributePipelinesPass()";
+}
+
 def Inference: FunctionPass<"inference"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }
 
 def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
     let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
+}
+
+def AdaptTypesToKernels: FunctionPass<"adapt-types-to-kernels"> {
+    let constructor = "mlir::daphne::createAdaptTypesToKernelsPass()";
 }
 
 def ManageObjRefs : FunctionPass<"manage-obj-refs"> {

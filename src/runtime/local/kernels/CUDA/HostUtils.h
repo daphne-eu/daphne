@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H
-#define DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H
-
 #pragma once
 
 #include <cuda.h>
@@ -127,6 +124,16 @@ template<typename T>
 void cuda_deleter(T* dev_ptr) { CudaDeleter<T>::del(dev_ptr); }
 
 template<typename T>
-using CudaUniquePtr = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
+using CudaUniquePtr [[maybe_unused]] = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
 
-#endif //DAPHNE_PROTOTYPE_CUDAHOSTUTILS_H
+#ifndef NDEBUG
+template<typename T>
+void debugPrintCUDABuffer(std::string_view title, const T* data, size_t num_items) {
+    std::vector<T> tmp(num_items);
+    CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
+    std::cerr << title << ":\n";
+    for(auto i = 0u; i < num_items; ++i)
+        std::cerr << tmp[i] << " ";
+    std::cerr << "\n";
+}
+#endif
