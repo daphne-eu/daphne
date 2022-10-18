@@ -77,7 +77,7 @@ opt<SelfSchedulingScheme> taskPartitioningScheme(
             clEnumVal(MSTATIC, "Modified version of Static, i.e., instead of n/p, it uses n/(4*p) where n is number of tasks and p is number of threads"),
             clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
             clEnumVal(PSS, "Probabilistic self-scheduling"),
-            clEnumVal(MYTECH, "some meaningful description to the abbrevaition of the new technique")
+            clEnumVal(MYTECH, "some meaningful description to the abbreviation of the new technique")
         )
 ); 
 ```
@@ -93,7 +93,7 @@ In this example, the daphne system will execute `my_script.daphne`  with the fol
 2. the DAPHNE runtime will use MYTECH for task partitioning due to `--MYTECH`
 3. the minimum partition size will be 10 due to `--grain-size 10 ` 
 4. the vectorized engine will use 4 threads due to `--num-threads 4` 
-5. work stealing will be used with a sepereate queue for each CPU due to `--PERCPU`
+5. work stealing will be used with a separate queue for each CPU due to `--PERCPU`
 6. the work stealing victim selection will be sequential prioritized due to `--SEQPRI`
 7. the rows will be evenly distributed before the scheduling technique is applied due to `--pre-partition`
 8. the CPU workers will be pinned to CPU cores due to `--pin-workers`

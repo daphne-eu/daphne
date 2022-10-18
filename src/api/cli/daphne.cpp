@@ -126,7 +126,7 @@ main(int argc, char** argv)
             "num-threads", cat(schedulingOptions),
             desc(
                 "Define the number of the CPU threads used by the vectorized execution engine "
-                "(default is equal to the number of physcial cores on the target node that executes the code)"
+                "(default is equal to the number of physical cores on the target node that executes the code)"
             )
     );
     opt<int> minimumTaskSize(
