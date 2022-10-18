@@ -44,9 +44,9 @@
 
 # read and split data
 XY = readMatrix($XY);
-n0 = as.si64(ncol(XY));
-X = XY[, 0:(n0 - 2)];
-y = XY[, n0 - 1];
+#XY = rand(1000, 20, 0.0, 1.0, 1, -1);
+X = XY[, 0:(ncol(XY) - 2)];
+y = XY[, ncol(XY) - 1];
 
 intercept_status = $icpt; # 0
 regularization = $reg;    # 1e-7
@@ -124,28 +124,27 @@ beta_unscaled = solve (A, b);
 #}
 
 if (verbose) {
-    n64 = as.f64(n);
-    avg_tot = sum(y) / n64;
+    avg_tot = sum(y) / n;
     ss_tot = sum(y ^ 2.0);
-    ss_avg_tot = ss_tot - n64 * avg_tot ^ 2.0;
-    var_tot = ss_avg_tot / (n64 - 1.0);
+    ss_avg_tot = ss_tot - n * avg_tot ^ 2.0;
+    var_tot = ss_avg_tot / (n - 1.0);
     y_residual = y - X @ beta;
-    avg_res = sum(y_residual) / n64;
+    avg_res = sum(y_residual) / n;
     ss_res = sum(y_residual ^ 2.0);
-    ss_avg_res = ss_res - n64 * avg_res ^ 2.0;
+    ss_avg_res = ss_res - n * avg_res ^ 2.0;
 
-    RMSE = sqrt(ss_res / n64);
+    RMSE = sqrt(ss_res / n);
 
     R2 = 1.0 - ss_res / ss_avg_tot;
     #dispersion = ifelse(n > m_ext, ss_res / (n - m_ext), nan);
     #adjusted_R2 = ifelse(n > m_ext, 1 - dispersion / (ss_avg_tot / (n - 1.0)), nan);
     R2_nobias = 1.0 - ss_avg_res / ss_avg_tot;
 
-    deg_freedom = n64 - as.f64(m) - 1.0;
+    deg_freedom = n - m - 1.0;
 
     #if (deg_freedom > 0.0) {
         var_res = ss_avg_res / deg_freedom;
-        adjusted_R2_nobias = 1.0 - var_res / (ss_avg_tot / (n64 - 1.0));
+        adjusted_R2_nobias = 1.0 - var_res / (ss_avg_tot / (n - 1.0));
     #} else {
     #    var_res = nan;
     #    adjusted_R2_nobias = nan;
@@ -154,7 +153,7 @@ if (verbose) {
 
     R2_vs_0 = 1.0 - ss_res / ss_tot;
     #adjusted_R2_vs_0 = ifelse(n > m, 1 - (ss_res / (n - m)) / (ss_tot / n), nan);
-    adjusted_R2_vs_0 = 1.0 - (ss_res / (n64 - as.f64(m))) / (ss_tot / n64);
+    adjusted_R2_vs_0 = 1.0 - (ss_res / (n - m)) / (ss_tot / n);
 
     print("-- Summary:");
     print("---- AVG_Response_Y:       ",0,0); print(avg_tot,1,0);             # Average of the response value Y
