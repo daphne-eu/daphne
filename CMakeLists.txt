@@ -131,25 +131,22 @@ if(USE_DUCKDB)
     ### all header files lie in this directory
     include_directories(${PROJECT_SOURCE_DIR}/thirdparty/sources/duckdb/src/include)
 #    link_directories(${PROJECT_SOURCE_DIR}/thirdparty/installed/lib)
+    if(USE_DUCKSQL)
+        add_definitions(-DUSE_DUCKSQL)
+    endif()
+    if(USE_DUCKAPI)
+        add_definitions(-DUSE_DUCKAPI)
+    else()
+        add_definitions(-DUSE_DUCKSC)
+    endif()
 endif()
 
 
-
-if(USE_DUCKSQL)
-    add_definitions(-DUSE_DUCKSQL)
-endif()
-if(USE_DUCKAPI)
-    add_definitions(-DUSE_DUCKAPI)
-else()
-    add_definitions(-DUSE_DUCKSC)
-endif()
-
-
-# get_directory_property( DirDefs DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
-# foreach( d ${DirDefs} )
-#     message( STATUS "Found Define: " ${d} )
-# endforeach()
-# message( STATUS "DirDefs: " ${DirDefs} )
+get_directory_property( DirDefs DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
+foreach( d ${DirDefs} )
+    message( STATUS "Found Define: " ${d} )
+endforeach()
+message( STATUS "DirDefs: " ${DirDefs} )
 
 
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
