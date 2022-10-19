@@ -20,9 +20,11 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/vectorized/MTWrapper.h>
-#include <runtime/local/vectorized/MTWrapperCUDA.h>
-#include <util/ILibCUDA.h>
 #include <ir/daphneir/Daphne.h>
+
+#ifdef USE_CUDA
+#include <util/ILibCUDA.h>
+#endif
 
 #include <cassert>
 #include <cstddef>

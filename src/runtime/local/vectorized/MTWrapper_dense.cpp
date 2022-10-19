@@ -124,29 +124,5 @@ template<typename VT>
     this->joinAll();
 }
 
-#ifndef USE_CUDA
-template<typename VT>
-[[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeSingleQueue(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
-        const bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
-        VectorSplit *splits, VectorCombine *combines, DCTX(ctx), const bool verbose) {
-    throw std::runtime_error("MTWrapper<DenseMatrix<VT>>::executeSingleQueue(...) only implemented for CUDA");
-}
-
-template<typename VT>
-[[maybe_unused]] void MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(
-        std::vector<std::function<typename MTWrapper<DenseMatrix<VT>>::PipelineFunc>> funcs, DenseMatrix<VT> ***res,
-        const bool* isScalar, Structure **inputs, size_t numInputs, size_t numOutputs, int64_t *outRows, int64_t *outCols,
-        VectorSplit *splits, VectorCombine *combines, DCTX(ctx), bool verbose) {
-    throw std::runtime_error("MTWrapper<DenseMatrix<VT>>::executeQueuePerDeviceType(...) only implemented for CUDA");
-}
-
-template<typename VT>
-void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseMatrix<VT>***& res_cuda_, size_t numOutputs,
-        mlir::daphne::VectorCombine* combines, DCTX(ctx)) {
-    throw std::runtime_error("MTWrapper<DenseMatrix<VT>>::combineOutputs(...) only implemented for CUDA");
-}
-#endif
-
 template class MTWrapper<DenseMatrix<double>>;
 template class MTWrapper<DenseMatrix<float>>;
