@@ -88,7 +88,7 @@ if [[ $? == 0 ]];then
   cd "$daphneBuildDir"
   mkdir -p $PACK_ROOT/conf
   # shellcheck disable=SC2154
-  cp -a bin lib "$projectRoot"/{deploy,doc,scripts} $PACK_ROOT
+  cp -a "$projectRoot"/{bin,deploy,doc,lib,scripts} $PACK_ROOT
   cp "$projectRoot"/UserConfig.json $PACK_ROOT/
   cp "$projectRoot"/{CONTRIBUTING.md,LICENSE.txt,README.md} $PACK_ROOT/
   tar czf $PACK_ROOT.tgz $PACK_ROOT
