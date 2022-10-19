@@ -54,7 +54,7 @@ Before executing Daphne on the distributed runtime, worker nodes must first be u
 
 ```bash
 # IP:PORT is the IP and PORT the worker server will be listening too
-./build/src/runtime/distributed/worker/DistributedWorker IP:PORT 
+./bin/DistributedWorker IP:PORT 
 ```
 
 There are [scripts](/deploy) that automate this task and can help running multiple workers at once 
@@ -96,7 +96,7 @@ TODO: PR #436 provides support for MPI and implements a cli argument for selecti
 
 On one terminal with start up a Distributed Worker:
 ```bash
-$./build/src/runtime/distributed/worker/DistributedWorklocalhost:5000
+$./bin/DistributedWorker localhost:5000
 Started Distributed Worker on `localhost:5000`
 ```
 

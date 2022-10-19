@@ -135,7 +135,7 @@ In the meantime, please always invoke `daphne` from the repository's root direct
 *Example:*
 
 ```
-Failed to create MemoryBuffer for: build/src/runtime/local/kernels/libAllKernels.so
+Failed to create MemoryBuffer for: lib/libAllKernels.so
 Error: No such file or directory
 ```
 *Typically followed by an error or the type `JIT session error: Symbols not found: ...`, which is described above.*
