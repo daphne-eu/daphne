@@ -36,8 +36,8 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
     auto addr2 = "0.0.0.0:50052";    
     // Redirect worker output to null
     int nullFd = open("/dev/null", O_WRONLY);
-    auto pid1 = runProgramInBackground(nullFd, nullFd, "build/src/runtime/distributed/worker/DistributedWorker", "DistributedWorker", addr1);
-    auto pid2 = runProgramInBackground(nullFd, nullFd, "build/src/runtime/distributed/worker/DistributedWorker", "DistributedWorker", addr2);
+    auto pid1 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker", "DistributedWorker", addr1);
+    auto pid2 = runProgramInBackground(nullFd, nullFd, "bin/DistributedWorker", "DistributedWorker", addr2);
     assert(std::getenv("DISTRIBUTED_WORKERS") == nullptr);
     auto distWorkerStr = std::string(addr1) + ',' + addr2;
 

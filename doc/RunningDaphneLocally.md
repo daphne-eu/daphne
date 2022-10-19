@@ -99,7 +99,7 @@ In many (but not yet all) cases, there will be an error message indicating what 
   Parser error: unexpected literal
   ```
   Maybe you tried to pass a string as an argument to a DaphneDSL script and forgot the quotation marks or they got lost.
-  Pass strings as `build/bin/daphne script.daphne foo=\"abc\"` (not `foo=abc` or `foo="abc"`) on a terminal.
+  Pass strings as `bin/daphne script.daphne foo=\"abc\"` (not `foo=abc` or `foo="abc"`) on a terminal.
 
 - **Missing metadata file.**
   ```

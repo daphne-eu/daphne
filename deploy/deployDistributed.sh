@@ -56,8 +56,8 @@ set -e
 function deploy () {
     PATH_TO_BUILD=$1
     ./build.sh --target DistributedWorker
-    echo "Compressing Build folder"
-    tar -czf DaphneWorker.tar.gz ./build
+    echo "Compressing daphne binaries"
+    tar -czf DaphneWorker.tar.gz ./{bin,lib}
 
 
     #******************************************************************************
@@ -87,11 +87,11 @@ function deploy () {
         PORT=${HOSTNAME_PORT[1]}
         if [[ $HOSTNAME != $LAST_MACHINE ]]; then
             echo "Uncompressing daphne to worker " $HOSTNAME
-            ($SSH_COMMAND $USERNAME@$HOSTNAME " tar -xzf DaphneWorker.tar.gz; \
-                                                mkdir -p $PATH_TO_BUILD; \
-                                                mv build $PATH_TO_BUILD; \
-                                                mkdir -p $PATH_TO_BUILD/logs; \
-                                                rm DaphneWorker.tar.gz; \
+            ($SSH_COMMAND $USERNAME@$HOSTNAME " mkdir -p $PATH_TO_BUILD; \
+                                                cd $PATH_TO_BUILD; \
+                                                tar -xzf ~/DaphneWorker.tar.gz; \
+                                                mkdir -p logs; \
+                                                rm ~/DaphneWorker.tar.gz; \
                                                 " ) &
             LAST_MACHINE=$HOSTNAME
         fi
@@ -114,7 +114,7 @@ function StartWorkers {
         $SSH_COMMAND $USERNAME@$HOSTNAME "\
             cd $PATH_TO_BUILD; \
             mkdir -p logs;              \
-            ./build/src/runtime/distributed/worker/DistributedWorker $HOSTNAME:$PORT > logs/$HOSTNAME.$PORT.out & echo \$! > logs/$HOSTNAME.$PORT.PID" &
+            ./bin/DistributedWorker $HOSTNAME:$PORT > logs/$HOSTNAME.$PORT.out & echo \$! > logs/$HOSTNAME.$PORT.PID" &
     done;
 }
 

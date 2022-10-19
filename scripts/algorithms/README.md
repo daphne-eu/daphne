@@ -38,7 +38,7 @@ Note that all of them are toy examples on small datasets (either the one downloa
 ### Connected components
 
 ```bash
-build/bin/daphne scripts/algorithms/components.daph n=100 e=500 C=\"outC.csv\"
+bin/daphne scripts/algorithms/components.daph n=100 e=500 C=\"outC.csv\"
 ```
 *Does not work with vectorized execution (`--vec`) at the moment.*
 <!-- error with --vec
@@ -48,7 +48,7 @@ loc(fused["scripts/algorithms/components.daph":40:17, "scripts/algorithms/compon
 ### Gaussian Nonnegative Matrix Factorization (GNMF)
 
 ```bash
-build/bin/daphne scripts/algorithms/gnmf.daph rank=2 n=100 e=500 W=\"outW.csv\" H=\"outH.csv\"
+bin/daphne scripts/algorithms/gnmf.daph rank=2 n=100 e=500 W=\"outW.csv\" H=\"outH.csv\"
 ```
 *Does not work with vectorized execution (`--vec`) at the moment.*
 <!-- error with --vec:
@@ -61,25 +61,25 @@ Aborted (core dumped)
 ### Linear Regression using the Direct Solve method
 
 ```bash
-build/bin/daphne scripts/algorithms/lmDS.daph XY=\"data/wine.csv\" icpt=0 reg=0.0000001 verbose=true
+bin/daphne scripts/algorithms/lmDS.daph XY=\"data/wine.csv\" icpt=0 reg=0.0000001 verbose=true
 ```
 <!-- successful with --vec -->
 
 ### Multinomial Logistic Regression using Trust Region method
 
 ```bash
-build/bin/daphne scripts/algorithms/multiLogReg.daph XY=\"data/wine.csv\" B=\"output.csv\"
+bin/daphne scripts/algorithms/multiLogReg.daph XY=\"data/wine.csv\" B=\"output.csv\"
 ```
 <!-- successful with --vec -->
 
 ### ~Principal Component Analysis (PCA)~
 
 ```bash
-build/bin/daphne scripts/algorithms/pca.daph X=\"data/wine.csv\" K=2 center=true scale=false
+bin/daphne scripts/algorithms/pca.daph X=\"data/wine.csv\" K=2 center=true scale=false
 ```
 *Does not work yet, because we still lack a kernel for `eigen()`.*
 
 <!--
-build/bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=10 c=5 i=3
-build/bin/daphne test/api/cli/algorithms/lm.daphne r=1000 c=100
+bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=10 c=5 i=3
+bin/daphne test/api/cli/algorithms/lm.daphne r=1000 c=100
 -->
