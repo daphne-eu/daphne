@@ -15,7 +15,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#ifdef USE_DUCKDB
+#ifdef USE_DUCKSC
 
 #include <duckdb.hpp>
 #include <duckdb/common/types/data_chunk.hpp>

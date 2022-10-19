@@ -57,21 +57,8 @@ namespace
                 return success();
             }else if(auto sqlop = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
 
-#ifndef USE_DUCKDB
-                std::stringstream sql_query;
-                sql_query << sqlop.sql().str();
 
-                SQLParser parser;
-                parser.setView(tables);
-                std::string sourceName;
-                llvm::raw_string_ostream ss(sourceName);
-                ss << "[sql query @ " << sqlop->getLoc() << ']';
-                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
-
-                rewriter.replaceOp(op, result_op);
-                return success();
-#else
-
+#ifdef USE_DUCKSQL
                 mlir::Location loc = op->getLoc();
 
                 //TODO Pass error: some operation has an unknown result type, but does not implement the type inference interface: daphne.duckdbsql
@@ -95,6 +82,19 @@ namespace
                 mlir::Value replacementOp = rewriter.create<daphne::DuckDbSqlOp>(op->getLoc(), rt, query, duckTables, duckTableNames);
                 rewriter.replaceOp(op, replacementOp);
                 std::cout << "WOWIE!!!!" << std::endl;
+                return success();
+#else
+                std::stringstream sql_query;
+                sql_query << sqlop.sql().str();
+
+                SQLParser parser;
+                parser.setView(tables);
+                std::string sourceName;
+                llvm::raw_string_ostream ss(sourceName);
+                ss << "[sql query @ " << sqlop->getLoc() << ']';
+                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
+
+                rewriter.replaceOp(op, result_op);
                 return success();
 #endif
             }

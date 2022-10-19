@@ -133,6 +133,25 @@ if(USE_DUCKDB)
 #    link_directories(${PROJECT_SOURCE_DIR}/thirdparty/installed/lib)
 endif()
 
+
+
+if(USE_DUCKSQL)
+    add_definitions(-DUSE_DUCKSQL)
+endif()
+if(USE_DUCKAPI)
+    add_definitions(-DUSE_DUCKAPI)
+else()
+    add_definitions(-DUSE_DUCKSC)
+endif()
+
+
+# get_directory_property( DirDefs DIRECTORY ${CMAKE_SOURCE_DIR} COMPILE_DEFINITIONS )
+# foreach( d ${DirDefs} )
+#     message( STATUS "Found Define: " ${d} )
+# endforeach()
+# message( STATUS "DirDefs: " ${DirDefs} )
+
+
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
 if(USE_ARROW)
     find_package(Arrow CONFIG REQUIRED
