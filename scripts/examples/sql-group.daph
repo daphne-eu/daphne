@@ -29,6 +29,6 @@ print(h);
 registerView("x", f);
 registerView("y", h);
 
-k = sql("SELECT x.a, y.d, count(x.b + 15), avg(y.c) + 2, sum(y.c - 1) FroM x, y Group By x.a, y.d;");
+k = sql("SELECT x.a, y.d, count(x.b + 15), avg(y.c) + 2.0, sum(y.c - 1) FroM x, y Group By x.a, y.d;");
 
 print(k);

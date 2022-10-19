@@ -28,6 +28,6 @@ print(h);
 registerView("x", f);
 registerView("y", h);
 
-k = sql("SELECT x.a, y.c, x.b FroM x, y as k;");
+k = sql("SELECT x.a, k.c, x.b FroM x, y as k;");
 
 print(k);
