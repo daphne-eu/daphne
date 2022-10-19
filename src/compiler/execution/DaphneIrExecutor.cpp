@@ -51,18 +51,22 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations,
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
 
-    void* handle_libCUDAKernels = dlopen("libCUDAKernels.so", RTLD_LAZY);
-    if (!handle_libCUDAKernels)
-        throw std::runtime_error("Cannot load libCUDAKernels: " + std::string(dlerror()));
-    dlerror(); //reset errors
+#ifdef USE_CUDA
+    if(userConfig_.use_cuda) {
+        void *handle_libCUDAKernels = dlopen("libCUDAKernels.so", RTLD_LAZY);
+        if(!handle_libCUDAKernels)
+            throw std::runtime_error("Cannot load libCUDAKernels: " + std::string(dlerror()));
+        dlerror(); //reset errors
 
-    cuda_get_mem_info = reinterpret_cast<fptr_cudaGetMemInfo>(dlsym(handle_libCUDAKernels, "cuda_get_mem_info"));
-    const char* dlsym_error_cstr = dlerror();
-    if (dlsym_error_cstr) {
-        auto dlsym_error = std::string(dlsym_error_cstr);
-        dlclose(handle_libCUDAKernels);
-        throw std::runtime_error("Cannot load symbol cuda_get_mem_info: " + dlsym_error);
+        cuda_get_mem_info = reinterpret_cast<fptr_cudaGetMemInfo>(dlsym(handle_libCUDAKernels, "cuda_get_mem_info"));
+        const char *dlsym_error_cstr = dlerror();
+        if(dlsym_error_cstr) {
+            auto dlsym_error = std::string(dlsym_error_cstr);
+            dlclose(handle_libCUDAKernels);
+            throw std::runtime_error("Cannot load symbol cuda_get_mem_info: " + dlsym_error);
+        }
     }
+#endif
 }
 
 bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
