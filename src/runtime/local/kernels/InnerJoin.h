@@ -15,6 +15,8 @@
 #include <cstddef>
 #include <cstdint>
 
+#ifdef USE_DUCKDB
+
 #ifdef USE_DUCKSC
 
 #include <duckdb.hpp>
@@ -140,15 +142,17 @@ void fillResultFrameColumn(
 }
 
 
-void fillFrame(Frame*& res, duckdb::DataChunk data, size_t row = 0, size_t column = 0){
-    size_t col_max_dc = column + data.size();
-    size_t row_max_dc = data.ColumnCount();
+void fillFrame(Frame*& res, duckdb::DataChunk& data, size_t row = 0, size_t column = 0){
+
+    size_t col_max_dc = data.ColumnCount();
+    size_t row_max_dc = data.size();
     size_t col_max_f = res->getNumCols();
     size_t row_max_f = res->getNumRows();
 
     size_t c_dc = 0;
     size_t c_f = column;
     while(c_dc < col_max_dc && c_f < col_max_f){
+        // std::cout << "\t" << c_dc << "," << c_f << "\t" << col_max_dc << "," << col_max_f << std::endl;
         duckdb::Vector dc_vec = move(data.data[c_dc]);
         duckdb::data_ptr_t dc_raw = dc_vec.GetData();
 
@@ -228,6 +232,7 @@ void innerJoin(
     // context
     DCTX(ctx)
 ) {
+    std::cout << "innerJoin, DuckDB with SC access!" << std::endl;
     //general Data
     const size_t numCols_l = lhs->getNumCols();
     const size_t numCols_r = rhs->getNumCols();
@@ -251,9 +256,10 @@ void innerJoin(
         col_idx_res++;
     }
 
-//start loading data into DuckDB
-    std::vector<duckdb::LogicalType> types_l;
-    std::vector<duckdb::LogicalType> types_r;
+
+// //start loading data into DuckDB
+//     std::vector<duckdb::LogicalType> types_l;
+//     std::vector<duckdb::LogicalType> types_r;
     duckdb::DataChunk dc_l;
     duckdb::DataChunk dc_r;
 
@@ -261,47 +267,68 @@ void innerJoin(
     createDataChunk(dc_r, rhs);
 
 //Data transfer finished
-    //For the InnerJoin we need 5(?) DataChunks. two with the data. two for the Join Condition. one for the results
+    //For the InnerJoin we need 4 to 5 DataChunks. two with the data. two for the Join Condition. one for the results
 
 //Datat prep for join
     duckdb::DataChunk dc_join_l;
     duckdb::DataChunk dc_join_r;
-    std::vector<duckdb::idx_t> join_ons_l;
-    join_ons_l.push_back(on_l);
-    std::vector<duckdb::idx_t> join_ons_r;
-    join_ons_r.push_back(on_r);
 
-    dc_join_l.ReferenceColumns(dc_l, join_ons_l);
-    dc_join_r.ReferenceColumns(dc_r, join_ons_r);
-    duckdb::SelectionVector sel_l;
-    duckdb::SelectionVector sel_r;
+    std::vector<duckdb::LogicalType> types_l_j;
+    std::vector<duckdb::LogicalType> types_r_j;
+    types_l_j.push_back(getDuckType(lhs->getColumnType(on_l)));
+    types_r_j.push_back(getDuckType(rhs->getColumnType(on_r)));
+    dc_join_l.InitializeEmpty(types_l_j);
+    dc_join_r.InitializeEmpty(types_r_j);
+    dc_join_l.data[0].Reference(dc_l.data[on_l]);
+    dc_join_r.data[0].Reference(dc_r.data[on_r]);
+    dc_join_l.SetCardinality(dc_l);
+    dc_join_r.SetCardinality(dc_r);
+
+    duckdb::SelectionVector sel_l(dc_l.size());
+    duckdb::SelectionVector sel_r(dc_r.size());
 
     duckdb::idx_t l_t = 0, r_t = 0;
+
 //join
     std::vector<duckdb::JoinCondition> condition ;
     duckdb::JoinCondition equal;//This innerJoin is always an Equi-Join
     equal.comparison = duckdb::ExpressionType::COMPARE_EQUAL;
     condition.push_back(move(equal));
     size_t match_count = duckdb::NestedLoopJoinInner::Perform(l_t, r_t, dc_join_l, dc_join_r, sel_l, sel_r, condition);
+
 //Result
     dc_l.Slice(sel_l, match_count);
     dc_r.Slice(sel_r, match_count);
     //here we could use another data_chunk for fusing the two results together.
     //but i guess we could forgo this and just create a dataframe that we fill.
     res = DataObjectFactory::create<Frame>(match_count, totalCols, schema, newlabels, false);
+    //WE NEED TO FLATTEN! Otherwise all the data is still there and we can copy the wrong result. (DICTIONARY)
+    dc_l.Flatten();
+    dc_r.Flatten();
 
-    col_idx_res = 0;
-    for(size_t i = 0; i < numCols_l; i++){
-        // res->column[col_idx_res] = (int8_t*) dc_l.data[i];
-        col_idx_res++;
-    }
-    for(size_t i = 0; i < numCols_r; i++){
-        // res->column[col_idx_res] = (int8_t*) dc_r.data[i];
-        col_idx_res++;
-    }
-
+    //Tiled reading. Saves a creation of one DataChunk or modification of one.
+    fillFrame(res, dc_l);
+    fillFrame(res, dc_r, 0, dc_l.ColumnCount());
 }
 
+
+
+#else if USE_DUCKAPI
+
+void innerJoin(
+    // results
+    Frame *& res,
+    // input frames
+    const Frame * lhs, const Frame * rhs,
+    // input column names
+    const char * lhsOn, const char * rhsOn,
+    // context
+    DCTX(ctx)
+) {
+    std::cout << "Not yet implemented!" std::endl;
+}
+
+#endif //DUCKDB Type
 
 
 #else //NO DuckDB
@@ -403,6 +430,8 @@ void innerJoin(
     // context
     DCTX(ctx)
 ) {
+    std::cout << "innerJoin, DAPHNE!" << std::endl;
+
     // Find out the value types of the columns to process.
     ValueTypeCode vtcLhsOn = lhs->getColumnType(lhsOn);
     ValueTypeCode vtcRhsOn = rhs->getColumnType(rhsOn);
