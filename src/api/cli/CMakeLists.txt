@@ -28,9 +28,9 @@ set(LIBS
 # These dependencies are linked at runtime
 set(LIB_DEPS MLIRDaphneOpsIncGen AllKernels)
 
-if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    list(APPEND LIB_DEPS CUDAKernels)
-endif()
+#if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+#    list(APPEND LIB_DEPS CUDAKernels)
+#endif()
 
 if(USE_FPGAOPENCL)
     list(APPEND LIB_DEPS FPGAOPENCLKernels)
