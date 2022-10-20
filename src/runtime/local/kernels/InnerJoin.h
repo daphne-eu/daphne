@@ -17,8 +17,6 @@
 
 #ifdef USE_DUCKDB
 
-#ifdef USE_DUCKSC
-
 #include <duckdb.hpp>
 #include <duckdb/common/types/data_chunk.hpp>
 #include <duckdb/common/types/selection_vector.hpp>
@@ -222,6 +220,8 @@ void fillFrame(Frame*& res, duckdb::DataChunk& data, size_t row = 0, size_t colu
 }
 
 
+#ifdef USE_DUCKSC
+
 void innerJoin(
     // results
     Frame *& res,
@@ -294,17 +294,18 @@ void innerJoin(
     duckdb::JoinCondition equal;//This innerJoin is always an Equi-Join
     equal.comparison = duckdb::ExpressionType::COMPARE_EQUAL;
     condition.push_back(move(equal));
+    //Exectution
     size_t match_count = duckdb::NestedLoopJoinInner::Perform(l_t, r_t, dc_join_l, dc_join_r, sel_l, sel_r, condition);
 
 //Result
     dc_l.Slice(sel_l, match_count);
     dc_r.Slice(sel_r, match_count);
-    //here we could use another data_chunk for fusing the two results together.
-    //but i guess we could forgo this and just create a dataframe that we fill.
-    res = DataObjectFactory::create<Frame>(match_count, totalCols, schema, newlabels, false);
     //WE NEED TO FLATTEN! Otherwise all the data is still there and we can copy the wrong result. (DICTIONARY)
     dc_l.Flatten();
     dc_r.Flatten();
+    //here we could use another data_chunk for fusing the two results together.
+    //but i guess we could forgo this and just create a dataframe that we fill.
+    res = DataObjectFactory::create<Frame>(match_count, totalCols, schema, newlabels, false);
 
     //Tiled reading. Saves a creation of one DataChunk or modification of one.
     fillFrame(res, dc_l);
@@ -314,6 +315,42 @@ void innerJoin(
 
 
 #else if USE_DUCKAPI
+
+
+void fillDuckDbTable(
+    duckdb::Connection &con,
+    const Frame *arg,
+    const char * name
+) {
+    duckdb::DataChunk dc_append;
+    createDataChunk(dc_append, arg);
+    con.Append(con.TableInfo(name), dc_append);
+}
+
+
+void createDuckDbTable(
+    duckdb::Connection &con,
+    const Frame *arg,
+    const char * name
+) {
+    const size_t numCols = arg->getNumCols();
+    std::stringstream s_stream;
+    s_stream << "CREATE TABLE " << name << "(";
+
+    for(size_t i = 0; i < numCols; i++){
+        ValueTypeCode type = arg->getColumnType(i);
+        std::string label = arg->getLabels()[i];
+        duckdb::LogicalType ddb_type = getDuckType(type);
+        s_stream << label << " " << ddb_type.ToString();
+        if(i < numCols - 1){
+            s_stream << ", ";
+        }
+    }
+    s_stream << ")";
+    std::cout << s_stream.str() << std::endl;
+    con.Query(s_stream.str());
+}
+
 
 void innerJoin(
     // results
@@ -326,6 +363,34 @@ void innerJoin(
     DCTX(ctx)
 ) {
     std::cout << "Not yet implemented!" std::endl;
+
+    std::string t_lhs_name = "lhs", t_rhs_name = "rhs";
+    duckdb::DuckDB db(nullptr);
+    duckdb::Connection con(db);
+
+    createDuckDbTable(con, lhs, t_lhs_name);
+    fillDuckDbTable(con, lhs, t_lhs_name);
+    duckdb::shared_ptr<duckdb::Relation> t_lhs = con.Table(t_lhs_name);
+
+    createDuckDbTable(con, rhs, t_rhs_name);
+    fillDuckDbTable(con, rhs, t_rhs_name);
+    duckdb::shared_ptr<duckdb::Relation> t_rhs = con.Table(t_rhs_name);
+
+    std::string condition = lhsOn + " = " + rhsOn;
+
+    duckdb::shared_ptr<duckdb::Relation> join = t_lhs->Join(t_rhs, condition);
+    duckdb::unique_ptr<duckdb::QueryResult> result = join->Execute();
+
+    //MERGING AND LOADING IN. IT WOULD BE POSSIBLE TO TILE IT USING the While LOOP
+    duckdb::unique_ptr<duckdb::DataChunk> mainChunk = result->Fetch();
+    duckdb::unique_ptr<duckdb::DataChunk> nextChunk = result->Fetch();
+
+    while(nextChunk != nullptr){
+        mainChunk->Append((const_cast<duckdb::DataChunk&>(*nextChunk)), true);
+        nextChunk = result->Fetch();
+    }
+
+    fillFrame(res, mainChunk);
 }
 
 #endif //DUCKDB Type
