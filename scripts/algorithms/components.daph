@@ -30,7 +30,7 @@ maxi = 0; # unlimited
 verbose = true;
 
 # read sparse graph 
-# G = readMatrix($G); #TODO Matrix Market
+# G = readMatrix($G);
 n = $n;
 e = $e;
 UT = upperTri(rand(n, n, 1.0, 1.0, 2.0*e/n^2.0, -1), false, false);

@@ -27,6 +27,7 @@ limitations under the License.
 - [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
 - [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
 - [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)
+- [A Few Early Example Algorithms in DaphneDSL](/scripts/algorithms/)
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
 
 ## Developer Documentation
