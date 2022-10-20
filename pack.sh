@@ -19,8 +19,8 @@ set -e
 
 function exit_with_usage {
   cat << EOF
-usage: $0 --version VERSION
-
+usage: pack.sh --version VERSION --feature FEATURE
+--feature FEATURE......a feature flag like --cuda, --arrow, etc (omit or "none" for plain Daphne)
 EOF
   exit 1
 }
@@ -29,8 +29,8 @@ if [ $# -eq 0 ]; then
   exit_with_usage
 fi
 
-DAPHNE_FEATURES=("--arrow" "--cuda")
 DAPHNE_VERSION=-1
+FEATURE=
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -41,6 +41,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --version)
             DAPHNE_VERSION=$1
+            shift
+            ;;
+        --feature)
+            # shellcheck disable=SC2001
+            FEATURE=$(echo "$1" | sed 's/ *$//g')
             shift
             ;;
         *)
@@ -59,9 +64,43 @@ if [[ "$DAPHNE_VERSION" == "-1" ]]; then
   exit_with_usage
 fi
 
-export PACK_ROOT=daphne-$DAPHNE_VERSION-bin
+# shellcheck disable=SC2254
+case "$FEATURE" in
+  arrow) ;&
+  cuda)  ;&
+  debug) ;&
+  fpgaopencl)
+    echo "Using feature $FEATURE"
+    FEATURE="--$FEATURE"
+    ;;
+  (none) ;&
+  ("")
+    echo "Building plain Daphne"
+    FEATURE=
+    ;;
+  (*)
+    echo "Warning: Unsupported feature $FEATURE ignored!"
+    sleep 3
+    FEATURE=
+    ;;
+esac
 
-source build.sh ${DAPHNE_FEATURES[@]} --target all
+export PACK_ROOT=daphne$FEATURE-$DAPHNE_VERSION-bin
+#echo "You have 10 seconds to abort (press Ctrl-c)"
+#sleep 10
+echo "Directories bin, build and lib will be removed before compiling."
+read -p "Are you sure? [y/n] " -n 1 -r
+echo ""
+if [[ ! $REPLY =~ ^[Yy]$ ]]
+then
+    echo -e "\nDid not receive a \"y\". \tAborting.\n"
+    git checkout -
+    exit 1
+fi
+rm -rf bin build lib
+
+# shellcheck disable=SC2086
+source build.sh $FEATURE --target all
 
 # shellcheck disable=SC2154
 if [ -d "$daphneBuildDir"/venv ]; then
@@ -81,17 +120,19 @@ fi
 
 # shellcheck disable=SC2154
 cd "$projectRoot"
-source test.sh ${DAPHNE_FEATURES[@]}
+
+# shellcheck disable=SC2086
+source test.sh $FEATURE
 
 # shellcheck disable=SC2181
 if [[ $? == 0 ]];then
   cd "$daphneBuildDir"
-  mkdir -p $PACK_ROOT/conf
+  mkdir -p "$PACK_ROOT/conf"
   # shellcheck disable=SC2154
-  cp -a "$projectRoot"/{bin,deploy,doc,lib,scripts} $PACK_ROOT
-  cp "$projectRoot"/UserConfig.json $PACK_ROOT/
-  cp "$projectRoot"/{CONTRIBUTING.md,LICENSE.txt,README.md} $PACK_ROOT/
-  tar czf $PACK_ROOT.tgz $PACK_ROOT
+  cp -a "$projectRoot"/{bin,deploy,doc,lib,scripts} "$PACK_ROOT"
+  cp "$projectRoot"/UserConfig.json "$PACK_ROOT"
+  cp "$projectRoot"/{CONTRIBUTING.md,LICENSE.txt,README.md} "$PACK_ROOT"
+  tar czf "$PACK_ROOT".tgz "$PACK_ROOT"
   cd - > /dev/null
 else
   echo "test.sh did not succeed - aborting $0"

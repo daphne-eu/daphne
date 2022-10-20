@@ -19,13 +19,14 @@ set -e
 
 function exit_with_usage {
   cat << EOF
-usage: $0 --version VERSION --githash GIT_HASH [ --gpgkey GPG_KEY ] [ --artifact PATH_TO_FILE ]
+usage: $0 --version VERSION --githash GIT_HASH [ --gpgkey GPG_KEY ] [ --artifact PATH_TO_FILE ] [ --feature FEATURE ]
 
 --gpgkey: The key ID to use for signing. If supplied, an attempt to sign the artifact will be made.
           Consider setting GNUPGHOME to point to your GPG keyring.
 
 --artifact: If supplied, building the release artifact will be skipped and the script will only perform
             checksumming and optional signing.
+--feature FEATURE......a feature flag like --cuda, --arrow, etc (omit or "none" for plain Daphne)
 EOF
   exit 1
 }
@@ -47,7 +48,7 @@ ARTIFACT_PATH=""
 DAPHNE_REPO_URL="git@github.com:corepointer/daphne.git"
 #real URL:
 #DAPHNE_REPO_URL="git@github.com:daphne-eu/daphne.git"
-
+FEATURE="--feature "
 while [[ $# -gt 0 ]]; do
     key=$1
     shift
@@ -57,6 +58,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --version)
             DAPHNE_VERSION=$1
+            shift
+            ;;
+        --feature)
+            FEATURE=$FEATURE$1
             shift
             ;;
         --githash)
@@ -74,7 +79,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-dryrun)
             echo "no-dryrun selected! Release will be tagged on Github($DAPHNE_REPO_URL)"
-            echo "You have 10 seconds to abort"
+            echo "You have 10 seconds to abort (press Ctrl-c)"
             sleep 10
             DRY_RUN=0
           ;;
@@ -95,18 +100,27 @@ if [ $BUILD -eq 1 ]; then
     exit_with_usage
   fi
 
+  if [[ "$FEATURE" == "--feature " ]]; then
+#    echo "Clearing FEATURE= variable"
+    FEATURE=
+  fi
+
   echo "Building Daphne $DAPHNE_VERSION release from git commit $GIT_HASH"
 
   # set the requested commit to build Daphne
   git checkout "$GIT_HASH"
-  source pack.sh --version "$DAPHNE_VERSION"
+  # shellcheck disable=SC2086
+  source pack.sh --version "$DAPHNE_VERSION" $FEATURE
   # return to the previous branch
   git checkout -
 
-  cd "$daphneBuildDir"
-  echo $GIT_HASH > $PACK_ROOT.githash
-  sha512sum "$PACK_ROOT".tgz > "$PACK_ROOT.tgz.sha512sum"
-  sha512sum -c "$PACK_ROOT".tgz.sha512sum
+  mkdir -p artifacts
+  cd  artifacts
+  echo "$GIT_HASH" > "$PACK_ROOT.githash"
+  # shellcheck disable=SC2154
+  mv "$daphneBuildDir/$PACK_ROOT.tgz" .
+  sha512sum "$PACK_ROOT.tgz" > "$PACK_ROOT.tgz.sha512sum"
+  sha512sum -c "$PACK_ROOT.tgz.sha512sum"
   echo
   cd - > /dev/null
 
@@ -135,12 +149,13 @@ else
     gpg --detach-sign --armor --default-key "$GPG_KEY" "$ARTIFACT_PATH"
   else
     echo "No GPG Key given - don't forget to sign the artifact manually"
+    GPG_KEY="<GPG_KEY>"
   fi
 
   echo "Now go to your git working copy of Daphne source and issue these commands (GPG key needed) before completing"
   echo "the release in the Github web interface."
   echo
-  echo "git tag -a -u <GPG_KEY> <DAPHNE_VERSION> <GIT_HASH>"
+  echo "git tag -a -u $GPG_KEY $DAPHNE_VERSION $GIT_HASH"
   echo "git push $DAPHNE_REPO_URL --tags"
 fi
 
