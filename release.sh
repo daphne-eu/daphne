@@ -43,11 +43,8 @@ GIT_HASH=0
 BUILD=1
 GPG_KEY=0
 ARTIFACT_PATH=""
+DAPHNE_REPO_URL="git@github.com:daphne-eu/daphne.git"
 
-#testing URL:
-DAPHNE_REPO_URL="git@github.com:corepointer/daphne.git"
-#real URL:
-#DAPHNE_REPO_URL="git@github.com:daphne-eu/daphne.git"
 FEATURE="--feature "
 while [[ $# -gt 0 ]]; do
     key=$1
