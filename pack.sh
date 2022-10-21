@@ -86,8 +86,7 @@ case "$FEATURE" in
 esac
 
 export PACK_ROOT=daphne$FEATURE-$DAPHNE_VERSION-bin
-#echo "You have 10 seconds to abort (press Ctrl-c)"
-#sleep 10
+
 echo "Directories bin, build and lib will be removed before compiling."
 read -p "Are you sure? [y/n] " -n 1 -r
 echo ""
@@ -127,11 +126,11 @@ source test.sh $FEATURE
 # shellcheck disable=SC2181
 if [[ $? == 0 ]];then
   cd "$daphneBuildDir"
-  mkdir -p "$PACK_ROOT/conf"
+  mkdir -p "$PACK_ROOT/bin"
   # shellcheck disable=SC2154
-  cp -a "$projectRoot"/{bin,deploy,doc,lib,scripts} "$PACK_ROOT"
-  cp "$projectRoot"/UserConfig.json "$PACK_ROOT"
-  cp "$projectRoot"/{CONTRIBUTING.md,LICENSE.txt,README.md} "$PACK_ROOT"
+  cp -a "$projectRoot"/{deploy,doc,lib,scripts} "$PACK_ROOT"
+  cp -a "$projectRoot"/bin/{daphne,DistributedWorker} "$PACK_ROOT/bin"
+  cp "$projectRoot"/{CITATION,CONTRIBUTING.md,KEYS.txt,LICENSE.txt,README.md,UserConfig.json} "$PACK_ROOT"
   tar czf "$PACK_ROOT".tgz "$PACK_ROOT"
   cd - > /dev/null
 else

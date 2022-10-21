@@ -91,14 +91,13 @@ if [ -n "$unknown_options" ]; then
   exit_with_usage
 fi
 
-if [ $BUILD -eq 1 ]; then
-  if [[ "$DAPHNE_VERSION" == "-1" ]] || [[ $GIT_HASH == "0" ]]; then
-    echo Error: version or hash not supplied
-    exit_with_usage
-  fi
+if [[ "$DAPHNE_VERSION" == "-1" ]] || [[ $GIT_HASH == "0" ]]; then
+  echo Error: version and git hash have to be specified
+  exit_with_usage
+fi
 
+if [ $BUILD -eq 1 ]; then
   if [[ "$FEATURE" == "--feature " ]]; then
-#    echo "Clearing FEATURE= variable"
     FEATURE=
   fi
 

@@ -20,13 +20,13 @@ that the one key owner trusts the other.
 4) **Signing and checksumming:**
    * ``` bash
      cd artifacts
-     ~/path/to/daphne/release.sh --artifact ./daphne-0.1-bin.tgz --gpgkey <GPG_KEY_ID> --githash `cat daphne-0.1-bin.githash` 
+     ~/path/to/daphne/release.sh --version 0.1 --artifact ./daphne-0.1-bin.tgz --gpgkey <GPG_KEY_ID> --githash `cat daphne-0.1-bin.githash` 
      ```
    * repeat for other feature artifacts
 5) **Tag & push** The previous signing command will provide you with two more git commands to tag the commit that the artfiacts were made from and to push these tags to github. 
     This should look something like this: 
    ``` bash
-   git tag -a -u B28F8F4D -1 312b2b50b4e60b3c5157c3365ec38383d35e28d8
+   git tag -a -u B28F8F4D 0.1 312b2b50b4e60b3c5157c3365ec38383d35e28d8
    git push git@github.com:corepointer/daphne.git --tags
    ```
 6) **Upload & release**: 
