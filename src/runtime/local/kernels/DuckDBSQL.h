@@ -53,6 +53,8 @@ void fillDuckDbTable(
 ) {
     const size_t numCols = arg->getNumCols();
     const size_t numRows = arg->getNumRows();
+    std::cout << "Append to: " << name << std::endl;
+    
     duckdb::Appender appender(con, name);
     for(size_t row = 0; row < numRows; row++){
 
@@ -146,8 +148,8 @@ void createDuckDbTable(
         }
     }
     s_stream << ")";
-    con.Query(s_stream.str());
     std::cout << s_stream.str() << std::endl;
+    con.Query(s_stream.str());
 }
 
 

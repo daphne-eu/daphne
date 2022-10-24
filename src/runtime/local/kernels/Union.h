@@ -261,19 +261,20 @@ void Union(
     // context
     DCTX(ctx)
 ) {
+    std::cout << "DuckDB Union" << std::endl;
 //OPEN CONNECTION AND
     duckdb::DuckDB db(nullptr);
     duckdb::Connection con(db);
     duckdb::shared_ptr<duckdb::Relation> tables[numTables];
     duckdb::shared_ptr<duckdb::Relation> unionR;
-    std::cout<<std::endl << query << std::endl;
 
 //CHECKING FRAMES
     checkFrames(frames, numTables);
 
 //LOAD DATA INTO DUCKDB
     for(size_t i = 0; i < numTables; i++){
-        std::string table_name = "table_" + (int8_t)('a' + i);
+        std::string table_name = "table_" +(int8_t)('a' + i/26)+"_"(int8_t)('a' + (i%26));
+        std::cout << table_name << std::endl;
         createDuckDbTable(con, frames[i], table_name);
         fillDuckDbTable(con, frames[i], table_name);
         tables[i] = con.Table(table_name);

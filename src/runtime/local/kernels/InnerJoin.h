@@ -17,14 +17,19 @@
 
 #ifdef USE_DUCKDB
 
-#ifdef USE_DUCKSC
-
 #include <duckdb.hpp>
+#include <duckdb/main/appender.hpp>
+
 #include <duckdb/common/types/data_chunk.hpp>
 #include <duckdb/common/types/selection_vector.hpp>
 #include <duckdb/common/constants.hpp>
 #include <duckdb/planner/joinside.hpp>
 #include <duckdb/execution/nested_loop_join.hpp>
+
+
+#include <iterator>
+#include <algorithm>
+
 
 duckdb::LogicalType getDuckType(ValueTypeCode type){
     switch(type){
@@ -94,7 +99,6 @@ ValueTypeCode getDaphneType(duckdb::PhysicalType phys){
     }
 }
 
-
 void createDataChunk(
     duckdb::DataChunk &dc,
     const Frame* arg
@@ -114,7 +118,6 @@ void createDataChunk(
     }
     dc.SetCardinality(numRows);
 }
-
 
 template<typename VTCol1, typename VTCol2>
 void fillResultFrameColumn(
@@ -141,8 +144,12 @@ void fillResultFrameColumn(
     }
 }
 
-
-void fillFrame(Frame*& res, duckdb::DataChunk& data, size_t row = 0, size_t column = 0){
+void fillFrame(
+    Frame*& res,
+    duckdb::DataChunk& data,
+    size_t row = 0,
+    size_t column = 0
+){
 
     size_t col_max_dc = data.ColumnCount();
     size_t row_max_dc = data.size();
@@ -221,6 +228,7 @@ void fillFrame(Frame*& res, duckdb::DataChunk& data, size_t row = 0, size_t colu
     }
 }
 
+#ifdef USE_DUCKSC
 
 void innerJoin(
     // results
@@ -315,6 +323,58 @@ void innerJoin(
 
 #else if USE_DUCKAPI
 
+//a function to fix column nameing for duckdb. (A . in the table namen leads to an error)
+void convert(std::string& x){
+    auto it = std::find(x.begin(), x.end(), '.');
+    if(it < x.end()){
+        size_t pos = it - x.begin();
+        x.replace(pos, 1, "_");
+    }
+}
+
+void fillDuckDbTable_i(
+    duckdb::Connection &con,
+    const Frame *arg,
+    const char *name
+) {
+
+    duckdb::DataChunk dc_append;
+    createDataChunk(dc_append, arg);
+//Doesn't seem to find the tableInfo for what ever reason.... SOO we try the Appender again.
+    // duckdb::unique_ptr<duckdb::TableDescription> t_info = con.TableInfo(name);
+    // std::cout << t_info->table  << std::endl;
+    // con.Append(*t_info, dc_append);
+    std::cout << "Append to: " << name << std::endl;
+    duckdb::Appender appender(con, name);
+    appender.AppendDataChunk(dc_append);
+}
+
+
+void createDuckDbTable_i(
+    duckdb::Connection &con,
+    const Frame *arg,
+    const char *name
+) {
+    const size_t numCols = arg->getNumCols();
+    std::stringstream s_stream;
+    s_stream << "CREATE TABLE " << name << "(";
+
+    for(size_t i = 0; i < numCols; i++){
+        ValueTypeCode type = arg->getColumnType(i);
+        std::stringstream l_stream;
+        std::string label = arg->getLabels()[i];
+        convert(label);
+        duckdb::LogicalType ddb_type = getDuckType(type);
+        s_stream << label << " " << ddb_type.ToString();
+        if(i < numCols - 1){
+            s_stream << ", ";
+        }
+    }
+    s_stream << ")";
+    std::cout << s_stream.str() << std::endl;
+    con.Query(s_stream.str());
+}
+
 void innerJoin(
     // results
     Frame *& res,
@@ -325,7 +385,109 @@ void innerJoin(
     // context
     DCTX(ctx)
 ) {
-    std::cout << "Not yet implemented!" std::endl;
+    std::cout << "innerJoin, DuckDB with API access!" << std::endl;
+    duckdb::DuckDB db(nullptr);
+    duckdb::Connection con(db);
+    //creating variables for the Join.
+    duckdb::shared_ptr<duckdb::Relation> t_lhs, t_rhs;
+    duckdb::shared_ptr<duckdb::Relation> join;
+    std::string t_lhs_name = "table_a", t_rhs_name = "table_b";
+
+//filling the Tables for the Join
+    createDuckDbTable_i(con, lhs, t_lhs_name.c_str());
+    fillDuckDbTable_i(con, lhs, t_lhs_name.c_str());
+    t_lhs = con.Table(t_lhs_name.c_str());
+
+
+    createDuckDbTable_i(con, rhs, t_rhs_name.c_str());
+    fillDuckDbTable_i(con, rhs, t_rhs_name.c_str());
+    t_rhs = con.Table(t_rhs_name.c_str());
+
+
+
+//Execution
+    std::stringstream cond;
+    std::string l_con(lhsOn);
+    std::string r_con(rhsOn);
+    convert(l_con);
+    convert(r_con);
+    cond << l_con << " = " << r_con;
+    // std::string condition = lhsOn + " = " + rhsOn;
+    std::string condition = cond.str();
+    join = t_lhs->Join(t_rhs, condition);
+    duckdb::unique_ptr<duckdb::QueryResult> result = join->Execute();
+
+//Check Errors
+if(result->HasError()){
+    std::stringstream error;
+    error << "InnerJoin(...) API: DuckDB Join execution unsuccessful: ";
+    error << "\nDuckDB reports: " << result->GetError();
+    throw std::runtime_error(error.str());
+}
+//Create Result Frame
+    std::vector<duckdb::LogicalType> ret_types = result->types;
+    std::vector<std::string> ret_names = result->names;
+
+    const size_t totalCols = ret_types.size() == ret_names.size()? ret_types.size(): 0;
+    size_t totalRows = 0;
+    ValueTypeCode schema[totalCols];
+    std::string newlabels[totalCols];
+
+    const size_t numCols_l = lhs->getNumCols();
+    const size_t numCols_r = rhs->getNumCols();
+
+    int64_t col_idx_res = 0;
+    for(size_t col_idx_l = 0; col_idx_l < numCols_l; col_idx_l++){
+        schema[col_idx_res] = lhs->getColumnType(col_idx_l);
+        newlabels[col_idx_res] = lhs->getLabels()[col_idx_l];
+        col_idx_res++;
+    }
+    for(size_t col_idx_r = 0; col_idx_r < numCols_r; col_idx_r++){
+        schema[col_idx_res] = rhs->getColumnType(col_idx_r);
+        newlabels[col_idx_res] = rhs->getLabels()[col_idx_r];
+        col_idx_res++;
+    }
+
+
+//Retrieve Result (2 Ways. VECTORISED and STANDARD(?) (Names need Work))
+#ifdef DUCKVECTORISED
+    //QueryResult doesn't has a Possibility to get the row count.
+    //In this case: We have to Fetch all the DataChunks and add up there lenght.
+    //Then we store one DataChunk at a time into a Frame.
+    std::vector<duckdb::unique_ptr<duckdb::DataChunk>>> chunks;
+    duckdb::unique_ptr<duckdb::DataChunk> nextChunk;
+    while(nextChunk = result->Fetch() != nullptr){
+        chunks.push_back(nextChunk);
+        totalRows += nextChunk->size;
+    }
+    size_t pos = 0;
+    for(unique_ptr<duckdb::DataChunk> chunk: chunks){
+        fillFrame(res, *chunk, pos);
+        pos += chunk->size();
+    }
+
+#else //DEFAULTMODE
+    //In this case we Fetch all the DataChunks and fit append them together into
+    //one DataChunk. This datachunk has a row count and we can load this data into
+    //the Frame!
+    std::cout << "1" << std::endl;
+    duckdb::unique_ptr<duckdb::DataChunk> mainChunk = result->Fetch();
+    duckdb::unique_ptr<duckdb::DataChunk> nextChunk = result->Fetch();
+    std::cout << "2" << std::endl;
+
+    while(nextChunk != nullptr){
+        mainChunk->Append((const_cast<duckdb::DataChunk&>(*nextChunk)), true);
+        nextChunk = result->Fetch();
+    }
+    std::cout << "3" << std::endl;
+    totalRows = mainChunk->size();
+    std::cout << "4" << std::endl;
+    res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
+
+    fillFrame(res, *mainChunk);
+#endif//DUCKTILED;
+
+
 }
 
 #endif //DUCKDB Type
