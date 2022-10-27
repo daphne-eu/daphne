@@ -1024,7 +1024,7 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(
             loc, lhs, rhs
         ));
-    if(op == "<>")
+    if(op == "<>" or op == "!=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(
             loc, lhs, rhs
         ));
