@@ -106,6 +106,12 @@ In many (but not yet all) cases, there will be an error message indicating what 
   Parser error: Could not open file 'data/foo.csv.meta' for reading meta data.
   ```
   Maybe you try to read a dataset called `data/foo.csv`, but the required [metadata file](/doc/FileMetaDataFormat.md) `data/foo.csv.meta` does not exist.
+  
+- **Using the old file metadata format.**
+  ```
+  Parser error: [json.exception.parse_error.101] parse error at line 1, column 7: syntax error while parsing value - unexpected ','; expected end of input
+  ```
+  Maybe you try to read a dataset with `readMatrix()` or `readFrame()` in DaphneDSL, but the file metadata file does not have the right structure. Note that we changed the initial one-line text-based format to a more human-readable [JSON-based format](/doc/FileMetaDataFormat.md).
 
 ### `JIT session error: Symbols not found: ...`
 
