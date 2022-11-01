@@ -16,7 +16,7 @@
 #define COORDINATOR 0
 
 enum TypesOfMessages{
-    BROADCAST=0, DATASIZE, DATA, DATAACK, MLIRSIZE, MLIR, INPUTKEYS, OUTPUT, OUTPUTKEY,  DETACH
+    BROADCAST=0, DATASIZE, DATA, DATAACK, MLIRSIZE, MLIR, INPUTKEYS, OUTPUT, OUTPUTKEY,  DETACH, OBJECTIDENTIFIERSIZE, OBJECTIDENTIFIER
 };
 enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
@@ -68,7 +68,17 @@ class MPIHelper{
             free(dataAcknowledgement);
             return info;  
         }
-       
+        static void sendObjectIdentifier(std::string identifier, int rank)
+        {
+            int len = identifier.length();
+            len++;
+            MPI_Send(&len,1, MPI_INT, rank, OBJECTIDENTIFIERSIZE, MPI_COMM_WORLD);
+            char message[len];
+            std::strcpy(message, identifier.c_str());
+            message[len-1]='\0'; 
+            MPI_Send(message,len, MPI_CHAR, rank, OBJECTIDENTIFIER, MPI_COMM_WORLD);
+
+        }
         static void sendData(size_t messageLength, void * data){
             int worldSize=getCommSize();
             int  message= messageLength;

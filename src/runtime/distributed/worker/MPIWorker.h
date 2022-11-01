@@ -69,8 +69,22 @@ class MPIWorker: WorkerImpl {
         int id;
         int myState=LISTENING;
         int temp=0;
-        std::vector<StoredInfo> inputs;
-        
+        std::vector<StoredInfo> allReceivedInputs;
+        std::vector<std::string> currentPipelineIdentifiers;
+        void getCurrentPipelineInputs(std::vector<StoredInfo> *currentPipelineInputs, std::vector<std::string> currentPipelineIdentifiers)
+        {
+            for(size_t i=0;i<currentPipelineIdentifiers.size();i++)
+            {
+                for(size_t j=0;j< allReceivedInputs.size();j++)
+                {
+                    if(currentPipelineIdentifiers.at(i)==allReceivedInputs.at(j).identifier)
+                    {
+                        currentPipelineInputs->push_back(allReceivedInputs.at(j));
+                        break;
+                    }
+                }
+            }
+        }
         StoredInfo updateInputs (distributed::Data * message, void * data, int messageLength)
         {
             StoredInfo info;
@@ -87,7 +101,9 @@ class MPIWorker: WorkerImpl {
                 double val= message->value().f64();
                 info= this->doStore(&val);
             }
-            inputs.push_back(info);
+            allReceivedInputs.push_back(info);
+            std::cout<<"input object has been received and identifier "<<info.identifier<<" has been added at " << id<<std::endl;
+            currentPipelineIdentifiers.push_back(info.identifier);
            // std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
             return info; 
         }
@@ -156,6 +172,8 @@ class MPIWorker: WorkerImpl {
             size_t index=0, rows=0, cols=0;
             StoredInfo info;
             std::vector<StoredInfo> outputs;
+            std::vector<StoredInfo> currentPipelineInputs;
+            std::string identifier;
             WorkerImpl::Status exStatus(true);
             switch(tag){
                 case BROADCAST:
@@ -166,7 +184,14 @@ class MPIWorker: WorkerImpl {
                     free(data);
                     sendDataACK(info);
                 break;
-
+                case OBJECTIDENTIFIERSIZE:
+                    std::cout<<"Identifier Message "<<std::endl;
+                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, OBJECTIDENTIFIERSIZE);
+                    MPI_Recv(data, messageLength, MPI_CHAR, COORDINATOR, OBJECTIDENTIFIER,MPI_COMM_WORLD, &messageStatus);
+                    identifier = std::string((const char *) data);
+                    std::cout<<"identifier "<<identifier <<" received at "<< id<<std::endl;
+                    currentPipelineIdentifiers.push_back(identifier);
+                break;
                 case DATASIZE:
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, DATASIZE);
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA,MPI_COMM_WORLD, &messageStatus);
@@ -183,12 +208,14 @@ class MPIWorker: WorkerImpl {
                     MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
                     protoMsgTask.ParseFromArray(data, messageLength);
                     //printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
-                    exStatus=this->doCompute(&outputs, inputs, protoMsgTask.mlir_code());
+                    getCurrentPipelineInputs(&currentPipelineInputs, currentPipelineIdentifiers);
+                    exStatus=this->doCompute(&outputs,currentPipelineInputs , protoMsgTask.mlir_code());
                     //std::cout<<printData<<std::endl;
                     if(!(exStatus.ok()))
                         std::cout<<"error!";    
                     // std::cout<<"computation is done"<<std::endl;
                     sendResult(outputs);
+                    currentPipelineIdentifiers.clear();
                     free(data);
                 break;
 

@@ -99,6 +99,9 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                 //std::cout<<"data is already placed at rank "<<rank<<std::endl;
+                auto data =dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
+                std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                 continue;
             }
             targetGroup.push_back(rank+1);  

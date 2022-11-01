@@ -108,7 +108,10 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                // std::cout<<"worker already has the data"<<std::endl;
-                continue;
+               auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+               MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
+               std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
+               continue;
             }
             MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
             MPIHelper::distributeData(messageLengths[rank], dataToSend,rank+1);
