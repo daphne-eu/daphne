@@ -1020,6 +1020,31 @@
     },
     {
         "kernelTemplate": {
+            "header": "Union.h",
+            "opName": "Union",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": [
+                {
+                    "type": "Frame *&",
+                    "name": "res"
+                },
+                {
+                    "type": "Frame **",
+                    "name": "frames"
+                },
+                {
+                    "type": "size_t",
+                    "name": "numTables"
+                }
+            ]
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "DuckDBSQL.h",
             "opName": "duckDbSql",
             "returnType": "void",

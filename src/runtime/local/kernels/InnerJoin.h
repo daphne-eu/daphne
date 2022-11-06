@@ -26,207 +26,7 @@
 #include <duckdb/planner/joinside.hpp>
 #include <duckdb/execution/nested_loop_join.hpp>
 
-
-#include <iterator>
-#include <algorithm>
-
-
-duckdb::LogicalType getDuckType(ValueTypeCode type){
-    switch(type){
-        case ValueTypeCode::SI8:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::TINYINT);
-        case ValueTypeCode::SI32:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::INTEGER);
-        case ValueTypeCode::SI64:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::BIGINT);
-        case ValueTypeCode::UI8:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::UTINYINT);
-        case ValueTypeCode::UI32:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::UINTEGER);
-        case ValueTypeCode::UI64:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::UBIGINT);
-        case ValueTypeCode::F32:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::FLOAT);
-        case ValueTypeCode::F64:
-            return duckdb::LogicalType(duckdb::LogicalTypeId::DOUBLE);
-        default:
-            std::stringstream error;
-            error << "innerJoin.h with DuckDB support doesn't "
-                << "support the given ValueType belonging to cpp type name: "
-                << ValueTypeUtils::cppNameForCode(type)
-                << ". Error in Function getDuckType()";
-            throw std::runtime_error(error.str());
-    }
-}
-
-ValueTypeCode getDaphneType(duckdb::PhysicalType phys){
-    std::stringstream error("");
-    switch(phys){
-        case duckdb::PhysicalType::BOOL:
-            error << "duckDbSql(...) does not yet support bool Types.\n";
-            throw std::runtime_error(error.str());
-            break;
-        case duckdb::PhysicalType::INT8:
-            return ValueTypeUtils::codeFor<int8_t>;
-        case duckdb::PhysicalType::INT16: //todo
-            return ValueTypeUtils::codeFor<int32_t>;
-        case duckdb::PhysicalType::INT32:
-            return ValueTypeUtils::codeFor<int32_t>;
-        case duckdb::PhysicalType::INT64:
-            return ValueTypeUtils::codeFor<int64_t>;
-        case duckdb::PhysicalType::INT128:  //todo
-            return ValueTypeUtils::codeFor<int64_t>;
-        case duckdb::PhysicalType::UINT8:
-            return ValueTypeUtils::codeFor<uint8_t>;
-        case duckdb::PhysicalType::UINT16:
-            return ValueTypeUtils::codeFor<uint32_t>;
-        case duckdb::PhysicalType::UINT32:
-            return ValueTypeUtils::codeFor<uint32_t>;
-        case duckdb::PhysicalType::UINT64:
-            return ValueTypeUtils::codeFor<uint64_t>;
-        case duckdb::PhysicalType::FLOAT:
-            return ValueTypeUtils::codeFor<float>;
-        case duckdb::PhysicalType::DOUBLE:
-            return ValueTypeUtils::codeFor<double>;
-        case duckdb::PhysicalType::VARCHAR:
-            error << "innerJoin(...) does not yet support String Types.\n";
-            throw std::runtime_error(error.str());
-        default:
-            error << "innerJoin(...). The physical return type from the "
-                << " DuckDB Query is not supported. The Type is: ";
-            error << duckdb::TypeIdToString(phys) << "\n";
-            throw std::runtime_error(error.str());
-    }
-}
-
-void createDataChunk(
-    duckdb::DataChunk &dc,
-    const Frame* arg
-){
-    const size_t numCols = arg->getNumCols();
-    const size_t numRows = arg->getNumRows();
-
-    std::vector<duckdb::LogicalType> types_ddb;
-    for(size_t i = 0; i < numCols; i++){
-        ValueTypeCode type = arg->getColumnType(i);
-        types_ddb.push_back(getDuckType(type));
-    }
-    dc.InitializeEmpty(types_ddb);
-    for(size_t i = 0; i < numCols; i++){
-        duckdb::Vector temp(types_ddb[i], (duckdb::data_ptr_t)arg->getColumnRaw(i));
-        dc.data[i].Reference(temp);
-    }
-    dc.SetCardinality(numRows);
-}
-
-template<typename VTCol1, typename VTCol2>
-void fillResultFrameColumn(
-    Frame *& res,
-    uint8_t * data,
-    const size_t column,
-    const size_t r_f_s,
-    const size_t r_f_e,
-    const size_t r_dc_s,
-    const size_t r_dc_e,
-    const size_t offset = 0
-){
-    const size_t add = 1 + offset;
-
-    VTCol1* res_c = res->getColumn<VTCol1>(column)->getValues();
-    VTCol2* data_c = (VTCol2*) data;
-
-    size_t r_f = r_f_s;
-    size_t r_dc = r_dc_s;
-    while(r_f < r_f_e && r_dc < r_dc_e){
-        res_c[r_f] = (VTCol1)data_c[r_dc];
-        r_f++;
-        r_dc+= add;
-    }
-}
-
-void fillFrame(
-    Frame*& res,
-    duckdb::DataChunk& data,
-    size_t row = 0,
-    size_t column = 0
-){
-
-    size_t col_max_dc = data.ColumnCount();
-    size_t row_max_dc = data.size();
-    size_t col_max_f = res->getNumCols();
-    size_t row_max_f = res->getNumRows();
-
-    size_t c_dc = 0;
-    size_t c_f = column;
-    while(c_dc < col_max_dc && c_f < col_max_f){
-        // std::cout << "\t" << c_dc << "," << c_f << "\t" << col_max_dc << "," << col_max_f << std::endl;
-        duckdb::Vector dc_vec = move(data.data[c_dc]);
-        duckdb::data_ptr_t dc_raw = dc_vec.GetData();
-
-        duckdb::PhysicalType phys = dc_vec.GetType().InternalType();
-
-        switch(phys){
-            case duckdb::PhysicalType::INT8:
-                fillResultFrameColumn<int8_t, int8_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::INT16: //todo
-                fillResultFrameColumn<int32_t, int16_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::INT32:
-                fillResultFrameColumn<int32_t, int32_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::INT64:
-                fillResultFrameColumn<int64_t, int64_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::INT128:
-                fillResultFrameColumn<int64_t, int64_t>(
-                    res, dc_raw, c_f, row, row_max_f, 1, row_max_dc*2, 1
-                );  //todo
-                break;
-            case duckdb::PhysicalType::UINT8:
-                fillResultFrameColumn<uint8_t, uint8_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::UINT16:
-                fillResultFrameColumn<uint32_t, uint16_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::UINT32:
-                fillResultFrameColumn<uint32_t, int32_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::UINT64:
-                fillResultFrameColumn<int64_t, int64_t>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::FLOAT:
-                fillResultFrameColumn<float, float>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-            case duckdb::PhysicalType::DOUBLE:
-                fillResultFrameColumn<double, double>(
-                    res, dc_raw, c_f, row, row_max_f, 0, row_max_dc
-                );
-                break;
-        }
-
-        c_dc++;
-        c_f++;
-    }
-}
+#include <runtime/local/kernels/DuckDBHelper.h>
 
 #ifdef USE_DUCKSC
 
@@ -271,8 +71,8 @@ void innerJoin(
     duckdb::DataChunk dc_l;
     duckdb::DataChunk dc_r;
 
-    createDataChunk(dc_l, lhs);
-    createDataChunk(dc_r, rhs);
+    ddb_CreateDataChunk(dc_l, lhs);
+    ddb_CreateDataChunk(dc_r, rhs);
 
 //Data transfer finished
     //For the InnerJoin we need 4 to 5 DataChunks. two with the data. two for the Join Condition. one for the results
@@ -283,8 +83,8 @@ void innerJoin(
 
     std::vector<duckdb::LogicalType> types_l_j;
     std::vector<duckdb::LogicalType> types_r_j;
-    types_l_j.push_back(getDuckType(lhs->getColumnType(on_l)));
-    types_r_j.push_back(getDuckType(rhs->getColumnType(on_r)));
+    types_l_j.push_back(ddb_GetDuckType(lhs->getColumnType(on_l)));
+    types_r_j.push_back(ddb_GetDuckType(rhs->getColumnType(on_r)));
     dc_join_l.InitializeEmpty(types_l_j);
     dc_join_r.InitializeEmpty(types_r_j);
     dc_join_l.data[0].Reference(dc_l.data[on_l]);
@@ -316,65 +116,12 @@ void innerJoin(
     res = DataObjectFactory::create<Frame>(match_count, totalCols, schema, newlabels, false);
 
     //Tiled reading. Saves a creation of one DataChunk or modification of one.
-    fillFrame(res, dc_l);
-    fillFrame(res, dc_r, 0, dc_l.ColumnCount());
+    ddb_FillFrame(res, dc_l);
+    ddb_FillFrame(res, dc_r, 0, dc_l.ColumnCount());
 }
 
 
-
-#else if USE_DUCKAPI
-
-//a function to fix column nameing for duckdb. (A . in the table namen leads to an error)
-void convert(std::string& x){
-    auto it = std::find(x.begin(), x.end(), '.');
-    if(it < x.end()){
-        size_t pos = it - x.begin();
-        x.replace(pos, 1, "_");
-    }
-}
-
-void fillDuckDbTable_i(
-    duckdb::Connection &con,
-    const Frame *arg,
-    const char *name
-) {
-
-    duckdb::DataChunk dc_append;
-    createDataChunk(dc_append, arg);
-//Doesn't seem to find the tableInfo for what ever reason.... SOO we try the Appender again.
-    // duckdb::unique_ptr<duckdb::TableDescription> t_info = con.TableInfo(name);
-    // std::cout << t_info->table  << std::endl;
-    // con.Append(*t_info, dc_append);
-    std::cout << "Append to: " << name << std::endl;
-    duckdb::Appender appender(con, name);
-    appender.AppendDataChunk(dc_append);
-}
-
-
-void createDuckDbTable_i(
-    duckdb::Connection &con,
-    const Frame *arg,
-    const char *name
-) {
-    const size_t numCols = arg->getNumCols();
-    std::stringstream s_stream;
-    s_stream << "CREATE TABLE " << name << "(";
-
-    for(size_t i = 0; i < numCols; i++){
-        ValueTypeCode type = arg->getColumnType(i);
-        std::stringstream l_stream;
-        std::string label = arg->getLabels()[i];
-        convert(label);
-        duckdb::LogicalType ddb_type = getDuckType(type);
-        s_stream << label << " " << ddb_type.ToString();
-        if(i < numCols - 1){
-            s_stream << ", ";
-        }
-    }
-    s_stream << ")";
-    std::cout << s_stream.str() << std::endl;
-    con.Query(s_stream.str());
-}
+#elif USE_DUCKAPI
 
 void innerJoin(
     // results
@@ -387,50 +134,50 @@ void innerJoin(
     DCTX(ctx)
 ) {
     std::cout << "innerJoin, DuckDB with API access!" << std::endl;
+
+//OPEN CONNECTION
     duckdb::DuckDB db(nullptr);
     duckdb::Connection con(db);
-    //creating variables for the Join.
+
+//CREATING VARIABLES FOR INNERJOIN
     duckdb::shared_ptr<duckdb::Relation> t_lhs, t_rhs;
     duckdb::shared_ptr<duckdb::Relation> join;
     std::string t_lhs_name = "table_a", t_rhs_name = "table_b";
 
-//filling the Tables for the Join
-    createDuckDbTable_i(con, lhs, t_lhs_name.c_str());
-    fillDuckDbTable_i(con, lhs, t_lhs_name.c_str());
+//LOADING DATA INTO DUCKDB
+    ddb_CreateAndFill(con, lhs, t_lhs_name.c_str());
     t_lhs = con.Table(t_lhs_name.c_str());
 
-
-    createDuckDbTable_i(con, rhs, t_rhs_name.c_str());
-    fillDuckDbTable_i(con, rhs, t_rhs_name.c_str());
+    ddb_CreateAndFill(con, rhs, t_rhs_name.c_str());
     t_rhs = con.Table(t_rhs_name.c_str());
 
-
-
-//Execution
+//BUILDING EXECUTION
     std::stringstream cond;
     std::string l_con(lhsOn);
     std::string r_con(rhsOn);
-    convert(l_con);
-    convert(r_con);
+    ddb_Convert(l_con);
+    ddb_Convert(r_con);
     cond << l_con << " = " << r_con;
-    // std::string condition = lhsOn + " = " + rhsOn;
     std::string condition = cond.str();
+
     join = t_lhs->Join(t_rhs, condition);
+
+//EXECUTION
     duckdb::unique_ptr<duckdb::QueryResult> result = join->Execute();
 
-//Check Errors
-if(result->HasError()){
-    std::stringstream error;
-    error << "InnerJoin(...) API: DuckDB Join execution unsuccessful: ";
-    error << "\nDuckDB reports: " << result->GetError();
-    throw std::runtime_error(error.str());
-}
-//Create Result Frame
+//CHECK FOR EXECUTION ERRORS
+    if(result->HasError()){
+        std::stringstream error;
+        error << "InnerJoin(...) API: DuckDB Join execution unsuccessful: ";
+        error << "DuckDB reports: " << result->GetError();
+        throw std::runtime_error(error.str());
+    }
+
+//PREPARE FRAMECREATION
     std::vector<duckdb::LogicalType> ret_types = result->types;
     std::vector<std::string> ret_names = result->names;
 
     const size_t totalCols = ret_types.size() == ret_names.size()? ret_types.size(): 0;
-    size_t totalRows = 0;
     ValueTypeCode schema[totalCols];
     std::string newlabels[totalCols];
 
@@ -449,48 +196,10 @@ if(result->HasError()){
         col_idx_res++;
     }
 
-
-//Retrieve Result (2 Ways. VECTORISED and STANDARD(?) (Names need Work))
-#ifdef DUCKVECTORISED
-    //QueryResult doesn't has a Possibility to get the row count.
-    //In this case: We have to Fetch all the DataChunks and add up there lenght.
-    //Then we store one DataChunk at a time into a Frame.
-    std::vector<duckdb::unique_ptr<duckdb::DataChunk>>> chunks;
-    duckdb::unique_ptr<duckdb::DataChunk> nextChunk;
-    while(nextChunk = result->Fetch() != nullptr){
-        chunks.push_back(nextChunk);
-        totalRows += nextChunk->size;
-    }
-    size_t pos = 0;
-    for(unique_ptr<duckdb::DataChunk> chunk: chunks){
-        fillFrame(res, *chunk, pos);
-        pos += chunk->size();
-    }
-
-#else //DEFAULTMODE
-    //In this case we Fetch all the DataChunks and fit append them together into
-    //one DataChunk. This datachunk has a row count and we can load this data into
-    //the Frame!
-    std::cout << "1" << std::endl;
-    duckdb::unique_ptr<duckdb::DataChunk> mainChunk = result->Fetch();
-    duckdb::unique_ptr<duckdb::DataChunk> nextChunk = result->Fetch();
-    std::cout << "2" << std::endl;
-
-    while(nextChunk != nullptr){
-        mainChunk->Append((const_cast<duckdb::DataChunk&>(*nextChunk)), true);
-        nextChunk = result->Fetch();
-    }
-    std::cout << "3" << std::endl;
-    totalRows = mainChunk->size();
-    std::cout << "4" << std::endl;
-    res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
-
-    fillFrame(res, *mainChunk);
-#endif//DUCKTILED;
-
+//CREATE FRAME AND TRANSFER DATA BACK
+    ddb_FillResultFrame(res, result, schema, newlabels, totalCols);
 
 }
-
 #endif //DUCKDB Type
 
 

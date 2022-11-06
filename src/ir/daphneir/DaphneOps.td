@@ -804,6 +804,16 @@ def Daphne_DuckDbSqlOp : Daphne_Op<"duckDbSql", [
     let results = (outs Frame:$res);
 }
 
+
+def Daphne_UnionOp : Daphne_Op<"Union", [
+    SameVariadicOperandSize
+    ]> {
+    let arguments = (ins
+        Variadic<Frame>:$tables
+    );
+    let results = (outs Frame:$res);
+}
+
 def Daphne_RegisterViewOp : Daphne_Op<"registerView"> {
     let arguments = (ins StrAttr:$view, MatrixOrFrame:$arg);
     let results = (outs); // no results
