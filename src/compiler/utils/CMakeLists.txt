@@ -15,3 +15,7 @@
 add_library(CompilerUtils STATIC
         CompilerUtils.cpp
 )
+
+target_link_libraries(CompilerUtils PUBLIC
+        DaphneMetaDataParser
+)

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <string>
@@ -33,34 +34,29 @@ using namespace mlir::OpTrait;
 // General utility functions
 // ****************************************************************************
 
-Type getFrameColumnTypeByLabel(daphne::FrameType ft, Value label) {
-    // TODO Use getConstantString from DaphneInferFrameLabelsOpInterface.cpp.
-    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(label.getDefiningOp())) {
-        if(auto strAttr = co.value().dyn_cast<StringAttr>()) {
-            std::string label = strAttr.getValue().str();
-            std::vector<std::string> * labels = ft.getLabels();
-            if(labels) {
-                // The column labels are known, so we search for the specified
-                // label.
-                std::vector<Type> colTypes = ft.getColumnTypes();
-                for(size_t i = 0; i < colTypes.size(); i++)
-                    if((*labels)[i] == label)
-                        // Found the label.
-                        return colTypes[i];
-                // Did not find the label.
-                throw std::runtime_error(
-                        "the specified label was not found: '" + label + "'"
-                );
-            }
-            else
-                // The column labels are unknown, so we cannot tell what type
-                // the column with the specified label has.
-                return daphne::UnknownType::get(ft.getContext());
-        }
-    }
-    throw std::runtime_error(
-            "the specified label must be a constant of string type"
+Type getFrameColumnTypeByLabel(daphne::FrameType ft, Value labelVal) {
+    std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
+            labelVal, "the specified label must be a constant of string type"
     );
+
+    std::vector<std::string> * labels = ft.getLabels();
+    if(labels) {
+        // The column labels are known, so we search for the specified
+        // label.
+        std::vector<Type> colTypes = ft.getColumnTypes();
+        for(size_t i = 0; i < colTypes.size(); i++)
+            if((*labels)[i] == labelStr)
+                // Found the label.
+                return colTypes[i];
+        // Did not find the label.
+        throw std::runtime_error(
+                "the specified label was not found: '" + labelStr + "'"
+        );
+    }
+    else
+        // The column labels are unknown, so we cannot tell what type
+        // the column with the specified label has.
+        return daphne::UnknownType::get(ft.getContext());
 }
 
 // ****************************************************************************

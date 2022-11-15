@@ -902,16 +902,11 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
     mlir::Value rhs = op.rhs();
     mlir::Value transa = op.transa();
     mlir::Value transb = op.transb();
-    bool ta = false;
-    bool tb = false;
 
-    if(auto co = transa.getDefiningOp<mlir::daphne::ConstantOp>()) {
-        ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
-    }
-    if(auto co = transb.getDefiningOp<mlir::daphne::ConstantOp>()) {
-        tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
-    }
-
+    // TODO If transa or transb are not constant, we cannot continue on the respective side;
+    // we cannot just assume false then.
+    bool ta = CompilerUtils::constantOrDefault<bool>(transa, false);
+    bool tb = CompilerUtils::constantOrDefault<bool>(transb, false);
 
     // TODO Turn on the transposition-awareness for the left-hand-side argument again (see #447).
     // mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();

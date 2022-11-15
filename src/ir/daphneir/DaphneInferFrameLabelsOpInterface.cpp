@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <runtime/local/datastructures/LabelUtils.h>
 
@@ -28,21 +29,6 @@ namespace mlir::daphne {
 }
 
 using namespace mlir;
-
-// ****************************************************************************
-// General utility fuctions
-// ****************************************************************************
-
-// TODO This could become a general utility (generalize for different types,
-// also useful in the parser and other compiler passes).
-std::string getConstantString(Value v) {
-    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto strAttr = co.value().dyn_cast<StringAttr>())
-            return strAttr.getValue().str();
-    throw std::runtime_error(
-            "the given value must be a constant of string type"
-    );
-}
 
 // ****************************************************************************
 // Frame label inference utility functions
@@ -90,7 +76,7 @@ void daphne::ColBindOp::inferFrameLabels() {
 void daphne::CreateFrameOp::inferFrameLabels() {
     auto resLabels = new std::vector<std::string>();
     for(Value label : labels())
-        resLabels->push_back(getConstantString(label));
+        resLabels->push_back(CompilerUtils::constantOrThrow<std::string>(label));
     Value res = getResult();
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
 }
@@ -100,7 +86,7 @@ void daphne::ExtractColOp::inferFrameLabels() {
     auto st = selectedCols().getType().dyn_cast<daphne::StringType>();
     if(ft && st) {
         auto resLabels = new std::vector<std::string>();
-        resLabels->push_back(getConstantString(selectedCols()));
+        resLabels->push_back(CompilerUtils::constantOrThrow<std::string>(selectedCols()));
         Value res = getResult();
         res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
     }
@@ -116,15 +102,15 @@ void daphne::FilterRowOp::inferFrameLabels() {
 
 void daphne::GroupJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    newLabels->push_back(getConstantString(lhsOn()));
-    newLabels->push_back(getConstantString(rhsAgg()));
+    newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(lhsOn()));
+    newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(rhsAgg()));
     Value res = getResult(0);
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
 
 void daphne::SemiJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    newLabels->push_back(getConstantString(lhsOn()));
+    newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(lhsOn()));
     Value res = getResult(0);
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }
@@ -196,11 +182,11 @@ void daphne::GroupOp::inferFrameLabels() {
     std::vector<std::string> aggFuncNames;
 
     for(Value t: keyCol()){ //Adopting keyCol Labels
-        newLabels->push_back(getConstantString(t));
+        newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(t));
     }
 
     for(Value t: aggCol()){
-        aggColLabels.push_back(getConstantString(t));
+        aggColLabels.push_back(CompilerUtils::constantOrThrow<std::string>(t));
     }
     for(Attribute t: aggFuncs()){
         GroupEnum aggFuncValue = t.dyn_cast<GroupEnumAttr>().getValue();
@@ -217,7 +203,7 @@ void daphne::SetColLabelsOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
     for(Value label : labels()) {
         try {
-            newLabels->push_back(getConstantString(label));
+            newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(label));
         }
         catch(std::runtime_error&) {
             // TODO This could be improved by supporting knowledge on only some
@@ -233,7 +219,7 @@ void daphne::SetColLabelsOp::inferFrameLabels() {
 
 void daphne::SetColLabelsPrefixOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
-    std::string prefixStr = getConstantString(prefix());
+    std::string prefixStr = CompilerUtils::constantOrThrow<std::string>(prefix());
     auto ft = arg().getType().dyn_cast<daphne::FrameType>();
     std::vector<std::string> * labelsStr = ft.getLabels();
     if(labelsStr)
