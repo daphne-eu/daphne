@@ -1200,9 +1200,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
 
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp())) {
                 if(auto intAttr = co.value().dyn_cast<mlir::IntegerAttr>())
                     vals.get()[i] = intAttr.getValue().getLimitedValue();
+            }
+            else
+                throw std::runtime_error("elements of matrix literals must be parse-time constants");
         }
         auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
@@ -1220,9 +1223,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
 
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp())) {
                 if(auto floatAttr = co.value().dyn_cast<mlir::FloatAttr>())
                     vals.get()[i] = floatAttr.getValue().convertToDouble();
+            }
+            else
+                throw std::runtime_error("elements of matrix literals must be parse-time constants");
         }
         auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
@@ -1240,9 +1246,12 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
 
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
+            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp())) {
                 if(auto boolAttr = co.value().dyn_cast<mlir::BoolAttr>())
                     vals.get()[i] = boolAttr.getValue();
+            }
+            else
+                throw std::runtime_error("elements of matrix literals must be parse-time constants");
         }
         auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
