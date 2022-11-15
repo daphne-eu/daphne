@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
 #define GET_OP_CLASSES

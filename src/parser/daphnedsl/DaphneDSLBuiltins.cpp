@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <compiler/CompilerUtils.h>
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
