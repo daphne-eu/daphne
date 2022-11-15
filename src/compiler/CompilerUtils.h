@@ -24,7 +24,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace CompilerUtils {
+struct CompilerUtils {
     // TODO Copied here from FrameLabelInference, have it just once.
     static std::string getConstantString2(mlir::Value v) {
         if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
@@ -148,4 +148,4 @@ namespace CompilerUtils {
         return isObjType(v.getType());
     }
 
-}
+};
