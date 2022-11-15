@@ -1,0 +1,11 @@
+// Reusing the SQL query string after the sql() built-in function should work.
+
+f = createFrame([1, 2, 3], "a");
+
+registerView("f", f);
+
+query = "SELECT f.a FROM f;";
+res = sql(query);
+print(res);
+
+print(query);

@@ -745,7 +745,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 // them at this point, we should enable some way to leave them
                 // unknown.
                 colTypes.push_back(builder.getF64Type());
-                co.erase();
                 return static_cast<mlir::Value>(builder.create<SqlOp>(
                         loc,
                         FrameType::get(builder.getContext(), colTypes),
@@ -761,7 +760,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Attribute attr = co.value();
         mlir::Value view = args[1];
         if(attr.isa<mlir::StringAttr>()) {
-            co.erase();
             return builder.create<RegisterViewOp>(
                     loc,
                     attr.dyn_cast<mlir::StringAttr>(),

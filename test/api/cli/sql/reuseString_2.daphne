@@ -1,0 +1,11 @@
+// Reusing the frame name string after the registerView() built-in function should work.
+
+f = createFrame([1, 2, 3], "a");
+
+name = "f";
+registerView(name, f);
+
+res = sql("SELECT f.a FROM f;");
+print(res);
+
+print(name);

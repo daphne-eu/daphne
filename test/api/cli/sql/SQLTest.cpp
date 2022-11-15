@@ -94,5 +94,7 @@ MAKE_TEST_CASE("thetaJoin_lessEqual", 2)
 MAKE_TEST_CASE("thetaJoin_notEqual", 2)
 MAKE_TEST_CASE("thetaJoin_combinedCompare", 2)
 
+MAKE_TEST_CASE("reuseString", 2)
+
 
 // TODO Use the scripts testing failure cases.
