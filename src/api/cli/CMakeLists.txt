@@ -41,6 +41,7 @@ if(USE_MORPHSTORE)
 endif()
 
 add_llvm_executable(daphne daphne.cpp DaphneUserConfig.h DEPENDS ${LIB_DEPS})
+set_target_properties(daphne PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 llvm_update_compile_flags(daphne)
 target_link_libraries(daphne PRIVATE ${LIBS})

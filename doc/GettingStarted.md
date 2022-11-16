@@ -130,7 +130,7 @@ print(m + m);
 print(t(m));
 ```
 
-... and execute it as follows: `build/bin/daphne scripts/examples/hello-world.daph` (This command works if Daphne is run 
+... and execute it as follows: `bin/daphne scripts/examples/hello-world.daph` (This command works if Daphne is run 
 after building from source. Omit "build" in the path to the Daphne binary if executed from the binary distribution).
 
 Optionally flags like ``--cuda`` can be added after the daphne command and before the script file to activate support 

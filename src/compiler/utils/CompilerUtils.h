@@ -19,25 +19,90 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/metadata/MetaDataParser.h>
 
+#include <mlir/Dialect/StandardOps/IR/Ops.h>
 #include <mlir/IR/Value.h>
 
 #include <stdexcept>
 #include <string>
 
-namespace CompilerUtils {
-    // TODO Copied here from FrameLabelInference, have it just once.
-    static std::string getConstantString2(mlir::Value v) {
-        if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(v.getDefiningOp()))
-            if(auto strAttr = co.value().dyn_cast<mlir::StringAttr>())
-                return strAttr.getValue().str();
-        throw std::runtime_error(
-                "the given value must be a constant of string type"
-        );
+struct CompilerUtils {
+
+private:
+
+    template<typename ValT, typename AttrT>
+    static std::pair<bool, ValT> isConstantHelper(mlir::Value v, std::function<ValT(const AttrT &)> func) {
+        if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
+            if(auto attr = co.value().dyn_cast<AttrT>())
+                return std::make_pair(true, func(attr));
+        if(auto co = v.getDefiningOp<mlir::ConstantIntOp>())
+            if(auto attr = co.value().dyn_cast<AttrT>())
+                return std::make_pair(true, func(attr));
+        if(auto co = v.getDefiningOp<mlir::ConstantFloatOp>())
+            if(auto attr = co.value().dyn_cast<AttrT>())
+                return std::make_pair(true, func(attr));
+        return std::make_pair(false, ValT(0));
     }
 
-    [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename) {
-        return MetaDataParser::readMetaData(getConstantString2(filename));
+    template<typename ValT, typename AttrT>
+    static ValT constantOrThrowHelper(mlir::Value v, std::function<ValT(const AttrT &)> func, const std::string & errorMsg, const std::string & valTypeName) {
+        auto p = isConstantHelper<ValT, AttrT>(v, func);
+        if(p.first)
+            return p.second;
+        else
+            throw std::runtime_error(
+                    errorMsg.empty()
+                    ? ("the given value must be a constant of " + valTypeName + " type")
+                    : errorMsg
+            );
     }
+
+    template<typename ValT, typename AttrT>
+    static ValT constantOrDefaultHelper(mlir::Value v, ValT d, std::function<ValT(const AttrT &)> func) {
+        auto p = isConstantHelper<ValT, AttrT>(v, func);
+        if(p.first)
+            return p.second;
+        else
+            return d;
+    }
+    
+public:
+
+    /**
+     * @brief Returns if the given `Value` is a constant, and if so, also the constant itself.
+     * 
+     * @tparam T The C++ type of the constant to extract.
+     * @param v The `Value`.
+     * @return If the given value is a constant: a pair of the value `true` and the constant value as type `T`;
+     * otherwise, a pair of the value `false` and an unspecified value of type `T`.
+     */
+    template<typename T>
+    static std::pair<bool, T> isConstant(mlir::Value v);
+    
+    /**
+     * @brief Returns a constant extracted from the given `Value`, or throws an exception if this is not possible.
+     * 
+     * @tparam T The C++ type of the constant to extract.
+     * @param v The `Value`.
+     * @param errorMsg The message of the exception to throw. In case of an empty string (default), the exception
+     * will have a generic error message.
+     * @return The extracted constant as a value of type `T`, if the given value is a constant.
+     */
+    template<typename T>
+    static T constantOrThrow(mlir::Value v, const std::string & errorMsg = "");
+
+    /**
+     * @brief Returns a constant extracted from the given `Value`, or a default value if this is not possible.
+     * 
+     * @tparam T The C++ type of the constant to extract.
+     * @param v The `Value`.
+     * @param d The default value.
+     * @return The extracted constant as a value of type `T`, if the given value is a constant, or the given
+     * default value, otherwise.
+     */
+    template<typename T>
+    static T constantOrDefault(mlir::Value v, T d);
+
+    [[maybe_unused]] static FileMetaData getFileMetaData(mlir::Value filename);
 
     /**
      * @brief Produces a string containing the C++ type name of the corresponding MLIR type. Mainly used to
@@ -148,4 +213,4 @@ namespace CompilerUtils {
         return isObjType(v.getType());
     }
 
-}
+};

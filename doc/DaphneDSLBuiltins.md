@@ -237,6 +237,8 @@ We plan to support various matrix decompositions like **`eigen`**, **`lu`**, **`
 
 ## Deep neural network
 
+Note that most of these operations only have a CUDNN-based kernel for GPU execution at the moment.
+
 - **`affine`**`(inputData:matrix, weightData:matrix, biasData:matrix)`
 
 - **`avg_pool2d`**`(inputData:matrix, numImages:size, numChannels:size, imgHeight:size, imgWidth:size, poolHeight:size, poolWidth:size, strideHeight:size, strideWidth:size, paddingHeight:size, paddingWidth:size)`
@@ -398,9 +400,11 @@ For both reading and writing, file names can be specified as absolute or relativ
 For most formats, DAPHNE requires additional information on the data and value types as well as dimensions, *when reading files*.
 These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
-- **`print`**`(arg:scalar/matrix/frame)`
+- **`print`**`(arg:scalar/matrix/frame[, newline:bool[, toStderr:bool]])`
 
   Prints the given scalar, matrix, or frame `arg` to `stdout`.
+  The parameter `newline` is optional; `true` (the default) means a new line is started after `arg`, `false` means no new line is started.
+  The parameter `toStderr` is optional; `true` means the text is printed to `stderr`, `false` (the default) means it is printed to `stdout`.
 
 - **`readFrame`**`(filename:str)`
 

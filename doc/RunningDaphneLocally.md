@@ -20,17 +20,17 @@ This document explains how to run DAPHNE on a local machine.
 For more details on running DAPHNE in a distributed setup, please see the documentation on the [distributed runtime](/doc/DistributedRuntime.md) and [distributed deployment](/doc/Deploy.md).
 
 Before DAPHNE can be executed, the system must be built using `./build.sh` (for more details see [Getting Started](/doc/GettingStarted.md)).
-The main executable of the DAPHNE system is `build/bin/daphne`.
+The main executable of the DAPHNE system is `bin/daphne`.
 The general scheme of an invocation of DAPHNE looks as follows:
 ```
-build/bin/daphne [options] script [arguments]
+bin/daphne [options] script [arguments]
 ```
 
 Where `script` is a [DaphneDSL](/doc/DaphneDSLLanguageRef.md) file.
 
 *Example:*
 ```
-build/bin/daphne scripts/examples/hello-world.daph
+bin/daphne scripts/examples/hello-world.daph
 ```
 
 Note that the present working directory should be the root directory `daphne/` when invoking the system (this requirement will be relaxed in the future).
@@ -42,7 +42,7 @@ These can the accessed as `$key` in the DaphneDSL script.
 
 *Example:*
 ```
-build/bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
+bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
 ```
 *This example executes a simplified variant of the k-means clustering algorithm on random data with 1000 rows and 20 features using 5 centroids and a fixed number of 10 iterations.*
 
@@ -52,7 +52,7 @@ Note that the quotation marks `"` are part of the string literal, so they must b
 ## Command-Line Arguments
 
 The behavior of `daphne` can be influenced by numerous command-line arguments (the `options` mentioned above).
-To see the full list of available options, invoke `build/bin/daphne --help`.
+To see the full list of available options, invoke `bin/daphne --help`.
 
 In the following, a few noteworthy general options are mentioned.
 Note that some of the more specific options are described in the documentation pages on the respective topics, e.g., [distributed execution](/doc/DistributedRuntime.md), [scheduling](/doc/SchedulingOptions.md), [configuration](/doc/Config.md), [FPGA configuration](/doc/FPGAconfiguration.md), etc.
@@ -62,7 +62,7 @@ Note that some of the more specific options are described in the documentation p
   Prints the MLIR-based intermediate representation (IR), the so-called *DaphneIR*, after the specified compiler passes.
   For instance, to see the IR after parsing (and some initial simplifications) and after property inference, invoke
   ```
-  build/bin/daphne --explain parsing_simplified,property_inference test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
+  bin/daphne --explain parsing_simplified,property_inference test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
   ```
 
 - **`--vec`**
@@ -91,6 +91,28 @@ If `daphne` terminates normally, one of the following status codes is returned:
 One of the three types of errors mentioned above occured.
 In many (but not yet all) cases, there will be an error message indicating what went wrong.
 
+*Examples:*
+
+- **Wrong way of passing string literals as DaphneDSL script arguments.**
+  ```
+  line 1:0 mismatched input 'foo' expecting {'true', 'false', INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL}
+  Parser error: unexpected literal
+  ```
+  Maybe you tried to pass a string as an argument to a DaphneDSL script and forgot the quotation marks or they got lost.
+  Pass strings as `bin/daphne script.daphne foo=\"abc\"` (not `foo=abc` or `foo="abc"`) on a terminal.
+
+- **Missing metadata file.**
+  ```
+  Parser error: Could not open file 'data/foo.csv.meta' for reading meta data.
+  ```
+  Maybe you try to read a dataset called `data/foo.csv`, but the required [metadata file](/doc/FileMetaDataFormat.md) `data/foo.csv.meta` does not exist.
+  
+- **Using the old file metadata format.**
+  ```
+  Parser error: [json.exception.parse_error.101] parse error at line 1, column 7: syntax error while parsing value - unexpected ','; expected end of input
+  ```
+  Maybe you try to read a dataset with `readMatrix()` or `readFrame()` in DaphneDSL, but the file metadata file does not have the right structure. Note that we changed the initial one-line text-based format to a more human-readable [JSON-based format](/doc/FileMetaDataFormat.md).
+
 ### `JIT session error: Symbols not found: ...`
 
 This error occurs when the execution of a DaphneDSL script requires invoking a kernel with an input/output type combination that was not pre-compiled.
@@ -112,14 +134,14 @@ Aborted (core dumped)
 
 ### `Failed to create MemoryBuffer for: ...`
 
-This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `build/bin/daphne`. 
+This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `bin/daphne`. 
 It will be fixed in the future (see issue #445).
 In the meantime, please always invoke `daphne` from the repository's root directory `daphne/`.
 
 *Example:*
 
 ```
-Failed to create MemoryBuffer for: build/src/runtime/local/kernels/libAllKernels.so
+Failed to create MemoryBuffer for: lib/libAllKernels.so
 Error: No such file or directory
 ```
 *Typically followed by an error or the type `JIT session error: Symbols not found: ...`, which is described above.*

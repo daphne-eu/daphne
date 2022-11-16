@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 #ifdef USE_FPGAOPENCL
-#include "compiler/CompilerUtils.h"
+#include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include <mlir/IR/BlockAndValueMapping.h>

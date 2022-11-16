@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <vector>
@@ -134,30 +135,24 @@ std::vector<std::pair<Value, Value>> daphne::MatMulOp::createOpsOutputSizes(OpBu
     auto sizeTy = builder.getIndexType();
 
     Value rows;
-    if(auto co = transa().getDefiningOp<mlir::daphne::ConstantOp>()) {
-        bool ta = co.value().dyn_cast<mlir::BoolAttr>().getValue();
-        rows = ta
-                ? builder.create<daphne::NumColsOp>(loc, sizeTy, lhs()).getResult()
-                : builder.create<daphne::NumRowsOp>(loc, sizeTy, lhs()).getResult();
-    }
-    else
-        throw std::runtime_error(
-                "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
-                "of rows of the result, because it is not known if the lhs input is transposed"
-        );
+    bool ta = CompilerUtils::constantOrThrow<bool>(
+            transa(),
+            "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
+            "of rows of the result, because it is not known if the lhs input is transposed"
+    );
+    rows = ta
+            ? builder.create<daphne::NumColsOp>(loc, sizeTy, lhs()).getResult()
+            : builder.create<daphne::NumRowsOp>(loc, sizeTy, lhs()).getResult();
     
     Value cols;
-    if(auto co = transb().getDefiningOp<mlir::daphne::ConstantOp>()) {
-        bool tb = co.value().dyn_cast<mlir::BoolAttr>().getValue();
-        cols = tb
-                ? builder.create<daphne::NumRowsOp>(loc, sizeTy, rhs()).getResult()
-                : builder.create<daphne::NumColsOp>(loc, sizeTy, rhs()).getResult();
-    }
-    else
-        throw std::runtime_error(
-                "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
-                "of columns of the result, because it is not known if the rhs input is transposed"
-        );
+    bool tb = CompilerUtils::constantOrThrow<bool>(
+            transb(),
+            "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
+            "of columns of the result, because it is not known if the rhs input is transposed"
+    );
+    cols = tb
+            ? builder.create<daphne::NumRowsOp>(loc, sizeTy, rhs()).getResult()
+            : builder.create<daphne::NumColsOp>(loc, sizeTy, rhs()).getResult();
 
     return {{rows, cols}};
 }

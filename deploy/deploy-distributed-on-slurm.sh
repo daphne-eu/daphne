@@ -108,12 +108,14 @@ function BuildWithSingularityContainer {
     time singularity $SINGULARITY_ARG exec daphne.sif ./build.sh --target DistributedWorker
     TIME_BUILT=$(date  +%F-%T)
     mv build build_${TIME_BUILT}
+    mv bin bin${TIME_BUILT}
+    mv lib lib${TIME_BUILT}
 }
 
 
 # ****************************************************************************
 # Packaging of files (payload) to be sent to a remote machine:
-# - daphne built (build/) and 
+# - daphne built (bin,lib) and
 # - user code (all *.daphne scripts in the current working directory).
 # The step of packaging using same compilation (build_*) is hence reusable.
 # ****************************************************************************
@@ -121,7 +123,7 @@ function BuildWithSingularityContainer {
 function PackageBuiltDaphnePayload {
     echo "Packaging latest files for DaphneDistributedWorker deployment..."
     (
-    tar cvzf build.tgz build/
+    tar cvzf build.tgz bin lib
     cp $0 deploy-distributed-on-slurm.sh
     chmod 755 deploy-distributed-on-slurm.sh
     tar cvzf daphne-package.tgz build.tgz *.daphne deploy-distributed-on-slurm.sh
@@ -190,7 +192,7 @@ function StartWorkersInContainersOnSLURM {
 
     srun -J DAPHNEworkers $SRUN_ARG -n $NUMCORES \
         bash -c 'singularity '$SINGULARITY_ARG' exec daphne.sif \
-                    build/src/runtime/distributed/worker/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) \
+                    bin/DistributedWorker $(hostname):$(( 50000 + SLURM_LOCALID )) \
                          > logs/OUTPUT.$(hostname):$(( 50000 + SLURM_LOCALID )) \
                         2>&1 \
                         & echo $! > logs/PID.$(hostname):$(( 50000 + SLURM_LOCALID ))' &
@@ -207,8 +209,8 @@ function WorkersStatus {
     
     [ $(cd logs; ls -1 OUTPUT.* 2>/dev/null | wc -l) -ge $NUMCORES ] && echo All up.
     
-    echo -e "\nInfo about the DAPHNE build/ dir is:"
-    cat build/git_source_status_info
+    echo -e "\nInfo about the DAPHNE bin/ dir is:"
+    cat bin/git_source_status_info
 }
 
 
@@ -245,7 +247,7 @@ function RunOneRequest {
     WORKERS=$(cd logs; echo OUTPUT.* | sed -e 's/OUTPUT.//g' -e 's/ /,/g')
     time srun $SRUN_ARG \
         singularity $SINGULARITY_ARG exec daphne.sif bash -c \
-            "DISTRIBUTED_WORKERS=${WORKERS} build/bin/daphne $ARGS_CS $DAPHNE_SCRIPT_AND_PARAMS"
+            "DISTRIBUTED_WORKERS=${WORKERS} bin/daphne $ARGS_CS $DAPHNE_SCRIPT_AND_PARAMS"
 }
 
 
@@ -335,7 +337,7 @@ function PrintHelp {
     echo "  build                   Compile DAPHNE codes (daphne, DistributedWorker) using the Singularity image for DAPHNE."
     echo "                          It should only be invoked from the code base root directory."
     echo "                          It could also be invoked on a target platform after a transfer."
-    echo "  package                 Create the package image with *.daphne scripts and a compressed build/ directory."
+    echo "  package                 Create the package image with *.daphne scripts and a compressed bin,lib directories."
     echo "  transfer                Transfers (uploads) a package to the target platform."
     echo "  start                   Run workers on remote machines through login node (deploys this script and runs workers)."
     echo "  workers                 Run workers on current login node through SLURM."
@@ -357,7 +359,7 @@ function PrintHelp {
     echo ""
     echo ""
     echo "Examples:"
-    echo "  $0 singularity && $0 build && $0 package                Builds the Singularity image and uses it to compile the build directory codes, then packages it."
+    echo "  $0 singularity && $0 build && $0 package                Builds the Singularity image and uses it to compile the daphne binaries, then packages it."
     echo "  $0 --login HPC --user hpc -i ~/.ssh/hpc.pub transfer    Transfers a package to the target platform through OpenSSH, using login node HPC, user hpc, and identify key hpc.pub."
     echo "  $0 -l HPC start                                         Using login node HPC, accesses the target platform and starts workers on remote machines."
     echo "  $0 -l HPC -n 1024 run example-time.daphne               Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration."

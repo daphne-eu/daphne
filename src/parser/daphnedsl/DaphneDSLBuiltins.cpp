@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <compiler/CompilerUtils.h>
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLBuiltins.h>
 #include <runtime/local/datastructures/Frame.h>
@@ -99,25 +99,23 @@ mlir::Value DaphneDSLBuiltins::createEwBinaryOp(mlir::Location loc, const std::s
 template<class RowAggOp, class ColAggOp>
 mlir::Value DaphneDSLBuiltins::createRowOrColAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 2);
-    if(auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>()) {
-        llvm::APInt axis = co.value().dyn_cast<mlir::IntegerAttr>().getValue();
-        if(axis == 0)
-            return utils.retValWithInferedType(
-                    builder.create<RowAggOp>(
-                            loc, utils.unknownType, args[0]
-                    )
-            );
-        else if(axis == 1)
-            return utils.retValWithInferedType(
-                    builder.create<ColAggOp>(
-                            loc, utils.unknownType, args[0]
-                    )
-            );
-        else
-            throw std::runtime_error("invalid axis");
-    }
+    int64_t axis = CompilerUtils::constantOrThrow<int64_t>(
+            args[1], "second argument of aggregation must be a constant"
+    );
+    if(axis == 0)
+        return utils.retValWithInferedType(
+                builder.create<RowAggOp>(
+                        loc, utils.unknownType, args[0]
+                )
+        );
+    else if(axis == 1)
+        return utils.retValWithInferedType(
+                builder.create<ColAggOp>(
+                        loc, utils.unknownType, args[0]
+                )
+        );
     else
-        throw std::runtime_error("second argument of aggregation must be a constant");
+        throw std::runtime_error("invalid axis");
 }
 
 template<class GrpAggOp>
@@ -596,21 +594,24 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value arg = args[0];
         std::vector<mlir::Value> colIdxs;
         std::vector<mlir::Value> ascs;
-        mlir::Value returnIdxs = args[numArgs - 1];
+        mlir::Value returnIdxs = utils.castBoolIf(args[numArgs - 1]);
         const size_t numCols = (numArgs - 2) / 2;
         for(size_t i = 0; i < numCols; i++) {
             colIdxs.push_back(utils.castSizeIf(args[1 + i]));
             ascs.push_back(utils.castBoolIf(args[1 + numCols + i]));
         }
         mlir::Type retTy;
-        if(auto co = returnIdxs.getDefiningOp<ConstantOp>()) {
-            if(co.value().dyn_cast<mlir::BoolAttr>().getValue())
+
+        std::pair<bool, bool> p = CompilerUtils::isConstant<bool>(returnIdxs);
+        if(p.first) {
+            if(p.second)
                 retTy = utils.matrixOfSizeType;
             else
                 retTy = args[0].getType();
         }
         else
             retTy = utils.unknownType;
+
         return static_cast<mlir::Value>(builder.create<OrderOp>(
                 loc, retTy, arg, colIdxs, ascs, returnIdxs
         ));
@@ -735,45 +736,36 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
     if(func == "sql") {
         checkNumArgsExact(func, numArgs, 1);
-        if(auto co = args[0].getDefiningOp<mlir::daphne::ConstantOp>()) {
-            mlir::Attribute attr = co.value();
-            if(attr.isa<mlir::StringAttr>()) {
-                // TODO How to know the column types, or how to not need to
-                // know them here? For now, we just leave them blank here.
-                std::vector<mlir::Type> colTypes;
-                // TODO Don't hardcode the column types. Since we cannot know
-                // them at this point, we should enable some way to leave them
-                // unknown.
-                colTypes.push_back(builder.getF64Type());
-                co.erase();
-                return static_cast<mlir::Value>(builder.create<SqlOp>(
-                        loc,
-                        FrameType::get(builder.getContext(), colTypes),
-                        attr.dyn_cast<mlir::StringAttr>()
-                ));
-            }
-        }
-        throw std::runtime_error("SqlOp requires a SQL query as a constant string");
+
+        std::string sql = CompilerUtils::constantOrThrow<std::string>(
+                args[0], "SqlOp requires a SQL query as a constant string"
+        );
+
+        // TODO How to know the column types, or how to not need to
+        // know them here? For now, we just leave them blank here.
+        std::vector<mlir::Type> colTypes;
+        // TODO Don't hardcode the column types. Since we cannot know
+        // them at this point, we should enable some way to leave them
+        // unknown.
+        colTypes.push_back(builder.getF64Type());
+        return static_cast<mlir::Value>(builder.create<SqlOp>(
+                loc,
+                FrameType::get(builder.getContext(), colTypes),
+                builder.getStringAttr(sql)
+        ));
     }
     if(func == "registerView") {
         checkNumArgsExact(func, numArgs, 2);
-        auto co = args[0].getDefiningOp<mlir::daphne::ConstantOp>();
-        mlir::Attribute attr = co.value();
-        mlir::Value view = args[1];
-        if(attr.isa<mlir::StringAttr>()) {
-            co.erase();
-            return builder.create<RegisterViewOp>(
-                    loc,
-                    attr.dyn_cast<mlir::StringAttr>(),
-                    view
-            );
-        }
 
-        throw std::runtime_error(
-                "registerView requires a view name as a constant string, and "
-                "a frame that gets assigned to that name"
+        std::string viewName = CompilerUtils::constantOrThrow<std::string>(
+                args[0], "registerView requires a view name as a constant string"
         );
-
+        mlir::Value view = args[1];
+        return builder.create<RegisterViewOp>(
+                loc,
+                builder.getStringAttr(viewName),
+                view
+        );
     }
 
     // --------------------------------------------------------------------

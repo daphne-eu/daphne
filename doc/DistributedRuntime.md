@@ -54,7 +54,7 @@ Before executing Daphne on the distributed runtime, worker nodes must first be u
 
 ```bash
 # IP:PORT is the IP and PORT the worker server will be listening too
-./build/src/runtime/distributed/worker/DistributedWorker IP:PORT 
+./bin/DistributedWorker IP:PORT 
 ```
 
 There are [scripts](/deploy) that automate this task and can help running multiple workers at once 
@@ -84,7 +84,7 @@ Now that we have all workers up and running and the environmental variable is se
 **(*)** Note that we execute Daphne from the same bash shell we've set up the environmental variable  `DISTRIBUTED_WORKERS`.
 
 ```bash
-./build/bin/daphne --distributed ./example.script
+./bin/daphne --distributed ./example.script
 ```
 
 For now only asynchronous-gRPC is implemented as a distributed backend and selection is hardcoded [here](/src/runtime/distributed/coordinator/kernels/DistributedWrapper.h#L73). 
@@ -96,14 +96,14 @@ TODO: PR #436 provides support for MPI and implements a cli argument for selecti
 
 On one terminal with start up a Distributed Worker:
 ```bash
-$./build/src/runtime/distributed/worker/DistributedWorklocalhost:5000
+$./bin/DistributedWorker localhost:5000
 Started Distributed Worker on `localhost:5000`
 ```
 
 On another terminal we set the environment variable and execute script [`distributed.daph`](/scripts/examples/distributed.daph):
 ```bash
 $ export DISTRIBUTED_WORKERS=localhost:5000
-$ ./build/bin/daphne --distributed ./scripts/example/distributed.daph
+$ ./bin/daphne --distributed ./scripts/example/distributed.daph
 ```
 
 ## Current limitations

@@ -34,7 +34,7 @@ print("hello world");
 Assuming this script is stored in the file `hello.daphne`, it can be executed by the following command:
 
 ```
-build/bin/daphne hello.daphne
+bin/daphne hello.daphne
 ```
 
 The remainder of this document discusses the language features of DaphneDSL in detail *as they are right now*, but *note that DaphneDSL is still evolving*.

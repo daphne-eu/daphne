@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 
-#include "compiler/CompilerUtils.h"
+#include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 

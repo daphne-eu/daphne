@@ -71,8 +71,8 @@ public:
     /**
      * @brief Saves the file meta data to the specified file. 
      * 
-     * @param filename The name of the file to which you want to save the
-     * meta data. Note that the extension ".json" is appended to this filename.
+     * @param filename The name of the file for which to save the
+     * meta data. Note that the extension ".meta" is appended to this filename.
      * @throws std::runtime_error Thrown if the specified file could not be openn.
      */
     static void writeMetaData(const std::string& filename, const FileMetaData& metaData);

@@ -14,7 +14,7 @@
  *  limitations under the License.
  */
 #ifdef USE_CUDA
-#include "compiler/CompilerUtils.h"
+#include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "runtime/local/context/CUDAContext.h"

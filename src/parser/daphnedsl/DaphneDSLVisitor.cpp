@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <compiler/CompilerUtils.h>
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -1188,9 +1188,6 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     mlir::Value result;
     mlir::Type valueType = currentValue.getType();
 
-    // TODO: extracting primitives is borrowed from getConstantInt()/getConstantFloat()/.. in DaphneInferShapeOpInterface.cpp, which
-    // is itself a workaround to later become a central utility. Do not forget to change it here as well.
-
     // TODO Reduce the code duplication in these cases.
     if(currentValue.getType().isSignedInteger(64)){
         std::shared_ptr<int64_t[]> vals = std::shared_ptr<int64_t[]>(new int64_t[ctx->literal().size()]);
@@ -1199,10 +1196,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
-
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
-                if(auto intAttr = co.value().dyn_cast<mlir::IntegerAttr>())
-                    vals.get()[i] = intAttr.getValue().getLimitedValue();
+            vals.get()[i] = CompilerUtils::constantOrThrow<int64_t>(
+                    currentValue, "elements of matrix literals must be parse-time constants"
+            );
         }
         auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
@@ -1219,10 +1215,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
-
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
-                if(auto floatAttr = co.value().dyn_cast<mlir::FloatAttr>())
-                    vals.get()[i] = floatAttr.getValue().convertToDouble();
+            vals.get()[i] = CompilerUtils::constantOrThrow<double>(
+                    currentValue, "elements of matrix literals must be parse-time constants"
+            );
         }
         auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
@@ -1239,10 +1234,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
-
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
-                if(auto boolAttr = co.value().dyn_cast<mlir::BoolAttr>())
-                    vals.get()[i] = boolAttr.getValue();
+            vals.get()[i] = CompilerUtils::constantOrThrow<bool>(
+                    currentValue, "elements of matrix literals must be parse-time constants"
+            );
         }
         auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(

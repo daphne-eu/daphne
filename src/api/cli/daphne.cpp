@@ -19,7 +19,6 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
-#include <compiler/execution/DaphneIrExecutor.h>
 #include <parser/config/ConfigParser.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -376,8 +375,7 @@ main(int argc, char** argv)
     // ************************************************************************
 
     // Creates an MLIR context and loads the required MLIR dialects.
-    DaphneIrExecutor
-        executor(selectMatrixRepr, user_config);
+    DaphneIrExecutor executor(selectMatrixRepr, user_config);
 
     // Create an OpBuilder and an MLIR module and set the builder's insertion
     // point to the module's body, such that subsequently created DaphneIR

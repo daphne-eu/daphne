@@ -46,7 +46,7 @@ through an environmental variable.
 
 Workers' own IPs and ports to listen to, can be specified inside the script, or with `--peers [IP[:PORT]],[IP[:PORT]],...`. Default port for all workers is 50000, but this can also be specified inside the script or with `-p,--port PORT`. If running on same machine (e.g. localhost), different ports must be specified.
 
-With `--deploy` the script builds `DistributedWorker` executable (`./build.sh --target DistributedWorker`), compresses the `build` folder and uses `scp` and `ssh` to send and decompress at remote machines, inside the directory specified by `--pathToBuild` (default `~/DaphneDistributedWorker/`). If running workers on localhost, `PATH_TO_BUILD` can be set `/path/to/daphne` and provided `DistributedWorker` is built, `--deploy` is not nessecary.
+With `--deploy` the script builds `DistributedWorker` executable (`./build.sh --target DistributedWorker`), compresses `build`, `lib` and `bin` folders and uses `scp` and `ssh` to send and decompress at remote machines, inside the directory specified by `--pathToBuild` (default `~/DaphneDistributedWorker/`). If running workers on localhost, `PATH_TO_BUILD` can be set `/path/to/daphne` and provided `DistributedWorker` is built, `--deploy` is not nessecary.
 
 Ssh username must be specified inside the script. For now the script assumes all remote machines can be accessed with the same `username`, `id_rsa` key and ssh port (default 22).
 
