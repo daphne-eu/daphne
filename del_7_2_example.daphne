@@ -1,0 +1,27 @@
+/// read input
+c = readFrame($inCustomer);
+o = readFrame($inOrders);
+
+/// register frames to sql scope
+registerView("customer", c);
+registerView("orders", o);
+
+/// execute query
+res = sql(
+   "Select customer.C_CUSTKEY, sum(orders.O_TOTALPRICE)
+    From customer
+    Inner Join orders
+    On customer.C_CUSTKEY = orders.O_CUSTKEY
+
+    Where customer.C_MKTSEGMENT <= 2
+    And orders.O_ORDERDATE >= 19960802
+    Group By customer.C_CUSTKEY;"
+);
+
+// Range Orderdate: 19920101 and 19980802
+
+
+/// print the results
+print("================================");
+print(res);
+print("================================");
