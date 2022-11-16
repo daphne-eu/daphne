@@ -130,10 +130,6 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
-option(USE_MORPHSTORE "Whether to use MorphStore as sql feature" OFF)
-if(USE_MORPHSTORE)
-    add_definitions(-DUSE_MORPHSTORE)
-endif()
 
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
 if(USE_ARROW)
@@ -173,8 +169,12 @@ endif()
 # *****************************************************************************
 
 
-set( MorphStoreRoot ${THIRDPARTY_DIR}/MorphStore )
-include(cmake_files/thirdparty/integrate_functions.cmake)
+option(USE_MORPHSTORE "Whether to use MorphStore as sql feature" OFF)
+if(USE_MORPHSTORE)
+    add_definitions(-DUSE_MORPHSTORE)
+    set( MorphStoreRoot ${THIRDPARTY_DIR}/MorphStore )
+    include(cmake_files/thirdparty/integrate_functions.cmake)
+endif()
 
 
 # *****************************************************************************

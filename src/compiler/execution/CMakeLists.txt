@@ -28,11 +28,17 @@ set(LIBS
         MLIRExecutionEngine
         )
 
+set(DaphneIrExecutor_Dependencies AllKernels)
+
+if(USE_MORPHSTORE)
+    list(APPEND DaphneIrExecutor_Dependencies MorphStoreKernels)
+endif()
+
 add_llvm_library(DaphneIrExecutor ${SOURCES}
         DEPENDS
         MLIRDaphneOpsIncGen
         # The kernels are linked at runtime.
-        AllKernels
+        ${DaphneIrExecutor_Dependencies}
         )
 
 llvm_update_compile_flags(DaphneIrExecutor)

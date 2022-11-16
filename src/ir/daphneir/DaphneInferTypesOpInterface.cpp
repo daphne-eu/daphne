@@ -112,57 +112,7 @@ std::vector<Type> daphne::RandMatrixOp::inferTypes() {
     return {daphne::MatrixType::get(getContext(), elTy)};
 }
 
-void daphne::EwGeOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
 
-void daphne::MorphStoreSelectEqOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
-
-void daphne::MorphStoreSelectNeqOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
-
-void daphne::MorphStoreSelectLtOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
-
-void daphne::MorphStoreSelectLeOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
-
-void daphne::MorphStoreSelectGtOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
-
-void daphne::MorphStoreSelectGeOp::inferTypes() {
-    return inferTypes_EwCmpOp(this);
-}
-
-void daphne::ExtractRowOp::inferTypes() {
-    Type srcType = source().getType();
-    Type t;
-    if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
-    else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
-        t = ft.withSameColumnTypes();
-    getResult().setType(t);
-}
-
-void daphne::MatMulOp::inferTypes() {
-    getResult().setType(lhs().getType().dyn_cast<daphne::MatrixType>().withSameElementType());
-}
-
-void daphne::FilterRowOp::inferTypes() {
-    Type srcType = source().getType();
-    Type t;
-    if(auto mt = srcType.dyn_cast<daphne::MatrixType>())
-        t = mt.withSameElementType();
-    else if(auto ft = srcType.dyn_cast<daphne::FrameType>())
-        t = ft.withSameColumnTypes();
-    getResult().setType(t);
-}
 
 std::vector<Type> daphne::GroupJoinOp::inferTypes() {
     daphne::FrameType lhsFt = lhs().getType().dyn_cast<daphne::FrameType>();
