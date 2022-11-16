@@ -80,7 +80,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::daphne::createRewriteSqlOpPass()); // calls SQL Parser
         if(userConfig_.explain_sql)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after SQL parsing:"));
-
+    
+        /// Kernel Selection Pass
+        pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createKernelSelectionPass(userConfig_)); // just some testing
+        
         // TODO There is a cyclic dependency between (shape) inference and
         // constant folding (included in canonicalization), at the moment we
         // run only three iterations of both passes (see #173).
@@ -185,6 +188,9 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         // TODO Find these at run-time.
         if(userConfig_.libdir.empty()) {
             sharedLibRefs.push_back("build/src/runtime/local/kernels/libAllKernels.so");
+            #ifdef USE_MORPHSTORE
+            sharedLibRefs.push_back("build/src/runtime/local/kernels/MorphStore/libMorphStoreKernels.so");
+            #endif
         }
         else {
             sharedLibRefs.insert(sharedLibRefs.end(), userConfig_.library_paths.begin(), userConfig_.library_paths.end());

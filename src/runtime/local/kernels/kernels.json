@@ -830,6 +830,13 @@
                     ["Frame", "Frame", "int64_t"]
                 ],
                 "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+            },
+            {
+                "name":  ["MorphStore"],
+                "instantiations": [
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
+                ],
+                "opCodes": ["EQ", "NEQ", "LT", "LE", "GT", "GE"]
             }
         ]
     },
@@ -3039,54 +3046,6 @@
                 "instantiations": [
                     [["DenseMatrix", "double"]]
                 ]
-            }
-        ]
-    },
-    {
-        "kernelTemplate": {
-            "header": "MorphStore/selectBinary.h",
-            "opName": "selectBinary",
-            "returnType": "void",
-            "templateParams": [
-                {
-                    "name": "DTRes",
-                    "isDataType": true
-                },
-                {
-                    "name": "DTLhs",
-                    "isDataType": true
-                },
-                {
-                    "name": "VTRhs",
-                    "isDataType": false
-                }
-            ],
-            "runtimeParams": [
-                {
-                    "type": "BinaryOpCode",
-                    "name": "opCode"
-                },
-                {
-                    "type": "DTRes *&",
-                    "name": "res"
-                },
-                {
-                    "type": "const DTLhs *",
-                    "name": "lhs"
-                },
-                {
-                    "type": "VTRhs",
-                    "name": "rhs"
-                }
-            ]
-        },
-        "api": [
-            {
-                "name":  ["CUDA", "CPP"],
-                "instantiations": [
-                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"]
-                ],
-                "opCodes": ["EQ", "NEQ", "LT", "LE", "GT", "GE"]
             }
         ]
     }
