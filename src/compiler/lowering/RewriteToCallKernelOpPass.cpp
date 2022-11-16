@@ -167,6 +167,9 @@ namespace
 	    else if(op->hasAttr("fpgaopencl_device")) {
 		 callee << "FPGAOPENCL";
 	    }
+            if(op->hasAttr("API")){
+                callee << op->getAttr("API").dyn_cast<mlir::StringAttr>().getValue().str();
+            }
 		    
 
             callee << '_' << op->getName().stripDialect().data();

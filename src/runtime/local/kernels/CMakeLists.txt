@@ -96,41 +96,7 @@ endif()
 
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 target_link_libraries(AllKernels PUBLIC ${LIBS})
-target_add_morphstore(AllKernels)
 
-# @todo remove before push to main.
-add_executable(ssb_query ./MorphStore/SSBQuery.cpp)
-#add_dependencies(ssb_query daphne DistributedWorker)
-target_link_libraries(ssb_query PRIVATE ${LIBS})
-target_compile_options(ssb_query PUBLIC -g -O0)
-target_add_morphstore(ssb_query)
 
-add_executable(morphstore_perf_ref ./MorphStore/MorphstorePerformanceAligned.cpp)
-#add_dependencies(morphstore_perf daphne DistributedWorker)
-target_link_libraries(morphstore_perf_ref PRIVATE ${LIBS})
-target_compile_options(morphstore_perf_ref PUBLIC -g -O0)
-target_add_morphstore(morphstore_perf_ref)
-
-add_executable(morphstore_perf_otfly ./MorphStore/MorphStorePerformanceAlignedOtfly.cpp)
-#add_dependencies(morphstore_perf daphne DistributedWorker)
-target_link_libraries(morphstore_perf_otfly PRIVATE ${LIBS})
-target_compile_options(morphstore_perf_otfly PUBLIC -g -O0)
-target_add_morphstore(morphstore_perf_otfly)
-
-add_executable(ssb_query11_kernel ./MorphStore/SSBQuery11Kernels.cpp)
-#add_dependencies(morphstore_perf daphne DistributedWorker)
-target_link_libraries(ssb_query11_kernel PRIVATE ${LIBS})
-target_compile_options(ssb_query11_kernel PUBLIC -g -O0)
-target_add_morphstore(ssb_query11_kernel)
-
-add_executable(test_file ./MorphStore/test.cpp)
-#add_dependencies(morphstore_perf daphne DistributedWorker)
-target_link_libraries(test_file PRIVATE ${LIBS})
-target_compile_options(test_file PUBLIC -g -O0)
-target_add_morphstore(test_file)
-
-add_executable(ssb_query11_daphne ./MorphStore/SSBQuery11DAPHNE.cpp)
-#add_dependencies(morphstore_perf daphne DistributedWorker)
-target_link_libraries(ssb_query11_daphne PRIVATE ${LIBS})
-target_compile_options(ssb_query11_daphne PUBLIC -g -O0)
-target_add_morphstore(ssb_query11_daphne)
+# Add MorphStore API to project
+add_subdirectory(MorphStore)

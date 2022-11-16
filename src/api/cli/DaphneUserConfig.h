@@ -73,6 +73,7 @@ struct DaphneUserConfig {
     
     
     std::string libdir;
+    std::string api;
     std::vector<std::string> library_paths;
     std::map<std::string, std::vector<std::string>> daphnedsl_import_paths;
 };
