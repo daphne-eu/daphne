@@ -25,9 +25,6 @@
 
 #include <memory>
 #include <utility>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -36,59 +33,49 @@ using namespace mlir;
 namespace
 {
 
-    std::unordered_map <std::string, mlir::Value> tables;
-    struct SqlReplacement : public RewritePattern{
+    struct SqlReplacement : public RewritePattern {
+        static std::unordered_map <std::string, mlir::Value> tables;
 
         SqlReplacement(MLIRContext * context, PatternBenefit benefit = 1)
         : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
         {}
 
-        LogicalResult matchAndRewrite(
-            Operation *op,
-            PatternRewriter &rewriter
-        ) const override
-        {
-            if(auto rOp = llvm::dyn_cast<mlir::daphne::RegisterViewOp>(op)){
+        LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
+            /// registerView(...);
+            if(auto regViewOp = llvm::dyn_cast<mlir::daphne::RegisterViewOp>(op)){
                 std::stringstream view_stream;
-                view_stream << rOp.view().str();
-                mlir::Value arg = rOp.arg();
+                view_stream << regViewOp.view().str();
+                mlir::Value arg = regViewOp.arg();
 
                 tables[view_stream.str()] = arg;
                 rewriter.eraseOp(op);
                 return success();
-            }else if(auto sqlop = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
-
-#ifndef USE_MORPHSTORE
+            }
+            
+            /// sql(...);
+            if(auto sqlOp = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
                 std::stringstream sql_query;
-                sql_query << sqlop.sql().str();
+                sql_query << sqlOp.sql().str();
 
+//                #ifndef USE_MORPHSTORE
                 SQLParser parser;
+//                #else
+//                MorphStoreSQLParser parser;
+//                #endif
                 parser.setView(tables);
                 std::string sourceName;
                 llvm::raw_string_ostream ss(sourceName);
-                ss << "[sql query @ " << sqlop->getLoc() << ']';
+                ss << "[sql query @ " << sqlOp->getLoc() << ']';
                 mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
 
                 rewriter.replaceOp(op, result_op);
                 return success();
-#else
-                std::stringstream sql_query;
-                sql_query << sqlop.sql().str();
-
-                MorphStoreSQLParser parser;
-                parser.setView(tables);
-                std::string sourceName;
-                llvm::raw_string_ostream ss(sourceName);
-                ss << "[sql query @ " << sqlop->getLoc() << ']';
-                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
-
-                rewriter.replaceOp(op, result_op);
-                return success();
-#endif
             }
             return failure();
         }
     };
+    
+    SQLParser::viewType SqlReplacement::tables = {};
 
     struct RewriteSqlOpPass
     : public PassWrapper <RewriteSqlOpPass, OperationPass<ModuleOp>>

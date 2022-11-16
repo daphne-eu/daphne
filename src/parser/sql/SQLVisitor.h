@@ -31,6 +31,17 @@
 #include <vector>
 #include <utility>
 
+
+struct MapUtils {
+    template< typename T >
+    static T fetch(std::unordered_map<std::string, T> x, const std::string & name) {
+        auto search = x.find(name);
+        return search != x.end() ? search->second : nullptr;
+    }
+};
+
+
+
 class SQLVisitor : public SQLGrammarVisitor {
 
     friend class MorphStoreSQLVisitor;
@@ -44,6 +55,7 @@ class SQLVisitor : public SQLGrammarVisitor {
 
 
 //Helper Functions:
+
 
     /**
      * @brief creates a mlir-string-value from a c++ String

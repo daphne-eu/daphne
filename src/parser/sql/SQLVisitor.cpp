@@ -28,53 +28,71 @@
 #include <cstdint>
 #include <regex>
 
+#include <util/BitPusher.h>
+
 // ****************************************************************************
 // Helper functions
 // ****************************************************************************
-/**
- * @brief Test if the flag at the position is set and returns result
- */
-bool isBitSet(int64_t flag, int64_t position){
-    return ((flag >> position) & 1) == 1;
-}
-
-/**
- * @brief Sets the Flag at the given position with a value
- */
-void setBit(int64_t& flag, int64_t position, int64_t val){
-    val = !!val;
-    flag ^= (-val ^ flag) & (0b1 << position);
-}
-
-/**
- * @brief Flips the bit of the Flag at the position
- */
-void toggleBit(int64_t& flag, int64_t position){
-    setBit(flag, position, !isBitSet(flag, position));
-}
+///**
+// * @brief Test if the flag at the position is set and returns result
+// */
+//bool isBitSet(int64_t flag, int64_t position){
+////    return ((flag >> position) & 1) == 1;
+//    return BitPusher::isBitSet(flag, position);
+//}
+//
+///**
+// * @brief Sets the Flag at the given position with a value
+// */
+//void setBit(int64_t& flag, int64_t position, int64_t val){
+//    val = !!val;
+//    flag ^= (-val ^ flag) & (0b1 << position);
+//}
+//
+///**
+// * @brief Flips the bit of the Flag at the position
+// */
+//void toggleBit(int64_t& flag, int64_t position){
+//    setBit(flag, position, !isBitSet(flag, position));
+//}
 
 // ****************************************************************************
 // Member Helper functions
 // ****************************************************************************
 
-template<typename T>
-T fetch(std::unordered_map <std::string, T> x, const std::string& name) {
-    auto search = x.find(name);
-    return search != x.end() ? search->second : nullptr;
-}
+
+//template<typename T>
+//T fetch(std::unordered_map <std::string, T> x, const std::string& name) {
+//    auto search = x.find(name);
+//    return search != x.end() ? search->second : nullptr;
+//}
+//
+//template<>
+//std::string fetch<std::string>(
+//    std::unordered_map <std::string, std::string> x,
+//    const std::string& name
+//)
+//{
+//    auto search = x.find(name);
+//    if(search != x.end()){
+//        return search->second;
+//    }
+//    return "";
+//}
 
 template<>
-std::string fetch<std::string>(
-    std::unordered_map <std::string, std::string> x,
-    const std::string& name
-)
-{
+std::string MapUtils::fetch<std::string>(
+  std::unordered_map<std::string, std::string> x,
+  const std::string & name
+) {
     auto search = x.find(name);
-    if(search != x.end()){
+    if (search != x.end()) {
         return search->second;
     }
     return "";
 }
+
+
 
 void SQLVisitor::registerAlias(const std::string& name, mlir::Value arg){
     alias[name] = arg;
@@ -87,7 +105,7 @@ std::string SQLVisitor::setFramePrefix(
     bool ignore = false
 )
 {
-    bool frameHasPrefix = !fetch<std::string>(framePrefix, framename).empty();
+    bool frameHasPrefix = !MapUtils::fetch<std::string>(framePrefix, framename).empty();
     if(frameHasPrefix){
         if(necessary){
             std::stringstream x;
@@ -97,14 +115,14 @@ std::string SQLVisitor::setFramePrefix(
             return "";
         }
     }
-    bool inuse = !fetch<std::string>(reverseFramePrefix, prefix).empty() && !ignore;
+    bool inuse = !MapUtils::fetch<std::string>(reverseFramePrefix, prefix).empty() && !ignore;
     std::string newPrefix = prefix;
     int i = 1;
     while(inuse){
         std::stringstream x;
         x << prefix << i;
         newPrefix = x.str();
-        inuse = !fetch<std::string>(reverseFramePrefix, newPrefix).empty();
+        inuse = !MapUtils::fetch<std::string>(reverseFramePrefix, newPrefix).empty();
     }
 
     if(!ignore){
@@ -116,7 +134,7 @@ std::string SQLVisitor::setFramePrefix(
 }
 
 [[maybe_unused]] mlir::Value SQLVisitor::fetchAlias(const std::string& name){
-    auto res = fetch<mlir::Value>(alias, name);
+    auto res = MapUtils::fetch<mlir::Value>(alias, name);
     if(res != nullptr){
         return res;
     }
@@ -127,11 +145,11 @@ std::string SQLVisitor::setFramePrefix(
 
 mlir::Value SQLVisitor::fetchMLIR(const std::string& name){
     mlir::Value res;
-    res = fetch<mlir::Value>(alias, name);
+    res = MapUtils::fetch<mlir::Value>(alias, name);
     if(res != nullptr){
         return res;
     }
-    res = fetch<mlir::Value>(view, name);
+    res = MapUtils::fetch<mlir::Value>(view, name);
     if(res != nullptr){
         return res;
     }
@@ -141,7 +159,7 @@ mlir::Value SQLVisitor::fetchMLIR(const std::string& name){
 }
 
 std::string SQLVisitor::fetchPrefix(const std::string& name){
-    auto prefix = fetch<std::string>(framePrefix, name);
+    auto prefix = MapUtils::fetch<std::string>(framePrefix, name);
     return prefix.empty() ? "" : prefix;
 }
 
@@ -432,7 +450,7 @@ antlrcpp::Any SQLVisitor::visitSelect(
     mlir::Value res;
 
     //Setting Codegeneration for Where Clause
-    setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
+    BitPusher::setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
 
     //Creating a Frame using FROM and JOIN
     try{
@@ -455,13 +473,13 @@ antlrcpp::Any SQLVisitor::visitSelect(
     //aggregation function we are going to generate the code on which the
     //aggregation and extend the currentFrame with it.
     if(ctx->groupByClause()){
-        setBit(sqlFlag, (int64_t)SQLBit::group, 1);
-        setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::group, 1);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
         visit(ctx->groupByClause());
         for(size_t i = 0; i < ctx->selectExpr().size(); i++){
             visit(ctx->selectExpr(i));
         }
-        setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
         visit(ctx->groupByClause());
     }
 
@@ -533,7 +551,7 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(
     mlir::Value matrix;
     antlrcpp::Any vExpr = visit(ctx->var);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -729,7 +747,7 @@ antlrcpp::Any SQLVisitor::visitGroupByClause(
     //  followed by a having check on the newly grouped result.
     mlir::Location loc = utils.getLoc(ctx->start);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         for(size_t i = 0; i < ctx->selectIdent().size(); i++){
             groupName.push_back(utils.valueOrError(visit(ctx->selectIdent(i))));
             grouped[ctx->selectIdent(i)->getText()] = 1;
@@ -774,7 +792,7 @@ antlrcpp::Any SQLVisitor::visitHavingClause(
     mlir::Value filter;
     antlrcpp::Any vExpr = visit(ctx->cond);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -860,7 +878,7 @@ antlrcpp::Any SQLVisitor::visitLiteralExpr(
     SQLGrammarParser::LiteralExprContext * ctx
 )
 {
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
     return utils.valueOrError(visit(ctx->literal()));
@@ -869,8 +887,8 @@ antlrcpp::Any SQLVisitor::visitLiteralExpr(
 antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     SQLGrammarParser::IdentifierExprContext * ctx)
 {
-    if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
-        && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
+    if(     BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
+        && !BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
         && grouped[ctx->selectIdent()->getText()] == 0) //AND the label is not in group expr
     {
         std::stringstream err_msg;
@@ -880,7 +898,7 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
         throw std::runtime_error(err_msg.str());
     }
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -906,23 +924,23 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //  the currentFrame. This Matrix is the result of this function.
     std::string newColumnName = "group_" + ctx->var->getText();
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
         throw std::runtime_error("Use of an aggregation function without a group clause");
     }
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::agg)){ //Not allowed nested Function Call
+    if(BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::agg)){ //Not allowed nested Function Call
         throw std::runtime_error("Nested Aggregation Functions");
     }
 
     //create Column pre Group for in group Aggregation
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         columnName.push_back(createStringConstant(newColumnName));
         functionName.push_back(getGroupEnum(ctx->func->getText()));
 
-        setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
-        setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
         mlir::Value expr = utils.valueOrError(visit(ctx->generalExpr()));
-        setBit(sqlFlag, (int64_t)SQLBit::agg, 0);
-        setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::agg, 0);
+        BitPusher::setBit(sqlFlag, (int64_t)SQLBit::codegen, 0);
 
         mlir::Value matrix = castToMatrixColumn(expr);
         currentFrame = addMatrixToCurrentFrame(matrix, newColumnName);
@@ -939,7 +957,7 @@ antlrcpp::Any SQLVisitor::visitParanthesesExpr(
 )
 {
     antlrcpp::Any vRes = visit(ctx->generalExpr());
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
     return utils.valueOrError(vRes);
@@ -955,7 +973,7 @@ antlrcpp::Any SQLVisitor::visitMulExpr(
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -984,7 +1002,7 @@ antlrcpp::Any SQLVisitor::visitAddExpr(
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -1013,7 +1031,7 @@ antlrcpp::Any SQLVisitor::visitCmpExpr(
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -1057,7 +1075,7 @@ antlrcpp::Any SQLVisitor::visitAndExpr(
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -1081,7 +1099,7 @@ antlrcpp::Any SQLVisitor::visitOrExpr(
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
