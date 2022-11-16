@@ -166,21 +166,24 @@ target_compile_options(theta_join_test PUBLIC -g -O0)
 # *****************************************************************************
 # Morphstore-specific tests
 # *****************************************************************************
-# @todo: include tests into run_tests
-set(MORPHSTORE_SOURCES
-        run_tests.cpp
-        runtime/local/kernels/MorphStore/SelectTest.cpp
-        runtime/local/kernels/MorphStore/SemiJoinTest.cpp
-        runtime/local/kernels/MorphStore/CalcTest.cpp
-        runtime/local/kernels/MorphStore/BetweenTest.cpp
-        runtime/local/kernels/MorphStore/SumTest.cpp
-        runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
-        runtime/local/kernels/MorphStore/GroupByTest.cpp
-        runtime/local/kernels/MorphStore/GroupSumTest.cpp
-)
+if(USE_MOPRHSTORE)
+    # @todo: include tests into run_tests
+    # TODO: Refactor SelectTest to MorphStore/EwBinaryObjSca.h
+    set(MORPHSTORE_SOURCES
+            run_tests.cpp
+            runtime/local/kernels/MorphStore/SelectTest.cpp
+    #        runtime/local/kernels/MorphStore/SemiJoinTest.cpp
+    #        runtime/local/kernels/MorphStore/CalcTest.cpp
+    #        runtime/local/kernels/MorphStore/BetweenTest.cpp
+    #        runtime/local/kernels/MorphStore/SumTest.cpp
+    #        runtime/local/kernels/MorphStore/NaturalJoinTest.cpp
+    #        runtime/local/kernels/MorphStore/GroupByTest.cpp
+    #        runtime/local/kernels/MorphStore/GroupSumTest.cpp
+    )
 
-add_executable(morphstore_test ${MORPHSTORE_SOURCES})
-#add_dependencies(morphstore_test daphne DistributedWorker)
-target_link_libraries(morphstore_test PRIVATE ${LIBS})
-target_compile_options(morphstore_test PUBLIC -g -O0)
-target_add_morphstore(morphstore_test)
+    add_executable(morphstore_test ${MORPHSTORE_SOURCES})
+    #add_dependencies(morphstore_test daphne DistributedWorker)
+    target_link_libraries(morphstore_test PRIVATE ${LIBS})
+    target_compile_options(morphstore_test PUBLIC -g -O0)
+    target_add_morphstore(morphstore_test)
+endif()

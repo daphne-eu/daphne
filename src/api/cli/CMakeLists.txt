@@ -36,10 +36,13 @@ if(USE_FPGAOPENCL)
     list(APPEND LIB_DEPS FPGAOPENCLKernels)
 endif()
 
+if(USE_MORPHSTORE)
+    list(APPEND LIB_DEPS MorphStoreKernels)
+endif()
+
 add_llvm_executable(daphne daphne.cpp DaphneUserConfig.h DEPENDS ${LIB_DEPS})
 
 llvm_update_compile_flags(daphne)
 target_link_libraries(daphne PRIVATE ${LIBS})
-target_add_morphstore(daphne)
 
 mlir_check_all_link_libraries(daphne)

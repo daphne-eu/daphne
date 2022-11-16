@@ -413,7 +413,6 @@ while [[ $# -gt 0 ]]; do
             export BUILD_CUDA="-DUSE_CUDA=ON"
             ;;
         --morphstore)
-            echo using MORPHSTORE
             export BUILD_MORPHSTORE="-DUSE_MORPHSTORE=ON"
             ;;
         --arrow)
