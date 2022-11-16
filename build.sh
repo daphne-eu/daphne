@@ -461,7 +461,6 @@ if [ ! -d "${projectRoot}/build" ]; then
     sleep 1
 fi
 
-
 # Make sure that the submodule(s) have been updated since the last clone/pull.
 # But only if this is a git repo.
 if [ -d .git ]; then
@@ -690,8 +689,20 @@ cd "${thirdpartyPath}/${llvmName}"
 if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit="$(git log -1 --format=%H)"
+else
+    # download and set up LLVM code if compilation is run without the local working copy being checked out from git
+    # e.g., compiling from released source artifact
+    llvmCommit="4763c8c9e3c7ef2946fa575d5c6bf8dd7fb88639"
+    llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
+    llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
+    if ! is_dependency_downloaded "llvm_${llvmCommit}"; then
+        wget https://github.com/llvm/llvm-project/archive/${llvmCommit}.tar.gz -qO "${llvmSnapshotPath}"
+        tar xzf "${llvmSnapshotPath}" --strip-components=1
+        dependency_download_success "llvm_${llvmCommit}"
+    fi
 fi
-cd - > /dev/null
+
+cd - > /dev/null # return back from llvm 3rd party subdir
 
 if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
     daphne_msg "Build llvm version ${llvmCommit}"
