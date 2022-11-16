@@ -15,7 +15,14 @@
  */
 
 #include <parser/sql/morphstore/MorphStoreSQLVisitor.h>
-#include <parser/sql/SQLVisitor.cpp>
+#include "util/BitPusher.h"
+
+/**
+ * @brief Test if the flag at the position is set and returns result
+ */
+//bool isBitSet(int64_t flag, int64_t position){
+//    return ((flag >> position) & 1) == 1;
+//}
 
 antlrcpp::Any MorphStoreSQLVisitor::visitCmpExpr(
         SQLGrammarParser::CmpExprContext * ctx
@@ -27,7 +34,7 @@ antlrcpp::Any MorphStoreSQLVisitor::visitCmpExpr(
     antlrcpp::Any vLhs = visit(ctx->lhs);
     antlrcpp::Any vRhs = visit(ctx->rhs);
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+    if(!BitPusher::isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
 
@@ -38,7 +45,7 @@ antlrcpp::Any MorphStoreSQLVisitor::visitCmpExpr(
         return static_cast<mlir::Value>(builder.create<mlir::daphne::MorphStoreSelectEqOp>(
                 loc, lhs, rhs
         ));
-    if(op == "<>")
+    if(op == "<>" or op == "!=")
         return static_cast<mlir::Value>(builder.create<mlir::daphne::MorphStoreSelectNeqOp>(
                 loc, lhs, rhs
         ));

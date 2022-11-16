@@ -20,16 +20,18 @@
 
 #include <parser/sql/SQLVisitor.h>
 
+#include <utility>
+
 class MorphStoreSQLVisitor : public SQLVisitor{
     antlrcpp::Any visitCmpExpr(SQLGrammarParser::CmpExprContext * ctx) override;
 public:
-    [[maybe_unused]] explicit MorphStoreSQLVisitor(mlir::OpBuilder & builder) : SQLVisitor(builder) {
-    };
+    [[maybe_unused]] explicit
+    MorphStoreSQLVisitor(mlir::OpBuilder & builder) : SQLVisitor(builder)
+    {}
 
-    MorphStoreSQLVisitor(
-            mlir::OpBuilder & builder,
-    std::unordered_map <std::string, mlir::Value> view_arg
-    ) : SQLVisitor(builder, view_arg){};
+    MorphStoreSQLVisitor(mlir::OpBuilder & builder, std::unordered_map <std::string, mlir::Value> view_arg)
+    : SQLVisitor(builder, std::move(view_arg))
+    {}
 
 };
 

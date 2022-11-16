@@ -25,16 +25,25 @@
 #include <string>
 #include <unordered_map>
 
-struct SQLParser : public Parser {
-
-    std::unordered_map <std::string, mlir::Value> view;
-    void setView(std::unordered_map <std::string, mlir::Value> view);
-
+/**
+ * @brief DAPHNEs custom Parser dedicated for parsing SQL strings.
+ *
+ * Implements the daphne::Parser interface.
+ */
+class SQLParser : public Parser {
+  public:
+    using viewType = std::unordered_map <std::string, mlir::Value>;
+  private:
+    viewType view;
+  
+  public:
+    /**
+     * Set the view on Frames (name to Frame mapping) used while emitting DaphneIR from parsed ANTLR tree.
+     * @param view unordered map holding name to Frame mapping
+     */
+    void setView(viewType view);
     void parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) override;
-
-    mlir::Value parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName);
-
-
+    mlir::Value parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) const;
 };
 
 #endif /* SRC_PARSER_SQL_SQLPARSER_H */

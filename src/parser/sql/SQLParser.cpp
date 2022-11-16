@@ -17,6 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLParser.h>
 #include <parser/sql/SQLVisitor.h>
+#include <parser/sql/morphstore/MorphStoreSQLVisitor.h>
 
 #include "antlr4-runtime.h"
 #include "SQLGrammarLexer.h"
@@ -27,33 +28,42 @@
 #include <mlir/IR/Location.h>
 
 #include <istream>
+#include <utility>
 #include <parser/CancelingErrorListener.h>
 
-void SQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
-    view = arg;
+void SQLParser::setView(viewType arg){
+    view = std::move(arg);
 }
 
-mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName){
+mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName) const {
     CancelingErrorListener errorListener;
     auto errorStrategy = std::make_shared<antlr4::BailErrorStrategy>();
-    {
-        antlr4::ANTLRInputStream input(stream);
-        input.name = sourceName;
-        SQLGrammarLexer lexer(&input);
-        lexer.removeErrorListeners();
-        lexer.addErrorListener(&errorListener);
-        antlr4::CommonTokenStream tokens(&lexer);
-        SQLGrammarParser parser(&tokens);
-        // TODO: evaluate if overloading error handler makes sense
-        parser.setErrorHandler(errorStrategy);
-        SQLGrammarParser::SqlContext * ctx = parser.sql();
-        SQLVisitor visitor(builder, view);
-        antlrcpp::Any a = visitor.visitSql(ctx);
-        if(a.is<mlir::Value>()){
-          return a.as<mlir::Value>();
-        }
-        throw std::runtime_error("expected a mlir::Value");
+    
+    antlr4::ANTLRInputStream input(stream);
+    input.name = sourceName;
+    
+    SQLGrammarLexer lexer(&input);
+    lexer.removeErrorListeners();
+    lexer.addErrorListener(&errorListener);
+    
+    antlr4::CommonTokenStream tokens(&lexer);
+    SQLGrammarParser parser(&tokens);
+    // TODO: evaluate if overloading error handler makes sense
+    parser.setErrorHandler(errorStrategy);
+    SQLGrammarParser::SqlContext * ctx = parser.sql();
+    
+//    #ifndef USE_MORPHSTORE
+    SQLVisitor visitor(builder, view);
+//    #else
+//    MorphStoreSQLVisitor visitor(builder, view);
+//    #endif
+    antlrcpp::Any a = visitor.visitSql(ctx);
+    
+    if(a.is<mlir::Value>()){
+      return a.as<mlir::Value>();
     }
+    
+    throw std::runtime_error("SQLParser: expected a mlir::Value");
 }
 
 void SQLParser::parseStream(mlir::OpBuilder & builder, std::istream & stream, const std::string &sourceName){
