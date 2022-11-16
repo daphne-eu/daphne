@@ -23,7 +23,7 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
     std::string filename = (filename_.find(".meta") == std::string::npos) ? filename_ + ".meta" : filename_;
     std::ifstream ifs(filename, std::ios::in);
     if (!ifs.good())
-        throw std::runtime_error("Could not open file '" + filename + ".meta' for reading meta data.");
+        throw std::runtime_error("Could not open file '" + filename + "' for reading meta data.");
 
     nlohmann::basic_json jf = nlohmann::json::parse(ifs);
 
