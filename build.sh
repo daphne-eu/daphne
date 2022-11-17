@@ -723,6 +723,7 @@ if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
     cd $FPGAOPENCL_BISTREAM_DIR
     wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
     wget $FPGAOPENCL_BISTREAM_URL/sgemv.aocx
+    wget $FPGAOPENCL_BISTREAM_URL/ssyrk.aocx
     cd - > /dev/null
   fi
 fi

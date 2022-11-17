@@ -794,7 +794,7 @@ def Daphne_CTableOp : Daphne_Op<"ctable", [
 def Daphne_SyrkOp : Daphne_Op<"syrk", [
     TypeFromFirstArg,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArgNumCols, NumColsFromArg, CUDASupport,
+    NumRowsFromArgNumCols, NumColsFromArg, CUDASupport,FPGAOPENCLSupport, 
     CastArgsToResType
 ]> {
     // TODO: support `A @ t(A)` operation

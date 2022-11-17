@@ -46,7 +46,12 @@ set(FPGAOPENCLKernels_SRC
 	${PREFIX}/sgemv_interface.cpp
 	${PREFIX}/sgemv_interface.h
 	${PROJECT_BINARY_DIR}/FPGAOPENCLkernels.cpp
-)
+	${PREFIX}/kernel_utils.h
+        ${PREFIX}/kernel_utils.cpp
+	${PREFIX}/Syrk.h
+	${PREFIX}/syrk_interface.cpp
+	${PREFIX}/syrk_interface.h
+) 
 
 add_library(FPGAOPENCLKernels SHARED ${FPGAOPENCLKernels_SRC})
 set_target_properties(FPGAOPENCLKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)

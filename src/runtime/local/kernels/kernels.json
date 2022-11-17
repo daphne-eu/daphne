@@ -2181,7 +2181,14 @@
                 "name":  ["CUDA", "CPP"],
                 "instantiations": [[["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                                    [["DenseMatrix", "double"], ["DenseMatrix", "double"]]]
+            },
+             {
+                "name":  ["FPGAOPENCL"],
+                "instantiations": [
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"]]
+                ]
             }
+ 
         ]
     },
     {
