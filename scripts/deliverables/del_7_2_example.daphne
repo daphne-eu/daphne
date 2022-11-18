@@ -18,7 +18,8 @@ res = sql(
     Group By customer.C_CUSTKEY;"
 );
 
-// Range Orderdate: 19920101 and 19980802
+// Range of Marketsegment: 0 - 4
+// Range of Orderdate: 19920101 - 19980802
 
 
 /// print the results

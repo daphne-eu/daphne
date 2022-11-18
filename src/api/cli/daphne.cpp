@@ -194,7 +194,7 @@ main(int argc, char** argv)
     /// @TODO: exchange string by a list (like explainArgsList) to support multiple APIs at the same time
     opt<string> api(
             "api", cat(daphneOptions),
-            desc("Name of the Kernel Lib that should be compiled against")
+            desc("Name of the API Lib that should be compiled against")
     );
 
     enum ExplainArgs {
@@ -294,7 +294,7 @@ main(int argc, char** argv)
     user_config.api = api.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     #ifdef USE_MORPHSTORE
-    user_config.library_paths.push_back(user_config.libdir + "/MorphStore/libMorphStoreKernels.so");
+    user_config.library_paths.push_back(user_config.libdir + "/libMorphStoreKernels.so");
     #endif
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;

@@ -12,7 +12,7 @@ fi
 # executes DAPHNE compiler
 function daphne () {
   # TODO set to build directory
-  cmd="${root}/cmake-build-debug-w-morphstore/bin/daphne ${@}"
+  cmd="${root}/bin/daphne ${@}"
   echo -e "${c_green}\$> ${cmd} ${c_reset}"
   $cmd
 }
@@ -24,11 +24,11 @@ script_dir="$(realpath $(dirname "${0})"))"
 # DAPHNE dir
 root=$(realpath "$script_dir/../..")
 
-libDir="cmake-build-debug/src/runtime/local/kernels"
+libDir="lib"
 
 # TPC-H files
-customer="$script_dir/tpch/data/customer.csv"
-orders="$script_dir/tpch/data/orders.csv"
+customer="${root}/benchmarks/tpc-h/data/customer.csv"
+orders="${root}/benchmarks/tpc-h/data/orders.csv"
 
 # navigate into DAPHNE dir
 cd "$root" || ( cd "$home" && exit 1 )
@@ -38,7 +38,7 @@ echo "Customer data: ${customer}"
 echo "Orders data: ${orders}"
 
 # call DAPHNE compiler with example script and TPC-H data files
-runtime_args="--libdir ${libDir} ./del_7_2_example.daphne inCustomer=\"${customer}\" inOrders=\"${orders}\""
+runtime_args="--libdir ${libDir} ./scripts/deliverables/del_7_2_example.daphne inCustomer=\"${customer}\" inOrders=\"${orders}\""
 explains="--explain parsing --explain sql --explain kernels"
 
 #daphne ${explains} "${@}" ${runtime_args}
