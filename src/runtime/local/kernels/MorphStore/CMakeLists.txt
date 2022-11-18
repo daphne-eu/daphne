@@ -34,6 +34,7 @@ if(USE_MORPHSTORE)
 
     ### Add MorphStore API as lib
     add_library(MorphStoreKernels SHARED ${MorphStore_kernels_SRC})
+    set_target_properties(MorphStoreKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
     ### Link against common libs
     target_link_libraries(MorphStoreKernels PUBLIC ${LIBS})
     target_add_morphstore(MorphStoreKernels)
