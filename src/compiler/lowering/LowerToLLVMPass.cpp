@@ -654,8 +654,7 @@ public:
                     Value val = rewriter.create<LLVM::LoadOp>(loc, addr);
                     auto expTy = typeConverter->convertType(op.inputs().getType()[i]);
                     if (expTy != val.getType()) {
-                        // casting for scalars
-                        val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
+                        val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getIntegerType(expTy.getIntOrFloatBitWidth(),false), val);
                         val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
                     }
                     funcBlock.getArgument(0).replaceAllUsesWith(val);
@@ -710,11 +709,15 @@ public:
         if(numRes > 0) {
             auto m32type = rewriter.getF32Type();
             auto m64type = rewriter.getF64Type();
+            auto msi64type = rewriter.getIntegerType(64, true);
+
             auto res_elem_type = op->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
             if(res_elem_type == m64type)
                 operandType = daphne::MatrixType::get(getContext(), m64type);
             else if(res_elem_type == m32type)
                 operandType = daphne::MatrixType::get(getContext(), m32type);
+            else if(res_elem_type == msi64type)
+                operandType = daphne::MatrixType::get(getContext(), msi64type);
             else {
                 std::string str;
                 llvm::raw_string_ostream output(str);
