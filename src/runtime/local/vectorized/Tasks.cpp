@@ -188,6 +188,7 @@ return _data._ru-_data._rl;
 
 template class CompiledPipelineTask<DenseMatrix<double>>;
 template class CompiledPipelineTask<DenseMatrix<float>>;
+template class CompiledPipelineTask<DenseMatrix<int64_t>>;
 
 template class CompiledPipelineTask<CSRMatrix<double>>;
 template class CompiledPipelineTask<CSRMatrix<float>>;
