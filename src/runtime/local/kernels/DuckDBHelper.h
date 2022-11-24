@@ -228,7 +228,7 @@ void ddb_FillFrame(
 }
 
 //We Fill the Frame with every DataChunk seperately
-void ddb_FillVectorised(
+void ddb_VectorizedFill(
     Frame *& res,
     duckdb::unique_ptr<duckdb::QueryResult> &query_result, //doesn't give us the res lenght;
     ValueTypeCode * schema,
@@ -255,20 +255,19 @@ void ddb_FillVectorised(
 }
 
 //We Append every DataChunk onto the next and than fill.
-void ddb_FillDefault(
+void ddb_MergeFill(
     Frame *& res,
-    duckdb::unique_ptr<duckdb::QueryResult> &query_result, //doesn't give us the res lenght;
+    duckdb::unique_ptr<duckdb::QueryResult> &query_result, //doesn't give us the res lenght
     ValueTypeCode * schema,
     std::string * labels,
     size_t totalCols
 ) {
     size_t totalRows = 0;
     duckdb::unique_ptr<duckdb::DataChunk> mainChunk = query_result->Fetch();
-    duckdb::unique_ptr<duckdb::DataChunk> nextChunk = query_result->Fetch();
+    duckdb::unique_ptr<duckdb::DataChunk> nextChunk;
 
-    while(nextChunk != nullptr){
+    while((nextChunk = query_result->Fetch()) != nullptr){
         mainChunk->Append((const_cast<duckdb::DataChunk&>(*nextChunk)), true);
-        nextChunk = query_result->Fetch();
     }
     totalRows = mainChunk->size();
 
@@ -279,7 +278,7 @@ void ddb_FillDefault(
 
 void ddb_FillResultFrame(
     Frame *& res,
-    duckdb::unique_ptr<duckdb::QueryResult> &query_result, //doesn't give us the res lenght;
+    duckdb::unique_ptr<duckdb::QueryResult> &query_result, //doesn't give us the res lenght
     ValueTypeCode * schema,
     std::string * labels,
     size_t totalCols
@@ -289,12 +288,12 @@ void ddb_FillResultFrame(
         //QueryResult doesn't has a Possibility to get the row count.
         //In this case: We have to Fetch all the DataChunks and add up there lenght.
         //Then we store one DataChunk at a time into a Frame.
-        ddb_FillVectorised(res, query_result, schema, labels, totalCols);
+        ddb_VectorizedFill(res, query_result, schema, labels, totalCols);
     #else //DEFAULTMODE
         //In this case we Fetch all the DataChunks and fit append them together into
         //one DataChunk. This datachunk has a row count and we can load this data into
         //the Frame!
-        ddb_FillDefault(res, query_result, schema, labels, totalCols);
+        ddb_MergeFill(res, query_result, schema, labels, totalCols);
     #endif // Result type
 }
 
