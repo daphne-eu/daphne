@@ -40,8 +40,6 @@ void innerJoin(
     // context
     DCTX(ctx)
 ) {
-    std::cout << "innerJoin, DuckDB with SC access!" << std::endl;
-    //general Data
     const size_t numCols_l = lhs->getNumCols();
     const size_t numCols_r = rhs->getNumCols();
     const size_t totalCols = numCols_r + numCols_l;
@@ -64,20 +62,13 @@ void innerJoin(
         col_idx_res++;
     }
 
-
-// //start loading data into DuckDB
-//     std::vector<duckdb::LogicalType> types_l;
-//     std::vector<duckdb::LogicalType> types_r;
+//Start loading data into DuckDB
     duckdb::DataChunk dc_l;
     duckdb::DataChunk dc_r;
-
     ddb_CreateDataChunk(dc_l, lhs);
     ddb_CreateDataChunk(dc_r, rhs);
 
-//Data transfer finished
-    //For the InnerJoin we need 4 to 5 DataChunks. two with the data. two for the Join Condition. one for the results
-
-//Datat prep for join
+//Data prep for join
     duckdb::DataChunk dc_join_l;
     duckdb::DataChunk dc_join_r;
 
@@ -92,30 +83,27 @@ void innerJoin(
     dc_join_l.SetCardinality(dc_l);
     dc_join_r.SetCardinality(dc_r);
 
-    duckdb::SelectionVector sel_l(dc_l.size());
-    duckdb::SelectionVector sel_r(dc_r.size());
-
+    duckdb::SelectionVector sel_l(dc_l.size()); //is this correct?
+    duckdb::SelectionVector sel_r(dc_r.size()); //is this correct?
     duckdb::idx_t l_t = 0, r_t = 0;
 
-//join
-    std::vector<duckdb::JoinCondition> condition ;
+//JoinCondition
+    std::vector<duckdb::JoinCondition> condition;
     duckdb::JoinCondition equal;//This innerJoin is always an Equi-Join
     equal.comparison = duckdb::ExpressionType::COMPARE_EQUAL;
     condition.push_back(move(equal));
-    //Exectution
+
+//Exectution
     size_t match_count = duckdb::NestedLoopJoinInner::Perform(l_t, r_t, dc_join_l, dc_join_r, sel_l, sel_r, condition);
 
 //Result
     dc_l.Slice(sel_l, match_count);
     dc_r.Slice(sel_r, match_count);
-    //WE NEED TO FLATTEN! Otherwise all the data is still there and we can copy the wrong result. (DICTIONARY)
     dc_l.Flatten();
     dc_r.Flatten();
-    //here we could use another data_chunk for fusing the two results together.
-    //but i guess we could forgo this and just create a dataframe that we fill.
+
     res = DataObjectFactory::create<Frame>(match_count, totalCols, schema, newlabels, false);
 
-    //Tiled reading. Saves a creation of one DataChunk or modification of one.
     ddb_FillFrame(res, dc_l);
     ddb_FillFrame(res, dc_r, 0, dc_l.ColumnCount());
 }

@@ -334,6 +334,26 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Data generation
     // ********************************************************************
 
+
+    if(func == "union") {
+        checkNumArgsMin(func, numArgs, 1);
+
+        std::vector<mlir::Value> cols;
+        for(auto arg : args){
+            if(arg.getType().dyn_cast<FrameType>()){
+                cols.push_back(arg);
+            }else{
+                throw std::runtime_error(
+                        "arguments to union() built-in function must be one or "
+                        "more frames"
+                );
+            }
+        }
+        return static_cast<mlir::Value>(builder.create<UnionOp>(
+                loc,  args[0].getType(), cols
+        ));
+
+    }
     if(func == "fill") {
         checkNumArgsExact(func, numArgs, 3);
         mlir::Value arg = args[0];
