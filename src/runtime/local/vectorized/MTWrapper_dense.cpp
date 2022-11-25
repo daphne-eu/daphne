@@ -199,7 +199,8 @@ template<typename VT>
 
 #ifdef USE_CUDA
     // ToDo: multi-device support :-P
-    float taskRatioCUDA = 0.25f;
+//    float taskRatioCUDA = 0.25f;
+    float taskRatioCUDA = 0.50f;
     auto gpu_task_len = static_cast<size_t>(std::ceil(static_cast<float>(len) * taskRatioCUDA));
     device_task_len += gpu_task_len;
     std::unique_ptr<TaskQueue> q_cuda = std::make_unique<BlockingTaskQueue>(gpu_task_len);

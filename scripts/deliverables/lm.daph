@@ -1,0 +1,38 @@
+
+# load
+t0_read=now();
+XY = readMatrix($input);
+numCols=ncol(XY);
+numRows=nrow(XY);
+t1_read=now();
+
+# extract X and y.
+t0_extract=now();
+X = XY[, seq(0, numCols - 2, 1)];
+y = XY[, seq(numCols - 1, numCols - 1, 1)];
+t1_extract=now();
+
+# Normalization, standardization.
+t0_normalize=now();
+Xmeans = mean(X, 1);
+Xstddev = stddev(X, 1);
+X = (X - Xmeans) / Xstddev;
+X = cbind(X, fill(as.f32(1.0), nrow(X), 1));
+t1_normalize=now();
+
+# LM pipeline
+t0_lm=now();
+A = syrk(X);
+lambda = fill(as.f32(0.001), ncol(X), 1);
+A = A + diagMatrix(lambda);
+b=gemv(X,y);
+print("Sum A: ", 0); print(sum(A));
+print("Sum b: ", 0); print(sum(b));
+beta = solve(A, b);
+t1_lm=now();
+
+print("Execution time: ", 0);
+print((t1_lm - t0_read)/1000000000.0, 0);
+print(" seconds", 1);
+
+print("Result sum(beta): ", 0); print(sum(beta));

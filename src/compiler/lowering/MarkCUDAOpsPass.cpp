@@ -87,9 +87,11 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if(rows < 0 || cols < 0) {
+#ifndef NDEBUG
                     std::cerr << "Warning: Ignoring unknown dimension in max mem check of " <<
                               op->getName().getStringRef().str() << "\ndims are: " << rows << "x" << cols <<
                               "\nsetting unknowns to 1 for this test" << std::endl;
+#endif
                     if(rows < 0)
                         rows = 1;
                     if(cols < 0)
@@ -121,9 +123,11 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
                 auto rows = t.getNumRows();
                 auto cols = t.getNumCols();
                 if(rows < 0 || cols < 0) {
+#ifndef NDEBUG
                     std::cerr << "Warning: Ignoring unknown dimension in min input size check of " <<
                               op->getName().getStringRef().str() << "\ndims are: " << rows << "x" << cols <<
                               "\nsetting unknowns to 256 for this test" << std::endl;
+#endif
                     if(rows < 0)
                         rows = 256;
                     if(cols < 0)
