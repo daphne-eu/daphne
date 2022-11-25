@@ -878,7 +878,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
     mlir::Location loc = utils.getLoc(ctx->start);
     
     if (ctx->expr().size() != 2) {
-      throw std::runtime_error(
+        throw std::runtime_error(
                 "built-in function 'map' expects exactly 2 argument(s), but got " +
                 std::to_string(ctx->expr().size())
         );

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAPOP_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAPOP_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_H
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
@@ -31,6 +31,8 @@
 
 template<class DTRes, class DTArg>
 struct Map {
+    // We could have a more specialized function pointer here i.e. (DTRes::VT)(*func)(DTArg::VT).
+    // The problem is that this is currently not supported by kernels.json.
     static void apply(DTRes *& res, const DTArg * arg , void* func, DCTX(ctx)) = delete;
 };
 
@@ -73,4 +75,4 @@ struct Map<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAPOP_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_H

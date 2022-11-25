@@ -28,9 +28,9 @@
 
 #define TYPES double, float, int64_t, int32_t, int8_t, uint64_t, uint8_t
 
-template<class DTres, class DTarg>
-void checkMap(const DTarg * arg, const DTres * exp, void* func) {
-    DTres * res = nullptr;
+template<class DTRes, class DTArg>
+void checkMap(const DTArg * arg, const DTRes * exp, void* func) {
+    DTRes * res = nullptr;
     map(res, arg, func, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
@@ -43,41 +43,41 @@ VTres mult3func(VTarg arg) {
 
 template<template<typename VT> class DT, class VTarg, class VTres>
 void checkMult3Map() {
-    using DTarg = DT<VTarg>;
-    using DTres = DT<VTres>;
+    using DTArg = DT<VTarg>;
+    using DTRes = DT<VTres>;
 
     void * mult3funcPtr = reinterpret_cast<void*>(&mult3func<VTarg, VTres>);
     
-    auto m1 = genGivenVals<DTarg>(3, {
+    auto m1 = genGivenVals<DTArg>(3, {
         0, 1, 2,
         1, 2, 3,
         3, 4, 5,
     });
     
-    auto mult3_res1 = genGivenVals<DTres>(3, {
+    auto mult3_res1 = genGivenVals<DTRes>(3, {
         0, 3, 6,
         3, 6, 9,
         9, 12, 15,
     });
 
-    auto m2 = genGivenVals<DTarg>(2, {
+    auto m2 = genGivenVals<DTArg>(2, {
         1, 0, 2, 0,
         3, 1, 2, 0,
     });
 
-    auto mult3_res2 = genGivenVals<DTres>(2, {
+    auto mult3_res2 = genGivenVals<DTRes>(2, {
         3, 0, 6, 0,
         9, 3, 6, 0,
     });
   
 
-    auto m3 = genGivenVals<DTarg>(3, {
+    auto m3 = genGivenVals<DTArg>(3, {
         1,
         5,
         3
     }); 
      
-    auto mult3_res3 = genGivenVals<DTres>(3, {
+    auto mult3_res3 = genGivenVals<DTRes>(3, {
         3,
         15,
         9

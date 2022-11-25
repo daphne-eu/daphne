@@ -134,7 +134,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
 
     /**
      * @brief Handles calls to `mapOp`
-     * @param ctx Context of the call expresion
+     * @param ctx Context of the call expression
      * @return the created `mapOp`
      */
     antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);

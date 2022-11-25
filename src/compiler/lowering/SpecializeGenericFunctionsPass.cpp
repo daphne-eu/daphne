@@ -243,7 +243,7 @@ namespace {
             // Specialize all functions called by MapOp
             function.walk([&](daphne::MapOp mapOp) {
                 auto calledFunction = functions[mapOp.func().str()];
-                 if(isFunctionTemplate(calledFunction)) {
+                if(isFunctionTemplate(calledFunction)) {
                      // Get the element type of the matrix the function should be mapped on
                     mlir::Type opTy = mapOp.arg().getType();
                     auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
@@ -260,15 +260,15 @@ namespace {
                         );
 
                     // Get current mapOp result matrix type and fix it if needed.
-                    // If we fixed somethin we rerun inference of the whole function
-                    daphne::MatrixType resMatrixTy = mapOp.getType();
+                    // If we fixed something we rerun inference of the whole function
+                    daphne::MatrixType resMatrixTy = mapOp.getType().dyn_cast<daphne::MatrixType>();
                     mlir::Type funcResTy = specializedFunc.getType().getResult(0);
 
                     // The matrix that results from the mapOp has the same dimension as the input 
                     // matrix and the element-type returned by the specialized function
                     if(resMatrixTy.getNumCols() != inpMatrixTy.getNumCols() || 
-                       resMatrixTy.getNumRows() != inpMatrixTy.getNumRows() ||
-                       resMatrixTy.getElementType() != funcResTy) {
+                        resMatrixTy.getNumRows() != inpMatrixTy.getNumRows() ||
+                        resMatrixTy.getElementType() != funcResTy) {
                         mapOp.getResult().setType(inpMatrixTy.withElementType(funcResTy));
                         inferTypesInFunction(function);
                     }
