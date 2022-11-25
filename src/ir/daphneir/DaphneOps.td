@@ -805,9 +805,7 @@ def Daphne_DuckDbSqlOp : Daphne_Op<"duckDbSql", [
 }
 
 
-def Daphne_UnionOp : Daphne_Op<"Union", [
-    SameVariadicOperandSize
-    ]> {
+def Daphne_UnionOp : Daphne_Op<"Union", []> {
     let arguments = (ins
         Variadic<Frame>:$tables
     );

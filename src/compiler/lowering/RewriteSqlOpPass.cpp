@@ -58,15 +58,11 @@ namespace
             }else if(auto sqlop = llvm::dyn_cast<mlir::daphne::SqlOp>(op)){
 
 
-#ifdef USE_DUCKSQL
-                mlir::Location loc = op->getLoc();
 
                 //TODO Pass error: some operation has an unknown result type, but does not implement the type inference interface: daphne.duckdbsql
                 //Create type inferance and ask an oracle what type the result will be.
-                mlir::Type t = mlir::daphne::UnknownType::get(rewriter.getContext());
-                std::vector<mlir::Type> colT;
-                colT.push_back(t);
-                mlir::Type rt = mlir::daphne::FrameType::get(rewriter.getContext(), colT);
+#ifdef USE_DUCKSQL
+                mlir::Location loc = op->getLoc();
 
                 std::vector<mlir::Value> duckTables;
                 std::vector<mlir::Value> duckTableNames;
@@ -74,14 +70,17 @@ namespace
 
                 for( const auto& [key, value] : tables ) {
                     duckTables.push_back(value);
-                    std::cout << "A table is called: "<<  key << std::endl;
                     mlir::Value name = rewriter.create<mlir::daphne::ConstantOp>(loc, key);
                     duckTableNames.push_back(name);
                 }
 
+                mlir::Type t = mlir::daphne::UnknownType::get(rewriter.getContext());
+                std::vector<mlir::Type> colT;
+                colT.push_back(t);
+                mlir::Type rt = mlir::daphne::FrameType::get(rewriter.getContext(), colT);
+
                 mlir::Value replacementOp = rewriter.create<daphne::DuckDbSqlOp>(op->getLoc(), rt, query, duckTables, duckTableNames);
                 rewriter.replaceOp(op, replacementOp);
-                std::cout << "WOWIE!!!!" << std::endl;
                 return success();
 #else
                 std::stringstream sql_query;

@@ -74,8 +74,7 @@ void Union(
 //LOADING DATA INTO DUCKDB
     for(size_t i = 0; i < numTables; i++){
         std::stringstream table_name_stream;
-         table_name_stream << "table_" << (int8_t)('a' + (int8_t)(i/26))
-            << "_" << (int8_t)('a' + (int8_t)(i%26));
+        table_name_stream << "table_" << i;
         std::string table_name = table_name_stream.str();
         std::cout << table_name << std::endl;
         ddb_CreateAndFill(con, frames[i], table_name.c_str());
