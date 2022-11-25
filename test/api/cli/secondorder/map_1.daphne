@@ -1,0 +1,21 @@
+// Small matrices with various shapes, integer.
+
+def timesThree(x) {
+    return x * 3;
+}
+
+// single element
+X = [2];
+print(map(X, timesThree));
+
+// column matrix
+X = [1, 0, 5, -2];
+print(map(X, timesThree));
+
+// row matrix
+X = reshape([1, 0, 5, -2], 1, 4);
+print(map(X, timesThree));
+
+// matrix
+X = reshape([1, 0, 5, -2], 2, 2);
+print(map(X, timesThree));
