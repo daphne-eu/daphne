@@ -24,9 +24,9 @@
 
 const std::string dirPath = "test/parser/config/configFiles/";
 
-TEST_CASE("Proper config file from src/api/cli directory")
+TEST_CASE("Proper config file from daphne root directory")
 {
-    const std::string configFile = "src/api/cli/UserConfig.json";
+    const std::string configFile = "UserConfig.json";
     DaphneUserConfig userConfig{};
     REQUIRE(ConfigParser::fileExists(configFile));
     REQUIRE_NOTHROW(ConfigParser::readUserConfig(configFile, userConfig));

@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef MM_FILE
-#define MM_FILE
+#pragma once
 
 #include <iterator>
 #include <cstddef>
@@ -180,11 +179,9 @@ inline int mm_read_banner(File *f, MM_typecode *matcode){
     
 
   /* third field */
-
-  if (strcmp(data_type, MM_REAL_STR) == 0)
+  if(strcmp(data_type, MM_REAL_STR) == 0)
     mm_set_real(matcode);
-  else
-  if (strcmp(data_type, MM_COMPLEX_STR) == 0)
+  else if (strcmp(data_type, MM_COMPLEX_STR) == 0)
     mm_set_complex(matcode);
   else
   if (strcmp(data_type, MM_PATTERN_STR) == 0)
@@ -250,10 +247,10 @@ class MMFile
 {
 private:
     File* f;
-    MM_typecode typecode;
-    size_t rows, cols, nnz;
+    MM_typecode typecode{};
+    size_t rows{}, cols{}, nnz;
 public:
-    MMFile(const char *filename){
+    explicit MMFile(const char *filename){
         f = openFile(filename);
         mm_read_banner(f, &typecode);
         if (mm_is_coordinate(typecode)){
@@ -268,7 +265,7 @@ public:
               nnz-= rows;
         }
     }
-    ~MMFile(){ /*closeFile(f);*/ }
+    ~MMFile() = default;
     size_t numberRows() { return rows; }
     size_t numberCols() { return cols; }
     /* entryCount is the number of entries in the file
@@ -291,7 +288,7 @@ public:
           a.col == b.col;
         }
         friend bool operator!=(const Entry& a, const Entry& b){
-          return !(a==b);
+          return !(a == b);
         }
         friend bool operator>(const Entry& a, const Entry& b){
           return (a.row > b.row || (a.row == b.row && a.col > b.col));
@@ -308,11 +305,11 @@ public:
         pointer m_ptr = (pointer)malloc(sizeof(Entry)*2), next = m_ptr+1;
         bool do_next = false;
         MMFile<VT> &file;
-        char *line;
+        char *line{};
         size_t r = 0, c = 0;
         std::function<void()> progress = [&]() mutable { r = 0; c++; };
         VT cur;
-        MMIterator() {}
+        MMIterator() = default;
         void readEntry(){
           //TODO: Handle arbitrary blank lines
           line = getLine(file.f);
@@ -323,10 +320,10 @@ public:
           size_t pos = 0;
           if(mm_is_coordinate(file.typecode)){
               //Assumes only single space between values
-              r = atoi(line) - 1;
+              r = std::stoi(line) - 1;
               while(line[pos++] != ' ');
-              c = atoi(line + pos) - 1;
-              while(line[pos++] != ' ');
+              c = std::stoi(line + pos) - 1;
+              while(line[pos] != ' ' && line[pos] != '\n') pos++;
           }
 
           if(!mm_is_pattern(file.typecode))
@@ -346,7 +343,7 @@ public:
           if(++r >= file.rows) progress();
         }
     public:
-        MMIterator(MMFile<VT>& f, bool read = true) : file(f) {
+        explicit MMIterator(MMFile<VT>& f, bool read = true) : file(f) {
           if(mm_is_pattern(file.typecode)) cur = true;
           if(mm_is_symmetric(file.typecode)) progress = [&]() mutable { r = ++c; };
           else if (mm_is_skew(file.typecode)) {
@@ -386,5 +383,3 @@ public:
       return dummy;
     }
 };
-
-#endif //MM_FILE

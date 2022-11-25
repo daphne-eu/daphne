@@ -1,0 +1,3 @@
+# Focus on type inference.
+#print(syrk([1])); # TODO We don't have a kernel for syrk on integers yet.
+print(syrk([1.5]));

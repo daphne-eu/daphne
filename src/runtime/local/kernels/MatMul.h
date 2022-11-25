@@ -31,7 +31,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct MatMul {
-    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool transa, bool transb, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -39,8 +39,8 @@ struct MatMul {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
-    MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, ctx);
+void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, bool transa, bool transb, DCTX(ctx)) {
+    MatMul<DTRes, DTLhs, DTRhs>::apply(res, lhs, rhs, transa, transb, ctx);
 }
 
 // ****************************************************************************
@@ -53,11 +53,11 @@ void matMul(DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
 
 template<>
 struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
-    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, DCTX(ctx)) {
-        const auto nr1 = static_cast<int>(lhs->getNumRows());
-        const auto nc1 = static_cast<int>(lhs->getNumCols());
-        const auto nc2 = static_cast<int>(rhs->getNumCols());
-        assert((nc1 == static_cast<int>(rhs->getNumRows())) && "#cols of lhs and #rows of rhs must be the same");
+    static void apply(DenseMatrix<float> *& res, const DenseMatrix<float> * lhs, const DenseMatrix<float> * rhs, bool transa, bool transb, DCTX(ctx)) {
+        const auto nr1 = static_cast<int>(transa ? lhs->getNumCols() : lhs->getNumRows());
+        const auto nc1 = static_cast<int>(transa ? lhs->getNumRows() : lhs->getNumCols());
+        const auto nc2 = static_cast<int>(transb ? rhs->getNumRows() : rhs->getNumCols());
+        assert((nc1 == static_cast<int>(transb ? rhs->getNumCols() : rhs->getNumRows())) && "#cols of lhs and #rows of rhs must be the same");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<float>>(nr1, nc2, false);
@@ -66,25 +66,25 @@ struct MatMul<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>> {
             res->set(0, 0, cblas_sdot(nc1, lhs->getValues(), 1, rhs->getValues(),
                     static_cast<int>(rhs->getRowSkip())));
         else if(nc2 == 1)        // Matrix-Vector
-            cblas_sgemv(CblasRowMajor, CblasNoTrans, nr1, nc1, 1, lhs->getValues(),
-                    static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
-                    static_cast<int>(rhs->getRowSkip()), 0,res->getValues(),
-                    static_cast<int>(res->getRowSkip()));
+            cblas_sgemv(CblasRowMajor, transa ? CblasTrans : CblasNoTrans, lhs->getNumRows(), lhs->getNumCols(), 1, lhs->getValues(),
+                static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
+                static_cast<int>(rhs->getRowSkip()), 0, res->getValues(),
+                static_cast<int>(res->getRowSkip()));
         else                     // Matrix-Matrix
-            cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nr1, nc2, nc1,
-                    1, lhs->getValues(), static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
+            cblas_sgemm(CblasRowMajor, transa ? CblasTrans : CblasNoTrans, transb ? CblasTrans : CblasNoTrans, nr1, nc2, nc1,
+                1, lhs->getValues(), static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
                 static_cast<int>(rhs->getRowSkip()), 0, res->getValues(), static_cast<int>(res->getRowSkip()));
     }
 };
 
 template<>
 struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
-    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, DCTX(ctx)) {
-        const auto nr1 = static_cast<int>(lhs->getNumRows());
-        const auto nc1 = static_cast<int>(lhs->getNumCols());
-        const auto nc2 = static_cast<int>(rhs->getNumCols());
-        assert((nc1 == static_cast<int>(rhs->getNumRows())) && "#cols of lhs and #rows of rhs must be the same");
-
+    static void apply(DenseMatrix<double> *& res, const DenseMatrix<double> * lhs, const DenseMatrix<double> * rhs, bool transa, bool transb, DCTX(ctx)) {
+        const auto nr1 = static_cast<int>(transa ? lhs->getNumCols() : lhs->getNumRows());
+        const auto nc1 = static_cast<int>(transa ? lhs->getNumRows() : lhs->getNumCols());
+        const auto nc2 = static_cast<int>(transb ? rhs->getNumRows() : rhs->getNumCols());
+        assert((nc1 == static_cast<int>(transb ? rhs->getNumCols() : rhs->getNumRows())) && "#cols of lhs and #rows of rhs must be the same");
+        
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<double>>(nr1, nc2, false);
 
@@ -92,12 +92,13 @@ struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
             res->set(0, 0, cblas_ddot(nc1, lhs->getValues(), 1, rhs->getValues(),
                 static_cast<int>(rhs->getRowSkip())));
         else if(nc2 == 1)        // Matrix-Vector
-            cblas_dgemv(CblasRowMajor, CblasNoTrans, nr1, nc1, 1, lhs->getValues(),
-            static_cast<int>(lhs->getRowSkip()), rhs->getValues(),static_cast<int>(rhs->getRowSkip()), 0,
-                res->getValues(), static_cast<int>(res->getRowSkip()));
+            cblas_dgemv(CblasRowMajor, transa ? CblasTrans : CblasNoTrans, lhs->getNumRows(), lhs->getNumCols(), 1, lhs->getValues(),
+                static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
+                static_cast<int>(rhs->getRowSkip()), 0, res->getValues(),
+                static_cast<int>(res->getRowSkip()));
         else                     // Matrix-Matrix
-            cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, nr1, nc2, nc1,
-                    1, lhs->getValues(), static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
-                    static_cast<int>(rhs->getRowSkip()), 0, res->getValues(), static_cast<int>(res->getRowSkip()));
+            cblas_dgemm(CblasRowMajor, transa ? CblasTrans : CblasNoTrans, transb ? CblasTrans : CblasNoTrans, nr1, nc2, nc1,
+                1, lhs->getValues(), static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
+                static_cast<int>(rhs->getRowSkip()), 0, res->getValues(), static_cast<int>(res->getRowSkip()));
     }
 };

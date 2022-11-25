@@ -72,10 +72,10 @@ C = (t(X) @ X) / Nm1 - (t(mu) @ mu) * (as.f64(N)/Nm1);
 evalues, evectors = eigen(C);
 
 # extract dominant eigenvalues and eigenvectors 
-# TODO sorting of matrices, ctable operations
+# TODO sorting of matrices
 # Note: can be emulated by:  cbind(evectors, t(evalues)) + cast, sort frame, + extract
 decreasing_Idx = order(evalues, 1, true, true);
-diagmat = table(seq(1.0, N, 1.0), decreasing_Idx);
+diagmat = ctable(seq(1.0, N, 1.0), decreasing_Idx);
 evalues = diagmat @ evalues;
 evectors = evectors @ diagmat;
 eval_dominant = evalues[1:K, 1];

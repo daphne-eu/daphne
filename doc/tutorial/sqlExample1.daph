@@ -1,0 +1,39 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+//Creation of different matrices for a Frame
+	//seq(a, b, c) generates a sequences of the form [a, b] and step size c
+	employee_id = seq(1, 20, 1);
+	//rand(a, b, c, d, e, f) generates a matrix with a rows and b columns in a value range of [c, d]
+	salary = rand(20, 1, 250.0, 500.0, 1.0, -1);
+	//with [a, b, ..] we can create a matrix with the given values.
+	age = [20, 30, 23, 65, 70, 42, 34, 55, 76, 32, 53, 40, 42, 69, 63, 26, 70, 36, 21, 23];
+
+	//createFrame() creates a Frame with the given matrices. The column names (strings) are optional.
+	employee_frame = createFrame(employee_id, salary, age, "employee_id", "salary", "age");
+
+//We register the employee_frame we created previously. note the name for the registration and the name of the frame don't have to be the same.
+	registerView("employee", employee_frame);
+
+//We run a SQL Query on the registered Frame. Note here we have to reference the name we choose during registration.
+	res = sql(
+		"SELECT e.employee_id as employee_id, e.salary as salary, e.age as age
+		FROM employee as e
+		WHERE e.salary > 450.0;");
+
+//We can Print both employee and the query result to the console with print().
+	print(employee_frame);
+	print(res);

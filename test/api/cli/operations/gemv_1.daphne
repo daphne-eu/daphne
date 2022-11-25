@@ -1,0 +1,5 @@
+# Focus on type inference.
+#print(gemv([2], [3])); # TODO We don't have a kernel for gemv on integers yet.
+print(gemv([2.5], [3.5]));
+print(gemv([2.5], [3]));
+print(gemv([2], [3.5]));

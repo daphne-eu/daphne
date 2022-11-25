@@ -30,9 +30,9 @@ maxi = 0; # unlimited
 verbose = true;
 
 # read sparse graph 
-# G = readMatrix($G); #TODO Matrix Market
-n = as.f64($n);
-e = as.f64($e);
+# G = readMatrix($G);
+n = $n;
+e = $e;
 UT = upperTri(rand(n, n, 1.0, 1.0, 2.0*e/n^2.0, -1), false, false);
 G = UT + t(UT);
 
@@ -43,7 +43,7 @@ if( sum(sum(G,0) != t(sum(G,1))) > 0.0 ) {
 }
 
 # initialize state with vertex ids
-c = seq(1.0, as.f64(nrow(G)), 1.0);
+c = seq(1.0, nrow(G), 1.0);
 diff = as.f64(nrow(G));
 iter = 1;
 

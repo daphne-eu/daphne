@@ -22,34 +22,59 @@
 #include <mlir/IR/BuiltinTypes.h>
 
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include "runtime/distributed/proto/worker.pb.h"
-#include "runtime/distributed/proto/worker.grpc.pb.h"
 
-class WorkerImpl final 
+class WorkerImpl  
 {
 public:
+    class Status {
+        private:
+            bool ok_;
+            std::string error_message_;
+        public:
+            Status (bool ok) : ok_(ok), error_message_("") { };
+            Status(bool ok, std::string msg) : ok_(ok), error_message_(msg) { };
+            bool ok() const { return ok_; };
+            std::string error_message() const { return error_message_; }; 
+    };
+    
     const static std::string DISTRIBUTED_FUNCTION_NAME;
-    std::unique_ptr<grpc::ServerCompletionQueue> cq_;
-
+   
     WorkerImpl();
     ~WorkerImpl();
     
-    void HandleRpcs();
-    // void StartHandleThread();
-    // void TerminateHandleThread();
-    grpc::Status Store(::grpc::ServerContext *context,
-                         const ::distributed::Matrix *request,
-                         ::distributed::StoredData *response) ;
-    grpc::Status Compute(::grpc::ServerContext *context,
-                         const ::distributed::Task *request,
-                         ::distributed::ComputeResult *response) ;
-    grpc::Status Transfer(::grpc::ServerContext *context,
-                          const ::distributed::StoredData *request,
-                         ::distributed::Matrix *response);
-    grpc::Status FreeMem(::grpc::ServerContext *context,
-                         const ::distributed::StoredData *request,
-                         ::distributed::Empty *emptyMessage);
-    distributed::Worker::AsyncService service_;
+    virtual void Wait() { };
+    struct StoredInfo {
+        std::string identifier;
+        size_t numRows, numCols;
+    };
+
+    /**
+     * @brief Stores a matrix at worker's memory
+     * 
+     * @param mat Structure * obj to store
+     * @return StoredInfo Information regarding stored object (identifier, numRows, numCols)
+     */
+    template<class DT>
+    StoredInfo Store(DT *mat) ;
+    
+    /**
+     * @brief Computes a pipeline
+     * 
+     * @param outputs vector to populate with results of the pipeline (identifier, numRows/cols, etc.)
+     * @param inputs vector with inputs of pipeline (identifiers to use, etc.)
+     * @param mlirCode mlir code fragment
+     * @return WorkerImpl::Status contains if everything went fine, with an optional error message
+     */
+    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode) ;
+
+    /**
+     * @brief Returns a matrix stored in worker's memory
+     * 
+     * @param storedInfo Information regarding stored object (identifier, numRows, numCols)
+     * @return Structure* Returns object
+     */
+    Structure * Transfer(StoredInfo storedInfo);
+
 private:
     uint64_t tmp_file_counter_ = 0;
     std::unordered_map<std::string, void *> localData_;
@@ -62,13 +87,12 @@ private:
      * @return packed pointers to inputs and outputs
      */
     std::vector<void *> createPackedCInterfaceInputsOutputs(mlir::FunctionType functionType,
-                                                            google::protobuf::RepeatedPtrField<distributed::WorkData> workInputs,
+                                                            std::vector<WorkerImpl::StoredInfo> workInputs,
                                                             std::vector<void *> &outputs,
                                                             std::vector<void *> &inputs);
-
-    Matrix<double> *readOrGetMatrix(const std::string &filename, size_t numRows, size_t numCols, bool isSparse);
-    void *loadWorkInputData(mlir::Type mlirType, const distributed::WorkData& workInput);
-    static distributed::WorkData::DataCase dataCaseForType(mlir::Type type);
+    
+    Structure *readOrGetMatrix(const std::string &identifier, size_t numRows, size_t numCols, bool isSparse = false, bool isFloat = false, bool isScalar = false);
+    void *loadWorkInputData(mlir::Type mlirType, StoredInfo& workInput);    
 };
 
 #endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPL_H

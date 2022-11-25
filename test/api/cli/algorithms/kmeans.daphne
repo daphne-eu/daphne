@@ -12,7 +12,7 @@ C = rand($c, $f, 0.0, 1.0, 1, -1);
 
 // K-means clustering (decisive part).
 for(i in 1:$i) {
-    D = (X @ t(C)) * -2.0 + t(sum(C ^ 2.0, 0));
+    D = (X @ t(C)) * -2 + t(sum(C ^ 2, 0));
     minD = aggMin(D, 0);
     P = D <= minD;
     P = P / sum(P, 0);

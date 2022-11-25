@@ -20,16 +20,26 @@ limitations under the License.
 
 ## User Documentation
 
-- Command-line interface API: see `build/bin/daphne --help`
+- For the `daphne` command-line interface API: see `bin/daphne --help`
+- [Running DAPHNE in a Local Environment](/doc/RunningDaphneLocally.md)
+- [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
+- [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
+- [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
+- [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
+- [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)
+- [A Few Early Example Algorithms in DaphneDSL](/scripts/algorithms/)
+- [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
 
 ## Developer Documentation
 
 ### How-tos and Guidelines
 
-- [Implementing a Built-in Kernel](/doc/ImplementBuiltinKernel.md)
+- [Handling a Pull Request](/doc/development/HandlingPRs.md)
+- [Implementing a Built-in Kernel](/doc/development/ImplementBuiltinKernel.md)
 - [Binary Data Format](/doc/BinaryFormat.md)
 - [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
-- [Extending DAPHNE with more scheduling knobs](/doc/ExtendingSchedulingKnobs.md)
+- [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
+- [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
 
 ### Source Code Documentation
 

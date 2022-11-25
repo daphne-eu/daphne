@@ -1,0 +1,5 @@
+# Focus on type inference.
+print(sqrt(4));
+print(sqrt(2.25));
+print(sqrt([4]));
+print(sqrt([2.25]));

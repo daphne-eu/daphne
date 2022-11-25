@@ -22,11 +22,13 @@ set(TEST_SOURCES
         api/cli/config/ConfigTest.cpp
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
+        api/cli/expressions/CastTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
         api/cli/expressions/TernaryTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp
+        api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
         api/cli/inference/SparsityTest.cpp
         api/cli/io/ReadTest.cpp
@@ -38,12 +40,15 @@ set(TEST_SOURCES
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
         api/cli/sql/SQLTest.cpp
+        api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
         api/cli/vectorized/MultiThreadedOpsTest.cpp
         api/cli/vectorized/VectorizedPipelineTest.cpp
         api/cli/Utils.cpp
     
         api/python/DaphneLibTest.cpp
+        
+        ir/daphneir/InferTypesTest.cpp
         
         parser/config/ConfigParserTest.cpp
     
@@ -55,7 +60,6 @@ set(TEST_SOURCES
         runtime/local/datastructures/MatrixTest.cpp
         runtime/local/datastructures/TaskQueueTest.cpp
 
-        runtime/local/io/FileMetaDataTest.cpp
         runtime/local/io/ReadCsvTest.cpp
 	runtime/local/io/ReadParquetTest.cpp
 	runtime/local/io/ReadMMTest.cpp
@@ -67,7 +71,9 @@ set(TEST_SOURCES
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
+        runtime/local/kernels/CastObjScaTest.cpp
         runtime/local/kernels/CastScaTest.cpp
+        runtime/local/kernels/CastScaObjTest.cpp
         runtime/local/kernels/CheckEqTest.cpp
         runtime/local/kernels/ColBindTest.cpp
         runtime/local/kernels/CreateFrameTest.cpp
@@ -125,9 +131,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             runtime/local/kernels/DNNSoftmaxTest.cpp)
 endif()
 
-add_executable(run_tests
-    ${TEST_SOURCES}
-)
+add_executable(run_tests ${TEST_SOURCES})
+set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 add_dependencies(run_tests daphne DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
@@ -145,8 +150,10 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 endif()
 
 target_link_libraries(run_tests PRIVATE ${LIBS})
-
+target_link_directories(run_tests PRIVATE ${PROJECT_BINARY_DIR}/lib)
 add_executable(theta_join_test run_tests.cpp runtime/local/kernels/ThetaJoinTest.cpp)
+set_target_properties(theta_join_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+
 add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)

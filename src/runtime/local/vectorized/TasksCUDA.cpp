@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "runtime/local/datastructures/AllocationDescriptorCUDA.h"
 #include "runtime/local/vectorized/TasksCUDA.h"
 #include "runtime/local/kernels/CUDA/EwBinaryMat.h"
 
@@ -38,8 +39,10 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t b
         
         // cleanup
         for (auto &localResult : localResults) {
-            DataObjectFactory::destroy(localResult);
-            localResult = nullptr;
+            if(localResult) {
+                DataObjectFactory::destroy(localResult);
+                localResult = nullptr;
+            }
         }
     }
     
@@ -67,24 +70,28 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<De
     
     //TODO: in-place computation via better compiled pipelines
     //TODO: multi-return
+    const size_t deviceID = 0; //ToDo: multi device support
+    AllocationDescriptorCUDA alloc_desc(_data._ctx, deviceID);
     for(auto o = 0u ; o < _data._numOutputs ; ++o) {
         auto &result = (*_res[o]);
         switch (_data._combines[o]) {
             case VectorCombine::ROWS: {
                 auto bufsize = localResults[o]->bufferSize();
-                auto data = result->getValuesCUDA();
+                auto data = result->getValues(&alloc_desc);
                 data += result->getRowSkip() * rowStart;
-                CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValuesCUDA(), bufsize, cudaMemcpyDeviceToDevice));
+                CHECK_CUDART(cudaMemcpy(data, localResults[o]->getValues(&alloc_desc), bufsize, cudaMemcpyDeviceToDevice));
+//                debugPrintCUDABuffer("TaskCUDA: accumulate outputs", localResults[o]->getValues(&alloc_desc), localResults[o]->getNumItems());
                 break;
             }
             case VectorCombine::COLS: {
-                auto res_base_ptr = result->getValuesCUDA();
-                auto lres_data_base_ptr = localResults[o]->getValuesCUDA();
+                auto res_base_ptr = result->getValues(&alloc_desc);
+                auto lres_data_base_ptr = localResults[o]->getValues(&alloc_desc);
                 auto rlen = rowEnd - rowStart;
                 auto slice = result->slice(0, this->_data._outRows[o], rowStart, rowEnd);
                 for(auto i = 0u; i < slice->getNumRows(); ++i) {
                     auto data_src = lres_data_base_ptr + localResults[o]->getRowSkip() * i;
-                    auto data_dst = res_base_ptr + result->getRowSkip() * i + rowStart;
+//                    auto data_dst = res_base_ptr + result->getRowSkip() * i + rowStart;
+                    auto data_dst = res_base_ptr + result->getNumCols() * i + rowStart;
 //                    auto data_dst = res_base_ptr;
                     CHECK_CUDART(cudaMemcpy(data_dst, data_src, sizeof(VT) * rlen, cudaMemcpyDeviceToDevice));
                 }
@@ -108,6 +115,11 @@ void CompiledPipelineTaskCUDA<DenseMatrix<VT>>::accumulateOutputs(std::vector<De
             }
         }
     }
+}
+
+template<typename VT>
+uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
+    return _data._ru-_data._rl;
 }
 
 template class CompiledPipelineTaskCUDA<DenseMatrix<double>>;

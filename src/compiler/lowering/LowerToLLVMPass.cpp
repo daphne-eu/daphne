@@ -16,7 +16,7 @@
 
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#include "compiler/CompilerUtils.h"
+#include "compiler/utils/CompilerUtils.h"
 
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"

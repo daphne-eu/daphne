@@ -60,7 +60,16 @@ void InsertDaphneContextPass::runOnFunction()
         builder.create<daphne::CreateCUDAContextOp>(loc);
     }
 #endif
+    if (user_config.use_distributed){
+        builder.create<daphne::CreateDistributedContextOp>(loc);
+    }
+#ifdef USE_FPGAOPENCL
+    if(user_config.use_fpgaopencl) {
+        builder.create<daphne::CreateFPGAContextOp>(loc);
+    }
+#endif
 
+ 
     // Insert a DestroyDaphneContextOp as the last operation in the block, but
     // before the block's terminator.
     builder.setInsertionPoint(b.getTerminator());

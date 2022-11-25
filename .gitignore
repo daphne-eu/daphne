@@ -2,6 +2,9 @@
 build/
 build-*/
 build_*/
+/bin
+/lib
+/tmp
 
 # dependencies
 thirdparty/*
@@ -14,9 +17,13 @@ thirdparty/duckdb
 
 # Python
 __pycache__/
+/venv
 
 # Jetbrains IDE
 .idea/
 cmake-*/
 
 tmpdaphne.daphne
+
+# release scripts output
+/artifacts

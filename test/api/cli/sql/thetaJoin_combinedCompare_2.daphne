@@ -1,0 +1,19 @@
+# Tests Join with equal comparison
+lhs = createFrame(
+    [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
+    [ 21, 32, 65, 17, 87, 54, 66,  7, 91,  3],
+    [100,400,500,100,700,800,200,300,500,900],
+    "a", "b", "c");
+
+rhs = createFrame(
+    [  0,   5,  9],
+    [ 11,  22, 10],
+    [750, 250, 50],
+    "a", "b", "c");
+
+registerView("lhs", lhs);
+registerView("rhs", rhs);
+
+res = sql("SELECT lhs.a, lhs.b, lhs.c, rhs.a, rhs.b, rhs.c FROM lhs JOIN rhs ON lhs.a >= rhs.a AND lhs.b < rhs.b AND lhs.c > rhs.c;");
+
+print(res);

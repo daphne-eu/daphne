@@ -1,0 +1,15 @@
+{
+    "numRows": 3,
+    "numCols": 3,
+    "schema": [
+        {
+            "valueType": "si64"
+        },
+        {
+            "valueType": "f64"
+        },
+        {
+            "valueType": "f32"
+        }
+    ]
+}

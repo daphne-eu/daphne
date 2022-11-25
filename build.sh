@@ -42,6 +42,9 @@ function printHelp {
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
     echo "  --arrow           Compile with support for Arrow/Parquet files"
+    echo "  --cuda            Compile with support for CUDA ops"
+    echo "  --debug           Compile with support for debug mode"
+    echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
 }
 
 #******************************************************************************
@@ -274,7 +277,7 @@ function clean() {
 function cleanBuildDirs() {
     echo "-- Cleanup of build directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}" "${projectRoot}/bin" "${projectRoot}/lib")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/antlr_v"*".install.success" \
@@ -293,7 +296,8 @@ function cleanBuildDirs() {
 function cleanAll() {
     echo "-- Cleanup of build and library directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}"
+                "${projectRoot}/bin" "${projectRoot}/lib")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/absl_v"*".download.success" \
@@ -385,6 +389,7 @@ BUILD_DUCKDB="-DUSE_DUCKDB=OFF"
 BUILD_DUCKSQL="-DUSE_DUCKSQL=OFF"
 BUILD_DUCKAPI="-DUSE_DUCKAPI=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
+BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 installDuckDB=0
 
@@ -435,6 +440,10 @@ while [[ $# -gt 0 ]]; do
         --arrow)
             echo using ARROW
             BUILD_ARROW="-DUSE_ARROW=ON"
+            ;;
+        --fpgaopencl)
+            echo using FPGAOPENCL
+            export BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=ON"
             ;;
         --debug)
             echo building DEBUG version
@@ -578,9 +587,11 @@ if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
 fi
 if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
     cd "$sourcePrefix/$openBlasDirName"
-    make -j"$(nproc)"
+    make clean
+    # optimizes for multiple x86_64 architectures
+    make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
     make PREFIX="$openBlasInstDirName" install
-    cd -
+    cd - > /dev/null
     dependency_install_success "openBlas_v${openBlasVersion}"
 else
     daphne_msg "No need to build OpenBlas again."
@@ -736,6 +747,7 @@ if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit="$(git log -1 --format=%H)"
 fi
+cd - > /dev/null
 
 if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
     daphne_msg "Build llvm version ${llvmCommit}"
@@ -752,11 +764,23 @@ if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFile
        -DCMAKE_INSTALL_PREFIX="$installPrefix"
     cmake --build "$buildPrefix/$llvmName" --target check-mlir
     echo "$llvmCommit" > "$llvmCommitFilePath"
+    cd - > /dev/null
     dependency_install_success "llvm_v${llvmCommit}"
 else
     daphne_msg "No need to build MLIR/LLVM again."
 fi
 
+if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
+  FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
+  FPGAOPENCL_BISTREAM_URL="https://github.com/daphne-eu/supplemental-binaries/raw/main/fpga_bitstreams/"
+  if [ ! -d $FPGAOPENCL_BISTREAM_DIR ]; then
+    echo fetching FPGA bitstreams
+    mkdir -p $FPGAOPENCL_BISTREAM_DIR
+    cd $FPGAOPENCL_BISTREAM_DIR
+    wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
+    cd - > /dev/null
+  fi
+fi
 
 # *****************************************************************************
 # Build DAPHNE target.
@@ -764,7 +788,7 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DUCKDB $BUILD_DUCKSQL $BUILD_DUCKAPI $BUILD_ARROW $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DUCKDB $BUILD_DUCKSQL $BUILD_DUCKAPI $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"

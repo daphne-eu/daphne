@@ -56,11 +56,14 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
                                                         2, 1, 2, 1, 2, 1, 2, 1, 2, 1 });
     auto c9 = genGivenVals<DenseMatrix<VT1>>(numRows, { 1.6, 2.7, 3.2, 1.5, 2.7, 1.5, 2.7, 1.6, 2.8, 1.5,
                                                         2.7, 1.6, 2.7, 1.5, 2.8, 1.5, 2.7, 1.6, 2.8, 1.5 });
+    auto c10 = genGivenVals<DenseMatrix<VT0>>(numRows, { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+    auto c11 = genGivenVals<DenseMatrix<VT0>>(numRows, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19});
     
-    std::vector<Structure *> colsArg {c0, c1, c2, c3, c4, c5, c6, c7, c8, c9};
-    std::string labels[] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg", "hhh", "iii", "jjj"};
+    std::vector<Structure *> colsArg {c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11};
+    std::string labels[] = {"aaa", "bbb", "ccc", "ddd", "eee", "fff", "ggg", "hhh", "iii", "jjj", "kkk", "lll"};
     auto arg = DataObjectFactory::create<Frame>(colsArg, labels);
-    DataObjectFactory::destroy(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
+    DataObjectFactory::destroy(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11);
 
     Frame* exp{};
     Frame* res{};
@@ -87,6 +90,39 @@ TEMPLATE_TEST_CASE("Group", TAG_KERNELS, (Frame)) {
         DenseMatrix<uint64_t> * c1Exp = genGivenVals<DenseMatrix<uint64_t>>(numRows, { 10, 9, 1});
         std::vector<Structure *> colsExp {c0Exp, c1Exp};
         std::string labelsExp[] = {"aaa", "COUNT(ccc)"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp);
+    }
+    SECTION("1 grouping column with one distinct value, 1 aggregation columns") {
+        numKeyCols = 1;
+        numAggCols = 1;
+        keyCols = new const char*[10]{labels[10].c_str()};
+        aggCols = new const char*[10]{labels[0].c_str()};
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::COUNT;
+
+        numRows = 1;
+        DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 1 });
+        DenseMatrix<uint64_t> * c1Exp = genGivenVals<DenseMatrix<uint64_t>>(numRows, { 20 });
+        std::vector<Structure *> colsExp {c0Exp, c1Exp};
+        std::string labelsExp[] = {"kkk", "COUNT(aaa)"};
+        exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
+        DataObjectFactory::destroy(c0Exp, c1Exp);
+    }
+    SECTION("1 grouping column with all distinct values, 1 aggregation columns") {
+        numKeyCols = 1;
+        numAggCols = 1;
+        keyCols = new const char*[10]{labels[11].c_str()};
+        aggCols = new const char*[10]{labels[0].c_str()};
+        aggFuncs = new mlir::daphne::GroupEnum[numAggCols];
+        aggFuncs[0] = mlir::daphne::GroupEnum::COUNT;
+
+        numRows = 20;
+        DenseMatrix<VT0> * c0Exp = genGivenVals<DenseMatrix<VT0>>(numRows, { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+            11, 12, 13, 14, 15, 16, 17, 18, 19});
+        DenseMatrix<uint64_t> * c1Exp = genGivenVals<DenseMatrix<uint64_t>>(numRows, { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+        std::vector<Structure *> colsExp {c0Exp, c1Exp};
+        std::string labelsExp[] = {"lll", "COUNT(aaa)"};
         exp = DataObjectFactory::create<Frame>(colsExp, labelsExp);
         DataObjectFactory::destroy(c0Exp, c1Exp);
     }
