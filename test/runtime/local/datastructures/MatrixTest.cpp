@@ -17,7 +17,6 @@
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/ValueTypeUtils.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <tags.h>

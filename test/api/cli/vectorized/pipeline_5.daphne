@@ -1,0 +1,4 @@
+// Passing a scalar of type f64 into a pipeline.
+x = fill(as.f64(123.0), 3, 3);
+res = x + as.f64(1.0);
+print(res);

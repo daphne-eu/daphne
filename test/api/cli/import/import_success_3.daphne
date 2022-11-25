@@ -1,0 +1,6 @@
+//Conflict name resolution
+import "sandbox/c.daphne";
+import "cascade/c.daphne";
+
+print(c.x);
+print(cascade.c.some_var);

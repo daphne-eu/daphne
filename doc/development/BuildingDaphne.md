@@ -66,16 +66,19 @@ Clean all download and build directories, i.e., `<project_root>/build`, `<projec
 ### Options
 All possible options for the build script:
 
-| Option             | Effect                                                     |
-|--------------------|------------------------------------------------------------|
-| -h, --help         | Print the help page                                        |
-| --clean            | Clean build directories                                    |
-| --cleanAll         | Clean build directories and download directories           |
-| --target \<target> | Build specific target                                      |
-| -nf, --no-fancy    | Disable colorized output                                  |
-| -y, --yes          | Accept prompt (e.g., when executing the clean command)      |
-| --cuda             | Compile with support for GPU operations using the CUDA SDK |
-| --debug            | Compile the daphne binary with debug symbols               |
+| Option             | Effect                                                                                  |
+|--------------------|-----------------------------------------------------------------------------------------|
+| -h, --help         | Print the help page                                                                     |
+| --clean            | Clean build directories                                                                 |
+| --cleanAll         | Clean build directories and download directories                                        |
+| --target \<target> | Build specific target                                                                   |
+| -nf, --no-fancy    | Disable colorized output                                                                |
+| -y, --yes          | Accept prompt (e.g., when executing the clean command)                                  |
+| --cuda             | Compile with support for GPU operations using the CUDA SDK                              |
+| --debug            | Compile the daphne binary with debug symbols                                            |
+| --oneapi           | Compile with support for accelerated operations using the OneAPI SDK                    |
+| --fpgaopencl       | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On |
+| --arrow            | Compile with support for Apache Arrow                                                   |
 
 
 ## 2. Extension

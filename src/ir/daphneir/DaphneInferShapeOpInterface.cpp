@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <compiler/CompilerUtils.h>
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
 #include <mlir/IR/Value.h>
@@ -43,39 +43,6 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
     // TODO Maybe check if it is really a scalar type.
     else // scalar
         return std::make_pair(1, 1);
-}
-
-ssize_t getSizeOrUnknown(Value v) {
-    if (!v.getDefiningOp()) // check if block argument
-        return -1;
-    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
-            return intAttr.getValue().getLimitedValue();
-    return -1; // the value of the scalar is unknown at the moment
-}
-
-// TODO This is just a quick and dirty workaround. Make this a central utility.
-int64_t getConstantInt(Value v) {
-    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto intAttr = co.value().dyn_cast<IntegerAttr>())
-            return intAttr.getValue().getLimitedValue();
-    throw std::runtime_error("expected an integer constant");
-}
-
-// TODO This is just a quick and dirty workaround. Make this a central utility.
-double getConstantDouble(Value v) {
-    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto floatAttr = co.value().dyn_cast<FloatAttr>())
-            return floatAttr.getValue().convertToDouble();
-    throw std::runtime_error("expected a floating-point constant");
-}
-
-// TODO This is just a quick and dirty workaround. Make this a central utility.
-float getConstantFloat(Value v) {
-    if(auto co = llvm::dyn_cast<daphne::ConstantOp>(v.getDefiningOp()))
-        if(auto floatAttr = co.value().dyn_cast<FloatAttr>())
-            return floatAttr.getValue().convertToFloat();
-    throw std::runtime_error("expected a floating-point constant");
 }
 
 ssize_t inferNumRowsFromArgs(ValueRange vs) {
@@ -166,9 +133,9 @@ ssize_t daphne::SeqOp::inferNumRows() {
     Type fromTy = from().getType();
     if(fromTy.isF64()) {
         try {
-            double vFrom = getConstantDouble(from());
-            double vTo = getConstantDouble(to());
-            double vInc = getConstantDouble(inc());
+            double vFrom = CompilerUtils::constantOrThrow<double>(from());
+            double vTo = CompilerUtils::constantOrThrow<double>(to());
+            double vInc = CompilerUtils::constantOrThrow<double>(inc());
             return floor(vTo / vInc - vFrom / vInc) + 1;
         }
         catch(const std::runtime_error & e) {
@@ -177,9 +144,9 @@ ssize_t daphne::SeqOp::inferNumRows() {
     }
     if(fromTy.isF32()) {
         try {
-            float vFrom = getConstantFloat(from());
-            float vTo = getConstantFloat(to());
-            float vInc = getConstantFloat(inc());
+            float vFrom = CompilerUtils::constantOrThrow<float>(from());
+            float vTo = CompilerUtils::constantOrThrow<float>(to());
+            float vInc = CompilerUtils::constantOrThrow<float>(inc());
             return floor(vTo / vInc - vFrom / vInc) + 1;
         }
         catch(const std::runtime_error & e) {
@@ -188,9 +155,9 @@ ssize_t daphne::SeqOp::inferNumRows() {
     }
     else if(fromTy.isSignedInteger(64)) {
         try {
-            int64_t vFrom = getConstantInt(from());
-            int64_t vTo = getConstantInt(to());
-            int64_t vInc = getConstantInt(inc());
+            int64_t vFrom = CompilerUtils::constantOrThrow<int64_t>(from());
+            int64_t vTo = CompilerUtils::constantOrThrow<int64_t>(to());
+            int64_t vInc = CompilerUtils::constantOrThrow<int64_t>(inc());
             return abs(vTo - vFrom) / abs(vInc) + 1;
         }
         catch(const std::runtime_error & e) {
@@ -220,9 +187,50 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     return {{numRows, numCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
+    auto shapeLhs = getShape(lhs());
+    auto shapeRhs = getShape(rhs());
+
+    ssize_t numRows = -1;
+    std::pair<bool, bool> pr = CompilerUtils::isConstant<bool>(transa());
+    if(pr.first)
+        numRows = pr.second ? shapeLhs.second : shapeLhs.first;
+    
+    ssize_t numCols = -1;
+    std::pair<bool, bool> pc = CompilerUtils::isConstant<bool>(transb());
+    if(pc.first)
+        numCols = pc.second ? shapeRhs.first : shapeRhs.second;
+
+    return {{numRows, numCols}};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
     FileMetaData fmd = CompilerUtils::getFileMetaData(fileName());
     return {{fmd.numRows, fmd.numCols}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
+    size_t numRows = -1;
+    size_t numCols = -1;
+
+    Type t = arg().getType();
+    if(auto mt = t.dyn_cast<daphne::MatrixType>()){
+        numRows = mt.getNumRows();
+        numCols = mt.getNumCols();
+    }
+    if(auto ft = t.dyn_cast<daphne::FrameType>()){
+        numRows = ft.getNumRows();
+        numCols = ft.getNumCols();
+    }
+    std::pair<bool, bool> p = CompilerUtils::isConstant<bool>(returnIdxs());
+    if(p.first) {
+        if(p.second)
+            numCols = 1;
+    }
+    else
+        numCols = -1;
+
+    return {{numRows, numCols}};
 }
 
 // ****************************************************************************
@@ -251,14 +259,14 @@ template<size_t i>
 struct tryNumRowsFromIthScalar {
     static void apply(ssize_t& numRows, ssize_t& numCols, Operation* op) {
         if(op->hasTrait<NumRowsFromIthScalar<i>::template Impl>())
-            numRows = getSizeOrUnknown(op->getOperand(i));
+            numRows = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
     }
 };
 template<size_t i>
 struct tryNumColsFromIthScalar {
     static void apply(ssize_t& numRows, ssize_t& numCols, Operation* op) {
         if(op->hasTrait<NumColsFromIthScalar<i>::template Impl>())
-            numCols = getSizeOrUnknown(op->getOperand(i));
+            numCols = CompilerUtils::constantOrDefault<int64_t>(op->getOperand(i), -1);
     }
 };
 

@@ -125,12 +125,15 @@ def Matrix : Daphne_Type<"Matrix"> {
 // A type constraint checking if a type is a matrix whose value type is one of
 // the given types (whereby Unknown is always allowed automatically).
 // Reuses MLIR's ContainerType constraint in a way inspired by MLIR's VectorOf.
-class MatrixOf<list<Type> allowedTypes> : ContainerType<
-        AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
-        Matrix.predicate,
-        "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()",
-        "matrix"
->;
+class MatrixOf<list<Type> allowedTypes> : AnyTypeOf<[
+        ContainerType<
+                AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
+                Matrix.predicate,
+                "$_self.dyn_cast<::mlir::daphne::MatrixType>().getElementType()",
+                "matrix"
+        >,
+        Unknown
+]>;
 
 def Frame : Daphne_Type<"Frame"> {
     let summary = "frame";
@@ -177,7 +180,11 @@ def Frame : Daphne_Type<"Frame"> {
     }];
 }
 
-def MatrixOrFrame : AnyTypeOf<[Matrix, Frame]>;
+def MatrixOrFrame : AnyTypeOf<[Matrix, Frame, Unknown]>;
+// TODO It would be great to get rid of the "unknown" in the names. Ideally, we
+// would like to allow unknown without explicitly specifying it.
+def MatrixOrU : AnyTypeOf<[Matrix, Unknown]>;
+def FrameOrU : AnyTypeOf<[Frame, Unknown]>;
 
 // ****************************************************************************
 // Distributed types
@@ -199,11 +206,11 @@ def StrScalar : Daphne_Type<"String"> {
     let summary = "string";
 }
 
-def SIntScalar : AnyTypeOf<[SI8, SI32, SI64], "signed integer">;
-def UIntScalar : AnyTypeOf<[UI8, UI32, UI64], "unsigned integer">;
+def SIntScalar : AnyTypeOf<[SI8, SI32, SI64, Unknown], "signed integer">;
+def UIntScalar : AnyTypeOf<[UI8, UI32, UI64, Unknown], "unsigned integer">;
 def IntScalar : AnyTypeOf<[SIntScalar, UIntScalar], "integer">;
-def FloatScalar : AnyTypeOf<[F32, F64], "float">;
-def NumScalar : AnyTypeOf<[IntScalar, FloatScalar], "numeric">;
+def FloatScalar : AnyTypeOf<[F32, F64, Unknown], "float">;
+def NumScalar : AnyTypeOf<[IntScalar, FloatScalar, Index], "numeric">;
 def BoolScalar : TypeAlias<I1, "boolean">;
 
 // TODO Exclude Index again.
@@ -237,7 +244,7 @@ def Size : TypeAlias<Index, "size">;
 def Seed : TypeAlias<SI64, "seed">;
 
 // TODO Remove SI64 again, it was only added temporarily to make things work.
-def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>]>;
+def Selection : AnyTypeOf<[Size, MatrixOf<[Size, SI64]>, Unknown]>;
 
 def VariadicPack : Daphne_Type<"VariadicPack"> {
     let summary = "pack of variadic operands";

@@ -190,4 +190,69 @@ public:
 };
 
 
+// ----------------------------------------------------------------------------
+//  DenseMatrix <- CSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+class CastObj<DenseMatrix<VT>, CSRMatrix<VT>> {
+
+public:
+    static void apply(DenseMatrix<VT> *& res, const CSRMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+        
+        // TODO This could be done more efficiently by avoiding the get()/set()
+        // calls (use append() or direct access to the underlying arrays).
+        VT temp;
+        for (size_t r=0; r<numRows; r++){
+            for (size_t c=0; c<numCols; c++){
+                temp=arg->get(r,c);
+                res->set(r,c,temp);
+            }
+        }
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+//  CSRMatrix  <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+class CastObj<CSRMatrix<VT>, DenseMatrix<VT>> {
+
+public:
+    static void apply(CSRMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numCols = arg->getNumCols();
+        const size_t numRows = arg->getNumRows();
+        size_t numNonZeros=0;
+        VT temp;
+
+        for (size_t r=0; r<numRows; r++){
+            for (size_t c=0; c<numCols; c++){
+                temp=arg->get(r,c);
+                if (temp!=0)
+                    numNonZeros++;
+            }
+        }
+        
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, numNonZeros, true);
+        
+        // TODO This could be done more efficiently by avoiding the get()/set()
+        // calls (use append() or direct access to the underlying arrays, then
+        // we could even avoid initializing the output CSRMatrix).
+        for (size_t r=0; r<numRows; r++){
+            for (size_t c=0; c<numCols; c++){
+                temp=arg->get(r,c);
+                res->set(r,c,temp);
+            }
+        }
+    }
+};
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_CASTOBJ_H

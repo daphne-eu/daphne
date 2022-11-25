@@ -1,0 +1,3 @@
+import "x.daphne";
+
+y = 111 + x.x;

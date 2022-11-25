@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
+#pragma once
 
+#include <runtime/local/datastructures/AllocationDescriptorHost.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
@@ -27,8 +27,6 @@
 #include <cassert>
 #include <cstddef>
 #include <cstring>
-
-// TODO DenseMatrix should not be concerned about CUDA.
 
 /**
  * @brief A dense matrix implementation.
@@ -52,14 +50,7 @@ class DenseMatrix : public Matrix<ValueType>
     
     size_t rowSkip;
     std::shared_ptr<ValueType[]> values{};
-    std::shared_ptr<ValueType> cuda_ptr{};
-    uint32_t deleted = 0;
-
-    mutable bool cuda_dirty = false;
-    mutable bool host_dirty = false;
-    mutable bool cuda_buffer_current = false;
-    mutable bool host_buffer_current = false;
-
+    
     size_t lastAppendedRowIdx;
     size_t lastAppendedColIdx;
     
@@ -71,32 +62,26 @@ class DenseMatrix : public Matrix<ValueType>
     friend void DataObjectFactory::destroy(const DataType * obj);
 
     /**
-     * @brief Creates a `DenseMatrix` and allocate
-     * s enough memory for the
-     * specified maximum size in the `values` array.
+     * @brief Creates a `DenseMatrix` and allocates enough memory for the specified maximum size in the `values` array.
      *
      * @param maxNumRows The maximum number of rows.
      * @param numCols The exact number of columns.
-     * @param zero Whether the allocated memory of the `values` array shall be
-     * initialized to zeros (`true`), or be left uninitialized (`false`).
+     * @param zero Whether the allocated memory of the `values` array shall be initialized to zeros (`true`), or be left
+     * uninitialized (`false`).
      */
-    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST_ALLOC);
-    
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo = nullptr);
+
     /**
-     * @brief Creates a `DenseMatrix` around an existing array of values
-     * without copying the data.
+     * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
      *
      * @param numRows The exact number of rows.
      * @param numCols The exact number of columns.
      * @param values A `std::shared_ptr` to an existing array of values.
      */
-    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values
-                , std::shared_ptr<ValueType> cuda_ptr_ = nullptr) : Matrix<ValueType>(numRows, numCols),
-                rowSkip(numCols), values(values), cuda_ptr(cuda_ptr_), lastAppendedRowIdx(0), lastAppendedColIdx(0) { }
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values);
 
     /**
-     * @brief Creates a `DenseMatrix` around a sub-matrix of another
-     * `DenseMatrix` without copying the data.
+     * @brief Creates a `DenseMatrix` around a sub-matrix of another `DenseMatrix` without copying the data.
      *
      * @param src The other dense matrix.
      * @param rowLowerIncl Inclusive lower bound for the range of rows to extract.
@@ -104,13 +89,16 @@ class DenseMatrix : public Matrix<ValueType>
      * @param colLowerIncl Inclusive lower bound for the range of columns to extract.
      * @param colUpperExcl Exclusive upper bound for the range of columns to extract.
      */
-    DenseMatrix(const DenseMatrix * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
+    DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
+            size_t colUpperExcl);
 
     ~DenseMatrix() override = default;
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
-        assert((rowIdx < numRows) && "rowIdx is out of bounds");
-        assert((colIdx < numCols) && "colIdx is out of bounds");
+        if(rowIdx >= numRows)
+            throw std::runtime_error("rowIdx is out of bounds");
+        if(colIdx >= numCols)
+            throw std::runtime_error("colIdx is out of bounds");
         return rowIdx * rowSkip + colIdx;
     }
     
@@ -138,7 +126,32 @@ class DenseMatrix : public Matrix<ValueType>
 
     void alloc_shared_values(std::shared_ptr<ValueType[]> src = nullptr, size_t offset = 0);
 
-    void alloc_shared_cuda_buffer(std::shared_ptr<ValueType> src = nullptr, size_t offset = 0);
+
+    /**
+     * @brief The getValuesInternal method fetches a pointer to an allocation of values. Optionally a sub range
+     * can be specified.
+     *
+     * This method is called by the public getValues() methods either in const or non-const fashion. The const version
+     * returns a data pointer that is meant to be read-only. Read only access updates the list of up-to-date
+     * allocations (the latest_versions "list"). This way several copies of the data in various allocations can be
+     * kept without invalidating their copy. If the read write version of getValues() is used, the latest_versions
+     * list is cleared because a write to an allocation is assumed, which renders the other allocations of the
+     * same data out of sync.
+     *
+     * @param alloc_desc An instance of an IAllocationDescriptor derived class that is used to specify what type of
+     * allocation is requested. If no allocation descriptor is provided, a host allocation (plain main memory) is
+     * assumed by default.
+     *
+     * @param range An optional range describing which rows and columns of a matrix-like structure are requested.
+     * By default this is null and means all rows and columns.
+     * @return A tuple of three values is returned:
+     *         1: bool - is the returend allocation in the latest_versions list
+     *         2: size_t - the ID of the data placement (a structure relating an allocation to a range)
+     *         3: ValueType* - the pointer to the actual data
+     */
+
+    auto getValuesInternal(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr)
+    -> std::tuple<bool, size_t, ValueType*>;
 
 public:
 
@@ -152,37 +165,45 @@ public:
         return rowSkip;
     }
 
-    const ValueType * getValues() const
+    /**
+     * @brief Fetch a pointer to the data held by this structure meant for read-only access.
+     *
+     * A difference is made between read-only and read-write access because with read-only access, the data
+     * can be cached in several memory spaces at the same time.
+     *
+     * @param alloc_desc An allocation descriptor describing which type of memory is requested (e.g. main memory in
+     * the current system, memory in an accelerator card or memory in another host)
+     *
+     * @param range A Range object describing optionally requesting a sub range of a data structure.
+     * @return A pointer to the data in the requested memory space
+     */
+    const ValueType* getValues(const IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) const
     {
-        if(!values)
-            const_cast<DenseMatrix*>(this)->alloc_shared_values();
-#ifdef USE_CUDA
-        if (cuda_dirty || (!host_buffer_current && cuda_buffer_current)) {
-            cuda2host();
-        }
-        host_buffer_current = true;
-#endif
-        return values.get();
+        auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
+        if(!isLatest)
+            this->mdo.addLatest(id);
+        return ptr;
     }
 
-    ValueType * getValues()
-    {
-        if(!values)
-            alloc_shared_values();
-
-#ifdef USE_CUDA
-        if (cuda_dirty || (!host_buffer_current && cuda_buffer_current)) {
-            cuda2host();
-        }
-        cuda_buffer_current = false;
-        host_buffer_current = true;
-        host_dirty = true;
-#endif
-        return values.get();
+    /**
+     * @brief Fetch a pointer to the data held by this structure meant for read-write access.
+     *
+     * A difference is made between read-only and read-write access. With read-write access, all copies in various
+     * memory spaces will be invalidated because data is assumed to change.
+     *
+     * @param alloc_desc An allocation descriptor describing which type of memory is requested (e.g. main memory in
+     * the current system, memory in an accelerator card or memory in another host)
+     *
+     * @param range A Range object describing optionally requesting a sub range of a data structure.
+     * @return A pointer to the data in the requested memory space
+     */
+    ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
+        auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
+        if(!isLatest)
+            this->mdo.setLatest(id);
+        return ptr;
     }
-
-
-
+    
     std::shared_ptr<ValueType[]> getValuesSharedPtr() const {
         return values;
     }
@@ -218,13 +239,9 @@ public:
     }
 
     void print(std::ostream & os) const override {
-        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
-                << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
-#ifdef USE_CUDA
-        if ((cuda_ptr && cuda_dirty) || !values) {
-              cuda2host();
-        }
-#endif
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
+                << std::endl;
+
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
                 printValue(os, get(r, c));
@@ -247,85 +264,10 @@ public:
         return DataObjectFactory::create<DenseMatrix<ValueType>>(this, rl, ru, cl, cu);
     }
 
+    // convenience functions
     size_t bufferSize();
 
-    size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
-
-    float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
-
-    DenseMatrix<ValueType>* vectorTranspose() const;
-
-
-#ifdef USE_CUDA
-    const ValueType* getValuesCUDA() const {
-        if(!cuda_ptr)
-            const_cast<DenseMatrix*>(this)->alloc_shared_cuda_buffer();
-
-        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
-            host2cuda();
-        }
-        cuda_buffer_current = true;
-        return cuda_ptr.get();
-    }
-
-    ValueType* getValuesCUDA() {
-        if(!cuda_ptr)
-            alloc_shared_cuda_buffer();
-
-        if(host_dirty || (!cuda_buffer_current && host_buffer_current)) {
-            host2cuda();
-        }
-        cuda_dirty = true;
-        cuda_buffer_current = true;
-        host_buffer_current = false;
-        return cuda_ptr.get();
-    }
-
-    [[maybe_unused]] bool isBufferDirty(ALLOCATION_TYPE type) const {
-        switch(type) {
-            case ALLOCATION_TYPE::CUDA_ALLOC:
-                return cuda_dirty;
-            case ALLOCATION_TYPE::HOST_ALLOC:
-            default:
-                return host_dirty;
-        }
-    }
-
-    [[maybe_unused]] bool isBufferCurrent(ALLOCATION_TYPE type) const {
-        switch(type) {
-            case ALLOCATION_TYPE::CUDA_ALLOC:
-                return cuda_buffer_current;
-            case ALLOCATION_TYPE::HOST_ALLOC:
-            default:
-                return host_buffer_current;
-        }
-    }
-
-    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
-        return cuda_ptr;
-    }
-
-    [[maybe_unused]] void printCUDAValuesSharedPtrUseCount() const {
-        std::ios state(nullptr);
-        state.copyfmt(std::cout);
-        std::cout << "CudaPtr " << cuda_ptr.get() << " use_count: " << cuda_ptr.use_count() << std::endl;
-        std::cout.copyfmt(state);
-    }
-
-    void host2cuda();
-    void cuda2host();
-
-    void host2cuda() const {
-        const_cast<DenseMatrix*>(this)->host2cuda();
-    }
-    void cuda2host() const {
-        const_cast<DenseMatrix*>(this)->cuda2host();
-    }
-#else
-    std::shared_ptr<ValueType> getCUDAValuesSharedPtr() const {
-        return nullptr;
-    }
-#endif
+    [[nodiscard]] size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
 };
 
 template <typename ValueType>
@@ -335,4 +277,281 @@ std::ostream & operator<<(std::ostream & os, const DenseMatrix<ValueType> & obj)
     return os;
 }
 
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_DENSEMATRIX_H
+/*
+    Helper struct for DenseMatrix with strings, represents a char buffer.
+    Needs to keep numCells from original DenseMatrix to manage modifications from views.
+*/
+struct CharBuf
+{
+    char* strings;
+    char* currentTop;
+
+    size_t capacity;
+    size_t numCells;
+
+    CharBuf(size_t capacity_, size_t numCells_) : capacity(capacity_), numCells(numCells_) {
+        strings = new char[capacity];
+        currentTop = strings;
+    }
+    ~CharBuf() {
+        delete[] strings;
+    }
+    
+    void expandStringBuffer(const size_t toFit, const char **vals, size_t numRows, size_t rowSkip, const size_t valsSize) {
+        size_t strBufSize = getSize();
+
+        size_t largerStrCapacity = (capacity * 2) > toFit ? (capacity * 2) : toFit;
+        char* largerStrings = new char[largerStrCapacity];
+        memcpy(largerStrings, strings, strBufSize);
+
+        auto start = vals[0];
+        const size_t numCols = numCells / numRows;
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++) {
+                size_t offset = vals[c] - start;
+                vals[c] = &largerStrings[offset];
+            }
+            vals += rowSkip;
+        }
+
+        delete[] strings;
+        strings = largerStrings;
+        capacity = largerStrCapacity;
+        currentTop = &largerStrings[strBufSize];
+    }
+
+    size_t getSize() {
+        return currentTop - strings;
+    }
+};
+
+template <>
+class DenseMatrix<const char*> : public Matrix<const char*>
+{
+    // `using`, so that we do not need to prefix each occurrence of these
+    // fields from the super-classes.
+    using Matrix<const char*>::numRows;
+    using Matrix<const char*>::numCols;
+    
+    size_t rowSkip;
+    std::shared_ptr<const char*[]> values{};
+    std::shared_ptr<CharBuf> strBuf;
+
+    std::shared_ptr<const char*> cuda_ptr{};
+    uint32_t deleted = 0;
+
+    size_t lastAppendedRowIdx;
+    size_t lastAppendedColIdx;
+    
+    // Grant DataObjectFactory access to the private constructors and
+    // destructors.
+    template<class DataType, typename ... ArgTypes>
+    friend DataType * DataObjectFactory::create(ArgTypes ...);
+    template<class DataType>
+    friend void DataObjectFactory::destroy(const DataType * obj);
+
+    DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, size_t strBufCapacity = 1024, ALLOCATION_TYPE type = ALLOCATION_TYPE::HOST);
+    
+    DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<const char*[]>& strings, size_t strBufCapacity = 1024, std::shared_ptr<const char*> cuda_ptr_ = nullptr);
+
+    DenseMatrix(const DenseMatrix<const char*> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl, size_t colUpperExcl);
+
+    ~DenseMatrix() override = default;
+
+    [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
+        if(rowIdx >= numRows)
+            throw std::runtime_error("rowIdx is out of bounds");
+        if(colIdx >= numCols)
+            throw std::runtime_error("colIdx is out of bounds");
+        return rowIdx * rowSkip + colIdx;
+    }
+    
+    void appendZerosRange(const char** valsStartPos, const size_t length)
+    {
+        memset(strBuf->currentTop, '\0', length * sizeof(char));
+        for(size_t val = 0; val < length; val++){
+            valsStartPos[val] = &strBuf->currentTop[val];
+        }
+        strBuf->currentTop += length;
+    }
+
+    void fillZeroUntil(size_t rowIdx, size_t colIdx) {
+        auto vals = values.get();
+        if(rowSkip == numCols || lastAppendedRowIdx == rowIdx) {
+            const size_t startPosIncl = pos(lastAppendedRowIdx, lastAppendedColIdx) + 1;
+            const size_t endPosExcl = pos(rowIdx, colIdx);
+            if(startPosIncl < endPosExcl){
+                appendZerosRange(&vals[startPosIncl], endPosExcl - startPosIncl);
+            }
+        }
+        else {
+            auto v = vals + lastAppendedRowIdx * rowSkip;
+            appendZerosRange(&v[lastAppendedColIdx + 1], numCols - lastAppendedColIdx - 1);
+            v += rowSkip;
+            
+            for(size_t r = lastAppendedRowIdx + 1; r < rowIdx; r++) {
+                appendZerosRange(v, numCols);
+                v += rowSkip;
+            }
+
+            if(colIdx)
+                appendZerosRange(v, colIdx - 1);
+        }
+    }
+
+    void printValue(std::ostream & os, const char* val) const;
+
+    void alloc_shared_values(std::shared_ptr<const char*[]> src = nullptr, size_t offset = 0);
+
+    void alloc_shared_strings(std::shared_ptr<CharBuf> src = nullptr, size_t strBufferCapacity = 1024);
+
+    void alloc_shared_cuda_buffer(std::shared_ptr<const char*> src = nullptr, size_t offset = 0);
+
+public:
+
+    void shrinkNumRows(size_t numRows) {
+        assert((numRows <= this->numRows) && "number of rows can only the shrunk");
+        // TODO Here we could reduce the allocated size of the values array.
+        this->numRows = numRows;
+    }
+    
+    [[nodiscard]] size_t getRowSkip() const {
+        return rowSkip;
+    }
+
+    const char** getValues() const{
+        if(!values)
+            const_cast<DenseMatrix*>(this)->alloc_shared_values();
+        return values.get();
+    }
+
+    const char** getValues(){
+        if(!values)
+            alloc_shared_values();
+        return values.get();
+    }
+
+    std::shared_ptr<CharBuf> getStrBufSharedPtr() const{
+        return strBuf;
+    }
+
+    CharBuf* getStrBuf() const{
+        if(!strBuf)
+            const_cast<DenseMatrix*>(this)->alloc_shared_strings();
+        return strBuf.get();
+    }
+
+    CharBuf* getStrBuf() {
+        if(!strBuf)
+            alloc_shared_strings();
+        return strBuf.get();
+    }
+
+    std::shared_ptr<const char*[]> getValuesSharedPtr() const {
+        return values;
+    }
+    
+    const char* get(size_t rowIdx, size_t colIdx) const override {
+        return getValues()[pos(rowIdx, colIdx)];
+    }
+
+    void set(size_t rowIdx, size_t colIdx, const char* value) override {
+        auto vals = getValues();
+        size_t currentPos = pos(rowIdx, colIdx);
+        auto currentVal = vals[currentPos];
+        size_t currentSize = strBuf.get()->getSize();
+        int32_t diff = strlen(value) - strlen(currentVal);
+
+        if(currentSize + diff > strBuf->capacity){
+            strBuf.get()->expandStringBuffer(currentSize + diff, vals, numRows, rowSkip, getNumItems());
+            currentVal = vals[currentPos];
+        }
+
+        if(diff && (currentPos + 1 < getStrBuf()->numCells)) {
+            const char* from = values[currentPos + 1];
+            const char* to = from + diff;
+            size_t length = strBuf->currentTop - from;
+            memmove(const_cast<char*>(to), from, length);
+        }
+        memcpy(const_cast<char*>(currentVal), value, strlen(value) + 1);
+
+        if(diff){
+            for(size_t offset = currentPos + 1; offset < getStrBuf()->numCells; offset++)
+                vals[offset] += diff;
+        }
+
+        strBuf->currentTop += diff;
+    }
+    
+    void prepareAppend() override {
+        values.get()[0] = "\0";
+        lastAppendedRowIdx = 0;
+        lastAppendedColIdx = 0;
+        strBuf->currentTop = strBuf.get()->strings;
+    }
+    
+    void append(size_t rowIdx, size_t colIdx, const char* value) override {
+        // Set all cells since the last one that was appended to zero.
+        fillZeroUntil(rowIdx, colIdx);
+        auto vals = getValues();
+        // Set the specified cell.
+        size_t length = strlen(value) + 1;
+        size_t currentSize = strBuf.get()->getSize();
+
+        if(currentSize + length > strBuf->capacity)
+            strBuf.get()->expandStringBuffer(currentSize + length, vals, numRows, rowSkip, getNumRows() * getNumCols());
+    
+        memcpy(strBuf->currentTop, value, length);
+        vals[pos(rowIdx, colIdx)] = strBuf->currentTop;
+
+        strBuf->currentTop += length;
+        // Update append state.
+        lastAppendedRowIdx = rowIdx;
+        lastAppendedColIdx = colIdx;
+    }
+    
+    void finishAppend() override {
+        if((lastAppendedRowIdx < numRows - 1) || (lastAppendedColIdx < numCols - 1))
+            append(numRows - 1, numCols - 1, "\0");
+    }
+
+    void print(std::ostream & os) const override {
+        os << "DenseMatrix(" << numRows << 'x' << numCols << ", "
+                << ValueTypeUtils::cppNameFor<const char*> << ')' << std::endl;
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++) {
+                printValue(os, get(r, c));
+                if (c < numCols - 1)
+                    os << ' ';
+            }
+            os << std::endl;
+        }
+    }
+
+    DenseMatrix<const char*>* sliceRow(size_t rl, size_t ru) const override {
+        return slice(rl, ru, 0, numCols);
+    }
+
+    DenseMatrix<const char*>* sliceCol(size_t cl, size_t cu) const override {
+        return slice(0, numRows, cl, cu);
+    }
+
+    DenseMatrix<const char*>* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
+        return DataObjectFactory::create<DenseMatrix<const char*>>(this, rl, ru, cl, cu);
+    }
+
+    size_t bufferSize();
+
+    size_t bufferSize() const { return const_cast<DenseMatrix*>(this)->bufferSize(); }
+
+    float printBufferSize() const { return static_cast<float>(bufferSize()) / (1048576); }
+
+    bool operator==(const DenseMatrix<const char*> &M) const {
+        assert(getNumRows() != 0 && getNumCols() != 0 && strBuf && values && "Invalid matrix");
+        for(size_t r = 0; r < getNumRows(); r++)
+            for(size_t c = 0; c < getNumCols(); c++)
+                if(strcmp(M.getValues()[M.pos(r,c)], values.get()[pos(r,c)]))
+                    return false;
+        return true;
+  }
+};

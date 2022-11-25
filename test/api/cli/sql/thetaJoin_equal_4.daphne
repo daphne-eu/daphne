@@ -1,0 +1,15 @@
+# Tests Join with equal comparison
+lhs = createFrame(
+    [ 0, 7, 12, 67, 46, 11, 404, 713 ],
+    "a");
+
+rhs = createFrame(
+    [ 0, 5, 19, 21, 77, 46, 404, 930, 1101, 202 ],
+    "a");
+
+registerView("lhs", lhs);
+registerView("rhs", rhs);
+
+res = sql("SELECT lhs.a, rhs.a FROM lhs JOIN rhs ON lhs.a = rhs.a;");
+
+print(res);

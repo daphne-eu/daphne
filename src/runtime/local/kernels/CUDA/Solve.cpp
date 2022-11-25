@@ -80,7 +80,10 @@ namespace CUDA {
     template<class VT>
     void Solve<DenseMatrix<VT>, DenseMatrix<VT>, DenseMatrix<VT>>::apply
             (DenseMatrix<VT> *&res, const DenseMatrix<VT> *lhs, const DenseMatrix<VT> *rhs, DCTX(dctx)) {
-        auto ctx = dctx->getCUDAContext(0);
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+        
         const size_t nr1 = lhs->getNumRows();
         const size_t nc1 = lhs->getNumCols();
         const size_t nc2 = rhs->getNumCols();
@@ -90,7 +93,7 @@ namespace CUDA {
         assert((nc2 == 1) && "#cols of rhs must be 1");
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false, ALLOCATION_TYPE::CUDA_ALLOC);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(nr1, nc2, false, &alloc_desc);
 
         int *d_Ipiv{}; /* pivoting sequence */
         int *d_info{}; /* error info */
@@ -103,14 +106,14 @@ namespace CUDA {
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
 
-        launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, lhs->getValuesCUDA(), d_A);
+        launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, lhs->getValues(&alloc_desc), d_A);
         CHECK_CUBLAS(cublasSetStream(ctx->getCublasHandle(), nullptr));
         auto &m = nc1;
-//    auto d_A = const_cast<VT*>(lhs->getValuesCUDA());
+//    auto d_A = const_cast<VT*>(lhs->getValues(&alloc_desc));
         CHECK_CUDART(
-                cudaMemcpyAsync(res->getValuesCUDA(), rhs->getValuesCUDA(), rhs->bufferSize(), cudaMemcpyDeviceToDevice,
+                cudaMemcpyAsync(res->getValues(&alloc_desc), rhs->getValues(&alloc_desc), rhs->bufferSize(), cudaMemcpyDeviceToDevice,
                                 ctx->getCuSolverStream()));
-        auto d_B = res->getValuesCUDA();
+        auto d_B = res->getValues(&alloc_desc);
         auto lda = m;
         auto ldb = m;
         CHECK_CUDART(cudaMallocAsync(reinterpret_cast<void **>(&d_Ipiv), sizeof(int) * nr1, ctx->getCuSolverStream()));

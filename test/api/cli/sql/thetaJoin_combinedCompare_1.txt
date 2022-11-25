@@ -1,0 +1,2 @@
+Frame(1x6, [lhs.a:int64_t, lhs.b:int64_t, lhs.c:int64_t, rhs.a:int64_t, rhs.b:int64_t, rhs.c:int64_t])
+0 21 100 0 11 750

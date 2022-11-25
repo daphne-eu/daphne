@@ -30,9 +30,7 @@ add_library(DaphneDSLParser STATIC
 )
 
 target_link_libraries(DaphneDSLParser PRIVATE
+        CompilerUtils
         DataStructures
-)
-
-target_link_libraries(DaphneDSLParser PRIVATE
         antlr4_static
 )

@@ -103,23 +103,28 @@ option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
 include(CheckLanguage)
 check_language(CUDA)
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    enable_language(CUDA)
+    find_package(CUDAToolkit REQUIRED)
+
     if(${CMAKE_COMPILER_IS_GNUCXX})
         set(GCC_EXPECTED_VERSION 11.3.0)
+        set(CUDA_EXPECTED_VERSION "11.7.99")
         if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER GCC_EXPECTED_VERSION AND NOT DEFINED ENV{CUDAHOSTCXX})
-            message(WARNING "GCC: Daphne requires version ${GCC_EXPECTED_VERSION} to build but found ${CMAKE_CXX_COMPILER_VERSION} \
-                You should set the env var CUDAHOSTCXX to something like g++-11 (if installed)")
-            execute_process(COMMAND sleep 7)
+            if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS ${CUDA_EXPECTED_VERSION})
+                message(WARNING "CUDA ${CMAKE_CUDA_COMPILER_VERSION} requires version ${GCC_EXPECTED_VERSION} to build \
+                        but found ${CMAKE_CXX_COMPILER_VERSION} You should set the env var CUDAHOSTCXX to something \
+                        like g++-11 (if installed)")
+                execute_process(COMMAND sleep 7)
+            endif()
         endif()
     endif()
 
-    enable_language(CUDA)
-    find_package(CUDAToolkit REQUIRED)
     set(CMAKE_CUDA_ARCHITECTURES  OFF)
     cmake_policy(SET CMP0104 NEW)
     add_definitions(-DUSE_CUDA)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
-    message(STATUS "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
+    message(STATUS  "CUDA enabled (version ${CMAKE_CUDA_COMPILER_VERSION})")
     if(DEFINED ENV{CUDAHOSTCXX})
         message(STATUS "CUDAHOSTCXX value: $ENV{CUDAHOSTCXX}")
     endif()
@@ -127,15 +132,31 @@ endif()
 
 option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
 if(USE_ARROW)
-    find_package(Arrow CONFIG REQUIRED)
+    find_package(Arrow CONFIG REQUIRED
+        PATHS thirdparty/installed/lib/cmake/arrow
+        NO_DEFAULT_PATH
+    )
     find_package(Parquet CONFIG REQUIRED
-        PATHS /usr/local/lib/cmake/arrow
+        PATHS thirdparty/installed/lib/cmake/arrow
         NO_DEFAULT_PATH
     )
     link_libraries(arrow_shared parquet_shared)
     add_definitions(-DUSE_ARROW)
     message(STATUS "Arrow/Parquet enabled")
 endif()
+
+option(USE_FPGAOPENCL "Whether to activate compilation of FPGA OpenCL features" OFF)
+if(USE_FPGAOPENCL)
+	if(NOT DEFINED ENV{QUARTUSDIR})
+		message(SEND_ERROR "Intel(R) Quartus installation directory should be defined by QUARTUSDIR varaiable (e.g. /opt/intel/intelFPGA_pro/21.4/)")
+		execute_process(COMMAND sleep 10)
+	endif()
+	include_directories($ENV{QUARTUSDIR}/hld/examples_aoc/common/inc/ $ENV{QUARTUSDIR}/hld/host/include/)
+	message(STATUS "cmake: using FPGA")
+	add_definitions(-DUSE_FPGAOPENCL)
+endif()
+
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 # *****************************************************************************
 # Project-specific include directories
@@ -153,6 +174,7 @@ add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)
 add_subdirectory(src/compiler/lowering)
+add_subdirectory(src/compiler/utils)
 add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/parser)
 add_subdirectory(src/parser/config)
@@ -162,6 +184,10 @@ add_subdirectory(src/runtime/distributed/worker)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/io)
 add_subdirectory(src/runtime/local/kernels)
+if(USE_FPGAOPENCL)
+    add_subdirectory(src/runtime/local/kernels/FPGAOPENCL)
+endif() 
 add_subdirectory(src/util)
+
 
 add_subdirectory(test)

@@ -26,7 +26,7 @@
 TEST_CASE("config success", TAG_CONFIG) {
     // Providing the following example config files as --config must succeed.
     for(const char * configFilePath : {
-        "src/api/cli/UserConfig.json",
+        "UserConfig.json",
                 
         "test/parser/config/configFiles/UserConfig1.json",
         "test/parser/config/configFiles/UserConfig4.json",

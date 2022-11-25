@@ -1,0 +1,2 @@
+DenseMatrix(1x1, double)
+2.25
