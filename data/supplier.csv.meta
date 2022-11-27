@@ -1,0 +1,22 @@
+{
+	"numRows": 10,
+	"numCols": 4,
+	"schema": [
+		{
+			"label": "s_suppkey",
+			"valueType": "ui64"
+		},
+		{
+			"label": "s_name",
+			"valueType": "ui64"
+		},
+		{
+			"label": "s_nationkey",
+			"valueType": "ui64"
+		},
+		{
+			"label": "s_acctbal",
+			"valueType": "f64"
+		}
+	]
+}

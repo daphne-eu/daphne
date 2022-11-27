@@ -1,0 +1,14 @@
+{
+	"numRows": 5,
+	"numCols": 2,
+	"schema": [
+		{
+			"label": "r_regionkey",
+			"valueType": "ui64"
+		},
+		{
+			"label": "r_name",
+			"valueType": "ui64"
+		}
+	]
+}
