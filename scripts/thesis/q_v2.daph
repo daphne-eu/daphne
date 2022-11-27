@@ -29,9 +29,13 @@ order by
 	o.o_orderdate desc;
 ";
 
+print("start DAPHNE Program");
+
 c = readFrame("data/customer.csv");
 l = readFrame("data/lineitem.csv");
 o = readFrame("data/orders.csv");
+
+print("load in finished");
 
 registerView("customer", c);
 registerView("lineitem", l);
