@@ -27,7 +27,7 @@ script:
     query* EOF ;
 
 sql:
-    query  EOF;
+    query  EOF?;
 
 query:
     select ';'?;

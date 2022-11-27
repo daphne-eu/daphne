@@ -14,6 +14,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <vector>
 
 #ifdef USE_DUCKDB
 
@@ -290,7 +291,7 @@ void innerJoin(
     // context
     DCTX(ctx)
 ) {
-    std::cout << "innerJoin, DAPHNE!" << std::endl;
+    //std::cout << "innerJoin, DAPHNE!" << std::endl;
 
     // Find out the value types of the columns to process.
     ValueTypeCode vtcLhsOn = lhs->getColumnType(lhsOn);
@@ -308,6 +309,7 @@ void innerJoin(
 
     int64_t col_idx_res = 0;
     int64_t row_idx_res = 0;
+    int64_t row_result_size = 0;
 
     ValueTypeCode schema[totalCols];
     std::string newlabels[totalCols];
@@ -324,15 +326,23 @@ void innerJoin(
         col_idx_res++;
     }
 
-    // Creating Result Frame
-    res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
+    std::vector<size_t> map;
+
+    //bool all_hits [totalRows];
+    //int row_nr = 0;
 
     for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
         for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
-            col_idx_res = 0;
             //PROBE ROWS
             bool hit = false;
             hit = hit || innerJoinProbeIf<int64_t, int64_t>(
+                vtcLhsOn, vtcRhsOn,
+                res,
+                lhs, rhs,
+                lhsOn, rhsOn,
+                row_idx_l, row_idx_r,
+                ctx);
+            hit = hit || innerJoinProbeIf<uint64_t, uint64_t>(
                 vtcLhsOn, vtcRhsOn,
                 res,
                 lhs, rhs,
@@ -346,9 +356,48 @@ void innerJoin(
                 lhsOn, rhsOn,
                 row_idx_l, row_idx_r,
                 ctx);
+
             if(hit){
+                map.push_back(row_idx_l * numRowRhs + row_idx_r);
+                row_result_size ++;
+            }
+            //all_hits[row_nr] = hit;
+            //row_nr++;
+            //row_result_size += (int) hit;
+        }
+    }
+
+
+    // Creating Result Frame
+    res = DataObjectFactory::create<Frame>(row_result_size, totalCols, schema, newlabels, false);
+    //row_nr = 0;
+
+//    std::cout << numRowLhs << " " << numRowRhs << std::endl;
+//    for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
+//        for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
+    for(size_t id : map){
+        size_t row_idx_r = id % numRowRhs;
+        size_t row_idx_l = (id - row_idx_r)/numRowRhs;
+
+
+            col_idx_res = 0;
+            //PROBE ROWS
+            //bool hit = all_hits[row_nr];
+            //row_nr++;
+            //if(hit)
+            {
                 for(size_t idx_c = 0; idx_c < numColLhs; idx_c++){
                     innerJoinSet<int64_t>(
+                        schema[col_idx_res],
+                        res,
+                        lhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_l,
+                        idx_c,
+                        ctx
+                    );
+                    innerJoinSet<uint64_t>(
                         schema[col_idx_res],
                         res,
                         lhs,
@@ -381,7 +430,16 @@ void innerJoin(
                         idx_c,
                         ctx
                     );
-
+                    innerJoinSet<uint64_t>(
+                        schema[col_idx_res],
+                        res,
+                        rhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_r,
+                        idx_c,
+                        ctx
+                    );
                     innerJoinSet<double>(
                         schema[col_idx_res],
                         res,
@@ -397,7 +455,8 @@ void innerJoin(
                 row_idx_res++;
             }
         }
-    }
+//    }
+//    std::cout << "size: " << row_idx_res << std::endl;
     res->shrinkNumRows(row_idx_res);
 }
 #endif //DuckDB

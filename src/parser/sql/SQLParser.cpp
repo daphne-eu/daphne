@@ -27,6 +27,7 @@
 #include <mlir/IR/Location.h>
 
 #include <istream>
+#include <iostream>
 #include <parser/CancelingErrorListener.h>
 
 void SQLParser::setView(std::unordered_map <std::string, mlir::Value> arg){
@@ -43,6 +44,7 @@ mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream 
         lexer.removeErrorListeners();
         lexer.addErrorListener(&errorListener);
         antlr4::CommonTokenStream tokens(&lexer);
+        // std::cout << tokens.getText() << std::endl;
         SQLGrammarParser parser(&tokens);
         // TODO: evaluate if overloading error handler makes sense
         parser.setErrorHandler(errorStrategy);

@@ -1,0 +1,44 @@
+// Arguments:
+// - f ... filename of the adjacency matrix (provide as `--args f=\"foo.csv\"`)
+// TCP-H Shipping Priority Query (Q3)
+// validation:
+//   segment = BUILDING (encoded 0)
+//   date = 1995-03-15 (encoded 9203)
+// benchmark:
+//   segment = any (encoded: 0-4)
+//   date = 1995-03-01, ..., 1995-03-31 (encoded: 9189 - 9219)
+
+query =	"SELECT
+	l.l_orderkey,
+	sum(l.l_extendedprice * (l.l_discount  * -1.0 + 1)) as revenue,
+	o.o_orderdate,
+	o.o_shippriority
+from
+	customer c,
+	orders o,
+	lineitem l
+where
+	c.c_mktsegment = 0
+	and c.c_custkey = o.o_custkey
+	and l.l_orderkey = o.o_orderkey
+	and o.o_orderdate < 9203
+	and l.l_shipdate > 9203
+group by
+	l.l_orderkey,
+	o.o_orderdate,
+	o.o_shippriority
+order by
+	o.o_orderdate desc;
+";
+
+c = readFrame("data/customer.csv");
+l = readFrame("data/lineitem.csv");
+o = readFrame("data/orders.csv");
+
+registerView("customer", c);
+registerView("lineitem", l);
+registerView("orders", o);
+
+result = sql(query);
+
+print(result);
