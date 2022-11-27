@@ -37,10 +37,17 @@ o = readFrame("data/orders.csv");
 
 print("load in finished");
 
+t1 = now();
+
 registerView("customer", c);
 registerView("lineitem", l);
 registerView("orders", o);
 
+t2 = now();
+
 result = sql(query);
 
 print(result);
+
+
+print(t2 - t1);
