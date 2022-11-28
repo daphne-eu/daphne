@@ -649,7 +649,7 @@ if [ ${installDuckDB} == 1 ]; then
     #
     #    unzip -q "$cacheDir/${duckdbZipName}" -d "$sourcePrefix"
         rm -rf "${sourcePrefix}/duckdb"
-        git clone "git@github.com:duckdb/duckdb.git" "${sourcePrefix}/duckdb"
+        git clone "https://github.com/duckdb/duckdb.git" "${sourcePrefix}/duckdb"
         cd "${sourcePrefix}/duckdb"
         git checkout tags/v0.5.0 -b duckdb
         dependency_download_success "duckdb_v${duckdbVersion}"
