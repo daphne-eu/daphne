@@ -44,6 +44,7 @@
 #include <llvm/ADT/BitVector.h>
 #include <llvm/ADT/APInt.h>
 #include <llvm/ADT/APSInt.h>
+#include <llvm/ADT/DenseMap.h>
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -410,6 +411,33 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
 mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphne::VectorizedPipelineOp op,
                                                                      mlir::PatternRewriter &rewriter)
 {
+    // // Find duplicate inputs
+    std::vector<Attribute> vSplitsAttrs;
+    for (auto & split : op.getSplits())
+        vSplitsAttrs.push_back(split);
+    auto currentSize = op.getInputs().size();
+    
+    DenseMap<Value, size_t> inputMap;
+
+    for (size_t i = 0; i < currentSize; i++) {
+        const auto& input = op.getInputs()[i];
+        const auto& split = op.getSplits()[i].cast<daphne::VectorSplitAttr>().getValue();
+
+        if (inputMap.count(input) == 0) {
+            inputMap[input] = i;
+        } else {
+            size_t j = inputMap[input];
+            if (op.getSplits()[j].cast<daphne::VectorSplitAttr>().getValue() == split) {
+                op.getBody().getArgument(i).replaceAllUsesWith(op.getBody().getArgument(j));
+                op.getBody().eraseArgument(i);
+                op.getInputsMutable().erase(i);
+                vSplitsAttrs.erase(vSplitsAttrs.begin() + i);
+                currentSize--;
+                i--;
+            }
+        }
+    }
+
     std::vector<Value> resultsToReplace;
     std::vector<Value> outRows;
     std::vector<Value> outCols;
@@ -434,7 +462,7 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
     if(!op.getCuda().getBlocks().empty())
         op.getCuda().front().getTerminator()->eraseOperands(eraseIxs);
 
-    if(resultsToReplace.size() == op->getNumResults()) {
+    if(resultsToReplace.size() == op->getNumResults() && op.getSplits().size() == vSplitsAttrs.size()) {
         return failure();
     }
     auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
@@ -442,7 +470,7 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
         op.getInputs(),
         outRows,
         outCols,
-        op.getSplits(),
+        rewriter.getArrayAttr(vSplitsAttrs),
         rewriter.getArrayAttr(vCombineAttrs),
         op.getCtx());
     pipelineOp.getBody().takeBody(op.getBody());
