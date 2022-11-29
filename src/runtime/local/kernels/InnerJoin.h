@@ -231,6 +231,86 @@ void innerJoinSet(
     }
 }
 
+
+template<typename VT>
+void innerJoinSetColumn(
+    DenseMatrix<VT> * res,
+    const DenseMatrix<VT> * arg,
+    const uint32_t * hit_list,
+    const size_t result_size,
+    DCTX(ctx)
+){
+    for(size_t i = 0; i < result_size; i++){
+        const VT argValue = arg->get(hit_list[i], 0);
+        res->set(i, 0, argValue);
+    }
+}
+
+template<typename VT>
+void innerJoinSetGetColumn(
+    Frame *&res,
+    const Frame * arg,
+    const uint32_t * hit_list,
+    const size_t result_size,
+    const int64_t toCol,
+    const int64_t fromCol,
+    DCTX(ctx)
+){
+    // std::cout << "\t\tVor Fehler\n";
+    ValueTypeCode vtcArg, vtcRes;
+    vtcArg = arg->getColumnType(fromCol);
+    vtcRes = res->getColumnType(toCol);
+    if(vtcArg != ValueTypeUtils::codeFor<VT> || vtcRes != ValueTypeUtils::codeFor<VT>){
+        throw std::runtime_error("Inner Join Type mismatch!");
+    }
+    innerJoinSetColumn<VT>(res->getColumn<VT>(toCol), arg->getColumn<VT>(fromCol), hit_list, result_size, ctx);
+}
+
+void innerJoinSetColumnWise(
+    Frame *&res,
+    const Frame * arg,
+    const uint32_t * hit_list,
+    const size_t result_size,
+    const size_t offset,
+    DCTX(ctx)
+) {
+    // std::cout << "\tVor Fehler\n";
+    const size_t numColArg = arg->getNumCols();
+
+    for(size_t i = 0; i < numColArg; i++){
+        ValueTypeCode vtcArg;
+        vtcArg = arg->getColumnType(i);
+
+        switch(vtcArg){
+            case ValueTypeCode::SI8:
+                innerJoinSetGetColumn<int8_t>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::SI32:
+                innerJoinSetGetColumn<int32_t>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::SI64:
+                innerJoinSetGetColumn<int64_t>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::UI8:
+                innerJoinSetGetColumn<uint8_t>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::UI32:
+                innerJoinSetGetColumn<uint32_t>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::UI64:
+                innerJoinSetGetColumn<uint64_t>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::F32:
+                innerJoinSetGetColumn<float>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+            case ValueTypeCode::F64:
+                innerJoinSetGetColumn<double>(res, arg, hit_list, result_size, i + offset, i, ctx);
+                break;
+        }
+    }
+}
+
+
 template<typename VTLhs, typename VTRhs>
 bool innerJoinEqual(
     // results
@@ -300,7 +380,7 @@ void innerJoin(
     // Perhaps check if res already allocated.
     const size_t numRowRhs = rhs->getNumRows();
     const size_t numRowLhs = lhs->getNumRows();
-    const size_t totalRows = numRowRhs * numRowLhs;
+    const size_t totalRows = numRowRhs > numRowLhs? numRowRhs: numRowLhs;
     const size_t numColRhs = rhs->getNumCols();
     const size_t numColLhs = lhs->getNumCols();
     const size_t totalCols = numColRhs + numColLhs;
@@ -324,18 +404,18 @@ void innerJoin(
         schema[col_idx_res] = rhs->getColumnType(col_idx_r);
         newlabels[col_idx_res] = oldlabels_r[col_idx_r];
         col_idx_res++;
-    }
+    };
 
-    std::vector<size_t> map;
+    //std::cout << totalRows << std::endl;
+    //List to store corresponding ids.
+    uint32_t hit_list_l[totalRows];
+    uint32_t hit_list_r[totalRows];
 
-    //bool all_hits [totalRows];
-    //int row_nr = 0;
-
+    //probeing phase. Needs work.
     for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
         for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
             //PROBE ROWS
-            bool hit = false;
-            hit = hit || innerJoinProbeIf<int64_t, int64_t>(
+            bool hit = innerJoinProbeIf<int64_t, int64_t>(
                 vtcLhsOn, vtcRhsOn,
                 res,
                 lhs, rhs,
@@ -357,107 +437,34 @@ void innerJoin(
                 row_idx_l, row_idx_r,
                 ctx);
 
-            if(hit){
-                map.push_back(row_idx_l * numRowRhs + row_idx_r);
-                row_result_size ++;
-            }
-            //all_hits[row_nr] = hit;
-            //row_nr++;
-            //row_result_size += (int) hit;
+            hit_list_l[row_result_size] = row_idx_l;
+            hit_list_r[row_result_size] = row_idx_r;
+            row_result_size += hit;
         }
     }
 
-
     // Creating Result Frame
     res = DataObjectFactory::create<Frame>(row_result_size, totalCols, schema, newlabels, false);
-    //row_nr = 0;
 
-//    std::cout << numRowLhs << " " << numRowRhs << std::endl;
-//    for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
-//        for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
-    for(size_t id : map){
-        size_t row_idx_r = id % numRowRhs;
-        size_t row_idx_l = (id - row_idx_r)/numRowRhs;
+    innerJoinSetColumnWise(
+        res,
+        lhs,
+        hit_list_l,
+        row_result_size,
+        0,
+        ctx
+    );
 
-
-            col_idx_res = 0;
-            //PROBE ROWS
-            //bool hit = all_hits[row_nr];
-            //row_nr++;
-            //if(hit)
-            {
-                for(size_t idx_c = 0; idx_c < numColLhs; idx_c++){
-                    innerJoinSet<int64_t>(
-                        schema[col_idx_res],
-                        res,
-                        lhs,
-                        row_idx_res,
-                        col_idx_res,
-                        row_idx_l,
-                        idx_c,
-                        ctx
-                    );
-                    innerJoinSet<uint64_t>(
-                        schema[col_idx_res],
-                        res,
-                        lhs,
-                        row_idx_res,
-                        col_idx_res,
-                        row_idx_l,
-                        idx_c,
-                        ctx
-                    );
-                    innerJoinSet<double>(
-                        schema[col_idx_res],
-                        res,
-                        lhs,
-                        row_idx_res,
-                        col_idx_res,
-                        row_idx_l,
-                        idx_c,
-                        ctx
-                    );
-                    col_idx_res++;
-                }
-                for(size_t idx_c = 0; idx_c < numColRhs; idx_c++){
-                    innerJoinSet<int64_t>(
-                        schema[col_idx_res],
-                        res,
-                        rhs,
-                        row_idx_res,
-                        col_idx_res,
-                        row_idx_r,
-                        idx_c,
-                        ctx
-                    );
-                    innerJoinSet<uint64_t>(
-                        schema[col_idx_res],
-                        res,
-                        rhs,
-                        row_idx_res,
-                        col_idx_res,
-                        row_idx_r,
-                        idx_c,
-                        ctx
-                    );
-                    innerJoinSet<double>(
-                        schema[col_idx_res],
-                        res,
-                        rhs,
-                        row_idx_res,
-                        col_idx_res,
-                        row_idx_r,
-                        idx_c,
-                        ctx
-                    );
-                    col_idx_res++;
-                }
-                row_idx_res++;
-            }
-        }
-//    }
+    innerJoinSetColumnWise(
+        res,
+        rhs,
+        hit_list_r,
+        row_result_size,
+        numColLhs,
+        ctx
+    );
 //    std::cout << "size: " << row_idx_res << std::endl;
-    res->shrinkNumRows(row_idx_res);
+    //res->shrinkNumRows(row_idx_res);
 }
 #endif //DuckDB
 #endif //SRC_RUNTIME_LOCAL_KERNELS_INNERJOIN_H
