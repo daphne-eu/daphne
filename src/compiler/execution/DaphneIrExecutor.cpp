@@ -190,7 +190,8 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
             sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libAllKernels.so"));
             sharedLibRefs.emplace_back(sharedLibRefPaths.back());
             #ifdef USE_MORPHSTORE
-            sharedLibRefs.push_back("build/src/runtime/local/kernels/MorphStore/libMorphStoreKernels.so");
+            sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libMorphStoreKernels.so"));
+            sharedLibRefs.emplace_back(sharedLibRefPaths.back());
             #endif
         }
         else {
