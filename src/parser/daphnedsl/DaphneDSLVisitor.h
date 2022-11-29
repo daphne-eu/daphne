@@ -29,6 +29,7 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
