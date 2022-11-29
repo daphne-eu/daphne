@@ -388,7 +388,7 @@ void innerJoin(
     // Perhaps check if res already allocated.
     const size_t numRowRhs = rhs->getNumRows();
     const size_t numRowLhs = lhs->getNumRows();
-    const size_t totalRows = numRowRhs > numRowLhs? numRowRhs: numRowLhs;
+    const size_t totalRows = numRowRhs > numRowLhs? numRowRhs: numRowLhs;;
     const size_t numColRhs = rhs->getNumCols();
     const size_t numColLhs = lhs->getNumCols();
     const size_t totalCols = numColRhs + numColLhs;
@@ -397,7 +397,6 @@ void innerJoin(
 
     int64_t col_idx_res = 0;
     int64_t row_idx_res = 0;
-    int64_t row_result_size = 0;
 
     ValueTypeCode schema[totalCols];
     std::string newlabels[totalCols];
@@ -412,18 +411,17 @@ void innerJoin(
         schema[col_idx_res] = rhs->getColumnType(col_idx_r);
         newlabels[col_idx_res] = oldlabels_r[col_idx_r];
         col_idx_res++;
-    };
+    }
 
-    //std::cout << totalRows << std::endl;
-    //List to store corresponding ids.
-    uint32_t hit_list_l[totalRows];
-    uint32_t hit_list_r[totalRows];
+    // Creating Result Frame
+    res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, newlabels, false);
 
-    //probeing phase. Needs work.
-    for(size_t row_idx_l = 0; row_idx_l < numRowLhs && row_result_size < totalRows; row_idx_l++){
-        for(size_t row_idx_r = 0; row_idx_r < numRowRhs && row_result_size < totalRows; row_idx_r++){
+    for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
+        for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
+            col_idx_res = 0;
             //PROBE ROWS
-            bool hit = innerJoinProbeIf<int64_t, int64_t>(
+            bool hit = false;
+            hit = hit || innerJoinProbeIf<int64_t, int64_t>(
                 vtcLhsOn, vtcRhsOn,
                 res,
                 lhs, rhs,
@@ -444,33 +442,78 @@ void innerJoin(
                 lhsOn, rhsOn,
                 row_idx_l, row_idx_r,
                 ctx);
-
-            hit_list_l[row_result_size] = row_idx_l;
-            hit_list_r[row_result_size] = row_idx_r;
-            row_result_size += hit;
+            if(hit){
+                for(size_t idx_c = 0; idx_c < numColLhs; idx_c++){
+                    innerJoinSet<int64_t>(
+                        schema[col_idx_res],
+                        res,
+                        lhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_l,
+                        idx_c,
+                        ctx
+                    );
+                    innerJoinSet<uint64_t>(
+                        schema[col_idx_res],
+                        res,
+                        lhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_l,
+                        idx_c,
+                        ctx
+                    );
+                    innerJoinSet<double>(
+                        schema[col_idx_res],
+                        res,
+                        lhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_l,
+                        idx_c,
+                        ctx
+                    );
+                    col_idx_res++;
+                }
+                for(size_t idx_c = 0; idx_c < numColRhs; idx_c++){
+                    innerJoinSet<int64_t>(
+                        schema[col_idx_res],
+                        res,
+                        rhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_r,
+                        idx_c,
+                        ctx
+                    );
+                    innerJoinSet<uint64_t>(
+                        schema[col_idx_res],
+                        res,
+                        rhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_r,
+                        idx_c,
+                        ctx
+                    );
+                    innerJoinSet<double>(
+                        schema[col_idx_res],
+                        res,
+                        rhs,
+                        row_idx_res,
+                        col_idx_res,
+                        row_idx_r,
+                        idx_c,
+                        ctx
+                    );
+                    col_idx_res++;
+                }
+                row_idx_res++;
+            }
         }
     }
-
-    // Creating Result Frame
-    res = DataObjectFactory::create<Frame>(row_result_size, totalCols, schema, newlabels, false);
-
-    innerJoinSetColumnWise(
-        res,
-        lhs,
-        hit_list_l,
-        row_result_size,
-        0,
-        ctx
-    );
-
-    innerJoinSetColumnWise(
-        res,
-        rhs,
-        hit_list_r,
-        row_result_size,
-        numColLhs,
-        ctx
-    );
+    res->shrinkNumRows(row_idx_res);
 //    std::cout << "size: " << row_idx_res << std::endl;
     //res->shrinkNumRows(row_idx_res);
 }
