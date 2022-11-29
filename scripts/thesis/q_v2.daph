@@ -39,6 +39,11 @@ c = readFrame("data/s10/customer.csv");
 l = readFrame("data/s10/lineitem.csv");
 o = readFrame("data/s10/orders.csv");
 
+//c = c[0:5000,];
+//l = l[0:20000,];
+//o = o[0:5000,];
+
+
 t1 = now();
 
 print("load in finished");

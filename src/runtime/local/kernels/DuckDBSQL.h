@@ -245,6 +245,7 @@ void duckDbSql(
 
     duckdb::DuckDB db(nullptr);
     duckdb::Connection con(db);
+    duckdb::unique_ptr<duckdb::QueryResult> se = con.Query("SET threads TO 1");
 
     // std::cout<<std::endl << query << std::endl;
     for(size_t i = 0; i < numTableNames && i < numTables; i++){

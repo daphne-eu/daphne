@@ -144,6 +144,9 @@ if(USE_DUCKDB)
     else()
         add_definitions(-DUSE_DUCKSC)
     endif()
+    if(USE_DUCKVEC)
+        add_definitions(-DUSE_DUCKVECTORISED)
+    endif()
 endif()
 
 
@@ -210,7 +213,7 @@ add_subdirectory(src/runtime/local/io)
 add_subdirectory(src/runtime/local/kernels)
 if(USE_FPGAOPENCL)
     add_subdirectory(src/runtime/local/kernels/FPGAOPENCL)
-endif() 
+endif()
 add_subdirectory(src/util)
 
 

@@ -284,7 +284,7 @@ void ddb_FillResultFrame(
     size_t totalCols
 ){
     //Retrieve Result (2 Ways. VECTORISED and STANDARD(?) (Names need Work))
-    #ifdef DUCKVECTORISED
+    #ifdef USE_DUCKVECTORISED
         //QueryResult doesn't has a Possibility to get the row count.
         //In this case: We have to Fetch all the DataChunks and add up there lenght.
         //Then we store one DataChunk at a time into a Frame.

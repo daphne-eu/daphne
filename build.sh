@@ -388,6 +388,7 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_DUCKDB="-DUSE_DUCKDB=OFF"
 BUILD_DUCKSQL="-DUSE_DUCKSQL=OFF"
 BUILD_DUCKAPI="-DUSE_DUCKAPI=OFF"
+BUILD_DUCKVEC="-DUSE_DUCKVEC=OFF"
 BUILD_ARROW="-DUSE_ARROW=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
@@ -435,6 +436,12 @@ while [[ $# -gt 0 ]]; do
             echo using DuckDB API
             export BUILD_DUCKDB="-DUSE_DUCKDB=ON"
             export BUILD_DUCKAPI="-DUSE_DUCKAPI=ON"
+            installDuckDB=1
+            ;;
+        --duckVEC)
+            echo using DuckDB API
+            export BUILD_DUCKDB="-DUSE_DUCKDB=ON"
+            export BUILD_DUCKVEC="-DUSE_DUCKVEC=ON"
             installDuckDB=1
             ;;
         --arrow)
@@ -788,7 +795,7 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DUCKDB $BUILD_DUCKSQL $BUILD_DUCKAPI $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_DUCKDB $BUILD_DUCKSQL $BUILD_DUCKAPI $BUILD_DUCKVEC $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
