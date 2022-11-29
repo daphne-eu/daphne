@@ -333,7 +333,7 @@ void ddb_CreateDuckDbTable(
         }
     }
     s_stream << ")";
-    std::cout << s_stream.str() << std::endl;
+    //std::cout << s_stream.str() << std::endl;
     con.Query(s_stream.str());
 }
 

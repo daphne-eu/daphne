@@ -41,6 +41,12 @@ void innerJoin(
     // context
     DCTX(ctx)
 ) {
+
+
+        duckdb::DuckDB db(nullptr);
+        duckdb::Connection con(db);
+        //con.Query("SET threads TO 1");
+
     const size_t numCols_l = lhs->getNumCols();
     const size_t numCols_r = rhs->getNumCols();
     const size_t totalCols = numCols_r + numCols_l;
@@ -128,6 +134,8 @@ void innerJoin(
     duckdb::DuckDB db(nullptr);
     duckdb::Connection con(db);
 
+duckdb::unique_ptr<duckdb::QueryResult> se = con.Query("SET threads TO 1");
+std::cout << se->ToString() << std::endl;
 //CREATING VARIABLES FOR INNERJOIN
     duckdb::shared_ptr<duckdb::Relation> t_lhs, t_rhs;
     duckdb::shared_ptr<duckdb::Relation> join;
@@ -412,8 +420,8 @@ void innerJoin(
     uint32_t hit_list_r[totalRows];
 
     //probeing phase. Needs work.
-    for(size_t row_idx_l = 0; row_idx_l < numRowLhs; row_idx_l++){
-        for(size_t row_idx_r = 0; row_idx_r < numRowRhs; row_idx_r++){
+    for(size_t row_idx_l = 0; row_idx_l < numRowLhs && row_result_size < totalRows; row_idx_l++){
+        for(size_t row_idx_r = 0; row_idx_r < numRowRhs && row_result_size < totalRows; row_idx_r++){
             //PROBE ROWS
             bool hit = innerJoinProbeIf<int64_t, int64_t>(
                 vtcLhsOn, vtcRhsOn,

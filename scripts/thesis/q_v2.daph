@@ -31,13 +31,15 @@ order by
 
 print("start DAPHNE Program");
 
-c = readFrame("data/customer.csv");
-l = readFrame("data/lineitem.csv");
-o = readFrame("data/orders.csv");
+t0 = now();
 
-print("load in finished");
+c = readFrame("data/s10/customer.csv");
+l = readFrame("data/s10/lineitem.csv");
+o = readFrame("data/s10/orders.csv");
 
 t1 = now();
+
+print("load in finished");
 
 registerView("customer", c);
 registerView("lineitem", l);
@@ -47,7 +49,15 @@ t2 = now();
 
 result = sql(query);
 
-print(result);
+t3 = now();
 
+print(result[0,]);
 
-print(t2 - t1);
+time_l = t1 - t0;
+time_s = t3 - t2;
+
+print("loading time: ");
+print(time_l);
+
+print("SQL time: ");
+print(time_s);
