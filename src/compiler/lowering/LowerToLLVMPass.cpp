@@ -516,6 +516,49 @@ public:
     }
 };
 
+class MapOpLowering : public OpConversionPattern<daphne::MapOp>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::MapOp op, ArrayRef<Value> operands,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        auto loc = op->getLoc();
+        auto module = op->getParentOfType<ModuleOp>();
+
+        std::stringstream callee;
+        callee << '_' << op->getName().stripDialect().str();
+
+        // Result Matrix
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
+
+        // Input Matrix
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.arg().getType());
+
+        // Pointer to UDF 
+        callee << "__void";
+
+        
+        // get pointer to UDF 
+        LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.func());
+        auto udfFnPtr = rewriter.create<LLVM::AddressOfOp>(loc, udfFuncOp);
+
+        std::vector<Value> kernelOperands{op.arg(), udfFnPtr};
+
+        auto kernel = rewriter.create<daphne::CallKernelOp>(
+            loc,
+            callee.str(),
+            kernelOperands,
+            op->getResultTypes()
+        );
+        rewriter.replaceOp(op, kernel.getResults());
+
+        return success();
+    }
+};
+
 class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::VectorizedPipelineOp>
 {
     const DaphneUserConfig& cfg;
@@ -944,7 +987,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
             ConstantOpLowering,
             ReturnOpLowering,
             StoreVariadicPackOpLowering,
-            GenericCallOpLowering
+            GenericCallOpLowering,
+            MapOpLowering
     >(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This

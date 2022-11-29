@@ -42,6 +42,7 @@
 #define TAG_PARSER "[parser]"
 #define TAG_SCOPING "[scoping]"
 #define TAG_SCRIPTARGS "[scriptargs]"
+#define TAG_SECONDORDER "[secondorder]"
 #define TAG_SQL "[sql]"
 #define TAG_SYNTAX "[syntax]"
 #define TAG_VECTORIZED "[vectorized]"
