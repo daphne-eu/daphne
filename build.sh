@@ -743,13 +743,36 @@ if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
   fi
 fi
 
+
+#------------------------------------------------------------------------------
+# Setup MorphStore sources if compiled from source artifact/snapshot
+#------------------------------------------------------------------------------
+
+if [[ $BUILD_MORPHSTORE = *"ON"* ]]; then
+  cd "${thirdpartyPath}/MorphStore"
+  if ! [ -e .git ]; then # Note: .git in the submodule is not a directory.
+    # download and set up MorphStore code if compilation is run without the local working copy being checked out from git
+    # e.g., compiling from released source artifact
+    morphstoreCommit="3ba07b150d54093a495e29b580a7501327a26666"
+    morphstoreSnapshotArtifact="morphstore_${morphstoreCommit}.tar.gz"
+    morphstoreSnapshotPath="${cacheDir}/${morphstoreSnapshotArtifact}"
+    if ! is_dependency_downloaded "morphstore_${morphstoreCommit}"; then
+        wget https://github.com/MorphStore/Engine/archive/${morphstoreCommit}.tar.gz -qO "${morphstoreSnapshotPath}"
+        tar xzf "${morphstoreSnapshotPath}" --strip-components=1
+        dependency_download_success "morphstore_${morphstoreCommit}"
+    fi
+  fi
+  cd - > /dev/null
+fi
+
 # *****************************************************************************
 # Build DAPHNE target.
 # *****************************************************************************
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_MORPHSTORE $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja \
+   $BUILD_CUDA $BUILD_MORPHSTORE $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
