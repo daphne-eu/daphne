@@ -8,7 +8,7 @@
 //   segment = any (encoded: 0-4)
 //   date = 1995-03-01, ..., 1995-03-31 (encoded: 9189 - 9219)
 
-print("Query 2 for Thesis Evaluation version 1")
+print("Query 2 for Thesis Evaluation version 1");
 
 query =	"SELECT
 	l.l_orderkey,
