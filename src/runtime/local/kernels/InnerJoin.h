@@ -51,9 +51,11 @@ void innerJoin(
 
     const size_t numCols_l = lhs->getNumCols();
     const size_t numCols_r = rhs->getNumCols();
+
     const size_t totalCols = numCols_r + numCols_l;
     const size_t numRow_r = rhs->getNumRows();
     const size_t numRow_l = lhs->getNumRows();
+    const size_t rows_total = numRow_r > numRow_l? numRow_r: numRow_l;
     const size_t on_l = lhs->getColumnIdx(lhsOn);
     const size_t on_r = rhs->getColumnIdx(rhsOn);
     ValueTypeCode schema[totalCols];
@@ -70,7 +72,6 @@ void innerJoin(
         newlabels[col_idx_res] = rhs->getLabels()[col_idx_r];
         col_idx_res++;
     }
-
 //Start loading data into DuckDB
     duckdb::DataChunk dc_l;
     duckdb::DataChunk dc_r;
@@ -83,17 +84,22 @@ void innerJoin(
 
     std::vector<duckdb::LogicalType> types_l_j;
     std::vector<duckdb::LogicalType> types_r_j;
+    // std::cout << "1\n";
     types_l_j.push_back(ddb_GetDuckType(lhs->getColumnType(on_l)));
     types_r_j.push_back(ddb_GetDuckType(rhs->getColumnType(on_r)));
     dc_join_l.InitializeEmpty(types_l_j);
     dc_join_r.InitializeEmpty(types_r_j);
+    // std::cout << "2\n";
     dc_join_l.data[0].Reference(dc_l.data[on_l]);
     dc_join_r.data[0].Reference(dc_r.data[on_r]);
+    // std::cout << "3\n";
     dc_join_l.SetCardinality(dc_l);
     dc_join_r.SetCardinality(dc_r);
 
-    duckdb::SelectionVector sel_l(dc_l.size() * dc_r.size()); //is this correct?
-    duckdb::SelectionVector sel_r(dc_l.size() * dc_r.size()); //is this correct?
+    // std::cout << "4\n";
+    // std::cout << dc_l.size() << " " << dc_r.size() << std::endl;
+    duckdb::SelectionVector sel_l(rows_total);//dc_l.size() * dc_r.size()); //is this correct?
+    duckdb::SelectionVector sel_r(rows_total);//dc_l.size() * dc_r.size()); //is this correct?
     duckdb::idx_t l_t = 0, r_t = 0;
 
 //JoinCondition
