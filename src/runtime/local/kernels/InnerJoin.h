@@ -92,8 +92,8 @@ void innerJoin(
     dc_join_l.SetCardinality(dc_l);
     dc_join_r.SetCardinality(dc_r);
 
-    duckdb::SelectionVector sel_l(dc_l.size()); //is this correct?
-    duckdb::SelectionVector sel_r(dc_r.size()); //is this correct?
+    duckdb::SelectionVector sel_l(dc_l.size() * dc_r.size()); //is this correct?
+    duckdb::SelectionVector sel_r(dc_l.size() * dc_r.size()); //is this correct?
     duckdb::idx_t l_t = 0, r_t = 0;
 
 //JoinCondition
