@@ -26,8 +26,8 @@ A = syrk(X);
 lambda = fill(as.f32(0.001), ncol(X), 1);
 A = A + diagMatrix(lambda);
 b=gemv(X,y);
-print("Sum A: ", 0); print(sum(A));
-print("Sum b: ", 0); print(sum(b));
+#print("Sum A: ", 0); print(sum(A));
+#print("Sum b: ", 0); print(sum(b));
 beta = solve(A, b);
 t1_lm=now();
 

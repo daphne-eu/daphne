@@ -137,6 +137,8 @@ cd "$daphneBuildDir"
 mkdir -p "$PACK_ROOT/bin"
 # shellcheck disable=SC2154
 cp -a "$projectRoot"/{benchmarks,deliverables,doc,lib,scripts} "$PACK_ROOT"
+# quick-fix to resolve a missing dependency issue for artifact D7.2
+cp /lib/x86_64-linux-gnu/libtinfo.so.5 "$PACK_ROOT/lib"
 cp -a "$projectRoot"/bin/daphne "$PACK_ROOT/bin"
 cp "$projectRoot"/{CITATION,CONTRIBUTING.md,KEYS.txt,LICENSE.txt,README.md,UserConfig.json} "$PACK_ROOT"
 tar czf "$PACK_ROOT".tgz "$PACK_ROOT"

@@ -1,23 +1,26 @@
 #!/usr/bin/env bash
 
-if [[ -d bin || -d build || -d lib ]]; then
-  while true; do
-  read -p "bin, build or lib directory exist. Run build --clean first? (y/n) " yn
-  case $yn in
-    y ) echo cleaning;
-      rm -rf bin build lib
-      break;;
-    n ) echo skipping cleanup;
-      break;;
-    * ) echo invalid response;;
-  esac
-  done
-fi
+# if this is run from the source snapshot, ask to recompile
+if [[ -d src ]]; then
+  if [[ -d bin || -d build || -d lib ]]; then
+    while true; do
+    read -p "bin, build or lib directory exist. Cleanup first to rebuild? (y/n) " yn
+    case $yn in
+      y ) echo cleaning;
+        rm -rf bin build lib
+        break;;
+      n ) echo skipping cleanup;
+        break;;
+      * ) echo invalid response;;
+    esac
+    done
+  fi
 
-if ! [[ -d bin || -d build || -d lib ]]; then
-  ./build.sh --cuda
-else
-  echo skipping rebuild
+  if ! [[ -d bin || -d build || -d lib ]]; then
+    ./build.sh --cuda
+  else
+    echo skipping rebuild
+  fi
 fi
 
 ROWS=500000

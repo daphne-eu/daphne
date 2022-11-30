@@ -22,11 +22,12 @@ runtime_args="--libdir ${libDir} ./scripts/deliverables/lm.daph input=\"delivera
 print_info LM on CPU
 bin/daphne ${runtime_args} #2>/dev/null
 
-print_info LM on CUDA
-bin/daphne --cuda ${runtime_args} #2>/dev/null
-
 print_info LM vectorized CPU
 OPENBLAS_NUM_THREADS=1 bin/daphne --vec ${runtime_args}# 2>/dev/null
 
-print_info LM vectorized CUDA
-OPENBLAS_NUM_THREADS=1 bin/daphne --vec --cuda ${runtime_args} #2>/dev/null
+print_info LM on CUDA
+bin/daphne --cuda ${runtime_args} #2>/dev/null
+
+# not working correctly yet
+#print_info LM vectorized CUDA
+#OPENBLAS_NUM_THREADS=1 bin/daphne --vec --cuda ${runtime_args} #2>/dev/null
