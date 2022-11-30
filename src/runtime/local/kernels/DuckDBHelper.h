@@ -241,8 +241,8 @@ void ddb_VectorizedFill(
     duckdb::unique_ptr<duckdb::DataChunk> nextChunk;
 
     while((nextChunk = query_result->Fetch()) != nullptr){
-        chunks.push_back(move(nextChunk));
         totalRows += nextChunk->size();
+        chunks.push_back(move(nextChunk));
     }
 
 	res = DataObjectFactory::create<Frame>(totalRows, totalCols, schema, labels, false);
