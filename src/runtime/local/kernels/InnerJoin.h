@@ -382,18 +382,21 @@ bool innerJoinProbeIf(
 template<typename VT>
 size_t innerJoinProbeColumn(
     // arguments
-    const DenseMatrix<VT> * argLhs,
-    const DenseMatrix<VT> * argRhs,
+    VT* argLhs_raw,
+    VT* argRhs_raw,
     size_t *& hit_list_l, size_t *& hit_list_r,
     const size_t lhs_row, const size_t rhs_row,
     // context
     DCTX(ctx)
 ){
     size_t hit = 0;
+    VT* argLhs = argLhs_raw;
+    VT* argRhs = argRhs_raw;
+
     for(size_t l = 0; l < lhs_row; l++){
         for(size_t r = 0; r < rhs_row; r++){
-            const VT l_val = argLhs->get(l, 0);
-            const VT r_val = argRhs->get(r, 0);
+            const VT l_val = argLhs[l];
+            const VT r_val = argRhs[r];
             hit_list_l[hit] = l;
             hit_list_r[hit] = r;
             hit += (int) (l_val == r_val);
@@ -411,8 +414,8 @@ size_t innerJoinProbeGetColumn(
     DCTX(ctx)
 ){
     return innerJoinProbeColumn<VT>(
-        lhs->getColumn<VT>(lhsOn),
-        rhs->getColumn<VT>(rhsOn),
+        (VT*)lhs->getColumnRaw(lhs->getColumnIdx(lhsOn)),
+        (VT*)rhs->getColumnRaw(rhs->getColumnIdx(rhsOn)),
         hit_list_l,
         hit_list_r,
         lhs->getNumRows(),
@@ -515,14 +518,14 @@ void innerJoin(
     size_t *hit_list_l = new size_t[totalRows];
     size_t *hit_list_r = new size_t[totalRows];
 
-    // std::cout << "start Probe\n";
+    std::cout << "start Probe\n";
     row_result_size = innerJoinProbe(lhs, rhs, hit_list_l, hit_list_r, lhsOn, rhsOn, ctx);
 
-    // std::cout << "creat result\n";
+    //std::cout << "creat result\n";
     // Creating Result Frame
     res = DataObjectFactory::create<Frame>(row_result_size, totalCols, schema, newlabels, false);
 
-    // std::cout << "start copy\n";
+    std::cout << "start copy\n";
 
     innerJoinSetColumnWise(
         res,
