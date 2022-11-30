@@ -47,7 +47,7 @@ void innerJoin(
 
         duckdb::DuckDB db(nullptr);
         duckdb::Connection con(db);
-        //con.Query("SET threads TO 1");
+        con.Query("SET threads TO 1");
 
     const size_t numCols_l = lhs->getNumCols();
     const size_t numCols_r = rhs->getNumCols();
