@@ -111,8 +111,12 @@ def generateKernelInstantiation(kernelTemplateInfo, templateValues, opCodes, out
             .replace("const ", "")
             .replace(" **", "" if rp["isOutput"] else "_variadic")
             .replace(" *", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")
+            .replace("*", "_variadic" if "isVariadic" in rp and rp["isVariadic"] else "")
             .replace("& ", "")
-            .replace("<", "_").replace(">", "")
+            .replace("<", "_")
+            .replace(">", "")
+            .replace(",", "_")
+            .replace(" ", "_")
         for rp in extendedRuntimeParams
     ])
     if typesForName != "":

@@ -20,6 +20,8 @@
 
 #include "llvm/Support/TargetSelect.h"
 #include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
@@ -43,6 +45,9 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations,
     context_.getOrLoadDialect<mlir::StandardOpsDialect>();
     context_.getOrLoadDialect<mlir::scf::SCFDialect>();
     context_.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
+    context_.getOrLoadDialect<mlir::AffineDialect>();
+    context_.getOrLoadDialect<mlir::memref::MemRefDialect>();
+    context_.getOrLoadDialect<mlir::scf::SCFDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -155,6 +160,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createManageObjRefsPass());
         if(userConfig_.explain_obj_ref_mgnt)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
+
+        // TODO: add --explain argument
+        pm.addPass(mlir::daphne::createPrintIRPass("IR before LowerDenseMatrixPass"));
+        pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after LowerDenseMatrixPass"));
+
 
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         if(userConfig_.explain_kernels)

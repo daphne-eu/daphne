@@ -579,6 +579,30 @@
     },
     {
         "kernelTemplate": {
+            "header": "GetDataPointer.h",
+            "opName": "getDataPointer",
+            "returnType": "StridedMemRefType<VT,N>",
+            "templateParams": [
+                {
+                    "name": "VT",
+                    "isDataType": true
+                },
+                {
+                    "name": "N",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DenseMatrix<VT>*",
+                    "name": "input"
+                }
+            ]
+        },
+        "instantiations": [["double", "1"], ["float", "1"]]
+    },
+    {
+        "kernelTemplate": {
             "header": "CreateFrame.h",
             "opName": "createFrame",
             "returnType": "void",

@@ -67,6 +67,20 @@ class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
         Op<Daphne_Dialect, mnemonic, traits>;
 
 // ****************************************************************************
+// Access
+// ****************************************************************************
+
+def DenseMatrix_T : AnyTypeOf<[MatrixOrU], "::mlir::daphne::DenseMatrix">;
+
+def Daphne_GetMemRefDenseMatrix : Daphne_Op<"getMemRefDenseMatrix", [NoSideEffect]> {
+    let summary = "Return a StridedMemRefType.";
+    let description = [{ Constructs a StridedMemRefType with rank 2 from a DenseMatrix* with already allocated memory. }];
+
+    let arguments = (ins DenseMatrix_T:$arg);
+    let results = (outs AnyMemRef:$output);
+}
+
+// ****************************************************************************
 // Data generation
 // ****************************************************************************
 
@@ -78,6 +92,7 @@ def Daphne_FillOp : Daphne_Op<"fill", [
     let results = (outs MatrixOrU:$res);
 }
 
+// TODO: could implement InferShapeOpInterface
 def Daphne_MatrixConstantOp : Daphne_Op<"matrixConstant", [
     DataTypeMat
 ]>{

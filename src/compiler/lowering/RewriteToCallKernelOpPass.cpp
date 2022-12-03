@@ -19,6 +19,7 @@
 #include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Transforms/DialectConversion.h"
@@ -493,7 +494,7 @@ void RewriteToCallKernelOpPass::runOnFunction()
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<
@@ -503,7 +504,9 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::CreateVariadicPackOp,
             daphne::StoreVariadicPackOp,
             daphne::VectorizedPipelineOp,
-            daphne::GenericCallOp
+            daphne::GenericCallOp,
+            scf::ForOp,
+            memref::LoadOp
     >();
     target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
         return op.isTrivialCast() || op.isMatrixPropertyCast();
