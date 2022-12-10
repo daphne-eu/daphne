@@ -16,6 +16,7 @@
 
 #include <api/cli/StatusCode.h>
 #include <api/cli/DaphneUserConfig.h>
+#include <chrono>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
@@ -191,6 +192,10 @@ main(int argc, char** argv)
             "libdir", cat(daphneOptions),
             desc("The directory containing kernel libraries")
     );
+    opt<bool> codegen(
+            "codegen", cat(daphneOptions),
+            desc("Enables DenseMatrix lowering to MLIR codegen.")
+    );
 
     enum ExplainArgs {
       kernels,
@@ -344,6 +349,8 @@ main(int argc, char** argv)
     if(fpgaopencl) {
         user_config.use_fpgaopencl = true;
     }
+    if (codegen)
+        user_config.codegen = true;
 
 
     // add this after the cli args loop to work around args order
@@ -391,9 +398,14 @@ main(int argc, char** argv)
     // Further, process the module, including optimization and lowering passes.
     try{
         // TODO MSC: start time benchmarking here
+        auto t1 = std::chrono::high_resolution_clock::now();
         if (!executor.runPasses(moduleOp)) {
             return StatusCode::PASS_ERROR;
         }
+        auto t2 = std::chrono::high_resolution_clock::now();
+        std::cout << "runPasses took: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+            << " milliseconds\n";
     }
     catch(std::exception & e){
         std::cerr << "Pass error: " << e.what() << std::endl;

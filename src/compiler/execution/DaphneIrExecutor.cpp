@@ -162,10 +162,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
 
         // TODO: add --explain argument
-        pm.addPass(mlir::daphne::createPrintIRPass("IR before LowerDenseMatrixPass"));
-        pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
-        pm.addPass(mlir::daphne::createPrintIRPass("IR after LowerDenseMatrixPass"));
-
+        if (userConfig_.codegen) {
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before LowerDenseMatrixPass"));
+            pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after LowerDenseMatrixPass"));
+        }
 
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         if(userConfig_.explain_kernels)
