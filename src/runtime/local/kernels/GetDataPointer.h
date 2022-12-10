@@ -17,46 +17,29 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H
 #define SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H
 
-#include <cstdint>
-#include <memory>
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <runtime/local/datastructures/Structure.h>
 #include "mlir/ExecutionEngine/CRunnerUtils.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Types.h"
 #include "llvm/ADT/ArrayRef.h"
 #include <cstddef>
-#include <vector>
 
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-StridedMemRefType<float, 1> getDataPointer(const DenseMatrix<float> *input, DCTX(ctx)) {
-// template<typename VT, int N>
-// StridedMemRefType<VT, N> _getDataPointer__StridedMemRefType___DenseMatrix_double(const DenseMatrix<float> *input, DCTX(ctx)) {
-// MemRefDescriptor
-// uint64_t getDataPointer(const DenseMatrix<VT>* input, DCTX(ctx)) {
-    StridedMemRefType<float, 1> memRef;
+inline StridedMemRefType<float, 2> getMemRefDenseMatrix(
+    const DenseMatrix<float> *input, DCTX(ctx)) {
+    StridedMemRefType<float, 2> memRef{};
     memRef.basePtr = input->getValuesSharedPtr().get();
-    memRef.data = input->getValuesSharedPtr().get();
+    memRef.data = memRef.basePtr;
     memRef.offset = 0;
     memRef.strides[0] = 1;
-    memRef.sizes[0] = 3;
+    memRef.sizes[0] = input->getNumRows();
+    memRef.sizes[1] = input->getNumCols();
 
     return memRef;
-    // return reinterpret_cast<uint64_t>(input->getValuesSharedPtr().get());
 }
 
-StridedMemRefType<double, 2> getMemRefDenseMatrix(
+inline StridedMemRefType<double, 2> getMemRefDenseMatrix(
     const DenseMatrix<double> *input, DCTX(ctx)) {
-    // template<typename VT, int N>
-    // StridedMemRefType<VT, N>
-    // _getDataPointer__StridedMemRefType___DenseMatrix_double(const
-    // DenseMatrix<float> *input, DCTX(ctx)) {
-
     StridedMemRefType<double, 2> memRef{};
     memRef.basePtr = input->getValuesSharedPtr().get();
     memRef.data = memRef.basePtr;

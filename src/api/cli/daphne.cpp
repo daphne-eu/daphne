@@ -390,6 +390,7 @@ main(int argc, char** argv)
 
     // Further, process the module, including optimization and lowering passes.
     try{
+        // TODO MSC: start time benchmarking here
         if (!executor.runPasses(moduleOp)) {
             return StatusCode::PASS_ERROR;
         }

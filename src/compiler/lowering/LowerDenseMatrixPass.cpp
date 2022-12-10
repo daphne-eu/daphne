@@ -70,9 +70,11 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         auto memRef = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, operands[0]);
 
+        // TODO: sumAll with 32 and 64 bit floats
         Value sum = rewriter.create<mlir::ConstantFloatOp>(
             op->getLoc(), llvm::APFloat(0.0),
             Float64Type::get(op->getContext()));
+//        op->getLoc(), llvm::APFloat(0.0), tensor.getElementType().dyn_cast<mlir::FloatType>());
 
         SmallVector<Value, 4> loopIvs;
         SmallVector<scf::ForOp, 2> forOps;
@@ -92,6 +94,8 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         Value sum_iter = rewriter.create<mlir::ConstantFloatOp>(
             op->getLoc(), llvm::APFloat(0.0),
             Float64Type::get(op->getContext()));
+        // TODO: 32 and 64 bit
+        //op->getLoc(), llvm::APFloat(0.0), tensor.getElementType().dyn_cast<mlir::FloatType>());
         // // inner loop
         auto innerUpperBound =
             rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
