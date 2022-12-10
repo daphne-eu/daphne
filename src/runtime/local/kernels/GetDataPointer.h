@@ -25,8 +25,11 @@
 #include "llvm/ADT/ArrayRef.h"
 #include <cstddef>
 
+// TODO: This obviously will be templated once genKernelInst.py is fixed
+
 inline StridedMemRefType<float, 2> getMemRefDenseMatrix(
     const DenseMatrix<float> *input, DCTX(ctx)) {
+
     StridedMemRefType<float, 2> memRef{};
     memRef.basePtr = input->getValuesSharedPtr().get();
     memRef.data = memRef.basePtr;
@@ -40,6 +43,7 @@ inline StridedMemRefType<float, 2> getMemRefDenseMatrix(
 
 inline StridedMemRefType<double, 2> getMemRefDenseMatrix(
     const DenseMatrix<double> *input, DCTX(ctx)) {
+
     StridedMemRefType<double, 2> memRef{};
     memRef.basePtr = input->getValuesSharedPtr().get();
     memRef.data = memRef.basePtr;

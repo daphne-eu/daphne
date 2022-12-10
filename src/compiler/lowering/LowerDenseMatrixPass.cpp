@@ -36,6 +36,7 @@
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/ADT/APFloat.h"
 
 using namespace mlir;
 
@@ -64,17 +65,16 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         auto nR = tensor.getNumRows();
         auto nC = tensor.getNumCols();
 
+        auto tensorType = tensor.getElementType();
         auto memRefType = mlir::MemRefType::get(
-            {nR, nC}, mlir::Float64Type::get(op->getContext()));
+            {nR, nC}, tensorType);
         auto memRefShape = memRefType.getShape();
         auto memRef = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, operands[0]);
 
-        // TODO: sumAll with 32 and 64 bit floats
+        llvm::APFloat zero = tensorType.isF32() ? llvm::APFloat(float(0)) : llvm::APFloat(0.0);
         Value sum = rewriter.create<mlir::ConstantFloatOp>(
-            op->getLoc(), llvm::APFloat(0.0),
-            Float64Type::get(op->getContext()));
-//        op->getLoc(), llvm::APFloat(0.0), tensor.getElementType().dyn_cast<mlir::FloatType>());
+            op->getLoc(), zero, tensorType.dyn_cast<mlir::FloatType>());
 
         SmallVector<Value, 4> loopIvs;
         SmallVector<scf::ForOp, 2> forOps;
@@ -92,11 +92,9 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
         Value sum_iter = rewriter.create<mlir::ConstantFloatOp>(
-            op->getLoc(), llvm::APFloat(0.0),
-            Float64Type::get(op->getContext()));
-        // TODO: 32 and 64 bit
-        //op->getLoc(), llvm::APFloat(0.0), tensor.getElementType().dyn_cast<mlir::FloatType>());
-        // // inner loop
+            op->getLoc(), zero,
+            tensorType.dyn_cast<mlir::FloatType>());
+        // inner loop
         auto innerUpperBound =
             rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
         auto innerLoop = rewriter.create<scf::ForOp>(
@@ -107,9 +105,10 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         loopIvs.push_back(innerLoop.getInductionVar());
         // inner loop body
         rewriter.setInsertionPointToStart(innerLoop.getBody());
-        // try loaded with ConstantIndexOp [{0,0}]
+        // load value from memref
         auto elementLoad =
             rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
+        // sum loop iter arg and memref value
         mlir::Value inner_sum = rewriter.create<AddFOp>(
             loc, innerLoop.getRegionIterArgs()[0], elementLoad);
         // yield inner loop result
@@ -121,44 +120,7 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             loc, outerLoop.getRegionIterArgs()[0], innerLoop.getResult(0));
         rewriter.create<scf::YieldOp>(loc, outer_sum);
 
-        // for (size_t i = 0; i < memRefShape.size(); ++i) {
-        // auto lowerBound = rewriter.create<ConstantIndexOp>(loc, 0);
-        //     auto upperBound =
-        //         rewriter.create<ConstantIndexOp>(loc, memRefShape[i]);
-        //     auto step = rewriter.create<ConstantIndexOp>(loc, 1);
-        //     auto loop =
-        //         rewriter.create<scf::ForOp>(loc, lowerBound, upperBound,
-        //         step, ValueRange{sum});
-        //     forOps.push_back(loop);
-        //     // for (Operation &nested : *loop.getBody()) {
-        //     //     rewriter.eraseOp(&nested);
-        //     // }
-        //     loopIvs.push_back(loop.getInductionVar());
-        //     // outer loop body
-        //     rewriter.setInsertionPointToStart(loop.getBody());
-        //     Value sum_iter = rewriter.create<mlir::ConstantFloatOp>(
-        //         op->getLoc(), llvm::APFloat(0.0),
-        //         Float64Type::get(op->getContext()));
-        //     rewriter.setInsertionPointToEnd(loop.getBody());
-        //     rewriter.create<scf::YieldOp>(loc);
-        //     rewriter.setInsertionPointToStart(loop.getBody());
-        // }
-        // inner loop body
-        // auto elementLoad =
-        //     rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
-        // sum= rewriter.create<AddFOp>(loc, sum, elementLoad);
-        // sum_iter = rewriter.create<AddFOp>(loc, sum_iter, elementLoad);
-        // rewriter.create<scf::YieldOp>(loc, sum_iter);
-        // rewriter.replaceOpWithNewOp<mlir::daphne::GetDataPointer>(
-        //     op.getOperation(), rewriter.getIntegerType(64, false),
-        //     operands[0]);
-
-        // rewriter.setInsertionPoint(op);
-        // SmallVector<Value, 4> idxs;
-        // idxs.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
-        // idxs.push_back(rewriter.create<ConstantIndexOp>(loc, 0));
-        // mlir::Value load = rewriter.create<memref::LoadOp>(loc, memRef,
-        // idxs);
+        // replace sumAll op with result of loops
         rewriter.replaceOp(op, outerLoop.getResult(0));
         return success();
     }
