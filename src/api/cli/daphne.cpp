@@ -415,8 +415,13 @@ main(int argc, char** argv)
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
     try{
+        auto t1 = std::chrono::high_resolution_clock::now();
         auto engine = executor.createExecutionEngine(moduleOp);
         auto error = engine->invoke("main");
+        auto t2 = std::chrono::high_resolution_clock::now();
+        std::cout << "engine->invoke took: "
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
+            << " milliseconds\n";
         if (error) {
             llvm::errs() << "JIT-Engine invocation failed: " << error;
             return StatusCode::EXECUTION_ERROR;
