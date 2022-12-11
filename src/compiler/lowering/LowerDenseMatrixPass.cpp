@@ -77,14 +77,16 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             op->getLoc(), zero, tensorType.dyn_cast<mlir::FloatType>());
 
         SmallVector<Value, 4> loopIvs;
-        SmallVector<scf::ForOp, 2> forOps;
-        auto lowerBound = rewriter.create<ConstantIndexOp>(loc, 0);
-        auto outerUpperBound =
-            rewriter.create<ConstantIndexOp>(loc, memRefShape[0]);
-        auto step = rewriter.create<ConstantIndexOp>(loc, 1);
+        // SmallVector<scf::ForOp, 2> forOps;
+        SmallVector<AffineForOp, 2> forOps;
+        // auto lowerBound = rewriter.create<ConstantIndexOp>(loc, 0);
+        // auto outerUpperBound =
+        //     rewriter.create<ConstantIndexOp>(loc, memRefShape[0]);
+        // auto step = rewriter.create<ConstantIndexOp>(loc, 1);
         // outer loop
-        auto outerLoop = rewriter.create<scf::ForOp>(
-            loc, lowerBound, outerUpperBound, step, ValueRange{sum});
+        // auto outerLoop = rewriter.create<scf::ForOp>(
+        auto outerLoop = rewriter.create<AffineForOp>(
+            loc, 0, nR, 1, ValueRange{sum});
         for (Operation &nested : *outerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -95,10 +97,11 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             op->getLoc(), zero,
             tensorType.dyn_cast<mlir::FloatType>());
         // inner loop
-        auto innerUpperBound =
-            rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
-        auto innerLoop = rewriter.create<scf::ForOp>(
-            loc, lowerBound, innerUpperBound, step, ValueRange{sum_iter});
+        // auto innerUpperBound =
+        //     rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
+        // auto innerLoop = rewriter.create<scf::ForOp>(
+        auto innerLoop = rewriter.create<AffineForOp>(
+            loc, 0, nC, 1, ValueRange{sum_iter});
         for (Operation &nested : *innerLoop.getBody()) {
             rewriter.eraseOp(&nested);
         }
@@ -113,12 +116,14 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             loc, innerLoop.getRegionIterArgs()[0], elementLoad);
         // yield inner loop result
         rewriter.setInsertionPointToEnd(innerLoop.getBody());
-        rewriter.create<scf::YieldOp>(loc, inner_sum);
+        // rewriter.create<scf::YieldOp>(loc, inner_sum);
+        rewriter.create<AffineYieldOp>(loc, inner_sum);
         // yield outer loop result
         rewriter.setInsertionPointToEnd(outerLoop.getBody());
         mlir::Value outer_sum = rewriter.create<AddFOp>(
             loc, outerLoop.getRegionIterArgs()[0], innerLoop.getResult(0));
-        rewriter.create<scf::YieldOp>(loc, outer_sum);
+        // rewriter.create<scf::YieldOp>(loc, outer_sum);
+        rewriter.create<AffineYieldOp>(loc, outer_sum);
 
         // replace sumAll op with result of loops
         rewriter.replaceOp(op, outerLoop.getResult(0));
@@ -149,6 +154,7 @@ void LowerDenseMatrixPass::runOnOperation() {
     target.addLegalDialect<mlir::memref::MemRefDialect>();
     target.addLegalDialect<mlir::StandardOpsDialect>();
     target.addLegalDialect<mlir::scf::SCFDialect>();
+    target.addLegalDialect<mlir::AffineDialect>();
 
     target.addLegalOp<mlir::daphne::GetMemRefDenseMatrix>();
     target.addIllegalOp<mlir::daphne::AllAggSumOp>();

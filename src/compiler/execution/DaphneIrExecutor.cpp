@@ -47,7 +47,6 @@ DaphneIrExecutor::DaphneIrExecutor(bool selectMatrixRepresentations,
     context_.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
     context_.getOrLoadDialect<mlir::AffineDialect>();
     context_.getOrLoadDialect<mlir::memref::MemRefDialect>();
-    context_.getOrLoadDialect<mlir::scf::SCFDialect>();
 
     llvm::InitializeNativeTarget();
     llvm::InitializeNativeTargetAsmPrinter();
@@ -163,11 +162,19 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 
         // TODO: add --explain argument
         if (userConfig_.codegen) {
+            pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
+            //
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR before LowerDenseMatrixPass"));
-            pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after LowerDenseMatrixPass"));
+            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR after LowerDenseMatrixPass"));
+
+            // pm.addNestedPass<mlir::FuncOp>(mlir::createBufferLoopHoistingPass());
+            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
+            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopFusionPass());
+
+            pm.addPass(mlir::createLowerAffinePass());
         }
 
         pm.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
@@ -193,6 +200,8 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
 {
     if (module) {
         // An optimization pipeline to use within the execution engine.
+        // TODO MSC: this enables loop unroll, tiling, unroll and jam, ..
+        unsigned make_fast = 3;
         auto optPipeline = mlir::makeOptimizingTransformer(0, 0, nullptr);
         std::vector<llvm::StringRef> sharedLibRefs;
         // This next line adds to our Linux platform lock-in
