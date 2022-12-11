@@ -1,0 +1,7 @@
+X = fill(1.0, 10000, 12500);
+
+start_fill = now();
+sum(X);
+end_fill = now();
+
+print(end_fill - start_fill);

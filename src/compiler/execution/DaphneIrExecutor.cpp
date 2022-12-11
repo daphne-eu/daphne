@@ -167,8 +167,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR before LowerDenseMatrixPass"));
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after LowerDenseMatrixPass"));
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createBufferLoopHoistingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
@@ -202,7 +202,7 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
         // An optimization pipeline to use within the execution engine.
         // TODO MSC: this enables loop unroll, tiling, unroll and jam, ..
         unsigned make_fast = 3;
-        auto optPipeline = mlir::makeOptimizingTransformer(0, 0, nullptr);
+        auto optPipeline = mlir::makeOptimizingTransformer(make_fast, 0, nullptr);
         std::vector<llvm::StringRef> sharedLibRefs;
         // This next line adds to our Linux platform lock-in
         std::string daphne_executable_dir(std::filesystem::canonical("/proc/self/exe").parent_path());

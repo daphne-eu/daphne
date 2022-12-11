@@ -20,14 +20,16 @@ def run_compile_benchmark(file: str):
         output = str(popen.stdout.read())
         time_spent_precompiled += int(re.findall(r"\d+", output)[0])
 
+    print(f"Total time spent precompiled: {time_spent_precompiled}, average:"
+          f"{time_spent_precompiled/ROUNDS}")
+
+    for i in range(ROUNDS):
         # codegen
         popen = subprocess.Popen(("../bin/daphne --codegen " + file).split(), stdout=subprocess.PIPE)
         popen.wait()
         output = str(popen.stdout.read())
         time_spent_codegen += int(re.findall(r"\d+", output)[0])
 
-    print(f"Total time spent precompiled: {time_spent_precompiled}, average:"
-          f"{time_spent_precompiled/ROUNDS}")
     print(f"Total time spent codegen: {time_spent_codegen}, average:"
           f"{time_spent_codegen/ROUNDS}")
 
