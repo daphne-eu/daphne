@@ -19,6 +19,7 @@
 #include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
@@ -494,7 +495,7 @@ void RewriteToCallKernelOpPass::runOnFunction()
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect>();
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<

@@ -190,4 +190,5 @@ endif()
 add_subdirectory(src/util)
 
 
+add_subdirectory(daphne-opt)
 add_subdirectory(test)
