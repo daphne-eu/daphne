@@ -165,13 +165,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         // TODO: add --explain argument
         if (userConfig_.codegen) {
 
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR before LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before LowerDenseMatrixPass"));
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
             //
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after LowerDenseMatrixPass"));
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createBufferLoopHoistingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
