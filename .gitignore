@@ -22,7 +22,24 @@ __pycache__/
 .idea/
 cmake-*/
 
+# local test/dev scripts
 tmpdaphne.daphne
+*.daphne
+*.mlir
+*.log
+
+# tags file
+tags
+
+# clangd cache
+.cache/
+
+# gdb
+.gdb_history
+
+# compile commands
+compile_commands.json
+
 
 # release scripts output
 /artifacts
