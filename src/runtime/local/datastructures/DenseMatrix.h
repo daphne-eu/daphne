@@ -71,6 +71,19 @@ class DenseMatrix : public Matrix<ValueType>
      */
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo = nullptr);
 
+    // public:
+    // ValueType *memRefPtr = nullptr;
+    // DenseMatrix(ValueType *memRefPtr);
+    // DenseMatrix(const DenseMatrix &dm) :Matrix<ValueType>(10, 10) {this->memRefPtr = dm.memRefPtr;}
+    // DenseMatrix<ValueType>operator=(DenseMatrix<ValueType>* t)
+    // {
+    //     this->memRefPtr = t->memRefPtr;
+    //     return *this;
+    // }
+    // ~DenseMatrix() override = default;
+    //
+    // private:
+
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
      *
@@ -244,6 +257,8 @@ public:
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
+                // TODO: Check for row/column major order on access
+                // os << memRefPtr[numRows * c + r];
                 printValue(os, get(r, c));
                 if (c < numCols - 1)
                     os << ' ';

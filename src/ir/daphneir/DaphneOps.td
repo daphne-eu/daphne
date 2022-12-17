@@ -70,7 +70,16 @@ class Daphne_Op<string mnemonic, list<OpTrait> traits = []> :
 // Access
 // ****************************************************************************
 
+// TODO: Do we really need this? MatrixOrU may be enough
 def DenseMatrix_T : AnyTypeOf<[MatrixOrU], "::mlir::daphne::DenseMatrix">;
+
+def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
+    let summary = "Return a DenseMatrix.";
+    let description = [{ Constructs a DenseMatrix given a rank 2 StridedMemRefType. }];
+
+    let arguments = (ins AnyMemRef:$arg);
+    let results = (outs DenseMatrix_T);
+}
 
 def Daphne_GetMemRefDenseMatrix : Daphne_Op<"getMemRefDenseMatrix", [NoSideEffect]> {
     let summary = "Return a StridedMemRefType.";
