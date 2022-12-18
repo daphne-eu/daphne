@@ -48,10 +48,14 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_
     this->mdo.addLatest(new_data_placement->dp_id);
 }
 
-// template<typename ValueType>
-// DenseMatrix<ValueType>::DenseMatrix(ValueType *memRefPtr) : Matrix<ValueType>(10, 10){
-//     this->memRefPtr = memRefPtr;
-// }
+template<typename ValueType>
+DenseMatrix<ValueType>::DenseMatrix() : Matrix<ValueType>(10, 10){
+}
+
+template<typename ValueType>
+DenseMatrix<ValueType>::DenseMatrix(ValueType *memRefPtr) : Matrix<ValueType>(10, 10){
+    this->memRefPtr = memRefPtr;
+}
 
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,

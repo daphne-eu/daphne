@@ -28,11 +28,16 @@
 // TODO: This obviously will be templated once genKernelInst.py is fixed
 
 // TODO: may need to pass DM/StridedMemRefType as value
-// inline DenseMatrix<double>* getDenseMatrixFromMemRef(const StridedMemRefType<double, 2>* memRef, DCTX(ctx))
-// {
-//     DenseMatrix<double> *res = new DenseMatrix<double>(memRef->basePtr);
-//     return res;
-// }
+inline void getDenseMatrixFromMemRef(DenseMatrix<double> *&res, StridedMemRefType<double, 2>* memRef, DCTX(ctx))
+{
+    std::cout << "in getDenseMatrixFromMemRef call\n";
+    // DenseMatrix<double> *res = new DenseMatrix<double>(memRef->basePtr);
+
+    if(res == nullptr)
+        res = DataObjectFactory::create<DenseMatrix<double>>(memRef->basePtr);
+    else
+        throw std::runtime_error("DenseMatrix already exists for memref?\n");
+}
 
 inline StridedMemRefType<float, 2> getMemRefDenseMatrix(
     const DenseMatrix<float> *input, DCTX(ctx)) {

@@ -71,18 +71,19 @@ class DenseMatrix : public Matrix<ValueType>
      */
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo = nullptr);
 
-    // public:
-    // ValueType *memRefPtr = nullptr;
-    // DenseMatrix(ValueType *memRefPtr);
-    // DenseMatrix(const DenseMatrix &dm) :Matrix<ValueType>(10, 10) {this->memRefPtr = dm.memRefPtr;}
-    // DenseMatrix<ValueType>operator=(DenseMatrix<ValueType>* t)
-    // {
-    //     this->memRefPtr = t->memRefPtr;
-    //     return *this;
-    // }
-    // ~DenseMatrix() override = default;
-    //
-    // private:
+    public:
+    ValueType *memRefPtr = nullptr;
+    DenseMatrix();
+    DenseMatrix(ValueType *memRefPtr);
+    DenseMatrix(const DenseMatrix &dm) :Matrix<ValueType>(10, 10) {this->memRefPtr = dm.memRefPtr;}
+    DenseMatrix<ValueType>operator=(DenseMatrix<ValueType>* t)
+    {
+        this->memRefPtr = t->memRefPtr;
+        return *this;
+    }
+    ~DenseMatrix() override = default;
+
+    private:
 
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
@@ -105,7 +106,7 @@ class DenseMatrix : public Matrix<ValueType>
     DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
             size_t colUpperExcl);
 
-    ~DenseMatrix() override = default;
+    // ~DenseMatrix() override = default;
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
         if(rowIdx >= numRows)
