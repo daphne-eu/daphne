@@ -175,6 +175,8 @@ mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser
     else if (keyword == "String") {
         return StringType::get(parser.getBuilder().getContext());
     }
+    // TODO MSC
+    // daphne-opt calls this at some time and fails with "DapphneContext" as type
     else {
         parser.emitError(parser.getCurrentLocation()) << "Parsing failed, keyword `" << keyword << "` not recognized!";
         return nullptr;
