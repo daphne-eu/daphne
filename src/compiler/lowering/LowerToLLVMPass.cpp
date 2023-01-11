@@ -19,7 +19,11 @@
 #include "compiler/utils/CompilerUtils.h"
 
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
+#include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
+
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
+#include "mlir/Dialect/Linalg/IR/LinalgOps.h"
+#include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/BlockAndValueMapping.h"
 
@@ -926,8 +930,11 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     // populate dialect conversions
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
+    // populateLinalgToLLVMConversionPatterns(typeConverter, patterns);
 
     target.addLegalOp<ModuleOp>();
+    target.addLegalOp<mlir::linalg::FillOp>();
+    // target.addLegalDialect<mlir::linalg::LinalgDialect>();
 
     // for trivial casts no lowering to kernels -> higher benefit
     patterns.insert<CastOpLowering>(&getContext(), 2);
@@ -946,7 +953,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
     // ensures that only legal operations will remain after the conversion.
-    if (failed(applyFullConversion(module, target, std::move(patterns))))
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
         signalPassFailure();
 }
 

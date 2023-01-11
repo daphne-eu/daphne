@@ -67,7 +67,16 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
             op->getLoc(), memRefType, operands[1]);
 
         mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
-        rewriter.create<linalg::MatmulOp>(loc, ValueRange{lhs, rhs}, ValueRange{outputMemRef});
+        // mlir::Value outputMemRef = rewriter.create<linalg::InitTensorOp>(loc, memRefType.getShape(), tensorType);
+        // rewriter.create<linalg::MatmulOp>(loc, ValueRange{lhs, rhs}, ValueRange{outputMemRef});
+
+        llvm::APFloat zero = llvm::APFloat(0.0);
+        Value sum = rewriter.create<mlir::ConstantFloatOp>(
+            op->getLoc(), zero,
+            // Force accumulator to f64
+            // tensorType.dyn_cast<mlir::FloatType>());
+            Float64Type::get(op->getContext()));
+        rewriter.create<linalg::FillOp>(loc, outputMemRef, sum);
         mlir::Value DM = rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
                 loc, op.getType(), outputMemRef);
 

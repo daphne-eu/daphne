@@ -258,9 +258,9 @@ public:
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
-                // TODO: Check for row/column major order on access
-                // os << memRefPtr[numRows * c + r];
-                printValue(os, get(r, c));
+                // TODO MSC: Check for row/column major order on access
+                os << memRefPtr[numRows * c + r];
+                // printValue(os, get(r, c));
                 if (c < numCols - 1)
                     os << ' ';
             }
