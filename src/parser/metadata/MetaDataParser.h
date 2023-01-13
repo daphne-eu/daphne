@@ -45,6 +45,8 @@ public:
     NLOHMANN_DEFINE_TYPE_INTRUSIVE(SchemaColumn, label, valueType)
     [[nodiscard]] const std::string& getLabel() const { return label; }
     [[nodiscard]] ValueTypeCode getValueType() const { return valueType; }
+    void setLabel(const std::string& label_) { this->label = label_; }
+    void setValueType(ValueTypeCode valueType_) { this->valueType = valueType_; }
 
 private:
     std::string label;
@@ -57,14 +59,23 @@ public:
     /**
      * @brief Retrieves the file meta data for the specified file.
      *
-     * @param filename The name of the file for which to retrieve the metadata.
-     * Metadata should be passed using a simple JSON-based format.
+     * @param filename The name of the file for which to retrieve the meta data.
+     * Meta data should be passed using a simple JSON-based format.
      * @return The meta data of the specified file.
      * @throws std::runtime_error Thrown if the specified file could not be open.
      * @throws std::invalid_argument Thrown if the JSON file contains any unexpected
      * keys or if the file doesn't contain all the metadata.
      */
     static FileMetaData readMetaData(const std::string& filename);
+
+    /**
+     * @brief Saves the file meta data to the specified file. 
+     * 
+     * @param filename The name of the file for which to save the
+     * meta data. Note that the extension ".meta" is appended to this filename.
+     * @throws std::runtime_error Thrown if the specified file could not be openn.
+     */
+    static void writeMetaData(const std::string& filename, const FileMetaData& metaData);
 
 private:
     /**

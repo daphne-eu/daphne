@@ -29,7 +29,7 @@
  * Container to pass around user configuration
  */
 struct DaphneUserConfig {
-    // Remember to update src/parser/config/UserConfig.json accordingly!
+    // Remember to update UserConfig.json accordingly!
 
     bool use_cuda = false;
     bool use_vectorized_exec = false;
@@ -50,6 +50,7 @@ struct DaphneUserConfig {
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_sql = false;
+    bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;

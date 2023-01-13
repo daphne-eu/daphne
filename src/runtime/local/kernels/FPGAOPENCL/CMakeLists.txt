@@ -38,14 +38,23 @@ set(FPGAOPENCLKernels_SRC
 	${PREFIX}/../../context/FPGAContext.cpp
  	${PREFIX}/../../context/FPGAContext.h
 	${PREFIX}/CreateFPGAContext.h
+        ${PREFIX}/kernel_utils.h
+        ${PREFIX}/kernel_utils.cpp
         ${PREFIX}/MatMul.h
 	${PREFIX}/gemm_interface.cpp
 	${PREFIX}/gemm_interface.h
+	${PREFIX}/sgemv_interface.cpp
+	${PREFIX}/sgemv_interface.h
 	${PROJECT_BINARY_DIR}/FPGAOPENCLkernels.cpp
-)
+	${PREFIX}/kernel_utils.h
+        ${PREFIX}/kernel_utils.cpp
+	${PREFIX}/Syrk.h
+	${PREFIX}/syrk_interface.cpp
+	${PREFIX}/syrk_interface.h
+) 
 
 add_library(FPGAOPENCLKernels SHARED ${FPGAOPENCLKernels_SRC})
-set_target_properties(FPGAOPENCLKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/src/runtime/local/kernels)
+set_target_properties(FPGAOPENCLKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 target_include_directories(FPGAOPENCLKernels PUBLIC ${PROJECT_SOURCE_DIR}/src/)
 

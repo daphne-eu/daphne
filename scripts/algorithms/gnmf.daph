@@ -34,7 +34,7 @@ maxi = 20;
 # read sparse ratings matrix 
 # X = readMatrix($X); #TODO Matrix Market
 n = as.f64($n);
-e = as.f64($e);
+e = $e;
 X = rand(2.0*n, n, 1.0, 1.0, 2.0*e/n^2.0, -1);
 
 # initialize factors W and H

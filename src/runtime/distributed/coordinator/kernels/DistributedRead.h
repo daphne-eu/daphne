@@ -21,8 +21,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/io/ReadCsv.h>
 #include <runtime/local/io/File.h>
-#include <runtime/local/io/FileMetaData.h>
-
+#include <parser/metadata/MetaDataParser.h>
 #include <cassert>
 #include <cstddef>
 
@@ -35,7 +34,7 @@
 template<class DT>
 void distributedRead(Handle<DT> *&res, const char * filename, DCTX(ctx))
 {
-    FileMetaData fmd = FileMetaData::ofFile(filename);    
+    FileMetaData fmd = MetaDataParser::readMetaData(filename);
 
     readCsv(res, filename, fmd.numRows, fmd.numCols, ',');
 }

@@ -61,7 +61,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 
     target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport CUDA::cudart CUDA::cublasLt CUDA::cublas
             CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
-    #    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+    set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 endif()
 
 add_custom_command(
@@ -84,7 +84,7 @@ add_library(AllKernels SHARED
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
 )
-#set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib)
+set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
 target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
@@ -94,8 +94,5 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
-list(APPEND LIBS 
-        MLIRDaphne
-        MLIRDaphneTransforms
-        )
+list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 target_link_libraries(AllKernels PUBLIC ${LIBS})

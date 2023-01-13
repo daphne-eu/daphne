@@ -23,6 +23,7 @@
 // "[b]", then TAG_A TAG_B is "[a]" "[b]", which is equivalent to "[a][b]".
 
 #define TAG_ALGORITHMS "[algorithms]"
+#define TAG_CAST "[cast]"
 #define TAG_CONFIG "[config]"
 #define TAG_CONTROLFLOW "[controlflow]"
 #define TAG_DATASTRUCTURES "[datastructures]"
@@ -41,6 +42,7 @@
 #define TAG_PARSER "[parser]"
 #define TAG_SCOPING "[scoping]"
 #define TAG_SCRIPTARGS "[scriptargs]"
+#define TAG_SECONDORDER "[secondorder]"
 #define TAG_SQL "[sql]"
 #define TAG_SYNTAX "[syntax]"
 #define TAG_VECTORIZED "[vectorized]"

@@ -1,0 +1,56 @@
+@software{DAPHNE,
+  author    = {DAPHNE Development Team},
+  title     = {{DAPHNE: An Open and Extensible System Infrastructure for Integrated
+               Data Analysis Pipelines}},
+  url       = {https://github.com/daphne-eu/daphne},
+}
+
+@inproceedings{DammeBB0BCDDEFG22,
+  author    = {Patrick Damme and
+               Marius Birkenbach and
+               Constantinos Bitsakos and
+               Matthias Boehm and
+               Philippe Bonnet and
+               Florina M. Ciorba and
+               Mark Dokter and
+               Pawel Dowgiallo and
+               Ahmed Eleliemy and
+               Christian Faerber and
+               Georgios I. Goumas and
+               Dirk Habich and
+               Niclas Hedam and
+               Marlies Hofer and
+               Wenjun Huang and
+               Kevin Innerebner and
+               Vasileios Karakostas and
+               Roman Kern and
+               Tomaz Kosar and
+               Alexander Krause and
+               Daniel Krems and
+               Andreas Laber and
+               Wolfgang Lehner and
+               Eric Mier and
+               Marcus Paradies and
+               Bernhard Peischl and
+               Gabrielle Poerwawinata and
+               Stratos Psomadakis and
+               Tilmann Rabl and
+               Piotr Ratuszniak and
+               Pedro Silva and
+               Nikolai Skuppin and
+               Andreas Starzacher and
+               Benjamin Steinwender and
+               Ilin Tolovski and
+               Pinar T{\"{o}}z{\"{u}}n and
+               Wojciech Ulatowski and
+               Yuanyuan Wang and
+               Izajasz P. Wrosz and
+               Ales Zamuda and
+               Ce Zhang and
+               Xiaoxiang Zhu},
+  title     = {{DAPHNE:} An Open and Extensible System Infrastructure for Integrated
+               Data Analysis Pipelines},
+  booktitle = {{CIDR}},
+  publisher = {www.cidrdb.org},
+  year      = {2022}
+}

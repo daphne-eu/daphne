@@ -42,6 +42,9 @@ function printHelp {
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
     echo "  --arrow           Compile with support for Arrow/Parquet files"
+    echo "  --cuda            Compile with support for CUDA ops"
+    echo "  --debug           Compile with support for debug mode"
+    echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
 }
 
 #******************************************************************************
@@ -274,7 +277,7 @@ function clean() {
 function cleanBuildDirs() {
     echo "-- Cleanup of build directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}" "${projectRoot}/bin" "${projectRoot}/lib")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/antlr_v"*".install.success" \
@@ -293,7 +296,8 @@ function cleanBuildDirs() {
 function cleanAll() {
     echo "-- Cleanup of build and library directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}")
+    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}"
+                "${projectRoot}/bin" "${projectRoot}/lib")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/absl_v"*".download.success" \
@@ -457,7 +461,6 @@ if [ ! -d "${projectRoot}/build" ]; then
     sleep 1
 fi
 
-
 # Make sure that the submodule(s) have been updated since the last clone/pull.
 # But only if this is a git repo.
 if [ -d .git ]; then
@@ -561,9 +564,11 @@ if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
 fi
 if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
     cd "$sourcePrefix/$openBlasDirName"
-    make -j"$(nproc)"
+    make clean
+    # optimizes for multiple x86_64 architectures
+    make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
     make PREFIX="$openBlasInstDirName" install
-    cd -
+    cd - > /dev/null
     dependency_install_success "openBlas_v${openBlasVersion}"
 else
     daphne_msg "No need to build OpenBlas again."
@@ -709,7 +714,20 @@ cd "${thirdpartyPath}/${llvmName}"
 if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
     llvmCommit="$(git log -1 --format=%H)"
+else
+    # download and set up LLVM code if compilation is run without the local working copy being checked out from git
+    # e.g., compiling from released source artifact
+    llvmCommit="4763c8c9e3c7ef2946fa575d5c6bf8dd7fb88639"
+    llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
+    llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
+    if ! is_dependency_downloaded "llvm_${llvmCommit}"; then
+        wget https://github.com/llvm/llvm-project/archive/${llvmCommit}.tar.gz -qO "${llvmSnapshotPath}"
+        tar xzf "${llvmSnapshotPath}" --strip-components=1
+        dependency_download_success "llvm_${llvmCommit}"
+    fi
 fi
+
+cd - > /dev/null # return back from llvm 3rd party subdir
 
 if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
     daphne_msg "Build llvm version ${llvmCommit}"
@@ -726,6 +744,7 @@ if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFile
        -DCMAKE_INSTALL_PREFIX="$installPrefix"
     cmake --build "$buildPrefix/$llvmName" --target check-mlir
     echo "$llvmCommit" > "$llvmCommitFilePath"
+    cd - > /dev/null
     dependency_install_success "llvm_v${llvmCommit}"
 else
     daphne_msg "No need to build MLIR/LLVM again."
@@ -739,7 +758,9 @@ if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
     mkdir -p $FPGAOPENCL_BISTREAM_DIR
     cd $FPGAOPENCL_BISTREAM_DIR
     wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
-    cd -
+    wget $FPGAOPENCL_BISTREAM_URL/sgemv.aocx
+    wget $FPGAOPENCL_BISTREAM_URL/ssyrk.aocx
+    cd - > /dev/null
   fi
 fi
 

@@ -95,13 +95,13 @@ void columnGroupScan(std::vector<std::pair<VTIdx, VTIdx>> &groups, DenseMatrix<V
             VT * next = nextWithRowskip<VT>(first, last, rowSkip);
             if ((size_t) (next - first) > rowSkip)
                 groups.push_back(std::make_pair((first-values-colIdx)/rowSkip, (next-values-colIdx)/rowSkip));
-            first = next;   
+            first = next;
         }
     }
     groups.erase(groups.begin(),groups.begin()+numOldGroups);
 }
 
-// sorts IDs inside groups by the key column, reorder the column via a row extraction into a temporary 
+// sorts IDs inside groups by the key column, reorder the column via a row extraction into a temporary
 // DenseMatrix and then scan for groups of duplicates to be tie broken by another subsequent key column
 template<typename VTIdx, typename VT>
 void multiColumnIDSort(DenseMatrix<VTIdx> *&idx, const DenseMatrix<VT>* col, size_t colIdx, std::vector<std::pair<VTIdx, VTIdx>> &groups, bool ascending, DCTX(ctx)){
@@ -154,9 +154,6 @@ struct OrderFrame {
             DeduceValueTypeAndExecute<ColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups, ascending[numColIdxs-1], colIdx, ctx);
         } else {
             DeduceValueTypeAndExecute<MultiColumnIDSort>::apply(arg->getSchema()[colIdx], arg, idx, groups, ascending[numColIdxs-1], colIdx, ctx);
-            if (groups.front().first == 0 && groups.front().second == numRows) {
-                groups.clear();
-            }
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
     }
@@ -167,7 +164,7 @@ struct OrderFrame {
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
-// Frame <- Frame 
+// Frame <- Frame
 // ----------------------------------------------------------------------------
 
 template <> struct Order<Frame, Frame> {
@@ -183,7 +180,7 @@ template <> struct Order<Frame, Frame> {
 };
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- Frame 
+// DenseMatrix <- Frame
 // ----------------------------------------------------------------------------
 
 template <typename VTRes> struct Order<DenseMatrix<VTRes>, Frame> {
@@ -195,10 +192,10 @@ template <typename VTRes> struct Order<DenseMatrix<VTRes>, Frame> {
         OrderFrame::apply(idx, arg, colIdxs, numColIdxs, ascending, numAscending, groupsRes, ctx);
         res = idx;
     }
-};  
+};
 
 // ----------------------------------------------------------------------------
-// DenseMatrix <- DenseMatrix 
+// DenseMatrix <- DenseMatrix
 // ----------------------------------------------------------------------------
 
 template <typename VTRes, typename VTArg>
@@ -206,7 +203,7 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, size_t * colIdxs, size_t numColIdxs, bool * ascending, size_t numAscending, bool returnIdx, DCTX(ctx), std::vector<std::pair<size_t, size_t>> * groupsRes = nullptr) {
         size_t numRows = arg->getNumRows();
         if (arg == nullptr || colIdxs == nullptr || numColIdxs == 0 || ascending == nullptr ||
-            (returnIdx == false && !std::is_same<VTRes, VTArg>::value) || 
+            (returnIdx == false && !std::is_same<VTRes, VTArg>::value) ||
             (returnIdx == true && !std::is_same<VTRes, size_t>::value)
         ) {
             throw std::runtime_error("order-kernel called with invalid arguments");
@@ -228,9 +225,6 @@ struct Order<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             columnIDSort(idx, arg, colIdxs[numColIdxs-1], groups, ascending[numColIdxs-1], ctx);
         } else {
             multiColumnIDSort(idx, arg, colIdxs[numColIdxs-1], groups, ascending[numColIdxs-1], ctx);
-            if (groups.front().first == 0 && groups.front().second == numRows) {
-                groups.clear();
-            }
             groupsRes->insert(groupsRes->end(), groups.begin(), groups.end());
         }
 

@@ -1,0 +1,6 @@
+// Variable identifier for the function.
+
+foo = 123;
+
+X = [1, 2, 3];
+print(map(X, foo));

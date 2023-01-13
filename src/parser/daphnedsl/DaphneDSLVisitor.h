@@ -29,6 +29,7 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Value.h>
 
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -100,6 +101,44 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     
     template<class InsertAxOp, class NumAxOp>
     mlir::Value applyLeftIndexing(mlir::Location loc, mlir::Value arg, mlir::Value ins, antlrcpp::Any ax, bool allowLabel);
+
+    /**
+     * @brief Tries to find a matching UDF based on the arguments provided
+     * @param functionName Name of the UDF
+     * @param args Arguments passed to the UDF
+     * @return `FuncOp` of the matched UDF or `std::nullopt` if no UDF with the provided 
+     *  name exists
+     * @throws `std::runtime_error` if a UDF with the name exists but no matching 
+     *  version was found
+     */
+    std::optional<mlir::FuncOp> findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const;
+
+    /**
+     * @brief Tries to find a unary (i.e. single param) UDF based on the argument type
+     * @param functionName Name of the UDF
+     * @param argType The type of the argument passed to the UDF
+     * @return `FuncOp` of the matched UDF or `std::nullopt` if no UDF with the provided 
+     *  name exists
+     * @throws `std::runtime_error` if a UDF with the name exists but no matching 
+     *  version was found
+     */
+    std::optional<mlir::FuncOp> findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const;
+
+    /**
+     * @brief Checks if the type of an agrument to a UDF is compatible with the 
+     *   corresponding parameter type
+     * @param argTy Type of the argument passed to the UDF
+     * @param paramTy Type of the corresponding UDF parameter
+     * @return true if the argument type and the parameter type ar compatible
+     */
+    bool argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const;
+
+    /**
+     * @brief Handles calls to `mapOp`
+     * @param ctx Context of the call expression
+     * @return the created `mapOp`
+     */
+    antlrcpp::Any handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx);
 
 public:
     DaphneDSLVisitor(

@@ -66,6 +66,12 @@ class SQLVisitor : public SQLGrammarVisitor {
         mlir::Value matrix, std::string newColumnName);
 
     /**
+    * @brief creates a GetColIdxOp for a specific colName of the frame.
+    */
+    mlir::Value getColIdx(
+        mlir::Value frame, mlir::Value colName);
+
+    /**
      * @brief creates ExtractColOp and CastOp
      */
     mlir::Value extractMatrixFromFrame(
@@ -76,7 +82,12 @@ class SQLVisitor : public SQLGrammarVisitor {
      *
      * TODO: extend if more aggregation functions get implemented.
      */
-    mlir::Attribute getEnum(const std::string& func);
+    mlir::Attribute getGroupEnum(const std::string& func);
+
+    /**
+     * @brief returns CompareEnumAttr for a given compare operation
+     */
+    mlir::Attribute getCompareEnum(const std::string& op);
 
     /**
      * @brief returns result of stringifyGroupEnum for the given func.
@@ -187,6 +198,12 @@ public:
 
 //havingClause
     antlrcpp::Any visitHavingClause(SQLGrammarParser::HavingClauseContext * ctx) override;
+
+//orderByClause
+    antlrcpp::Any visitOrderByClause(SQLGrammarParser::OrderByClauseContext * ctx) override;
+
+//orderInformation
+    antlrcpp::Any visitOrderInformation(SQLGrammarParser::OrderInformationContext * ctx) override;
 
 //generalExpr
     antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;

@@ -25,6 +25,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <iostream>
 
 using namespace mlir;
 
@@ -77,18 +78,8 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
 
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         // Type inference.
-        if(returnsUnknownType(op)) {
-            if (auto inferTypesOp = llvm::dyn_cast<daphne::InferTypes>(op))
-                inferTypesOp.inferTypes();
-            else if (!cfg.partialInferenceAllowed)
-                // TODO As soon as the run-time can handle unknown
-                // data/value types, we do not need to throw here anymore.
-                throw std::runtime_error(
-                        "some operation has an unknown result type, but "
-                        "does not implement the type inference interface: "
-                        + op->getName().getStringRef().str()
-                );
-        }
+        if(returnsUnknownType(op))
+            daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
 
         // Frame label inference.
         if(cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {

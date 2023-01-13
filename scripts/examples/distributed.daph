@@ -1,0 +1,10 @@
+# Creating two random 2x3 matrix
+m1 = rand(6, 3, 1.0, 10.0, 1.0, 1);
+m2 = rand(6, 3, 1.0, 10.0, 1.0, 1);
+m3 = m1  + m2;
+print(m1);
+print(m2);
+print(m3);
+print("Hello world!");
+print("Bye!"); 
+

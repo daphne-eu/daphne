@@ -39,6 +39,7 @@ set(LIBS
         ProtoDataConverter
         CallData
         Proto
+        DaphneMetaDataParser
         )
 
 add_library(WorkerImpl ${SOURCES})
@@ -51,8 +52,5 @@ target_link_libraries(WorkerImpl PRIVATE ${LIBS})
 # *****************************************************************************
 
 add_executable(DistributedWorker main.cpp)
-target_link_libraries(DistributedWorker
-        PRIVATE
-        Proto
-        WorkerImpl
-        MLIRDaphne)
+set_target_properties(DistributedWorker PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
+target_link_libraries(DistributedWorker PRIVATE Proto WorkerImpl MLIRDaphne)

@@ -1,0 +1,8 @@
+// Swapped matrix and function.
+
+def foo(x) {
+    return x;
+}
+
+X = [1, 2, 3];
+print(map(foo, X));

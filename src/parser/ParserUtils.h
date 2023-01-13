@@ -237,6 +237,17 @@ public:
         static unsigned functionUniqueId = 0;
         return functionName + "-" + std::to_string(++functionUniqueId);
     }
+
+    /**
+     * @brief Infers and sets the result type of the given operation and returns the result as an `mlir::Value`.
+     * 
+     * Works only for operations with exactly one result.
+     */
+    template<class Op>
+    mlir::Value retValWithInferedType(Op op) {
+        mlir::daphne::setInferedTypes(op.getOperation());
+        return static_cast<mlir::Value>(op);
+    }
 };
 
 #endif //SRC_PARSER_PARSERUTILS_H

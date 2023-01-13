@@ -273,6 +273,23 @@ mlir::Value SQLVisitor::addMatrixToCurrentFrame(
     }
 }
 
+mlir::Value SQLVisitor::getColIdx(
+    mlir::Value frame,
+    mlir::Value colName
+)
+{
+    mlir::Location loc = builder.getUnknownLoc();
+
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::GetColIdxOp>(
+            loc,
+            utils.sizeType,
+            frame,
+            colName
+        )
+    );
+}
+
 mlir::Value SQLVisitor::extractMatrixFromFrame(
     mlir::Value frame,
     mlir::Value colname
@@ -284,11 +301,16 @@ mlir::Value SQLVisitor::extractMatrixFromFrame(
     mlir::Type resTypeCol = mlir::daphne::FrameType::get(
             builder.getContext(), {vt}
     );
+
+    //TODO: Integration of Transformation of ColName to ColIdx Op.
+    //mlir::Value colIdx = getColIdx(frame, colname);
+
     mlir::Value col = static_cast<mlir::Value>(
         builder.create<mlir::daphne::ExtractColOp>(
             loc,
             resTypeCol,
             frame,
+            //colIdx
             colname
         )
     );
@@ -301,7 +323,7 @@ mlir::Value SQLVisitor::extractMatrixFromFrame(
     ));
 }
 
-mlir::Attribute SQLVisitor::getEnum(const std::string & func){
+mlir::Attribute SQLVisitor::getGroupEnum(const std::string & func){
     if(func == "count"){
         return static_cast<mlir::Attribute>(mlir::daphne::GroupEnumAttr::get(builder.getContext(), mlir::daphne::GroupEnum::COUNT));
     }
@@ -323,8 +345,51 @@ mlir::Attribute SQLVisitor::getEnum(const std::string & func){
     return nullptr;
 }
 
+mlir::Attribute SQLVisitor::getCompareEnum(const std::string & op){
+    if(op == "="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::Equal)
+        );
+    }
+    if(op == "<"){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::LessThan)
+        );
+    }
+    if(op == "<="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::LessEqual)
+        );
+    }
+    if(op == ">"){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::GreaterThan)
+        );
+    }
+    if(op == ">="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::GreaterEqual)
+        );
+    }
+    if(op == "<>" or op == "!="){
+        return static_cast<mlir::Attribute>(
+            mlir::daphne::CompareOperationAttr::get(builder.getContext(),
+            mlir::daphne::CompareOperation::NotEqual)
+        );
+    }
+    std::stringstream x;
+    x << "Error: " << op << " does not name a compare operation\n";
+    throw std::runtime_error(x.str());
+}
+
+
 std::string SQLVisitor::getEnumLabelExt(const std::string &func){
-    return mlir::daphne::stringifyGroupEnum(getEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue()).str();
+    return mlir::daphne::stringifyGroupEnum(getGroupEnum(func).dyn_cast<mlir::daphne::GroupEnumAttr>().getValue()).str();
 }
 
 // ****************************************************************************
@@ -398,6 +463,10 @@ antlrcpp::Any SQLVisitor::visitSelect(
         }
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
         visit(ctx->groupByClause());
+    }
+
+    if(ctx->orderByClause()){
+        currentFrame = utils.valueOrError(visit(ctx->orderByClause()));
     }
 
     //Runs over the projections and seeks columns and adds them to a Frame,
@@ -560,12 +629,8 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(
     //This behavior could be changed here.
     //TODO: Make the position independent
     mlir::Location loc = utils.getLoc(ctx->start);
-
     mlir::Value tojoin = utils.valueOrError(visit(ctx->var));
-    //rhs is join
-    //lhs is currentFrame
-    mlir::Value rhsName = utils.valueOrError(visit(ctx->rhs));
-    mlir::Value lhsName = utils.valueOrError(visit(ctx->lhs));
+
 
     std::vector<mlir::Type> colTypes;
     for(mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
@@ -574,15 +639,51 @@ antlrcpp::Any SQLVisitor::visitInnerJoin(
         colTypes.push_back(t);
     mlir::Type t = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
 
+//ctx->CMP_OP(0)->getText()
+    if(ctx->op->getText() == "=" && ctx->selectIdent().size() == 2){
+        //rhs is join
+        //lhs is currentFrame
+        mlir::Value rhsName = utils.valueOrError(visit(ctx->rhs));
+        mlir::Value lhsName = utils.valueOrError(visit(ctx->lhs));
+
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::InnerJoinOp>(
+                loc,
+                t,
+                currentFrame,
+                tojoin,
+                rhsName,
+                lhsName
+            ));
+    }
+
+    std::vector<mlir::Value> rhsNames;
+    std::vector<mlir::Value> lhsNames;
+    std::vector<mlir::Attribute> ops;
+
+    for(auto i = 0ul; i < ctx->selectIdent().size()/2; i++){
+        mlir::Value lhsName = utils.valueOrError(visit(ctx->selectIdent(i*2)));
+        mlir::Value rhsName = utils.valueOrError(visit(ctx->selectIdent(i*2 + 1)));
+        mlir::Attribute op = getCompareEnum(ctx->CMP_OP(i)->getText());
+
+        lhsNames.push_back(lhsName);
+        rhsNames.push_back(rhsName);
+        ops.push_back(op);
+
+    }
+
     return static_cast<mlir::Value>(
-        builder.create<mlir::daphne::InnerJoinOp>(
+        builder.create<mlir::daphne::ThetaJoinOp>(
             loc,
             t,
             currentFrame,
             tojoin,
-            rhsName,
-            lhsName
-        ));
+            lhsNames,
+            rhsNames,
+            builder.getArrayAttr(ops)
+        )
+    );
+
 }
 
 
@@ -691,6 +792,62 @@ antlrcpp::Any SQLVisitor::visitHavingClause(
     return v;
 }
 
+
+
+antlrcpp::Any SQLVisitor::visitOrderByClause(
+    SQLGrammarParser::OrderByClauseContext * ctx
+)
+{
+    mlir::Location loc = utils.getLoc(ctx->start);
+
+    std::vector<mlir::Value> columnIdxs;
+    std::vector<mlir::Value> asc;
+    for(auto i = 0ul; i < ctx->selectIdent().size(); i++){
+        mlir::Value boolean = utils.valueOrError(visit(ctx->orderInformation(i)));
+        mlir::Value columnName = utils.valueOrError(visit(ctx->selectIdent(i)));
+        mlir::Value idx = getColIdx(currentFrame, columnName);
+        columnIdxs.push_back(utils.castSizeIf(idx));
+        asc.push_back(utils.castBoolIf(boolean));
+    }
+    mlir::Value returnFrame = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                    loc,
+                    builder.getBoolAttr(false)
+            )
+        );
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::OrderOp>(
+            loc,
+            currentFrame.getType().dyn_cast<mlir::daphne::FrameType>(),
+            currentFrame,
+            columnIdxs,
+            asc,
+            returnFrame
+        )
+    );
+}
+
+antlrcpp::Any SQLVisitor::visitOrderInformation(
+    SQLGrammarParser::OrderInformationContext * ctx
+)
+{
+    mlir::Location loc = utils.getLoc(ctx->start);
+    //ASC is default
+    if(ctx->desc){
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                    loc,
+                    builder.getBoolAttr(false)
+            )
+        );
+    }
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(
+                loc,
+                builder.getBoolAttr(true)
+        )
+    );
+}
 //generalExpr
 
 //For the following generalExpr:
@@ -759,7 +916,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //create Column pre Group for in group Aggregation
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         columnName.push_back(createStringConstant(newColumnName));
-        functionName.push_back(getEnum(ctx->func->getText()));
+        functionName.push_back(getGroupEnum(ctx->func->getText()));
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);

@@ -178,7 +178,7 @@ pid_t runProgramInBackground(int &out, int &err, const char * execPath, Args ...
  */
 template<typename... Args>
 int runDaphne(std::stringstream & out, std::stringstream & err, Args ... args) {
-    return runProgram(out, err, "build/bin/daphne", "daphne", args...);
+    return runProgram(out, err, "bin/daphne", "daphne", args...);
 }
 
 /**

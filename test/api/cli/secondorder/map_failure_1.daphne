@@ -1,0 +1,4 @@
+// Undefined identifier for the function.
+
+X = [1, 2, 3];
+print(map(X, foo));

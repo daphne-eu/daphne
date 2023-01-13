@@ -124,3 +124,4 @@ uint64_t CompiledPipelineTaskCUDA<DenseMatrix<VT>>::getTaskSize() {
 
 template class CompiledPipelineTaskCUDA<DenseMatrix<double>>;
 template class CompiledPipelineTaskCUDA<DenseMatrix<float>>;
+template class CompiledPipelineTaskCUDA<DenseMatrix<int64_t>>;

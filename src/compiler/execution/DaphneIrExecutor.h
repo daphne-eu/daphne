@@ -14,9 +14,6 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H
-#define SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H
-
 #pragma once
 
 #include "mlir/IR/BuiltinOps.h"
@@ -36,8 +33,8 @@ public:
 private:
     mlir::MLIRContext context_;
     bool selectMatrixRepresentations_;
-    bool insertFreeOp_{};
     DaphneUserConfig userConfig_;
+    // Storage for lib paths needed for StringRefs
+    std::vector<std::string> sharedLibRefPaths;
 };
 
-#endif //SRC_COMPILER_EXECUTION_DAPHNEIREXECUTOR_H

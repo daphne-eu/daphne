@@ -1,0 +1,63 @@
+name: Build DAPHNE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    env:
+      # fix usage of tput in build script:
+      TERM: dumb
+      DEBIAN_FRONTEND: noninteractive
+
+    steps:
+    - 
+      name: Get latest CMake and Ninja
+      # Using 'latest' branch, the most recent CMake and ninja are installed.
+      uses: lukka/get-cmake@latest
+    -
+      name: "Install build dependencies"
+      run: |
+        set -e
+        pwd
+        echo Installing ...
+        sudo apt-get update
+        sudo apt-get install -y clang default-jdk git libssl-dev lld pkg-config python3 python3-pip gfortran uuid-dev libboost-dev unzip wget moreutils
+        sudo python3 -m pip install -U numpy
+        echo "---------"
+        echo "clang: $(clang --version)"
+        echo "cmake: $(cmake --version)"
+        echo "ninja: $(ninja --version)"
+        python3 -m pip show numpy
+
+    -
+      name: Checkout
+      uses: actions/checkout@v3
+    -
+      name: Building
+      run: |
+        set -e
+        ./build.sh -nf --clean --yes | ts
+        ./build.sh -nf | ts
+    -
+      name: Testing
+      run: ./test.sh | ts
+    -
+      name: "List generated files"
+      run: |
+        ls -la bin
+        ls -la lib
+    -
+      name: 'Upload Artifact'
+      uses: actions/upload-artifact@v3
+      with:
+        name: daphne
+        path: |
+          bin/
+          lib/

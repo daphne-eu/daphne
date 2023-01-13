@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#include <compiler/CompilerUtils.h>
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <parser/daphnedsl/DaphneDSLVisitor.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -783,6 +783,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::Iden
     const auto& identifierVec = ctx->IDENTIFIER();
     for(size_t s = 0; s < identifierVec.size(); s++)
         var += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
+
     try {
         return symbolTable.get(var).value;
     }
@@ -795,55 +796,143 @@ antlrcpp::Any DaphneDSLVisitor::visitParanthesesExpr(DaphneDSLGrammarParser::Par
     return utils.valueOrError(visit(ctx->expr()));
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
-    std::string func;
-    const auto& identifierVec = ctx->IDENTIFIER();
-    for(size_t s = 0; s < identifierVec.size(); s++)
-        func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
-    mlir::Location loc = utils.getLoc(ctx->start);
+bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type paramTy) const {
+    auto argMatTy = argTy.dyn_cast<mlir::daphne::MatrixType>();
+    auto paramMatTy = paramTy.dyn_cast<mlir::daphne::MatrixType>();
 
-    // Parse arguments.
-    std::vector<mlir::Value> args_vec;
-    for(unsigned i = 0; i < ctx->expr().size(); i++)
-        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
+    bool isMatchingUnknownMatrix =
+        argMatTy && paramMatTy && paramMatTy.getElementType() == utils.unknownType;
 
+    return paramTy == argTy || paramTy == utils.unknownType || isMatchingUnknownMatrix;
+}
+
+std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
     // search user defined functions
-    auto range = functionsSymbolMap.equal_range(func);
+    auto range = functionsSymbolMap.equal_range(functionName);
     // TODO: find not only a matching version, but the `most` specialized
     for (auto it = range.first; it != range.second; ++it) {
         auto userDefinedFunc = it->second;
         auto funcTy = userDefinedFunc.getType();
         auto compatible = true;
 
-        if (funcTy.getInputs().size() != args_vec.size()) {
+        if (funcTy.getNumInputs() != args.size()) {
             continue;
         }
-        for (auto compIt : llvm::zip(funcTy.getInputs(), args_vec)) {
-            auto funcInputType = std::get<0>(compIt);
+        for (auto compIt : llvm::zip(funcTy.getInputs(), args)) {
+            auto funcParamType = std::get<0>(compIt);
             auto argVal = std::get<1>(compIt);
 
-            auto funcMatTy = funcInputType.dyn_cast<mlir::daphne::MatrixType>();
-            auto specializedMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
-            bool isMatchingUnknownMatrix =
-                funcMatTy && specializedMatTy && funcMatTy.getElementType() == utils.unknownType;
-            if(funcInputType != argVal.getType() && !isMatchingUnknownMatrix && funcInputType != utils.unknownType) {
+            if (!argAndUDFParamCompatible(argVal.getType(), funcParamType)) {
                 compatible = false;
                 break;
             }
         }
         if (compatible) {
-            // TODO: variable results
-            return builder
-                .create<mlir::daphne::GenericCallOp>(loc,
-                                                     userDefinedFunc.sym_name(),
-                                                     args_vec,
-                                                     userDefinedFunc.getType().getResults())
-                .getResult(0);
+            return userDefinedFunc;
         }
     }
+    // UDF with the provided name exists, but no version matches the argument types
     if (range.second != range.first) {
         // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
-        throw std::runtime_error("No function definition of `" + func + "` found with matching types");
+        throw std::runtime_error("No function definition of `" + functionName + "` found with matching types");
+    }
+
+    // UDF with the provided name does not exist
+    return std::nullopt;
+}
+
+
+std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const {
+    // search user defined functions
+    auto range = functionsSymbolMap.equal_range(functionName);
+    
+    // TODO: find not only a matching version, but the `most` specialized    
+    for (auto it = range.first; it != range.second; ++it) {
+        auto userDefinedFunc = it->second;
+        auto funcTy = userDefinedFunc.getType();
+
+        if (funcTy.getNumInputs() != 1) {
+            continue;
+        }
+
+        if (argAndUDFParamCompatible(argType, funcTy.getInput(0))) {
+            return userDefinedFunc;
+        }
+    }
+    // UDF with the provided name exists, but no version matches the argument types
+    if (range.second != range.first) {
+        // FIXME: disallow user-defined function with same name as builtins, otherwise this would be wrong behaviour
+        throw std::runtime_error("No function definition of `" + functionName + "` found with matching types");
+    }
+
+    // UDF with the provided name does not exist
+    return std::nullopt;
+}
+
+antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExprContext * ctx) {
+    std::string func;
+    const auto& identifierVec = ctx->IDENTIFIER();
+    for(size_t s = 0; s < identifierVec.size(); s++)
+        func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
+    assert(func == "map" && "Called 'handleMapOpCall' for another function");
+    mlir::Location loc = utils.getLoc(ctx->start);
+    
+    if (ctx->expr().size() != 2) {
+        throw std::runtime_error(
+                "built-in function 'map' expects exactly 2 argument(s), but got " +
+                std::to_string(ctx->expr().size())
+        );
+    }
+
+    std::vector<mlir::Value> args;
+    
+    auto argVal = utils.valueOrError(visit(ctx->expr(0)));
+    args.push_back(argVal);
+
+    auto argMatTy = argVal.getType().dyn_cast<mlir::daphne::MatrixType>();
+    if (!argMatTy)
+        throw std::runtime_error("built-in function 'map' expects argument of type matrix as its first parameter");
+    
+    std::string udfName = ctx->expr(1)->getText();
+    auto maybeUDF = findMatchingUnaryUDF(udfName, argMatTy.getElementType());
+
+    if (!maybeUDF)
+        throw std::runtime_error("No function definition of `" + udfName + "` found");
+
+    args.push_back(static_cast<mlir::Value>(
+        builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->sym_name().str())
+    ));
+
+    // Create DaphneIR operation for the built-in function.
+    return builtins.build(loc, func, args);
+}
+
+
+antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprContext * ctx) {
+    std::string func;
+    const auto& identifierVec = ctx->IDENTIFIER();
+    for(size_t s = 0; s < identifierVec.size(); s++)
+        func += (s < identifierVec.size() - 1) ? identifierVec[s]->getText() + '.' : identifierVec[s]->getText();
+    mlir::Location loc = utils.getLoc(ctx->start);
+ 
+    if (func == "map") 
+        return handleMapOpCall(ctx);
+
+    // Parse arguments.
+    std::vector<mlir::Value> args_vec;
+    for(unsigned i = 0; i < ctx->expr().size(); i++)
+        args_vec.push_back(utils.valueOrError(visit(ctx->expr(i))));
+
+    auto maybeUDF = findMatchingUDF(func, args_vec);
+
+    if (maybeUDF) {
+        // TODO: variable results
+        return builder
+            .create<mlir::daphne::GenericCallOp>(loc,
+                maybeUDF->sym_name(),
+                args_vec,
+                maybeUDF->getType().getResults())
+            .getResult(0);
     }
 
     // Create DaphneIR operation for the built-in function.
@@ -860,18 +949,82 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
             if(ctx->VALUE_TYPE())
                 vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
             else
-                vt = utils.unknownType;
+            {
+                vt = utils.valueOrError(visit(ctx->expr())).getType();
+                if(vt.isa<mlir::daphne::FrameType>())
+                    // TODO Instead of using the value type of the first frame
+                    // column as the value type of the matrix, we should better
+                    // use the most general of all column types.
+                    vt = vt.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                if(vt.isa<mlir::daphne::MatrixType>())
+                    vt = vt.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+            }
             resType = utils.matrixOf(vt);
         }
-        else if(dtStr == "frame")
-            throw std::runtime_error("casting to a frame is not supported yet");
+        else if(dtStr == "frame") {
+            // Currently does not support casts of type "Specify value type only" (e.g., as.si64(x)) 
+            // and "Specify data type and value type" (e.g., as.frame<[si64, f64]>(x)) 
+            std::vector<mlir::Type> colTypes;
+            // TODO Take the number of columns into account.
+            if(ctx->VALUE_TYPE())
+                throw std::runtime_error("casting to a frame with particular column types is not supported yet");
+                //colTypes = {utils.getValueTypeByName(ctx->VALUE_TYPE()->getText())};
+            else {
+                // TODO This fragment should be factored out, such that we can
+                // reuse it for matrix/frame/scalar.
+                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                if(argType.isa<mlir::daphne::MatrixType>())
+                    colTypes = {argType.dyn_cast<mlir::daphne::MatrixType>().getElementType()};
+                else if(argType.isa<mlir::daphne::FrameType>())
+                    // TODO Instead of using the value type of the first frame
+                    // column as the value type of the matrix, we should better
+                    // use the most general of all column types.
+                    colTypes = {argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0]};
+                else
+                    colTypes = {argType};
+            }
+            resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        }
+        else if(dtStr == "scalar") {
+            if(ctx->VALUE_TYPE())
+                resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+            else
+            {
+                // TODO This fragment should be factored out, such that we can
+                // reuse it for matrix/frame/scalar.
+                mlir::Type argType = utils.valueOrError(visit(ctx->expr())).getType();
+                if(argType.isa<mlir::daphne::MatrixType>())
+                    resType = argType.dyn_cast<mlir::daphne::MatrixType>().getElementType();
+                else if(argType.isa<mlir::daphne::FrameType>())
+                    // TODO Instead of using the value type of the first frame
+                    // column as the value type of the matrix, we should better
+                    // use the most general of all column types.
+                    resType = argType.dyn_cast<mlir::daphne::FrameType>().getColumnTypes()[0];
+                else
+                    resType = argType;
+            }
+        }
         else
             throw std::runtime_error(
                     "unsupported data type in cast expression: " + dtStr
             );
     }
     else if(ctx->VALUE_TYPE())
-        resType = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+    { // Data type shall be retained
+        mlir::Type vt = utils.getValueTypeByName(ctx->VALUE_TYPE()->getText());
+        mlir::Type argTy = utils.valueOrError(visit(ctx->expr())).getType();
+        if(argTy.isa<mlir::daphne::MatrixType>())
+            resType = utils.matrixOf(vt);
+        else if(argTy.isa<mlir::daphne::FrameType>())
+        {
+            throw std::runtime_error("casting to a frame with particular column types is not supported yet");
+            //size_t numCols = argTy.dyn_cast<mlir::daphne::FrameType>().getColumnTypes().size();
+            //std::vector<mlir::Type> colTypes(numCols, vt);
+            //resType = mlir::daphne::FrameType::get(builder.getContext(), colTypes);
+        }
+        else
+            resType = vt;
+    }
     else
         throw std::runtime_error(
                 "casting requires the specification of the target data and/or "
@@ -951,7 +1104,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
 
     if(op == "@") {
         mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, builder.getBoolAttr(false));
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::MatMulOp>(
+        return utils.retValWithInferedType(builder.create<mlir::daphne::MatMulOp>(
                 loc, lhs.getType(), lhs, rhs, f, f
         ));
     }
@@ -966,7 +1119,7 @@ antlrcpp::Any DaphneDSLVisitor::visitPowExpr(DaphneDSLGrammarParser::PowExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "^")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwPowOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -978,7 +1131,7 @@ antlrcpp::Any DaphneDSLVisitor::visitModExpr(DaphneDSLGrammarParser::ModExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "%")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwModOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -990,9 +1143,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMulExpr(DaphneDSLGrammarParser::MulExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "*")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc, lhs, rhs));
     if(op == "/")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwDivOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1010,9 +1163,9 @@ antlrcpp::Any DaphneDSLVisitor::visitAddExpr(DaphneDSLGrammarParser::AddExprCont
         // might not be known at this point in time. Thus, we always create an
         // EwAddOp here. Note that EwAddOp has a canonicalize method rewriting
         // it to ConcatOp if necessary.
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAddOp>(loc, lhs, rhs));
     if(op == "-")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwSubOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1024,17 +1177,17 @@ antlrcpp::Any DaphneDSLVisitor::visitCmpExpr(DaphneDSLGrammarParser::CmpExprCont
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "==")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwEqOp>(loc, lhs, rhs));
     if(op == "!=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwNeqOp>(loc, lhs, rhs));
     if(op == "<")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLtOp>(loc, lhs, rhs));
     if(op == "<=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwLeOp>(loc, lhs, rhs));
     if(op == ">")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGtOp>(loc, lhs, rhs));
     if(op == ">=")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwGeOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1046,7 +1199,7 @@ antlrcpp::Any DaphneDSLVisitor::visitConjExpr(DaphneDSLGrammarParser::ConjExprCo
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "&&")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwAndOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1058,7 +1211,7 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "||")
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
+        return utils.retValWithInferedType(builder.create<mlir::daphne::EwOrOp>(loc, lhs, rhs));
 
     throw std::runtime_error("unexpected op symbol");
 }
@@ -1124,9 +1277,6 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
     mlir::Value result;
     mlir::Type valueType = currentValue.getType();
 
-    // TODO: extracting primitives is borrowed from getConstantInt()/getConstantFloat()/.. in DaphneInferShapeOpInterface.cpp, which
-    // is itself a workaround to later become a central utility. Do not forget to change it here as well.
-
     // TODO Reduce the code duplication in these cases.
     if(currentValue.getType().isSignedInteger(64)){
         std::shared_ptr<int64_t[]> vals = std::shared_ptr<int64_t[]>(new int64_t[ctx->literal().size()]);
@@ -1135,10 +1285,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
-
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
-                if(auto intAttr = co.value().dyn_cast<mlir::IntegerAttr>())
-                    vals.get()[i] = intAttr.getValue().getLimitedValue();
+            vals.get()[i] = CompilerUtils::constantOrThrow<int64_t>(
+                    currentValue, "elements of matrix literals must be parse-time constants"
+            );
         }
         auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
@@ -1155,10 +1304,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
-
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
-                if(auto floatAttr = co.value().dyn_cast<mlir::FloatAttr>())
-                    vals.get()[i] = floatAttr.getValue().convertToDouble();
+            vals.get()[i] = CompilerUtils::constantOrThrow<double>(
+                    currentValue, "elements of matrix literals must be parse-time constants"
+            );
         }
         auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
@@ -1175,10 +1323,9 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
             currentValue = utils.valueOrError(visitLiteral(ctx->literal(i)));
             if(currentValue.getType() != valueType)
                 throw std::runtime_error("matrix of elements of different types");
-
-            if(auto co = llvm::dyn_cast<mlir::daphne::ConstantOp>(currentValue.getDefiningOp()))
-                if(auto boolAttr = co.value().dyn_cast<mlir::BoolAttr>())
-                    vals.get()[i] = boolAttr.getValue();
+            vals.get()[i] = CompilerUtils::constantOrThrow<bool>(
+                    currentValue, "elements of matrix literals must be parse-time constants"
+            );
         }
         auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
