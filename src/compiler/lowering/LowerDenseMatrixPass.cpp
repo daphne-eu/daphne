@@ -48,8 +48,6 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, ArrayRef<Value> operands,
         ConversionPatternRewriter &rewriter) const override {
-        op.getType().dump();
-        std::cout << "\n";
 
         auto loc = op->getLoc();
         mlir::daphne::MatrixType tensor =
@@ -61,28 +59,32 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto memRefType = mlir::MemRefType::get(
             {nR, nC}, tensorType);
 
-        auto lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+#if 0
+        // copy from mlir_matmul.cpp
+#else
+        mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, operands[0]);
-        auto rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+        mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, operands[1]);
+        // mlir::Value outputDM = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+        //     op->getLoc(), memRefType, nullptr);
 
-        mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
-        // mlir::Value outputMemRef = rewriter.create<linalg::InitTensorOp>(loc, memRefType.getShape(), tensorType);
+        // mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
         // rewriter.create<linalg::MatmulOp>(loc, ValueRange{lhs, rhs}, ValueRange{outputMemRef});
 
-        llvm::APFloat zero = llvm::APFloat(0.0);
-        Value sum = rewriter.create<mlir::ConstantFloatOp>(
-            op->getLoc(), zero,
+        // llvm::APFloat zero = llvm::APFloat(0.0);
+        // Value sum = rewriter.create<mlir::ConstantFloatOp>(
+        //     op->getLoc(), zero,
             // Force accumulator to f64
             // tensorType.dyn_cast<mlir::FloatType>());
-            Float64Type::get(op->getContext()));
-        rewriter.create<linalg::FillOp>(loc, outputMemRef, sum);
+            // Float64Type::get(op->getContext()));
+        // rewriter.create<linalg::FillOp>(loc, lhs, sum);
         mlir::Value DM = rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
-                loc, op.getType(), outputMemRef);
+                loc, op.getType(), lhs);
 
         rewriter.replaceOp(op, DM);
-        // rewriter.replaceOp(op, outputMemRef);
         return success();
+#endif
     }
 };
 

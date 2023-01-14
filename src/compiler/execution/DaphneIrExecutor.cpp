@@ -129,25 +129,27 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         // TODO: add --explain argument
         if (userConfig_.codegen) {
 
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR before LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before LowerDenseMatrixPass"));
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR after LowerDenseMatrixPass"));
 
-            pm.addNestedPass<mlir::FuncOp>(mlir::createConvertLinalgToLoopsPass());
-            pm.addPass(mlir::createConvertLinalgToLLVMPass());
+            // pm.addNestedPass<mlir::FuncOp>(mlir::createConvertLinalgToLoopsPass());
+            // pm.addPass(mlir::createConvertLinalgToLLVMPass());
 
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after createConvertLinalgToLoopsPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after createConvertLinalgToLoopsPass"));
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createBufferLoopHoistingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopFusionPass());
 
             // pm.addPass(mlir::createLowerAffinePass());
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR after linalg lowering"));
         }
         // For now, in order to use the distributed runtime we also require the vectorized engine to be enabled
         // to create pipelines. Therefore, *if* distributed runtime is enabled, we need to make a vectorization pass.
