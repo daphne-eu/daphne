@@ -623,12 +623,12 @@ if ! is_dependency_downloaded "grpc_v${grpcVersion}"; then
     if [ -d "${sourcePrefix}/${grpcDirName}" ]; then
       rm -rf "${sourcePrefix}/${grpcDirName:?}"
     fi
-    git clone -b v$grpcVersion --depth 1 https://github.com/grpc/grpc "$sourcePrefix/$grpcDirName"
+    git clone -b v$grpcVersion https://github.com/grpc/grpc "$sourcePrefix/$grpcDirName"
     pushd "$sourcePrefix/$grpcDirName"
-    git submodule update --init --depth 1 third_party/boringssl-with-bazel
-    git submodule update --init --depth 1 third_party/cares/cares
-    git submodule update --init --depth 1 third_party/protobuf
-    git submodule update --init --depth 1 third_party/re2
+    git submodule update --init third_party/boringssl-with-bazel
+    git submodule update --init third_party/cares/cares
+    git submodule update --init third_party/protobuf
+    git submodule update --init third_party/re2
     daphne_msg "Applying 0003-protobuf-override.patch"
     patch -Np1 -i "${patchDir}/0003-protobuf-override.patch" -d "$sourcePrefix/$grpcDirName/third_party/protobuf"
     popd
