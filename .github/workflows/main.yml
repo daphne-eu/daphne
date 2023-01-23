@@ -11,53 +11,46 @@ on:
 jobs:
   build:
     runs-on: ubuntu-20.04
+    container: daphneeu/github-action:latest
     env:
       # fix usage of tput in build script:
       TERM: dumb
       DEBIAN_FRONTEND: noninteractive
 
     steps:
-    - 
-      name: Get latest CMake and Ninja
-      # Using 'latest' branch, the most recent CMake and ninja are installed.
-      uses: lukka/get-cmake@latest
-    -
-      name: "Install build dependencies"
-      run: |
-        set -e
-        pwd
-        echo Installing ...
-        sudo apt-get update
-        sudo apt-get install -y clang default-jdk git libssl-dev lld pkg-config python3 python3-pip gfortran uuid-dev libboost-dev unzip wget moreutils
-        sudo python3 -m pip install -U numpy
-        echo "---------"
-        echo "clang: $(clang --version)"
-        echo "cmake: $(cmake --version)"
-        echo "ninja: $(ninja --version)"
-        python3 -m pip show numpy
-
-    -
-      name: Checkout
+    - name: Checkout
       uses: actions/checkout@v3
-    -
-      name: Building
-      run: |
-        set -e
-        ./build.sh -nf --clean --yes | ts
-        ./build.sh -nf | ts
-    -
-      name: Testing
+
+    - name: Fix working dir permissions
+      run: chown root:root .
+
+    - name: Cache 3rd party dependency build
+      id: cache-deps
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-deps
+      with:
+        path: ./thirdparty
+        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ env.cache-name }}-
+
+    - if: ${{ steps.cache-deps.outputs.cache-hit == 'true' }}
+      name: Print cache hit result
+      continue-on-error: true
+      run: echo "------------ Using cached build dependencies ------------"
+
+    - name: Building
+      run: ./build.sh --no-fancy --target all | ts
+      shell: bash
+
+    - name: Testing
       run: ./test.sh | ts
-    -
-      name: "List generated files"
+
+    - name: "List generated files"
       run: |
         ls -la bin
         ls -la lib
-    -
-      name: 'Upload Artifact'
-      uses: actions/upload-artifact@v3
-      with:
-        name: daphne
-        path: |
-          bin/
-          lib/
+
+    - name: "Run a simple daph script"
+      run: bin/daphne scripts/examples/hello-world.daph
