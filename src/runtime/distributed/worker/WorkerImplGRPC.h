@@ -44,9 +44,6 @@ public:
                           const ::distributed::StoredData *request,
                          ::distributed::Matrix *response) ;
 
-    template<class DT>
-    DT* CreateMatrix(const ::distributed::Matrix *mat);
-
     distributed::Worker::AsyncService service_;
 };
 

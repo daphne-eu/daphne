@@ -19,8 +19,8 @@
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
-#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
+#include <runtime/local/io/DaphneSerializer.h>
+
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
@@ -149,6 +149,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         distributed::Data protoMsg;
 
         double *val;
+        void *buffer = nullptr;        
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
@@ -160,10 +161,17 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         else { // Not scalar
             assert(mat != nullptr && "Matrix to broadcast is nullptr");
             auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
-            if (!denseMat){
-                throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            if (denseMat){
+                buffer = DaphneSerializer<DenseMatrix<double>>::save(denseMat, buffer);
+                size_t length = DaphneSerializer<DenseMatrix<double>>::length(denseMat);
+                protoMsg.mutable_matrix()->set_bytes(buffer, length);
             }
-            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix());
+            auto csrMat = dynamic_cast<const CSRMatrix<double>*>(mat);
+            if (csrMat){
+                buffer = DaphneSerializer<CSRMatrix<double>>::save(csrMat, buffer);
+                size_t length = DaphneSerializer<CSRMatrix<double>>::length(csrMat);
+                protoMsg.mutable_matrix()->set_bytes(buffer, length);
+            }
         }
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
         

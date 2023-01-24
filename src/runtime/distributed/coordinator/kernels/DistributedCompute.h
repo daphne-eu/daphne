@@ -23,7 +23,6 @@
 
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
 #ifdef USE_MPI

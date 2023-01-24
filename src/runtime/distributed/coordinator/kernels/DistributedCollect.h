@@ -14,15 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOLLECT_H
-#define SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOLLECT_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
+#include <runtime/local/io/DaphneSerializer.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
@@ -152,18 +151,21 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
 
             auto matProto = response.result;
             
+            // TODO: We need to handle different data types 
             auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
             if (!denseMat){
                 throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
-            }        
-            ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
-                matProto, denseMat,
-                dp->range->r_start, dp->range->r_start + dp->range->r_len,
-                dp->range->c_start, dp->range->c_start + dp->range->c_len);                
+            }
+            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_load((void*)matProto.bytes().c_str()));
+            auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
+            auto slicedMatValues = slicedMat->getValues();
+            for (size_t r = 0; r < dp->range->r_len; r++){
+                memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
+                resValues += denseMat->getRowSkip();                    
+                slicedMatValues += slicedMat->getRowSkip();
+            }               
             data.isPlacedAtWorker = false;
             dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
         } 
     };
 };
-
-#endif //SRC_RUNTIME_DISTRIBUTED_COORDINATOR_KERNELS_DISTRIBUTEDCOLLECT_H

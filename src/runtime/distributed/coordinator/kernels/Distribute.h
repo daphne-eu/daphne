@@ -20,9 +20,9 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
+#include <runtime/local/io/DaphneSerializer.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
 
@@ -140,19 +140,23 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             distributed::Data protoMsg;
-        
 
             // TODO: We need to handle different data types 
-            // (this will be simplified when serialization is implemented)
+            void *buffer = nullptr;
+            size_t length;
             auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
-            if (!denseMat){
-                throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            if (denseMat){
+                auto slicedMat = denseMat->sliceRow(range.r_start, range.r_start + range.r_len);
+                buffer = DaphneSerializer<DenseMatrix<double>>::save(slicedMat, buffer);
+                length = DaphneSerializer<DenseMatrix<double>>::length(slicedMat);
             }
-            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix(), 
-                                                    dp->range->r_start,
-                                                    dp->range->r_start + dp->range->r_len,
-                                                    dp->range->c_start,
-                                                    dp->range->c_start + dp->range->c_len);
+            auto csrMat = dynamic_cast<const CSRMatrix<double>*>(mat);
+            if (csrMat){
+                auto slicedMat = csrMat->sliceRow(range.r_start, range.r_start + range.r_len);
+                buffer = DaphneSerializer<CSRMatrix<double>>::save(slicedMat, buffer);
+                length = DaphneSerializer<CSRMatrix<double>>::length(slicedMat);
+            }
+            protoMsg.mutable_matrix()->set_bytes(buffer, length);
 
             StoredInfo storedInfo({dp->dp_id}); 
             caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);

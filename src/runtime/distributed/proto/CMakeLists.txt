@@ -44,13 +44,3 @@ set(LIBS Proto)
 
 add_library(CallData ${SOURCES})
 target_link_libraries(CallData PRIVATE ${LIBS})
-
-# *****************************************************************************
-# ProtoDataConverter library
-# *****************************************************************************
-
-set(SOURCES ProtoDataConverter.cpp)
-set(LIBS DataStructures Proto)
-
-add_library(ProtoDataConverter ${SOURCES})
-target_link_libraries(ProtoDataConverter PRIVATE ${LIBS})

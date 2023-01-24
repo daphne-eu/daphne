@@ -26,41 +26,6 @@ message StoredData {
   uint64 num_cols = 3;
 }
 
-message DenseMatrix {
-  oneof cells {
-    CellsF64 cells_f64 = 1;
-    CellsF32 cells_f32 = 2;
-    CellsI64 cells_i64 = 3;
-    CellsI32 cells_i32 = 4;
-  }
-}
-
-message CSRMatrix {
-  
-  CellsI64 row_offsets = 1;
-  CellsI64 colIdx = 2;
-  oneof values {
-    CellsF64 values_f64 = 3;
-    CellsF32 values_f32 = 4;
-    CellsI64 values_i64 = 5;
-    CellsI32 values_i32 = 6;
-  }
-}
-
-message CellsF64 {
-  repeated double cells = 1;
-}
-message CellsF32 {
-  repeated float cells = 1;
-}
-message CellsI64 {
-  // TODO: int64 would perform better for mostly positive integers, performance improvements?
-  repeated sint64 cells = 1;
-}
-message CellsI32 {
-  repeated sint32 cells = 1;
-}
-
 message Value {
   oneof value {
     double f64 = 1;

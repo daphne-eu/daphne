@@ -38,12 +38,7 @@ message Data {
 
 
 message Matrix {
-  oneof matrix {
-    DenseMatrix dense_Matrix = 1;
-    CSRMatrix csr_Matrix = 2;
-  }
-  uint64 num_rows = 3;
-  uint64 num_cols = 4;
+  bytes bytes = 1;
 }
 
 message WorkData {
