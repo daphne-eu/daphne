@@ -47,9 +47,14 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/Syrk.cu
             ${PREFIX}/Transpose.cpp
             ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/CUDAkernels.cpp
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapperCUDA.cpp
+            ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
+            ${PROJECT_SOURCE_DIR}/src/util/CUDAHostUtils.h
+            ${PROJECT_SOURCE_DIR}/src/util/CUDAHostUtils.cpp
+            ${PROJECT_SOURCE_DIR}/src/util/ILibCUDA.h
         )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
@@ -58,6 +63,8 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(lib_name cudnn)
     find_library(CUDA_${lib_name}_LIBRARY NAMES ${lib_name} HINTS ${CUDAToolkit_LIBRARY_DIR} ENV CUDA_PATH
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
+
+    target_include_directories(CUDAKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
 
     target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport CUDA::cudart CUDA::cublasLt CUDA::cublas
             CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
@@ -86,13 +93,13 @@ add_library(AllKernels SHARED
 )
 set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
-if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
-    list(APPEND LIBS CUDAKernels)
-else()
+#if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+#target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+#    list(APPEND LIBS CUDAKernels)
+#else()
     # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
     list(APPEND LIBS LLVMSupport)
-endif()
+#endif()
 
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 target_link_libraries(AllKernels PUBLIC ${LIBS})

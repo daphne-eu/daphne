@@ -38,3 +38,7 @@ add_llvm_library(DaphneIrExecutor ${SOURCES}
 llvm_update_compile_flags(DaphneIrExecutor)
 target_link_libraries(DaphneIrExecutor PUBLIC ${LIBS})
 mlir_check_all_link_libraries(DaphneIrExecutor)
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    target_include_directories(DaphneIrExecutor PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+endif()

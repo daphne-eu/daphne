@@ -55,7 +55,8 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createVectorizeComputationsPass();
     std::unique_ptr<Pass> createWhileLoopInvariantCodeMotionPass();
 #ifdef USE_CUDA
-    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg);
+    std::unique_ptr<Pass> createMarkCUDAOpsPass(const DaphneUserConfig& cfg, const size_t& available_gpu_mem,
+            const size_t& total_gpu_mem);
 #endif
 
 #ifdef USE_FPGAOPENCL

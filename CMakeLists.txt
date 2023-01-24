@@ -140,7 +140,8 @@ if(USE_ARROW)
         PATHS thirdparty/installed/lib/cmake/arrow
         NO_DEFAULT_PATH
     )
-    link_libraries(arrow_shared parquet_shared)
+#    link_libraries(arrow_shared parquet_shared)
+    link_libraries(arrow_static parquet_static)
     add_definitions(-DUSE_ARROW)
     message(STATUS "Arrow/Parquet enabled")
 endif()

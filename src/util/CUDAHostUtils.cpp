@@ -14,21 +14,14 @@
  * limitations under the License.
  */
 
-x = 1;
-y = 2;
-print(x + y);
+#include "CUDAHostUtils.h"
 
-# Creating a random 2x3 matrix
-m = rand(2, 3, 100.0, 200.0, 1.0, 42);
-print(m);
-print(m + m);
+extern "C" {
+    void cuda_get_device_count(int *device_count) {
+        CHECK_CUDART(cudaGetDeviceCount(device_count));
+    }
 
-// Print transpose of matrix
-print(t(m));
-
-# Comments are useful to temporarily disable code blocks like this matMul
-#Z = m @ t(m);
-#print(Z);
-
-print("Hello world!");
-print("Bye!");
+    void cuda_get_mem_info(size_t* available_gpu_mem, size_t* total_gpu_mem) {
+        CHECK_CUDART(cudaMemGetInfo(available_gpu_mem, total_gpu_mem));
+    }
+}

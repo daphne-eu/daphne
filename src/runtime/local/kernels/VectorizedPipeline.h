@@ -22,6 +22,10 @@
 #include <runtime/local/vectorized/MTWrapper.h>
 #include <ir/daphneir/Daphne.h>
 
+#ifdef USE_CUDA
+#include <util/ILibCUDA.h>
+#endif
+
 #include <cassert>
 #include <cstddef>
 
@@ -48,20 +52,30 @@ struct VectorizedPipeline {
         auto *** outputs2 = new DTRes**[numOutputs];
         for(size_t i = 0; i < numOutputs; i++)
             outputs2[i] = outputs + i;
-        
-        if(ctx->getUserConfig().vectorized_single_queue) {
-            wrapper->executeSingleQueue(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
-                    reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
-        }
-        else if(!ctx->getUserConfig().vectorized_single_queue && numFuncs == 1) {
+
+// ToDo: Quick but ugly solution to get libCUDAKernels separated from libAllKernels
+
+        if(numFuncs == 1) {
             wrapper->executeCpuQueues(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
         }
+#ifdef USE_CUDA
         else {
-            wrapper->executeQueuePerDeviceType(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+
+            std::cout << "instantiating CUDA vectorized executor" << std::endl;
+            IVectorizedExecutor* cuda_vexec = create_cuda_vectorized_executor();
+            //testing executor --> this is a noop atm
+            cuda_vexec->executeQueuePerDeviceType(3, reinterpret_cast<void***>(outputs2), isScalar, inputs, numInputs, numOutputs, outRows, outCols,
                     reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+            std::cout << "unloading cuda vexec" << std::endl;
+
+            // this one does the work for now (without GPU of course)
+            wrapper->executeCpuQueues(funcs, outputs2, isScalar, inputs, numInputs, numOutputs, outRows, outCols,
+                                      reinterpret_cast<VectorSplit *>(splits), reinterpret_cast<VectorCombine *>(combines), ctx, false);
+
+            destroy_cuda_vectorized_executor(cuda_vexec);
         }
-        
+#endif
         delete[] outputs2;
     }
 };

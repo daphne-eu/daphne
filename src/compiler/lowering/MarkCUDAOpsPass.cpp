@@ -17,7 +17,7 @@
 #include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#include "runtime/local/context/CUDAContext.h"
+//#include "runtime/local/context/CUDAContext.h"
 #include <mlir/IR/BlockAndValueMapping.h>
 
 #include <iostream>
@@ -30,14 +30,22 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
      * @brief User configuration influencing the rewrite pass
      */
     const DaphneUserConfig& cfg;
-    size_t available_gpu_mem{};
-    size_t total_gpu_mem{};
+    size_t available_mem{};
+    size_t total_mem{};
     size_t mem_budget;
     
-    explicit MarkCUDAOpsPass(const DaphneUserConfig& cfg) : cfg(cfg) {
+    explicit MarkCUDAOpsPass(const DaphneUserConfig& cfg, const size_t& available_gpu_mem, const size_t& total_gpu_mem)
+            : cfg(cfg), available_mem(available_gpu_mem), total_mem(total_gpu_mem) {
         // ToDo: use context and per device mem info
-        cudaMemGetInfo(&available_gpu_mem, &total_gpu_mem);
-        mem_budget = std::floor(0.9 * static_cast<double>(total_gpu_mem));
+        //cudaMemGetInfo(&available_gpu_mem, &total_gpu_mem);
+//        available_gpu_mem = 1000000*256;
+//        total_gpu_mem = 1000000*512;
+//        std::cout << "querying mem info" << std::endl;
+//        cuda_get_mem_info(&available_gpu_mem, &total_gpu_mem);
+//        std::cout << "availabpe_gpu_mem: " << available_gpu_mem << std::endl;
+        mem_budget = std::floor(0.9 * static_cast<double>(total_mem));
+        if(mem_budget > available_mem)
+            mem_budget = std::floor(0.9 * static_cast<double>(available_mem));
     }
     
     void runOnFunction() final;
@@ -164,7 +172,8 @@ void MarkCUDAOpsPass::runOnFunction() {
     });
 }
 
-std::unique_ptr<Pass> daphne::createMarkCUDAOpsPass(const DaphneUserConfig& cfg) {
-    return std::make_unique<MarkCUDAOpsPass>(cfg);
+std::unique_ptr<Pass> daphne::createMarkCUDAOpsPass(const DaphneUserConfig& cfg, const size_t& available_gpu_mem,
+        const size_t& total_gpu_mem) {
+    return std::make_unique<MarkCUDAOpsPass>(cfg, available_gpu_mem, total_gpu_mem);
 }
 #endif // USE_CUDA

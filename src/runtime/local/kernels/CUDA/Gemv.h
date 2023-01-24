@@ -18,7 +18,7 @@
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/CUDA/HostUtils.h>
+#include "util/CUDAHostUtils.h"
 #include <runtime/local/context/CUDAContext.h>
 
 namespace CUDA {

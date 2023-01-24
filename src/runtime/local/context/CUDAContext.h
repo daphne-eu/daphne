@@ -17,7 +17,7 @@
 #pragma once
 
 #include "runtime/local/context/DaphneContext.h"
-#include "runtime/local/kernels/CUDA/HostUtils.h"
+#include "util/CUDAHostUtils.h"
 
 #include <cassert>
 #include <iostream>
