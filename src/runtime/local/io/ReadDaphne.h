@@ -23,6 +23,7 @@
 #include <runtime/local/datastructures/Frame.h>
 
 #include <runtime/local/io/DaphneFile.h>
+#include <runtime/local/io/DaphneSerializer.h>
 #include <runtime/local/io/utils.h>
 
 #include <util/preprocessor_defs.h>
@@ -60,153 +61,45 @@ void readDaphne(DTRes *&res, const char *filename) {
 // ****************************************************************************
 
 template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
-  static void apply(DenseMatrix<VT> *&res, const char *filename) {
+    static void apply(DenseMatrix<VT> *&res, const char *filename) {
+        std::ifstream f;
+        f.open(filename, std::ios::in|std::ios::binary);
+        // TODO: check f.good()
 
-    std::ifstream f;
-    f.open(filename, std::ios::in|std::ios::binary);
-    // TODO: check f.good()
+        f.seekg(0, f.end);
+        size_t len = f.tellg();
+        f.seekg(f.beg);
 
-    // read header
-    DF_header h;
-    f.read((char *)&h, sizeof(h));
+        char *buf = (char *)malloc(len);
+        f.read(buf, len);
 
-    if (h.dt == DF_data_t::DenseMatrix_t) {
-	    ValueTypeCode vt;
-	    f.read((char *)&vt, sizeof(vt));
+        res = DaphneSerializer<DenseMatrix<VT>>::load(buf);
 
-	    DF_body b;
-	    f.read((char *)&b, sizeof(b));
-	    // b is ignored for now - assumed to be 0,0
-	    //TODO: consider multiple blocks
-
-	    DF_body_block bb;
-	    f.read((char *)&bb,sizeof(bb));
-	    // empty Matrix
-	    if (bb.bt == DF_body_t::empty) {
-		res = DataObjectFactory::create<DenseMatrix<VT>>(0, 0, false);
-		goto exit;
-
-	    // Dense Matrix
-	    } else if (bb.bt == DF_body_t::dense) {
-		 f.read((char *)&vt, sizeof(vt));
-
-         size_t numItems = bb.nbrows*bb.nbcols;
-         std::streamsize memBlockSize = numItems * sizeof(VT);
-         auto memblock = std::shared_ptr<VT[]>(new VT[numItems], std::default_delete<VT[]>());
-         f.read(reinterpret_cast<char*>(memblock.get()), memBlockSize);
-		 res = DataObjectFactory::create<DenseMatrix<VT>>(static_cast<size_t>(bb.nbrows), static_cast<size_t>(bb.nbcols),
-                 memblock);
-
-		 goto exit;
-	    }
+        f.close();
+        free(buf);
+        return;
     }
-exit:
-   f.close();
-   return;
-  }
 };
 
 template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
-  static void apply(CSRMatrix<VT> *&res, const char *filename) {
+    static void apply(CSRMatrix<VT> *&res, const char *filename) {
+        std::ifstream f;
+        f.open(filename, std::ios::in|std::ios::binary);
+        // TODO: check f.good()
 
-    std::ifstream f;
-    f.open(filename, std::ios::in|std::ios::binary);
-    // TODO: check f.good()
+        f.seekg(0, f.end);
+        size_t len = f.tellg();
+        f.seekg(f.beg);
 
-    // read header
-    DF_header h;
-    f.read((char *)&h, sizeof(h));
+        char *buf = (char *)malloc(len);
+        f.read(buf, len);
 
-    if (h.dt == DF_data_t::CSRMatrix_t) {
-	    uint8_t vt;
-	    f.read((char *)&vt, sizeof(vt));
+        res = DaphneSerializer<CSRMatrix<VT>>::load(buf);
 
-	    DF_body b;
-	    f.read((char *)&b, sizeof(b));
-	    // b is ignored for now - assumed to be 0,0
-	    //TODO: consider multiple blocks
-
-	    DF_body_block bb;
-	    f.read((char *)&bb,sizeof(bb));
-	    // empty Matrix
-	    if (bb.bt == DF_body_t::empty) {
-		res = DataObjectFactory::create<CSRMatrix<VT>>(0, 0, 0, false);
-		goto exit;
-	    // CSR Matrix
-	    } else if (bb.bt == DF_body_t::sparse) {
-		    uint8_t vt;
-		    f.read((char *)&vt, sizeof(vt));
-
-		    uint64_t nzb;
-		    f.read((char *)&nzb, sizeof(nzb));
-
-		    res = DataObjectFactory::create<CSRMatrix<VT>>(
-				bb.nbrows, bb.nbcols, nzb, true);
-
-		    for (size_t i = 0; i < bb.nbrows; i++) {
-			    uint64_t nzr;
-			    f.read((char *)&nzr, sizeof(nzr));
-
-			    for (uint64_t n = 0; n < nzr; n++) {
-				  size_t j;
-				  f.read((char *)&j, sizeof(j));
-
-				  VT val;
-				  f.read((char *)&val, sizeof(val));
-
-				  res->set(i, j, val);
-			    }
-		    }
-
-		goto exit;
-
-            // COO Matrix
-	    } else if (bb.bt == DF_body_t::ultra_sparse) {
-		    uint8_t vt;
-		    f.read((char *)&vt, sizeof(vt));
-
-		    uint64_t nzb;
-		    f.read((char *)&nzb, sizeof(nzb));
-
-		    res = DataObjectFactory::create<CSRMatrix<VT>>(
-				bb.nbrows, bb.nbcols, nzb, false);
-
-		   // Single column case
-		   if (bb.nbcols == 1) {
-			for (uint64_t n = 0; n < nzb; n++) {
-				uint32_t i;
-				f.read((char *)&i, sizeof(i));
-
-				VT val;
-				f.read((char *)&val, sizeof(val));
-
-				res->set(i, 1, val);
-			}
-			goto exit;
-		   } else {
-			   // TODO: check numcols is greater than 1
-			for (uint64_t n = 0; n < nzb; n++) {
-				uint32_t i;
-				f.read((char *)&i, sizeof(i));
-
-				uint32_t j;
-				f.read((char *)&j, sizeof(j));
-
-				VT val;
-				f.read((char *)&val, sizeof(val));
-
-				res->set(i, j, val);
-			}
-			goto exit;
-		   }
-
-	    }
-	    //TODO: frames
-exit:
-	    f.close();
-	    return;
+        f.close();
+        free(buf);
+        return;
     }
-  }
 };
 
 template <> struct ReadDaphne<Frame> {
@@ -220,7 +113,7 @@ template <> struct ReadDaphne<Frame> {
     DF_header h;
     f.read((char *)&h, sizeof(h));
 
-    if (h.dt == DF_data_t::Frame_t) {
+    if (h.dt == (uint8_t)DF_data_t::Frame_t) {
 	    // read rest of the header
 	    ValueTypeCode * schema = new ValueTypeCode[h.nbcols];
 	    for (uint64_t c = 0; c < h.nbcols; c++) {
@@ -251,53 +144,55 @@ template <> struct ReadDaphne<Frame> {
             }
 
 	    for (size_t r=0; r < h.nbrows; r++) {
-			for (size_t c=0; c < h.nbcols; c++) { 
-				switch (schema[c]) {
+				for (size_t c = 0; c < h.nbcols; c++)
+				{
+					switch (schema[c])
+					{
 					case ValueTypeCode::SI8:
 						int8_t val_si8;
-						f.read((char *) &val_si8, sizeof(val_si8));
+						f.read((char *)&val_si8, sizeof(val_si8));
 						reinterpret_cast<int8_t *>(rawCols[c])[r] = val_si8;
 						break;
 					case ValueTypeCode::SI32:
 						int32_t val_si32;
-						f.read((char *) &val_si32, sizeof(val_si32));
+						f.read((char *)&val_si32, sizeof(val_si32));
 						reinterpret_cast<int32_t *>(rawCols[c])[r] = val_si32;
 						break;
 					case ValueTypeCode::SI64:
 						int64_t val_si64;
-						f.read((char *) &val_si64, sizeof(val_si64));
+						f.read((char *)&val_si64, sizeof(val_si64));
 						reinterpret_cast<int64_t *>(rawCols[c])[r] = val_si64;
 						break;
 					case ValueTypeCode::UI8:
 						uint8_t val_ui8;
-						f.read((char *) &val_ui8, sizeof(val_ui8));
+						f.read((char *)&val_ui8, sizeof(val_ui8));
 						reinterpret_cast<uint8_t *>(rawCols[c])[r] = val_ui8;
 						break;
 					case ValueTypeCode::UI32:
 						uint32_t val_ui32;
-						f.read((char *) &val_ui32, sizeof(val_ui32));
+						f.read((char *)&val_ui32, sizeof(val_ui32));
 						reinterpret_cast<uint32_t *>(rawCols[c])[r] = val_ui32;
 						break;
 					case ValueTypeCode::UI64:
 						uint64_t val_ui64;
-						f.read((char *) &val_ui64, sizeof(val_ui64));
+						f.read((char *)&val_ui64, sizeof(val_ui64));
 						reinterpret_cast<uint64_t *>(rawCols[c])[r] = val_ui64;
 						break;
 					case ValueTypeCode::F32:
 						float val_f32;
-						f.read((char *) &val_f32, sizeof(val_f32));
+						f.read((char *)&val_f32, sizeof(val_f32));
 						reinterpret_cast<float *>(rawCols[c])[r] = val_f32;
 						break;
 					case ValueTypeCode::F64:
 						double val_f64;
-						f.read((char *) &val_f64, sizeof(val_f64));
+						f.read((char *)&val_f64, sizeof(val_f64));
 						reinterpret_cast<double *>(rawCols[c])[r] = val_f64;
 						break;
 					default:
 						throw std::runtime_error("ReadDaphne::apply: unknown value type code");
+					}
 				}
-			}
-        }
+		}
 
 	delete[] rawCols;
 	delete[] schema;
