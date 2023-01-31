@@ -692,7 +692,8 @@ then
 else
     # download and set up LLVM code if compilation is run without the local working copy being checked out from git
     # e.g., compiling from released source artifact
-    llvmCommit="4763c8c9e3c7ef2946fa575d5c6bf8dd7fb88639"
+    # TODO Don't hardcode the commit hash here, since we upgrade from time to time.
+    llvmCommit="459ad97221fcdfa41d647a11b0ff02b5133e27c6"
     llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
     llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
     if ! is_dependency_downloaded "llvm_${llvmCommit}"; then

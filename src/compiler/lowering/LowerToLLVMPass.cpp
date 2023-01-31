@@ -18,10 +18,18 @@
 #include "ir/daphneir/Passes.h"
 #include "compiler/utils/CompilerUtils.h"
 
-#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
+#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
+#include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
+#include "mlir/Conversion/LLVMCommon/TypeConverter.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/IR/BlockAndValueMapping.h"
+#include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
 #include <utility>
@@ -42,15 +50,15 @@ struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
     using OpConversionPattern<BinaryOp>::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(BinaryOp op, ArrayRef<Value> operands,
+    matchAndRewrite(BinaryOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
         Type type = op.getType();
         if (type.isa<IntegerType>()) {
-            rewriter.replaceOpWithNewOp<ReplIOp>(op.getOperation(), operands);
+            rewriter.replaceOpWithNewOp<ReplIOp>(op.getOperation(), adaptor.getOperands());
         }
         else if (type.isa<FloatType>()) {
-            rewriter.replaceOpWithNewOp<ReplFOp>(op.getOperation(), operands);
+            rewriter.replaceOpWithNewOp<ReplFOp>(op.getOperation(), adaptor.getOperands());
         }
         else {
             return failure();
@@ -70,7 +78,7 @@ struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
     LogicalResult matchAndRewrite(daphne::ReturnOp op,
                                   PatternRewriter &rewriter) const final
     {
-        rewriter.replaceOpWithNewOp<ReturnOp>(op, op.getOperands());
+        rewriter.replaceOpWithNewOp<func::ReturnOp>(op, op.getOperands());
         return success();
     }
 };
@@ -96,11 +104,11 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::ConstantOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::ConstantOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
         Location loc = op->getLoc();
-        if(auto strAttr = op.value().dyn_cast<StringAttr>()) {
+        if(auto strAttr = op.getValue().dyn_cast<StringAttr>()) {
             StringRef sr = strAttr.getValue();
 #if 1
             // MLIR does not have direct support for strings. Thus, if this is
@@ -118,16 +126,16 @@ public:
             auto allocaOp = rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
                     op.getOperation(),
                     i8PtrType,
-                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(numChars)),
+                    rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numChars)),
                     1
             );
             for(size_t i = 0; i < numChars; i++) {
                 std::vector<Value> indices = {
-                    rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))
+                    rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))
                 };
                 rewriter.create<LLVM::StoreOp>(
                         loc,
-                        rewriter.create<ConstantOp>(
+                        rewriter.create<arith::ConstantOp>(
                                 loc, rewriter.getI8IntegerAttr(chars[i])
                         ),
                         rewriter.create<LLVM::GEPOp>(
@@ -149,21 +157,21 @@ public:
 #endif
         }
         else {
-            // Constants of all other types are lowered to an mlir::ConstantOp.
+            // Constants of all other types are lowered to an mlir::arith::ConstantOp.
             // Note that this is a different op than mlir::daphne::ConstantOp!
 #if 1
-            rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+            rewriter.replaceOpWithNewOp<arith::ConstantOp>(op.getOperation(), op.getValue());
 #else
             // NOTE: this fixes printing due to an error in the LLVMDialect, but is the wrong behaviour.
             //  Use this for debugging only
             if (auto iTy = op.getType().dyn_cast<IntegerType>()) {
                 auto ty = IntegerType::get(getContext(), iTy.getWidth());
-                rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(),
+                rewriter.replaceOpWithNewOp<arith::ConstantOp>(op.getOperation(),
                     ty,
-                    IntegerAttr::get(ty, op.value().cast<IntegerAttr>().getValue()));
+                    IntegerAttr::get(ty, op.getValue().cast<IntegerAttr>().getValue()));
             }
             else {
-                rewriter.replaceOpWithNewOp<ConstantOp>(op.getOperation(), op.value());
+                rewriter.replaceOpWithNewOp<arith::ConstantOp>(op.getOperation(), op.getValue());
             }
 #endif
         }
@@ -285,7 +293,7 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::CallKernelOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::CallKernelOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
         // Whether all results of the operation shall be combined into one
@@ -302,7 +310,7 @@ public:
 
         auto inputOutputTypes = getLLVMInputOutputTypes(
                                                         loc, rewriter.getContext(), typeConverter,
-                                                        op.getResultTypes(), ValueRange(operands).getTypes(),
+                                                        op.getResultTypes(), ValueRange(adaptor.getOperands()).getTypes(),
                                                         hasVarRes, rewriter.getIndexType());
 
         // create function protoype and get `FlatSymbolRefAttr` to it
@@ -310,12 +318,15 @@ public:
                                                  rewriter, module, op.getCalleeAttr().getValue(),
                                                  getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
 
-        auto kernelOperands = allocOutputReferences(loc, rewriter, operands, inputOutputTypes, op->getNumResults(), hasVarRes);
+        auto kernelOperands = allocOutputReferences(loc, rewriter, adaptor.getOperands(), inputOutputTypes, op->getNumResults(), hasVarRes);
 
         // call function
-        rewriter.create<CallOp>(
+        // The kernel call has an empty list of return types, because our
+        // kernel(-wrapper)s generally return via parameters.
+        TypeRange ts;
+        rewriter.create<func::CallOp>(
                 loc, kernelRef,
-                /*no return value*/ LLVM::LLVMVoidType::get(rewriter.getContext()),
+                ts,
                 kernelOperands);
         rewriter.replaceOp(op, dereferenceOutputs(loc, rewriter, module,
                                                   op->getNumResults(),
@@ -334,7 +345,9 @@ private:
         
         if(hasVarRes) { // combine all results into one variadic result
             for(size_t i = 0; i < numResults; i++) {
-                std::vector<Value> indices = {rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))};
+                std::vector<Value> indices = {
+                    rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))
+                };
                 results.push_back(rewriter.create<LLVM::LoadOp>(
                         loc,
                         rewriter.create<LLVM::GEPOp>(
@@ -361,7 +374,7 @@ private:
 
     std::vector<Value>
     allocOutputReferences(Location &loc, PatternRewriter &rewriter,
-                          ArrayRef<Value> operands,
+                          ValueRange operands,
                           std::vector<Type> inputOutputTypes, size_t numRes, bool hasVarRes) const
     {
 
@@ -376,7 +389,7 @@ private:
             auto allocaOp = rewriter.create<LLVM::AllocaOp>(
                     loc,
                     inputOutputTypes[0],
-                    rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(numRes)).getResult()
+                    rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(numRes)).getResult()
             );
             kernelOperands.push_back(allocaOp);
 
@@ -388,7 +401,9 @@ private:
             Type elType = inputOutputTypes[0].dyn_cast<LLVM::LLVMPointerType>().getElementType();
             if(elType.isa<LLVM::LLVMPointerType>()) {
                 for(size_t i = 0; i < numRes; i++) {
-                    std::vector<Value> indices = {rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))};
+                    std::vector<Value> indices = {
+                        rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))
+                    };
                     rewriter.create<LLVM::StoreOp>(
                         loc,
                         rewriter.create<LLVM::NullOp>(loc, elType),
@@ -401,7 +416,7 @@ private:
         }
         else { // typical case
             // Constant of 1 for AllocaOp of output.
-            Value cst1 = rewriter.create<ConstantOp>(loc, rewriter.getI64IntegerAttr(1));
+            Value cst1 = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(1));
             
             for (size_t i = 0; i < numRes; i++) {
                 // Allocate space for a single element.
@@ -430,7 +445,7 @@ private:
         
         if(hasVarRes)
             // Insert the number of results in the variadic result as a constant.
-            kernelOperands.push_back(rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(numRes)));
+            kernelOperands.push_back(rewriter.create<arith::ConstantOp>(loc, rewriter.getIndexAttr(numRes)));
         
         for(auto op : operands)
             kernelOperands.push_back(op);
@@ -449,15 +464,15 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::CreateVariadicPackOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::CreateVariadicPackOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
-        Type contType = op.res().getType().dyn_cast<daphne::VariadicPackType>().getContainedType();
+        Type contType = op.getRes().getType().dyn_cast<daphne::VariadicPackType>().getContainedType();
         Type convType = typeConverter->convertType(contType);
         rewriter.replaceOpWithNewOp<LLVM::AllocaOp>(
                 op.getOperation(),
                 LLVM::LLVMPointerType::get(convType),
-                rewriter.create<ConstantOp>(op->getLoc(), op.numElementsAttr()),
+                rewriter.create<arith::ConstantOp>(op->getLoc(), op.getNumElementsAttr()),
                 1
         );
         return success();
@@ -475,15 +490,15 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::StoreVariadicPackOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::StoreVariadicPackOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
         mlir::Location loc = op->getLoc();
-        mlir::Value pack = operands[0];
-        mlir::Value item = operands[1];
+        mlir::Value pack = adaptor.getOperands()[0];
+        mlir::Value item = adaptor.getOperands()[1];
         auto elementType = pack.getType().cast<LLVM::LLVMPointerType>().getElementType();
         std::vector<Value> indices = {
-            rewriter.create<ConstantOp>(loc, op.posAttr())
+            rewriter.create<arith::ConstantOp>(loc, op.getPosAttr())
         };
         auto addr = rewriter.create<LLVM::GEPOp>(
                 loc, pack.getType(), pack, indices
@@ -522,7 +537,7 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::MapOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::MapOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
         auto loc = op->getLoc();
@@ -535,17 +550,17 @@ public:
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
 
         // Input Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.arg().getType());
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType());
 
         // Pointer to UDF 
         callee << "__void";
 
         
         // get pointer to UDF 
-        LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.func());
+        LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.getFunc());
         auto udfFnPtr = rewriter.create<LLVM::AddressOfOp>(loc, udfFuncOp);
 
-        std::vector<Value> kernelOperands{op.arg(), udfFnPtr};
+        std::vector<Value> kernelOperands{op.getArg(), udfFnPtr};
 
         auto kernel = rewriter.create<daphne::CallKernelOp>(
             loc,
@@ -570,15 +585,15 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::VectorizedPipelineOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::VectorizedPipelineOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
-        if (op.ctx() == nullptr) {
+        if (op.getCtx() == nullptr) {
             op->emitOpError() << "`DaphneContext` not known";
             return failure();
         }
         auto loc = op->getLoc();
-        auto numDataOperands = op.inputs().size();
+        auto numDataOperands = op.getInputs().size();
         std::vector<mlir::Value> func_ptrs;
 
         auto i1Ty = IntegerType::get(getContext(), 1);
@@ -590,8 +605,8 @@ public:
         {
             OpBuilder::InsertionGuard ig(rewriter);
             auto moduleOp = op->getParentOfType<ModuleOp>();
-            auto &moduleBody = moduleOp.body().front();
-            rewriter.setInsertionPointToStart(&moduleBody);
+            Block * moduleBody = moduleOp.getBody();
+            rewriter.setInsertionPointToStart(moduleBody);
 
             static auto ix = 0;
             std::string funcName = "_vect" + std::to_string(++ix);
@@ -601,12 +616,12 @@ public:
                 {/*outputs...*/pppI1Ty, /*inputs...*/ptrPtrI1Ty, /*daphneContext...*/ptrI1Ty});
 
             fOp = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
-            fOp.body().takeBody(op.body());
-            auto &funcBlock = fOp.body().front();
+            fOp.getBody().takeBody(op.getBody());
+            auto &funcBlock = fOp.getBody().front();
 
-            auto returnRef = funcBlock.addArgument(pppI1Ty);
-            auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty);
-            auto daphneContext = funcBlock.addArgument(ptrI1Ty);
+            auto returnRef = funcBlock.addArgument(pppI1Ty, rewriter.getUnknownLoc());
+            auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty, rewriter.getUnknownLoc());
+            auto daphneContext = funcBlock.addArgument(ptrI1Ty, rewriter.getUnknownLoc());
             // TODO: we should not create a new daphneContext, instead pass the one created in the main function
             for (auto callKernelOp : funcBlock.getOps<daphne::CallKernelOp>()) {
                 callKernelOp.setOperand(callKernelOp.getNumOperands() - 1, daphneContext);
@@ -621,9 +636,9 @@ public:
                     ptrPtrI1Ty,
                     inputsArg,
                     ArrayRef<Value>({
-                        rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                        rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
                 Value val = rewriter.create<LLVM::LoadOp>(loc, addr);
-                auto expTy = typeConverter->convertType(op.inputs().getType()[i]);
+                auto expTy = typeConverter->convertType(op.getInputs().getType()[i]);
                 if (expTy != val.getType()) {
                     // casting for scalars
                     val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getI64Type(), val);
@@ -647,26 +662,27 @@ public:
                 auto retVal = oldReturn->getOperand(i);
                 // TODO: check how the GEPOp works exactly, and if this can be written better
                 auto addr1 = rewriter.create<LLVM::GEPOp>(op->getLoc(), pppI1Ty, returnRef, ArrayRef<Value>(
-                        {rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                        {rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
                 auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
-                rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
+                Value retValConverted = typeConverter->materializeTargetConversion(rewriter, oldReturn->getLoc(), typeConverter->convertType(retVal.getType()), {retVal});
+                rewriter.create<LLVM::StoreOp>(loc, retValConverted, addr2);
             }
             // Replace the old ReturnOp with operands by a new ReturnOp without
             // operands.
-            rewriter.replaceOpWithNewOp<ReturnOp>(oldReturn);
+            rewriter.replaceOpWithNewOp<func::ReturnOp>(oldReturn);
         }
 
         auto fnPtr = rewriter.create<LLVM::AddressOfOp>(loc, fOp);
 
         func_ptrs.push_back(fnPtr);
 
-        if(cfg.use_cuda && !op.cuda().getBlocks().empty()) {
+        if(cfg.use_cuda && !op.getCuda().getBlocks().empty()) {
             LLVM::LLVMFuncOp fOp2;
             {
                 OpBuilder::InsertionGuard ig(rewriter);
                 auto moduleOp = op->getParentOfType<ModuleOp>();
-                auto &moduleBody = moduleOp.body().front();
-                rewriter.setInsertionPointToStart(&moduleBody);
+                Block * moduleBody = moduleOp.getBody();
+                rewriter.setInsertionPointToStart(moduleBody);
 
                 static auto ix = 0;
                 std::string funcName = "_vect_cuda" + std::to_string(++ix);
@@ -675,12 +691,12 @@ public:
             {/*outputs...*/pppI1Ty, /*inputs...*/ ptrPtrI1Ty, /*daphneContext...*/ptrI1Ty});
 
                 fOp2 = rewriter.create<LLVM::LLVMFuncOp>(loc, funcName, funcType);
-                fOp2.body().takeBody(op.cuda());
-                auto &funcBlock = fOp2.body().front();
+                fOp2.getBody().takeBody(op.getCuda());
+                auto &funcBlock = fOp2.getBody().front();
 
-                auto returnRef = funcBlock.addArgument(pppI1Ty);
-                auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty);
-                auto daphneContext = funcBlock.addArgument(ptrI1Ty);
+                auto returnRef = funcBlock.addArgument(pppI1Ty, rewriter.getUnknownLoc());
+                auto inputsArg = funcBlock.addArgument(ptrPtrI1Ty, rewriter.getUnknownLoc());
+                auto daphneContext = funcBlock.addArgument(ptrI1Ty, rewriter.getUnknownLoc());
 
                 // TODO: we should not create a new daphneContext, instead pass the one created in the main function
                 for (auto callKernelOp: funcBlock.getOps<daphne::CallKernelOp>()) {
@@ -693,9 +709,9 @@ public:
 
                 for (auto i = 0u; i < numDataOperands; ++i) {
                     auto addr = rewriter.create<LLVM::GEPOp>(loc, ptrPtrI1Ty, inputsArg, ArrayRef<Value>({
-                            rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                            rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
                     Value val = rewriter.create<LLVM::LoadOp>(loc, addr);
-                    auto expTy = typeConverter->convertType(op.inputs().getType()[i]);
+                    auto expTy = typeConverter->convertType(op.getInputs().getType()[i]);
                     if (expTy != val.getType()) {
                         val = rewriter.create<LLVM::PtrToIntOp>(loc, rewriter.getIntegerType(expTy.getIntOrFloatBitWidth(),false), val);
                         val = rewriter.create<LLVM::BitcastOp>(loc, expTy, val);
@@ -711,13 +727,14 @@ public:
                     auto retVal = oldReturn->getOperand(i);
                     // TODO: check how the GEPOp works exactly, and if this can be written better
                     auto addr1 = rewriter.create<LLVM::GEPOp>(op->getLoc(), pppI1Ty, returnRef, ArrayRef<Value>(
-                        {rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i))}));
+                        {rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i))}));
                     auto addr2 = rewriter.create<LLVM::LoadOp>(op->getLoc(), addr1);
-                    rewriter.create<LLVM::StoreOp>(loc, retVal, addr2);
+                    Value retValConverted = typeConverter->materializeTargetConversion(rewriter, oldReturn->getLoc(), typeConverter->convertType(retVal.getType()), {retVal});
+                    rewriter.create<LLVM::StoreOp>(loc, retValConverted, addr2);
                 }
                 // Replace the old ReturnOp with operands by a new ReturnOp without
                 // operands.
-                rewriter.replaceOpWithNewOp<ReturnOp>(oldReturn);
+                rewriter.replaceOpWithNewOp<func::ReturnOp>(oldReturn);
             }
 
             auto fnPtr2 = rewriter.create<LLVM::AddressOfOp>(loc, fOp2);
@@ -773,21 +790,21 @@ public:
         }
 
         // Handle variadic operands isScalar and inputs (both share numInputs).
-        auto idxAttrNumInputs = rewriter.getIndexAttr(numDataOperands);
+        auto attrNumInputs = rewriter.getI64IntegerAttr(numDataOperands);
         // For isScalar.
         callee << "__bool";
         auto vpScalar = rewriter.create<daphne::CreateVariadicPackOp>(loc,
             daphne::VariadicPackType::get(rewriter.getContext(), rewriter.getI1Type()),
-            idxAttrNumInputs);
+            attrNumInputs);
         // For inputs and numInputs.
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandType, true);
         callee << "_variadic__size_t";
         auto vpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc,
             daphne::VariadicPackType::get(rewriter.getContext(), operandType),
-            idxAttrNumInputs);
+            attrNumInputs);
         // Populate the variadic packs for isScalar and inputs.
         for(size_t k = 0; k < numDataOperands; k++) {
-            auto idxAttrK = rewriter.getIndexAttr(k);
+            auto attrK = rewriter.getI64IntegerAttr(k);
             rewriter.create<daphne::StoreVariadicPackOp>(
                     loc,
                     vpScalar,
@@ -795,22 +812,22 @@ public:
                             loc,
                             // We assume this input to be a scalar if its type
                             // has not been converted to a pointer type.
-                            !operands[k].getType().isa<LLVM::LLVMPointerType>()
+                            !adaptor.getOperands()[k].getType().isa<LLVM::LLVMPointerType>()
                     ),
-                    idxAttrK
+                    attrK
             );
             rewriter.create<daphne::StoreVariadicPackOp>(
-                    loc, vpInputs, operands[k], idxAttrK
+                    loc, vpInputs, adaptor.getOperands()[k], attrK
             );
         }
         newOperands.push_back(vpScalar);
         newOperands.push_back(vpInputs);
-        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(numDataOperands)));
+        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(numDataOperands)));
 
         auto numOutputs = op.getNumResults();
         // Variadic num rows operands.
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
-        auto rowsOperands = operands.drop_front(numDataOperands);
+        auto rowsOperands = adaptor.getOperands().drop_front(numDataOperands);
         newOperands
             .push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), rowsOperands.take_front(numOutputs)));
         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(rewriter.getIntegerType(64, true));
@@ -820,35 +837,35 @@ public:
         // Add array of split enums
         callee << "__int64_t";
         std::vector<Value> splitConsts;
-        for(auto split : op.splits()) {
-            splitConsts.push_back(rewriter.create<ConstantOp>(loc, split));
+        for(auto split : op.getSplits()) {
+            splitConsts.push_back(rewriter.create<arith::ConstantOp>(loc, split));
         }
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), splitConsts));
 
         // Add array of combine enums
         callee << "__int64_t";
         std::vector<Value> combineConsts;
-        for(auto combine : op.combines()) {
-            combineConsts.push_back(rewriter.create<ConstantOp>(loc, combine));
+        for(auto combine : op.getCombines()) {
+            combineConsts.push_back(rewriter.create<arith::ConstantOp>(loc, combine));
         }
         newOperands.push_back(convertToArray(loc, rewriter, rewriter.getI64Type(), combineConsts));
 
         // TODO: pass function pointer with special placeholder instead of `void`
 
         callee << "__size_t";
-        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexAttr(func_ptrs.size())));
+        newOperands.push_back(rewriter.create<daphne::ConstantOp>(loc, rewriter.getIndexType(), rewriter.getIndexAttr(func_ptrs.size())));
         callee << "__void_variadic";
         newOperands.push_back(convertToArray(loc, rewriter, ptrPtrI1Ty, func_ptrs));
 //        newOperands.push_back(fnPtr);
 
         // Add ctx
 //        newOperands.push_back(operands.back());
-        if (op.ctx() == nullptr) {
+        if (op.getCtx() == nullptr) {
             op->emitOpError() << "`DaphneContext` not known";
             return failure();
         }
         else
-            newOperands.push_back(op.ctx());
+            newOperands.push_back(op.getCtx());
         // Create a CallKernelOp for the kernel function to call and return
         // success().
         auto kernel = rewriter.create<daphne::CallKernelOp>(
@@ -867,9 +884,9 @@ private:
         auto valuePtrTy = LLVM::LLVMPointerType::get(valueTy);
         auto array = rewriter.create<LLVM::AllocaOp>(loc,
             valuePtrTy,
-            Value(rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(values.size()))));
+            Value(rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(values.size()))));
         for(auto i = 0u; i < values.size(); ++i) {
-            Value cstI = rewriter.create<ConstantOp>(loc, rewriter.getIndexAttr(i));
+            Value cstI = rewriter.create<arith::ConstantOp>(loc, rewriter.getI64IntegerAttr(i));
             auto addr = rewriter.create<LLVM::GEPOp>(loc, valuePtrTy, array, ArrayRef<Value>({cstI}));
             auto val = values[i];
             if (val.getType() != valueTy) {
@@ -887,10 +904,10 @@ public:
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::GenericCallOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::GenericCallOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
-        rewriter.replaceOpWithNewOp<CallOp>(op, op.callee(), op->getResultTypes(), operands);
+        rewriter.replaceOpWithNewOp<func::CallOp>(op, op.getCallee(), op->getResultTypes(), adaptor.getOperands());
         return success();
     }
 };
@@ -915,11 +932,11 @@ void DaphneLowerToLLVMPass::runOnOperation()
 {
     auto module = getOperation();
 
-    OwningRewritePatternList patterns(&getContext());
+    RewritePatternSet patterns(&getContext());
 
     LowerToLLVMOptions llvmOptions(&getContext());
     // TODO: just create CWrappers for `main` and UDFs (currently vectorized pipelines are also emitted)
-    llvmOptions.emitCWrappers = true;
+    // llvmOptions.emitCWrappers = true; // TODO
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
     {
@@ -971,7 +988,10 @@ void DaphneLowerToLLVMPass::runOnOperation()
     LLVMConversionTarget target(getContext());
 
     // populate dialect conversions
-    populateStdToLLVMConversionPatterns(typeConverter, patterns);
+    arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
+    populateReturnOpTypeConversionPattern(patterns, typeConverter);
 
     target.addLegalOp<ModuleOp>();
 

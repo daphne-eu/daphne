@@ -21,8 +21,8 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "ir/daphneir/Daphne.h"
 
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinOps.h"
@@ -30,7 +30,7 @@
 #include <mlir/InitAllDialects.h>
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/IR/AsmState.h>
-#include <mlir/Parser.h>
+#include "mlir/Parser/Parser.h"
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Transforms/Passes.h>
 
@@ -49,7 +49,7 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
     {
         mlir::MLIRContext context;
         context.getOrLoadDialect<mlir::daphne::DaphneDialect>();
-        context.getOrLoadDialect<mlir::StandardOpsDialect>();
+        context.getOrLoadDialect<mlir::func::FuncDialect>();
         context.getOrLoadDialect<mlir::scf::SCFDialect>();
 
         mlir::OpBuilder builder(&context);
@@ -66,10 +66,10 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
 
     mlir::MLIRContext context;
     context.getOrLoadDialect<mlir::daphne::DaphneDialect>();
-    context.getOrLoadDialect<mlir::StandardOpsDialect>();
+    context.getOrLoadDialect<mlir::func::FuncDialect>();
     context.getOrLoadDialect<mlir::scf::SCFDialect>();
 
-    mlir::OwningModuleRef module(mlir::parseSourceString(daphneIrCode, &context));
+    mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(daphneIrCode, &context));
     REQUIRE(module);
 
     std::string newCode;

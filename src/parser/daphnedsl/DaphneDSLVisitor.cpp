@@ -26,7 +26,7 @@
 #include "DaphneDSLGrammarLexer.h"
 #include "DaphneDSLGrammarParser.h"
 
-#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 
 #include <limits>
 #include <regex>
@@ -355,7 +355,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
                         throw std::runtime_error(std::string("Alias ").append(ctx->alias->getText())
                         .append(" results in a name clash with another prefix"));
                     }
-//                    finalPrefix = importingPath.parent_path().filename().string() + prefixDelim + finalPrefix;
+//                    finalPrefix = importingPath.parent_path().getFilename().string() + prefixDelim + finalPrefix;
                     finalPrefix.insert(0, importingPath.parent_path().filename().string() + prefixDelim);
                     break;
                 }
@@ -376,7 +376,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
         parser.addErrorListener(&errorListener);
         DaphneDSLGrammarParser::ScriptContext * importCtx = parser.script();
         
-        std::multimap<std::string, mlir::FuncOp> origFuncMap = functionsSymbolMap;
+        std::multimap<std::string, mlir::func::FuncOp> origFuncMap = functionsSymbolMap;
         functionsSymbolMap.clear();
 
         symbolTable.pushScope();
@@ -393,7 +393,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
 
         symbolTable.put(origScope);
         
-        for(std::pair<std::string, mlir::FuncOp> funcSymbol : functionsSymbolMap)
+        for(std::pair<std::string, mlir::func::FuncOp> funcSymbol : functionsSymbolMap)
             if(funcSymbol.first.find('.') == std::string::npos)
                 origFuncMap.insert({finalPrefix + funcSymbol.first, funcSymbol.second});
         functionsSymbolMap.clear();
@@ -525,7 +525,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     // Rewire the results of the if-operation to their variable names.
     size_t i = 0;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++)
-        symbolTable.put(*it, ifOp.results()[i++]);
+        symbolTable.put(*it, ifOp.getResults()[i++]);
 
     return nullptr;
 }
@@ -591,8 +591,8 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         mlir::Value oldVal = symbolTable.get(it->first).value;
         whileOperands.push_back(oldVal);
 
-        beforeBlock->addArgument(type);
-        afterBlock->addArgument(type);
+        beforeBlock->addArgument(type, builder.getUnknownLoc());
+        afterBlock->addArgument(type, builder.getUnknownLoc());
     }
 
     // Create the ConditionOp of the "before" block.
@@ -613,8 +613,8 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
 
     // Create the SCF WhileOp and insert the "before" and "after" blocks.
     auto whileOp = builder.create<mlir::scf::WhileOp>(loc, resultTypes, whileOperands);
-    whileOp.before().push_back(beforeBlock);
-    whileOp.after().push_back(afterBlock);
+    whileOp.getBefore().push_back(beforeBlock);
+    whileOp.getAfter().push_back(afterBlock);
 
     size_t i = 0;
     for(auto it = ow.begin(); it != ow.end(); it++) {
@@ -622,15 +622,15 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         // corresponding block arguments.
         whileOperands[i].replaceUsesWithIf(beforeBlock->getArgument(i), [&](mlir::OpOperand & operand) {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
-            return parentRegion != nullptr && whileOp.before().isAncestor(parentRegion);
+            return parentRegion != nullptr && whileOp.getBefore().isAncestor(parentRegion);
         });
         whileOperands[i].replaceUsesWithIf(afterBlock->getArgument(i), [&](mlir::OpOperand & operand) {
             auto parentRegion = operand.getOwner()->getBlock()->getParent();
-            return parentRegion != nullptr && whileOp.after().isAncestor(parentRegion);
+            return parentRegion != nullptr && whileOp.getAfter().isAncestor(parentRegion);
         });
 
         // Rewire the results of the WhileOp to their variable names.
-        symbolTable.put(it->first, whileOp.results()[i++]);
+        symbolTable.put(it->first, whileOp.getResults()[i++]);
     }
 
     return nullptr;
@@ -657,10 +657,10 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         // which always results in -1 or +1, even if to equals from.
         step = builder.create<mlir::daphne::EwAddOp>(
                 loc,
-                builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(t, -1)),
+                builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, -1)),
                 builder.create<mlir::daphne::EwMulOp>(
                         loc,
-                        builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(t, 2)),
+                        builder.create<mlir::daphne::ConstantOp>(loc, t, builder.getIntegerAttr(t, 2)),
                         utils.castIf(t, builder.create<mlir::daphne::EwGeOp>(loc, to, from))
                 )
         );
@@ -689,7 +689,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
 
     // A placeholder for the loop's induction variable, since we do not know it
     // yet; will be replaced later.
-    mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexAttr(123));
+    mlir::Value ph = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(123));
     // Make the induction variable available by the specified name.
     symbolTable.put(
             ctx->var->getText(),
@@ -741,7 +741,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         });
 
         // Rewire the results of the ForOp to their variable names.
-        symbolTable.put(it->first, forOp.results()[i]);
+        symbolTable.put(it->first, forOp.getResults()[i]);
 
         i++;
     }
@@ -806,13 +806,13 @@ bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type par
     return paramTy == argTy || paramTy == utils.unknownType || isMatchingUnknownMatrix;
 }
 
-std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
+std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
     // search user defined functions
     auto range = functionsSymbolMap.equal_range(functionName);
     // TODO: find not only a matching version, but the `most` specialized
     for (auto it = range.first; it != range.second; ++it) {
         auto userDefinedFunc = it->second;
-        auto funcTy = userDefinedFunc.getType();
+        auto funcTy = userDefinedFunc.getFunctionType();
         auto compatible = true;
 
         if (funcTy.getNumInputs() != args.size()) {
@@ -842,14 +842,14 @@ std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string 
 }
 
 
-std::optional<mlir::FuncOp> DaphneDSLVisitor::findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const {
+std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const {
     // search user defined functions
     auto range = functionsSymbolMap.equal_range(functionName);
     
     // TODO: find not only a matching version, but the `most` specialized    
     for (auto it = range.first; it != range.second; ++it) {
         auto userDefinedFunc = it->second;
-        auto funcTy = userDefinedFunc.getType();
+        auto funcTy = userDefinedFunc.getFunctionType();
 
         if (funcTy.getNumInputs() != 1) {
             continue;
@@ -900,7 +900,7 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
         throw std::runtime_error("No function definition of `" + udfName + "` found");
 
     args.push_back(static_cast<mlir::Value>(
-        builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->sym_name().str())
+        builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->getSymName().str())
     ));
 
     // Create DaphneIR operation for the built-in function.
@@ -929,9 +929,9 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
         // TODO: variable results
         return builder
             .create<mlir::daphne::GenericCallOp>(loc,
-                maybeUDF->sym_name(),
+                maybeUDF->getSymName(),
                 args_vec,
-                maybeUDF->getType().getResults())
+                maybeUDF->getFunctionType().getResults())
             .getResult(0);
     }
 
@@ -1103,7 +1103,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatmulExpr(DaphneDSLGrammarParser::MatmulEx
     mlir::Value rhs = utils.valueOrError(visit(ctx->rhs));
 
     if(op == "@") {
-        mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, builder.getBoolAttr(false));
+        mlir::Value f = builder.create<mlir::daphne::ConstantOp>(loc, false);
         return utils.retValWithInferedType(builder.create<mlir::daphne::MatMulOp>(
                 loc, lhs.getType(), lhs, rhs, f, f
         ));
@@ -1265,7 +1265,7 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
         insertElseBlockDo
     );
 
-    return static_cast<mlir::Value>(ifOp.results()[0]);
+    return static_cast<mlir::Value>(ifOp.getResults()[0]);
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {
@@ -1292,8 +1292,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         auto mat = DataObjectFactory::create<DenseMatrix<int64_t>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
-                        builder.create<mlir::daphne::ConstantOp>(loc,
-                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                        builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
                 )
         );
     }
@@ -1311,8 +1310,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         auto mat = DataObjectFactory::create<DenseMatrix<double>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
-                        builder.create<mlir::daphne::ConstantOp>(loc,
-                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                        builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
                 )
         );
     }
@@ -1330,8 +1328,7 @@ antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::M
         auto mat = DataObjectFactory::create<DenseMatrix<bool>>(ctx->literal().size(), 1, vals);
         result = static_cast<mlir::Value>(
                 builder.create<mlir::daphne::MatrixConstantOp>(loc, utils.matrixOf(valueType),
-                        builder.create<mlir::daphne::ConstantOp>(loc,
-                        builder.getIntegerAttr(builder.getIntegerType(64, false), reinterpret_cast<uint64_t>(mat)))
+                        builder.create<mlir::daphne::ConstantOp>(loc, reinterpret_cast<uint64_t>(mat))
                 )
         );
     }
@@ -1373,8 +1370,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
         int64_t val = atol(lit->getText().c_str());
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(
-                        loc,
-                        builder.getIntegerAttr(builder.getIntegerType(64, true), val)
+                        loc, val
                 )
         );
     }
@@ -1391,8 +1387,7 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
             val = atof(litStr.c_str());
         return static_cast<mlir::Value>(
                 builder.create<mlir::daphne::ConstantOp>(
-                        loc,
-                        builder.getF64FloatAttr(val)
+                        loc, val
                 )
         );
     }
@@ -1432,8 +1427,7 @@ antlrcpp::Any DaphneDSLVisitor::visitBoolLiteral(DaphneDSLGrammarParser::BoolLit
 
     return static_cast<mlir::Value>(
         builder.create<mlir::daphne::ConstantOp>(
-                loc,
-                builder.getBoolAttr(val)
+                loc, val
         )
     );
 }
@@ -1493,7 +1487,8 @@ void rectifyIfCaseWithoutReturnOp(mlir::scf::IfOp ifOpWithEarlyReturn, mlir::Blo
     // the previous loop with the correct values.
     auto currIfOp = ifOpWithEarlyReturn;
     auto currOp = &caseBlock->front();
-    while(auto nextOp = currOp->getNextNode()) {
+    while(currOp) {
+        auto nextOp = currOp->getNextNode();
         if(auto yieldOp = llvm::dyn_cast<mlir::scf::YieldOp>(currOp)) {
             // cast was checked in previous loop
             for(auto it : llvm::zip(currIfOp.getResults(), yieldOp.getOperands())) {
@@ -1540,7 +1535,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
     };
     auto insertElseBlock = [&](mlir::OpBuilder &nested, mlir::Location loc) {
         auto newElseBlock = nested.getBlock();
-        if(!ifOp.elseRegion().empty()) {
+        if(!ifOp.getElseRegion().empty()) {
             newElseBlock->getOperations().splice(newElseBlock->end(), ifOp.elseBlock()->getOperations());
         }
         // TODO: check if already final operation is a return
@@ -1565,7 +1560,7 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
     auto newIfOp = builder.create<mlir::scf::IfOp>(
         builder.getUnknownLoc(),
         resultTypes,
-        ifOp.condition(),
+        ifOp.getCondition(),
         insertThenBlock,
         insertElseBlock
     );
@@ -1626,7 +1621,8 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
                 op = op->getParentOp();
             }
 
-            if(nested > mostNestedReturn) {
+            // if(nested > mostNestedReturn) {
+            if(nested > levelOfMostNested) { // TODO submit separat bugfix
                 mostNestedReturn = returnOp;
                 levelOfMostNested = nested;
             }
@@ -1679,12 +1675,12 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
 
     auto funcBlock = new mlir::Block();
     for(auto it : llvm::zip(funcArgNames, funcArgTypes)) {
-        auto blockArg = funcBlock->addArgument(std::get<1>(it));
+        auto blockArg = funcBlock->addArgument(std::get<1>(it), builder.getUnknownLoc());
         handleAssignmentPart(std::get<0>(it), nullptr, symbolTable, blockArg);
     }
 
     mlir::Type returnType;
-    mlir::FuncOp functionOperation;
+    mlir::func::FuncOp functionOperation;
     if(ctx->retTy) {
         // early creation of FuncOp for recursion
         returnType = utils.typeOrError(visit(ctx->retTy));
@@ -1714,13 +1710,13 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         throw std::runtime_error(
             "Function `" + functionName + "` returns different type than specified in the definition");
     }
-    functionOperation.body().push_front(funcBlock);
+    functionOperation.getBody().push_front(funcBlock);
 
     symbolTable = globalSymbolTable;
     return functionOperation;
 }
 
-mlir::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Location &loc,
+mlir::func::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Location &loc,
                                                        const mlir::FunctionType &funcType,
                                                        const std::string &functionName) {
     mlir::OpBuilder::InsertionGuard guard(builder);
@@ -1728,7 +1724,7 @@ mlir::FuncOp DaphneDSLVisitor::createUserDefinedFuncOp(const mlir::Location &loc
     auto functionSymbolName = utils.getUniqueFunctionSymbol(functionName);
 
     builder.setInsertionPoint(moduleBody, moduleBody->begin());
-    auto functionOperation = builder.create<mlir::FuncOp>(loc, functionSymbolName, funcType);
+    auto functionOperation = builder.create<mlir::func::FuncOp>(loc, functionSymbolName, funcType);
     functionsSymbolMap.insert({functionName, functionOperation});
     return functionOperation;
 }

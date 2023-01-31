@@ -17,9 +17,9 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/BlockAndValueMapping.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -33,20 +33,20 @@ struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipeli
     using OpConversionPattern::OpConversionPattern;
 
     LogicalResult
-    matchAndRewrite(daphne::VectorizedPipelineOp op, ArrayRef<Value> operands,
+    matchAndRewrite(daphne::VectorizedPipelineOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
         MLIRContext newContext;
         OpBuilder tempBuilder(&newContext);
         std::string funcName = "dist";
 
-        auto &bodyBlock = op.body().front();
+        auto &bodyBlock = op.getBody().front();
         auto funcType = tempBuilder.getFunctionType(
             bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
-        auto funcOp = tempBuilder.create<FuncOp>(op.getLoc(), funcName, funcType);
+        auto funcOp = tempBuilder.create<func::FuncOp>(op.getLoc(), funcName, funcType);
 
         BlockAndValueMapping mapper;
-        op.body().cloneInto(&funcOp.getRegion(), mapper);
+        op.getBody().cloneInto(&funcOp.getRegion(), mapper);
 
         std::string s;
         llvm::raw_string_ostream stream(s);
@@ -55,8 +55,8 @@ struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipeli
         
         rewriter.replaceOpWithNewOp<daphne::DistributedPipelineOp>(
                 op.getOperation(),
-                op.outputs().getTypes(), irStr, op.inputs(),
-                op.out_rows(), op.out_cols(), op.splits(), op.combines()
+                op.getOutputs().getTypes(), irStr, op.getInputs(),
+                op.getOutRows(), op.getOutCols(), op.getSplits(), op.getCombines()
         );
         
         return success();
@@ -73,13 +73,13 @@ void DistributePipelinesPass::runOnOperation()
 {
     auto module = getOperation();
 
-    OwningRewritePatternList patterns(&getContext());
+    RewritePatternSet patterns(&getContext());
 
     // convert other operations
     ConversionTarget target(getContext());
     // TODO do we need all these?
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
-    target.addLegalOp<ModuleOp, FuncOp>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
+    target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addDynamicallyLegalOp<daphne::VectorizedPipelineOp>([](daphne::VectorizedPipelineOp op)
     {
         // TODO Carefully decide if this pipeline shall be distributed, e.g.,
@@ -88,7 +88,7 @@ void DistributePipelinesPass::runOnOperation()
         return false;
     });
 
-    patterns.insert<DistributePipelines>(&getContext());
+    patterns.add<DistributePipelines>(&getContext());
 
     if (failed(applyFullConversion(module, target, std::move(patterns))))
         signalPassFailure();

@@ -32,17 +32,17 @@ using namespace mlir;
 // extensions in several directions, e.g.:
 // - inserting the context into blocks (e.g. parfor loop bodies)
 // - passing the context as an argument to a function
-struct InsertDaphneContextPass : public PassWrapper<InsertDaphneContextPass, FunctionPass>
+struct InsertDaphneContextPass : public PassWrapper<InsertDaphneContextPass, OperationPass<func::FuncOp>>
 {
     const DaphneUserConfig& user_config;
     explicit InsertDaphneContextPass(const DaphneUserConfig& cfg) : user_config(cfg) {}
-    void runOnFunction() final;
+    void runOnOperation() final;
 };
 
-void InsertDaphneContextPass::runOnFunction()
+void InsertDaphneContextPass::runOnOperation()
 {
-    FuncOp f = getFunction();
-    Block & b = f.body().front();
+    func::FuncOp f = getOperation();
+    Block & b = f.getBody().front();
     
     OpBuilder builder(&b, b.begin());
     Location loc = builder.getUnknownLoc();

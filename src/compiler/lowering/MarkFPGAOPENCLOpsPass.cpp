@@ -23,7 +23,7 @@
 
 using namespace mlir;
 
-struct MarkFPGAOPENCLOpsPass : public PassWrapper<MarkFPGAOPENCLOpsPass, FunctionPass> {
+struct MarkFPGAOPENCLOpsPass : public PassWrapper<MarkFPGAOPENCLOpsPass, OperationPass<func::FuncOp>> {
 
     /**
      * @brief User configuration influencing the rewrite pass
@@ -33,7 +33,7 @@ struct MarkFPGAOPENCLOpsPass : public PassWrapper<MarkFPGAOPENCLOpsPass, Functio
     explicit MarkFPGAOPENCLOpsPass(const DaphneUserConfig& cfg) : cfg(cfg) {
     }
 
-    void runOnFunction() final;
+    void runOnOperation() final;
 
     bool checkUseFPGAOPENCL(Operation* op) const {
 //        std::cout << "checkUseFPGAOPENCL: " << op->getName().getStringRef().str() << std::endl;
@@ -41,8 +41,9 @@ struct MarkFPGAOPENCLOpsPass : public PassWrapper<MarkFPGAOPENCLOpsPass, Functio
     }
 };
 
-void MarkFPGAOPENCLOpsPass::runOnFunction() {
-    getFunction()->walk([&](Operation* op) {
+void MarkFPGAOPENCLOpsPass::runOnOperation() {
+    func::FuncOp f = getOperation();
+    f->walk([&](Operation* op) {
         OpBuilder builder(op);
         if(checkUseFPGAOPENCL(op)) {
             op->setAttr("fpgaopencl_device", builder.getI32IntegerAttr(0));

@@ -21,13 +21,13 @@
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
+#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
-#include "mlir/IR/FunctionSupport.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
@@ -343,7 +343,7 @@ namespace mlir::daphne {
 mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
 {
     assert(operands.empty() && "constant has no operands");
-    return value();
+    return getValue();
 }
 
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(
@@ -423,29 +423,29 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
         }
         else {
             resultsToReplace.push_back(result);
-            outRows.push_back(op.out_rows()[resultIx]);
-            outCols.push_back(op.out_cols()[resultIx]);
-            vCombineAttrs.push_back(op.combines()[resultIx]);
+            outRows.push_back(op.getOutRows()[resultIx]);
+            outCols.push_back(op.getOutCols()[resultIx]);
+            vCombineAttrs.push_back(op.getCombines()[resultIx]);
         }
     }
-    op.body().front().getTerminator()->eraseOperands(eraseIxs);
-    if(!op.cuda().getBlocks().empty())
-        op.cuda().front().getTerminator()->eraseOperands(eraseIxs);
+    op.getBody().front().getTerminator()->eraseOperands(eraseIxs);
+    if(!op.getCuda().getBlocks().empty())
+        op.getCuda().front().getTerminator()->eraseOperands(eraseIxs);
 
     if(resultsToReplace.size() == op->getNumResults()) {
         return failure();
     }
     auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
         ValueRange(resultsToReplace).getTypes(),
-        op.inputs(),
+        op.getInputs(),
         outRows,
         outCols,
-        op.splits(),
+        op.getSplits(),
         rewriter.getArrayAttr(vCombineAttrs),
-        op.ctx());
-    pipelineOp.body().takeBody(op.body());
-    if(!op.cuda().getBlocks().empty())
-        pipelineOp.cuda().takeBody(op.cuda());
+        op.getCtx());
+    pipelineOp.getBody().takeBody(op.getBody());
+    if(!op.getCuda().getBlocks().empty())
+        pipelineOp.getCuda().takeBody(op.getCuda());
     for (auto e : llvm::enumerate(resultsToReplace)) {
         auto resultToReplace = e.value();
         auto i = e.index();
@@ -469,8 +469,9 @@ mlir::Attribute constFoldBinaryOp(mlir::Type resultType, llvm::ArrayRef<mlir::At
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    if(operands[0].getType() != operands[1].getType())
-        return {};
+    // We cannot do this type check anymore, because MLIR attributes do not have a type anymore.
+    // if(operands[0].getType() != operands[1].getType())
+    //     return {};
 
     if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
         auto lhs = operands[0].cast<AttrElementT>();
@@ -488,8 +489,9 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    if(operands[0].getType() != operands[1].getType())
-        return {};
+    // We cannot do this type check anymore, because MLIR attributes do not have a type anymore.
+    // if(operands[0].getType() != operands[1].getType())
+    //     return {};
 
     if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
         auto lhs = operands[0].cast<AttrElementT>();
@@ -508,7 +510,7 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
         if (operands[0])
             return {operands[0]};
         else
-            return {arg()};
+            return {getArg()};
     }
     if(auto in = operands[0].dyn_cast_or_null<IntegerAttr>()) {
         auto apInt = in.getValue();
@@ -764,8 +766,8 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) 
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    if(operands[0].getType() != operands[1].getType())
-        return {};
+    // if(operands[0].getType() != operands[1].getType())
+    //     return {};
 
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
         auto lhs = operands[0].cast<StringAttr>();
@@ -783,8 +785,9 @@ mlir::OpFoldResult mlir::daphne::ConcatOp::fold(ArrayRef<Attribute> operands) {
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    if(operands[0].getType() != operands[1].getType())
-        return {};
+    // We cannot do this type check anymore, because MLIR attributes do not have a type anymore.
+    // if(operands[0].getType() != operands[1].getType())
+    //     return {};
 
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
         auto lhs = operands[0].cast<StringAttr>();
@@ -898,10 +901,10 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
 mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
         mlir::daphne::MatMulOp op, PatternRewriter &rewriter
 ) {    
-    mlir::Value lhs = op.lhs();
-    mlir::Value rhs = op.rhs();
-    mlir::Value transa = op.transa();
-    mlir::Value transb = op.transb();
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
+    mlir::Value transa = op.getTransa();
+    mlir::Value transb = op.getTransb();
 
     // TODO If transa or transb are not constant, we cannot continue on the respective side;
     // we cannot just assume false then.
@@ -919,19 +922,19 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
 
 #if 0
     if(lhsTransposeOp) {
-        lhs = lhsTransposeOp.arg();
+        lhs = lhsTransposeOp.getArg();
         ta = !ta;
     }
 #endif
     if(rhsTransposeOp) {
-        rhs = rhsTransposeOp.arg();
+        rhs = rhsTransposeOp.getArg();
         tb = !tb;
     }
 
     rewriter.replaceOpWithNewOp<mlir::daphne::MatMulOp>(
         op, op.getType(), lhs, rhs,
-        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), rewriter.getBoolAttr(ta))),
-        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), rewriter.getBoolAttr(tb)))
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), ta)),
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), tb))
     );
     return mlir::success();
 }
@@ -945,7 +948,7 @@ mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(
 ) {
     ssize_t numRows = -1;
     
-    mlir::Type inTy = op.arg().getType();
+    mlir::Type inTy = op.getArg().getType();
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
         numRows = t.getNumRows();
     else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
@@ -953,7 +956,7 @@ mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(
     
     if(numRows != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getIndexAttr(numRows)
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numRows)
         );
         return mlir::success();
     }
@@ -969,7 +972,7 @@ mlir::LogicalResult mlir::daphne::NumColsOp::canonicalize(
 ) {
     ssize_t numCols = -1;
     
-    mlir::Type inTy = op.arg().getType();
+    mlir::Type inTy = op.getArg().getType();
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
         numCols = t.getNumCols();
     else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
@@ -977,7 +980,7 @@ mlir::LogicalResult mlir::daphne::NumColsOp::canonicalize(
     
     if(numCols != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getIndexAttr(numCols)
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numCols)
         );
         return mlir::success();
     }
@@ -994,7 +997,7 @@ mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(
     ssize_t numRows = -1;
     ssize_t numCols = -1;
     
-    mlir::Type inTy = op.arg().getType();
+    mlir::Type inTy = op.getArg().getType();
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>()) {
         numRows = t.getNumRows();
         numCols = t.getNumCols();
@@ -1006,7 +1009,7 @@ mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(
     
     if(numRows != -1 && numCols != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getIndexAttr(numRows * numCols)
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numRows * numCols)
         );
         return mlir::success();
     }
@@ -1028,12 +1031,12 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
     matchAndRewrite(
             mlir::daphne::DistributeOp op, mlir::PatternRewriter &rewriter
     ) const override {
-        mlir::daphne::ReadOp readOp = op.mat().getDefiningOp<mlir::daphne::ReadOp>();
+        mlir::daphne::ReadOp readOp = op.getMat().getDefiningOp<mlir::daphne::ReadOp>();
         if(!readOp || !readOp.getOperation()->hasOneUse())
             return mlir::failure();
         rewriter.replaceOp(
                 op, {rewriter.create<mlir::daphne::DistributedReadOp>(
-                        readOp.getLoc(), op.getType(), readOp.fileName()
+                        readOp.getLoc(), op.getType(), readOp.getFileName()
                 )}
         );
         // TODO Instead of erasing the ReadOp here, the compiler should
@@ -1059,8 +1062,8 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(
         mlir::daphne::EwAddOp op, PatternRewriter &rewriter
 ) {
-    mlir::Value lhs = op.lhs();
-    mlir::Value rhs = op.rhs();
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
     const bool lhsIsStr = lhs.getType().isa<mlir::daphne::StringType>();
     const bool rhsIsStr = rhs.getType().isa<mlir::daphne::StringType>();
     if(lhsIsStr || rhsIsStr) {
