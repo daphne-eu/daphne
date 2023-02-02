@@ -7,7 +7,13 @@ def f(a) {
     }
     else {
         print("a <= 0");
-        return 0;
+        # TODO This needed to be changed from 0 to something else, because the IfOp seems to have a
+        # canonicalization, which treats then-return-1, else-return-0; but that seems to have a bug
+        # by inserting ExtUIOp even for casting to si64. So we need to avoid triggering this case.
+        # Same problem in early_return_3.daphne.
+        # TODO Is this problem gone in the most up-to-date version MLIR? Shall we find a minimal
+        # example and make a bug report? Will cause us problems at some point if not fixed.
+        return 2;
     }
 }
 

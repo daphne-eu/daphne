@@ -49,9 +49,9 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
     auto compute = builder.create<daphne::DistributedComputeOp>(loc,
         ArrayRef<Type>{daphne::HandleType::get(op->getContext(), op->getType())},
         distributedInputs);
-    auto &block = compute.body().emplaceBlock();
-    auto argLhs = block.addArgument(getWrappedType(distributedInputs[0]));
-    auto argRhs = block.addArgument(getWrappedType(distributedInputs[1]));
+    auto &block = compute.getBody().emplaceBlock();
+    auto argLhs = block.addArgument(getWrappedType(distributedInputs[0]), builder.getUnknownLoc());
+    auto argRhs = block.addArgument(getWrappedType(distributedInputs[1]), builder.getUnknownLoc());
 
     {
         mlir::OpBuilder::InsertionGuard guard(builder);
@@ -69,9 +69,9 @@ std::vector<mlir::Value> createEquivalentDistributedDAG_EwBinaryOp(EwBinaryOp *o
 
 template<class EwBinaryOp>
 std::vector<bool> getOperandDistrPrimitives_EwBinaryOp(EwBinaryOp *op) {
-    Type tL0 = op->lhs().getType();
+    Type tL0 = op->getLhs().getType();
     auto tL  = tL0.dyn_cast<daphne::MatrixType>();
-    Type tR0 = op->rhs().getType();
+    Type tR0 = op->getRhs().getType();
     auto tR  = tR0.dyn_cast<daphne::MatrixType>();
     const ssize_t nrL = tL.getNumRows();
     const ssize_t ncL = tL.getNumCols();
@@ -152,8 +152,8 @@ std::vector<mlir::Value> daphne::RowAggMaxOp::createEquivalentDistributedDAG(
     auto compute = builder.create<daphne::DistributedComputeOp>(loc,
         ArrayRef<Type>{daphne::HandleType::get(getContext(), getType())},
         distributedInputs);
-    auto &block = compute.body().emplaceBlock();
-    auto arg = block.addArgument(getWrappedType(distributedInputs[0]));
+    auto &block = compute.getBody().emplaceBlock();
+    auto arg = block.addArgument(getWrappedType(distributedInputs[0]), builder.getUnknownLoc());
 
     {
         mlir::OpBuilder::InsertionGuard guard(builder);

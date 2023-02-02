@@ -35,7 +35,10 @@ add_mlir_dialect_library(MLIRDaphneTransforms
 )
 target_link_libraries(MLIRDaphneTransforms PUBLIC
     CompilerUtils
-    MLIRStandardToLLVM
+    MLIRArithToLLVM
+    MLIRControlFlowToLLVM
+    MLIRFuncToLLVM
+    MLIRFuncTransforms
     SQLParser
 )
 

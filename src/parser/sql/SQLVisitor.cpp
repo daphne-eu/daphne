@@ -181,8 +181,7 @@ mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
 
         mlir::Value one = static_cast<mlir::Value>(
             builder.create<mlir::daphne::ConstantOp>(
-                loc,
-                builder.getIntegerAttr(builder.getIntegerType(64, true), 1)
+                loc, static_cast<int64_t>(1)
             ));
 
         return static_cast<mlir::Value>(
@@ -811,8 +810,7 @@ antlrcpp::Any SQLVisitor::visitOrderByClause(
     }
     mlir::Value returnFrame = static_cast<mlir::Value>(
             builder.create<mlir::daphne::ConstantOp>(
-                    loc,
-                    builder.getBoolAttr(false)
+                    loc, false
             )
         );
     return static_cast<mlir::Value>(
@@ -836,15 +834,13 @@ antlrcpp::Any SQLVisitor::visitOrderInformation(
     if(ctx->desc){
         return static_cast<mlir::Value>(
             builder.create<mlir::daphne::ConstantOp>(
-                    loc,
-                    builder.getBoolAttr(false)
+                    loc, false
             )
         );
     }
     return static_cast<mlir::Value>(
         builder.create<mlir::daphne::ConstantOp>(
-                loc,
-                builder.getBoolAttr(true)
+                loc, true
         )
     );
 }
@@ -1192,8 +1188,7 @@ antlrcpp::Any SQLVisitor::visitLiteral(
         double val = std::stod(lit->getText());
         return static_cast<mlir::Value>(
             builder.create<mlir::daphne::ConstantOp>(
-                loc,
-                builder.getF64FloatAttr(val)
+                loc, val
             )
         );
     }

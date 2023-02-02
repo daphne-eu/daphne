@@ -18,13 +18,13 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "runtime/local/context/CUDAContext.h"
-#include <mlir/IR/BlockAndValueMapping.h>
+#include <mlir/IR/IRMapping.h>
 
 #include <iostream>
 
 using namespace mlir;
 
-struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
+struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func::FuncOp>> {
     
     /**
      * @brief User configuration influencing the rewrite pass
@@ -40,11 +40,11 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
         mem_budget = std::floor(0.9 * static_cast<double>(total_gpu_mem));
     }
     
-    void runOnFunction() final;
+    void runOnOperation() final;
     
     void addCUDAOpsToVectorizedPipeline(OpBuilder& builder, daphne::VectorizedPipelineOp& pipelineOp) const {
         
-        auto& pipeline = pipelineOp.body().front().getOperations();
+        auto& pipeline = pipelineOp.getBody().front().getOperations();
         bool build_cuda_pipeline;
         
         // add CUDA ops if at least one (cuda_fuse_any) or all (!cuda_fuse_any) ops would be supported
@@ -69,9 +69,9 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
         // clone body region into cuda region if there's a cuda supported op in body
         if(build_cuda_pipeline) {
             PatternRewriter::InsertionGuard insertGuard(builder);
-            BlockAndValueMapping mapper;
-            pipelineOp.body().cloneInto(&pipelineOp.cuda(), mapper);
-            for (auto &op: pipelineOp.cuda().front().getOperations()) {
+            IRMapping mapper;
+            pipelineOp.getBody().cloneInto(&pipelineOp.getCuda(), mapper);
+            for (auto &op: pipelineOp.getCuda().front().getOperations()) {
                 bool isMat = CompilerUtils::isMatrixComputation(&op);
                 if (op.hasTrait<mlir::OpTrait::CUDASupport>() && isMat)
                     op.setAttr("cuda_device", builder.getI32IntegerAttr(0));
@@ -146,8 +146,8 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, FunctionPass> {
     }
 };
 
-void MarkCUDAOpsPass::runOnFunction() {
-    getFunction()->walk([&](Operation* op) {
+void MarkCUDAOpsPass::runOnOperation() {
+    getOperation()->walk([&](Operation* op) {
 //        std::cout << "MarkCUDAOpsPass: " << op->getName().getStringRef().str() << " parent: " << op->getParentOp()->getName().getStringRef().str() <<  std::endl;
         
         OpBuilder builder(op);

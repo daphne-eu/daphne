@@ -71,7 +71,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
     /**
      * @brief Maps function names to MLIR symbols of functions defined in the IR.
      */
-    std::multimap<std::string, mlir::FuncOp> functionsSymbolMap;
+    std::multimap<std::string, mlir::func::FuncOp> functionsSymbolMap;
 
     std::unordered_map<std::string, std::string> args;
 
@@ -85,7 +85,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @param functionName The name used in source code to refer to this function
      * @return The `FuncOp`
      */
-    mlir::FuncOp createUserDefinedFuncOp(const mlir::Location &loc,
+    mlir::func::FuncOp createUserDefinedFuncOp(const mlir::Location &loc,
                                          const mlir::FunctionType &funcType,
                                          const std::string &functionName);
     
@@ -111,7 +111,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @throws `std::runtime_error` if a UDF with the name exists but no matching 
      *  version was found
      */
-    std::optional<mlir::FuncOp> findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const;
+    std::optional<mlir::func::FuncOp> findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const;
 
     /**
      * @brief Tries to find a unary (i.e. single param) UDF based on the argument type
@@ -122,7 +122,7 @@ class DaphneDSLVisitor : public DaphneDSLGrammarVisitor {
      * @throws `std::runtime_error` if a UDF with the name exists but no matching 
      *  version was found
      */
-    std::optional<mlir::FuncOp> findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const;
+    std::optional<mlir::func::FuncOp> findMatchingUnaryUDF(const std::string &functionName, mlir::Type argType) const;
 
     /**
      * @brief Checks if the type of an agrument to a UDF is compatible with the 
