@@ -1422,7 +1422,7 @@ def Daphne_ReturnOp : Daphne_Op<"return", [Pure, Terminator, ReturnLike, ParentO
 
     let builders = [
         OpBuilder<(ins), [{
-            build($_builder, $_state, llvm::None);
+            build($_builder, $_state, std::nullopt);
         }]>
     ];
 }

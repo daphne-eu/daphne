@@ -20,7 +20,7 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
 #include "mlir/Dialect/SCF/IR/SCF.h"
-#include "mlir/IR/BlockAndValueMapping.h"
+#include "mlir/IR/IRMapping.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
@@ -45,7 +45,7 @@ struct DistributePipelines : public OpConversionPattern<daphne::VectorizedPipeli
             bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
         auto funcOp = tempBuilder.create<func::FuncOp>(op.getLoc(), funcName, funcType);
 
-        BlockAndValueMapping mapper;
+        IRMapping mapper;
         op.getBody().cloneInto(&funcOp.getRegion(), mapper);
 
         std::string s;

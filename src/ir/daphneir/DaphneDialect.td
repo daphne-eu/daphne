@@ -45,6 +45,8 @@ def Daphne_Dialect : Dialect {
         void printType(::mlir::Type type,
                       ::mlir::DialectAsmPrinter &os) const override;
     }];
+
+    let useFoldAPI = kEmitFoldAdaptorFolder;
 }
 
 #endif //SRC_IR_DAPHNEIR_DAPHNEDIALECT_TD

@@ -22,7 +22,7 @@
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/IR/BlockAndValueMapping.h"
+#include "mlir/IR/IRMapping.h"
 
 #include <memory>
 #include <utility>
@@ -348,7 +348,7 @@ namespace
                     bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
                 auto funcOp = tempBuilder.create<func::FuncOp>(loc, funcName, funcType);
 
-                BlockAndValueMapping mapper;
+                IRMapping mapper;
                 distCompOp.getBody().cloneInto(&funcOp.getRegion(), mapper);
 
                 // write recompile region as string constant

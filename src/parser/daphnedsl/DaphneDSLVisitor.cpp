@@ -479,7 +479,6 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     // Determine the result type(s) of the if-operation as well as the operands
     // to the yield-operation of both branches.
     std::set<std::string> owUnion = ScopedSymbolTable::mergeSymbols(owThen, owElse);
-    std::vector<mlir::Type> resultTypes;
     std::vector<mlir::Value> resultsThen;
     std::vector<mlir::Value> resultsElse;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++) {
@@ -488,7 +487,6 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         if(valThen.getType() != valElse.getType())
             // TODO We could try to cast the types.
             throw std::runtime_error("type missmatch");
-        resultTypes.push_back(valThen.getType());
         resultsThen.push_back(valThen);
         resultsElse.push_back(valElse);
     }
@@ -516,7 +514,6 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     // explicitly given in the DSL script, or when it is needed to yield values.
     auto ifOp = builder.create<mlir::scf::IfOp>(
             loc,
-            resultTypes,
             cond,
             insertThenBlockDo,
             (ctx->elseStmt || !owUnion.empty()) ? insertElseBlockDo : insertElseBlockNo
@@ -1232,12 +1229,9 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
     builder.setInsertionPointToEnd(&elseBlock);
     mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
 
-    mlir::Type resultType;
     if(valThen.getType() != valElse.getType())
         // TODO We could try to cast the types.
         throw std::runtime_error("type missmatch");
-
-    resultType = valThen.getType();
 
     // Create yield-operations in both branches.
     builder.setInsertionPointToEnd(&thenBlock);
@@ -1259,7 +1253,6 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
 
     auto ifOp = builder.create<mlir::scf::IfOp>(
         loc,
-        resultType,
         cond,
         insertThenBlockDo,
         insertElseBlockDo
@@ -1512,7 +1505,7 @@ mlir::scf::YieldOp replaceReturnWithYield(mlir::daphne::ReturnOp returnOp) {
     return yieldOp;
 }
 
-void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
+void rectifyEarlyReturn(mlir::scf::IfOp ifOp) {
     // FIXME: handle case where early return is in else block
     auto insertThenBlock = [&](mlir::OpBuilder &nested, mlir::Location loc) {
         auto newThenBlock = nested.getBlock();
@@ -1559,7 +1552,6 @@ void rectifyEarlyReturn(mlir::scf::IfOp ifOp, mlir::TypeRange resultTypes) {
 
     auto newIfOp = builder.create<mlir::scf::IfOp>(
         builder.getUnknownLoc(),
-        resultTypes,
         ifOp.getCondition(),
         insertThenBlock,
         insertElseBlock
@@ -1634,7 +1626,7 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
 
         auto parentOp = mostNestedReturn->getParentOp();
         if(auto ifOp = llvm::dyn_cast<mlir::scf::IfOp>(parentOp)) {
-            rectifyEarlyReturn(ifOp, mostNestedReturn->getOperandTypes());
+            rectifyEarlyReturn(ifOp);
         }
         else {
             throw std::runtime_error(
