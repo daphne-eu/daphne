@@ -16,7 +16,6 @@
 
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/IR/MLIRContext.h>
-#include <mlir/InitAllDialects.h>
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/IR/AsmState.h>
