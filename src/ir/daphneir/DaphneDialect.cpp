@@ -471,9 +471,6 @@ mlir::Attribute constFoldBinaryOp(mlir::Type resultType, llvm::ArrayRef<mlir::At
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    // We cannot do this type check anymore, because MLIR attributes do not have a type anymore.
-    // if(operands[0].getType() != operands[1].getType())
-    //     return {};
 
     if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
         auto lhs = operands[0].cast<AttrElementT>();
@@ -491,9 +488,6 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    // We cannot do this type check anymore, because MLIR attributes do not have a type anymore.
-    // if(operands[0].getType() != operands[1].getType())
-    //     return {};
 
     if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
         auto lhs = operands[0].cast<AttrElementT>();
@@ -782,8 +776,6 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(FoldAdaptor adaptor) {
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    // if(operands[0].getType() != operands[1].getType())
-    //     return {};
 
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
         auto lhs = operands[0].cast<StringAttr>();
@@ -802,9 +794,6 @@ mlir::OpFoldResult mlir::daphne::ConcatOp::fold(FoldAdaptor adaptor) {
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    // We cannot do this type check anymore, because MLIR attributes do not have a type anymore.
-    // if(operands[0].getType() != operands[1].getType())
-    //     return {};
 
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
         auto lhs = operands[0].cast<StringAttr>();

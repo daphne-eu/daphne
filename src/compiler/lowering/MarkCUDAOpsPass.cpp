@@ -18,7 +18,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "runtime/local/context/CUDAContext.h"
-#include <mlir/IR/BlockAndValueMapping.h>
+#include <mlir/IR/IRMapping.h>
 
 #include <iostream>
 
@@ -69,7 +69,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
         // clone body region into cuda region if there's a cuda supported op in body
         if(build_cuda_pipeline) {
             PatternRewriter::InsertionGuard insertGuard(builder);
-            BlockAndValueMapping mapper;
+            IRMapping mapper;
             pipelineOp.getBody().cloneInto(&pipelineOp.getCuda(), mapper);
             for (auto &op: pipelineOp.getCuda().front().getOperations()) {
                 bool isMat = CompilerUtils::isMatrixComputation(&op);

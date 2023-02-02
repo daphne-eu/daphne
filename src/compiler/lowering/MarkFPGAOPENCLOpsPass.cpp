@@ -17,7 +17,6 @@
 #include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-#include <mlir/IR/BlockAndValueMapping.h>
 
 #include <iostream>
 

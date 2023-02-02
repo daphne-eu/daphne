@@ -692,7 +692,6 @@ then
 else
     # download and set up LLVM code if compilation is run without the local working copy being checked out from git
     # e.g., compiling from released source artifact
-    # TODO Don't hardcode the commit hash here, since we upgrade from time to time.
     llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
     llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
     llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"

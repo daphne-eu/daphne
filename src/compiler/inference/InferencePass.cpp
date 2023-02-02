@@ -168,7 +168,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
             // TODO In the future, we should support changing the shape of some
             // data object within a loop's body as well as mismatching shapes
             // after then/else branches.
-            if(auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
+            else if(auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
                 Block & beforeBlock = whileOp.getBefore().front();
                 Block & afterBlock = whileOp.getAfter().front();
                 // Transfer the WhileOp's operand types to the block arguments

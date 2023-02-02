@@ -1613,8 +1613,7 @@ void rectifyEarlyReturns(mlir::Block *funcBlock) {
                 op = op->getParentOp();
             }
 
-            // if(nested > mostNestedReturn) {
-            if(nested > levelOfMostNested) { // TODO submit separat bugfix
+            if(nested > levelOfMostNested) {
                 mostNestedReturn = returnOp;
                 levelOfMostNested = nested;
             }

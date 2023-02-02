@@ -934,8 +934,6 @@ void DaphneLowerToLLVMPass::runOnOperation()
     RewritePatternSet patterns(&getContext());
 
     LowerToLLVMOptions llvmOptions(&getContext());
-    // TODO: just create CWrappers for `main` and UDFs (currently vectorized pipelines are also emitted)
-    // llvmOptions.emitCWrappers = true; // TODO
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
     {
