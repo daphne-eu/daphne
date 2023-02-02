@@ -169,13 +169,13 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 # Descend to subdirectories
 # *****************************************************************************
 
+add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/api/cli)
 add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/compiler/utils)
-add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/parser)
 add_subdirectory(src/parser/config)
 add_subdirectory(src/parser/metadata)
