@@ -63,11 +63,14 @@ fancy="1"
 # Prints info message with style ... Daphne style 8-)
 function daphne_msg() {
     local message date dotSize dots textSize columnWidth
-    # get width of terminal
-    columnWidth="$(tput cols)"
+
     # check if output is directed to file, if true, set width to 120
     if ! [ -t 1 ]; then
         columnWidth=120
+        fancy="0"
+    else
+        # get width of terminal
+        columnWidth="$(tput cols)"
     fi
     prefix="[DAPHNE]"
     message="..${*}"
