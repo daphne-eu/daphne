@@ -36,6 +36,8 @@ function printHelp {
     echo ""
     echo "Optional arguments:"
     echo "  -h, --help        Print this help message and exit."
+    echo "  --installPrefix <path>"
+    echo "                    Set the prefix for the install path of third party dependencies (default: <projectRoot>/thirdparty)"
     echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
     echo "  --clean           Remove all temporary build directories for a fresh build"
     echo "  --cleanAll        Remove all thirdparty library directories for a build from scratch"
@@ -430,6 +432,10 @@ while [[ $# -gt 0 ]]; do
             echo building DEBUG version
             export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
             ;;
+        --installPrefix)
+            installPrefix=$1
+            shift
+            ;;
         *)
             unknown_options="${unknown_options} ${key}"
             ;;
@@ -499,7 +505,7 @@ fi
 if ! is_dependency_installed "antlr_v${antlrVersion}"; then
     mkdir -p "$installPrefix"/share/antlr4/
     cp "$cacheDir/$antlrJarName" "$installPrefix/share/antlr4/$antlrJarName"
-    
+
     daphne_msg "Applying 0000-antlr-silence-compiler-warnings.patch"
     # disable fail on error as first build might fail and patches might be rejected
     set +e
