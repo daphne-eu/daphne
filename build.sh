@@ -734,12 +734,13 @@ if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFile
        -DLLVM_ENABLE_RTTI=ON \
        -DCMAKE_INSTALL_PREFIX="$installPrefix"
     cmake --build "$buildPrefix/$llvmName" --target check-mlir
-    echo "$llvmCommit" > "$llvmCommitFilePath"
-    cd - > /dev/null
-    dependency_install_success "llvm_v${llvmCommit}"
-else
-    daphne_msg "No need to build MLIR/LLVM again."
-fi
+    cmake --build "$buildPrefix/$llvmName" --target install
+      echo "$llvmCommit" > "$llvmCommitFilePath"
+      cd - > /dev/null
+      dependency_install_success "llvm_v${llvmCommit}"
+  else
+      daphne_msg "No need to build MLIR/LLVM again."
+  fi
 
 if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
   FPGAOPENCL_BISTREAM_DIR="$projectRoot/src/runtime/local/kernels/FPGAOPENCL/bitstreams"
@@ -761,10 +762,9 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG \
-  -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
-  -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
-  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
+  -DCMAKE_PREFIX_PATH="$installPrefix" \
+  $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG
 
 cmake --build "$daphneBuildDir" --target "$target"
 
