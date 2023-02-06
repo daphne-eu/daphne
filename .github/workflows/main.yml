@@ -24,28 +24,31 @@ jobs:
     - name: Fix working dir permissions
       run: chown root:root .
 
-    - name: Cache 3rd party dependency build
-      id: cache-deps
-      uses: actions/cache@v3
-      env:
-        cache-name: cache-deps
-      with:
-        path: ./thirdparty
-        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
-        restore-keys: |
-          ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+#    - name: Cache 3rd party dependency build
+#      id: cache-deps
+#      uses: actions/cache@v3
+#      env:
+#        cache-name: cache-deps
+#      with:
+#        path: ./thirdparty
+#        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+#        restore-keys: |
+#          ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
 
-    - if: ${{ steps.cache-deps.outputs.cache-hit == 'true' }}
-      name: Print cache hit result
-      continue-on-error: true
-      run: echo "------------ Using cached build dependencies ------------"
+#    - if: ${{ steps.cache-deps.outputs.cache-hit == 'true' }}
+#      name: Print cache hit result
+#      continue-on-error: true
+#      run: echo "------------ Using cached build dependencies ------------"
 
     - name: Building
-      run: ./build.sh --no-fancy --target all | ts
+      run: ./build.sh --no-fancy --no-deps --installPrefix /usr/local --target all | ts
       shell: bash
 
     - name: Testing
-      run: ./test.sh | ts
+      run: |
+        mkdir --parents src/api/python/tmp
+        PYTHONPATH="$PYTHONPATH:$PWD/src/" bin/run_tests
+  
 
     - name: "List generated files"
       run: |
