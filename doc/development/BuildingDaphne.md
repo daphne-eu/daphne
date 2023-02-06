@@ -52,21 +52,21 @@ For example the following builds the main test target.
 ### Clean
 
 Clean all build directories, i.e., the daphne build dir `<project_root>/build` and the build output in 
-`<project_root>/bin` and  `<project_root>/lib`
+`<project_root>/bin` and `<project_root>/lib`
 
 ```bash
 ./build.sh --clean
 ```
 
-Clean all downloads and extracted archive directories, i.e., `<thirdparty_dir`/download-cache, `<thirdparty_dir`/sources
-and `<thirdparty_dir`/*.download.success files: 
+Clean all downloads and extracted archive directories, i.e., `<thirdparty_dir>`/download-cache, `<thirdparty_dir>`/sources
+and `<thirdparty_dir>`/*.download.success files: 
 
 ```bash
 ./build.sh --cleanCache
 ```
 
 Clean third party build output, i.e., `<thirdparty_dir>/installed`, `<thirdparty_dir>/build` and 
-`<thirdparty_dir`/*.install.success files:
+`<thirdparty_dir>`/*.install.success files:
 
 ```bash
 ./build.sh --cleanDeps
@@ -91,23 +91,23 @@ If you have built DAPHNE and **change the installPrefix directory**, it is requi
 ### Options
 All possible options for the build script:
 
-| Option                 | Effect                                                                                     |
-|------------------------|--------------------------------------------------------------------------------------------|
-| -h, --help             | Print the help page                                                                        |
-| --installPrefix <path> | Install third party dependencies in <path> (default: <project_root>/thirdparty)            | 
-| --clean                | Clean DAPHNE build output (<project_root>/{bin,build,lib})                                 |
-| --cleanCache           | Clean downloaded and extracted third party artifacts                                       |
-| --cleanDeps            | Clean third party dependency build output and installed files                              |
-| --cleanAll             | Clean DAPHNE build output and reset the third party directory to the state in the git repo |
-| --target \<target>     | Build specific target                                                                      |
-| -nf, --no-fancy        | Disable colorized output                                                                   |
-| --no-deps              | Avoid building third party dependencies                                                    |
-| -y, --yes              | Accept prompt (e.g., when executing the clean command)                                     |
-| --cuda                 | Compile with support for GPU operations using the CUDA SDK                                 |
-| --debug                | Compile the daphne binary with debug symbols                                               |
-| --oneapi               | Compile with support for accelerated operations using the OneAPI SDK                       |
-| --fpgaopencl           | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On    |
-| --arrow                | Compile with support for Apache Arrow                                                      |
+| Option                  | Effect                                                                                     |
+|-------------------------|--------------------------------------------------------------------------------------------|
+| -h, --help              | Print the help page                                                                        |
+| --installPrefix \<path> | Install third party dependencies in \<path> (default: <project_root>/thirdparty/installed) | 
+| --clean                 | Clean DAPHNE build output (<project_root>/{bin,build,lib})                                 |
+| --cleanCache            | Clean downloaded and extracted third party artifacts                                       |
+| --cleanDeps             | Clean third party dependency build output and installed files                              |
+| --cleanAll              | Clean DAPHNE build output and reset the third party directory to the state in the git repo |
+| --target \<target>      | Build specific target                                                                      |
+| -nf, --no-fancy         | Disable colorized output                                                                   |
+| --no-deps               | Avoid building third party dependencies                                                    |
+| -y, --yes               | Accept prompt (e.g., when executing the clean command)                                     |
+| --cuda                  | Compile with support for GPU operations using the CUDA SDK                                 |
+| --debug                 | Compile the daphne binary with debug symbols                                               |
+| --oneapi                | Compile with support for accelerated operations using the OneAPI SDK                       |
+| --fpgaopencl            | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On    |
+| --arrow                 | Compile with support for Apache Arrow                                                      |
 
 ## 2. Extension
 ### Overview over the build script

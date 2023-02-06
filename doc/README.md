@@ -40,7 +40,7 @@ limitations under the License.
 - [DAPHNE Configuration: Getting Information from the User](/doc/Config.md)
 - [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
 - [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
-- [Building DAPHNE with the infamous build.sh script](/doc/development/BuildingDaphne.md)
+- [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
 
 ### Source Code Documentation
 

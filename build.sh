@@ -27,7 +27,7 @@ function printHelp {
     printLogo
     echo "Build the DAPHNE prototype."
     echo ""
-    echo "Usage: $0 [-h|--help] [--target TARGET]"
+    echo "Usage: $0 [-h|--help] [--target <target>]"
     echo ""
     echo "This includes downloading and building all required third-party "
     echo "material, if necessary. Simply invoke this script without any "
@@ -38,7 +38,7 @@ function printHelp {
     echo "  -h, --help        Print this help message and exit."
     echo "  --installPrefix <path>"
     echo "                    Set the prefix for the install path of third party dependencies (default: <projectRoot>/thirdparty)"
-    echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
+    echo "  --target <target> Build the cmake target TARGET (defaults to '$target')"
     echo "  --clean           Remove DAPHNE build output (DAPHNE_ROOT/{bin,build,lib}"
     echo "  --cleanCache      Remove downloaded and extracted third party artifacts"
     echo "  --cleanDeps       Remove build output of third party dependencies (<thirdpartyPath>/{build,installed})"
@@ -325,7 +325,7 @@ function cleanCache {
 function cleanAll {
   cd "$projectRoot"
   message="This will delete the DAPHNE build output and everyting in $thirdpartyPath and reset this directory to its \
-    last state in git."
+last state in git."
   if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
       printf "WARNING! ${message}"
   else
@@ -345,8 +345,10 @@ function cleanAll {
   rm -rf "$thirdpartyPath"
   git checkout "$thirdpartyPath"
 
+  local par_acceptAll_old=par_acceptAll
   par_acceptAll="1"
   cleanBuildDirs
+  par_acceptAll=$par_accpetAll_old
   cd - > /dev/null
 }
 
@@ -376,7 +378,7 @@ function is_dependency_downloaded() {
 
 function clean_param_check() {
   if [ "$par_clean" -gt 0 ]; then
-    echo echo "Only *one* clean parameter (clean/cleanAll/cleanDeps/cleanCache) is allowed!"
+    echo "Only *one* clean parameter (clean/cleanAll/cleanDeps/cleanCache) is allowed!"
     exit 1
   fi
 }
@@ -833,3 +835,4 @@ build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
+
