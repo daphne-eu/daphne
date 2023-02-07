@@ -141,21 +141,13 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                 continue;
             distributed::Data protoMsg;
 
-            // TODO: We need to handle different data types 
             void *buffer = nullptr;
             size_t length;
-            auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
-            if (denseMat){
-                auto slicedMat = denseMat->sliceRow(range.r_start, range.r_start + range.r_len);
-                buffer = DaphneSerializer<DenseMatrix<double>>::save(slicedMat, buffer);
-                length = DaphneSerializer<DenseMatrix<double>>::length(slicedMat);
-            }
-            auto csrMat = dynamic_cast<const CSRMatrix<double>*>(mat);
-            if (csrMat){
-                auto slicedMat = csrMat->sliceRow(range.r_start, range.r_start + range.r_len);
-                buffer = DaphneSerializer<CSRMatrix<double>>::save(slicedMat, buffer);
-                length = DaphneSerializer<CSRMatrix<double>>::length(slicedMat);
-            }
+            
+            auto slicedMat = mat->sliceRow(range.r_start, range.r_start + range.r_len);
+            buffer = DaphneSerializer<DT>::save(slicedMat, buffer);
+            length = DaphneSerializer<DT>::length(slicedMat);
+            
             protoMsg.mutable_matrix()->set_bytes(buffer, length);
 
             StoredInfo storedInfo({dp->dp_id}); 

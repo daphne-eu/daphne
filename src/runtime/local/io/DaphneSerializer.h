@@ -359,6 +359,92 @@ struct DaphneSerializer<Frame> {
    };
 };
 
+template <>
+struct DaphneSerializer<const Structure> {
+    static size_t length(const Structure *arg) {
+        /* DenseMatrix */
+        if (auto mat = dynamic_cast<const DenseMatrix<double>*>(arg))
+            return DaphneSerializer<DenseMatrix<double>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<float>*>(arg))
+            return DaphneSerializer<DenseMatrix<float>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<int8_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<int8_t>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<int32_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<int32_t>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<int64_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<int64_t>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<uint8_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<uint8_t>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<uint32_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<uint32_t>>::length(mat);
+        if (auto mat = dynamic_cast<const DenseMatrix<uint64_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<uint64_t>>::length(mat);
+        /* CSRMatrix */
+        if (auto mat = dynamic_cast<const CSRMatrix<double>*>(arg))
+            return DaphneSerializer<CSRMatrix<double>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<float>*>(arg))
+            return DaphneSerializer<CSRMatrix<float>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<int8_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<int8_t>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<int32_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<int32_t>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<int64_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<int64_t>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<uint8_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<uint8_t>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<uint32_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<uint32_t>>::length(mat);
+        if (auto mat = dynamic_cast<const CSRMatrix<uint64_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<uint64_t>>::length(mat);
+        // else   
+        throw std::runtime_error("Serialization length: uknown value type");
+    };
+
+    static void *save(const Structure *arg, void *buf) {
+        /* DenseMatrix */
+        if (auto mat = dynamic_cast<const DenseMatrix<double>*>(arg))
+            return DaphneSerializer<DenseMatrix<double>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<float>*>(arg))
+            return DaphneSerializer<DenseMatrix<float>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<int8_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<int8_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<int32_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<int32_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<int64_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<int64_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<uint8_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<uint8_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<uint32_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<uint32_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const DenseMatrix<uint64_t>*>(arg))
+            return DaphneSerializer<DenseMatrix<uint64_t>>::save(mat, buf);
+            
+        /* CSRMatrix */
+        if (auto mat = dynamic_cast<const CSRMatrix<double>*>(arg))
+            return DaphneSerializer<CSRMatrix<double>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<float>*>(arg))
+            return DaphneSerializer<CSRMatrix<float>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<int8_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<int8_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<int32_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<int32_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<int64_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<int64_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<uint8_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<uint8_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<uint32_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<uint32_t>>::save(mat, buf);
+        if (auto mat = dynamic_cast<const CSRMatrix<uint64_t>*>(arg))
+            return DaphneSerializer<CSRMatrix<uint64_t>>::save(mat, buf);
+        // else   
+        throw std::runtime_error("Serialization save: uknown value type");
+    };
+
+   static Structure *load(const void *buf) {
+       throw std::runtime_error("not implemented");
+   };
+};
+
 inline Structure *DF_load(const void *buf) {
     if (DF_Dtype(buf) == DF_data_t::DenseMatrix_t) {
         switch(DF_Vtype(buf)) {

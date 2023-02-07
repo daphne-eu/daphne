@@ -389,6 +389,8 @@ public:
     size_t bufferSize() {
         return this->getNumItems() * sizeof(ValueType);
     }
+
+    void* serialize(void *buf) const override ;
 };
 
 template <typename ValueType>

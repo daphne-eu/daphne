@@ -412,6 +412,7 @@ public:
             colIdxs[i] = c;
         return DataObjectFactory::create<Frame>(this, rl, ru, cu-cl, colIdxs);
     }
+    void* serialize(void *buf) const override;
 };
 
 std::ostream & operator<<(std::ostream & os, const Frame & obj);

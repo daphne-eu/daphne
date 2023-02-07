@@ -275,6 +275,8 @@ public:
     }
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
+    
+    void* serialize(void *buf) const override;
 };
 
 template <typename ValueType>
@@ -564,5 +566,9 @@ public:
                 if(strcmp(M.getValues()[M.pos(r,c)], values.get()[pos(r,c)]))
                     return false;
         return true;
+  }
+
+  void* serialize(void *buf) const override {
+    throw std::runtime_error("Not implemented");
   }
 };

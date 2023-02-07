@@ -15,15 +15,20 @@
  */
 
 #include <runtime/local/io/DaphneSerializer.h>
-#include <runtime/local/datastructures/Frame.h>
-#include <ostream>
 
-std::ostream & operator<<(std::ostream & os, const Frame & obj)
-{
-    obj.print(os);
-    return os;
+#include "CSRMatrix.h"
+
+template<typename ValueType>
+void* CSRMatrix<ValueType>::serialize(void *buf) const {
+    return DaphneSerializer<CSRMatrix<ValueType>>::save(this, buf);
 }
 
-void* Frame::serialize(void* buf) const {
-    return DaphneSerializer<Frame>::save(this, buf);
-}
+// explicitly instantiate to satisfy linker
+template class CSRMatrix<double>;
+template class CSRMatrix<float>;
+template class CSRMatrix<int>;
+template class CSRMatrix<long>;
+template class CSRMatrix<signed char>;
+template class CSRMatrix<unsigned char>;
+template class CSRMatrix<unsigned int>;
+template class CSRMatrix<unsigned long>;

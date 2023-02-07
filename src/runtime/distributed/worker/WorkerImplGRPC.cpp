@@ -68,7 +68,7 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
         case distributed::Data::DataCase::kMatrix:
         {
             Structure *mat = nullptr;
-            mat = DF_load((void*)request->matrix().bytes().c_str());
+            mat = DF_load(request->matrix().bytes().c_str());
             storedInfo = WorkerImpl::Store<Structure>(mat);
             break;
         }
@@ -87,7 +87,11 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
                     break; 
                 }
             }
+            break;
         }
+        default:
+            throw std::runtime_error("Store: data not set");
+            break;
     }
     response->set_identifier(storedInfo.identifier);
     response->set_num_rows(storedInfo.numRows);

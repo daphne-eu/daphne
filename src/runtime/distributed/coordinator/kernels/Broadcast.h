@@ -159,19 +159,9 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
         } 
         else { // Not scalar
-            assert(mat != nullptr && "Matrix to broadcast is nullptr");
-            auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
-            if (denseMat){
-                buffer = DaphneSerializer<DenseMatrix<double>>::save(denseMat, buffer);
-                size_t length = DaphneSerializer<DenseMatrix<double>>::length(denseMat);
-                protoMsg.mutable_matrix()->set_bytes(buffer, length);
-            }
-            auto csrMat = dynamic_cast<const CSRMatrix<double>*>(mat);
-            if (csrMat){
-                buffer = DaphneSerializer<CSRMatrix<double>>::save(csrMat, buffer);
-                size_t length = DaphneSerializer<CSRMatrix<double>>::length(csrMat);
-                protoMsg.mutable_matrix()->set_bytes(buffer, length);
-            }
+            buffer = DaphneSerializer<DT>::save(mat, buffer);
+            size_t length = DaphneSerializer<DT>::length(mat);
+            protoMsg.mutable_matrix()->set_bytes(buffer, length);            
         }
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
         
