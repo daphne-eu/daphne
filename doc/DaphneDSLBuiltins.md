@@ -392,7 +392,7 @@ The format is determined by the specified file name extension.
 Currently, the following formats are supported:
 - ".csv": comma-separated values
 - ".mtx": matrix market
-- ".parquet": Parquet (requires DAPHNE to be built with `--arrow`)
+- ".parquet": Apache Parquet format
 - ".dbdf": [DAPHNE's binary data format](/doc/BinaryFormat.md)
 
 For both reading and writing, file names can be specified as absolute or relative paths.

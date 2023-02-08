@@ -30,7 +30,7 @@ bool ConfigParser::fileExists(const std::string& filename) {
 
 void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig& config) {
     std::ifstream ifs(filename);
-    nlohmann::basic_json jf = nlohmann::json::parse(ifs);
+    auto jf = nlohmann::json::parse(ifs);
 
 //try {
     checkAnyUnexpectedKeys(jf, filename);   // raise an error if the config JSON file contains any unexpected keys

@@ -107,7 +107,6 @@ All possible options for the build script:
 | --debug                 | Compile the daphne binary with debug symbols                                               |
 | --oneapi                | Compile with support for accelerated operations using the OneAPI SDK                       |
 | --fpgaopencl            | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On    |
-| --arrow                 | Compile with support for Apache Arrow                                                      |
 
 ## 2. Extension
 ### Overview over the build script

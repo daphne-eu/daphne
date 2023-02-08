@@ -28,7 +28,6 @@ set -e
 
 catch2_options=""
 BUILD_CUDA=""
-BUILD_ARROW=""
 BUILD_FPGAOPENCL=""
 BUILD_DEBUG=""
 
@@ -39,10 +38,6 @@ while [[ $# -gt 0 ]]; do
         --cuda)
             echo using CUDA
             export BUILD_CUDA="--cuda"
-            ;;
-        --arrow)
-            echo using ARROW
-            BUILD_ARROW="--arrow"
             ;;
         --fpgaopencl)
             echo using FPGAOPENCL
@@ -59,7 +54,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Build tests.
-./build.sh $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
+./build.sh $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG --target run_tests
 
 # Preparations for running DaphneLib (Python API) tests.
 export PYTHONPATH="$PYTHONPATH:$PWD/src/"

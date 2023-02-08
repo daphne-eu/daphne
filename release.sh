@@ -26,7 +26,7 @@ usage: $0 --version VERSION --githash GIT_HASH [ --gpgkey GPG_KEY ] [ --artifact
 
 --artifact: If supplied, building the release artifact will be skipped and the script will only perform
             checksumming and optional signing.
---feature FEATURE......a feature flag like --cuda, --arrow, etc (omit or "none" for plain Daphne)
+--feature FEATURE......a feature flag like --cuda, etc (omit or "none" for plain Daphne)
 EOF
   exit 1
 }

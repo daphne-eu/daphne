@@ -129,20 +129,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
-option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
-if(USE_ARROW)
-    find_package(Arrow CONFIG REQUIRED
-        PATHS thirdparty/installed/lib/cmake/arrow
-        NO_DEFAULT_PATH
-    )
-    find_package(Parquet CONFIG REQUIRED
-        PATHS thirdparty/installed/lib/cmake/arrow
-        NO_DEFAULT_PATH
-    )
-    link_libraries(arrow_shared parquet_shared)
-    add_definitions(-DUSE_ARROW)
-    message(STATUS "Arrow/Parquet enabled")
-endif()
+
+find_package(Arrow REQUIRED)
+find_package(Parquet REQUIRED)
 
 option(USE_FPGAOPENCL "Whether to activate compilation of FPGA OpenCL features" OFF)
 if(USE_FPGAOPENCL)
