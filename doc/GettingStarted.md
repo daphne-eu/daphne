@@ -28,32 +28,34 @@ Newer versions should work as well, older versions might work as well.
 
 ##### Operating system
 
-| OS        | distribution/version known to work (*)      | Comment                           |
-|-----------|---------------------------------------------|-----------------------------------|
-| GNU/Linux | Ubuntu 20.04.1 with kernel 5.8.0-43-generic ||
-| GNU/Linux | Ubuntu 18.04  | If used with Intel PAC D5005 FPGA |
+| OS        | distribution/version known to work (*) | Comment                                                                 |
+|-----------|----------------------------------------|-------------------------------------------------------------------------|
+| GNU/Linux | Manjaro                                | Last checked in January 2023                                            ||
+| GNU/Linux | Ubuntu 20.04 - 22.10                   | All versions in that range work. 20.04 needs CMake installed from Snap. |
+| GNU/Linux | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, custom toolchain needed                 |
 
 ##### Software
 
-| tool/lib                           | version known to work (*) | comment                                                                                                                                 |
-|------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| clang                              | 10.0.0                    |                                                                                                                                         |
-| cmake                              | 3.17                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
-| git                                | 2.25.1                    |                                                                                                                                         |
-| libssl-dev                         | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
-| lld                                | 10.0.0                    |                                                                                                                                         |
-| ninja                              | 1.10.0                    |                                                                                                                                         |
-| pkg-config                         | 0.29.1                    |                                                                                                                                         |
-| python3                            | 3.8.5                     |                                                                                                                                         |
-| numpy                              | 1.19.5                    |                                                                                                                                         |
-| java (e.g. openjdk)                | 11 (1.7 should be fine)   |                                                                                                                                         |
-| gfortran                           | 9.3.0                     |                                                                                                                                         |
-| uuid-dev                           |                           |                                                                                                                                         |
-| libboost-dev                       | 1.71.0.0                  | Only required when building with support for Arrow (`--arrow`)                                                                          |
-| wget                               |                           | Used to fetch additional dependencies and other artefacts                                                                               |
-| ***                                | ***                       | ***                                                                                                                                     |
-| CUDA SDK                           | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
-| OneAPI SDK                         | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
+| tool/lib                             | version known to work (*) | comment                                                                                                                                 |
+|--------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| GCC/G++                              | 9.3.0                     | Last checked version: 12.2                                                                                                              |
+| clang                                | 10.0.0                    |                                                                                                                                         |
+| cmake                                | 3.17                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
+| git                                  | 2.25.1                    |                                                                                                                                         |
+| libssl-dev                           | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
+| lld                                  | 10.0.0                    |                                                                                                                                         |
+| ninja                                | 1.10.0                    |                                                                                                                                         |
+| pkg-config                           | 0.29.1                    |                                                                                                                                         |
+| python3                              | 3.8.5                     |                                                                                                                                         |
+| numpy                                | 1.19.5                    |                                                                                                                                         |
+| java (e.g. openjdk)                  | 11 (1.7 should be fine)   |                                                                                                                                         |
+| gfortran                             | 9.3.0                     |                                                                                                                                         |
+| uuid-dev                             |                           |                                                                                                                                         |
+| libboost-dev                         | 1.71.0.0                  | Only required when building with support for Arrow (`--arrow`)                                                                          |
+| wget                                 |                           | Used to fetch additional dependencies and other artefacts                                                                               |
+| ***                                  | ***                       | ***                                                                                                                                     |
+| CUDA SDK                             | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
+| OneAPI SDK                           | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
 | Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                    | Optional for FPGAOPENCL ops                                                                                                             |
 
 ##### Hardware
@@ -99,10 +101,19 @@ Simply build the system using the build-script without any arguments:
 When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
 Subsequent builds, e.g., when you changed something in this repository, will be much faster.
 
-If the build fails in between (e.g., due to missing packages), multiple build directories (e.g., daphne, antlr, llvm) require cleanup. For convenience, you can call the following to remove them all.
-
+If the build fails in between (e.g., due to missing packages), multiple build directories (e.g., daphne, antlr, llvm) 
+require cleanup. To only remove build output use the following two commands:
 ```bash
 ./build.sh --clean
+./build.sh --cleanDeps
+```
+If you want to remove downloaded and extracted artifacts, use this:
+```bash
+./build.sh --cleanCache
+```
+For convenience, you can call the following to remove them all.
+```bash
+./build.sh --cleanAll
 ```
 
 See [this page](/doc/development/BuildingDaphne.md) for more information.

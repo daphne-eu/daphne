@@ -39,8 +39,10 @@ function printHelp {
     echo "  --installPrefix <path>"
     echo "                    Set the prefix for the install path of third party dependencies (default: <projectRoot>/thirdparty)"
     echo "  --target TARGET   Build the cmake target TARGET (defaults to '$target')"
-    echo "  --clean           Remove all temporary build directories for a fresh build"
-    echo "  --cleanAll        Remove all thirdparty library directories for a build from scratch"
+    echo "  --clean           Remove DAPHNE build output (DAPHNE_ROOT/{bin,build,lib}"
+    echo "  --cleanCache      Remove downloaded and extracted third party artifacts"
+    echo "  --cleanDeps       Remove build output of third party dependencies (<thirdpartyPath>/{build,installed})"
+    echo "  --cleanAll        Remove all build output and reset the directory of the third party dependencies"
     echo "  -nf, --no-fancy   Suppress all colored and animated output"
     echo "  -y, --yes         Accept all prompts"
     echo "  --arrow           Compile with support for Arrow/Parquet files"
@@ -278,11 +280,18 @@ function clean() {
     done
 }
 
-# Cleans all build directories
-function cleanBuildDirs() {
-    echo "-- Cleanup of build directories in ${projectRoot} ..."
+function cleanBuildDirs {
+    echo "-- Cleanup of DAPHNE build directories in ${projectRoot} ..."
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${installPrefix}" "${projectRoot}/bin" "${projectRoot}/lib")
+    local dirs=("${daphneBuildDir}" "${projectRoot}/bin" "${projectRoot}/lib")
+
+    clean dirs
+}
+
+function cleanDeps {
+    echo "-- Cleanup of third party build directories in ${thirdpartyPath} ..."
+
+    local dirs=("${buildPrefix}" "${installPrefix}")
     local files=(\
       "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/antlr_v"*".install.success" \
@@ -293,33 +302,52 @@ function cleanBuildDirs() {
       "${thirdpartyPath}/llvm_v"*".install.success" \
       "${thirdpartyPath}/arrow_v"*".install.success" \
       "${llvmCommitFilePath}")
-    
+
     clean dirs files
 }
 
-# Cleans build directory and all dependencies
-function cleanAll() {
-    echo "-- Cleanup of build and library directories in ${projectRoot} ..."
+function cleanCache {
+    echo "-- Cleanup of downloaded/extracted artifacts of the third party dependencies"
 
-    local dirs=("${daphneBuildDir}" "${buildPrefix}" "${sourcePrefix}" "${installPrefix}" "${cacheDir}"
-                "${projectRoot}/bin" "${projectRoot}/lib")
+    local dirs=("${sourcePrefix}" "${cacheDir}")
+
     local files=(\
-      "${thirdpartyPath}/absl_v"*".install.success" \
       "${thirdpartyPath}/absl_v"*".download.success" \
-      "${thirdpartyPath}/antlr_v"*".install.success" \
       "${thirdpartyPath}/antlr_v"*".download.success" \
-      "${thirdpartyPath}/catch2_v"*".install.success" \
-      "${thirdpartyPath}/grpc_v"*".install.success" \
       "${thirdpartyPath}/grpc_v"*".download.success" \
-      "${thirdpartyPath}/nlohmannjson_v"*".install.success" \
-      "${thirdpartyPath}/openBlas_v"*".install.success" \
       "${thirdpartyPath}/openBlas_v"*".download.success" \
-      "${thirdpartyPath}/llvm_v"*".install.success" \
-      "${thirdpartyPath}/arrow_v"*".install.success" \
       "${thirdpartyPath}/arrow_v"*".download.success" \
-      "${llvmCommitFilePath}")
+      )
 
     clean dirs files
+}
+
+function cleanAll {
+  cd "$projectRoot"
+  message="This will delete the DAPHNE build output and everyting in $thirdpartyPath and reset this directory to its \
+    last state in git."
+  if [ "$fancy" -eq 0 ] || ! [ -t 1 ] ; then
+      printf "WARNING! ${message}"
+  else
+      printf "${daphne_red_fg}WARNING!${reset} ${message}"
+  fi
+
+  # prompt confirmation, if not set by --yes
+  if [ "$par_acceptAll" == "0" ]; then
+      read -p "Are you sure? (y/n) " answer
+
+      if [[ "$answer" != [yY] ]]; then
+          echo "Abort."
+          exit 0
+      fi
+  fi
+
+  rm -rf "$thirdpartyPath"
+  git checkout "$thirdpartyPath"
+
+  par_acceptAll="1"
+  cleanBuildDirs
+  cd - > /dev/null
 }
 
 #******************************************************************************
@@ -344,6 +372,13 @@ function is_dependency_installed() {
 }
 function is_dependency_downloaded() {
     [ -e "${thirdpartyPath}/${1}.download.success" ]
+}
+
+function clean_param_check() {
+  if [ "$par_clean" -gt 0 ]; then
+    echo echo "Only *one* clean parameter (clean/cleanAll/cleanDeps/cleanCache) is allowed!"
+    exit 1
+  fi
 }
 
 #******************************************************************************
@@ -402,10 +437,20 @@ while [[ $# -gt 0 ]]; do
             par_printHelp="1"
             ;;
         --clean)
+            clean_param_check
             par_clean="1"
             ;;
         --cleanAll)
+            clean_param_check
             par_clean="2"
+            ;;
+        --cleanDeps)
+            clean_param_check
+            par_clean="3"
+            ;;
+        --cleanCache)
+            clean_param_check
+            par_clean="4"
             ;;
         --target)
             target=$1
@@ -458,15 +503,23 @@ if [ "$par_printHelp" -eq 1 ]; then
     exit 0
 fi
 
-if [ "$par_clean" -eq 1 ]; then
-    cleanBuildDirs
-    exit 0
+if [ "$par_clean" -gt 0 ]; then
+  case $par_clean in
+    1)
+      cleanBuildDirs
+      ;;
+    2)
+      cleanAll
+      ;;
+    3)
+      cleanDeps
+      ;;
+    4)
+      cleanCache
+      ;;
+  esac
+  exit 0
 fi
-if [ "$par_clean" -eq 2 ]; then
-    cleanAll
-    exit 0
-fi
-
 
 # Print Daphne-Logo when first time executing
 if [ "$fancy" -eq 1 ] && [ ! -d "${projectRoot}/build" ]; then
@@ -479,7 +532,7 @@ if [ $WITH_DEPS -gt 0 ]; then
 
   # Make sure that the submodule(s) have been updated since the last clone/pull.
   # But only if this is a git repo.
-  if [ -d .git/modules ]; then
+  if [ -d .git ]; then
       git submodule update --init --recursive
   fi
 
@@ -705,29 +758,30 @@ if [ $WITH_DEPS -gt 0 ]; then
   then
     submodule_path=$(cat .git | cut -d ' ' -f 2)
 
-  # if the third party directory was loaded from gh action cache, this path will not exist
-  if [ -d $submodule_path ]; then
-    llvmCommit="$(git log -1 --format=%H)"
-  else
-    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
-  fi
+    # if the third party directory was loaded from gh action cache, this path will not exist
+    if [ -d $submodule_path ]; then
+      llvmCommit="$(git log -1 --format=%H)"
+    else
+      llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
+    fi
   else
       # download and set up LLVM code if compilation is run without the local working copy being checked out from git
       # e.g., compiling from released source artifact
       llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
       llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
       llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
-      if ! is_dependency_downloaded "llvm_${llvmCommit}"; then
+      if ! is_dependency_downloaded "llvm_v${llvmCommit}"; then
+            daphne_msg "Geting LLVM/MLIR snapshot ${llvmCommit}"
           wget https://github.com/llvm/llvm-project/archive/${llvmCommit}.tar.gz -qO "${llvmSnapshotPath}"
           tar xzf "${llvmSnapshotPath}" --strip-components=1
-          dependency_download_success "llvm_${llvmCommit}"
+          dependency_download_success "llvm_v${llvmCommit}"
       fi
   fi
 
   cd - > /dev/null # return back from llvm 3rd party subdir
 
   if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
-      daphne_msg "Build llvm version ${llvmCommit}"
+      daphne_msg "Building LLVM/MLIR from ${llvmCommit}"
       cd "${thirdpartyPath}/${llvmName}"
       echo "Need to build MLIR/LLVM."
       cmake -G Ninja -S llvm -B "$buildPrefix/$llvmName" \
