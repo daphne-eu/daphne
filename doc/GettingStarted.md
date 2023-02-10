@@ -144,34 +144,43 @@ print(t(m));
 after building from source. Omit "build" in the path to the Daphne binary if executed from the binary distribution).
 
 Optionally flags like ``--cuda`` can be added after the daphne command and before the script file to activate support 
-for accelerated ops (see [software requirements](#software) above and [build instructions](/doc/development/BuildingDaphne.md)). 
+for accelerated ops (see [software requirements](#software) above and [build instructions](development/BuildingDaphne.md)). 
 For further flags that can be set at runtime to activate additional functionality, run ``daphne --help``.
 
 ### Building and running with containers [Alternative path for building and running the system and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
 - you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or higher are sufficient
-- you can use the provided docker file to create an image that contains all dependencies as follows:
+- you can use the provided docker files and scripts to create and run DAPHNE.
+
+The following creates two images (daphneeu/daphne-dev; daphneeu/daphne-dev-interactive):
 ```bash
-cd daphne/deploy
-docker build -t <ImageTag> .
-#the image can be built from the dockerhub docker://ahmedeleliemy/test-workflow:latest as well
-docker run -v absolute_path_to_daphne/:absolute_path_to_daphne_in_the_container -it <ImageTag> bash
-[root@<some_container_ID>]cd absolute_path_to_daphne_in_the_container
-[root@<some_container_ID>]./build.sh #or ./test.sh  
+cd container
+./build-containers.sh
 ```
- - you can also use Singularity containers instead of docker as follows:
+
+Running in an interactive container can be done with this run script, which takes care of mounting your 
+current directory and handling permissions:
+```bash
+cd container
+./run-daphne-dev-interactive.sh
+```
+ - you can also use Singularity containers instead of Docker as follows:
   ```bash
-singularity build <ImageName.sif> docker://ahmedeleliemy/test-workflow
 #one can also use [Singularity python](https://singularityhub.github.io/singularity-cli/)
 #to convert the provided Dockerfile into Singularity recipe 
+singularity build <ImageName.sif> docker://daphneeu/daphne-dev
+
+# This command will place you in a shell in the container, your home directory and /tmp mounted. 
 singularity shell <ImageName.sif>
-Singularity> cd daphne
-Singularity> ./build.sh #or ./test.sh  
+Singularity> cd <your/daphne/directory>
+Singularity> ./build.sh #or ./test.sh
 ```
 - Because the container instance works on the same folder, if one already built the system outside the container, it is recommended to clean all build files to avoid conflicts.
-- One may also do the commits from within the containers as normal.
+- One may also do the commits from within the containers as normal (this holds for Singularity. With Docker images, your home
+directory and therefore your .gitconfig is usually not available).
 
-For more about building and running with containers, refer to the directory `deploy/` and its [README.md](/deploy/README.md) and further documentation in [Deploy.md](/doc/Deploy.md).
+For more about building and running with containers, refer to the directory `containers/` and its [README.md](/containers/README.md). 
+For documentation of using containers in conjunction with our cluster deployment scripts, refer to [Deploy.md](/doc/Deploy.md).
 
 ### Exploring the Source Code
 
@@ -179,8 +188,13 @@ As an **entry point for exploring the source code**, you might want to have a lo
 
 On the top-level, there are the following directories:
 
-- `build`: everything generated during build (executables, libraries, generated source code)
-- `doc`: documentation
+- `bin`: after compilation, generated binaries will be placed here (e.g., daphne)
+- `build`: temporary build output
+- `containers`: scripts and configuration files to get/build/run with Docker or Singularity containers
+- `deploy`: shell scripts to ease deployment in SLURM clusters
+- `doc`: documentation written in markdown (e.g., what you are reading at the moment)
+- `lib`: after compilation, generated library files will be placed here (e.g., libAllKernels.so, libCUDAKernels.so, ...)
+- `scripts`: a collection of algorithms and examples written in DAPHNE's own domain specific language ([DaphneDSL](DaphneDSLLanguageRef.md))
 - `src`: the actual source code, subdivided into the individual components of the system
 - `test`: test cases
 - `thirdparty`: required external software

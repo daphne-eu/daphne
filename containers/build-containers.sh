@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright 2021 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script builds the "daphne.sif" singularity image from the Docker 
-# image daphneeu/daphne-dev
+export DOCKER_BUILDKIT=1
 
-singularity build daphne.sif docker://daphneeu/daphne-dev
+docker build -t daphneeu/daphne-dev --build-arg NUM_CORES="$(nproc)" \
+    --build-arg DAPHNE_REPO="https://github.com/daphne-eu/daphne.git" --build-arg DAPHNE_BRANCH="main" -f ./daphne-dev.Dockerfile .
+
+docker build -t daphneeu/daphne-dev-interactive -f ./daphne-dev-interactive.Dockerfile .

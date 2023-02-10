@@ -429,6 +429,7 @@ BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
 WITH_DEPS=1
+WITH_SUBMODULE_UPDATE=1
 
 while [[ $# -gt 0 ]]; do
     key=$1
@@ -482,7 +483,9 @@ while [[ $# -gt 0 ]]; do
     -nd | --no-deps)
         WITH_DEPS=0
         ;;
-    *)
+    --no-submodule-update)
+            WITH_SUBMODULE_UPDATE=0
+            ;;*)
         unknown_options="${unknown_options} ${key}"
         ;;
     esac
@@ -537,7 +540,7 @@ if [ $WITH_DEPS -gt 0 ]; then
             submodule_path=$(cut -d ' ' -f 2 < .git)
 
             # if the third party directory was loaded from gh action cache, this path will not exist
-            if [ -d "$submodule_path" ]; then
+            if [ -d "$submodule_path" ] && [ $WITH_SUBMODULE_UPDATE -ne 0 ]; then
                 git submodule update --init --recursive
             fi
         else

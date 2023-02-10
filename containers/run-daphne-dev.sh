@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
-# Copyright 2021 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script builds the "daphne.sif" singularity image from the Docker 
-# image daphneeu/daphne-dev
+DOCKER_IMAGE=daphneeu/daphne-dev
+DAPHNE_ROOT=$PWD
 
-singularity build daphne.sif docker://daphneeu/daphne-dev
+LD_LIBRARY_PATH=/daphne/lib:$LD_LIBRARY_PATH
+PATH=/daphne/bin:$PATH
+
+# shellcheck disable=SC2046
+# shellcheck disable=SC2068
+docker run --user=$(id -u):$(id -g) --rm -w $DAPHNE_ROOT -e TERM=screen-256color -v "$DAPHNE_ROOT:$DAPHNE_ROOT" $DOCKER_IMAGE $@
