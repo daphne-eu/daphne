@@ -177,5 +177,6 @@ if(USE_FPGAOPENCL)
 endif() 
 add_subdirectory(src/util)
 
+add_dependencies(CompilerUtils MLIRDaphneTransformsIncGen)
 
 add_subdirectory(test)
