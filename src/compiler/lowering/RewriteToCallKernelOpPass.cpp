@@ -495,7 +495,7 @@ void RewriteToCallKernelOpPass::runOnFunction()
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect>();
+    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect, mlir::AffineDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<

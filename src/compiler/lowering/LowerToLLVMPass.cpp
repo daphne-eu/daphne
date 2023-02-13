@@ -18,9 +18,11 @@
 #include "ir/daphneir/Passes.h"
 #include "compiler/utils/CompilerUtils.h"
 
+#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 
+#include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/LinalgOps.h"
 #include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
@@ -929,8 +931,8 @@ void DaphneLowerToLLVMPass::runOnOperation()
     LLVMConversionTarget target(getContext());
 
     // populate dialect conversions
+    populateLoopToStdConversionPatterns(patterns);
     populateStdToLLVMConversionPatterns(typeConverter, patterns);
-    // populateLinalgToLLVMConversionPatterns(typeConverter, patterns);
 
     target.addLegalOp<ModuleOp>();
     target.addLegalOp<mlir::linalg::FillOp>();

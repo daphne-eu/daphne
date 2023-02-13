@@ -30,9 +30,10 @@
 // TODO MSC: This obviously will be templated once genKernelInst.py is fixed
 
 // TODO MSC: may need to pass DM/StridedMemRefType as value
-inline void getDenseMatrixFromMemRef(DenseMatrix<double> *&res,
+inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
                                      StridedMemRefType<double, 2> *memRef,
                                      DCTX(ctx)) {
+    std::cout << "convertMemRefToDenseMatrix(result: " << result << ", memRef: " << memRef << ", ctx: " << ctx << ")\n";
     // DenseMatrix<double> *res = new DenseMatrix<double>(memRef->basePtr);
 
     // if(res == nullptr) {
@@ -50,7 +51,7 @@ inline void getDenseMatrixFromMemRef(DenseMatrix<double> *&res,
         std::cout << std::endl;
     }
 #endif
-    res = DataObjectFactory::create<DenseMatrix<double>>(memRef->basePtr);
+    result = DataObjectFactory::create<DenseMatrix<double>>(memRef->basePtr);
     // }
     // else
     //     throw std::runtime_error("DenseMatrix already exists for memref?\n");
@@ -70,9 +71,46 @@ inline void getDenseMatrixFromMemRef(DenseMatrix<double> *&res,
 //
 //     return memRef;
 // }
+// inline StridedMemRefType<float, 2> convertDenseMatrixToMemRef(
+//     const DenseMatrix<float> *input, DCTX(ctx)) {
+//
+//     StridedMemRefType<float, 2> memRef{};
+//     memRef.basePtr = input->getValuesSharedPtr().get();
+//     memRef.data = memRef.basePtr;
+//     memRef.offset = 0;
+//     memRef.strides[0] = 1;
+//     memRef.sizes[0] = input->getNumRows();
+//     memRef.sizes[1] = input->getNumCols();
+//     input->increaseRefCounter();
+//
+//     return memRef;
+// }
+//
+// inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
+//     const DenseMatrix<double> *input, DCTX(ctx)) {
+//
+//     StridedMemRefType<double, 2> memRef{};
+//     memRef.basePtr = input->getValuesSharedPtr().get();
+//     memRef.data = memRef.basePtr;
+//     memRef.offset = 0;
+//     memRef.strides[0] = 1;
+//     memRef.sizes[0] = input->getNumRows();
+//     memRef.sizes[1] = input->getNumCols();
+//     input->increaseRefCounter();
+//
+//     return memRef;
+// }
 
-inline void getMemRefDenseMatrix(StridedMemRefType<double, 2> *&result,
+inline void convertDenseMatrixToMemRef(StridedMemRefType<double, 2> *&result,
                                  const DenseMatrix<double> *input, DCTX(ctx)) {
+    std::cout << "convertDenseMatrixToMemRef(result: " << result << ", input: " << input << ", ctx: " << ctx << ")\n";
+    // static int dm_count = 0;
+    // dm_count++;
+    //
+    // if (dm_count > 2) {
+    //     input = DataObjectFactory::create<DenseMatrix<double>>(10, 10, true);
+    //     input->increaseRefCounter();
+    // }
     result = new StridedMemRefType<double, 2>();
     result->basePtr = input->getValuesSharedPtr().get();
     result->data = result->basePtr;
@@ -98,4 +136,38 @@ inline void getMemRefDenseMatrix(StridedMemRefType<double, 2> *&result,
 #endif
 }
 
+inline void convertDenseMatrixToMemRef(StridedMemRefType<float, 2> *&result,
+                                 const DenseMatrix<float> *input, DCTX(ctx)) {
+    std::cout << "convertDenseMatrixToMemRef(result: " << result << ", input: " << input << ", ctx: " << ctx << ")\n";
+    // static int dm_count = 0;
+    // dm_count++;
+    //
+    // if (dm_count > 2) {
+    //     input = DataObjectFactory::create<DenseMatrix<float>>(10, 10, true);
+    //     input->increaseRefCounter();
+    // }
+    result = new StridedMemRefType<float, 2>();
+    result->basePtr = input->getValuesSharedPtr().get();
+    result->data = result->basePtr;
+    result->offset = 0;
+    result->strides[0] = 0;
+    result->strides[1] = 0;
+    result->sizes[0] = input->getNumRows();
+    result->sizes[1] = input->getNumCols();
+    input->increaseRefCounter();
+
+#if 0
+    std::cout << "DenseMatrix -> MemRef:\nMemRef{basePtr: " << result->basePtr
+              << ", data: " << result->data << "}\n\n";
+    for (size_t r = 0; r < 10; r++) {
+        for (size_t c = 0; c < 10; c++) {
+            // TODO MSC: Check for row/column major order on access
+            std::cout << result->basePtr[10 * c + r];
+            // printValue(os, get(r, c));
+            if (c < 10 - 1) std::cout << ' ';
+        }
+        std::cout << std::endl;
+    }
+#endif
+}
 #endif  // SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H

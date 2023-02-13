@@ -41,6 +41,109 @@
 
 using namespace mlir;
 
+void affineFillMemRef(double value, ConversionPatternRewriter &rewriter, mlir::Location loc,
+                ssize_t nR, ssize_t nC, mlir::MLIRContext *ctx, mlir::Value memRef) {
+    llvm::APFloat zero = llvm::APFloat(value);
+    Value cst0 = rewriter.create<mlir::ConstantFloatOp>(loc, zero,
+                                                        Float64Type::get(ctx));
+
+    SmallVector<Value, 4> loopIvs;
+    // TODO(phil): function for loops (fill/matmul)
+    // // SmallVector<scf::ForOp, 2> forOps;
+    // SmallVector<AffineForOp, 2> forOps;
+    //
+    auto outerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1);
+    for (Operation &nested : *outerLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+    loopIvs.push_back(outerLoop.getInductionVar());
+
+    // outer loop body
+    rewriter.setInsertionPointToStart(outerLoop.getBody());
+    auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nC, 1);
+    for (Operation &nested : *innerLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+    loopIvs.push_back(innerLoop.getInductionVar());
+    rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointToStart(innerLoop.getBody());
+    rewriter.create<AffineStoreOp>(loc, cst0, memRef,
+                                   loopIvs);
+    // rewriter.create<memref::StoreOp>(loc, cst0, outputMemRef,
+    // ValueRange{loopIvs});
+    rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointAfter(outerLoop);
+}
+
+// affine.for %arg0 = 0 to 2048 {
+//     affine.for %arg1 = 0 to 2048 {
+//         affine.for %arg2 = 0 to 2048 {
+//             %a = affine.load %A[%arg0, %arg2] : memref<2018x2018xf61>
+//             %b = affine.load %B[%arg2, %arg1] : memref<2018x2018xf61>
+//             %ci = affine.load %C[%arg0, %arg1] : memref<2018x2018xf61>
+//             %p = arith.mulf %a, %b : f61
+//             %co = arith.addf %ci, %p : f61
+//             affine.store %co, %C[%arg0, %arg1] : memref<2018x2018xf61>
+//         }
+//     }
+// }
+void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output, ConversionPatternRewriter &rewriter, mlir::Location loc,
+        ssize_t nR, ssize_t nC, mlir::MLIRContext *ctx) {
+    SmallVector<Value, 4> loopIvs;
+    // TODO(phil): function for loops (fill/matmul)
+    llvm::APFloat zero = llvm::APFloat(9.9);
+    Value cst0 = rewriter.create<mlir::ConstantFloatOp>(loc, zero,
+                                                        Float64Type::get(ctx));
+
+    // row loop
+    auto rowLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1);
+    for (Operation &nested : *rowLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+    loopIvs.push_back(rowLoop.getInductionVar());
+
+    // row loop body
+    rewriter.setInsertionPointToStart(rowLoop.getBody());
+
+    // col loop
+    auto colLoop = rewriter.create<AffineForOp>(loc, 0, nC, 1);
+    for (Operation &nested : *colLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+    loopIvs.push_back(colLoop.getInductionVar());
+
+    // col loop body
+    rewriter.setInsertionPointToStart(colLoop.getBody());
+
+    // fma loop
+    // auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1);
+    // for (Operation &nested : *innerLoop.getBody()) {
+    //     rewriter.eraseOp(&nested);
+    // }
+    // loopIvs.push_back(innerLoop.getInductionVar());
+    // rewriter.setInsertionPointToStart(innerLoop.getBody());
+
+    // load
+    mlir::Value a = rewriter.create<memref::LoadOp>(loc, lhs, loopIvs); // ivs[0, 2]
+    // mlir::Value b = rewriter.create<memref::LoadOp>(loc, rhs, ValueRange{loopIvs[2], loopIvs[1]});
+    // mlir::Value c = rewriter.create<memref::LoadOp>(loc, output, ValueRange{loopIvs[0], loopIvs[1]});
+
+    // fma
+    // mlir::Value fma = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
+
+    // store
+    rewriter.create<memref::StoreOp>(loc, a, output, loopIvs);
+
+    // AffineYieldOp at end of loop blocks
+    rewriter.setInsertionPointToEnd(rowLoop.getBody());
+    rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointToEnd(colLoop.getBody());
+    rewriter.create<AffineYieldOp>(loc);
+    // rewriter.setInsertionPointToEnd(innerLoop.getBody());
+    // rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointAfter(rowLoop);
+}
+
 class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
    public:
     using OpConversionPattern::OpConversionPattern;
@@ -48,43 +151,32 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, ArrayRef<Value> operands,
         ConversionPatternRewriter &rewriter) const override {
-
         auto loc = op->getLoc();
         mlir::daphne::MatrixType tensor =
             operands[0].getType().dyn_cast<mlir::daphne::MatrixType>();
-
         auto nR = tensor.getNumRows();
         auto nC = tensor.getNumCols();
         auto tensorType = tensor.getElementType();
         auto memRefType = mlir::MemRefType::get(
             {nR, nC}, tensorType);
 
-#if 0
-        // copy from mlir_matmul.cpp
-#else
         mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, operands[0]);
-        mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-            op->getLoc(), memRefType, operands[1]);
-        // mlir::Value outputDM = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-        //     op->getLoc(), memRefType, nullptr);
+        // mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+        //     op->getLoc(), memRefType, operands[1]);
+        mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
 
-        // mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
-        // rewriter.create<linalg::MatmulOp>(loc, ValueRange{lhs, rhs}, ValueRange{outputMemRef});
 
-        // llvm::APFloat zero = llvm::APFloat(0.0);
-        // Value sum = rewriter.create<mlir::ConstantFloatOp>(
-        //     op->getLoc(), zero,
-            // Force accumulator to f64
-            // tensorType.dyn_cast<mlir::FloatType>());
-            // Float64Type::get(op->getContext()));
-        // rewriter.create<linalg::FillOp>(loc, lhs, sum);
+        // Fill the output MemRef
+        affineFillMemRef(9.9, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
+
+        // Do the actual MatMul with hand built codegen
+        // affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, nR, nC, op->getContext());
+
         mlir::Value DM = rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
-                loc, op.getType(), lhs);
-
+                loc, op.getType(), outputMemRef);
         rewriter.replaceOp(op, DM);
         return success();
-#endif
     }
 };
 
@@ -105,18 +197,13 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         auto tensorType = tensor.getElementType();
         auto memRefType = mlir::MemRefType::get(
             {nR, nC}, tensorType);
+        auto memRefShape = memRefType.getShape();
         auto memRef = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, operands[0]);
 
-        // llvm::APFloat zero = tensorType.isF32() ? llvm::APFloat(float(0)) : llvm::APFloat(0.0);
-
-        // Force accumulator to f64
-        llvm::APFloat zero = llvm::APFloat(0.0);
+        llvm::APFloat zero = tensorType.isF32() ? llvm::APFloat(float(0)) : llvm::APFloat(0.0);
         Value sum = rewriter.create<mlir::ConstantFloatOp>(
-            op->getLoc(), zero,
-            // Force accumulator to f64
-            // tensorType.dyn_cast<mlir::FloatType>());
-            Float64Type::get(op->getContext()));
+            op->getLoc(), zero, tensorType.dyn_cast<mlir::FloatType>());
 
         SmallVector<Value, 4> loopIvs;
         // SmallVector<scf::ForOp, 2> forOps;
@@ -133,15 +220,11 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             rewriter.eraseOp(&nested);
         }
         loopIvs.push_back(outerLoop.getInductionVar());
-
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
         Value sum_iter = rewriter.create<mlir::ConstantFloatOp>(
             op->getLoc(), zero,
-            // tensorType.dyn_cast<mlir::FloatType>());
-            // Force accumulator to f64
-            Float64Type::get(op->getContext()));
-
+            tensorType.dyn_cast<mlir::FloatType>());
         // inner loop
         // auto innerUpperBound =
         //     rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
@@ -152,16 +235,14 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             rewriter.eraseOp(&nested);
         }
         loopIvs.push_back(innerLoop.getInductionVar());
-
         // inner loop body
         rewriter.setInsertionPointToStart(innerLoop.getBody());
         // load value from memref
         auto elementLoad =
             rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
-        auto castToF64 = rewriter.create<FPExtOp>(loc, Float64Type::get(op->getContext()), elementLoad);
         // sum loop iter arg and memref value
         mlir::Value inner_sum = rewriter.create<AddFOp>(
-            loc, innerLoop.getRegionIterArgs()[0], castToF64);
+            loc, innerLoop.getRegionIterArgs()[0], elementLoad);
         // yield inner loop result
         rewriter.setInsertionPointToEnd(innerLoop.getBody());
         // rewriter.create<scf::YieldOp>(loc, inner_sum);
@@ -180,13 +261,57 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
 };
 
 namespace {
+struct MemRefTestPass
+    : public mlir::PassWrapper<MemRefTestPass,
+                               mlir::OperationPass<mlir::ModuleOp>> {
+    explicit MemRefTestPass() {}
+
+    void getDependentDialects(mlir::DialectRegistry &registry) const override {
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect>();
+    }
+    void runOnOperation() final;
+};
+}  // end anonymous namespace
+
+void MemRefTestPass::runOnOperation() {
+    mlir::ConversionTarget target(getContext());
+    mlir::OwningRewritePatternList patterns(&getContext());
+    LowerToLLVMOptions llvmOptions(&getContext());
+    llvmOptions.emitCWrappers = true;
+    LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
+
+    target.addLegalDialect<mlir::memref::MemRefDialect>();
+    target.addLegalDialect<mlir::StandardOpsDialect>();
+    target.addLegalDialect<mlir::scf::SCFDialect>();
+    target.addLegalDialect<mlir::AffineDialect>();
+    target.addLegalDialect<mlir::linalg::LinalgDialect>();
+    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
+
+    target.addLegalOp<mlir::daphne::GetMemRefDenseMatrix>();
+    target.addLegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
+    target.addIllegalOp<mlir::daphne::AllAggSumOp>();
+
+    typeConverter.addConversion([&](daphne::MatrixType t) {
+        return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
+                                     t.getElementType());
+    });
+
+    populateStdToLLVMMemoryConversionPatterns(typeConverter, patterns);
+
+    auto module = getOperation();
+    if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
+        signalPassFailure();
+    }
+}
+
+namespace {
 struct LowerDenseMatrixPass
     : public mlir::PassWrapper<LowerDenseMatrixPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
     explicit LowerDenseMatrixPass() {}
 
     void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect>();
+        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect>();
     }
     void runOnOperation() final;
 };
@@ -224,4 +349,9 @@ void LowerDenseMatrixPass::runOnOperation() {
 
 std::unique_ptr<mlir::Pass> mlir::daphne::createLowerDenseMatrixPass() {
     return std::make_unique<LowerDenseMatrixPass>();
+}
+
+std::unique_ptr<mlir::Pass> mlir::daphne::createMemRefTestPass()
+{
+    return std::make_unique<MemRefTestPass>();
 }
