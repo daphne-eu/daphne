@@ -16,7 +16,8 @@
 
 #include "ir/daphneir/Passes.h"
 
-#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 
 #include <memory>
 
@@ -33,13 +34,13 @@ using namespace mlir;
  * significantly simplified.
  */
 struct WhileLoopInvariantCodeMotionPass
-: public PassWrapper <WhileLoopInvariantCodeMotionPass, FunctionPass> {
-    void runOnFunction() final;
+: public PassWrapper <WhileLoopInvariantCodeMotionPass, OperationPass<func::FuncOp>> {
+    void runOnOperation() final;
 };
 
-void WhileLoopInvariantCodeMotionPass::runOnFunction() {
-    getFunction()->walk([&](scf::WhileOp whileOp) {
-        Region & loopBody = whileOp.after();
+void WhileLoopInvariantCodeMotionPass::runOnOperation() {
+    getOperation()->walk([&](scf::WhileOp whileOp) {
+        Region & loopBody = whileOp.getAfter();
 
         SmallPtrSet<Operation *, 8> willBeMovedSet;
         SmallVector<Operation *, 8> opsToMove;
@@ -55,7 +56,7 @@ void WhileLoopInvariantCodeMotionPass::runOnFunction() {
                 auto memInterface = dyn_cast<MemoryEffectOpInterface>(op);
                 if(
                     llvm::all_of(op.getOperands(), isDefinedOutsideOfBody) &&
-                    op.hasTrait<OpTrait::ZeroRegion>() && // such that we don't need to recurse
+                    op.hasTrait<OpTrait::ZeroRegions>() && // such that we don't need to recurse
                     memInterface && memInterface.hasNoEffect()
                 ) {
                     opsToMove.push_back(&op);

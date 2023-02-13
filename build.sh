@@ -456,15 +456,14 @@ fi
 
 
 # Print Daphne-Logo when first time executing
-if [ ! -d "${projectRoot}/build" ]; then
+if [ "$fancy" -eq 1 ] && [ ! -d "${projectRoot}/build" ]; then
     printLogo
     sleep 1
 fi
 
-
 # Make sure that the submodule(s) have been updated since the last clone/pull.
 # But only if this is a git repo.
-if [ -d .git ]; then
+if [ -d .git/modules ]; then
     git submodule update --init --recursive
 fi
 
@@ -689,9 +688,28 @@ llvmCommit="llvmCommit-local-none"
 cd "${thirdpartyPath}/${llvmName}"
 if [ -e .git ] # Note: .git in the submodule is not a directory.
 then
+  submodule_path=$(cat .git | cut -d ' ' -f 2)
+
+  # if the third party directory was loaded from gh action cache, this path will not exist
+  if [ -d $submodule_path ]; then
     llvmCommit="$(git log -1 --format=%H)"
+  else
+    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
+  fi
+else
+    # download and set up LLVM code if compilation is run without the local working copy being checked out from git
+    # e.g., compiling from released source artifact
+    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
+    llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
+    llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
+    if ! is_dependency_downloaded "llvm_${llvmCommit}"; then
+        wget https://github.com/llvm/llvm-project/archive/${llvmCommit}.tar.gz -qO "${llvmSnapshotPath}"
+        tar xzf "${llvmSnapshotPath}" --strip-components=1
+        dependency_download_success "llvm_${llvmCommit}"
+    fi
 fi
-cd - > /dev/null
+
+cd - > /dev/null # return back from llvm 3rd party subdir
 
 if ! is_dependency_installed "llvm_v${llvmCommit}" || [ "$(cat "${llvmCommitFilePath}")" != "$llvmCommit" ]; then
     daphne_msg "Build llvm version ${llvmCommit}"
@@ -722,6 +740,8 @@ if [[ $BUILD_FPGAOPENCL = *"ON"* ]]; then
     mkdir -p $FPGAOPENCL_BISTREAM_DIR
     cd $FPGAOPENCL_BISTREAM_DIR
     wget $FPGAOPENCL_BISTREAM_URL/sgemm.aocx
+    wget $FPGAOPENCL_BISTREAM_URL/sgemv.aocx
+    wget $FPGAOPENCL_BISTREAM_URL/ssyrk.aocx
     cd - > /dev/null
   fi
 fi

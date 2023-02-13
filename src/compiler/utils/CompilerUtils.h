@@ -19,7 +19,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/metadata/MetaDataParser.h>
 
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
+#include <mlir/Dialect/Arith/IR/Arith.h>
 #include <mlir/IR/Value.h>
 
 #include <stdexcept>
@@ -32,13 +32,10 @@ private:
     template<typename ValT, typename AttrT>
     static std::pair<bool, ValT> isConstantHelper(mlir::Value v, std::function<ValT(const AttrT &)> func) {
         if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
-            if(auto attr = co.value().dyn_cast<AttrT>())
+            if(auto attr = co.getValue().dyn_cast<AttrT>())
                 return std::make_pair(true, func(attr));
-        if(auto co = v.getDefiningOp<mlir::ConstantIntOp>())
-            if(auto attr = co.value().dyn_cast<AttrT>())
-                return std::make_pair(true, func(attr));
-        if(auto co = v.getDefiningOp<mlir::ConstantFloatOp>())
-            if(auto attr = co.value().dyn_cast<AttrT>())
+        if(auto co = v.getDefiningOp<mlir::arith::ConstantOp>())
+            if(auto attr = co.getValue().dyn_cast<AttrT>())
                 return std::make_pair(true, func(attr));
         return std::make_pair(false, ValT(0));
     }
@@ -191,9 +188,9 @@ public:
      * @param func
      * @return 
      */
-    [[maybe_unused]] mlir::Value static getDaphneContext(mlir::FuncOp & func) {
+    [[maybe_unused]] mlir::Value static getDaphneContext(mlir::func::FuncOp & func) {
         mlir::Value dctx = nullptr;
-        auto ops = func.body().front().getOps<mlir::daphne::CreateDaphneContextOp>();
+        auto ops = func.getBody().front().getOps<mlir::daphne::CreateDaphneContextOp>();
         for(auto op : ops) {
             if(!dctx)
                 dctx = op.getResult();

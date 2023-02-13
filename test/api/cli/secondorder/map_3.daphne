@@ -1,0 +1,8 @@
+// Large matrix.
+
+def timesThree(x) {
+    return x * 3;
+}
+
+X = fill(2, 1000, 1000);
+print(sum(map(X, timesThree)));

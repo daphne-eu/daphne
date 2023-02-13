@@ -18,8 +18,7 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
@@ -172,7 +171,7 @@ namespace
         }
     }
 
-    struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<FuncOp>> {
+    struct VectorizeComputationsPass : public PassWrapper<VectorizeComputationsPass, OperationPass<func::FuncOp>> {
         void runOnOperation() final;
     };
 }
@@ -329,7 +328,7 @@ void VectorizeComputationsPass::runOnOperation()
             builder.getArrayAttr(vSplitAttrs),
             builder.getArrayAttr(vCombineAttrs),
             nullptr);
-        Block *bodyBlock = builder.createBlock(&pipelineOp.body());
+        Block *bodyBlock = builder.createBlock(&pipelineOp.getBody());
 
         for(size_t i = 0u; i < operands.size(); ++i) {
             auto argTy = operands[i].getType();
@@ -344,7 +343,7 @@ void VectorizeComputationsPass::runOnOperation()
                     // keep any size information
                     break;
             }
-            bodyBlock->addArgument(argTy);
+            bodyBlock->addArgument(argTy, builder.getUnknownLoc());
         }
 
         auto argsIx = 0u;
@@ -374,11 +373,11 @@ void VectorizeComputationsPass::runOnOperation()
                 for(auto& use: old.getUses()) {
                     auto* op = use.getOwner();
                     if(auto nrowOp = llvm::dyn_cast<daphne::NumRowsOp>(op)) {
-                        nrowOp.replaceAllUsesWith(pipelineOp.out_rows()[replacement.getResultNumber()]);
+                        nrowOp.replaceAllUsesWith(pipelineOp.getOutRows()[replacement.getResultNumber()]);
                         nrowOp.erase();
                     }
                     if(auto ncolOp = llvm::dyn_cast<daphne::NumColsOp>(op)) {
-                        ncolOp.replaceAllUsesWith(pipelineOp.out_cols()[replacement.getResultNumber()]);
+                        ncolOp.replaceAllUsesWith(pipelineOp.getOutCols()[replacement.getResultNumber()]);
                         ncolOp.erase();
                     }
                 }

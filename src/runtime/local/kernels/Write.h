@@ -66,6 +66,8 @@ struct Write<DenseMatrix<VT>> {
 		writeCsv(arg, file);
 		closeFile(file);
 	} else if (ext == "dbdf") {
+        FileMetaData metaData(arg->getNumRows(), arg->getNumCols(), true, ValueTypeUtils::codeFor<VT>);
+        MetaDataParser::writeMetaData(filename, metaData);
 		writeDaphne(arg, filename);
 	}
     }

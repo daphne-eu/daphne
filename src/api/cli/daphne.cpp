@@ -379,7 +379,7 @@ main(int argc, char** argv)
     // point to the module's body, such that subsequently created DaphneIR
     // operations are inserted into the module.
     OpBuilder builder(executor.getContext());
-    auto loc = mlir::FileLineColLoc::get(builder.getIdentifier(inputFile), 0, 0);
+    auto loc = mlir::FileLineColLoc::get(builder.getStringAttr(inputFile), 0, 0);
     auto moduleOp = ModuleOp::create(loc);
     auto * body = moduleOp.getBody();
     builder.setInsertionPoint(body, body->begin());

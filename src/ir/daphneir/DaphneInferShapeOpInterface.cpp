@@ -124,18 +124,18 @@ ssize_t inferNumColsFromSumOfArgs(ValueRange vs) {
 // ****************************************************************************
 
 ssize_t daphne::CartesianOp::inferNumRows() {
-    auto ftLhs = lhs().getType().dyn_cast<daphne::FrameType>();
-    auto ftRhs = rhs().getType().dyn_cast<daphne::FrameType>();
+    auto ftLhs = getLhs().getType().dyn_cast<daphne::FrameType>();
+    auto ftRhs = getRhs().getType().dyn_cast<daphne::FrameType>();
     return ftLhs.getNumRows() * ftRhs.getNumRows();
 }
 
 ssize_t daphne::SeqOp::inferNumRows() {
-    Type fromTy = from().getType();
+    Type fromTy = getFrom().getType();
     if(fromTy.isF64()) {
         try {
-            double vFrom = CompilerUtils::constantOrThrow<double>(from());
-            double vTo = CompilerUtils::constantOrThrow<double>(to());
-            double vInc = CompilerUtils::constantOrThrow<double>(inc());
+            double vFrom = CompilerUtils::constantOrThrow<double>(getFrom());
+            double vTo = CompilerUtils::constantOrThrow<double>(getTo());
+            double vInc = CompilerUtils::constantOrThrow<double>(getInc());
             return floor(vTo / vInc - vFrom / vInc) + 1;
         }
         catch(const std::runtime_error & e) {
@@ -144,9 +144,9 @@ ssize_t daphne::SeqOp::inferNumRows() {
     }
     if(fromTy.isF32()) {
         try {
-            float vFrom = CompilerUtils::constantOrThrow<float>(from());
-            float vTo = CompilerUtils::constantOrThrow<float>(to());
-            float vInc = CompilerUtils::constantOrThrow<float>(inc());
+            float vFrom = CompilerUtils::constantOrThrow<float>(getFrom());
+            float vTo = CompilerUtils::constantOrThrow<float>(getTo());
+            float vInc = CompilerUtils::constantOrThrow<float>(getInc());
             return floor(vTo / vInc - vFrom / vInc) + 1;
         }
         catch(const std::runtime_error & e) {
@@ -155,9 +155,9 @@ ssize_t daphne::SeqOp::inferNumRows() {
     }
     else if(fromTy.isSignedInteger(64)) {
         try {
-            int64_t vFrom = CompilerUtils::constantOrThrow<int64_t>(from());
-            int64_t vTo = CompilerUtils::constantOrThrow<int64_t>(to());
-            int64_t vInc = CompilerUtils::constantOrThrow<int64_t>(inc());
+            int64_t vFrom = CompilerUtils::constantOrThrow<int64_t>(getFrom());
+            int64_t vTo = CompilerUtils::constantOrThrow<int64_t>(getTo());
+            int64_t vInc = CompilerUtils::constantOrThrow<int64_t>(getInc());
             return abs(vTo - vFrom) / abs(vInc) + 1;
         }
         catch(const std::runtime_error & e) {
@@ -171,7 +171,7 @@ ssize_t daphne::SeqOp::inferNumRows() {
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::CreateFrameOp::inferShape() {
-    return {{inferNumRowsFromArgs(cols()), inferNumColsFromSumOfArgs(cols())}};
+    return {{inferNumRowsFromArgs(getCols()), inferNumColsFromSumOfArgs(getCols())}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
@@ -183,21 +183,21 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
     const size_t numRows = -1;
-    const size_t numCols = inferNumColsFromArgs(keyCol()) + inferNumColsFromArgs(aggCol());
+    const size_t numCols = inferNumColsFromArgs(getKeyCol()) + inferNumColsFromArgs(getAggCol());
     return {{numRows, numCols}};
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
-    auto shapeLhs = getShape(lhs());
-    auto shapeRhs = getShape(rhs());
+    auto shapeLhs = getShape(getLhs());
+    auto shapeRhs = getShape(getRhs());
 
     ssize_t numRows = -1;
-    std::pair<bool, bool> pr = CompilerUtils::isConstant<bool>(transa());
+    std::pair<bool, bool> pr = CompilerUtils::isConstant<bool>(getTransa());
     if(pr.first)
         numRows = pr.second ? shapeLhs.second : shapeLhs.first;
     
     ssize_t numCols = -1;
-    std::pair<bool, bool> pc = CompilerUtils::isConstant<bool>(transb());
+    std::pair<bool, bool> pc = CompilerUtils::isConstant<bool>(getTransb());
     if(pc.first)
         numCols = pc.second ? shapeRhs.first : shapeRhs.second;
 
@@ -205,7 +205,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
-    FileMetaData fmd = CompilerUtils::getFileMetaData(fileName());
+    FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
     return {{fmd.numRows, fmd.numCols}};
 }
 
@@ -213,7 +213,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
     size_t numRows = -1;
     size_t numCols = -1;
 
-    Type t = arg().getType();
+    Type t = getArg().getType();
     if(auto mt = t.dyn_cast<daphne::MatrixType>()){
         numRows = mt.getNumRows();
         numCols = mt.getNumCols();
@@ -222,7 +222,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
         numRows = ft.getNumRows();
         numCols = ft.getNumCols();
     }
-    std::pair<bool, bool> p = CompilerUtils::isConstant<bool>(returnIdxs());
+    std::pair<bool, bool> p = CompilerUtils::isConstant<bool>(getReturnIdxs());
     if(p.first) {
         if(p.second)
             numCols = 1;

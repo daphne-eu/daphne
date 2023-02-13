@@ -50,7 +50,7 @@ double getSparsityOrUnknownFromType(Value v) {
 // ****************************************************************************
 
 std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
-    auto argTy = arg().getType().dyn_cast<daphne::MatrixType>();
+    auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();
     auto k = argTy.getNumRows();
     auto sparsity = argTy.getSparsity();
 
@@ -62,8 +62,8 @@ std::vector<double> daphne::DiagMatrixOp::inferSparsity() {
 }
 
 std::vector<double> daphne::MatMulOp::inferSparsity() {
-    auto lhsTy = lhs().getType().dyn_cast<daphne::MatrixType>();
-    auto rhsTy = rhs().getType().dyn_cast<daphne::MatrixType>();
+    auto lhsTy = getLhs().getType().dyn_cast<daphne::MatrixType>();
+    auto rhsTy = getRhs().getType().dyn_cast<daphne::MatrixType>();
     if(lhsTy.getSparsity() == -1.0 || rhsTy.getSparsity() == -1.0) {
         return {-1.0};
     }
@@ -79,7 +79,7 @@ std::vector<double> daphne::MatMulOp::inferSparsity() {
 }
 
 std::vector<double> daphne::TriOp::inferSparsity() {
-    auto argTy = arg().getType().dyn_cast<daphne::MatrixType>();
+    auto argTy = getArg().getType().dyn_cast<daphne::MatrixType>();
     if(argTy.getSparsity() == -1.0) {
         return {-1.0};
     }
@@ -88,7 +88,7 @@ std::vector<double> daphne::TriOp::inferSparsity() {
 }
 
 std::vector<double> daphne::ReadOp::inferSparsity() {
-    std::pair<bool, std::string> p = CompilerUtils::isConstant<std::string>(fileName());
+    std::pair<bool, std::string> p = CompilerUtils::isConstant<std::string>(getFileName());
     if(p.first) {
         FileMetaData fmd = MetaDataParser::readMetaData(p.second);
         if (fmd.numNonZeros == -1)

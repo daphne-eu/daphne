@@ -19,6 +19,21 @@
 
 // The following includes are required by...
 #include "llvm/ADT/StringRef.h"
+
+// TODO Get rid of this workaround by removing the pragmas and the include within
+//      (note that this header is also included transitively by FuncOps.h),
+//      once the problem is fixed in MLIR/LLVM.
+// As of MLIR llvm/llvm-project@20d454c79bbca7822eee88d188afb7a8747dac58,
+// AttrTypeSubElements.h yields the following warnings, which are hereby ignored:
+// - "... parameter 'derived' set but not used [-Wunused-but-set-parameter]"
+// - "... parameter 'walkAttrsFn' set but not used [-Wunused-but-set-parameter]"
+// - "... parameter 'walkTypesFn' set but not used [-Wunused-but-set-parameter]"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-but-set-parameter"
+#include "mlir/IR/AttrTypeSubElements.h"
+#pragma GCC diagnostic pop
+
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/IR/Attributes.h"
@@ -32,7 +47,17 @@
 #include "mlir/IR/OperationSupport.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Types.h"
+
+// TODO Get rid of this workaround by removing the pragmas,
+//      once the problem is fixed in MLIR/LLVM.
+// As of MLIR llvm/llvm-project@20d454c79bbca7822eee88d188afb7a8747dac58,
+// PatternMatch.h yields the following warning, which is hereby ignored:
+// - "... typedef 'using FnTraitsT = struct llvm::function_traits<PDLFnT>' locally defined but not used [-Wunused-local-typedefs]"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-local-typedefs"
 #include "mlir/IR/PatternMatch.h"
+#pragma GCC diagnostic pop
+
 #include "mlir/Support/TypeID.h"
 
 #include <ir/daphneir/DaphneAdaptTypesToKernelsTraits.h>

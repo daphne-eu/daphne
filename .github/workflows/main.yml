@@ -1,0 +1,56 @@
+name: Build DAPHNE
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    container: daphneeu/github-action:latest
+    env:
+      # fix usage of tput in build script:
+      TERM: dumb
+      DEBIAN_FRONTEND: noninteractive
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Fix working dir permissions
+      run: chown root:root .
+
+    - name: Cache 3rd party dependency build
+      id: cache-deps
+      uses: actions/cache@v3
+      env:
+        cache-name: cache-deps
+      with:
+        path: ./thirdparty
+        key: ${{ runner.os }}-${{ env.cache-name }}-${{ hashFiles('build.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-${{ env.cache-name }}-
+
+    - if: ${{ steps.cache-deps.outputs.cache-hit == 'true' }}
+      name: Print cache hit result
+      continue-on-error: true
+      run: echo "------------ Using cached build dependencies ------------"
+
+    - name: Building
+      run: ./build.sh --no-fancy --target all | ts
+      shell: bash
+
+    - name: Testing
+      run: ./test.sh | ts
+
+    - name: "List generated files"
+      run: |
+        ls -la bin
+        ls -la lib
+
+    - name: "Run a simple daph script"
+      run: bin/daphne scripts/examples/hello-world.daph

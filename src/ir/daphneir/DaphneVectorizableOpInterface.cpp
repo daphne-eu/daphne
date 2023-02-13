@@ -36,9 +36,9 @@ std::vector<daphne::VectorSplit> getVectorSplits_EwBinaryOp(EwBinaryOp *op)
 {
     // Matrix -> row-wise, Scalar -> none
     auto lhsSplit =
-        op->lhs().getType().template isa<daphne::MatrixType>() ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
+        op->getLhs().getType().template isa<daphne::MatrixType>() ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
     auto rhsSplit =
-        op->rhs().getType().template isa<daphne::MatrixType>() ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
+        op->getRhs().getType().template isa<daphne::MatrixType>() ? daphne::VectorSplit::ROWS : daphne::VectorSplit::NONE;
     return {lhsSplit, rhsSplit};
 }
 template<class EwBinaryOp>
@@ -51,8 +51,8 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_EwBinaryOp(EwBinaryOp 
 {
     auto loc = op->getLoc();
     auto sizeTy = builder.getIndexType();
-    auto lhsRows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->lhs());
-    auto lhsCols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->lhs());
+    auto lhsRows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->getLhs());
+    auto lhsCols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->getLhs());
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
     return {{lhsRows, lhsCols}};
 }
@@ -71,8 +71,8 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_EwUnaryOp(EwUnaryOp *o
 {
     auto loc = op->getLoc();
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->arg());
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->arg());
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->getArg());
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->getArg());
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
     return {{rows, cols}};
 }
@@ -91,7 +91,7 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_RowAggOp(RowAggOp *op,
 {
     auto loc = op->getLoc();
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->arg());
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, op->getArg());
     auto cst1 = builder.create<daphne::ConstantOp>(loc, sizeTy, builder.getIndexAttr(1l));
     return {{rows, cst1}};
 }
@@ -106,7 +106,7 @@ std::vector<std::pair<Value, Value>> createOpsOutputSizes_ColAggOp(ColAggOp *op,
     auto loc = op->getLoc();
     auto sizeTy = builder.getIndexType();
     auto cst1 = builder.create<daphne::ConstantOp>(loc, sizeTy, builder.getIndexAttr(1l));
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->arg());
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, op->getArg());
     return {{cst1, cols}};
 }
 
@@ -136,23 +136,23 @@ std::vector<std::pair<Value, Value>> daphne::MatMulOp::createOpsOutputSizes(OpBu
 
     Value rows;
     bool ta = CompilerUtils::constantOrThrow<bool>(
-            transa(),
+            getTransa(),
             "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
             "of rows of the result, because it is not known if the lhs input is transposed"
     );
     rows = ta
-            ? builder.create<daphne::NumColsOp>(loc, sizeTy, lhs()).getResult()
-            : builder.create<daphne::NumRowsOp>(loc, sizeTy, lhs()).getResult();
+            ? builder.create<daphne::NumColsOp>(loc, sizeTy, getLhs()).getResult()
+            : builder.create<daphne::NumRowsOp>(loc, sizeTy, getLhs()).getResult();
     
     Value cols;
     bool tb = CompilerUtils::constantOrThrow<bool>(
-            transb(),
+            getTransb(),
             "VectorizableOpInterface::createOpsOutputSizes() for MatMulOp cannot know the number "
             "of columns of the result, because it is not known if the rhs input is transposed"
     );
     cols = tb
-            ? builder.create<daphne::NumRowsOp>(loc, sizeTy, rhs()).getResult()
-            : builder.create<daphne::NumColsOp>(loc, sizeTy, rhs()).getResult();
+            ? builder.create<daphne::NumRowsOp>(loc, sizeTy, getRhs()).getResult()
+            : builder.create<daphne::NumColsOp>(loc, sizeTy, getRhs()).getResult();
 
     return {{rows, cols}};
 }
@@ -271,9 +271,9 @@ std::vector<std::pair<Value, Value>> daphne::ExtractColOp::createOpsOutputSizes(
 {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, source());
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getSource());
     // TODO: support scalar and maybe (based on definition of `ExtractColOp`) apply some kind of `unique()` op
-    auto cols = builder.create<daphne::NumRowsOp>(loc, sizeTy, selectedCols());
+    auto cols = builder.create<daphne::NumRowsOp>(loc, sizeTy, getSelectedCols());
     return {{rows, cols}};
 }
 // ----------------------------------------------------------------------------
@@ -292,8 +292,8 @@ std::vector<std::pair<Value, Value>> daphne::TransposeOp::createOpsOutputSizes(O
 {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, arg());
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, arg());
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getArg());
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg());
     return {{cols, rows}};
 }
 
@@ -310,9 +310,9 @@ std::vector<std::pair<Value, Value>> daphne::ColBindOp::createOpsOutputSizes(OpB
     auto loc = getLoc();
     auto i64Ty = builder.getIntegerType(64, true);
     auto sizeTy = builder.getIndexType();
-    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, lhs());
-    auto colsLhs = builder.create<daphne::NumColsOp>(loc, sizeTy, lhs());
-    auto colsRhs = builder.create<daphne::NumColsOp>(loc, sizeTy, rhs());
+    auto rows = builder.create<daphne::NumRowsOp>(loc, sizeTy, getLhs());
+    auto colsLhs = builder.create<daphne::NumColsOp>(loc, sizeTy, getLhs());
+    auto colsRhs = builder.create<daphne::NumColsOp>(loc, sizeTy, getRhs());
     return {{rows, builder.create<daphne::CastOp>(loc,
         sizeTy,
         builder.create<daphne::EwAddOp>(loc,
@@ -335,7 +335,7 @@ std::vector<std::pair<Value, Value>> daphne::SyrkOp::createOpsOutputSizes(OpBuil
 {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, arg());
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getArg());
     // TODO: do max on #rows/#cols of lhs and rhs for broadcasting
     return {{cols, cols}};
 }
@@ -352,8 +352,8 @@ std::vector<std::pair<Value, Value>> daphne::GemvOp::createOpsOutputSizes(OpBuil
 {
     auto loc = getLoc();
     auto sizeTy = builder.getIndexType();
-    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, mat());
-    auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexAttr(1));
+    auto cols = builder.create<daphne::NumColsOp>(loc, sizeTy, getMat());
+    auto one = builder.create<daphne::ConstantOp>(loc, builder.getIndexType(), builder.getIndexAttr(1));
     return {{cols, one}};
 }
 // ----------------------------------------------------------------------------

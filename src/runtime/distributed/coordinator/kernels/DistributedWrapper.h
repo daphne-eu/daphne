@@ -30,7 +30,7 @@
 
 #include <mlir/InitAllDialects.h>
 #include <mlir/IR/AsmState.h>
-#include <mlir/Parser.h>
+#include <mlir/Parser/Parser.h>
 #include <llvm/Support/SourceMgr.h>
 #include <mlir/IR/BuiltinTypes.h>
 #include <vector>
@@ -147,19 +147,19 @@ private:
         // Fixme: is it ok to allow unregistered dialects?
         mlir::MLIRContext ctx;
         ctx.allowUnregisteredDialects();
-        mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
+        mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
         if (!module) {
             auto message = "DistributedWrapper: Failed to parse source string.\n";
             throw std::runtime_error(message);
         }
 
         auto *distOp = module->lookupSymbol("dist");
-        mlir::FuncOp distFunc;
-        if (!(distFunc = llvm::dyn_cast_or_null<mlir::FuncOp>(distOp))) {
+        mlir::func::FuncOp distFunc;
+        if (!(distFunc = llvm::dyn_cast_or_null<mlir::func::FuncOp>(distOp))) {
             auto message = "DistributedWrapper: MLIR fragment has to contain `dist` FuncOp\n";
             throw std::runtime_error(message);
         }
-        auto distFuncTy = distFunc.getType();
+        auto distFuncTy = distFunc.getFunctionType();
         
         // TODO passing a vector<mlir::Type> seems to causes problems...
         // Use enum as work around for now but consider returning mlir::Type

@@ -18,13 +18,17 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/SCF.h"
 #include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "mlir/IR/BlockAndValueMapping.h"
+#include "mlir/IR/IRMapping.h"
 
 #include <memory>
 #include <utility>
@@ -227,18 +231,18 @@ namespace
                                         rewriter.getContext(),
                                         op->getOperand(idx).getType()
                                 ),
-                                rewriter.getIndexAttr(len)
+                                rewriter.getI64IntegerAttr(len)
                         );
                         for(int64_t k = 0; k < len; k++)
                             rewriter.create<daphne::StoreVariadicPackOp>(
                                     loc,
                                     cvpOp,
                                     op->getOperand(idx + k),
-                                    rewriter.getIndexAttr(k)
+                                    rewriter.getI64IntegerAttr(k)
                             );
                         newOperands.push_back(cvpOp);
                         newOperands.push_back(rewriter.create<daphne::ConstantOp>(
-                                loc, rewriter.getIndexAttr(len))
+                                loc, rewriter.getIndexType(), rewriter.getIndexAttr(len))
                         );
                     }
                     else
@@ -263,13 +267,13 @@ namespace
 
                 callee << "__GroupEnum_variadic__size_t";
 
-                ArrayAttr aggFuncs = groupOp.aggFuncs();
+                ArrayAttr aggFuncs = groupOp.getAggFuncs();
                 const size_t numAggFuncs = aggFuncs.size();
                 const Type t = rewriter.getIntegerType(32, false);
                 auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
                         loc,
                         daphne::VariadicPackType::get(rewriter.getContext(), t),
-                        rewriter.getIndexAttr(numAggFuncs)
+                        rewriter.getI64IntegerAttr(numAggFuncs)
                 );
                 size_t k = 0;
                 for(Attribute aggFunc : aggFuncs.getValue())
@@ -278,6 +282,7 @@ namespace
                             cvpOp,
                             rewriter.create<daphne::ConstantOp>(
                                     loc,
+                                    t,
                                     rewriter.getIntegerAttr(
                                             t,
                                             static_cast<uint32_t>(
@@ -285,11 +290,11 @@ namespace
                                             )
                                     )
                             ),
-                            rewriter.getIndexAttr(k++)
+                            rewriter.getI64IntegerAttr(k++)
                     );
                 newOperands.push_back(cvpOp);
                 newOperands.push_back(rewriter.create<daphne::ConstantOp>(
-                        loc, rewriter.getIndexAttr(numAggFuncs))
+                        loc, rewriter.getIndexType(), rewriter.getIndexAttr(numAggFuncs))
                 );
             }
             
@@ -304,14 +309,14 @@ namespace
                 callee << "__CompareOperation__size_t";
 
                 // get array of CompareOperations
-                ArrayAttr compareOperations = thetaJoinOp.cmp();
+                ArrayAttr compareOperations = thetaJoinOp.getCmp();
                 const size_t numCompareOperations = compareOperations.size();
                 const Type t = rewriter.getIntegerType(32, false);
                 // create Variadic Pack
                 auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
                         loc,
                         daphne::VariadicPackType::get(rewriter.getContext(), t),
-                        rewriter.getIndexAttr(numCompareOperations)
+                        rewriter.getI64IntegerAttr(numCompareOperations)
                 );
                 // fill variadic pack
                 size_t k = 0;
@@ -321,6 +326,7 @@ namespace
                             cvpOp,
                             rewriter.create<daphne::ConstantOp>(
                                     loc,
+                                    t,
                                     rewriter.getIntegerAttr(
                                             t,
                                             static_cast<uint32_t>(
@@ -328,13 +334,13 @@ namespace
                                             )
                                     )
                             ),
-                            rewriter.getIndexAttr(k++)
+                            rewriter.getI64IntegerAttr(k++)
                     );
                 // add created variadic pack and size of this pack as
                 // new operands / parameters of the ThetaJoin-Kernel call
                 newOperands.push_back(cvpOp);
                 newOperands.push_back(rewriter.create<daphne::ConstantOp>(
-                        loc, rewriter.getIndexAttr(numCompareOperations))
+                        loc, rewriter.getIndexType(), rewriter.getIndexAttr(numCompareOperations))
                 );
             }
 
@@ -343,13 +349,13 @@ namespace
                 OpBuilder tempBuilder(&newContext);
                 std::string funcName = "dist";
 
-                auto &bodyBlock = distCompOp.body().front();
+                auto &bodyBlock = distCompOp.getBody().front();
                 auto funcType = tempBuilder.getFunctionType(
                     bodyBlock.getArgumentTypes(), bodyBlock.getTerminator()->getOperandTypes());
-                auto funcOp = tempBuilder.create<FuncOp>(loc, funcName, funcType);
+                auto funcOp = tempBuilder.create<func::FuncOp>(loc, funcName, funcType);
 
-                BlockAndValueMapping mapper;
-                distCompOp.body().cloneInto(&funcOp.getRegion(), mapper);
+                IRMapping mapper;
+                distCompOp.getBody().cloneInto(&funcOp.getRegion(), mapper);
 
                 // write recompile region as string constant
                 std::string s;
@@ -391,11 +397,11 @@ namespace
         {
         }
 
-        LogicalResult matchAndRewrite(daphne::DistributedPipelineOp op, ArrayRef<Value> operands,
+        LogicalResult matchAndRewrite(daphne::DistributedPipelineOp op, OpAdaptor adaptor,
                                       ConversionPatternRewriter &rewriter) const override
         {
-            size_t numOutputs = op.outputs().size();
-            size_t numInputs = op.inputs().size();
+            size_t numOutputs = op.getOutputs().size();
+            size_t numInputs = op.getInputs().size();
                      
             
             std::stringstream callee;
@@ -418,58 +424,58 @@ namespace
             Type vptInt64 = daphne::VariadicPackType::get(mctx, rewriter.getIntegerType(64, true));
             
             // Variadic pack for inputs.
-            auto cvpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptObj, rewriter.getIndexAttr(numInputs));
+            auto cvpInputs = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptObj, rewriter.getI64IntegerAttr(numInputs));
             for(size_t i = 0; i < numInputs; i++)
                 rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc, cvpInputs, op.inputs()[i], rewriter.getIndexAttr(i)
+                        loc, cvpInputs, op.getInputs()[i], rewriter.getI64IntegerAttr(i)
                 );
             // Constants for #inputs.
             auto coNumInputs = rewriter.create<daphne::ConstantOp>(loc, numInputs);
             [[maybe_unused]] auto coNumOutputs = rewriter.create<daphne::ConstantOp>(loc, numOutputs);
             // Variadic pack for out_rows.
-            auto cvpOutRows = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
+            auto cvpOutRows = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getI64IntegerAttr(numOutputs));
             for(size_t i = 0; i < numOutputs; i++)
                 rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc, cvpOutRows, op.out_rows()[i], rewriter.getIndexAttr(i)
+                        loc, cvpOutRows, op.getOutRows()[i], rewriter.getI64IntegerAttr(i)
                 );
             // Variadic pack for out_cols.
-            auto cvpOutCols = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getIndexAttr(numOutputs));
+            auto cvpOutCols = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptSize, rewriter.getI64IntegerAttr(numOutputs));
             for(size_t i = 0; i < numOutputs; i++)
                 rewriter.create<daphne::StoreVariadicPackOp>(
-                        loc, cvpOutCols, op.out_cols()[i], rewriter.getIndexAttr(i)
+                        loc, cvpOutCols, op.getOutCols()[i], rewriter.getI64IntegerAttr(i)
                 );
             // Variadic pack for splits.
-            auto cvpSplits = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getIndexAttr(numInputs));
+            auto cvpSplits = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getI64IntegerAttr(numInputs));
             for(size_t i = 0; i < numInputs; i++)
                 rewriter.create<daphne::StoreVariadicPackOp>(
                         loc,
                         cvpSplits,
                         rewriter.create<daphne::ConstantOp>(
-                                loc, static_cast<int64_t>(op.splits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())
+                                loc, static_cast<int64_t>(op.getSplits()[i].dyn_cast<daphne::VectorSplitAttr>().getValue())
                         ),
-                        rewriter.getIndexAttr(i)
+                        rewriter.getI64IntegerAttr(i)
                 );
             // Variadic pack for combines.
-            auto cvpCombines = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getIndexAttr(numOutputs));
+            auto cvpCombines = rewriter.create<daphne::CreateVariadicPackOp>(loc, vptInt64, rewriter.getI64IntegerAttr(numOutputs));
             for(size_t i = 0; i < numOutputs; i++)
                 rewriter.create<daphne::StoreVariadicPackOp>(
                         loc,
                         cvpCombines,
                         rewriter.create<daphne::ConstantOp>(
-                                loc, static_cast<int64_t>(op.combines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())
+                                loc, static_cast<int64_t>(op.getCombines()[i].dyn_cast<daphne::VectorCombineAttr>().getValue())
                         ),
-                        rewriter.getIndexAttr(i)
+                        rewriter.getI64IntegerAttr(i)
                 );
             
             // Create CallKernelOp.
             std::vector<Value> newOperands = {
-                cvpInputs, coNumInputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.ir(), dctx
+                cvpInputs, coNumInputs, cvpOutRows, cvpOutCols, cvpSplits, cvpCombines, op.getIr(), dctx
             };
             auto cko = rewriter.replaceOpWithNewOp<daphne::CallKernelOp>(
                     op.getOperation(),
                     callee.str(),
                     newOperands,
-                    op.outputs().getTypes()
+                    op.getOutputs().getTypes()
             );
             // TODO Use ATTR_HASVARIADICRESULTS from LowerToLLVMPass.cpp.
             cko->setAttr("hasVariadicResults", rewriter.getBoolAttr(true));
@@ -479,24 +485,26 @@ namespace
     };
 
     struct RewriteToCallKernelOpPass
-    : public PassWrapper<RewriteToCallKernelOpPass, FunctionPass>
+    : public PassWrapper<RewriteToCallKernelOpPass, OperationPass<func::FuncOp>>
     {
         RewriteToCallKernelOpPass() = default;
-        void runOnFunction() final;
+        void runOnOperation() final;
     };
 }
 
-void RewriteToCallKernelOpPass::runOnFunction()
+void RewriteToCallKernelOpPass::runOnOperation()
 {
-    FuncOp func = getFunction();
+    func::FuncOp func = getOperation();
 
-    OwningRewritePatternList patterns(&getContext());
+    RewritePatternSet patterns(&getContext());
 
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
     target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect, mlir::AffineDialect>();
     target.addLegalOp<ModuleOp, FuncOp>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect>();
+    target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<
             daphne::ConstantOp,
@@ -505,9 +513,10 @@ void RewriteToCallKernelOpPass::runOnFunction()
             daphne::CreateVariadicPackOp,
             daphne::StoreVariadicPackOp,
             daphne::VectorizedPipelineOp,
-            daphne::GenericCallOp,
             scf::ForOp,
             memref::LoadOp
+            daphne::GenericCallOp,
+            daphne::MapOp
     >();
     target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
         return op.isTrivialCast() || op.isMatrixPropertyCast();
@@ -517,7 +526,7 @@ void RewriteToCallKernelOpPass::runOnFunction()
     mlir::Value dctx = CompilerUtils::getDaphneContext(func);
     func->walk([&](daphne::VectorizedPipelineOp vpo)
     {
-      vpo.ctxMutable().assign(dctx);
+      vpo.getCtxMutable().assign(dctx);
     });
 
     // Apply conversion to CallKernelOps.
