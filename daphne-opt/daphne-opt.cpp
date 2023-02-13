@@ -10,10 +10,8 @@
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Support/raw_ostream.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
-#include "mlir/Dialect/SCF/SCF.h"
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/ExecutionEngine/OptUtils.h"
 #include "mlir/IR/AsmState.h"
@@ -21,7 +19,7 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 #include "mlir/InitAllDialects.h"
-#include "mlir/Parser.h"
+#include "mlir/Parser/Parser.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
@@ -96,6 +94,8 @@ int loadAndProcessMLIR(mlir::MLIRContext &context,
     // TODO
     // add daphne context creation pass
 
+    passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
+    module->dump();
     // passManager.addPass(mlir::createLowerAffinePass());
     // passManager.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(cfg));
     // passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
@@ -105,7 +105,7 @@ int loadAndProcessMLIR(mlir::MLIRContext &context,
     // passManager.addPass(mlir::createCSEPass());
     // passManager.addNestedPass<mlir::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
     // passManager.addPass(mlir::createLowerToCFGPass());
-    passManager.addPass(mlir::daphne::createLowerToLLVMPass(cfg));
+    // passManager.addPass(mlir::daphne::createLowerToLLVMPass(cfg));
 
     if (mlir::failed(passManager.run(*module))) {
         return 4;
@@ -124,12 +124,20 @@ int runJit(mlir::ModuleOp module) {
     mlir::registerLLVMDialectTranslation(*module->getContext());
 
     // An optimization pipeline to use within the execution engine.
-    auto optPipeline = mlir::makeOptimizingTransformer(3, 0, nullptr);
+    unsigned make_fast = 0;
+    auto optPipeline = mlir::makeOptimizingTransformer(make_fast, 0, nullptr);
+
+    mlir::ExecutionEngineOptions options;
+    options.llvmModuleBuilder = nullptr;
+    options.transformer = optPipeline;
+    options.jitCodeGenOptLevel = llvm::CodeGenOpt::Level::Default;
+    options.enableObjectDump = true;
+    options.enableGDBNotificationListener = true;
+    options.enablePerfNotificationListener = true;
 
     // Create an MLIR execution engine. The execution engine eagerly
     // JIT-compiles the module.
-    auto maybeEngine = mlir::ExecutionEngine::create(module, nullptr, optPipeline,
-            llvm::CodeGenOpt::Level::Default);
+    auto maybeEngine = mlir::ExecutionEngine::create(module, options);
     assert(maybeEngine && "failed to construct an execution engine");
     auto &engine = maybeEngine.get();
 
@@ -150,12 +158,12 @@ int main(int argc, char **argv) {
     cl::ParseCommandLineOptions(argc, argv, "Hello compiler\n");
     mlir::MLIRContext context;
     context.getOrLoadDialect<mlir::daphne::DaphneDialect>();
-    context.getOrLoadDialect<mlir::StandardOpsDialect>();
     context.getOrLoadDialect<mlir::scf::SCFDialect>();
     context.getOrLoadDialect<mlir::LLVM::LLVMDialect>();
     context.getOrLoadDialect<mlir::AffineDialect>();
     context.getOrLoadDialect<mlir::memref::MemRefDialect>();
     context.getOrLoadDialect<mlir::linalg::LinalgDialect>();
+    context.getOrLoadDialect<mlir::func::FuncDialect>();
 
     mlir::OwningOpRef<mlir::ModuleOp> module;
     if (int error = loadAndProcessMLIR(context, module)) {
