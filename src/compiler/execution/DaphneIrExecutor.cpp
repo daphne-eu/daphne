@@ -14,6 +14,7 @@
  *  limitations under the License.
  */
 
+#include <iostream>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 #include "DaphneIrExecutor.h"
@@ -131,14 +132,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 #endif
         // TODO: add --explain argument
         if (userConfig_.codegen) {
-
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR before LowerDenseMatrixPass"));
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR before LowerDenseMatrixPass"));
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
-
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR after LowerDenseMatrixPass"));
+
+            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
 
             // pm.addPass(mlir::daphne::createMemRefTestPass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
@@ -207,6 +207,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::createConvertSCFToCFPass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+        pm.addPass(mlir::daphne::createPrintIRPass("IR after createLowerToLLVMPass lowering"));
         pm.addPass(mlir::createReconcileUnrealizedCastsPass());
         if(userConfig_.explain_llvm)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));

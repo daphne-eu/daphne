@@ -43,8 +43,7 @@ using namespace mlir;
 
 void affineFillMemRef(double value, ConversionPatternRewriter &rewriter, mlir::Location loc,
                 ssize_t nR, ssize_t nC, mlir::MLIRContext *ctx, mlir::Value memRef) {
-    llvm::APFloat zero = llvm::APFloat(value);
-    Value cst0 = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+    Value cst0 = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(value));
     SmallVector<Value, 4> loopIvs;
     // TODO(phil): function for loops (fill/matmul)
     // // SmallVector<scf::ForOp, 2> forOps;
@@ -148,6 +147,7 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
+        std::cout << "MatMulOpLowering\n";
         auto loc = op->getLoc();
         mlir::daphne::MatrixType tensor =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
@@ -161,17 +161,17 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
                 op->getLoc(), memRefType, adaptor.getLhs());
         // mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
         //     op->getLoc(), memRefType, adaptor.getRhs());
-        // mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
+        mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
 
 
         // Fill the output MemRef
-        // affineFillMemRef(9.9, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
+        affineFillMemRef(9.9, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
 
         // Do the actual MatMul with hand built codegen
         // affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, nR, nC, op->getContext());
 
         mlir::Value DM = rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
-                loc, op.getType(), lhs);
+                loc, op.getType(), outputMemRef);
         rewriter.replaceOp(op, DM);
         return success();
     }
@@ -316,6 +316,7 @@ void LowerDenseMatrixPass::runOnOperation() {
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
     target.addLegalDialect<mlir::memref::MemRefDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect>();
     target.addLegalDialect<mlir::scf::SCFDialect>();
     target.addLegalDialect<mlir::AffineDialect>();
     target.addLegalDialect<mlir::linalg::LinalgDialect>();
@@ -324,6 +325,7 @@ void LowerDenseMatrixPass::runOnOperation() {
     target.addLegalOp<mlir::daphne::GetMemRefDenseMatrix>();
     target.addLegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
     target.addIllegalOp<mlir::daphne::AllAggSumOp>();
+    target.addIllegalOp<mlir::daphne::MatMulOp>();
 
     typeConverter.addConversion([&](daphne::MatrixType t) {
         return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
