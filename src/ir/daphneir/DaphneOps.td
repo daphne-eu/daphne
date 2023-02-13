@@ -81,7 +81,7 @@ def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
     let results = (outs MatrixOrU:$res);
 }
 
-def Daphne_GetMemRefDenseMatrix : Daphne_Op<"getMemRefDenseMatrix", [NoSideEffect]> {
+def Daphne_GetMemRefDenseMatrix : Daphne_Op<"getMemRefDenseMatrix", [Pure]> {
     let summary = "Return a StridedMemRefType.";
     let description = [{ Constructs a StridedMemRefType with rank 2 from a DenseMatrix* with already allocated memory. }];
 

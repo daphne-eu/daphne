@@ -20,16 +20,9 @@
 
 #include "llvm/Support/TargetSelect.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
-#include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Conversion/ReconcileUnrealizedCasts/ReconcileUnrealizedCasts.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -165,9 +158,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopFusionPass());
 
-            pm.addPass(mlir::createLowerAffinePass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after affine lowering"));
+            // pm.addPass(mlir::affine::createLowerAffinePass());
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after affine lowering"));
         }
         // For now, in order to use the distributed runtime we also require the vectorized engine to be enabled
         // to create pipelines. Therefore, *if* distributed runtime is enabled, we need to make a vectorization pass.

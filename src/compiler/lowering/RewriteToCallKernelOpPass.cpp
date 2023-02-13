@@ -20,12 +20,8 @@
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
-#include "mlir/Dialect/Linalg/IR/LinalgTypes.h"
+#include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/IR/IRMapping.h"
@@ -501,9 +497,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
     // Specification of (il)legal dialects/operations. All DaphneIR operations
     // but those explicitly marked as legal will be replaced by CallKernelOp.
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect, mlir::AffineDialect>();
-    target.addLegalOp<ModuleOp, FuncOp>();
-    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, memref::MemRefDialect, mlir::linalg::LinalgDialect, mlir::arith::ArithDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<
@@ -514,7 +508,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::StoreVariadicPackOp,
             daphne::VectorizedPipelineOp,
             scf::ForOp,
-            memref::LoadOp
+            memref::LoadOp,
             daphne::GenericCallOp,
             daphne::MapOp
     >();
