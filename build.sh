@@ -526,10 +526,23 @@ fi
 # Process dependencies if requested (--with-deps)
 if [ $WITH_DEPS -gt 0 ]; then
 
+    # Directory name of the LLVM dependency
+    llvmName="llvm-project"
+
     # Make sure that the submodule(s) have been updated since the last clone/pull.
     # But only if this is a git repo.
+    # Extra care needs to be taken if the submodule was loaded from gh action cache
     if [ -d .git ]; then
-        git submodule update --init --recursive
+        if [ -e "${thirdpartyPath}/${llvmName}/.git" ]; then # Note: .git in the submodule is not a directory.
+            submodule_path=$(cut -d ' ' -f 2 < .git)
+
+            # if the third party directory was loaded from gh action cache, this path will not exist
+            if [ -d "$submodule_path" ]; then
+                git submodule update --init --recursive
+            fi
+        else
+            git submodule update --init --recursive
+        fi
     fi
 
     #******************************************************************************
@@ -743,7 +756,6 @@ if [ $WITH_DEPS -gt 0 ]; then
     # file does not exist (first build of the prototype) or does not contain the
     # expected hash (upgrade of the LLVM sub-module).
 
-    llvmName="llvm-project"
     llvmCommit="llvmCommit-local-none"
     cd "${thirdpartyPath}/${llvmName}"
     if [ -e .git ]; then # Note: .git in the submodule is not a directory.
