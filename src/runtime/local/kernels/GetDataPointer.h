@@ -86,55 +86,58 @@ inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
 //     return memRef;
 // }
 //
-// inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
-//     const DenseMatrix<double> *input, DCTX(ctx)) {
-//
-//     StridedMemRefType<double, 2> memRef{};
-//     memRef.basePtr = input->getValuesSharedPtr().get();
-//     memRef.data = memRef.basePtr;
-//     memRef.offset = 0;
-//     memRef.strides[0] = 1;
-//     memRef.sizes[0] = input->getNumRows();
-//     memRef.sizes[1] = input->getNumCols();
-//     input->increaseRefCounter();
-//
-//     return memRef;
-// }
+inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
+    const DenseMatrix<double> *input, DCTX(ctx)) {
 
-inline void convertDenseMatrixToMemRef(StridedMemRefType<double, 2> *&result,
-                                 const DenseMatrix<double> *input, DCTX(ctx)) {
-    std::cout << "convertDenseMatrixToMemRef(result: " << result << ", input: " << input << ", ctx: " << ctx << ")\n";
-    // static int dm_count = 0;
-    // dm_count++;
-    //
-    // if (dm_count > 2) {
-    //     input = DataObjectFactory::create<DenseMatrix<double>>(10, 10, true);
-    //     input->increaseRefCounter();
-    // }
-    result = new StridedMemRefType<double, 2>();
-    result->basePtr = input->getValuesSharedPtr().get();
-    result->data = result->basePtr;
-    result->offset = 0;
-    result->strides[0] = 0;
-    result->strides[1] = 0;
-    result->sizes[0] = input->getNumRows();
-    result->sizes[1] = input->getNumCols();
+    StridedMemRefType<double, 2> memRef{};
+    memRef.basePtr = input->getValuesSharedPtr().get();
+    memRef.data = memRef.basePtr;
+    memRef.offset = 0;
+    memRef.strides[0] = 1;
+    memRef.sizes[0] = input->getNumRows();
+    memRef.sizes[1] = input->getNumCols();
     input->increaseRefCounter();
 
-#if 0
-    std::cout << "DenseMatrix -> MemRef:\nMemRef{basePtr: " << result->basePtr
-              << ", data: " << result->data << "}\n\n";
-    for (size_t r = 0; r < 10; r++) {
-        for (size_t c = 0; c < 10; c++) {
-            // TODO MSC: Check for row/column major order on access
-            std::cout << result->basePtr[10 * c + r];
-            // printValue(os, get(r, c));
-            if (c < 10 - 1) std::cout << ' ';
-        }
-        std::cout << std::endl;
-    }
-#endif
+    return memRef;
 }
+
+// inline void convertDenseMatrixToMemRef(StridedMemRefType<double, 2> *&result,
+//                                  const DenseMatrix<double> *input, DCTX(ctx)) {
+//     std::cout << "START convertDenseMatrixToMemRef(result: " << result << ", input: " << input << ", ctx: " << ctx << ")\n";
+//     // static int dm_count = 0;
+//     // dm_count++;
+//     //
+//     // if (dm_count > 2) {
+//     //     input = DataObjectFactory::create<DenseMatrix<double>>(10, 10, true);
+//     //     input->increaseRefCounter();
+//     // }
+//     result = new StridedMemRefType<double, 2>();
+//     result->basePtr = input->getValuesSharedPtr().get();
+//     result->data = result->basePtr;
+//     result->offset = 0;
+//     result->strides[0] = 0;
+//     result->strides[1] = 0;
+//     result->sizes[0] = input->getNumRows();
+//     result->sizes[1] = input->getNumCols();
+//     input->increaseRefCounter();
+//
+//     std::cout << "dataptr->" << result->data << "\n";
+//
+// #if 0
+//     std::cout << "DenseMatrix -> MemRef:\nMemRef{basePtr: " << result->basePtr
+//               << ", data: " << result->data << "}\n\n";
+//     for (size_t r = 0; r < 10; r++) {
+//         for (size_t c = 0; c < 10; c++) {
+//             // TODO MSC: Check for row/column major order on access
+//             std::cout << result->basePtr[10 * c + r];
+//             // printValue(os, get(r, c));
+//             if (c < 10 - 1) std::cout << ' ';
+//         }
+//         std::cout << std::endl;
+//     }
+// #endif
+//     std::cout << "DONE convertDenseMatrixToMemRef\n";
+// }
 
 inline void convertDenseMatrixToMemRef(StridedMemRefType<float, 2> *&result,
                                  const DenseMatrix<float> *input, DCTX(ctx)) {

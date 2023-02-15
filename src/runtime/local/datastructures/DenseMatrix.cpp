@@ -51,7 +51,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(ValueType *memRefPtr) : Matrix<ValueType>(10, 10){
     this->memRefPtr = memRefPtr;
-    std::cout << "creating DM with 10x10 and ptr@: " << this->memRefPtr << " \n";
+    std::cout << "creating DM with 10x10 and ptr@: " << memRefPtr << " \n";
 }
 
 template<typename ValueType>

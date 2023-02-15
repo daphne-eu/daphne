@@ -41,6 +41,9 @@
 
 using namespace mlir;
 
+
+// TODO(phil): Look into buildLoopNest() for loop generation
+
 void affineFillMemRef(double value, ConversionPatternRewriter &rewriter, mlir::Location loc,
                 ssize_t nR, ssize_t nC, mlir::MLIRContext *ctx, mlir::Value memRef) {
     Value cst0 = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(value));
@@ -87,8 +90,6 @@ void affineFillMemRef(double value, ConversionPatternRewriter &rewriter, mlir::L
 void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output, ConversionPatternRewriter &rewriter, mlir::Location loc,
         ssize_t nR, ssize_t nC, mlir::MLIRContext *ctx) {
     SmallVector<Value, 4> loopIvs;
-    // TODO(phil): function for loops (fill/matmul)
-    llvm::APFloat zero = llvm::APFloat(9.9);
     Value cst0 = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
 
     // row loop
@@ -112,31 +113,31 @@ void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output, Conve
     rewriter.setInsertionPointToStart(colLoop.getBody());
 
     // fma loop
-    // auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1);
-    // for (Operation &nested : *innerLoop.getBody()) {
-    //     rewriter.eraseOp(&nested);
-    // }
-    // loopIvs.push_back(innerLoop.getInductionVar());
-    // rewriter.setInsertionPointToStart(innerLoop.getBody());
+    auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1);
+    for (Operation &nested : *innerLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+    loopIvs.push_back(innerLoop.getInductionVar());
+    rewriter.setInsertionPointToStart(innerLoop.getBody());
 
     // load
-    mlir::Value a = rewriter.create<memref::LoadOp>(loc, lhs, loopIvs); // ivs[0, 2]
-    // mlir::Value b = rewriter.create<memref::LoadOp>(loc, rhs, ValueRange{loopIvs[2], loopIvs[1]});
-    // mlir::Value c = rewriter.create<memref::LoadOp>(loc, output, ValueRange{loopIvs[0], loopIvs[1]});
+    mlir::Value a = rewriter.create<memref::LoadOp>(loc, lhs, ValueRange{loopIvs[0], loopIvs[2]}); // ivs[0, 2]
+    mlir::Value b = rewriter.create<memref::LoadOp>(loc, rhs, ValueRange{loopIvs[2], loopIvs[1]});
+    mlir::Value c = rewriter.create<memref::LoadOp>(loc, output, ValueRange{loopIvs[0], loopIvs[1]});
 
     // fma
-    // mlir::Value fma = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
+    mlir::Value fma = rewriter.create<LLVM::FMAOp>(loc, a, b, c);
 
     // store
-    rewriter.create<memref::StoreOp>(loc, a, output, loopIvs);
+    rewriter.create<memref::StoreOp>(loc, fma, output, ValueRange{loopIvs[0], loopIvs[1]});
 
     // AffineYieldOp at end of loop blocks
     rewriter.setInsertionPointToEnd(rowLoop.getBody());
     rewriter.create<AffineYieldOp>(loc);
     rewriter.setInsertionPointToEnd(colLoop.getBody());
     rewriter.create<AffineYieldOp>(loc);
-    // rewriter.setInsertionPointToEnd(innerLoop.getBody());
-    // rewriter.create<AffineYieldOp>(loc);
+    rewriter.setInsertionPointToEnd(innerLoop.getBody());
+    rewriter.create<AffineYieldOp>(loc);
     rewriter.setInsertionPointAfter(rowLoop);
 }
 
@@ -147,7 +148,6 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
     LogicalResult matchAndRewrite(
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
-        std::cout << "MatMulOpLowering\n";
         auto loc = op->getLoc();
         mlir::daphne::MatrixType tensor =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
@@ -157,18 +157,38 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto memRefType = mlir::MemRefType::get(
             {nR, nC}, tensorType);
 
+        // daphne::Matrix -> memref
         mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
                 op->getLoc(), memRefType, adaptor.getLhs());
-        // mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-        //     op->getLoc(), memRefType, adaptor.getRhs());
+        mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+            op->getLoc(), memRefType, adaptor.getRhs());
+        // Pure memref MatMul
+        // mlir::Value lhs = rewriter.create<memref::AllocOp>(loc, memRefType);
+        // mlir::Value rhs = rewriter.create<memref::AllocOp>(loc, memRefType);
+        // affineFillMemRef(3.0, rewriter, loc, nR, nC, op->getContext(), lhs);
+        // affineFillMemRef(3.0, rewriter, loc, nR, nC, op->getContext(), rhs);
+
+
+        // Alloc output memref
         mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
+
+        // Extraction of aligned pointer of memref
+        // %0 = memref.extract_aligned_pointer_as_index %arg : memref<4x4xf32> -> index
+        // %1 = arith.index_cast %0 : index to i64
+        // %2 = llvm.inttoptr %1 : i64 to !llvm.ptr<f32>
+        // mlir::Value m_ptr = rewriter.create<mlir::memref::ExtractAlignedPointerAsIndexOp>(loc, lhs);
+        // mlir::Value m_ptr_cast = rewriter.create<mlir::arith::IndexCastOp>(loc, rewriter.getI64Type(), m_ptr).getOut();
+        // mlir::Value m_ptr_llvm_ptr = rewriter.create<mlir::LLVM::IntToPtrOp>(loc, mlir::LLVM::LLVMPointerType::get(rewriter.getF64Type()), m_ptr_cast);
 
 
         // Fill the output MemRef
-        affineFillMemRef(9.9, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
+        affineFillMemRef(0.0, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
+
+
+        // rewriter.create<mlir::daphne::PrintMemRef>(loc, outputMemRef);
 
         // Do the actual MatMul with hand built codegen
-        // affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, nR, nC, op->getContext());
+        affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, nR, nC, op->getContext());
 
         mlir::Value DM = rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
                 loc, op.getType(), outputMemRef);
@@ -194,7 +214,6 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         auto tensorType = tensor.getElementType();
         auto memRefType = mlir::MemRefType::get(
             {nR, nC}, tensorType);
-        auto memRefShape = memRefType.getShape();
         auto memRef = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), memRefType, adaptor.getArg());
 

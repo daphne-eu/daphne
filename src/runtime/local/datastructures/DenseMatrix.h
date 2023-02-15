@@ -255,6 +255,7 @@ public:
     void print(std::ostream & os) const override {
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
                 << std::endl;
+        os << "DM::data.pointer@" << memRefPtr << std::endl;
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {

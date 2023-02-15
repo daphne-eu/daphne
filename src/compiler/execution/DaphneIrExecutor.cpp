@@ -20,6 +20,7 @@
 #include "DaphneIrExecutor.h"
 
 #include "llvm/Support/TargetSelect.h"
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
@@ -158,9 +159,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopFusionPass());
 
-            // pm.addPass(mlir::affine::createLowerAffinePass());
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after affine lowering"));
+            pm.addPass(mlir::createLowerAffinePass());
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR after affine lowering"));
         }
         // For now, in order to use the distributed runtime we also require the vectorized engine to be enabled
         // to create pipelines. Therefore, *if* distributed runtime is enabled, we need to make a vectorization pass.
@@ -207,7 +208,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::createConvertSCFToCFPass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
-        pm.addPass(mlir::daphne::createPrintIRPass("IR after createLowerToLLVMPass lowering"));
         pm.addPass(mlir::createReconcileUnrealizedCastsPass());
         if(userConfig_.explain_llvm)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
@@ -227,8 +227,8 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
     if (module) {
         // An optimization pipeline to use within the execution engine.
         // TODO MSC: this enables loop unroll, tiling, unroll and jam, ..
-        unsigned make_fast = 3;
-        auto optPipeline = mlir::makeOptimizingTransformer(0, 0, nullptr);
+        unsigned make_fast = 0;
+        auto optPipeline = mlir::makeOptimizingTransformer(make_fast, 0, nullptr);
         std::vector<llvm::StringRef> sharedLibRefs;
         // This next line adds to our Linux platform lock-in
         std::string daphne_executable_dir(std::filesystem::canonical("/proc/self/exe").parent_path());
