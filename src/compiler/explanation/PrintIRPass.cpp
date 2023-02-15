@@ -44,7 +44,10 @@ void PrintIRPass::runOnOperation() {
     std::cerr << message << std::endl;
     
     auto module = getOperation();
-    module.dump();
+    OpPrintingFlags flags = {};
+    flags.enableDebugInfo(true, false);
+    module.print(llvm::errs(), flags);
+    // module.dump();
 }
 
 std::unique_ptr<Pass> daphne::createPrintIRPass(const std::string message) {
