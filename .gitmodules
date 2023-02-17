@@ -1,6 +1,6 @@
 [submodule "thirdparty/llvm-project"]
 	path = thirdparty/llvm-project
 	url = https://github.com/llvm/llvm-project.git
-[submodule "thirdparty/installed/include/TSL"]
-	path = thirdparty/installed/include/TSL
-	url = https://github.com/db-tu-dresden/TVL.git
+[submodule "thirdparty/sources/TSLGenerator"]
+	path = thirdparty/sources/TSLGenerator
+	url = https://github.com/db-tu-dresden/TVLGen.git
