@@ -674,6 +674,22 @@ if [[ "$BUILD_ARROW" == "-DUSE_ARROW=ON" ]]; then
 fi
 
 #------------------------------------------------------------------------------
+# TSL (Template SIMD Library)
+#------------------------------------------------------------------------------
+if ! is_dependency_installed "TSL"; then
+    daphne_msg "Install TSL."
+    tsl_generator="${sourcePrefix}/TSLGenerator/main.py"
+    tsl_output="${installPrefix}/include/TSL"
+    python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
+    dependency_install_success "TSL"
+else
+    daphne_msg "No need to generate TSL again."
+fi
+
+
+
+
+#------------------------------------------------------------------------------
 # Build MLIR
 #------------------------------------------------------------------------------
 # We rarely need to build MLIR/LLVM, only during the first build of the
