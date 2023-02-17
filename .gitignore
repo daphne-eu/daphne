@@ -27,3 +27,6 @@ tmpdaphne.daphne
 # release scripts output
 /artifacts
 
+# clang cache
+.cache
+
