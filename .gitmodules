@@ -3,3 +3,4 @@
 	url = https://github.com/llvm/llvm-project.git
 [submodule "thirdparty/installed/include/TSL"]
 	path = thirdparty/installed/include/TSL
+	url = https://github.com/db-tu-dresden/TVL.git
