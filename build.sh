@@ -537,7 +537,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     # Extra care needs to be taken if the submodule was loaded from gh action cache
     if [ -d .git ]; then
         if [ -e "${thirdpartyPath}/${llvmName}/.git" ]; then # Note: .git in the submodule is not a directory.
-            submodule_path=$(cut -d ' ' -f 2 < .git)
+            submodule_path=$(cut -d ' ' -f 2 < "${thirdpartyPath}/${llvmName}/.git")
 
             # if the third party directory was loaded from gh action cache, this path will not exist
             if [ -d "$submodule_path" ] && [ $WITH_SUBMODULE_UPDATE -ne 0 ]; then
