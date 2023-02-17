@@ -42,3 +42,6 @@ profiler/
 precompiled-dependencies/
 /cmake*/
 /data
+# clang cache
+.cache
+
