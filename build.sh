@@ -928,6 +928,31 @@ if [ $WITH_DEPS -gt 0 ]; then
     # the LLVM commit hash we built into a file, and only rebuild MLIR/LLVM if this
     # file does not exist (first build of the prototype) or does not contain the
     # expected hash (upgrade of the LLVM sub-module).
+#------------------------------------------------------------------------------
+# TSL (Template SIMD Library)
+#------------------------------------------------------------------------------
+if ! is_dependency_installed "TSL"; then
+    daphne_msg "Install TSL."
+    tsl_generator="${sourcePrefix}/TSLGenerator/main.py"
+    tsl_output="${installPrefix}/include/TSL"
+    python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
+    dependency_install_success "TSL"
+else
+    daphne_msg "No need to generate TSL again."
+fi
+
+
+
+
+#------------------------------------------------------------------------------
+# Build MLIR
+#------------------------------------------------------------------------------
+# We rarely need to build MLIR/LLVM, only during the first build of the
+# prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
+# builds (which take several seconds even if there is nothing to do), we store
+# the LLVM commit hash we built into a file, and only rebuild MLIR/LLVM if this
+# file does not exist (first build of the prototype) or does not contain the
+# expected hash (upgrade of the LLVM sub-module).
 
     llvmCommit="llvmCommit-local-none"
     cd "${thirdpartyPath}/${llvmName}"
