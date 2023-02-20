@@ -15,7 +15,6 @@
  */
 
 #pragma once
-#ifdef USE_ARROW
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -81,23 +80,22 @@ void readParquet(DTRes *&res, const char *filename, size_t numRows, size_t numCo
 // ****************************************************************************
 
 inline struct File *arrowToCsv(const char *filename){
-    arrow::Status st;
     arrow::MemoryPool* pool = arrow::default_memory_pool();
     arrow::fs::LocalFileSystem file_system;
     std::shared_ptr<arrow::io::RandomAccessFile> input = file_system.OpenInputFile(filename).ValueOrDie();
 
     std::unique_ptr<parquet::arrow::FileReader> arrow_reader;
-    st = parquet::arrow::OpenFile(input, pool, &arrow_reader);
-    if (!st.ok()) {
-       // TODO: Handle error instantiating file reader...
-       return NULL;
-    }
+    if(!(parquet::arrow::OpenFile(input, pool, &arrow_reader).ok()))
+        throw std::runtime_error("Could not open Parquet file");
 
     std::shared_ptr<arrow::Table> table;
-    st = arrow_reader->ReadTable(&table);
+    if(!(arrow_reader->ReadTable(&table)).ok())
+        throw std::runtime_error("Could not read Parquet table");
 
     auto output = arrow::io::BufferOutputStream::Create().ValueOrDie();
-    arrow::csv::WriteCSV(*table, arrow::csv::WriteOptions::Defaults(), output.get());
+    if(!(arrow::csv::WriteCSV(*table, arrow::csv::WriteOptions::Defaults(), output.get())).ok())
+        throw std::runtime_error("Could not write from Parquet to CSV format");
+
     auto finishResult = output->Finish();
 
     auto csv = finishResult.ValueOrDie()->ToString();
@@ -148,5 +146,3 @@ template <typename VT> struct ReadParquet<DenseMatrix<VT>> {
         closeFile(file);
     }
 };
-
-#endif

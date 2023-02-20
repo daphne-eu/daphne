@@ -17,6 +17,9 @@
 #ifndef SRC_IR_DAPHNEIR_DAPHNETYPES_TD
 #define SRC_IR_DAPHNEIR_DAPHNETYPES_TD
 
+include "mlir/IR/AttrTypeBase.td"
+include "mlir/IR/EnumAttr.td"
+
 // ****************************************************************************
 // General
 // ****************************************************************************

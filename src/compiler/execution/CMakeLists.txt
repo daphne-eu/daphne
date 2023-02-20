@@ -26,6 +26,7 @@ set(LIBS
         MLIRDaphneInference
         MLIRDaphneTransforms
         MLIRExecutionEngine
+        MLIRReconcileUnrealizedCasts
         )
 
 add_llvm_library(DaphneIrExecutor ${SOURCES}

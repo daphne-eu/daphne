@@ -74,15 +74,15 @@ set(BLA_VENDOR OpenBLAS)
 set(BLA_STATIC ON)
 find_package(BLAS)
 
+SET(ANTLR_VERSION 4.9.2 CACHE STRING "The version of ANTLR (parsing library).")
+message(STATUS "ANTLR_VERSION: ${ANTLR_VERSION}")
+
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources
 # prefix and /usr/local e.g.: -DCMAKE_PREFIX_PATH="/usr/local;${PROJECT_SOURCE_DIR}/thirdparty/installed"
-
-message(STATUS "ANTLR_VERSION: ${ANTLR_VERSION}")
 foreach(path ${CMAKE_PREFIX_PATH})
     message(STATUS "CMAKE_PREFIX_PATH:  ${path}")
     include_directories(${path}/include)
-    include_directories(${path}/include/openblas)
     file(GLOB ANTLR_JAR_FOUND ${path}/share/antlr4/antlr-${ANTLR_VERSION}-complete.jar)
     if(DEFINED ANTLR_JAR_FOUND)
         message(STATUS "ANTLR_JAR_FOUND: ${ANTLR_JAR_FOUND}")
@@ -93,7 +93,6 @@ endforeach(path)
 # fallback if not using CMAKE_PREFIX_PATH (e.g., system/container install)
 if(NOT DEFINED CMAKE_PREFIX_PATH)
     set(ANTLR4_JAR_LOCATION /usr/local/share/antlr4/antlr-${ANTLR_VERSION}-complete.jar CACHE STRING "default value for ANTLR jar file")
-    include_directories(/usr/local/include/openblas)
 endif()
 
 # check <package>_ROOT env var
@@ -135,20 +134,9 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     endif()
 endif()
 
-option(USE_ARROW "Whether to activate compilation of Arrow/Parquet features" OFF)
-if(USE_ARROW)
-    find_package(Arrow CONFIG REQUIRED
-        PATHS thirdparty/installed/lib/cmake/arrow
-        NO_DEFAULT_PATH
-    )
-    find_package(Parquet CONFIG REQUIRED
-        PATHS thirdparty/installed/lib/cmake/arrow
-        NO_DEFAULT_PATH
-    )
-    link_libraries(arrow_shared parquet_shared)
-    add_definitions(-DUSE_ARROW)
-    message(STATUS "Arrow/Parquet enabled")
-endif()
+
+find_package(Arrow REQUIRED)
+find_package(Parquet REQUIRED)
 
 option(USE_FPGAOPENCL "Whether to activate compilation of FPGA OpenCL features" OFF)
 if(USE_FPGAOPENCL)
@@ -174,13 +162,13 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 # Descend to subdirectories
 # *****************************************************************************
 
+add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/api/cli)
 add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)
 add_subdirectory(src/compiler/lowering)
 add_subdirectory(src/compiler/utils)
-add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/parser)
 add_subdirectory(src/parser/config)
 add_subdirectory(src/parser/metadata)
@@ -194,5 +182,6 @@ if(USE_FPGAOPENCL)
 endif() 
 add_subdirectory(src/util)
 
+add_dependencies(CompilerUtils MLIRDaphneTransformsIncGen)
 
 add_subdirectory(test)

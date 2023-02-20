@@ -16,11 +16,10 @@
 
 #include <mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h>
 #include <mlir/IR/MLIRContext.h>
-#include <mlir/InitAllDialects.h>
-#include "mlir/Conversion/SCFToStandard/SCFToStandard.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/IR/AsmState.h>
-#include <mlir/Parser.h>
+#include <mlir/Parser/Parser.h>
 #include <mlir/Pass/PassManager.h>
 #include <mlir/Transforms/Passes.h>
 #include <llvm/Support/SourceMgr.h>
@@ -87,7 +86,7 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     // the FreeOps at the coordinator already.
     DaphneIrExecutor executor(false, cfg);
 
-    mlir::OwningModuleRef module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
+    mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, executor.getContext()));
     if (!module) {
         auto message = "Failed to parse source string.\n";
         llvm::errs() << message;
@@ -95,13 +94,13 @@ WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outp
     }
 
     auto *distOp = module->lookupSymbol(DISTRIBUTED_FUNCTION_NAME);
-    mlir::FuncOp distFunc;
-    if (!(distFunc = llvm::dyn_cast_or_null<mlir::FuncOp>(distOp))) {
+    mlir::func::FuncOp distFunc;
+    if (!(distFunc = llvm::dyn_cast_or_null<mlir::func::FuncOp>(distOp))) {
         auto message = "MLIR fragment has to contain `dist` FuncOp\n";
         llvm::errs() << message;
         return WorkerImpl::Status(false, message);
     }
-    auto distFuncTy = distFunc.getType();
+    auto distFuncTy = distFunc.getFunctionType();
 
     std::vector<void *> inputsObj;
     std::vector<void *> outputsObj;
