@@ -853,18 +853,12 @@ fi
 
 daphne_msg "Build Daphne"
 
-<<<<<<< HEAD
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL  $BUILD_DEBUG \
   -DMPI_INST_DIR=$MPIInstDirName \
   -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++ \
   -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
   -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
   -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
-=======
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
-    -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG
->>>>>>> 061856911b6421cf0239c0eded1b9d1d2e7bbfc4
 
 cmake --build "$daphneBuildDir" --target "$target"
 
@@ -872,7 +866,4 @@ build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
-<<<<<<< HEAD
-=======
 
->>>>>>> 061856911b6421cf0239c0eded1b9d1d2e7bbfc4
