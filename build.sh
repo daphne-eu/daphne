@@ -694,6 +694,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     MPIVersion="4.1.3"
     MPIZipName=openmpi-$MPIVersion.tar.gz
     MPIInstDirName=$installPrefix
+    MPIInclude=$MPIInstDirName/include
     if ! is_dependency_downloaded "openmpi_v${MPIVersion}"; then
         daphne_msg "Get openmpi version ${MPIVersion}"
         wget "https://download.open-mpi.org/release/open-mpi/v4.1/$MPIZipName" -qO "${cacheDir}/${MPIZipName}"
@@ -709,9 +710,9 @@ if [ $WITH_DEPS -gt 0 ]; then
         dependency_install_success "openmpi_v${MPIVersion}"
     else
         daphne_msg "No need to build OpenMPI again"
-    fi    
-    export PATH=$MPIInstDirName/bin/:$PATH
-    export LD_LIBRARY_PATH=$MPIInstDirName/lib/:$LD_LIBRARY_PATH
+    fi
+    #export PATH=$MPIInstDirName/bin/:$PATH
+    #export LD_LIBRARY_PATH=$MPIInstDirName/lib/:$LD_LIBRARY_PATH
     #------------------------------------------------------------------------------
     # gRPC
     #------------------------------------------------------------------------------
@@ -853,12 +854,9 @@ fi
 
 daphne_msg "Build Daphne"
 
-cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja $BUILD_CUDA $BUILD_ARROW $BUILD_FPGAOPENCL  $BUILD_DEBUG \
-  -DMPI_INST_DIR=$MPIInstDirName \
-  -DCMAKE_C_COMPILER=mpicc -DCMAKE_CXX_COMPILER=mpic++ \
-  -DCMAKE_PREFIX_PATH="$installPrefix" -DANTLR_VERSION="$antlrVersion"  \
-  -DMLIR_DIR="$buildPrefix/$llvmName/lib/cmake/mlir/" \
-  -DLLVM_DIR="$buildPrefix/$llvmName/lib/cmake/llvm/"
+cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
+    -DCMAKE_PREFIX_PATH="$installPrefix" \
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG
 
 cmake --build "$daphneBuildDir" --target "$target"
 
@@ -866,4 +864,3 @@ build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
-

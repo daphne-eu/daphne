@@ -26,7 +26,6 @@
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
-#include <runtime/distributed/worker/MPICoordinator.h>
 
 
 

@@ -99,8 +99,9 @@ endif()
 cmake_policy(SET CMP0074 NEW)
 
 ###### MPI
-include_directories(${MPI_INST_DIR}/include)
-SET(OPENMPI_LIBRARIES ${MPI_INST_DIR}/lib/)
+#SET(OPENMPI_LIBRARIES ${MPI_INST_DIR}/lib/)
+find_package(MPI REQUIRED)
+include_directories(${MPI_INCLUDE_PATH})
 ##########
 
 option(USE_CUDA "Whether to activate compilation of CUDA features" OFF)
