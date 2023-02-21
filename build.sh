@@ -444,6 +444,8 @@ if [ ! -d "$thirdpartyFlagsDir" ]; then
     done
 fi
 
+mkdir -p ${thirdpartyPath}/flags
+tflags=${thirdpartyPath}/flags
 
 
 #******************************************************************************
