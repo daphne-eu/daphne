@@ -321,24 +321,26 @@ function cleanAll() {
 # Create / Check Indicator-files
 #******************************************************************************
 
+
+
 #// creates indicator file which indicates successful dependency installation in <projectRoot>/thirdparty/
 #// param 1 dependency name
 function dependency_install_success() {
     daphne_msg "Successfully installed ${1}."
-    touch "${thirdpartyPath}/${1}.install.success"
+    touch "${tflags}/${1}.install.success"
 }
 function dependency_download_success() {
     daphne_msg "Successfully downloaded ${1}."
-    touch "${thirdpartyPath}/${1}.download.success"
+    touch "${tflags}/${1}.download.success"
 }
 
 #// checks if dependency is installed successfully
 #// param 1 dependency name
 function is_dependency_installed() {
-    [ -e "${thirdpartyPath}/${1}.install.success" ]
+    [ -e "${tflags}/${1}.install.success" ]
 }
 function is_dependency_downloaded() {
-    [ -e "${thirdpartyPath}/${1}.download.success" ]
+    [ -e "${tflags}/${1}.download.success" ]
 }
 
 #******************************************************************************
@@ -372,6 +374,9 @@ sourcePrefix="${myPrefix}/sources"
 cacheDir="${myPrefix}/download-cache"
 
 mkdir -p "$cacheDir"
+
+mkdir -p ${thirdpartyPath}/flags
+tflags=${thirdpartyPath}/flags
 
 #******************************************************************************
 # Parse arguments
