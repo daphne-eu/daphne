@@ -25,8 +25,9 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
-#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
-
+#ifdef USE_MPI
+    #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#endif
 
 
 #include <mlir/InitAllDialects.h>
@@ -71,7 +72,11 @@ public:
         // Backend Implementation 
         // gRPC hard-coded selection
         // TODO choose implementation based on configFile/command-line argument        
+#ifdef USE_MPI
         const auto alloc_type = ALLOCATION_TYPE::DIST_MPI;
+#else
+        const auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
+#endif
         //std::cout<<"Distributed wrapper " <<std::endl;
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
