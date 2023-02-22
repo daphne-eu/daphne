@@ -15,7 +15,9 @@
  */
 
 #include "runtime/local/datastructures/IAllocationDescriptor.h"
-#include "runtime/distributed/worker/MPIWorker.h"
+#ifdef USE_MPI
+    #include "runtime/distributed/worker/MPIWorker.h"
+#endif
 #include <api/cli/StatusCode.h>
 #include <api/cli/DaphneUserConfig.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
@@ -430,23 +432,20 @@ int startCoordinator(int argc, char** argv){
     return StatusCode::SUCCESS;
 }
 
-int startDistributedWorkers(int argc, char** argv){
-    MPIWorker worker;
-    worker.joinComputingTeam();
-    return StatusCode::SUCCESS;
-}
+//int startDistributedWorkers(int argc, char** argv){
+//    MPIWorker worker;
+//    worker.joinComputingTeam();
+//    return StatusCode::SUCCESS;
+//}
 
 
 int main(int argc, char** argv){
+    int res;
+#ifdef USE_MPI 
     int id, size;
     MPI_Init(NULL,NULL);
     MPI_Comm_rank(MPI_COMM_WORLD, &id);
     MPI_Comm_size(MPI_COMM_WORLD, &size);
-    char processor_name[MPI_MAX_PROCESSOR_NAME];
-    int name_len;
-    MPI_Get_processor_name(processor_name, &name_len);
-   // std::cout<<"I am "<< id <<" out of "<< size << " reside on "<< processor_name <<std::endl;
-    int res;
     if(id==COORDINATOR){
         res=startCoordinator(argc, argv);
         std::cout<<"==========Done=======\n";
@@ -457,9 +456,14 @@ int main(int argc, char** argv){
        }
     }   
     else{
-        res=startDistributedWorkers(argc, argv);
+            MPIWorker worker;
+            worker.joinComputingTeam();
+            res=StatusCode::SUCCESS;
     }   
 
     MPI_Finalize();
+#else
+    res=startCoordinator(argc, argv);
+#endif    
     return res;
 }
