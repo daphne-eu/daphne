@@ -163,7 +163,7 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto nC = tensor.getNumCols();
         auto tensorType = tensor.getElementType();
         auto memRefType = mlir::MemRefType::get(
-            {nR, nC}, tensorType, {mlir::AffineMap::getMinorIdentityMap(2, 2, op->getContext())});
+            {nR, nC}, tensorType);
         MemRefLayoutAttrInterface t;
         std::cout << "tensorType: " << std::endl;
         tensorType.dump();
