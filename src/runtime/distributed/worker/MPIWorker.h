@@ -102,7 +102,7 @@ class MPIWorker: WorkerImpl {
                 info= this->doStore(&val);
             }
             allReceivedInputs.push_back(info);
-            std::cout<<"input object has been received and identifier "<<info.identifier<<" has been added at " << id<<std::endl;
+            //std::cout<<"input object has been received and identifier "<<info.identifier<<" has been added at " << id<<std::endl;
             currentPipelineIdentifiers.push_back(info.identifier);
            // std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
             return info; 
@@ -185,11 +185,11 @@ class MPIWorker: WorkerImpl {
                     sendDataACK(info);
                 break;
                 case OBJECTIDENTIFIERSIZE:
-                    std::cout<<"Identifier Message "<<std::endl;
+                   // std::cout<<"Identifier Message "<<std::endl;
                     prepareBufferForMessage(&data, &messageLength, MPI_INT, source, OBJECTIDENTIFIERSIZE);
                     MPI_Recv(data, messageLength, MPI_CHAR, COORDINATOR, OBJECTIDENTIFIER,MPI_COMM_WORLD, &messageStatus);
                     identifier = std::string((const char *) data);
-                    std::cout<<"identifier "<<identifier <<" received at "<< id<<std::endl;
+                   // std::cout<<"identifier "<<identifier <<" received at "<< id<<std::endl;
                     currentPipelineIdentifiers.push_back(identifier);
                 break;
                 case DATASIZE:
@@ -211,8 +211,8 @@ class MPIWorker: WorkerImpl {
                     getCurrentPipelineInputs(&currentPipelineInputs, currentPipelineIdentifiers);
                     exStatus=this->doCompute(&outputs,currentPipelineInputs , protoMsgTask.mlir_code());
                     //std::cout<<printData<<std::endl;
-                    if(!(exStatus.ok()))
-                        std::cout<<"error!";    
+                    //if(!(exStatus.ok()))
+                    //    std::cout<<"error!";    
                     // std::cout<<"computation is done"<<std::endl;
                     sendResult(outputs);
                     currentPipelineIdentifiers.clear();

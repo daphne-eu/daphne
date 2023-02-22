@@ -104,13 +104,13 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                 data.ix = DistributedIndex(rank, 0);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }
-            std::cout<<"rank "<< rank+1<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
+            //std::cout<<"rank "<< rank+1<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                // std::cout<<"worker already has the data"<<std::endl;
                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
                MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
-               std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
+               //std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                continue;
             }
             MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
@@ -121,7 +121,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
         for(size_t i=0;i<targetGroup.size();i++)
         {
             int rank=targetGroup.at(i);
-            std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
+            //std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
             if (rank==COORDINATOR)
             {
 

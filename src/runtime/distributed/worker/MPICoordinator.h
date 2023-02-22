@@ -96,7 +96,7 @@ class MPICoordinator{
                     range.c_start = data.ix.getCol() * partitionSize;
                     range.c_len = partitionSize;
                 }
-                std::cout<<"rank "<< COORDINATOR <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
+                //std::cout<<"rank "<< COORDINATOR <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
                 std::string addr= std::to_string(COORDINATOR);
                 // If dp already exists for this worker, update the range and data
                 if (auto dp = (*res[i])->getMetaDataObject().getDataPlacementByLocation(addr)) { 

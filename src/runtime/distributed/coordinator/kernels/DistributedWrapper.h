@@ -160,12 +160,12 @@ private:
         // Fixme: is it ok to allow unregistered dialects?
         mlir::MLIRContext ctx;
         ctx.allowUnregisteredDialects();
+        std::cout<<mlirCode<<std::endl;
         mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
         if (!module) {
             auto message = "DistributedWrapper: Failed to parse source string.\n";
             throw std::runtime_error(message);
         }
-
         auto *distOp = module->lookupSymbol("dist");
         mlir::func::FuncOp distFunc;
         if (!(distFunc = llvm::dyn_cast_or_null<mlir::func::FuncOp>(distOp))) {

@@ -110,7 +110,7 @@ class MPIHelper{
                     dataToDisplay+= "\n";
                     allValues += res->getRowSkip();
                 }
-                std::cout<<dataToDisplay<<std::endl;
+                //std::cout<<dataToDisplay<<std::endl;
         }
         
         static void displayData(distributed::Data data, int rank)
@@ -129,7 +129,7 @@ class MPIHelper{
             {
                 dataToDisplay += " scalar  lf:";
                 dataToDisplay += std::to_string(data.value().f64());
-                std::cout<<dataToDisplay<<std::endl;
+                //std::cout<<dataToDisplay<<std::endl;
 
             }
         }

@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-#include <mpi.h>
 #include "runtime/local/datastructures/IAllocationDescriptor.h"
 #include "runtime/distributed/worker/MPIWorker.h"
 #include <api/cli/StatusCode.h>
@@ -446,7 +445,7 @@ int main(int argc, char** argv){
     char processor_name[MPI_MAX_PROCESSOR_NAME];
     int name_len;
     MPI_Get_processor_name(processor_name, &name_len);
-    std::cout<<"I am "<< id <<" out of "<< size << " reside on "<< processor_name <<std::endl;
+   // std::cout<<"I am "<< id <<" out of "<< size << " reside on "<< processor_name <<std::endl;
     int res;
     if(id==COORDINATOR){
         res=startCoordinator(argc, argv);
@@ -454,7 +453,7 @@ int main(int argc, char** argv){
         unsigned char terminateMessage=0x00;
         for(int i=1;i<size;i++){
             MPI_Send(&terminateMessage,1, MPI_UNSIGNED_CHAR, i,  DETACH, MPI_COMM_WORLD);
-            std::cout<<"coordinator detached worker "<<i<<std::endl; 
+           // std::cout<<"coordinator detached worker "<<i<<std::endl; 
        }
     }   
     else{

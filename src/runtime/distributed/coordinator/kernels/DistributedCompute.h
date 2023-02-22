@@ -111,7 +111,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                     range.c_start = data.ix.getCol() * partitionSize;
                     range.c_len = colCount;
                 }
-                std::cout<<"rank "<< rank+1 <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
+               // std::cout<<"rank "<< rank+1 <<" Range rows from "<< range.r_start <<" to " <<( range.r_len + range.r_start)<< " cols from " <<range.c_start <<" to " <<( range.c_len + range.c_start)<<std::endl;
                 remainingSize-=partitionSize;
                 std::string addr= std::to_string(rank+1);
                 // If dp already exists for this worker, update the range and data
