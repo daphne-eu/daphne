@@ -26,12 +26,14 @@
 #include <runtime/local/datastructures/Range.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
+
 #ifdef USE_MPI
-    #include <runtime/distributed/worker/MPIWorker.h>
-    #include <runtime/distributed/worker/MPISerializer.h>
-    #include <runtime/distributed/worker/MPIHelper.h>
-    #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#include <runtime/distributed/worker/MPIHelper.h>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#include <runtime/distributed/worker/MPIWorker.h>
+#include <runtime/distributed/worker/MPISerializer.h>
 #endif
+
 #include <cassert>
 #include <cstddef>
 
