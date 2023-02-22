@@ -100,7 +100,8 @@ cmake_policy(SET CMP0074 NEW)
 
 ###### MPI
 #SET(OPENMPI_LIBRARIES ${MPI_INST_DIR}/lib/)
-find_package(MPI REQUIRED)
+find_package(MPI)
+# REQUIRED)
 include_directories(${MPI_INCLUDE_PATH})
 ##########
 
