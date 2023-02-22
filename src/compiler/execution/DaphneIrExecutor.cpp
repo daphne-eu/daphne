@@ -192,15 +192,17 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         // This is important, because otherwise, an SSA value whose references are managed could
         // be cleared away by common subexpression elimination (CSE), while retaining its
         // IncRefOps/DecRefOps, which could lead to double frees etc.
-        // pm.addPass(mlir::createCanonicalizerPass());
-        // pm.addPass(mlir::createCSEPass());
+        pm.addPass(mlir::createCanonicalizerPass());
+        pm.addPass(mlir::createCSEPass());
 
         if(userConfig_.use_obj_ref_mgnt)
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createManageObjRefsPass());
         if(userConfig_.explain_obj_ref_mgnt)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
 
+        // TODO(phil): figure out when in pipeline we want to lower memref kernel calls
         pm.addPass(mlir::daphne::createPrintIRPass("IR before kernel lowering"));
+        // pm.addPass(mlir::daphne::createMemRefTestPass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         if(userConfig_.explain_kernels)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));

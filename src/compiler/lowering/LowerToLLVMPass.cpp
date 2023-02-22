@@ -283,6 +283,7 @@ class CallKernelOpLowering : public OpConversionPattern<daphne::CallKernelOp>
 
         PatternRewriter::InsertionGuard insertGuard(rewriter);
         rewriter.setInsertionPointToStart(module.getBody());
+        // TODO(phil): https://github.com/llvm/llvm-project/blob/5c9013e2664141d3b4071c37b3cbb8cd09a008d8/mlir/lib/Conversion/GPUToNVVM/LowerGpuOpsToNVVMOps.cpp#L223
         rewriter.create<LLVM::LLVMFuncOp>(module.getLoc(), funcName, llvmFnType);
         return SymbolRefAttr::get(context, funcName);
     }
@@ -313,17 +314,20 @@ public:
         auto module = op->getParentOfType<ModuleOp>();
         auto loc = op.getLoc();
 
+        std::cout << "Lowering kernel call: " << op.getCallee().str() << "\n";
         auto inputOutputTypes = getLLVMInputOutputTypes(
-                                                        loc, rewriter.getContext(), typeConverter,
-                                                        op.getResultTypes(), ValueRange(adaptor.getOperands()).getTypes(),
-                                                        hasVarRes, rewriter.getIndexType());
+            loc, rewriter.getContext(), typeConverter, op.getResultTypes(),
+            ValueRange(adaptor.getOperands()).getTypes(), hasVarRes,
+            rewriter.getIndexType());
 
         // create function protoype and get `FlatSymbolRefAttr` to it
         auto kernelRef = getOrInsertFunctionAttr(
-                                                 rewriter, module, op.getCalleeAttr().getValue(),
-                                                 getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
+            rewriter, module, op.getCalleeAttr().getValue(),
+            getKernelFuncSignature(rewriter.getContext(), inputOutputTypes));
 
-        auto kernelOperands = allocOutputReferences(loc, rewriter, adaptor.getOperands(), inputOutputTypes, op->getNumResults(), hasVarRes);
+        auto kernelOperands = allocOutputReferences(
+            loc, rewriter, adaptor.getOperands(), inputOutputTypes,
+            op->getNumResults(), hasVarRes);
 
         // call function
         // The kernel call has an empty list of return types, because our
@@ -912,6 +916,7 @@ public:
     matchAndRewrite(daphne::GenericCallOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
+        std::cout <<"GenericCallOpLowering: " << op.getCallee().str() << "\n";
         rewriter.replaceOpWithNewOp<func::CallOp>(op, op.getCallee(), op->getResultTypes(), adaptor.getOperands());
         return success();
     }
@@ -940,6 +945,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
     RewritePatternSet patterns(&getContext());
 
     LowerToLLVMOptions llvmOptions(&getContext());
+    // llvmOptions.useBarePtrCallConv = true;
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
     typeConverter.addConversion([&](daphne::MatrixType t)
     {

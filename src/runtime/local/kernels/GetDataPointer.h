@@ -31,9 +31,11 @@
 
 // TODO MSC: may need to pass DM/StridedMemRefType as value
 inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
-                                     StridedMemRefType<double, 2> *memRef,
+        double* basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1,
+                                     // StridedMemRefType<double, 2> *memRef,
                                      DCTX(ctx)) {
-    std::cout << "convertMemRefToDenseMatrix(result: " << result << ", memRef: " << memRef << ", ctx: " << ctx << ")\n";
+    std::cout << "convertMemRefToDenseMatrix(result: " << result << ", memRef: " << basePtr << ", ctx: " << ctx << ")\n";
     // DenseMatrix<double> *res = new DenseMatrix<double>(memRef->basePtr);
 
     // if(res == nullptr) {
@@ -51,7 +53,7 @@ inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
         std::cout << std::endl;
     }
 #endif
-    result = DataObjectFactory::create<DenseMatrix<double>>(memRef->basePtr);
+    result = DataObjectFactory::create<DenseMatrix<double>>(basePtr);
     // }
     // else
     //     throw std::runtime_error("DenseMatrix already exists for memref?\n");
@@ -93,9 +95,11 @@ inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
     memRef.basePtr = input->getValuesSharedPtr().get();
     memRef.data = memRef.basePtr;
     memRef.offset = 0;
-    memRef.strides[0] = 1;
     memRef.sizes[0] = input->getNumRows();
     memRef.sizes[1] = input->getNumCols();
+    // TODO(phil): does not make a difference? maybe the mlir/llvm inferes something since it's statically typed
+    memRef.strides[0] = 10;
+    memRef.strides[1] = 1;
     input->increaseRefCounter();
 
     return memRef;

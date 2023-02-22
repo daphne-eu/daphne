@@ -22,9 +22,17 @@
 #include "compiler/utils/CompilerUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
+#include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
+#include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
+#include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
+#include "mlir/Conversion/MemRefToLLVM/MemRefToLLVM.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Func/Transforms/FuncConversions.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -155,7 +163,12 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto nC = tensor.getNumCols();
         auto tensorType = tensor.getElementType();
         auto memRefType = mlir::MemRefType::get(
-            {nR, nC}, tensorType);
+            {nR, nC}, tensorType, {mlir::AffineMap::getMinorIdentityMap(2, 2, op->getContext())});
+        MemRefLayoutAttrInterface t;
+        std::cout << "tensorType: " << std::endl;
+        tensorType.dump();
+        std::cout << "memRefType: " << std::endl;
+        memRefType.dump();
 
         // daphne::Matrix -> memref
         mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
@@ -172,26 +185,35 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         // Alloc output memref
         mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
 
-        // Extraction of aligned pointer of memref
-        // %0 = memref.extract_aligned_pointer_as_index %arg : memref<4x4xf32> -> index
-        // %1 = arith.index_cast %0 : index to i64
-        // %2 = llvm.inttoptr %1 : i64 to !llvm.ptr<f32>
-        // mlir::Value m_ptr = rewriter.create<mlir::memref::ExtractAlignedPointerAsIndexOp>(loc, lhs);
-        // mlir::Value m_ptr_cast = rewriter.create<mlir::arith::IndexCastOp>(loc, rewriter.getI64Type(), m_ptr).getOut();
-        // mlir::Value m_ptr_llvm_ptr = rewriter.create<mlir::LLVM::IntToPtrOp>(loc, mlir::LLVM::LLVMPointerType::get(rewriter.getF64Type()), m_ptr_cast);
-
-
         // Fill the output MemRef
         affineFillMemRef(0.0, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
-
-
-        // rewriter.create<mlir::daphne::PrintMemRef>(loc, outputMemRef);
-
         // Do the actual MatMul with hand built codegen
         affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, nR, nC, op->getContext());
 
+        auto extractStridedMetadataOp =
+            rewriter.create<memref::ExtractStridedMetadataOp>(loc, outputMemRef);
+        // Base ptr.
+        mlir::Value basePtr = extractStridedMetadataOp.getBaseBuffer();
+        mlir::Value alignedPtr = rewriter.create<memref::ExtractAlignedPointerAsIndexOp>(loc, outputMemRef);
+        // offset.
+        mlir::Value offset = extractStridedMetadataOp.getOffset();
+        // strides.
+        mlir::ResultRange strides = extractStridedMetadataOp.getStrides();
+        // sizes
+        mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
+        // IREE approach to sizes
+        // mlir::Value size0 = rewriter.create<memref::DimOp>(loc, outputMemRef, 0);
+        // mlir::Value size1 = rewriter.create<memref::DimOp>(loc, outputMemRef, 1);
+
+        rewriter.create<mlir::daphne::PrintMemRef>(loc, alignedPtr, offset, sizes[0], sizes[1], strides[0], strides[1]);
+        // rewriter.create<mlir::daphne::PrintMemRef>(loc, basePtr, offset, size0, size1, strides[0], strides[1]);
+        // rewriter.create<mlir::daphne::PrintMemRef>(loc, basePtr);
+
+        // TODO(phil): MemRefDescriptor in MemRefBuilder.h may be useful
+
         mlir::Value DM = rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
-                loc, op.getType(), outputMemRef);
+                // loc, op.getType(), outputMemRef);
+                loc, op.getType(), alignedPtr, offset, sizes[0], sizes[1], strides[0], strides[1]);
         rewriter.replaceOp(op, DM);
         return success();
     }
@@ -273,48 +295,6 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
 };
 
 namespace {
-struct MemRefTestPass
-    : public mlir::PassWrapper<MemRefTestPass,
-                               mlir::OperationPass<mlir::ModuleOp>> {
-    explicit MemRefTestPass() {}
-
-    void getDependentDialects(mlir::DialectRegistry &registry) const override {
-        registry.insert<mlir::LLVM::LLVMDialect, mlir::AffineDialect, mlir::memref::MemRefDialect>();
-    }
-    void runOnOperation() final;
-};
-}  // end anonymous namespace
-
-void MemRefTestPass::runOnOperation() {
-    mlir::ConversionTarget target(getContext());
-    mlir::RewritePatternSet patterns(&getContext());
-    LowerToLLVMOptions llvmOptions(&getContext());
-    LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
-
-    target.addLegalDialect<mlir::memref::MemRefDialect>();
-    target.addLegalDialect<mlir::scf::SCFDialect>();
-    target.addLegalDialect<mlir::AffineDialect>();
-    target.addLegalDialect<mlir::linalg::LinalgDialect>();
-    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
-
-    target.addLegalOp<mlir::daphne::GetMemRefDenseMatrix>();
-    target.addLegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
-    target.addIllegalOp<mlir::daphne::AllAggSumOp>();
-
-    typeConverter.addConversion([&](daphne::MatrixType t) {
-        return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
-                                     t.getElementType());
-    });
-
-    // populateStdToLLVMMemoryConversionPatterns(typeConverter, patterns);
-
-    auto module = getOperation();
-    if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
-        signalPassFailure();
-    }
-}
-
-namespace {
 struct LowerDenseMatrixPass
     : public mlir::PassWrapper<LowerDenseMatrixPass,
                                mlir::OperationPass<mlir::ModuleOp>> {
@@ -331,7 +311,6 @@ void LowerDenseMatrixPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     LowerToLLVMOptions llvmOptions(&getContext());
-    // llvmOptions.emitCWrappers = true;
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
     target.addLegalDialect<mlir::memref::MemRefDialect>();
@@ -343,8 +322,10 @@ void LowerDenseMatrixPass::runOnOperation() {
 
     target.addLegalOp<mlir::daphne::GetMemRefDenseMatrix>();
     target.addLegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
+    target.addLegalOp<mlir::daphne::PrintMemRef>();
     target.addIllegalOp<mlir::daphne::AllAggSumOp>();
     target.addIllegalOp<mlir::daphne::MatMulOp>();
+    // populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
 
     typeConverter.addConversion([&](daphne::MatrixType t) {
         return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
@@ -358,11 +339,99 @@ void LowerDenseMatrixPass::runOnOperation() {
     }
 }
 
+class MemRefCallingConvention : public OpConversionPattern<daphne::GetDenseMatrixFromMemRef> {
+   public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult matchAndRewrite(
+        daphne::GetDenseMatrixFromMemRef op, OpAdaptor adaptor,
+        ConversionPatternRewriter &rewriter) const override {
+
+        /*
+        std::cout <<"hugo\n";
+        auto loc = op->getLoc();
+        // SmallVector<mlir::Value> callOperands{};
+        // auto extractStridedMetadataOp =
+        //     rewriter.create<memref::ExtractStridedMetadataOp>(loc, op.getArg());
+        // // Base ptr.
+        // callOperands.push_back(extractStridedMetadataOp.getBaseBuffer());
+        // // offset.
+        // callOperands.push_back(extractStridedMetadataOp.getOffset());
+        // // strides.
+        // callOperands.push_back(extractStridedMetadataOp.getStrides().front());
+
+        // std::string callee_name = "_getDenseMatrixFromMemRef__DenseMatrix_double__StridedMemRefType_"
+        std::string fName = "_printMemRef"; 
+        mlir::Value memRef = adaptor.getArg();
+        ArrayRef<mlir::Value> args({memRef});
+
+        TypeRange ts;
+        auto callOp = rewriter.create<func::CallOp>(loc, fName, ts, args);
+        // rewriter.replaceOp(op, memRef);
+        // SmallVector<Value, 4> results;
+        // results.append(callOp.result_begin(), callOp.result_end());
+        rewriter.replaceOp(op, callOp.getResult(0));
+        */
+        return success();
+    }
+};
+
+namespace {
+struct MemRefCallingConventionPass
+    : public mlir::PassWrapper<MemRefCallingConventionPass,
+                               mlir::OperationPass<mlir::ModuleOp>> {
+    explicit MemRefCallingConventionPass() {}
+
+    void getDependentDialects(mlir::DialectRegistry &registry) const override {
+        registry.insert<mlir::daphne::DaphneDialect, mlir::LLVM::LLVMDialect,
+                        mlir::AffineDialect, mlir::memref::MemRefDialect>();
+    }
+    void runOnOperation() final;
+};
+}  // namespace
+
+void MemRefCallingConventionPass::runOnOperation() {
+    mlir::ConversionTarget target(getContext());
+    mlir::RewritePatternSet patterns(&getContext());
+    LowerToLLVMOptions llvmOptions(&getContext());
+    // llvmOptions.seBarePtrCallConv = true;
+    LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
+    typeConverter.addConversion([&](daphne::MatrixType t) {
+        return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
+                                     t.getElementType());
+    });
+
+    populateAffineToStdConversionPatterns(patterns);
+    populateSCFToControlFlowConversionPatterns(patterns);
+    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
+    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
+    cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
+    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
+    populateReturnOpTypeConversionPattern(patterns, typeConverter);
+
+    target.addLegalDialect<mlir::memref::MemRefDialect>();
+    target.addLegalDialect<mlir::func::FuncDialect>();
+    // target.addLegalDialect<mlir::arith::ArithDialect>();
+    // target.addLegalDialect<mlir::scf::SCFDialect>();
+    // target.addLegalDialect<mlir::AffineDialect>();
+    // target.addLegalDialect<mlir::linalg::LinalgDialect>();
+    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
+    // populate
+
+    target.addIllegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
+
+    patterns.insert<MemRefCallingConvention>(&getContext());
+    auto module = getOperation();
+    if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
+        signalPassFailure();
+    }
+}
+
 std::unique_ptr<mlir::Pass> mlir::daphne::createLowerDenseMatrixPass() {
     return std::make_unique<LowerDenseMatrixPass>();
 }
 
 std::unique_ptr<mlir::Pass> mlir::daphne::createMemRefTestPass()
 {
-    return std::make_unique<MemRefTestPass>();
+    return std::make_unique<MemRefCallingConventionPass>();
 }

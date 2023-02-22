@@ -34,6 +34,7 @@ include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
 
+include "mlir/Dialect/LLVMIR/LLVMTypes.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
 
@@ -73,11 +74,21 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
 // TODO: Do we really need this? MatrixOrU may be enough
 def DenseMatrix_T : AnyTypeOf<[MatrixOrU], "::mlir::daphne::DenseMatrix">;
 
+def Daphne_PrintMemRef : Daphne_Op<"printMemRef"> {
+    let summary = "Utility function to print a MemRefs content.";
+
+    let arguments = (ins Size:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
+    //let arguments = (ins AnyMemRef:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
+    /* let arguments = (ins AnyMemRef:$inputMemref); */
+    // let arguments = (ins LLVMPointerType:$base, LLVMPointerType:$data, I64:$offset, I64:$sizes0, I64:$sizes1, I64:$strides0, I64:$strides1);
+}
+
 def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
     let summary = "Return a DenseMatrix.";
     let description = [{ Constructs a DenseMatrix given a rank 2 StridedMemRefType. }];
 
-    let arguments = (ins AnyMemRef:$arg);
+    /* let arguments = (ins AnyMemRef:$arg); */
+    let arguments = (ins Size:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
     let results = (outs MatrixOrU:$res);
 }
 
