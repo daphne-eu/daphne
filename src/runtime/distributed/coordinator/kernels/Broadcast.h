@@ -22,15 +22,16 @@
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
-#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
-#include <runtime/distributed/worker/MPIWorker.h>
-#include <runtime/distributed/worker/MPISerializer.h>
-#include <runtime/distributed/proto/DistributedGRPCCaller.h>
-#include <runtime/distributed/worker/MPIHelper.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
-
+#include <runtime/distributed/proto/DistributedGRPCCaller.h>
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPIWorker.h>
+    #include <runtime/distributed/worker/MPISerializer.h>
+    #include <runtime/distributed/worker/MPIHelper.h>
+    #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#endif
 #include <cassert>
 #include <cstddef>
 
@@ -61,6 +62,7 @@ void broadcast(DT *&mat, bool isScalar, DCTX(dctx))
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
+#ifdef USE_MPI
 template<class DT>
 struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
@@ -141,7 +143,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         }
     }
 };
-
+#endif
 // ----------------------------------------------------------------------------
 // GRPC
 // ----------------------------------------------------------------------------

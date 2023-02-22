@@ -23,10 +23,12 @@
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
-
-#include <runtime/distributed/worker/MPISerializer.h>
-#include <runtime/distributed/worker/MPIHelper.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
+
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPISerializer.h>
+    #include <runtime/distributed/worker/MPIHelper.h>
+#endif 
 
 #include <cassert>
 #include <cstddef>
@@ -55,7 +57,7 @@ void distribute(DT *mat, DCTX(dctx))
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************
 
-
+#ifdef USE_MPI
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
@@ -142,6 +144,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 
     }
 };
+#endif
 
 // ----------------------------------------------------------------------------
 // GRPC

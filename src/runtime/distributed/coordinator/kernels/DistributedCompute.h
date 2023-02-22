@@ -25,7 +25,9 @@
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
-#include <runtime/distributed/worker/MPIHelper.h>
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPIHelper.h>
+#endif
 
 #include <cassert>
 #include <cstddef>
@@ -61,7 +63,7 @@ void distributedCompute(DTRes **&res, size_t numOutputs, DTArgs **args, size_t n
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
-
+#ifdef USE_MPI
 template<class DTRes>
 struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
 {
@@ -155,6 +157,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
 
     }
 };
+#endif
 
 // ----------------------------------------------------------------------------
 // GRPC

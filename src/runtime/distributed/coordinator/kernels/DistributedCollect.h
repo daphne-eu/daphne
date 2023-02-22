@@ -26,7 +26,10 @@
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
-#include <runtime/distributed/worker/MPIHelper.h>
+
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPIHelper.h>
+#endif
 
 #include <cassert>
 #include <cstddef>
@@ -61,7 +64,7 @@ void distributedCollect(DT *&mat, DCTX(dctx))
 // ----------------------------------------------------------------------------
 // MPI
 // ----------------------------------------------------------------------------
-
+#ifdef USE_MPI
 template<class DT>
 struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
 {
@@ -101,7 +104,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
         }
     };
 };
-
+#endif
 
 // ----------------------------------------------------------------------------
 // GRPC
