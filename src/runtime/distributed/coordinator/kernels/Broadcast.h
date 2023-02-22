@@ -25,7 +25,6 @@
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
-#include <mpi.h>
 #include <runtime/distributed/worker/MPIWorker.h>
 #include <runtime/distributed/worker/MPISerializer.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
