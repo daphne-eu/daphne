@@ -94,28 +94,29 @@ void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
     for (Operation &nested : *rowLoop.getBody()) {
         rewriter.eraseOp(&nested);
     }
-    loopIvs.push_back(rowLoop.getInductionVar());
 
     // row loop body
     rewriter.setInsertionPointToStart(rowLoop.getBody());
-
-    // col loop
-    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], 1);
-    for (Operation &nested : *colLoop.getBody()) {
-        rewriter.eraseOp(&nested);
-    }
-    loopIvs.push_back(colLoop.getInductionVar());
-
-    // col loop body
-    rewriter.setInsertionPointToStart(colLoop.getBody());
 
     // fma loop
     auto innerLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[ROW], 1);
     for (Operation &nested : *innerLoop.getBody()) {
         rewriter.eraseOp(&nested);
     }
-    loopIvs.push_back(innerLoop.getInductionVar());
     rewriter.setInsertionPointToStart(innerLoop.getBody());
+
+    // col loop
+    auto colLoop = rewriter.create<AffineForOp>(loc, 0, rhsShape[COL], 1);
+    for (Operation &nested : *colLoop.getBody()) {
+        rewriter.eraseOp(&nested);
+    }
+
+    // col loop body
+    rewriter.setInsertionPointToStart(colLoop.getBody());
+
+    loopIvs.push_back(rowLoop.getInductionVar());
+    loopIvs.push_back(colLoop.getInductionVar());
+    loopIvs.push_back(innerLoop.getInductionVar());
 
     // load
     mlir::Value a = rewriter.create<memref::LoadOp>(
