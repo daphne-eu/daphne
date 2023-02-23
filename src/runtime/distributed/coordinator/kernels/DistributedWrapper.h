@@ -164,6 +164,7 @@ private:
         // is it safe to pass null for mlir::DaphneContext? 
         // Fixme: is it ok to allow unregistered dialects?
         mlir::MLIRContext ctx;
+        ctx.getOrLoadDialect<mlir::func::FuncDialect>();
         ctx.allowUnregisteredDialects();
         //std::cout<<mlirCode<<std::endl;
         mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
