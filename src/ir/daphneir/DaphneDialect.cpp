@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
@@ -954,6 +955,17 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
     );
     return mlir::success();
 }
+
+// TODO(phil): fix genVerifyDecl in DaphneOps.td
+// mlir::LogicalResult mlir::daphne::MatMulOp::verify() {
+//     mlir::daphne::MatrixType lhs = getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+//     mlir::daphne::MatrixType rhs = getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+//
+//     if (lhs.getNumCols() != rhs.getNumRows())
+//         return emitError("daphne::MatMulOp operands do not satisfy matrix multiplication shape constraints.");
+//
+//     return mlir::success();
+// }
 
 /**
  * @brief Replaces NumRowsOp by a constant, if the #rows of the input is known

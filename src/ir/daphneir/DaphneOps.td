@@ -37,6 +37,7 @@ include "ir/daphneir/FPGAOPENCLSupport.td"
 include "mlir/Dialect/LLVMIR/LLVMTypes.td"
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
+include "mlir/IR/AttrTypeBase.td"
 
 // ****************************************************************************
 // Custom constraints
@@ -196,6 +197,7 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
     let hasCanonicalizeMethod = 1;
+    /* let genVerifyDecl = 1; */
 }
 
 // ****************************************************************************
