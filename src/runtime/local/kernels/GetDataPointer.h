@@ -34,8 +34,8 @@ inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
                                        size_t size0, size_t size1,
                                        size_t stride0, size_t stride1,
                                        DCTX(ctx)) {
-    std::cout << "convertMemRefToDenseMatrix(result: " << result
-              << ", memRef: " << basePtr << ", ctx: " << ctx << ")\n";
+    // std::cout << "convertMemRefToDenseMatrix(result: " << result
+    //           << ", memRef: " << basePtr << ", ctx: " << ctx << ")\n";
 
     std::shared_ptr<double[]> ptr(basePtr);
     result = DataObjectFactory::create<DenseMatrix<double>>(size0, size1, ptr);
@@ -64,8 +64,8 @@ inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
 inline void convertDenseMatrixToMemRef(StridedMemRefType<float, 2> *&result,
                                        const DenseMatrix<float> *input,
                                        DCTX(ctx)) {
-    std::cout << "convertDenseMatrixToMemRef(result: " << result
-              << ", input: " << input << ", ctx: " << ctx << ")\n";
+    // std::cout << "convertDenseMatrixToMemRef(result: " << result
+    //           << ", input: " << input << ", ctx: " << ctx << ")\n";
     result = new StridedMemRefType<float, 2>();
     result->basePtr = input->getValuesSharedPtr().get();
     result->data = result->basePtr;

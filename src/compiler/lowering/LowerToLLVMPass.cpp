@@ -314,7 +314,6 @@ public:
         auto module = op->getParentOfType<ModuleOp>();
         auto loc = op.getLoc();
 
-        std::cout << "Lowering kernel call: " << op.getCallee().str() << "\n";
         auto inputOutputTypes = getLLVMInputOutputTypes(
             loc, rewriter.getContext(), typeConverter, op.getResultTypes(),
             ValueRange(adaptor.getOperands()).getTypes(), hasVarRes,
@@ -916,7 +915,6 @@ public:
     matchAndRewrite(daphne::GenericCallOp op, OpAdaptor adaptor,
                     ConversionPatternRewriter &rewriter) const override
     {
-        std::cout <<"GenericCallOpLowering: " << op.getCallee().str() << "\n";
         rewriter.replaceOpWithNewOp<func::CallOp>(op, op.getCallee(), op->getResultTypes(), adaptor.getOperands());
         return success();
     }

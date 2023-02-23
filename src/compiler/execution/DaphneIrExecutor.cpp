@@ -133,11 +133,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 #endif
         // TODO: add --explain argument
         if (userConfig_.codegen) {
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR before LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before LowerDenseMatrixPass"));
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after LowerDenseMatrixPass"));
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
 
@@ -160,8 +160,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopFusionPass());
 
             pm.addPass(mlir::createLowerAffinePass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after affine lowering"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after affine lowering"));
         }
         // For now, in order to use the distributed runtime we also require the vectorized engine to be enabled
         // to create pipelines. Therefore, *if* distributed runtime is enabled, we need to make a vectorization pass.
@@ -200,9 +200,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.explain_obj_ref_mgnt)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
 
-        // TODO(phil): figure out when in pipeline we want to lower memref kernel calls
-        pm.addPass(mlir::daphne::createPrintIRPass("IR before kernel lowering"));
-        // pm.addPass(mlir::daphne::createMemRefTestPass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         if(userConfig_.explain_kernels)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
