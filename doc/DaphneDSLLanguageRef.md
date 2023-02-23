@@ -347,7 +347,7 @@ Note that casting to frames does not support changing the value/column type yet,
 
 #### Function calls
 
-Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as *user-defined* functions, but the syntax is the same in both cases:
+Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as [*user-defined* functions](#user-defined-functions-udfs), but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parentheses.
 
 *Examples*
