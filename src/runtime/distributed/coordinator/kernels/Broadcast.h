@@ -70,7 +70,6 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *&mat, bool isScalar, DCTX(dctx))
     {
-        std::cout<<"***********MPI*********\n"; 
         size_t messageLength=0;
         void * dataToSend;
         auto ptr = (double*)(&mat);
