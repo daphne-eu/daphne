@@ -71,19 +71,14 @@ class DenseMatrix : public Matrix<ValueType>
      */
     DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo = nullptr);
 
-    public:
-    ValueType *memRefPtr = nullptr;
-    DenseMatrix();
-    DenseMatrix(ValueType *memRefPtr);
-    DenseMatrix(const DenseMatrix &dm) :Matrix<ValueType>(10, 10) {this->memRefPtr = dm.memRefPtr;}
-    DenseMatrix<ValueType>operator=(DenseMatrix<ValueType>* t)
-    {
-        this->memRefPtr = t->memRefPtr;
-        return *this;
-    }
-    ~DenseMatrix() override = default;
-
-    private:
+    /**
+     * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
+     *
+     * @param numRows The exact number of rows.
+     * @param numCols The exact number of columns.
+     * @param values a raw pointer to an existing array of values.
+     */
+    // DenseMatrix(size_t numRows, size_t numCols, ValueType* values);
 
     /**
      * @brief Creates a `DenseMatrix` around an existing array of values without copying the data.
@@ -106,7 +101,7 @@ class DenseMatrix : public Matrix<ValueType>
     DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
             size_t colUpperExcl);
 
-    // ~DenseMatrix() override = default;
+    ~DenseMatrix() override = default;
 
     [[nodiscard]] size_t pos(size_t rowIdx, size_t colIdx) const {
         if(rowIdx >= numRows)
@@ -255,13 +250,10 @@ public:
     void print(std::ostream & os) const override {
         os << "DenseMatrix(" << numRows << 'x' << numCols << ", " << ValueTypeUtils::cppNameFor<ValueType> << ')'
                 << std::endl;
-        os << "DM::data.pointer@" << memRefPtr << std::endl;
 
         for (size_t r = 0; r < numRows; r++) {
             for (size_t c = 0; c < numCols; c++) {
-                // TODO MSC: Check for row/column major order on access
-                os << memRefPtr[numRows * c + r];
-                // printValue(os, get(r, c));
+                printValue(os, get(r, c));
                 if (c < numCols - 1)
                     os << ' ';
             }

@@ -52,8 +52,12 @@ inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
         }
         std::cout << std::endl;
     }
+
 #endif
-    result = DataObjectFactory::create<DenseMatrix<double>>(basePtr);
+
+    std::shared_ptr<double[]> ptr (basePtr);
+    result = DataObjectFactory::create<DenseMatrix<double>>(size0, size1, ptr);
+    result->increaseRefCounter();
     // }
     // else
     //     throw std::runtime_error("DenseMatrix already exists for memref?\n");
@@ -97,9 +101,10 @@ inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
     memRef.offset = 0;
     memRef.sizes[0] = input->getNumRows();
     memRef.sizes[1] = input->getNumCols();
+
     // TODO(phil): does not make a difference? maybe the mlir/llvm inferes something since it's statically typed
-    memRef.strides[0] = 10;
-    memRef.strides[1] = 1;
+    memRef.strides[0] = input->getNumCols();
+    memRef.strides[1] = 1; // TODO(phil): needs to be calculated for non row-major memory layouts
     input->increaseRefCounter();
 
     return memRef;
