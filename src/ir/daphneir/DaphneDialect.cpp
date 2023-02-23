@@ -956,16 +956,22 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
     return mlir::success();
 }
 
-// TODO(phil): fix genVerifyDecl in DaphneOps.td
-// mlir::LogicalResult mlir::daphne::MatMulOp::verify() {
-//     mlir::daphne::MatrixType lhs = getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-//     mlir::daphne::MatrixType rhs = getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-//
-//     if (lhs.getNumCols() != rhs.getNumRows())
-//         return emitError("daphne::MatMulOp operands do not satisfy matrix multiplication shape constraints.");
-//
-//     return mlir::success();
-// }
+mlir::LogicalResult mlir::daphne::MatMulOp::verify() {
+    constexpr int UNKNOWN = -1;
+
+    mlir::daphne::MatrixType lhs =
+        getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+    mlir::daphne::MatrixType rhs =
+        getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+
+    if (lhs.getNumCols() != UNKNOWN && rhs.getNumRows() != UNKNOWN &&
+        lhs.getNumCols() != rhs.getNumRows())
+        return emitError(
+            "daphne::MatMulOp operands do not satisfy matrix multiplication "
+            "shape constraints.");
+
+    return mlir::success();
+}
 
 /**
  * @brief Replaces NumRowsOp by a constant, if the #rows of the input is known

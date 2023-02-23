@@ -145,7 +145,6 @@ def Daphne_RandMatrixOp : Daphne_Op<"randMatrix", [
     NumRowsFromIthScalar<0>, NumColsFromIthScalar<1>, DeclareOpInterfaceMethods<InferTypesOpInterface>,
     SparsityFromIthScalar<4>, CastArgsToResTypeRandMatrixOp
 ]> {
-    //let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, Seed:$seed, StrScalar:$pdf);
     let arguments = (ins Size:$numRows, Size:$numCols, AnyScalar:$min, AnyScalar:$max, F64:$sparsity, IntScalar:$seed);
     let results = (outs MatrixOrU:$res);
 }
@@ -197,7 +196,7 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
     let arguments = (ins MatrixOf<[NumScalar]>:$lhs, MatrixOf<[NumScalar]>:$rhs, BoolScalar:$transa, BoolScalar:$transb);
     let results = (outs MatrixOf<[NumScalar]>:$res);
     let hasCanonicalizeMethod = 1;
-    /* let genVerifyDecl = 1; */
+    let hasVerifier = 1;
 }
 
 // ****************************************************************************
