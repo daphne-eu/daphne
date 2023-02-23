@@ -96,7 +96,7 @@ void affineFillMemRef(double value, ConversionPatternRewriter &rewriter, mlir::L
 //     }
 // }
 void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output, ConversionPatternRewriter &rewriter, mlir::Location loc,
-        ssize_t nR, ssize_t nC, mlir::MLIRContext *ctx) {
+        ssize_t nR, ssize_t nC, size_t nInner, mlir::MLIRContext *ctx) {
     SmallVector<Value, 4> loopIvs;
     Value cst0 = rewriter.create<mlir::arith::ConstantOp>(loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
 
@@ -121,7 +121,7 @@ void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output, Conve
     rewriter.setInsertionPointToStart(colLoop.getBody());
 
     // fma loop
-    auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nR, 1);
+    auto innerLoop = rewriter.create<AffineForOp>(loc, 0, nInner, 1);
     for (Operation &nested : *innerLoop.getBody()) {
         rewriter.eraseOp(&nested);
     }
@@ -157,47 +157,57 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         daphne::MatMulOp op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
         auto loc = op->getLoc();
-        mlir::daphne::MatrixType tensor =
+        mlir::daphne::MatrixType lhsTensor =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-        auto nR = tensor.getNumRows();
-        auto nC = tensor.getNumCols();
-        auto tensorType = tensor.getElementType();
-        auto memRefType = mlir::MemRefType::get(
-            {nR, nC}, tensorType);
-        MemRefLayoutAttrInterface t;
-        std::cout << "tensorType: " << std::endl;
-        tensorType.dump();
-        std::cout << "memRefType: " << std::endl;
-        memRefType.dump();
+        mlir::daphne::MatrixType rhsTensor =
+            adaptor.getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+
+        auto lhsRows = lhsTensor.getNumRows();
+        auto lhsCols = lhsTensor.getNumCols();
+
+        auto rhsRows = rhsTensor.getNumRows();
+        auto rhsCols = rhsTensor.getNumCols();
+
+        auto tensorType = lhsTensor.getElementType();
+        auto lhsMemRefType = mlir::MemRefType::get(
+            {lhsRows, lhsCols}, tensorType);
+        auto rhsMemRefType = mlir::MemRefType::get(
+            {rhsRows, rhsCols}, tensorType);
+
+        auto outputMemRefType = mlir::MemRefType::get(
+            {rhsRows, lhsCols}, tensorType);
 
         // daphne::Matrix -> memref
         mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-                op->getLoc(), memRefType, adaptor.getLhs());
+                op->getLoc(), lhsMemRefType, adaptor.getLhs());
         mlir::Value rhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
-            op->getLoc(), memRefType, adaptor.getRhs());
-        // Pure memref MatMul
+            op->getLoc(), rhsMemRefType, adaptor.getRhs());
+
+        // Pure memref MatMul for testing purposes
         // mlir::Value lhs = rewriter.create<memref::AllocOp>(loc, memRefType);
         // mlir::Value rhs = rewriter.create<memref::AllocOp>(loc, memRefType);
-        // affineFillMemRef(3.0, rewriter, loc, nR, nC, op->getContext(), lhs);
+        // affineFillMemRef(5.0, rewriter, loc, nR, nC, op->getContext(), lhs);
         // affineFillMemRef(3.0, rewriter, loc, nR, nC, op->getContext(), rhs);
 
 
         // Alloc output memref
-        mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, memRefType);
+        mlir::Value outputMemRef = rewriter.create<memref::AllocOp>(loc, outputMemRefType);
 
         // Fill the output MemRef
-        affineFillMemRef(0.0, rewriter, loc, nR, nC, op->getContext(), outputMemRef);
+        affineFillMemRef(0.0, rewriter, loc, rhsRows, lhsCols, op->getContext(), outputMemRef);
         // Do the actual MatMul with hand built codegen
-        affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, nR, nC, op->getContext());
+        affineMatMul(lhs, rhs, outputMemRef, rewriter, loc, rhsRows, lhsCols, lhsRows, op->getContext());
 
         auto extractStridedMetadataOp =
             rewriter.create<memref::ExtractStridedMetadataOp>(loc, outputMemRef);
-        // Base ptr.
-        mlir::Value basePtr = extractStridedMetadataOp.getBaseBuffer();
+        // Base ptr. -> is a memref<f64> --> llvm.struct<ptr<f64>, ptr<f64>, i64> not ptr
+        // mlir::Value basePtr = extractStridedMetadataOp.getBaseBuffer();
+
+        // aligned ptr (memref.data)
         mlir::Value alignedPtr = rewriter.create<memref::ExtractAlignedPointerAsIndexOp>(loc, outputMemRef);
-        // offset.
+        // offset
         mlir::Value offset = extractStridedMetadataOp.getOffset();
-        // strides.
+        // strides
         mlir::ResultRange strides = extractStridedMetadataOp.getStrides();
         // sizes
         mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
