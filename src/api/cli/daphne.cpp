@@ -67,7 +67,7 @@ void printVersion(llvm::raw_ostream& os) {
       << "https://github.com/daphne-eu/daphne\n";
 }
     
-int startCoordinator(int argc, char** argv){
+int startDAPHNE(int argc, char** argv, int *id){
     // ************************************************************************
     // Parse command line arguments
     // ************************************************************************
@@ -90,11 +90,11 @@ int startCoordinator(int argc, char** argv){
     opt<ALLOCATION_TYPE> distributedBackEndSetup("dist_backend", cat(distributedBackEndSetupOptions), 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange (default)"),
                                                     clEnumValN(ALLOCATION_TYPE::DIST_GRPC, "gRPC", "Use remote procedure call for internode data exchange")
-                                                )
+                                                ),
+                                            init(ALLOCATION_TYPE::DIST_MPI)
                                             );
-
 
     
     // Scheduling options
@@ -114,7 +114,8 @@ int startCoordinator(int argc, char** argv){
                 clEnumVal(MSTATIC, "Modified version of Static, i.e., instead of n/p, it uses n/(4*p) where n is number of tasks and p is number of threads"),
                 clEnumVal(MFSC, "Modified version of fixed size chunk self-scheduling, i.e., MFSC does not require profiling information as FSC"),
                 clEnumVal(PSS, "Probabilistic self-scheduling")
-            )
+            ),
+            init(STATIC)
     );
     opt<QueueTypeOption> queueSetupScheme("queue_layout",
             cat(schedulingOptions), desc("Choose queue setup scheme:"),
@@ -122,16 +123,18 @@ int startCoordinator(int argc, char** argv){
                 clEnumVal(CENTRALIZED, "One queue (default)"),
                 clEnumVal(PERGROUP, "One queue per CPU group"),
                 clEnumVal(PERCPU, "One queue per CPU core")
-            )
+            ),
+            init(CENTRALIZED)
     );
 	opt<VictimSelectionLogic> victimSelection("victim_selection",
             cat(schedulingOptions), desc("Choose work stealing victim selection logic:"),
             values(
-                clEnumVal(SEQ, "Steal from next adjacent worker"),
+                clEnumVal(SEQ, "Steal from next adjacent worker (default)"),
                 clEnumVal(SEQPRI, "Steal from next adjacent worker, prioritize same NUMA domain"),
                 clEnumVal(RANDOM, "Steal from random worker"),
 				clEnumVal(RANDOMPRI, "Steal from random worker, prioritize same NUMA domain")
-            )
+            ),
+            init(SEQ)
     );
 
     opt<int> numberOfThreads(
@@ -145,7 +148,8 @@ int startCoordinator(int argc, char** argv){
             "grain-size", cat(schedulingOptions),
             desc(
                 "Define the minimum grain size of a task (default is 1)"
-            )
+            ),
+            init(1)
     );
     opt<bool> useVectorizedPipelines(
             "vec", cat(schedulingOptions),
@@ -311,7 +315,11 @@ int startCoordinator(int argc, char** argv){
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
-
+    if(user_config.use_distributed)
+    {
+        if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC)
+            std::cout<<"No backend has been selected. Wiil use the default 'MPI'\n";
+    }
     for (auto explain : explainArgList) {
         switch (explain) {
             case kernels:
@@ -344,6 +352,25 @@ int startCoordinator(int argc, char** argv){
         }
     }
 
+    if(user_config.use_distributed && distributedBackEndSetup==ALLOCATION_TYPE::DIST_MPI)
+    {
+#ifndef USE_MPI
+    throw std::runtime_error("you are trying to use the MPI backend. But, Daphne was not build with --mpi option\n");    
+#else
+        MPI_Init(NULL,NULL);
+        MPI_Comm_rank(MPI_COMM_WORLD, id);
+        int size=0;
+        MPI_Comm_size(MPI_COMM_WORLD, &size);
+        if(size<=1)
+        {
+             throw std::runtime_error("you need to rerun with at least 2 MPI ranks (1 Master + 1 Worker)\n");
+        }
+        if(*id!=COORDINATOR)
+        {
+            return *id; 
+        }
+#endif 
+    }
     if(cuda) {
         int device_count = 0;
 #ifdef USE_CUDA
@@ -432,38 +459,29 @@ int startCoordinator(int argc, char** argv){
     return StatusCode::SUCCESS;
 }
 
-//int startDistributedWorkers(int argc, char** argv){
-//    MPIWorker worker;
-//    worker.joinComputingTeam();
-//    return StatusCode::SUCCESS;
-//}
-
 
 int main(int argc, char** argv){
-    int res;
-#ifdef USE_MPI 
-    int id, size;
-    MPI_Init(NULL,NULL);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id);
-    MPI_Comm_size(MPI_COMM_WORLD, &size);
-    if(id==COORDINATOR){
-        res=startCoordinator(argc, argv);
-        std::cout<<"==========Done=======\n";
+    int id=-1; // this  -1 would not change if the user did not select mpi backend during execution
+    int res=startDAPHNE(argc, argv, &id);
+
+#ifdef USE_MPI    
+    if(id==COORDINATOR)
+    {
+        int size=0;
+        MPI_Comm_size(MPI_COMM_WORLD, &size);
         unsigned char terminateMessage=0x00;
         for(int i=1;i<size;i++){
             MPI_Send(&terminateMessage,1, MPI_UNSIGNED_CHAR, i,  DETACH, MPI_COMM_WORLD);
-           // std::cout<<"coordinator detached worker "<<i<<std::endl; 
        }
+       MPI_Finalize();
     }   
-    else{
-            MPIWorker worker;
-            worker.joinComputingTeam();
-            res=StatusCode::SUCCESS;
-    }   
-
-    MPI_Finalize();
-#else
-    res=startCoordinator(argc, argv);
-#endif    
+    else if(id>-1){
+        MPIWorker worker;
+        worker.joinComputingTeam();
+        res=StatusCode::SUCCESS;
+        MPI_Finalize();
+    }
+#endif
+   
     return res;
 }

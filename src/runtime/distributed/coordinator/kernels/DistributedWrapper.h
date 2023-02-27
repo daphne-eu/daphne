@@ -71,12 +71,7 @@ public:
         
         // Backend Implementation 
         // gRPC hard-coded selection
-        // TODO choose implementation based on configFile/command-line argument        
-#ifdef USE_MPI
-        const auto alloc_type = ALLOCATION_TYPE::DIST_MPI;
-#else
-        const auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
-#endif
+        const auto allocation_type=_dctx->getUserConfig().distributedBackEndSetup;
         //std::cout<<"Distributed wrapper " <<std::endl;
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
@@ -120,23 +115,49 @@ public:
             // (i.e. rows/cols splitted accordingly). If it does then we can skip.
             if (isBroadcast(splits[i], inputs[i])){
                 auto type = inputTypes.at(i);
-                if (type==INPUT_TYPE::Matrix) {            
-                    broadcast<alloc_type>(inputs[i], false, _dctx);
+                if (type==INPUT_TYPE::Matrix) {
+                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI           
+                            broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
+#endif
+                        }
+                        else { 
+                             broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], false, _dctx);
+                        }
                 }
                 else {
-                    broadcast<alloc_type>(inputs[i], true, _dctx);
+                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI 
+                             broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
+#endif
+                        }
+                        else {
+                            broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], true, _dctx);
+                        }
                 }
             }
             else {
                 assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
                 // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
-                distribute<alloc_type>(inputs[i], _dctx);        
+                if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI 
+                        distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
+#endif
+                }
+                else {
+                        distribute<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], _dctx);       
+                }        
             }
         }
 
-          
-        distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
-
+        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI   
+            distributedCompute<ALLOCATION_TYPE::DIST_MPI>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+#endif        
+         }
+        else {
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);   
+        }
         //handle my part as coordinator we currently exclude the coordinator
         /*if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
         {
@@ -147,10 +168,15 @@ public:
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect<alloc_type>(*res[o], _dctx);      
-        }
-        
-        
+            if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI 
+                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], _dctx);      
+#endif
+            }
+            else {
+                 distributedCollect<ALLOCATION_TYPE::DIST_GRPC>(*res[o], _dctx);
+            }
+        }      
     }
 
 private:
