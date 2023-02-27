@@ -90,10 +90,10 @@ int startDAPHNE(int argc, char** argv, int *id){
     opt<ALLOCATION_TYPE> distributedBackEndSetup("dist_backend", cat(distributedBackEndSetupOptions), 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange (default)"),
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC, "gRPC", "Use remote procedure call for internode data exchange")
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC, "gRPC", "Use remote procedure call for internode data exchange (default)")
                                                 ),
-                                            init(ALLOCATION_TYPE::DIST_MPI)
+                                            init(ALLOCATION_TYPE::DIST_GRPC)
                                             );
 
     
