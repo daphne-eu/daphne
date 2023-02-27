@@ -196,9 +196,6 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto extractStridedMetadataOp =
             rewriter.create<memref::ExtractStridedMetadataOp>(loc,
                                                               outputMemRef);
-        // Base ptr. -> is a memref<f64> --> llvm.struct<ptr<f64>, ptr<f64>,
-        // i64> not ptr mlir::Value basePtr =
-        // extractStridedMetadataOp.getBaseBuffer();
 
         // aligned ptr (memref.data)
         mlir::Value alignedPtr =
@@ -210,11 +207,8 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         mlir::ResultRange strides = extractStridedMetadataOp.getStrides();
         // sizes
         mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
-        // IREE approach to sizes
-        // mlir::Value size0 = rewriter.create<memref::DimOp>(loc, outputMemRef,
-        // 0); mlir::Value size1 = rewriter.create<memref::DimOp>(loc,
-        // outputMemRef, 1);
 
+        // debug
         // rewriter.create<mlir::daphne::PrintMemRef>(loc, alignedPtr, offset,
         //                                            sizes[0], sizes[1],
         //                                            strides[0], strides[1]);
@@ -336,12 +330,11 @@ void LowerDenseMatrixPass::runOnOperation() {
     target.addLegalOp<mlir::daphne::PrintMemRef>();
     target.addIllegalOp<mlir::daphne::AllAggSumOp>();
     target.addIllegalOp<mlir::daphne::MatMulOp>();
-    // populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
 
-    typeConverter.addConversion([&](daphne::MatrixType t) {
-        return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
-                                     t.getElementType());
-    });
+    // typeConverter.addConversion([&](daphne::MatrixType t) {
+    //     return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
+    //                                  t.getElementType());
+    // });
 
     patterns.insert<MatMulOpLowering, SumAllOpLowering>(&getContext());
     auto module = getOperation();
@@ -358,34 +351,6 @@ class MemRefCallingConvention
     LogicalResult matchAndRewrite(
         daphne::GetDenseMatrixFromMemRef op, OpAdaptor adaptor,
         ConversionPatternRewriter &rewriter) const override {
-        /*
-        std::cout <<"hugo\n";
-        auto loc = op->getLoc();
-        // SmallVector<mlir::Value> callOperands{};
-        // auto extractStridedMetadataOp =
-        //     rewriter.create<memref::ExtractStridedMetadataOp>(loc,
-        op.getArg());
-        // // Base ptr.
-        // callOperands.push_back(extractStridedMetadataOp.getBaseBuffer());
-        // // offset.
-        // callOperands.push_back(extractStridedMetadataOp.getOffset());
-        // // strides.
-        //
-        callOperands.push_back(extractStridedMetadataOp.getStrides().front());
-
-        // std::string callee_name =
-        "_getDenseMatrixFromMemRef__DenseMatrix_double__StridedMemRefType_"
-        std::string fName = "_printMemRef";
-        mlir::Value memRef = adaptor.getArg();
-        ArrayRef<mlir::Value> args({memRef});
-
-        TypeRange ts;
-        auto callOp = rewriter.create<func::CallOp>(loc, fName, ts, args);
-        // rewriter.replaceOp(op, memRef);
-        // SmallVector<Value, 4> results;
-        // results.append(callOp.result_begin(), callOp.result_end());
-        rewriter.replaceOp(op, callOp.getResult(0));
-        */
         return success();
     }
 };
@@ -408,29 +373,11 @@ void MemRefCallingConventionPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     LowerToLLVMOptions llvmOptions(&getContext());
-    // llvmOptions.seBarePtrCallConv = true;
     LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
-    typeConverter.addConversion([&](daphne::MatrixType t) {
-        return mlir::MemRefType::get({t.getNumRows(), t.getNumCols()},
-                                     t.getElementType());
-    });
-
-    populateAffineToStdConversionPatterns(patterns);
-    populateSCFToControlFlowConversionPatterns(patterns);
-    mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);
-    populateFinalizeMemRefToLLVMConversionPatterns(typeConverter, patterns);
-    cf::populateControlFlowToLLVMConversionPatterns(typeConverter, patterns);
-    populateFuncToLLVMConversionPatterns(typeConverter, patterns);
-    populateReturnOpTypeConversionPattern(patterns, typeConverter);
 
     target.addLegalDialect<mlir::memref::MemRefDialect>();
     target.addLegalDialect<mlir::func::FuncDialect>();
-    // target.addLegalDialect<mlir::arith::ArithDialect>();
-    // target.addLegalDialect<mlir::scf::SCFDialect>();
-    // target.addLegalDialect<mlir::AffineDialect>();
-    // target.addLegalDialect<mlir::linalg::LinalgDialect>();
     target.addLegalDialect<mlir::LLVM::LLVMDialect>();
-    // populate
 
     target.addIllegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
 
