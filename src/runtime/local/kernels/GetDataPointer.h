@@ -22,29 +22,22 @@
 
 #include <cstddef>
 
-#include "llvm/ADT/ArrayRef.h"
 #include "mlir/ExecutionEngine/CRunnerUtils.h"
-#include "mlir/IR/BuiltinTypes.h"
-#include "mlir/IR/Types.h"
 
-// TODO MSC: This obviously will be templated once genKernelInst.py is fixed
-
-inline void convertMemRefToDenseMatrix(DenseMatrix<double> *&result,
-                                       double *basePtr, size_t offset,
-                                       size_t size0, size_t size1,
-                                       size_t stride0, size_t stride1,
-                                       DCTX(ctx)) {
-    // std::cout << "convertMemRefToDenseMatrix(result: " << result
-    //           << ", memRef: " << basePtr << ", ctx: " << ctx << ")\n";
-
-    std::shared_ptr<double[]> ptr(basePtr);
-    result = DataObjectFactory::create<DenseMatrix<double>>(size0, size1, ptr);
+template <typename T>
+inline void convertMemRefToDenseMatrix(DenseMatrix<T> *&result, T *basePtr,
+                                       size_t offset, size_t size0,
+                                       size_t size1, size_t stride0,
+                                       size_t stride1, DCTX(ctx)) {
+    std::shared_ptr<T[]> ptr(basePtr);
+    result = DataObjectFactory::create<DenseMatrix<T>>(size0, size1, ptr);
     result->increaseRefCounter();
 }
 
-inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
-    const DenseMatrix<double> *input, DCTX(ctx)) {
-    StridedMemRefType<double, 2> memRef{};
+template <typename T>
+inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
+    const DenseMatrix<T> *input, DCTX(ctx)) {
+    StridedMemRefType<T, 2> memRef{};
     memRef.basePtr = input->getValuesSharedPtr().get();
     memRef.data = memRef.basePtr;
     memRef.offset = 0;
@@ -61,19 +54,35 @@ inline StridedMemRefType<double, 2> convertDenseMatrixToMemRef(
     return memRef;
 }
 
-inline void convertDenseMatrixToMemRef(StridedMemRefType<float, 2> *&result,
-                                       const DenseMatrix<float> *input,
-                                       DCTX(ctx)) {
-    // std::cout << "convertDenseMatrixToMemRef(result: " << result
-    //           << ", input: " << input << ", ctx: " << ctx << ")\n";
-    result = new StridedMemRefType<float, 2>();
-    result->basePtr = input->getValuesSharedPtr().get();
-    result->data = result->basePtr;
-    result->offset = 0;
-    result->sizes[0] = input->getNumRows();
-    result->sizes[1] = input->getNumCols();
-    result->strides[0] = input->getNumCols();
-    result->strides[1] = 0;
-    input->increaseRefCounter();
-}
 #endif  // SRC_RUNTIME_LOCAL_KERNELS_GETDATAPOINTER_H
+/* since the python generator for kernels.cpp does not correctly work for these
+ calls here's the backup for the manual ones (kernels.cpp not in git cause it's
+ under build/)
+ *
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<float>**res,
+        float *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<float>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_double__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<double>**res,
+        double *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<double>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_float(StridedMemRefType<float,2>
+ *res, const DenseMatrix<float>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<float>(input, ctx);
+    }
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_double(StridedMemRefType<double,2>
+ *res, const DenseMatrix<double>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<double>(input, ctx);
+    }
+ *
+ */
