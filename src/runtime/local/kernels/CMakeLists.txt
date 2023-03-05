@@ -94,6 +94,6 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
-list(APPEND LIBS Arrow::arrow_shared Parquet::parquet_shared DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
+list(APPEND LIBS Arrow::arrow_static Parquet::parquet_static DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 
 target_link_libraries(AllKernels PUBLIC ${LIBS})
