@@ -490,9 +490,10 @@ while [[ $# -gt 0 ]]; do
     -nd | --no-deps)
         WITH_DEPS=0
         ;;
-    --no-submodule-update)
-            WITH_SUBMODULE_UPDATE=0
-            ;;*)
+    -ns | --no-submodule-update)
+        WITH_SUBMODULE_UPDATE=0
+        ;;
+      *)
         unknown_options="${unknown_options} ${key}"
         ;;
     esac
@@ -550,7 +551,8 @@ if [ $WITH_DEPS -gt 0 ]; then
             if [ -d "$submodule_path" ] && [ $WITH_SUBMODULE_UPDATE -ne 0 ]; then
                 git submodule update --init --recursive
             fi
-        else
+        # do a submodule update only if llvm path is empty (e.g., initial repo checkout)
+        elif [ ! "$(ls -A ${thirdpartyPath}/${llvmName})" ] && [ $WITH_SUBMODULE_UPDATE -ne 0 ]; then
             git submodule update --init --recursive
         fi
     fi
