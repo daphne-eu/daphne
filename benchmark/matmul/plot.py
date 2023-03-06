@@ -31,30 +31,28 @@ df['codegen_speedup'] = df['codegen'] / df['precompiled']
 print(df)
 df.iloc[0:6].plot(ax=axes[0,0], kind='barh', x='test_name', y=[1,2])
 df.iloc[0:6].plot(ax=axes[0,1], kind='line', x='test_name', y=[3,4])
-#  df.iloc[0:10].plot(ax=axes[1,0], kind='line', x='test_name', y=[3,4])
-#  df.iloc[10:20].plot(ax=axes[1,1], kind='line', x='test_name', y=[3,4])
+df.iloc[6:12].plot(ax=axes[1,0], kind='barh', x='test_name', y=[1,2])
+df.iloc[6:12].plot(ax=axes[1,1], kind='line', x='test_name', y=[3,4])
 
 # precompiled at top
-axes[0,0].invert_yaxis()
 axes[0,1].invert_yaxis()
+axes[1,1].invert_yaxis()
 
-#  axes[0,0].set_title('Float32 Runtime')
-axes[0,1].set_title('Float64 Runtime')
-axes[0,1].set_title('Float64 Speedup')
-#  axes[1,1].set_title('Float64 Speedup')
-
-
+axes[0,0].set_title('Float32 Runtime')
+axes[0,1].set_title('Float32 Speedup')
+axes[1,0].set_title('Float64 Runtime')
+axes[1,1].set_title('Float64 Speedup')
 
 #  axes[0, 0].set_xlabel('ms')
 #  axes[0, 1].set_xlabel('ms')
-axes[0, 0].set_xlabel('ms - log scale')
-axes[0, 1].set_xlabel('speedup')
-#
-#  axes[1, 0].set_ylabel('speedup')
-#  axes[1, 1].set_ylabel('speedup')
+axes[0, 0].set_xlabel('')
+axes[0, 1].set_xlabel('')
+
+axes[1, 0].set_ylabel('test_name')
+axes[1, 1].set_ylabel('speedup')
 
 axes[0,0].set_xscale("log")
-axes[0,1].set_xscale("log")
+axes[1,0].set_xscale("log")
 fig.suptitle('i5-8250U\n4 cores 8 threads max 3.4 GHz\n AVX, AVX2, FMA3\nL1 32KB L2 256KB L3 6MB\nPeak: 435.2 GFLOP/s')
 #  fig.suptitle('Delta - AMD EPYC 7302 16-Core\n')
 plt.show()

@@ -8,12 +8,12 @@ import pandas as pd
 from typing import List
 
 tests = [
-    #  "f32_10x10.daphne",
-    #  "f32_1kb.daphne",
-    #  "f32_10kb.daphne",
-    #  "f32_100kb.daphne",
-    #  "f32_1mb.daphne",
-    #  "f32_10mb.daphne",
+    "f32_10x10.daphne",
+    "f32_1kb.daphne",
+    "f32_10kb.daphne",
+    "f32_100kb.daphne",
+    "f32_1mb.daphne",
+    "f32_10mb.daphne",
     #  "f32_100mb.daphne",
     #  "f32_1gb.daphne",
     #  "f32_5gb.daphne",
@@ -24,7 +24,6 @@ tests = [
     "f64_100kb.daphne",
     "f64_1mb.daphne",
     "f64_10mb.daphne",
-    "f64_100mb.daphne",
     #  "f64_1gb.daphne",
     #  "f64_5gb.daphne",
     #  "f64_10gb.daphne",
@@ -83,14 +82,5 @@ if __name__ == "__main__":
         columns=["test_name", "precompiled", "codegen"],
     )
     df.to_csv("results.csv", index=False)
-
-    # since we can't run codegen and codegen_optimized with the same binary I
-    # stitch the results together after a seperate run for codegen_optimized
-    #  df = pd.DataFrame(
-    #      {
-    #          'codegen_optimized': codegen_results
-    #      }, columns=['codegen_optimized']
-    #  )
-    #  df.to_csv('codegen.csv', index=False)
 
     print(df)
