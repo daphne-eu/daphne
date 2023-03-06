@@ -45,7 +45,7 @@ void PrintIRPass::runOnOperation() {
     
     auto module = getOperation();
     OpPrintingFlags flags = {};
-    flags.enableDebugInfo(true, false);
+    flags.enableDebugInfo(/*enable=*/false, /*prettyForm=*/false);
     module.print(llvm::errs(), flags);
     // module.dump();
 }
