@@ -196,6 +196,14 @@ main(int argc, char** argv)
             "codegen", cat(daphneOptions),
             desc("Enables DenseMatrix lowering to MLIR codegen.")
     );
+    opt<bool> linalg(
+            "linalg", cat(daphneOptions),
+            desc("Enables linalg lowering to external library calls.")
+    );
+    opt<bool> _inline(
+            "inline", cat(daphneOptions),
+            desc("Enables inlining of function calls.")
+    );
 
     enum ExplainArgs {
       kernels,
@@ -206,7 +214,8 @@ main(int argc, char** argv)
       sql,
       type_adaptation,
       vectorized,
-      obj_ref_mgnt
+      obj_ref_mgnt,
+      cdgn
     };
 
     llvm::cl::list<ExplainArgs> explainArgList(
@@ -222,7 +231,8 @@ main(int argc, char** argv)
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
             clEnumVal(kernels, "Show DaphneIR after kernel lowering"),
-            clEnumVal(llvm, "Show DaphneIR after llvm lowering")),
+            clEnumVal(llvm, "Show DaphneIR after llvm lowering"),
+            clEnumVal(cdgn, "Show DaphneIR after DenseMatrix codegen")),
         CommaSeparated);
 
     llvm::cl::list<string> scriptArgs1(
@@ -331,6 +341,8 @@ main(int argc, char** argv)
             case obj_ref_mgnt:
                 user_config.explain_obj_ref_mgnt = true;
                 break;
+            case cdgn:
+                user_config.explain_codegen = true;
         }
     }
 
@@ -351,7 +363,10 @@ main(int argc, char** argv)
     }
     if (codegen)
         user_config.codegen = true;
-
+    if (linalg)
+        user_config.linalg = true;
+    if (_inline)
+        user_config._inline = true;
 
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)
@@ -415,13 +430,14 @@ main(int argc, char** argv)
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
     try{
-        // auto t1 = std::chrono::high_resolution_clock::now();
         auto engine = executor.createExecutionEngine(moduleOp);
+        // auto t1 = std::chrono::high_resolution_clock::now();
         auto error = engine->invoke("main");
         // auto t2 = std::chrono::high_resolution_clock::now();
         // std::cout << "engine->invoke took: "
         //     << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
         //     << " milliseconds\n";
+        engine->dumpToObjectFile("obj_dump.out");
         if (error) {
             llvm::errs() << "JIT-Engine invocation failed: " << error;
             return StatusCode::EXECUTION_ERROR;
