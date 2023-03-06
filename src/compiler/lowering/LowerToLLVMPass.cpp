@@ -23,6 +23,7 @@
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
+#include "mlir/Conversion/LinalgToStandard/LinalgToStandard.h"
 #include "mlir/Conversion/SCFToControlFlow/SCFToControlFlow.h"
 #include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVM.h"
 #include "mlir/Conversion/LLVMCommon/ConversionTarget.h"
@@ -570,6 +571,8 @@ public:
 
         std::vector<Value> kernelOperands{op.getArg(), udfFnPtr};
 
+        // TODO(phil): preferably lower this in a pass before since
+        // LowerToLLVMPass also lowers CallKernelOp(in RewriteKernelCallOp)
         auto kernel = rewriter.create<daphne::CallKernelOp>(
             loc,
             callee.str(),
@@ -997,6 +1000,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
     // populate dialect conversions
     // populateLoopToStdConversionPatterns(patterns);
 
+    mlir::linalg::populateLinalgToStandardConversionPatterns(patterns);
     populateAffineToStdConversionPatterns(patterns);
     populateSCFToControlFlowConversionPatterns(patterns);
     mlir::arith::populateArithToLLVMConversionPatterns(typeConverter, patterns);

@@ -40,6 +40,7 @@ target_link_libraries(MLIRDaphneTransforms PUBLIC
     MLIRArithToLLVM
     MLIRMemRefToLLVM
     MLIRAffineToStandard
+    MLIRLinalgToStandard
     MLIRControlFlowToLLVM
     MLIRFuncToLLVM
     MLIRFuncTransforms
