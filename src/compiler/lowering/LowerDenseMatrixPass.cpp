@@ -288,11 +288,11 @@ class EwModOpLowering : public OpConversionPattern<daphne::EwModOp> {
         rewriter.create<AffineYieldOp>(loc);
         rewriter.setInsertionPointToStart(innerLoop.getBody());
         mlir::Value lhsValue = rewriter.create<AffineLoadOp>(loc, lhs, loopIvs);
-        // mlir::Value lhsV = rewriter.create<mlir::arith::FPToSIOp>(loc, rewriter.getI64Type(), lhsValue);
+        mlir::Value lhsV = rewriter.create<mlir::arith::FPToSIOp>(loc, rewriter.getI64Type(), lhsValue);
 
 
         mlir::Value modResult =
-            rewriter.create<arith::AndIOp>(loc, lhsValue, rhsV);
+            rewriter.create<arith::AndIOp>(loc, lhsV, rhsV);
         mlir::Value modResultCast = rewriter.create<arith::SIToFPOp>(loc, rewriter.getF64Type(), modResult);
 
         rewriter.create<AffineStoreOp>(loc, modResultCast, outputMemRef, loopIvs);
