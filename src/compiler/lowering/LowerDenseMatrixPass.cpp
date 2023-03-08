@@ -57,6 +57,21 @@ using namespace mlir;
 constexpr int ROW = 0;
 constexpr int COL = 1;
 
+/// Insert an allocation and deallocation for the given MemRefType.
+static Value insertAllocAndDealloc(MemRefType type, Location loc,
+                                   PatternRewriter &rewriter) {
+  auto alloc = rewriter.create<memref::AllocOp>(loc, type);
+
+  // Make sure to allocate at the beginning of the block.
+  auto *parentBlock = alloc->getBlock();
+  alloc->moveBefore(&parentBlock->front());
+
+  // Make sure to deallocate this alloc at the end of the block.
+  auto dealloc = rewriter.create<memref::DeallocOp>(loc, alloc);
+  dealloc->moveBefore(&parentBlock->back());
+  return alloc;
+}
+
 void affineFillMemRef(double value, ConversionPatternRewriter &rewriter,
                       mlir::Location loc, ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
@@ -188,8 +203,7 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         // affineFillMemRef(3.0, rewriter, loc, nR, nC, op->getContext(), rhs);
 
         // Alloc output memref
-        mlir::Value outputMemRef =
-            rewriter.create<memref::AllocOp>(loc, outputMemRefType);
+        mlir::Value outputMemRef = insertAllocAndDealloc(outputMemRefType, loc, rewriter);
 
         // Fill the output MemRef
         affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
