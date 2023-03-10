@@ -221,12 +221,12 @@ void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> sr
 }
 
 template<typename ValueType>
-void* DenseMatrix<ValueType>::serialize(void *buf) const {
+size_t DenseMatrix<ValueType>::serialize(std::vector<char> &buf) const {
     return DaphneSerializer<DenseMatrix<ValueType>>::save(this, buf);
 }
 
 template<>
-void* DenseMatrix<bool>::serialize(void* buf) const{
+size_t DenseMatrix<bool>::serialize(std::vector<char> &buf) const{
     throw std::runtime_error("DenseMatrix<bool> serialization not implemented");
 }
 

@@ -276,7 +276,7 @@ public:
 
     [[nodiscard]] size_t getBufferSize() const { return bufferSize; }
     
-    void* serialize(void *buf) const override;
+    size_t serialize(std::vector<char> &buf) const override;
 };
 
 template <typename ValueType>
@@ -568,7 +568,7 @@ public:
         return true;
   }
 
-  void* serialize(void *buf) const override {
+  size_t serialize(std::vector<char> &buf) const override {
     throw std::runtime_error("Not implemented");
   }
 };

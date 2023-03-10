@@ -141,14 +141,13 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                 continue;
             distributed::Data protoMsg;
 
-            void *buffer = nullptr;
-            size_t length;
+            std::vector<char> buffer;
             
             auto slicedMat = mat->sliceRow(range.r_start, range.r_start + range.r_len);
-            buffer = DaphneSerializer<DT>::save(slicedMat, buffer);
-            length = DaphneSerializer<DT>::length(slicedMat);
-            
-            protoMsg.mutable_matrix()->set_bytes(buffer, length);
+            // DT is const Structure, but we only provide template specialization for structure.
+            // TODO should we implement an additional specialization or remove constness from template parameter?
+            auto length = DaphneSerializer<typename std::remove_const<DT>::type>::save(slicedMat, buffer);            
+            protoMsg.mutable_matrix()->set_bytes(buffer.data(), length);
 
             StoredInfo storedInfo({dp->dp_id}); 
             caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);

@@ -156,7 +156,9 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
             if (!denseMat){
                 throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
             }
-            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_load((void*)matProto.bytes().c_str()));
+            // Zero copy buffer
+            std::vector<char> buf(static_cast<const char*>(matProto.bytes().data()), static_cast<const char*>(matProto.bytes().data()) + matProto.bytes().size()); 
+            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_load(buf));
             auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
             auto slicedMatValues = slicedMat->getValues();
             for (size_t r = 0; r < dp->range->r_len; r++){

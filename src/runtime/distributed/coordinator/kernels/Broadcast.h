@@ -149,7 +149,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         distributed::Data protoMsg;
 
         double *val;
-        void *buffer = nullptr;        
+        std::vector<char> buffer;
         if (isScalar) {
             auto ptr = (double*)(&mat);
             val = ptr;
@@ -159,9 +159,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
         } 
         else { // Not scalar
-            buffer = DaphneSerializer<DT>::save(mat, buffer);
-            size_t length = DaphneSerializer<DT>::length(mat);
-            protoMsg.mutable_matrix()->set_bytes(buffer, length);            
+            // DT is const Structure, but we only provide template specialization for structure.
+            // TODO should we implement an additional specialization or remove constness from template parameter?
+            size_t length = DaphneSerializer<typename std::remove_const<DT>::type>::save(mat, buffer);
+            protoMsg.mutable_matrix()->set_bytes(buffer.data(), length);            
         }
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
         

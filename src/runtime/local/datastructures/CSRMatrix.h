@@ -390,7 +390,7 @@ public:
         return this->getNumItems() * sizeof(ValueType);
     }
 
-    void* serialize(void *buf) const override ;
+    size_t serialize(std::vector<char> &buf) const override ;
 };
 
 template <typename ValueType>

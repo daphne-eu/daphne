@@ -45,8 +45,8 @@ TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer save/load", TAG_IO, (DATA_TYPES), (
     });
   
   // Serialize and deserialize
-  void *buffer = nullptr;
-  buffer = DaphneSerializer<DT>::save(mat, buffer);
+  std::vector<char> buffer;
+  DaphneSerializer<DT>::save(mat, buffer);
 
   auto newMat = dynamic_cast<DT*>(DF_load(buffer));
 

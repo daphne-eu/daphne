@@ -70,13 +70,13 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
         size_t len = f.tellg();
         f.seekg(f.beg);
 
-        char *buf = (char *)malloc(len);
-        f.read(buf, len);
+		std::vector<char> buf(len);
+
+        f.read(buf.data(), len);
 
         res = DaphneSerializer<DenseMatrix<VT>>::load(buf);
 
         f.close();
-        free(buf);
         return;
     }
 };
@@ -91,13 +91,12 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
         size_t len = f.tellg();
         f.seekg(f.beg);
 
-        char *buf = (char *)malloc(len);
-        f.read(buf, len);
+        std::vector<char> buf(len);
+        f.read(buf.data(), len);
 
         res = DaphneSerializer<CSRMatrix<VT>>::load(buf);
 
         f.close();
-        free(buf);
         return;
     }
 };

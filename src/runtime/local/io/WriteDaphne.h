@@ -71,12 +71,11 @@ struct WriteDaphne<DenseMatrix<VT>> {
 		// TODO: check f.good()
 		
 		size_t len = DaphneSerializer<DenseMatrix<VT>>::length(arg);
-		void *buf = malloc(len);
-
-		f.write((const char *)DaphneSerializer<DenseMatrix<VT>>::save(arg, buf), len);
+		std::vector<char> buf(len);
+		DaphneSerializer<DenseMatrix<VT>>::save(arg, buf);
+		f.write(buf.data(), len);
 
 		f.close();
-		free(buf);
 
 		return;
    }
@@ -94,14 +93,13 @@ struct WriteDaphne<CSRMatrix<VT>> {
 		// TODO: check f.good()
 		
 		size_t len = DaphneSerializer<CSRMatrix<VT>>::length(arg);
-		void *buf = malloc(len);
-
+		std::vector<char> buf(len);
+		
 		DaphneSerializer<CSRMatrix<VT>>::save(arg, buf);
-		f.write((const char *)buf, len);
+		f.write(buf.data(), len);
 
 		f.close();
-		free(buf);
-
+		
 		return;
    }
 };

@@ -68,7 +68,9 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
         case distributed::Data::DataCase::kMatrix:
         {
             Structure *mat = nullptr;
-            mat = DF_load(request->matrix().bytes().c_str());
+            // Zero copy buffer
+            std::vector<char> buf(static_cast<const char*>(request->matrix().bytes().data()), static_cast<const char*>(request->matrix().bytes().data()) + request->matrix().bytes().size());
+            mat = DF_load(buf);
             storedInfo = WorkerImpl::Store<Structure>(mat);
             break;
         }
@@ -130,28 +132,10 @@ grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,
                          ::distributed::Matrix *response)
 {
     StoredInfo info({request->identifier(), request->num_rows(), request->num_cols()});
-    void *buffer = nullptr;
+    std::vector<char> buffer;
     size_t bufferLength;
     Structure *mat = Transfer(info);
-    // TODO: Could we avoid if statements here?
-    if(auto matDT = dynamic_cast<DenseMatrix<double>*>(mat)){
-        buffer = DaphneSerializer<DenseMatrix<double>>::save(matDT, buffer);
-        bufferLength = DaphneSerializer<DenseMatrix<double>>::length(matDT);
-    }        
-    else if(auto matDT = dynamic_cast<DenseMatrix<int64_t>*>(mat)){
-        buffer = DaphneSerializer<DenseMatrix<int64_t>>::save(matDT, buffer);
-        bufferLength = DaphneSerializer<DenseMatrix<int64_t>>::length(matDT);
-    }
-    else if(auto matDT = dynamic_cast<CSRMatrix<double>*>(mat)){
-        buffer = DaphneSerializer<CSRMatrix<double>>::save(matDT, buffer);
-        bufferLength = DaphneSerializer<CSRMatrix<double>>::length(matDT);
-    }
-    else if(auto matDT = dynamic_cast<CSRMatrix<int64_t>*>(mat)){
-        buffer = DaphneSerializer<CSRMatrix<int64_t>>::save(matDT, buffer);
-        bufferLength = DaphneSerializer<CSRMatrix<int64_t>>::length(matDT);
-
-    } else 
-        std::runtime_error("Type is not supported atm");
-    response->set_bytes(buffer, bufferLength);
+    bufferLength = DaphneSerializer<Structure>::save(mat, buffer);
+    response->set_bytes(buffer.data(), bufferLength);
     return ::grpc::Status::OK;
 }
