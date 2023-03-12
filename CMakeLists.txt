@@ -74,26 +74,13 @@ set(BLA_VENDOR OpenBLAS)
 set(BLA_STATIC ON)
 find_package(BLAS)
 
-SET(ANTLR_VERSION 4.9.2 CACHE STRING "The version of ANTLR (parsing library).")
-message(STATUS "ANTLR_VERSION: ${ANTLR_VERSION}")
-
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources
 # prefix and /usr/local e.g.: -DCMAKE_PREFIX_PATH="/usr/local;${PROJECT_SOURCE_DIR}/thirdparty/installed"
 foreach(path ${CMAKE_PREFIX_PATH})
     message(STATUS "CMAKE_PREFIX_PATH:  ${path}")
     include_directories(${path}/include)
-    file(GLOB ANTLR_JAR_FOUND ${path}/share/antlr4/antlr-${ANTLR_VERSION}-complete.jar)
-    if(DEFINED ANTLR_JAR_FOUND)
-        message(STATUS "ANTLR_JAR_FOUND: ${ANTLR_JAR_FOUND}")
-        set(ANTLR4_JAR_LOCATION ${ANTLR_JAR_FOUND} CACHE STRING "default value for ANTLR jar file")
-    endif()
 endforeach(path)
-
-# fallback if not using CMAKE_PREFIX_PATH (e.g., system/container install)
-if(NOT DEFINED CMAKE_PREFIX_PATH)
-    set(ANTLR4_JAR_LOCATION /usr/local/share/antlr4/antlr-${ANTLR_VERSION}-complete.jar CACHE STRING "default value for ANTLR jar file")
-endif()
 
 # check <package>_ROOT env var
 cmake_policy(SET CMP0074 NEW)
