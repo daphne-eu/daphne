@@ -79,10 +79,15 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
         // Initialize Distributed index array, needed for results
         for (size_t i = 0; i < numOutputs; i++)
         {
-            size_t partitionSize=0, remainingSize=0, startRow=0, rowCount=0, startCol=0, colCount=0;
+            size_t partitionSize=0, remainingSize=0, rowCount=0,colCount=0; // startRow=0, startCol=0;
             auto combineType = vectorCombine[i];
             remainingSize = (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows(): (*res[i])->getNumCols();
             partitionSize = (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows()/worldSize: (*res[i])->getNumCols()/worldSize;
+            if(partitionSize<1)
+            {
+                partitionSize = 1;
+                worldSize= (combineType==VectorCombine::ROWS)? (*res[i])->getNumRows() : (*res[i])->getNumCols();
+            }
             for(int rank=0; rank<worldSize;rank++) // we currently exclude the coordinator
             {      
                 DistributedData data;
@@ -123,8 +128,8 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                 }
                 else { // else create new dp entry   
                     AllocationDescriptorMPI allocationDescriptor(
-                                            dctx,
                                             rank+1,
+                                            dctx,
                                             data);                                    
                     ((*res[i]))->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
                 } 

@@ -32,9 +32,9 @@ class AllocationDescriptorMPI : public IAllocationDescriptor {
 
 public:
     AllocationDescriptorMPI() {} ;
-    AllocationDescriptorMPI(DaphneContext* ctx, 
-                            int id, 
-                            DistributedData data) : ctx(ctx), processRankID(id), distributedData(data) {} ;
+    AllocationDescriptorMPI(int id,
+                            DaphneContext* ctx, 
+                            DistributedData data) :  processRankID(id), ctx(ctx), distributedData(data) {} ;
 
     ~AllocationDescriptorMPI() override {};
 
@@ -46,7 +46,7 @@ public:
     };
     
     void createAllocation(size_t size, bool zero) override {} ;
-    std::shared_ptr<std::byte> getData() override {} ;
+    std::shared_ptr<std::byte> getData() override {return nullptr;} ;
 
     bool operator==(const IAllocationDescriptor* other) const override {
         if(getType() == other->getType())

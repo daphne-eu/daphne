@@ -72,7 +72,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
     {
         size_t messageLength=0;
         void * dataToSend;
-        auto ptr = (double*)(&mat);
+        //auto ptr = (double*)(&mat);
         MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
         std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
         int worldSize = MPIHelper::getCommSize();
@@ -94,8 +94,8 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             else {  // else create new dp entry
                 DistributedData data;
                 data.ix = DistributedIndex(0, 0);
-                AllocationDescriptorMPI allocationDescriptor (dctx, 
-                                                                rank+1, /* to exclude coordinator*/  
+                AllocationDescriptorMPI allocationDescriptor (rank+1, /* to exclude coordinator*/  
+                                                                dctx,
                                                                 data);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
             }
@@ -109,18 +109,18 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             }
             targetGroup.push_back(rank+1);  
         }
-        if(targetGroup.size()==worldSize){
+        if((int)targetGroup.size()==worldSize){
             MPIHelper::sendData(messageLength, dataToSend);
            // std::cout<<"data has been send to all "<<std::endl;
         }
         else{
-            for(int i=0;i<targetGroup.size();i++){
+            for(int i=0;i<(int)targetGroup.size();i++){
                     MPIHelper::distributeData(messageLength, dataToSend, targetGroup.at(i));
                     //std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
                 } 
         }
         free(dataToSend);
-        for(int i=0;i<targetGroup.size();i++)
+        for(int i=0;i<(int)targetGroup.size();i++)
         { 
             //std::cout<<"From broadcast waiting for ack " << std::endl;
            

@@ -72,6 +72,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
     {
         assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
         int worldSize= MPIHelper::getCommSize()-1;
+        auto collectedDataItems=0;
         for(int rank=0; rank<worldSize ; rank++) // we currently exclude the coordinator
         {
             //if(rank==COORDINATOR)
@@ -86,7 +87,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             //std::cout<<"from distributed collect address " <<address<< " rows from "<< dp->range->r_start<< " to "<< (dp->range->r_start + dp->range->r_len) <<" cols from " <<  dp->range->c_start << " to " << (dp->range->c_start + dp->range->c_len)  <<std::endl;
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();                  
             auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
-            auto toDisplay = DataObjectFactory::create<DenseMatrix<double>>(dp->range->r_len, dp->range->c_len, false);
+            //auto toDisplay = DataObjectFactory::create<DenseMatrix<double>>(dp->range->r_len, dp->range->c_len, false);
             if (!denseMat){
                 throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
             }
@@ -98,9 +99,13 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
                 protoMessage.matrix(), denseMat,
                 dp->range->r_start, dp->range->r_start + dp->range->r_len,
-                dp->range->c_start, dp->range->c_start + dp->range->c_len);                
+                dp->range->c_start, dp->range->c_start + dp->range->c_len);
+            collectedDataItems+=  dp->range->r_len *  dp->range->c_len;
             data.isPlacedAtWorker = false;
             dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            // this is to handle the case when not all workers participate in the computation, i.e., number of workers is larger than of the work items
+            if(collectedDataItems == denseMat->getNumRows() * denseMat->getNumCols())
+                break;
         }
     };
 };

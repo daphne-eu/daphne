@@ -68,6 +68,17 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
         int worldSize= MPIHelper::getCommSize()-1; // exclude coordinator
         size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainingRows=0;
         auto partitionSize =  mat->getNumRows()/worldSize;
+        //if(partitionSize==0){
+        //    throw std::runtime_error("number of workers is more than the work items, i.e., maximum number of workers is " + std::str(worldSize+1) + " \n");
+        //}
+
+        // this part is to handle the case when the number of worker is larger than the number of work items
+        if(partitionSize<1)
+        {
+          //std::cout<<"testing 1\n";
+          partitionSize=1;
+          worldSize=mat->getNumRows();  
+        }
         remainingRows=mat->getNumRows();
         size_t messageLengths [worldSize];
         void *dataToSend;
@@ -99,10 +110,9 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             }
             else {
                 DistributedData data;
-                AllocationDescriptorMPI allocationDescriptor(
-                                                dctx,
-                                                rank+1,/*exclude coordinator*/
-                                                data);
+                AllocationDescriptorMPI allocationDescriptor(rank+1,/*exclude coordinator*/
+                                                            dctx,
+                                                            data);
                 data.ix = DistributedIndex(rank, 0);
                 dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
             }

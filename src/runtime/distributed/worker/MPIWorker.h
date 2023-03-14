@@ -110,7 +110,7 @@ class MPIWorker: WorkerImpl {
         
         void sendResult(std::vector<StoredInfo> outputs)
         {
-            for(int i=0;i<outputs.size();i++)
+            for(size_t i=0;i<outputs.size();i++)
             {
                 StoredInfo tempInfo=outputs.at(i);
                 Structure * res =Transfer(tempInfo);
@@ -162,14 +162,14 @@ class MPIWorker: WorkerImpl {
             int tag = status.MPI_TAG;
             MPI_Status messageStatus;
             void * data;
-            char * mlirCode;
+            //char * mlirCode;
             int messageLength;
-            DenseMatrix<double> *mat=nullptr;
-            double val;
+            //DenseMatrix<double> *mat=nullptr;
+            //double val;
             distributed::Data protoMsgData;
             distributed::Task protoMsgTask;
             std::string printData="";
-            size_t index=0, rows=0, cols=0;
+            //size_t index=0, rows=0, cols=0;
             StoredInfo info;
             std::vector<StoredInfo> outputs;
             std::vector<StoredInfo> currentPipelineInputs;
