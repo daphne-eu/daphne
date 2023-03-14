@@ -103,7 +103,7 @@ void daphne::FilterRowOp::inferFrameLabels() {
 void daphne::GroupJoinOp::inferFrameLabels() {
     auto newLabels = new std::vector<std::string>();
     newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getLhsOn()));
-    newLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getRhsAgg()));
+    newLabels->push_back(std::string("SUM(") + CompilerUtils::constantOrThrow<std::string>(getRhsAgg()) + std::string(")"));
     Value res = getResult(0);
     res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(newLabels));
 }

@@ -173,7 +173,7 @@ void groupJoin(
     groupJoinColIf<int64_t, int64_t, int64_t, VTLhsTid>(vtcLhsOn, vtcRhsOn, vtcRhsAgg, res, lhsTid, lhs, rhs, lhsOn, rhsOn, rhsAgg, ctx);
     
     // Set the column labels of the result frame.
-    std::string labels[] = {lhsOn, rhsAgg};
+    std::string labels[] = {lhsOn, std::string("SUM(") + rhsAgg + std::string(")")};
     res->setLabels(labels);
 }
 

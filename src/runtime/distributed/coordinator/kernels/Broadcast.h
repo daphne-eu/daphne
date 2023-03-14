@@ -165,7 +165,6 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         
         distributed::Data protoMsg;
 
-        assert(mat != nullptr && "Matrix to broadcast is nullptr");
         double *val;
         if (isScalar) {
             auto ptr = (double*)(&mat);
@@ -176,6 +175,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
         } 
         else { // Not scalar
+            assert(mat != nullptr && "Matrix to broadcast is nullptr");
             auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
             if (!denseMat){
                 throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
