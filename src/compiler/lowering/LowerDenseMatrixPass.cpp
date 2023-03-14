@@ -77,7 +77,7 @@ void affineFillMemRef(double value, ConversionPatternRewriter &rewriter,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
                       mlir::Type elemType) {
     Value fillValue = rewriter.create<mlir::arith::ConstantOp>(
-        loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(value));
+        loc, elemType, rewriter.getFloatAttr(elemType, value));
 
     SmallVector<Value, 4> loopIvs;
 
