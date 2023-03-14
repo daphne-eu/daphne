@@ -8,25 +8,31 @@ import pandas as pd
 from typing import List
 
 tests = [
-    "f32_10x10.daphne",
-    "f32_1kb.daphne",
-    "f32_10kb.daphne",
-    "f32_100kb.daphne",
-    "f32_1mb.daphne",
-    "f32_10mb.daphne",
+    #  "f32_10x10.daphne",
+    #  "f32_1kb.daphne",
+    #  "f32_10kb.daphne",
+    #  "f32_100kb.daphne",
+    #  "f32_1mb.daphne",
+    #  "f32_10mb.daphne",
     #  "f32_100mb.daphne",
     #  "f32_1gb.daphne",
     #  "f32_5gb.daphne",
     #  "f32_10gb.daphne",
-    "f64_10x10.daphne",
-    "f64_1kb.daphne",
-    "f64_10kb.daphne",
-    "f64_100kb.daphne",
-    "f64_1mb.daphne",
-    "f64_10mb.daphne",
+    #  "f64_10x10.daphne",
+    #  "f64_1kb.daphne",
+    #  "f64_10kb.daphne",
+    #  "f64_100kb.daphne",
+    #  "f64_1mb.daphne",
+    #  "f64_10mb.daphne",
     #  "f64_1gb.daphne",
     #  "f64_5gb.daphne",
     #  "f64_10gb.daphne",
+    "f64_32x32.daphne",
+    "f64_64x64.daphne",
+    "f64_512x512.daphne",
+    "f64_1024x1024.daphne",
+    "f64_2048x2048.daphne",
+    "f64_4096x4096.daphne"
 ]
 
 precompiled_results = []
@@ -39,6 +45,7 @@ def run_benchmark(file: str):
 
     ROUNDS = 3
 
+    print(file)
     for i in range(ROUNDS):
         # precompiled
         popen = subprocess.Popen(
@@ -46,6 +53,7 @@ def run_benchmark(file: str):
         )
         popen.wait()
         output = str(popen.stdout.read())
+        print(output)
         time_spent_precompiled += float(re.findall(r"\d+", output)[0]) / 1e6
 
     precompiled_results.append(round(time_spent_precompiled / ROUNDS, 3))
@@ -60,11 +68,12 @@ def run_benchmark(file: str):
         )
         popen.wait()
         output = str(popen.stdout.read())
+        print(output)
         time_spent_codegen += float(re.findall(r"\d+", output)[0]) / 1e6
 
     codegen_results.append(round(time_spent_codegen / ROUNDS, 3))
 
-    print(f"Total time spent codegen: {time_spent_codegen}")
+    print(f"Total time spent codegen: {time_spent_codegen:.3}")
 
 
 if __name__ == "__main__":
@@ -81,6 +90,6 @@ if __name__ == "__main__":
         },
         columns=["test_name", "precompiled", "codegen"],
     )
-    df.to_csv("results.csv", index=False)
+    df.to_csv("results_handwritten_mm.csv", index=False)
 
     print(df)

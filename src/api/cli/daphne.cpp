@@ -437,7 +437,7 @@ main(int argc, char** argv)
         // std::cout << "engine->invoke took: "
         //     << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count()
         //     << " milliseconds\n";
-        engine->dumpToObjectFile("obj_dump.out");
+        engine->dumpToObjectFile("module.ll");
         if (error) {
             llvm::errs() << "JIT-Engine invocation failed: " << error;
             return StatusCode::EXECUTION_ERROR;

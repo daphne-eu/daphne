@@ -19,6 +19,8 @@
 
 include "mlir/Pass/PassBase.td"
 
+// TODO(phil): add passes
+
 def DistributeComputations : Pass<"distribute-computations", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createDistributeComputationsPass()";
 }
