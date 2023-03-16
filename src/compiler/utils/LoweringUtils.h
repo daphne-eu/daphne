@@ -23,6 +23,7 @@
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/Location.h"
 #include "mlir/IR/Visitors.h"
 #include "mlir/Transforms/DialectConversion.h"
 
@@ -33,3 +34,7 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
                       mlir::Type elemType);
+
+mlir::Value getDenseMatrixFromMemRef(mlir::Location,
+                                     mlir::ConversionPatternRewriter&,
+                                     mlir::Value memRef, mlir::Type);

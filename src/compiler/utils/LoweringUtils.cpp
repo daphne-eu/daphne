@@ -15,6 +15,7 @@
  */
 
 #include "LoweringUtils.h"
+#include "ir/daphneir/Daphne.h"
 
 /// Insert an allocation and deallocation for the given MemRefType.
 mlir::Value insertAllocAndDealloc(mlir::MemRefType type, mlir::Location loc,
@@ -61,4 +62,24 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
 
     rewriter.create<mlir::AffineYieldOp>(loc);
     rewriter.setInsertionPointAfter(outerLoop);
+}
+
+mlir::Value getDenseMatrixFromMemRef(mlir::Location loc,
+                                     mlir::ConversionPatternRewriter &rewriter,
+                                     mlir::Value memRef, mlir::Type type) {
+    auto extractStridedMetadataOp =
+        rewriter.create<mlir::memref::ExtractStridedMetadataOp>(loc, memRef);
+    // aligned ptr (memref.data)
+    mlir::Value alignedPtr =
+        rewriter.create<mlir::memref::ExtractAlignedPointerAsIndexOp>(loc,
+                                                                      memRef);
+    // offset
+    mlir::Value offset = extractStridedMetadataOp.getOffset();
+    // strides
+    mlir::ResultRange strides = extractStridedMetadataOp.getStrides();
+    // sizes
+    mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
+    return rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
+        loc, type, alignedPtr, offset, sizes[0], sizes[1], strides[0],
+        strides[1]);
 }
