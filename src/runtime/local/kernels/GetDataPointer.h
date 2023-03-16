@@ -29,7 +29,8 @@ inline void convertMemRefToDenseMatrix(DenseMatrix<T> *&result, T *basePtr,
                                        size_t offset, size_t size0,
                                        size_t size1, size_t stride0,
                                        size_t stride1, DCTX(ctx)) {
-    std::shared_ptr<T[]> ptr(basePtr);
+    auto no_op_deleter = [](T*){};
+    std::shared_ptr<T[]> ptr(basePtr, no_op_deleter);
     result = DataObjectFactory::create<DenseMatrix<T>>(size0, size1, ptr);
     result->increaseRefCounter();
 }
