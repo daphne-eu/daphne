@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
+#include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Pass/Pass.h"
+#include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
@@ -32,6 +35,7 @@ class EwModOpLowering
    public:
     using OpConversionPattern::OpConversionPattern;
 
+    // TODO(phil): currently only supports f64
     mlir::LogicalResult matchAndRewrite(
         mlir::daphne::EwModOp op, OpAdaptor adaptor,
         mlir::ConversionPatternRewriter &rewriter) const override {
@@ -39,10 +43,12 @@ class EwModOpLowering
         mlir::daphne::MatrixType lhsTensor =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
 
+        auto tensorType = lhsTensor.getElementType();
+        if (!tensorType.isF64()) return failure();
+
         auto lhsRows = lhsTensor.getNumRows();
         auto lhsCols = lhsTensor.getNumCols();
 
-        auto tensorType = lhsTensor.getElementType();
         auto lhsMemRefType =
             mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
 
@@ -53,14 +59,27 @@ class EwModOpLowering
         mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             op->getLoc(), lhsMemRefType, adaptor.getLhs());
         mlir::Value rhs = adaptor.getRhs();
+        std::pair<bool, double> isConstant =
+            CompilerUtils::isConstant<double>(rhs);
 
-        mlir::Value cst_one = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(1));
+        // Apply (n & (n - 1)) optimization when n is a power of two
+        bool optimize =
+            isConstant.first && std::fmod(isConstant.second, 2) == 0;
 
-        mlir::Value rhsValue =
-            rewriter.create<mlir::arith::SubFOp>(loc, rhs, cst_one);
-        mlir::Value rhsV = rewriter.create<mlir::arith::FPToSIOp>(
-            loc, rewriter.getI64Type(), rhsValue);
+        mlir::Value cst_one{};
+        mlir::Value rhsValue{};
+        mlir::Value rhsV{};
+
+        if (optimize) {
+            cst_one = rewriter.create<mlir::arith::ConstantOp>(
+                loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(1));
+            rhsValue = rewriter.create<mlir::arith::SubFOp>(loc, rhs, cst_one);
+
+            rhsV = rewriter.create<mlir::arith::FPToSIOp>(
+                loc, rewriter.getI64Type(), rhsValue);
+        } else {
+            rhsV = rhs;
+        }
 
         // Alloc output memref
         mlir::Value outputMemRef =
@@ -70,8 +89,6 @@ class EwModOpLowering
         affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
                          op->getContext(), outputMemRef, tensorType);
 
-        // rewriter.create<linalg::ElemwiseBinaryOp>(loc, ValueRange{lhs, rhs},
-        // ValueRange{outputMemRef}, linalg::BinaryFnAttr::get);
         SmallVector<Value, 4> loopIvs;
 
         auto outerLoop = rewriter.create<AffineForOp>(loc, 0, lhsRows, 1);
@@ -90,17 +107,20 @@ class EwModOpLowering
         rewriter.create<AffineYieldOp>(loc);
         rewriter.setInsertionPointToStart(innerLoop.getBody());
         mlir::Value lhsValue = rewriter.create<AffineLoadOp>(loc, lhs, loopIvs);
-        mlir::Value lhsV = rewriter.create<mlir::arith::FPToSIOp>(
-            loc, rewriter.getI64Type(), lhsValue);
 
-        mlir::Value modResult =
-            // rewriter.create<arith::RemFOp>(loc, lhsValue, rhs);
-            rewriter.create<arith::AndIOp>(loc, lhsV, rhsV);
-        mlir::Value modResultCast = rewriter.create<arith::SIToFPOp>(
-            loc, rewriter.getF64Type(), modResult);
+        mlir::Value modResult{};
+        if (optimize) {
+            mlir::Value lhsV = rewriter.create<mlir::arith::FPToSIOp>(
+                loc, rewriter.getI64Type(), lhsValue);
+            mlir::Value modResultCast =
+                rewriter.create<arith::AndIOp>(loc, lhsV, rhsV);
+            modResult = rewriter.create<arith::SIToFPOp>(
+                loc, rewriter.getF64Type(), modResultCast);
+        } else {
+            modResult = rewriter.create<arith::RemFOp>(loc, lhsValue, rhsV);
+        }
 
-        rewriter.create<AffineStoreOp>(loc, modResultCast, outputMemRef,
-                                       loopIvs);
+        rewriter.create<AffineStoreOp>(loc, modResult, outputMemRef, loopIvs);
 
         rewriter.create<AffineYieldOp>(loc);
         rewriter.setInsertionPointAfter(outerLoop);
@@ -149,8 +169,9 @@ void EwOpLoweringPass::runOnOperation() {
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
     mlir::LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
-    target.addLegalDialect<mlir::AffineDialect, arith::ArithDialect,
-                           memref::MemRefDialect, mlir::daphne::DaphneDialect>();
+    target
+        .addLegalDialect<mlir::AffineDialect, arith::ArithDialect,
+                         memref::MemRefDialect, mlir::daphne::DaphneDialect>();
 
     target.addIllegalOp<mlir::daphne::EwModOp>();
 
