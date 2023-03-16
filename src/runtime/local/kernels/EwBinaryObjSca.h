@@ -56,22 +56,36 @@ void ewBinaryObjSca(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs 
 // DenseMatrix <- DenseMatrix, scalar
 // ----------------------------------------------------------------------------
 
-template<typename VT>
+template <typename VT>
 struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * lhs, VT rhs, DCTX(ctx)) {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VT>*& res,
+                      const DenseMatrix<VT>* lhs, VT rhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
-        
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
-        const VT * valuesLhs = lhs->getValues();
-        VT * valuesRes = res->getValues();
-        
-        EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-        
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols,
+                                                             false);
+
+        const VT* valuesLhs = lhs->getValues();
+        VT* valuesRes = res->getValues();
+
+        if (opCode == BinaryOpCode::MOD) {
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++)
+                    valuesRes[c] = std::fmod(valuesLhs[c], rhs);
+                valuesLhs += lhs->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+            return;
+        }
+
+        EwBinaryScaFuncPtr<VT, VT, VT> func =
+            getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
+
+        // TODO(phil): also remove func for other BinaryOpCode?
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesLhs[c], rhs, ctx);
             valuesLhs += lhs->getRowSkip();
             valuesRes += res->getRowSkip();
