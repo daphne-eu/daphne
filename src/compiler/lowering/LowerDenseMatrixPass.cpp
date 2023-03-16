@@ -56,10 +56,8 @@
 
 using namespace mlir;
 
-// TODO(phil): Look into buildLoopNest() for loop generation
-
-constexpr int ROW = 0;
-constexpr int COL = 1;
+static constexpr int ROW = 0;
+static constexpr int COL = 1;
 
 void affineMatMul(mlir::Value &lhs, mlir::Value &rhs, mlir::Value &output,
                   ConversionPatternRewriter &rewriter, mlir::Location loc,

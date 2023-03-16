@@ -32,6 +32,7 @@ mlir::Value insertAllocAndDealloc(mlir::MemRefType type, mlir::Location loc,
     return alloc;
 }
 
+// TODO(phil): Look into buildLoopNest() for loop generation
 void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
