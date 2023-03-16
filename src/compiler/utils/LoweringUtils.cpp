@@ -79,6 +79,12 @@ mlir::Value getDenseMatrixFromMemRef(mlir::Location loc,
     mlir::ResultRange strides = extractStridedMetadataOp.getStrides();
     // sizes
     mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
+
+    // debug
+    // rewriter.create<mlir::daphne::PrintMemRef>(loc, alignedPtr, offset,
+    //                                            sizes[0], sizes[1],
+    //                                            strides[0], strides[1]);
+
     return rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
         loc, type, alignedPtr, offset, sizes[0], sizes[1], strides[0],
         strides[1]);

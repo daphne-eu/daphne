@@ -125,24 +125,7 @@ class EwModOpLowering
         rewriter.create<AffineYieldOp>(loc);
         rewriter.setInsertionPointAfter(outerLoop);
 
-        auto extractStridedMetadataOp =
-            rewriter.create<memref::ExtractStridedMetadataOp>(loc,
-                                                              outputMemRef);
-        // aligned ptr (memref.data)
-        mlir::Value alignedPtr =
-            rewriter.create<memref::ExtractAlignedPointerAsIndexOp>(
-                loc, outputMemRef);
-        // offset
-        mlir::Value offset = extractStridedMetadataOp.getOffset();
-        // strides
-        mlir::ResultRange strides = extractStridedMetadataOp.getStrides();
-        // sizes
-        mlir::ResultRange sizes = extractStridedMetadataOp.getSizes();
-
-        mlir::Value DM =
-            rewriter.create<mlir::daphne::GetDenseMatrixFromMemRef>(
-                loc, op.getType(), alignedPtr, offset, sizes[0], sizes[1],
-                strides[0], strides[1]);
+        mlir::Value DM = getDenseMatrixFromMemRef(loc, rewriter, outputMemRef, op.getType());
         rewriter.replaceOp(op, DM);
         return mlir::success();
     }
