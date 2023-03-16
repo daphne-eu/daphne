@@ -150,11 +150,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // TODO(phil) maybe add createAffineScalarReplacementPass
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
-
-            // pm.addPass(mlir::daphne::createMemRefTestPass());
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after MemRefTestPass"));
-
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLinalgBufferizePass());
 
             // pm.addPass(mlir::daphne::createPrintIRPass(
