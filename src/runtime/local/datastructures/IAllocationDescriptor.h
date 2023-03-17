@@ -22,7 +22,7 @@
 // Supporting all of that is probably unmaintainable :-/
 enum class ALLOCATION_TYPE {
     DIST_GRPC,
-    DIST_OPENMPI,
+    DIST_MPI,
     DIST_SPARK,
     GPU_CUDA,
     GPU_HIP,

@@ -49,6 +49,7 @@ function printHelp {
     echo "  --cuda            Compile with support for CUDA ops"
     echo "  --debug           Compile with support for debug mode"
     echo "  --fpgaopencl      Compile with support for Intel PAC D5005 FPGA"
+    echo " --mpi             Compile with support for MPI"
 }
 
 #******************************************************************************
@@ -393,6 +394,7 @@ abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
 arrowVersion=11.0.0
+openMPIVersion="4.1.5"
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -428,6 +430,7 @@ unknown_options=""
 BUILD_CUDA="-DUSE_CUDA=OFF"
 BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=OFF"
 BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Release"
+BUILD_MPI="-DUSE_MPI=OFF"
 WITH_DEPS=1
 WITH_SUBMODULE_UPDATE=1
 
@@ -472,6 +475,10 @@ while [[ $# -gt 0 ]]; do
         echo using FPGAOPENCL
         export BUILD_FPGAOPENCL="-DUSE_FPGAOPENCL=ON"
         ;;
+    --mpi)
+        echo using MPI
+        export BUILD_MPI="-DUSE_MPI=ON"
+        ;;    
     --debug)
         echo building DEBUG version
         export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
@@ -688,6 +695,28 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
+    # MPI (Default is MPI library is OpenMPI but cut can be any)
+    #------------------------------------------------------------------------------
+    MPIZipName=openmpi-$openMPIVersion.tar.gz
+    MPIInstDirName=$installPrefix
+    if ! is_dependency_downloaded "openmpi_v${openMPIVersion}"; then
+        daphne_msg "Get openmpi version ${openMPIVersion}"
+        wget "https://download.open-mpi.org/release/open-mpi/v4.1/$MPIZipName" -qO "${cacheDir}/${MPIZipName}"
+        tar -xf "$cacheDir/$MPIZipName" --directory "$sourcePrefix"
+        dependency_download_success "openmpi_v${openMPIVersion}"
+        mkdir --parents "$MPIInstDirName"
+    fi
+    if ! is_dependency_installed "openmpi_v${openMPIVersion}"; then
+        cd "$sourcePrefix/openmpi-$openMPIVersion"
+        ./configure --prefix="$MPIInstDirName"
+        make -j"$(nproc)" all
+        make install
+        cd -
+        dependency_install_success "openmpi_v${openMPIVersion}"
+    else
+        daphne_msg "No need to build OpenMPI again"
+    fi
+    #------------------------------------------------------------------------------
     # gRPC
     #------------------------------------------------------------------------------
     grpcDirName="grpc"
@@ -724,7 +753,6 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build GRPC again."
     fi
-
     #------------------------------------------------------------------------------
     # Arrow / Parquet
     #------------------------------------------------------------------------------
@@ -831,7 +859,7 @@ daphne_msg "Build Daphne"
 
 cmake -S "$projectRoot" -B "$daphneBuildDir" -G Ninja -DANTLR_VERSION="$antlrVersion" \
     -DCMAKE_PREFIX_PATH="$installPrefix" \
-    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG
+    $BUILD_CUDA $BUILD_FPGAOPENCL $BUILD_DEBUG $BUILD_MPI
 
 cmake --build "$daphneBuildDir" --target "$target"
 
@@ -839,4 +867,3 @@ build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
-

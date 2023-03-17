@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,33 +14,20 @@
  * limitations under the License.
  */
 
-#pragma once
+x = 1.0;
+y = 2.0;
 
-enum QueueTypeOption {
-    CENTRALIZED=0,
-    PERGROUP,
-    PERCPU
-};
+m1 = rand(6000, 15000, 1.0, 1000.0, 1.0, 42);
+m2= rand(6000, 15000, 1.0, 1000.0, 1.0, 43);
+print("---------------");
+print("part of random matrix m1");
+print(m1[1:5,1:5]);
+print("part of random matrix m2");
+print(m2[1:5,1:5]);
 
-enum VictimSelectionLogic {
-    SEQ=0,
-    SEQPRI,
-    RANDOM,
-    RANDOMPRI
-};
+m3= m1 + m2;
+print("m3 = m1 + m2");
+print(m3[1:5,1:5]);
 
-enum SelfSchedulingScheme {
-    STATIC=0,
-    SS,
-    GSS,
-    TSS,
-    FAC2,
-    TFSS,
-    FISS,
-    VISS,
-    PLS,
-    MSTATIC,
-    MFSC,
-    PSS,
-    INVALID=-1 /* only for JSON enum conversion */
-};
+print("Hello world!");
+print("Bye!"); 

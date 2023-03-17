@@ -96,4 +96,4 @@ endif()
 
 list(APPEND LIBS Arrow::arrow_shared Parquet::parquet_shared DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 
-target_link_libraries(AllKernels PUBLIC ${LIBS})
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES})

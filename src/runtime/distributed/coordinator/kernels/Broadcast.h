@@ -20,11 +20,19 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
-
+#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
+
+#ifdef USE_MPI
+#include <runtime/distributed/worker/MPIHelper.h>
+#include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#include <runtime/distributed/worker/MPIWorker.h>
+#include <runtime/distributed/worker/MPISerializer.h>
+#endif
 
 #include <cassert>
 #include <cstddef>
@@ -53,6 +61,91 @@ void broadcast(DT *&mat, bool isScalar, DCTX(dctx))
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************
 
+// ----------------------------------------------------------------------------
+// MPI
+// ----------------------------------------------------------------------------
+#ifdef USE_MPI
+template<class DT>
+struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
+{
+    static void apply(DT *&mat, bool isScalar, DCTX(dctx))
+    {
+        size_t messageLength=0;
+        void * dataToSend;
+        //auto ptr = (double*)(&mat);
+        MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
+        std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
+        int worldSize = MPIHelper::getCommSize();
+        worldSize--; // to exclude coordinator
+        Range range;
+        range.r_start = 0;
+        range.c_start = 0;
+        range.r_len = mat->getNumRows();
+        range.c_len = mat->getNumCols();
+        for (int rank=0;rank<worldSize;rank++){   // we currently exclude the coordinator
+            std::string address=std::to_string(rank+1); // to skip coordinator  
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            if (dp!=nullptr) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                data.ix = DistributedIndex(0, 0);
+                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            }
+            else {  // else create new dp entry
+                DistributedData data;
+                data.ix = DistributedIndex(0, 0);
+                AllocationDescriptorMPI allocationDescriptor (rank+1, /* to exclude coordinator*/  
+                                                                dctx,
+                                                                data);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
+            }
+            if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            {
+                //std::cout<<"data is already placed at rank "<<rank<<std::endl;
+                auto data =dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
+               // std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
+                continue;
+            }
+            targetGroup.push_back(rank+1);  
+        }
+        if((int)targetGroup.size()==worldSize){
+            MPIHelper::sendData(messageLength, dataToSend);
+           // std::cout<<"data has been send to all "<<std::endl;
+        }
+        else{
+            for(int i=0;i<(int)targetGroup.size();i++){
+                    MPIHelper::distributeData(messageLength, dataToSend, targetGroup.at(i));
+                    //std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
+                } 
+        }
+        free(dataToSend);
+        for(int i=0;i<(int)targetGroup.size();i++)
+        { 
+            //std::cout<<"From broadcast waiting for ack " << std::endl;
+           
+            int rank=targetGroup.at(i);
+            if (rank==COORDINATOR)
+            {
+
+               // std::cout<<"coordinator doe not need ack from itself" << std::endl;
+                continue;
+            }
+            WorkerImpl::StoredInfo dataAcknowledgement=MPIHelper::getDataAcknowledgement(&rank);
+            //std::cout<<"received ack form worker " << rank<<std::endl;
+            std::string address=std::to_string(rank);
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+            data.identifier = dataAcknowledgement.identifier;
+            data.numRows = dataAcknowledgement.numRows;
+            data.numCols = dataAcknowledgement.numCols;
+            data.isPlacedAtWorker = true;
+            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+
+        }
+    }
+};
+#endif
 // ----------------------------------------------------------------------------
 // GRPC
 // ----------------------------------------------------------------------------
