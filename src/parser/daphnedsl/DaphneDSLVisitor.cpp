@@ -1046,9 +1046,11 @@ antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::
                 utils.valueOrError(visit(ctx->rows))
         );
     if(ctx->cols) // cols specified
-        // TODO Required to complete #481.
-        throw std::runtime_error(
-                "right indexing columns by bit vector is not supported yet"
+        obj = builder.create<mlir::daphne::FilterColOp>(
+                utils.getLoc(ctx->cols->start),
+                obj.getType(), // TODO Not correct for frames, see #484.
+                obj,
+                utils.valueOrError(visit(ctx->cols))
         );
 
     // Note: If rows and cols are specified, we create two filter steps.

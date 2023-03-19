@@ -994,11 +994,37 @@ def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
         The *i*-th row of `source` is contained in the result, if the *i*-th
         entry of `selectedRows` is a one (in its respective value type).
 
-        Note that `ExtractRowOp` is similar, but works with positions lists
-        instead of bit vectors.
+        Note that `ExtractRowOp` and `SliceRowOp` are similar, but work with
+        positions instead of bit vectors.
     }];
 
     let arguments = (ins MatrixOrFrame:$source, MatrixOrU:$selectedRows);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_FilterColOp : Daphne_Op<"filterCol", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    // TODO Support frame label inference, (see #484).
+    /*DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,*/
+    NumRowsFromArg
+]> {
+    let summary = "Filters the columns of a data object according to a bit vector";
+
+    let description = [{
+        Filters the columns of a data object (matrix or frame) according to a bit
+        vector. The argument `selectedCols` must be a single-column matrix. All
+        its entries must be zero or one. The value type of `selectedCols` does
+        not need to be boolean, it could also be an integer or floating-point
+        type. The number of entries (rows) in `selectedCols` and the number of
+        columns in `source` must be the same.
+        The *i*-th column of `source` is contained in the result, if the *i*-th
+        entry of `selectedCols` is a one (in its respective value type).
+
+        Note that `ExtractColOp` and `SliceColOp` are similar, but work with
+        positions instead of bit vectors.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, MatrixOrU:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
 }
 

@@ -62,7 +62,7 @@ struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
         const size_t numCols = arg->getNumCols();
 
         if(sel->getNumRows() != numRowsArg)
-            throw std::runtime_error("the number of rows in arg and sel must be the same");
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
 
@@ -102,7 +102,7 @@ struct FilterRow<Frame, Frame, VTSel> {
         const ValueTypeCode * schema = arg->getSchema();
         
         if(sel->getNumRows() != numRows)
-            throw std::runtime_error("the number of rows in arg and sel must be the same");
+            throw std::runtime_error("sel must have exactly one entry (row) for each row in arg");
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
         

@@ -93,6 +93,16 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
         );
 }
 
+std::vector<Type> daphne::FilterColOp::inferTypes() {
+    if(auto mt = getSource().getType().dyn_cast<daphne::MatrixType>())
+        return {mt.withSameElementType()};
+    else
+        // TODO See #484.
+        throw std::runtime_error(
+                "currently, FilterColOp can only infer its type for matrix inputs"
+        );
+}
+
 std::vector<Type> daphne::CreateFrameOp::inferTypes() {
     std::vector<Type> colTypes;
     for(Value col : getCols())
