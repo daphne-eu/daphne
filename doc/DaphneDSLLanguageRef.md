@@ -301,7 +301,7 @@ So far, this is only supported for addressing columns of frames.
 
 ##### Indexing by bit vector (filtering)
 
-So far, this is only supported for addressing rows of frames.
+So far, this is only supported for addressing rows.
 
 In contrast to indexing with positions and labels, indexing by bit vector specifies for each row whether to retain it or not.
 It expects a column (*n x 1*) matrix with as many rows as the input data object.

@@ -1037,25 +1037,28 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
-    mlir::Type objType = obj.getType();
-    if(ctx->rows && ctx->cols)
-        throw std::runtime_error(
-                "currently right indexing supports either rows or columns, "
-                "but not both at the same time"
+
+    if(ctx->rows) // rows specified
+        obj = builder.create<mlir::daphne::FilterRowOp>(
+                utils.getLoc(ctx->rows->start),
+                obj.getType(),
+                obj,
+                utils.valueOrError(visit(ctx->rows))
         );
-    if(ctx->rows) {
-        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::FilterRowOp>(
-                utils.getLoc(ctx->rows->start), objType, obj, rows
-        ));
-    }
-    if(ctx->cols)
+    if(ctx->cols) // cols specified
+        // TODO Required to complete #481.
         throw std::runtime_error(
-                "currently right indexing (for filter) supports only rows"
+                "right indexing columns by bit vector is not supported yet"
         );
-    throw std::runtime_error(
-            "right indexing requires the specification of rows and/or columns"
-    );
+
+    // Note: If rows and cols are specified, we create two filter steps.
+    // This can be inefficient, but it is simpler for now.
+    // TODO Create a combined FilterOp
+
+    // Note: If neither rows nor cols are specified, we simply return the
+    // object.
+
+    return obj;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {

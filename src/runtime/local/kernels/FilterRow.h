@@ -52,6 +52,42 @@ void filterRow(DTRes *& res, const DTArg * arg, const DenseMatrix<VTSel> * sel, 
 // ****************************************************************************
 
 // ----------------------------------------------------------------------------
+// DenseMatrix <- DenseMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT, typename VTSel>
+struct FilterRow<DenseMatrix<VT>, DenseMatrix<VT>, VTSel> {
+    static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, const DenseMatrix<VTSel> * sel, DCTX(ctx)) {
+        const size_t numRowsArg = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(sel->getNumRows() != numRowsArg)
+            throw std::runtime_error("the number of rows in arg and sel must be the same");
+        if(sel->getNumCols() != 1)
+            throw std::runtime_error("sel must be a single-column matrix");
+
+        size_t numRowsRes = 0;
+        for(size_t r = 0; r < numRowsArg; r++)
+            numRowsRes += sel->get(r, 0);
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRowsRes, numCols, false);
+
+        const VT * valuesArg = arg->getValues();
+        VT * valuesRes = res->getValues();
+        const size_t rowSkipArg = arg->getRowSkip();
+        const size_t rowSkipRes = res->getRowSkip();
+        for(size_t r = 0; r < numRowsArg; r++) {
+            if(sel->get(r, 0)) {
+                memcpy(valuesRes, valuesArg, numCols * sizeof(VT));
+                valuesRes += rowSkipRes;
+            }
+            valuesArg += rowSkipArg;
+        }
+    }
+};
+
+// ----------------------------------------------------------------------------
 // Frame <- Frame
 // ----------------------------------------------------------------------------
 
@@ -66,7 +102,7 @@ struct FilterRow<Frame, Frame, VTSel> {
         const ValueTypeCode * schema = arg->getSchema();
         
         if(sel->getNumRows() != numRows)
-            throw std::runtime_error("number of rows in arg and sel must be the same");
+            throw std::runtime_error("the number of rows in arg and sel must be the same");
         if(sel->getNumCols() != 1)
             throw std::runtime_error("sel must be a single-column matrix");
         
