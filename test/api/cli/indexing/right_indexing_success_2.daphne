@@ -1,5 +1,4 @@
 // Many ways of right indexing on frames using positions.
-// Note that some are not working yet and are commented out (see below and #234).
 
 // Considered way of specifying row/col:
 // - empty (leave blank)
