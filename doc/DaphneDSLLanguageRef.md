@@ -265,12 +265,11 @@ This is supported for addressing rows and columns in matrices and frames.
 
   *Examples*
   ```
-  pos1 = seq(5, 1, -2); # [5, 3, 1]
-  X[pos1, ]             # extracts rows 5, 3, and 1
-
-  pos2 = fill(2, 3, 1); # [2, 2, 2]
-  X[, pos2]             # extracts column 2 three times
+  X[ [5, 1, 3], ] # extracts rows 5, 1, and 3
+  X[, [2, 2, 2] ] # extracts column 2 three times
   ```
+
+  Note that, when using matrix literals to specify the positions, a space must be left between the opening/closing bracket `[`/`]` of the indexing and that of the matrix literal, in order to avoid confusion with the indexing by bit vector.
 
 A few remarks on positions:
 - Counting starts at zero.
