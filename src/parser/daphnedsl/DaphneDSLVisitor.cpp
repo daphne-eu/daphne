@@ -486,7 +486,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         mlir::Value valElse = symbolTable.get(*it, owElse).value;
         if(valThen.getType() != valElse.getType())
             // TODO We could try to cast the types.
-            throw std::runtime_error("type missmatch");
+            throw std::runtime_error("type mismatch");
         resultsThen.push_back(valThen);
         resultsElse.push_back(valElse);
     }
@@ -1236,7 +1236,7 @@ antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprCo
 
     if(valThen.getType() != valElse.getType())
         // TODO We could try to cast the types.
-        throw std::runtime_error("type missmatch");
+        throw std::runtime_error("type mismatch");
 
     // Create yield-operations in both branches.
     builder.setInsertionPointToEnd(&thenBlock);
