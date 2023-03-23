@@ -17,6 +17,8 @@ tests = [
     "f64_1gb.daphne",
     #  "f64_5gb.daphne",
     #  "f64_10gb.daphne",
+    #  "f32_4mb.daphne",
+    #  "f32_128mb.daphne"
 ]
 
 precompiled_results = []
@@ -71,6 +73,6 @@ if __name__ == "__main__":
         },
         columns=["test_name", "precompiled", "codegen"],
     )
-    df.to_csv("results.csv", index=False)
+    df.to_csv("results_kernel_func.csv", index=False)
 
     print(df)

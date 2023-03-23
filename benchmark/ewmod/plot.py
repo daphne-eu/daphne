@@ -2,12 +2,13 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 
-df = pd.read_csv("results.csv", skipinitialspace=True)
+df = pd.read_csv("results_kernel_remf_opt.csv", skipinitialspace=True)
 
 fig, axes = plt.subplots(nrows=2, ncols=2)
 
-df['precompiled_baseline'] = df['precompiled'] / df['precompiled']
-df['codegen_speedup'] = df['codegen'] / df['precompiled']
+df['base'] = df['precompiled'] / df['precompiled']
+df['codegen_speedup'] = df['precompiled'] / df['codegen']
+df['codegen_and_opt_speedup'] = df['precompiled'] / df['codegen_opt']
 
 # 10x10 - 100kb
 #  df.iloc[0:4].plot(ax=axes[0,0], kind='barh', x='test_name', y=[1,2,3])
@@ -29,14 +30,14 @@ df['codegen_speedup'] = df['codegen'] / df['precompiled']
 
 # all tests
 print(df)
-df.iloc[0:6].plot(ax=axes[0,0], kind='barh', x='test_name', y=[1,2])
-df.iloc[0:6].plot(ax=axes[0,1], kind='line', x='test_name', y=[3,4])
-df.iloc[6:12].plot(ax=axes[1,0], kind='barh', x='test_name', y=[1,2])
-df.iloc[6:12].plot(ax=axes[1,1], kind='line', x='test_name', y=[3,4])
+df.iloc[0:4].plot(ax=axes[0,0], kind='barh', x='test_name', y=[1,2,3])
+df.iloc[0:4].plot(ax=axes[0,1], kind='line', x='test_name', y=[4,5,6])
+#  df.iloc[6:12].plot(ax=axes[1,0], kind='barh', x='test_name', y=[1,3])
+#  df.iloc[6:12].plot(ax=axes[1,1], kind='line', x='test_name', y=[4,6])
 
 # precompiled at top
-axes[0,1].invert_yaxis()
-axes[1,1].invert_yaxis()
+#  axes[0,1].invert_yaxis()
+#  axes[1,1].invert_yaxis()
 
 axes[0,0].set_title('Float32 Runtime')
 axes[0,1].set_title('Float32 Speedup')
