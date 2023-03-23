@@ -1,0 +1,44 @@
+boolean condition
+scalar values
+20
+10
+matrix values
+DenseMatrix(1x1, int64_t)
+20
+DenseMatrix(1x1, int64_t)
+10
+frame values
+Frame(1x1, [y:int64_t])
+20
+Frame(1x1, [x:int64_t])
+10
+
+integer condition
+scalar values
+20
+10
+matrix values
+DenseMatrix(1x1, int64_t)
+20
+DenseMatrix(1x1, int64_t)
+10
+frame values
+Frame(1x1, [y:int64_t])
+20
+Frame(1x1, [x:int64_t])
+10
+
+floating-point condition
+scalar values
+20
+10
+matrix values
+DenseMatrix(1x1, int64_t)
+20
+DenseMatrix(1x1, int64_t)
+10
+frame values
+Frame(1x1, [y:int64_t])
+20
+Frame(1x1, [x:int64_t])
+10

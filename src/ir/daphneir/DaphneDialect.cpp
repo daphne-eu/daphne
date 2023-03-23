@@ -23,6 +23,7 @@
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
 #include <ir/daphneir/DaphneOpsDialect.cpp.inc>
 
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinTypes.h"
@@ -1122,4 +1123,78 @@ void mlir::daphne::DistributeOp::getCanonicalizationPatterns(
         RewritePatternSet &results, MLIRContext *context
 ) {
     results.add<SimplifyDistributeRead>(context);
+}
+
+mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
+                                                       mlir::PatternRewriter &rewriter)
+{
+    mlir::Value cond = op.getCond();
+    if(cond.getType().isa<mlir::daphne::UnknownType, mlir::daphne::MatrixType, mlir::daphne::FrameType>())
+        // If the condition is not a scalar, we cannot rewrite the operation here.
+        return mlir::failure();
+    else {
+        // If the condition is a scalar, we rewrite the operation to an if-then-else construct
+        // using the SCF dialect.
+        // TODO Check if it is really a scalar.
+
+        mlir::Location loc = op.getLoc();
+
+        // Ensure that the condition is a boolean.
+        if(!cond.getType().isSignlessInteger(1))
+            cond = rewriter.create<mlir::daphne::CastOp>(loc, rewriter.getI1Type(), cond);
+
+        mlir::Block thenBlock;
+        mlir::Block elseBlock;
+        mlir::Value thenVal = op.getThenVal();
+        mlir::Value elseVal = op.getElseVal();
+
+        // Get rid of frame column labels, since they interfere with the type comparison (see #485).
+        if(auto thenFrmTy = thenVal.getType().dyn_cast<daphne::FrameType>())
+            if(thenFrmTy.getLabels() != nullptr)
+                thenVal = rewriter.create<mlir::daphne::CastOp>(loc, thenFrmTy.withLabels(nullptr), thenVal);
+        if(auto elseFrmTy = elseVal.getType().dyn_cast<daphne::FrameType>())
+            if(elseFrmTy.getLabels() != nullptr)
+                elseVal = rewriter.create<mlir::daphne::CastOp>(loc, elseFrmTy.withLabels(nullptr), elseVal);
+        
+        if(thenVal.getType() != elseVal.getType())
+            // TODO We could try to cast the types.
+            throw std::runtime_error(
+                    "the then/else-values of CondOp must have the same type if "
+                    "the condition is a scalar"
+            );
+            
+        {
+            // Save the insertion point (automatically restored at the end of the block).
+            PatternRewriter::InsertionGuard insertGuard(rewriter);
+
+            // TODO The current implementation only makes sure that the correct value is
+            // returned, but the operations calculating the then/else-values are still
+            // outside the if-then-else and will always both be executed (unless, e.g.,
+            // the entire branching can be elimitated). This could be good (e.g., if
+            // the then/else-values have common subexpressions with other code) or bad
+            // (e.g., if they are expensive to compute). See #486.
+
+            // Create yield-operations in both branches.
+            rewriter.setInsertionPointToEnd(&thenBlock);
+            rewriter.create<mlir::scf::YieldOp>(loc, thenVal);
+            rewriter.setInsertionPointToEnd(&elseBlock);
+            rewriter.create<mlir::scf::YieldOp>(loc, elseVal);
+        }
+
+        // Helper functions to move the operations in the two blocks created above
+        // into the actual branches of the if-operation.
+        auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+            nested.getBlock()->getOperations().splice(nested.getBlock()->end(), thenBlock.getOperations());
+        };
+        auto insertElseBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
+            nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
+        };
+
+        // Replace the daphne::CondOp by an scf::IfOp.
+        rewriter.replaceOpWithNewOp<mlir::scf::IfOp>(
+            op, cond, insertThenBlockDo, insertElseBlockDo
+        );
+
+        return mlir::success();
+    }
 }

@@ -881,6 +881,210 @@
     },
     {
         "kernelTemplate": {
+            "header": "CondMatMatMat.h",
+            "opName": "condMatMatMat",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTCond",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTThen",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTElse",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTCond *",
+                    "name": "cond"
+                },
+                {
+                    "type": "const DTThen *",
+                    "name": "thenVal"
+                },
+                {
+                    "type": "const DTElse *",
+                    "name": "elseVal"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "bool"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "bool"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CondMatMatSca.h",
+            "opName": "condMatMatSca",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTCond",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTThen",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTElse",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTCond *",
+                    "name": "cond"
+                },
+                {
+                    "type": "const DTThen *",
+                    "name": "thenVal"
+                },
+                {
+                    "type": "VTElse",
+                    "name": "elseVal"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "double"], ["DenseMatrix", "bool"], ["DenseMatrix", "double"], "double"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "double"], ["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "bool"], ["DenseMatrix", "int64_t"], "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CondMatScaMat.h",
+            "opName": "condMatScaMat",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTCond",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTThen",
+                    "isDataType": false
+                },
+                {
+                    "name": "DTElse",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTCond *",
+                    "name": "cond"
+                },
+                {
+                    "type": "VTThen",
+                    "name": "thenVal"
+                },
+                {
+                    "type": "const DTElse *",
+                    "name": "elseVal"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"], "double", ["DenseMatrix", "double"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double", ["DenseMatrix", "double"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "bool"], "double", ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t", ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "double"], "int64_t", ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "bool"], "int64_t", ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "CondMatScaSca.h",
+            "opName": "condMatScaSca",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTCond",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTThen",
+                    "isDataType": false
+                },
+                {
+                    "name": "VTElse",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTCond *",
+                    "name": "cond"
+                },
+                {
+                    "type": "VTThen",
+                    "name": "thenVal"
+                },
+                {
+                    "type": "VTElse",
+                    "name": "elseVal"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"], "double", "double"],
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], "double", "double"],
+            [["DenseMatrix", "double"], ["DenseMatrix", "bool"], "double", "double"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], "int64_t", "int64_t"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "double"], "int64_t", "int64_t"],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "bool"], "int64_t", "int64_t"]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "ExtractCol.h",
             "opName": "extractCol",
             "returnType": "void",

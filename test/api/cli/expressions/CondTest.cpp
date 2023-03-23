@@ -45,5 +45,5 @@ const std::string dirPath = "test/api/cli/expressions/";
     }
 
 
-MAKE_SUCCESS_TEST_CASE("ternary", 2)
-MAKE_FAILURE_TEST_CASE("ternary", 1)
+MAKE_SUCCESS_TEST_CASE("cond", 2)
+MAKE_FAILURE_TEST_CASE("cond", 4)

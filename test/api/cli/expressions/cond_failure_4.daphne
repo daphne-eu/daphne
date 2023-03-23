@@ -1,0 +1,2 @@
+# If condition is matrix, else-value must not be frame.
+print([0] ? 10 : createFrame([20]));

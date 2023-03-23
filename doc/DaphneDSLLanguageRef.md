@@ -367,9 +367,22 @@ DaphneDSL supports the conditional expression with the general syntax:
 condition ? then-value : else-value
 ```
 
+The condition can be either a scalar or a matrix.
+- *Condition is a scalar:*
+  If the condition is `true` (when casted to boolean), then the result is the `then-value`.
+  Otherwise, the result is the `else-value`.
+  The `then-value` and the `else-value` must have the same type.
+- *Condition is a matrix (elementwise application):*
+  In this case, the condition matrix can be of any value type, but must only contain 0 or 1 values of that type (for all other values, the behavior is unspecified).
+  The `then-value` and `else-value` must be matrices of the same shape as the condition and must have the same value type as each other.
+  The `?:`-operator is applied in an elementwise fashion, i.e., individually for each triple of corresponding elements in condition/`then-value`/`else-value`.
+  The `then-value` and `else-value` may also be scalars, in which case they are treated like matrices with a constant value.
+  The result is a matrix of the same shape as the condition and the same value type as the `then-value`/`else-value`.
+
 *Examples*
 ```
-(i > 5) ? 42.0 : -42.0
+(i > 5) ? 42.0 : -42.0                      # 42.0 if i > 5, -42.0 otherwise
+[1, 0, 0, 1] ? [1.0, 2.0, 3.0, 4.0] : 99.9  # [1.0, 99.9, 99.9, 4.0]
 ```
 
 ## Statements

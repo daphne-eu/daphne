@@ -23,8 +23,8 @@ set(TEST_SOURCES
         api/cli/controlflow/ControlFlowTest.cpp
         api/cli/distributed/DistributedTest.cpp
         api/cli/expressions/CastTest.cpp
+        api/cli/expressions/CondTest.cpp
         api/cli/expressions/MatrixLiteralTest.cpp
-        api/cli/expressions/TernaryTest.cpp
         api/cli/functions/FunctionsTest.cpp
         api/cli/functions/RecursiveFunctionsTest.cpp
         api/cli/io/ReadTest.cpp

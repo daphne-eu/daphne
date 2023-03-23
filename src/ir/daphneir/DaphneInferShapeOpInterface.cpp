@@ -233,6 +233,59 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {
     return {{numRows, numCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
+    Type condTy = getCond().getType();
+    if(condTy.isa<daphne::UnknownType>())
+        // Actually, this should not happen, because if the type of the
+        // condition is unknown, the type of the result should be unknown
+        // too per type inference, such that shape inference should not
+        // even get called. Nevertheless, returning unknown will probably
+        // not hurt in case anyone ever calls this from somewhere else.
+        return {{-1, -1}};
+    if(auto condMatTy = condTy.dyn_cast<daphne::MatrixType>())
+        return {{condMatTy.getNumRows(), condMatTy.getNumCols()}};
+    else if(auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
+        throw std::runtime_error("CondOp does not support frames for the condition yet");
+    else { // cond is a scalar // TODO check if it is really a scalar
+        Type thenTy = getThenVal().getType();
+        Type elseTy = getElseVal().getType();
+        
+        ssize_t thenNumRows = -1;
+        ssize_t thenNumCols = -1;
+        ssize_t elseNumRows = -1;
+        ssize_t elseNumCols = -1;
+        auto thenMatTy = thenTy.dyn_cast<daphne::MatrixType>();
+        auto thenFrmTy = thenTy.dyn_cast<daphne::FrameType>();
+        auto elseMatTy = elseTy.dyn_cast<daphne::MatrixType>();
+        auto elseFrmTy = elseTy.dyn_cast<daphne::FrameType>();
+        if(thenMatTy) {
+            thenNumRows = thenMatTy.getNumRows();
+            thenNumCols = thenMatTy.getNumCols();
+        }
+        else if(thenFrmTy) {
+            thenNumRows = thenFrmTy.getNumRows();
+            thenNumCols = thenFrmTy.getNumCols();
+        }
+        if(elseMatTy) {
+            elseNumRows = elseMatTy.getNumRows();
+            elseNumCols = elseMatTy.getNumCols();
+        }
+        else if(elseFrmTy) {
+            elseNumRows = elseFrmTy.getNumRows();
+            elseNumCols = elseFrmTy.getNumCols();
+        }
+
+        if((thenMatTy || thenFrmTy) && (elseMatTy || elseFrmTy))
+            return {{
+                (thenNumRows == elseNumRows) ? thenNumRows : -1,
+                (thenNumCols == elseNumCols) ? thenNumCols : -1
+            }};
+        else
+            // Then-value or else-value is a scalar.
+            return {{-1, -1}};
+    }
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************

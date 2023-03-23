@@ -1218,52 +1218,14 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     throw std::runtime_error("unexpected op symbol");
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprContext * ctx) {
-    mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
-    mlir::Location loc = utils.getLoc(ctx->start);
-
-    mlir::OpBuilder oldBuilder = builder;
-
-    // Generate the operations for the then-block.
-    mlir::Block thenBlock;
-    builder.setInsertionPointToEnd(&thenBlock);
-    mlir::Value valThen = utils.valueOrError(visit(ctx->thenExpr));
-
-    // Generate the operations for the else-block
-    mlir::Block elseBlock;
-    builder.setInsertionPointToEnd(&elseBlock);
-    mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
-
-    if(valThen.getType() != valElse.getType())
-        // TODO We could try to cast the types.
-        throw std::runtime_error("type mismatch");
-
-    // Create yield-operations in both branches.
-    builder.setInsertionPointToEnd(&thenBlock);
-    builder.create<mlir::scf::YieldOp>(loc, valThen);
-    builder.setInsertionPointToEnd(&elseBlock);
-    builder.create<mlir::scf::YieldOp>(loc, valElse);
-
-    // Restore the old state of the builder.
-    builder = oldBuilder;
-
-    // Helper functions to move the operations in the two blocks created above
-    // into the actual branches of the if-operation.
-    auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
-        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), thenBlock.getOperations());
-    };
-    auto insertElseBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
-        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
-    };
-
-    auto ifOp = builder.create<mlir::scf::IfOp>(
-        loc,
-        cond,
-        insertThenBlockDo,
-        insertElseBlockDo
-    );
-
-    return static_cast<mlir::Value>(ifOp.getResults()[0]);
+antlrcpp::Any DaphneDSLVisitor::visitCondExpr(DaphneDSLGrammarParser::CondExprContext * ctx) {
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::CondOp>(
+            utils.getLoc(ctx->start),
+            utils.unknownType,
+            utils.valueOrError(visit(ctx->cond)),
+            utils.valueOrError(visit(ctx->thenExpr)),
+            utils.valueOrError(visit(ctx->elseExpr))
+    ));
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {

@@ -304,6 +304,20 @@ def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
 def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 
 // ****************************************************************************
+// Elementwise ternary
+// ****************************************************************************
+
+def Daphne_CondOp : Daphne_Op<"cond", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
+]> {
+    let arguments = (ins AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$cond, AnyType:$thenVal, AnyType:$elseVal);
+    let results = (outs AnyType:$res);
+
+    let hasCanonicalizeMethod = 1;
+}
+
+// ****************************************************************************
 // Aggregation and statistical
 // ****************************************************************************
 
