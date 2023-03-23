@@ -1107,18 +1107,21 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             return getArg().getType() == getRes().getType();
         }
         /**
-         * @brief This cast just removes detailed properties from a matrix type, making them unknown instead.
+         * @brief Checks if this cast just removes detailed properties from a matrix/frame type,
+         * to make them unknown instead.
          *
          * Usually casts like this need to exist to make the IR correct for SCF operations.
          * @return true if this cast just tags some known information unknown, false otherwise
          */
-        bool isMatrixPropertyCast() {
-            auto inTy = getArg().getType().dyn_cast<daphne::MatrixType>();
-            auto outTy = getRes().getType().dyn_cast<daphne::MatrixType>();
-            if (inTy && outTy && inTy.isSpecializationOf(outTy)) {
-                return true;
-            }
-            return false;
+        bool isRemovePropertyCast() {
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
+            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
+            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
+            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
+            return (argMatTy && resMatTy && argMatTy.isSpecializationOf(resMatTy))
+                || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
     }];
 }
