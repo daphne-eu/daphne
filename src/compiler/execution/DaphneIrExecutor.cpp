@@ -145,6 +145,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after EwOpLoweringPass"));
+            pm.addPass(mlir::daphne::createMapOpLoweringPass());
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR after MapOpLoweringPass"));
 
 
             // TODO(phil) maybe add createAffineScalarReplacementPass
@@ -170,7 +173,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         }
 
         if (userConfig_.linalg) {
-            pm.addPass(mlir::daphne::createMemRefTestPass());
+            // TODO(phil): removed pass with f3592b2
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after linalg call lowering"));

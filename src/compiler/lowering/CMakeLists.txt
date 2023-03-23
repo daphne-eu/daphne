@@ -14,6 +14,7 @@
 
 add_mlir_dialect_library(MLIRDaphneTransforms
     EwOpLowering.cpp
+    MapOpLowering.cpp
     RewriteSqlOpPass.cpp
     DistributeComputationsPass.cpp
     DistributePipelinesPass.cpp
