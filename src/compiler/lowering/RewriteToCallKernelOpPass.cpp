@@ -24,6 +24,7 @@
 #include "mlir/Dialect/Linalg/IR/Linalg.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/BuiltinDialect.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/IR/IRMapping.h"
 
@@ -504,7 +505,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
     target.addLegalDialect<mlir::AffineDialect, LLVM::LLVMDialect,
                            scf::SCFDialect, memref::MemRefDialect,
                            mlir::linalg::LinalgDialect,
-                           mlir::arith::ArithDialect>();
+                           mlir::arith::ArithDialect, mlir::BuiltinDialect>();
 
     target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();

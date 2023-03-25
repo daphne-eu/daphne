@@ -204,6 +204,11 @@ main(int argc, char** argv)
             "inline", cat(daphneOptions),
             desc("Enables inlining of function calls.")
     );
+    opt<bool> useScalarToMLIRLowering(
+        "mlir", cat(schedulingOptions), "scalar-lowering",
+        cat(schedulingOptions),
+        desc("Lower DaphneIR operators on scalars to MLIR instead of "
+             "precompiled kernels"));
 
     enum ExplainArgs {
       kernels,
@@ -361,12 +366,11 @@ main(int argc, char** argv)
     if(fpgaopencl) {
         user_config.use_fpgaopencl = true;
     }
-    if (codegen)
-        user_config.codegen = true;
-    if (linalg)
-        user_config.linalg = true;
-    if (_inline)
-        user_config._inline = true;
+
+    if (codegen) user_config.codegen = true;
+    if (linalg) user_config.linalg = true;
+    if (_inline) user_config._inline = true;
+    if (useScalarToMLIRLowering) user_config.lower_scalar = true;
 
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)
