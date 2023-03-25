@@ -131,7 +131,15 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
 #endif
-        // TODO: add --explain argument
+        // if (userConfig_.fusion) {
+        if (userConfig_.lower_scalar) {
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before LowerScalarOpsPass"));
+            pm.addPass(mlir::daphne::createLowerScalarOpsPass(userConfig_));
+            // pm.addPass(
+            //     mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
+        }
+        // }
         if (userConfig_.codegen) {
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR before LowerDenseMatrixPass"));
@@ -222,6 +230,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::createConvertSCFToCFPass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
+        if(userConfig_.explain_llvm)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
         pm.addPass(mlir::createReconcileUnrealizedCastsPass());
 
         if (userConfig_._inline) {
@@ -229,8 +239,6 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR after inlining"));
         }
-        if(userConfig_.explain_llvm)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
 
         if (failed(pm.run(module))) {
             module->dump();

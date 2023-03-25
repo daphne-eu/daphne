@@ -40,8 +40,6 @@ struct ScalarOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwAddOp
         mlir::ConversionPatternRewriter &rewriter) const override {
 
         mlir::Type type = op.getType();
-        type.dump();
-        std::cout <<"\n";
 
         if (type.isa<mlir::IntegerType>()) {
             rewriter.replaceOpWithNewOp<mlir::arith::AddIOp>(op.getOperation(), adaptor.getOperands());
@@ -57,11 +55,11 @@ struct ScalarOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwAddOp
 // using SubOpLowering = ScalarOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp, mlir::arith::SubFOp>;
 // using MulOpLowering = ScalarOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp, mlir::arith::MulFOp>;
 // using DivOpLowering = ScalarOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivFOp, mlir::arith::DivFOp>;
-// // FIXME: IPowIOp has been added to MathOps.td with 08b4cf3 Aug 10
+// // TODO(phil): IPowIOp has been added to MathOps.td with 08b4cf3 Aug 10
 // using PowOpLowering = ScalarOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp, mlir::math::PowFOp>;
-// // FIXME: AbsIOp  has been added to MathOps.td with 7d9fc95 Aug 08
+// // TODO(phil): AbsIOp  has been added to MathOps.td with 7d9fc95 Aug 08
 // using AbsOpLowering = ScalarOpLowering<mlir::daphne::EwAbsOp, mlir::math::AbsFOp, mlir::math::AbsFOp>;
-// // FIXME
+// // TODO(phil)
 // using LnOpLowering = ScalarOpLowering<mlir::daphne::EwLnOp, mlir::math::LogOp, mlir::math::LogOp>;
 
 
