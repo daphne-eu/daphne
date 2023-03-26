@@ -44,7 +44,10 @@ class EwModOpLowering
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
 
         auto tensorType = lhsTensor.getElementType();
-        if (!tensorType.isF64()) return failure();
+
+        std::cout << "EwModType\n";
+        tensorType.dump();
+        // if (!tensorType.isF64()) return failure();
 
         auto lhsRows = lhsTensor.getNumRows();
         auto lhsCols = lhsTensor.getNumCols();
@@ -72,11 +75,12 @@ class EwModOpLowering
 
         if (optimize) {
             cst_one = rewriter.create<mlir::arith::ConstantOp>(
-                loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(1));
-            rhsValue = rewriter.create<mlir::arith::SubFOp>(loc, rhs, cst_one);
+                loc, rewriter.getI64Type(), rewriter.getI64IntegerAttr(1));
+            rhsValue = rewriter.create<mlir::arith::SubIOp>(loc, rhs, cst_one);
 
-            rhsV = rewriter.create<mlir::arith::FPToSIOp>(
-                loc, rewriter.getI64Type(), rhsValue);
+            rhsV = rhsValue;
+            // rhsV = rewriter.create<mlir::arith::FPToSIOp>(
+            //     loc, rewriter.getI64Type(), rhsValue);
         } else {
             rhsV = rhs;
         }
@@ -86,7 +90,7 @@ class EwModOpLowering
             rewriter.create<mlir::memref::AllocOp>(loc, outputMemRefType);
 
         // Fill the output MemRef
-        affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
+        affineFillMemRefInt(0, rewriter, loc, outputMemRefType.getShape(),
                          op->getContext(), outputMemRef, tensorType);
 
         SmallVector<Value, 4> loopIvs;
@@ -110,14 +114,15 @@ class EwModOpLowering
 
         mlir::Value modResult{};
         if (optimize) {
-            mlir::Value lhsV = rewriter.create<mlir::arith::FPToSIOp>(
-                loc, rewriter.getI64Type(), lhsValue);
+            // mlir::Value lhsV = rewriter.create<mlir::arith::FPToSIOp>(
+            //     loc, rewriter.getI64Type(), lhsValue);
             mlir::Value modResultCast =
-                rewriter.create<arith::AndIOp>(loc, lhsV, rhsV);
-            modResult = rewriter.create<arith::SIToFPOp>(
-                loc, rewriter.getF64Type(), modResultCast);
+                rewriter.create<arith::AndIOp>(loc, lhsValue, rhsV);
+            modResult = modResultCast;
+            // modResult = rewriter.create<arith::SIToFPOp>(
+            //     loc, rewriter.getI64Type(), modResultCast);
         } else {
-            modResult = rewriter.create<arith::RemFOp>(loc, lhsValue, rhsV);
+            modResult = rewriter.create<arith::RemSIOp>(loc, lhsValue, rhsV);
         }
 
         rewriter.create<AffineStoreOp>(loc, modResult, outputMemRef, loopIvs);

@@ -30,6 +30,11 @@
 mlir::Value insertAllocAndDealloc(mlir::MemRefType type, mlir::Location loc,
                                   mlir::PatternRewriter &rewriter);
 
+void affineFillMemRefInt(int value, mlir::ConversionPatternRewriter &rewriter,
+                      mlir::Location loc, mlir::ArrayRef<int64_t> shape,
+                      mlir::MLIRContext *ctx, mlir::Value memRef,
+                      mlir::Type elemType);
+
 void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
                       mlir::Location loc, mlir::ArrayRef<int64_t> shape,
                       mlir::MLIRContext *ctx, mlir::Value memRef,
