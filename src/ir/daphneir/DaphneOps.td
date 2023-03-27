@@ -796,12 +796,10 @@ def Daphne_ReplaceOp : Daphne_Op<"replace", [
 }
 
 def Daphne_CTableOp : Daphne_Op<"ctable", [
-    DataTypeMat, ValueTypeFromArgs, // inference of value type is debatable
-    CastArgsToResType
+    DataTypeMat, ValueTypeFromThirdArg,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
-    //// TODO The last three arguments should be optional.
-    //let arguments = (ins MatrixOrU:$lhs, AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$rhs, AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$weights, Size:$outHeight, Size:$outWidth);
-    let arguments = (ins MatrixOrU:$lhs, MatrixOrU:$rhs);
+    let arguments = (ins MatrixOrU:$lhs, MatrixOrU:$rhs, NumScalar:$weight, SI64:$resNumRows, SI64:$resNumCols);
     let results = (outs MatrixOrU:$res);
 }
 

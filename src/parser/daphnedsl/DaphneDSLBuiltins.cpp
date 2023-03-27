@@ -702,16 +702,46 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         ));
     }
     if(func == "ctable") {
-        checkNumArgsExact(func, numArgs, 2);
+        // The first two arguments are mandatory.
+        checkNumArgsMin(func, numArgs, 2);
         mlir::Value lhs = args[0];
         mlir::Value rhs = args[1];
-        // TODO Support all parameters of this operation again.
-//        mlir::Value weights = args[2];
-//        mlir::Value outHeight = utils.castSizeIf(args[3]);
-//        mlir::Value outWidth = utils.castSizeIf(args[4]);
-        return utils.retValWithInferedType(builder.create<CTableOp>(
-//                loc, utils.unknownType, lhs, rhs, weights, outHeight, outWidth
-                loc, utils.unknownType, lhs, rhs
+        // The remaining arguments are optional.
+        mlir::Value weight;
+        mlir::Value resNumRows;
+        mlir::Value resNumCols;
+        mlir::Value one = builder.create<ConstantOp>(loc, double(1));
+        mlir::Value minusOne = builder.create<ConstantOp>(loc, int64_t(-1));
+        switch(numArgs) {
+            case 2: { // none are given, all default
+                weight = one;
+                resNumRows = minusOne;
+                resNumCols = minusOne;
+                break;
+            }
+            case 3: { // weight is given; resNumRows and resNumCols default to -1 (unknown)
+                weight = args[2];
+                resNumRows = minusOne;
+                resNumCols = minusOne;
+                break;
+            }
+            case 4: { // resNumRows, resNumCols are given; weight defaults to 1.0
+                weight = one;
+                resNumRows = utils.castSI64If(args[2]);
+                resNumCols = utils.castSI64If(args[3]);
+                break;
+            }
+            case 5: { // weight, resNumRows, resNumCols are given
+                weight = args[2];
+                resNumRows = utils.castSI64If(args[3]);
+                resNumCols = utils.castSI64If(args[4]);
+                break;
+            }
+            default:
+                throw std::runtime_error("ctable(): unexpected number of arguments");
+        }
+        return static_cast<mlir::Value>(builder.create<CTableOp>(
+                loc, utils.unknownType, lhs, rhs, weight, resNumRows, resNumCols
         ));
     }
     if(func == "syrk") {

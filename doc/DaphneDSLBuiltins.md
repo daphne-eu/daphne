@@ -291,11 +291,24 @@ Note that most of these operations only have a CUDNN-based kernel for GPU execut
 
   Replaces all occurrences of the element `pattern` in the matrix `arg` by the element `replacement`.
 
-- **`ctable`**`(lhs:matrix, rhs:matrix)`
+- **`ctable`**`(ys:matrix, xs:matrix[, weight:scalar][, numRows:int, numCols:int])`
 
-  Returns the contingency table of two *(n x 1)* column-matrices `lhs` and `rhs`.
-  The resulting matrix `res` consists of `max(lhs)` rows and `max(rhs)` columns.
-  More precisely, *`res[i, j]` = |{ k | `lhs[k, 0]` = i and `rhs[k, 0]` = j, 0 ≤ k ≤ n-1 }|*.
+  Returns the contingency table of two *(n x 1)* column-matrices `ys` and `xs`.
+  The resulting matrix `res` consists of `max(ys) + 1` rows and `max(xs) + 1` columns.
+  More precisely, *`res[x, y]` = |{ k | `ys[k, 0]` = y and `xs[k, 0]` = x, 0 ≤ k ≤ n-1 }| * `weight`*.
+  
+  In other words, starting with an all-zero result matrix, `ys` and `xs` can be thought of as lists of `y`/`x`-coordinates which indicate the result matrix's cells whose value shall be increased by `weight`.
+  Note that `ys` and `xs` must not contain negative numbers.
+  
+  The scalar weight is an optional argument and defaults to 1.0.
+  The weight also determines the value type of the result.
+  
+  Moreover, optionally, the result shape in terms of the number of rows and columns can be specified.
+  If omited, it defaults to the smallest numbers required to accommodate all given `y`/`x`-coordinates, as expressed above.
+  If specified, the result can be either cropped or padded with zeros to the desired shape.
+  If a value less than zero is provided as the number of rows/columns, the respective dimension will also be determined from the input data.
+  
+  This built-in function can be called with 2, 3, 4, or 5 arguments, depending on which optional arguments are given.
 
 - **`syrk`**`(A:martix)`
 

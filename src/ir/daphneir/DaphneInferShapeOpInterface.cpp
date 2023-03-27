@@ -286,6 +286,20 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CondOp::inferShape() {
     }
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::CTableOp::inferShape() {
+    // If the result shape is given as arguments, then we know it.
+    // Otherwise, we don't.
+    // TODO In case resNumRows/resNumCols are known to be -1 (i.e., if
+    // the output shape shall be determined depening on the values in
+    // the lhs and rhs input matrices) and the lhs/rhs input matrices
+    // are compile-time constants, then we could determine the number
+    // of rows/columns here.
+    return {{
+        CompilerUtils::constantOrDefault<ssize_t>(getResNumRows(), -1),
+        CompilerUtils::constantOrDefault<ssize_t>(getResNumCols(), -1)
+    }};
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************
