@@ -204,6 +204,10 @@ main(int argc, char** argv)
             "inline", cat(daphneOptions),
             desc("Enables inlining of function calls.")
     );
+    opt<bool> fusion(
+            "fusion", cat(daphneOptions),
+            desc("Enables affine loop fusion.")
+    );
     opt<bool> useScalarToMLIRLowering(
         "mlir", cat(schedulingOptions), "scalar-lowering",
         cat(schedulingOptions),
@@ -367,10 +371,11 @@ main(int argc, char** argv)
         user_config.use_fpgaopencl = true;
     }
 
-    if (codegen) user_config.codegen = true;
-    if (linalg) user_config.linalg = true;
-    if (_inline) user_config._inline = true;
-    if (useScalarToMLIRLowering) user_config.lower_scalar = true;
+    user_config.codegen = codegen;
+    user_config.linalg = linalg;
+    user_config._inline = _inline;
+    user_config.lower_scalar = useScalarToMLIRLowering;
+    user_config.fusion = fusion;
 
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)
