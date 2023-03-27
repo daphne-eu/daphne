@@ -22,6 +22,7 @@
 #include "llvm/Support/TargetSelect.h"
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/LinalgToLLVM/LinalgToLLVM.h"
+#include "mlir/Dialect/Affine/Passes.h"
 #include "mlir/Dialect/Linalg/Passes.h"
 #include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
@@ -39,6 +40,7 @@
 #include <mlir/Dialect/LLVMIR/Transforms/Passes.h>
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
+#include "mlir/Dialect/Affine/Passes.h"
 
 #include <filesystem>
 #include <memory>
@@ -131,31 +133,34 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
 #endif
-        // if (userConfig_.fusion) {
         if (userConfig_.lower_scalar) {
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR before LowerScalarOpsPass"));
-            pm.addPass(mlir::daphne::createLowerScalarOpsPass(userConfig_));
-            // pm.addPass(
-            //     mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR before LowerScalarOpsPass"));
+            pm.addPass(mlir::daphne::createLowerScalarOpsPass());
+            pm.addPass(
+                mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
         }
-        // }
+
         if (userConfig_.codegen) {
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR before LowerDenseMatrixPass"));
+            if (userConfig_.explain_codegen)
+                pm.addPass(mlir::daphne::createPrintIRPass(
+                    "IR before LowerDenseMatrixPass"));
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after LowerDenseMatrixPass"));
 
-
-            pm.addPass(mlir::daphne::createEwOpLoweringPass());
-            if (userConfig_.explain_codegen)
-                pm.addPass(mlir::daphne::createPrintIRPass(
-                    "IR after EwOpLoweringPass"));
             pm.addPass(mlir::daphne::createMapOpLoweringPass());
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR after MapOpLoweringPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before EwOpLoweringPass"));
+            pm.addPass(mlir::daphne::createEwOpLoweringPass());
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after EwOpLoweringPass"));
+            if (userConfig_.explain_codegen)
+                pm.addPass(mlir::daphne::createPrintIRPass(
+                    "IR after EwOpLoweringPass"));
 
 
             // TODO(phil) maybe add createAffineScalarReplacementPass
@@ -173,11 +178,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 
             // pm.addNestedPass<mlir::FuncOp>(mlir::createBufferLoopHoistingPass());
             // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopFusionPass());
+            pm.addPass(mlir::createLoopFusionPass());
 
-            pm.addPass(mlir::createLowerAffinePass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after affine lowering"));
+            //     "IR after affine fusion"));
+            pm.addPass(mlir::createLowerAffinePass());
         }
 
         if (userConfig_.linalg) {

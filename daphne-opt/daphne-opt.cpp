@@ -94,8 +94,13 @@ int loadAndProcessMLIR(mlir::MLIRContext &context,
     // TODO
     // add daphne context creation pass
 
-    passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
-    module->dump();
+    passManager.addPass(mlir::daphne::createPrintIRPass(
+        "IR before LowerScalarOpsPass"));
+    passManager.addPass(mlir::daphne::createLowerScalarOpsPass());
+    passManager.addPass(
+        mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
+    // passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
+    // module->dump();
     // passManager.addPass(mlir::createLowerAffinePass());
     // passManager.addNestedPass<mlir::FuncOp>(mlir::daphne::createInsertDaphneContextPass(cfg));
     // passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());

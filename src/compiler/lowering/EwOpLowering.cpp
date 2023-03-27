@@ -24,11 +24,133 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/MemRef/IR/MemRef.h"
+#include "mlir/IR/BuiltinTypes.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 using namespace mlir;
+
+class EwMulOpLowering
+    : public mlir::OpConversionPattern<mlir::daphne::EwMulOp> {
+   public:
+    using mlir::OpConversionPattern<mlir::daphne::EwMulOp>::OpConversionPattern;
+
+    mlir::LogicalResult matchAndRewrite(
+        mlir::daphne::EwMulOp op, OpAdaptor adaptor,
+        mlir::ConversionPatternRewriter &rewriter) const override {
+        std::cout << "EwMul\n";
+        auto lhs = adaptor.getLhs();
+        auto rhs = adaptor.getRhs();
+
+        // no matrix
+        if (lhs.getType().isa<mlir::IntegerType>() &&
+            rhs.getType().isa<mlir::IntegerType>()) {
+            rewriter.replaceOpWithNewOp<mlir::arith::MulIOp>(
+                op.getOperation(), adaptor.getOperands());
+            return mlir::success();
+        } else if (lhs.getType().isa<mlir::FloatType>() &&
+                   rhs.getType().isa<mlir::FloatType>()) {
+            rewriter.replaceOpWithNewOp<mlir::arith::MulFOp>(
+                op.getOperation(), adaptor.getOperands());
+            return mlir::success();
+        }
+        std::cout << "EwMul with Matrix\n";
+
+        // for now assume matrix is LHS and float
+        mlir::daphne::MatrixType lhsTensor =
+            adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        auto tensorType = lhsTensor.getElementType();
+        auto lhsRows = lhsTensor.getNumRows();
+        auto lhsCols = lhsTensor.getNumCols();
+        auto lhsMemRefType =
+            mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
+
+        mlir::Value memRef =
+            rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+                op->getLoc(), lhsMemRefType, adaptor.getLhs());
+
+        SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
+        SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
+        buildAffineLoopNest(
+            rewriter, op.getLoc(), lowerBounds,
+            {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, steps,
+            [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+                // Call the processing function with the rewriter, the memref
+                // operands, and the loop induction variables. This function
+                // will return the value to store at the current index.
+                mlir::Value load =
+                    nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+                mlir::Value add = nestedBuilder.create<arith::MulFOp>(
+                    loc, load, adaptor.getRhs());
+                nestedBuilder.create<AffineStoreOp>(loc, add, memRef, ivs);
+            });
+        mlir::Value output = getDenseMatrixFromMemRef(op->getLoc(), rewriter, memRef, op.getType());
+        rewriter.replaceOp(op, output);
+        return mlir::success();
+    }
+};
+
+class EwAddOpLowering
+    : public mlir::OpConversionPattern<mlir::daphne::EwAddOp> {
+   public:
+    using mlir::OpConversionPattern<mlir::daphne::EwAddOp>::OpConversionPattern;
+
+    mlir::LogicalResult matchAndRewrite(
+        mlir::daphne::EwAddOp op, OpAdaptor adaptor,
+        mlir::ConversionPatternRewriter &rewriter) const override {
+        std::cout << "EwAdd\n";
+        auto lhs = adaptor.getLhs();
+        auto rhs = adaptor.getRhs();
+
+        // no matrix
+        if (lhs.getType().isa<mlir::IntegerType>() &&
+            rhs.getType().isa<mlir::IntegerType>()) {
+            rewriter.replaceOpWithNewOp<mlir::arith::AddIOp>(
+                op.getOperation(), adaptor.getOperands());
+            return mlir::success();
+        } else if (lhs.getType().isa<mlir::FloatType>() &&
+                   rhs.getType().isa<mlir::FloatType>()) {
+            rewriter.replaceOpWithNewOp<mlir::arith::AddFOp>(
+                op.getOperation(), adaptor.getOperands());
+            return mlir::success();
+        }
+        std::cout << "EwAdd with Matrix\n";
+
+        // for now assume matrix is LHS and float
+
+        mlir::daphne::MatrixType lhsTensor =
+            adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+        auto tensorType = lhsTensor.getElementType();
+        auto lhsRows = lhsTensor.getNumRows();
+        auto lhsCols = lhsTensor.getNumCols();
+        auto lhsMemRefType =
+            mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
+
+        mlir::Value memRef =
+            rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+                op->getLoc(), lhsMemRefType, adaptor.getLhs());
+
+        SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
+        SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
+        buildAffineLoopNest(
+            rewriter, op.getLoc(), lowerBounds,
+            {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, steps,
+            [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+                // Call the processing function with the rewriter, the memref
+                // operands, and the loop induction variables. This function
+                // will return the value to store at the current index.
+                mlir::Value load =
+                    nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+                mlir::Value add = nestedBuilder.create<arith::AddFOp>(
+                    loc, load, adaptor.getRhs());
+                nestedBuilder.create<AffineStoreOp>(loc, add, memRef, ivs);
+            });
+        mlir::Value output = getDenseMatrixFromMemRef(op->getLoc(), rewriter, memRef, op.getType());
+        rewriter.replaceOp(op, output);
+        return mlir::success();
+    }
+};
 
 class EwModOpLowering
     : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
@@ -39,14 +161,14 @@ class EwModOpLowering
     mlir::LogicalResult matchAndRewrite(
         mlir::daphne::EwModOp op, OpAdaptor adaptor,
         mlir::ConversionPatternRewriter &rewriter) const override {
+
+        std::cout << "EwModType\n";
         auto loc = op->getLoc();
         mlir::daphne::MatrixType lhsTensor =
             adaptor.getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
 
         auto tensorType = lhsTensor.getElementType();
 
-        std::cout << "EwModType\n";
-        tensorType.dump();
         // if (!tensorType.isF64()) return failure();
 
         auto lhsRows = lhsTensor.getNumRows();
@@ -157,13 +279,18 @@ void EwOpLoweringPass::runOnOperation() {
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
     mlir::LLVMTypeConverter typeConverter(&getContext(), llvmOptions);
 
+    target.addLegalDialect<mlir::memref::MemRefDialect>();
+    target.addLegalDialect<mlir::arith::ArithDialect>();
+    target.addLegalDialect<mlir::AffineDialect>();
+    target.addLegalDialect<mlir::LLVM::LLVMDialect>();
+
     target
         .addLegalDialect<mlir::AffineDialect, arith::ArithDialect,
                          memref::MemRefDialect, mlir::daphne::DaphneDialect>();
 
-    target.addIllegalOp<mlir::daphne::EwModOp>();
+    target.addIllegalOp<mlir::daphne::EwModOp, mlir::daphne::EwAddOp, mlir::daphne::EwMulOp>();
 
-    patterns.insert<EwModOpLowering>(&getContext());
+    patterns.insert<EwModOpLowering, EwAddOpLowering, EwMulOpLowering>(&getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();

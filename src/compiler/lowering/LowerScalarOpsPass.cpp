@@ -2,8 +2,7 @@
 #include "ir/daphneir/Passes.h"
 #include "compiler/utils/CompilerUtils.h"
 
-// #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVM.h"
-// #include "mlir/Conversion/StandardToLLVM/ConvertStandardToLLVMPass.h"
+#include "mlir/Dialect/Affine/IR/AffineOps.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/Math/IR/Math.h"
 #include "mlir/Dialect/Arith/IR/Arith.h"
@@ -12,6 +11,7 @@
 #include "mlir/Conversion/LLVMCommon/LoweringOptions.h"
 #include "mlir/Conversion/LLVMCommon/TypeConverter.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
+#include "mlir/Dialect/MemRef/IR/MemRef.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 
@@ -51,7 +51,7 @@ struct ScalarOpLowering : public mlir::OpConversionPattern<mlir::daphne::EwAddOp
         return mlir::success();
     }
 };
-// using AddOpLowering = ScalarOpLowering<mlir::daphne::EwAddOp, mlir::arith::AddIOp, mlir::arith::AddFOp>;
+// using AddOpLowering = ScalarOpLowering<mlir::daphne::EwSubOp, mlir::arith::AddIOp, mlir::arith::AddFOp>;
 // using SubOpLowering = ScalarOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp, mlir::arith::SubFOp>;
 // using MulOpLowering = ScalarOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp, mlir::arith::MulFOp>;
 // using DivOpLowering = ScalarOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivFOp, mlir::arith::DivFOp>;
@@ -69,8 +69,7 @@ namespace
     struct LowerScalarOpsPass
     : public mlir::PassWrapper<LowerScalarOpsPass, mlir::OperationPass<mlir::ModuleOp>>
     {
-		explicit LowerScalarOpsPass(const DaphneUserConfig& cfg) : cfg(cfg) { }
-		const DaphneUserConfig& cfg;
+		explicit LowerScalarOpsPass() { }
 
         void getDependentDialects(mlir::DialectRegistry & registry) const override
         {
@@ -100,7 +99,7 @@ void LowerScalarOpsPass::runOnOperation()
         signalPassFailure();
 }
 
-std::unique_ptr<mlir::Pass> mlir::daphne::createLowerScalarOpsPass(const DaphneUserConfig& cfg)
+std::unique_ptr<mlir::Pass> mlir::daphne::createLowerScalarOpsPass()
 {
-    return std::make_unique<LowerScalarOpsPass>(cfg);
+    return std::make_unique<LowerScalarOpsPass>();
 }
