@@ -17,7 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
-#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/Operation.h>
 #include <mlir/Pass/Pass.h>
 
@@ -73,7 +73,7 @@ namespace {
 // TODO Currently, the properties to be inferred are hardcoded, but we should
 // make them configurable, whereby different instances of this pass should be
 // able to infer different sets of properties.
-class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
+class InferencePass : public PassWrapper<InferencePass, OperationPass<func::FuncOp>> {
     daphne::InferenceConfig cfg;
 
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
@@ -169,41 +169,64 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
             // data object within a loop's body as well as mismatching shapes
             // after then/else branches.
             else if(auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
-                Block & beforeBlock = whileOp.before().front();
-                Block & afterBlock = whileOp.after().front();
+                Block & beforeBlock = whileOp.getBefore().front();
+                Block & afterBlock = whileOp.getAfter().front();
                 // Transfer the WhileOp's operand types to the block arguments
-                // and results to fulfill constraints on the WhileOp.
+                // of the before-block to fulfill constraints on the WhileOp.
                 for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
                     Type t = removeSCFVariantProperties(whileOp->getOpOperand(i));
                     beforeBlock.getArgument(i).setType(t);
-                    afterBlock.getArgument(i).setType(t);
-                    whileOp.getResult(i).setType(t);
                 }
-                // Continue the walk on both blocks of the WhileOp. We trigger
-                // this explicitly, since we need to do something afterwards.
+
+                // Continue walk in the before-block, to infer the operand types
+                // of the ConditionOp.
                 beforeBlock.walk<WalkOrder::PreOrder>(walkOp);
+
+                Operation * condOp = beforeBlock.getTerminator();
+                // TODO Make this an assertion?
+                if(!llvm::isa<scf::ConditionOp>(condOp))
+                    throw std::runtime_error("terminator is not a ConditionOp");
+                // Transfer the ConditionOp's operand types to the block arguments
+                // of the after-block and the results of the WhileOp to fulfill
+                // constraints on the WhileOp.
+                // Note that the first operand of the ConditionOp is skipped, since it
+                // is the condition value itself.
+                for(size_t i = 1; i < condOp->getNumOperands(); i++) {
+                    Type t = removeSCFVariantProperties(condOp->getOpOperand(i));
+                    afterBlock.getArgument(i - 1).setType(t);
+                    whileOp.getResult(i - 1).setType(t);
+                }
+
+                // Continue walk in the after-block, to infer the operand types
+                // of the YieldOp.
                 afterBlock.walk<WalkOrder::PreOrder>(walkOp);
+
                 // Check if the infered types match the required result types.
                 // This is not the case if, for instance, the shape of some
                 // variable written in the loop changes. The WhileOp would also
                 // check this later during verification, but here, we want to
                 // throw a readable error message.
                 Operation * yieldOp = afterBlock.getTerminator();
+                // TODO Make this an assertion?
+                if(whileOp->getNumOperands() != yieldOp->getNumOperands())
+                    throw std::runtime_error("WhileOp and YieldOp must have the same number of operands");
                 for(size_t i = 0; i < whileOp.getNumOperands(); i++) {
                     Type yieldedTy = removeSCFVariantProperties(yieldOp->getOpOperand(i));
-                    Type resultTy = op->getResult(i).getType();
-                    if(yieldedTy != resultTy)
+                    Type operandTy = op->getOperand(i).getType();
+                    if(yieldedTy != operandTy) {
                         throw std::runtime_error(
                                 "the type/shape of a variable must not be "
                                 "changed within the body of a while-loop"
                         );
+                    }
                 }
+
                 // Tell the walker to skip the descendants of the WhileOp, we
                 // have already triggered a walk on them explicitly.
                 return WalkResult::skip();
             }
             else if(auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
-                Block & block = forOp.region().front();
+                Block & block = forOp.getRegion().front();
                 const size_t numIndVars = forOp.getNumInductionVars();
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
@@ -268,12 +291,13 @@ class InferencePass : public PassWrapper<InferencePass, FunctionPass> {
 public:
     InferencePass(daphne::InferenceConfig cfg) : cfg(cfg) {}
 
-    void runOnFunction() override {
-        getFunction().walk<WalkOrder::PreOrder>(walkOp);
+    void runOnOperation() override {
+        func::FuncOp f = getOperation();
+        f.walk<WalkOrder::PreOrder>(walkOp);
         // infer function return types
-        getFunction().setType(FunctionType::get(&getContext(),
-            getFunction().getType().getInputs(),
-            getFunction().body().back().getTerminator()->getOperandTypes()));
+        f.setType(FunctionType::get(&getContext(),
+            f.getFunctionType().getInputs(),
+            f.getBody().back().getTerminator()->getOperandTypes()));
     }
 
     static bool returnsUnknownType(Operation *op) {

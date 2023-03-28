@@ -23,6 +23,12 @@
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/ProtoDataConverter.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
+
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPISerializer.h>
+    #include <runtime/distributed/worker/MPIHelper.h>
+#endif 
 
 #include <cassert>
 #include <cstddef>
@@ -50,6 +56,105 @@ void distribute(DT *mat, DCTX(dctx))
 // ****************************************************************************
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************
+
+#ifdef USE_MPI
+// ----------------------------------------------------------------------------
+// MPI
+// ----------------------------------------------------------------------------
+template<class DT>
+struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
+{
+    static void apply(DT *mat, DCTX(dctx)) {
+        int worldSize= MPIHelper::getCommSize()-1; // exclude coordinator
+        size_t  startRow=0, rowCount=0, startCol=0, colCount=0, remainingRows=0;
+        auto partitionSize =  mat->getNumRows()/worldSize;
+        //if(partitionSize==0){
+        //    throw std::runtime_error("number of workers is more than the work items, i.e., maximum number of workers is " + std::str(worldSize+1) + " \n");
+        //}
+
+        // this part is to handle the case when the number of worker is larger than the number of work items
+        if(partitionSize<1)
+        {
+          //std::cout<<"testing 1\n";
+          partitionSize=1;
+          worldSize=mat->getNumRows();  
+        }
+        remainingRows=mat->getNumRows();
+        size_t messageLengths [worldSize];
+        void *dataToSend;
+        std::vector<int> targetGroup;  
+        for(int rank=0;rank<worldSize;rank++) //we currently exclude the coordinator
+        {
+            startRow= (rank * partitionSize);
+            if(rank==worldSize-1){
+                    rowCount= remainingRows;
+            }
+            else{
+                rowCount = partitionSize;
+            }
+            remainingRows-=partitionSize;
+            colCount= mat->getNumCols();
+            startCol=0;
+            Range range;
+            range.r_start = startRow;
+            range.r_len = rowCount;
+            range.c_start = startCol;
+            range.c_len = colCount;
+            std::string address=std::to_string(rank+1);
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            if (dp!=nullptr) {                
+                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                data.ix = DistributedIndex(rank, 0);     
+                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            }
+            else {
+                DistributedData data;
+                AllocationDescriptorMPI allocationDescriptor(rank+1,/*exclude coordinator*/
+                                                            dctx,
+                                                            data);
+                data.ix = DistributedIndex(rank, 0);
+                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
+            }
+            //std::cout<<"rank "<< rank+1<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
+            if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+            {
+               // std::cout<<"worker already has the data"<<std::endl;
+               auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+               MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
+               //std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
+               continue;
+            }
+            MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLengths[rank], startRow, rowCount, startCol, colCount);
+            MPIHelper::distributeData(messageLengths[rank], dataToSend,rank+1);
+            targetGroup.push_back(rank+1);
+            free(dataToSend);  
+        }
+        for(size_t i=0;i<targetGroup.size();i++)
+        {
+            int rank=targetGroup.at(i);
+            //std::cout<<"From distribute waiting for ack ("+std::to_string(rank)+")" << std::endl;
+            if (rank==COORDINATOR)
+            {
+
+               // std::cout<<"coordinator doe not need ack from itself" << std::endl;
+                continue;
+            }
+            WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
+            std::string address = std::to_string(rank);
+            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+            data.identifier = dataAcknowledgement.identifier ;
+            data.numRows = dataAcknowledgement.numRows;
+            data.numCols = dataAcknowledgement.numCols;
+            data.isPlacedAtWorker = true;
+            //std::cout<<"acknowledgement received with distribute identifier " << data.identifier<<std::endl;
+            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+        }
+
+    }
+};
+#endif
 
 // ----------------------------------------------------------------------------
 // GRPC

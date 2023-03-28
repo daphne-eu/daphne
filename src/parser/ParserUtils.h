@@ -223,7 +223,7 @@ public:
      * @return mlir location representing the position of the token in the file
      */
     mlir::Location getLoc(antlr4::Token *start) {
-        return mlir::FileLineColLoc::get(builder.getIdentifier(start->getTokenSource()->getSourceName()),
+        return mlir::FileLineColLoc::get(builder.getStringAttr(start->getTokenSource()->getSourceName()),
             start->getLine(),
             start->getCharPositionInLine());
     }

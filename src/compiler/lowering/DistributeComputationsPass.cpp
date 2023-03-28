@@ -17,9 +17,9 @@
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
-#include "mlir/Dialect/SCF/SCF.h"
-#include "mlir/Dialect/StandardOps/IR/Ops.h"
+#include "mlir/Dialect/Arith/IR/Arith.h"
 #include <mlir/Dialect/LLVMIR/LLVMDialect.h>
+#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
 
 #include <memory>
@@ -52,7 +52,7 @@ struct Distribute : public OpInterfaceConversionPattern<daphne::Distributable>
                 // The operand has just been collected from a distributed data
                 // object, so we should reuse the original distributed data
                 // object.
-                distributedInputs.push_back(co.arg());
+                distributedInputs.push_back(co.getArg());
             else {
                 // The operands need to be distributed/broadcasted first.
                 Type t = daphne::HandleType::get(getContext(), operand.getType());
@@ -86,12 +86,12 @@ void DistributeComputationsPass::runOnOperation()
 {
     auto module = getOperation();
 
-    OwningRewritePatternList patterns(&getContext());
+    RewritePatternSet patterns(&getContext());
 
     // convert other operations
     ConversionTarget target(getContext());
-    target.addLegalDialect<StandardOpsDialect, LLVM::LLVMDialect, scf::SCFDialect>();
-    target.addLegalOp<ModuleOp, FuncOp>();
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect>();
+    target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addDynamicallyLegalDialect<daphne::DaphneDialect>([](Operation *op)
     {
         // An operation is legal (does not need to be replaced), if ...
@@ -105,7 +105,7 @@ void DistributeComputationsPass::runOnOperation()
                 !onlyMatrixOperands(op);
     });
 
-    patterns.insert<Distribute>(&getContext());
+    patterns.add<Distribute>(&getContext());
 
     if (failed(applyFullConversion(module, target, std::move(patterns))))
         signalPassFailure();

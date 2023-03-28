@@ -23,7 +23,7 @@
 using namespace mlir;
 
 
-struct KernelSelectionPass : public PassWrapper<KernelSelectionPass, FunctionPass> {
+struct KernelSelectionPass : public PassWrapper<KernelSelectionPass, OperationPass<func::FuncOp>> {
     
     const DaphneUserConfig& cfg;
     
@@ -39,15 +39,15 @@ struct KernelSelectionPass : public PassWrapper<KernelSelectionPass, FunctionPas
     }
     
     
-    void runOnFunction() final;
+    void runOnOperation() final;
     
 };
 
 
-void KernelSelectionPass::runOnFunction() {
+void KernelSelectionPass::runOnOperation() {
     using namespace mlir::daphne;
     if(cfg.api == "MorphStore") {
-        getFunction()->walk(
+        getOperation()->walk(
           [&](Operation * op) {
               OpBuilder builder(op);
           

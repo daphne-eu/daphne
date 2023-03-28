@@ -31,6 +31,68 @@
 
 #include <cstdint>
 
+TEMPLATE_PRODUCT_TEST_CASE("FilterRow", TAG_KERNELS, (DenseMatrix), (double, int64_t, uint32_t)) {
+    using DT = TestType;
+    using VTSel = int64_t;
+    using DTSel = DenseMatrix<VTSel>;
+
+    auto arg = genGivenVals<DT>(5, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9,
+        10, 11, 12,
+        13, 14, 15
+    });
+
+    DTSel * sel = nullptr;
+    DT * exp = nullptr;
+    SECTION("bit vector empty") {
+        sel = genGivenVals<DTSel>(5, {0, 0, 0, 0, 0});
+        exp = DataObjectFactory::create<DT>(0, 3, false);
+    }
+    SECTION("bit vector contiguous 0") {
+        sel = genGivenVals<DTSel>(5, {0, 0, 1, 1, 1});
+        exp = genGivenVals<DT>(3, {
+            7, 8, 9,
+            10, 11, 12,
+            13, 14, 15,
+        });
+    }
+    SECTION("bit vector contiguous 1") {
+        sel = genGivenVals<DTSel>(5, {1, 1, 1, 0, 0});
+        exp = genGivenVals<DT>(3, {
+            1, 2, 3,
+            4, 5, 6,
+            7, 8, 9,
+        });
+    }
+    SECTION("bit vector mixed") {
+        sel = genGivenVals<DTSel>(5, {0, 1, 1, 0, 1});
+        exp = genGivenVals<DT>(3, {
+            4, 5, 6,
+            7, 8, 9,
+            13, 14, 15,
+        });
+    }
+    SECTION("bit vector full") {
+        sel = genGivenVals<DTSel>(5, {1, 1, 1, 1, 1});
+        exp = genGivenVals<DT>(5, {
+            1, 2, 3,
+            4, 5, 6,
+            7, 8, 9,
+            10, 11, 12,
+            13, 14, 15,
+        });
+    }
+
+    DT * res = nullptr;
+    filterRow<DT, DT, VTSel>(res, arg, sel, nullptr);
+
+    CHECK(*res == *exp);
+
+    DataObjectFactory::destroy(arg, sel, exp, res);
+}
+
 /**
  * @brief Runs the filterRow-kernel with small input data and performs various
  * checks.

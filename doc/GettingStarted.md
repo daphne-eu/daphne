@@ -28,32 +28,33 @@ Newer versions should work as well, older versions might work as well.
 
 ##### Operating system
 
-| OS        | distribution/version known to work (*)      | Comment                           |
-|-----------|---------------------------------------------|-----------------------------------|
-| GNU/Linux | Ubuntu 20.04.1 with kernel 5.8.0-43-generic ||
-| GNU/Linux | Ubuntu 18.04  | If used with Intel PAC D5005 FPGA |
+| OS        | distribution/version known to work (*) | Comment                                                                 |
+|-----------|----------------------------------------|-------------------------------------------------------------------------|
+| GNU/Linux | Manjaro                                | Last checked in January 2023                                            ||
+| GNU/Linux | Ubuntu 20.04 - 22.10                   | All versions in that range work. 20.04 needs CMake installed from Snap. |
+| GNU/Linux | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, custom toolchain needed                 |
 
 ##### Software
 
-| tool/lib                           | version known to work (*) | comment                                                                                                                                 |
-|------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| clang                              | 10.0.0                    |                                                                                                                                         |
-| cmake                              | 3.17                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
-| git                                | 2.25.1                    |                                                                                                                                         |
-| libssl-dev                         | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
-| lld                                | 10.0.0                    |                                                                                                                                         |
-| ninja                              | 1.10.0                    |                                                                                                                                         |
-| pkg-config                         | 0.29.1                    |                                                                                                                                         |
-| python3                            | 3.8.5                     |                                                                                                                                         |
-| numpy                              | 1.19.5                    |                                                                                                                                         |
-| java (e.g. openjdk)                | 11 (1.7 should be fine)   |                                                                                                                                         |
-| gfortran                           | 9.3.0                     |                                                                                                                                         |
-| uuid-dev                           |                           |                                                                                                                                         |
-| libboost-dev                       | 1.71.0.0                  | Only required when building with support for Arrow (`--arrow`)                                                                          |
-| wget                               |                           | Used to fetch additional dependencies and other artefacts                                                                               |
-| ***                                | ***                       | ***                                                                                                                                     |
-| CUDA SDK                           | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
-| OneAPI SDK                         | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
+| tool/lib                             | version known to work (*) | comment                                                                                                                                 |
+|--------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| GCC/G++                              | 9.3.0                     | Last checked version: 12.2                                                                                                              |
+| clang                                | 10.0.0                    |                                                                                                                                         |
+| cmake                                | 3.17                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
+| git                                  | 2.25.1                    |                                                                                                                                         |
+| libssl-dev                           | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
+| lld                                  | 10.0.0                    |                                                                                                                                         |
+| ninja                                | 1.10.0                    |                                                                                                                                         |
+| pkg-config                           | 0.29.1                    |                                                                                                                                         |
+| python3                              | 3.8.5                     |                                                                                                                                         |
+| numpy                                | 1.19.5                    |                                                                                                                                         |
+| java (e.g. openjdk)                  | 11 (1.7 should be fine)   |                                                                                                                                         |
+| gfortran                             | 9.3.0                     |                                                                                                                                         |
+| uuid-dev                             |                           |                                                                                                                                         |
+| wget                                 |                           | Used to fetch additional dependencies and other artefacts                                                                               |
+| ***                                  | ***                       | ***                                                                                                                                     |
+| CUDA SDK                             | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
+| OneAPI SDK                           | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
 | Intel FPGA SDK or OneAPI FPGA Add-On | 2022.x                    | Optional for FPGAOPENCL ops                                                                                                             |
 
 ##### Hardware
@@ -99,10 +100,19 @@ Simply build the system using the build-script without any arguments:
 When you do this the first time, or when there were updates to the LLVM submodule, this will also download and build the third-party material, which might increase the build time significantly.
 Subsequent builds, e.g., when you changed something in this repository, will be much faster.
 
-If the build fails in between (e.g., due to missing packages), multiple build directories (e.g., daphne, antlr, llvm) require cleanup. For convenience, you can call the following to remove them all.
-
+If the build fails in between (e.g., due to missing packages), multiple build directories (e.g., daphne, antlr, llvm) 
+require cleanup. To only remove build output use the following two commands:
 ```bash
 ./build.sh --clean
+./build.sh --cleanDeps
+```
+If you want to remove downloaded and extracted artifacts, use this:
+```bash
+./build.sh --cleanCache
+```
+For convenience, you can call the following to remove them all.
+```bash
+./build.sh --cleanAll
 ```
 
 See [this page](/doc/development/BuildingDaphne.md) for more information.
@@ -134,34 +144,43 @@ print(t(m));
 after building from source. Omit "build" in the path to the Daphne binary if executed from the binary distribution).
 
 Optionally flags like ``--cuda`` can be added after the daphne command and before the script file to activate support 
-for accelerated ops (see [software requirements](#software) above and [build instructions](/doc/development/BuildingDaphne.md)). 
+for accelerated ops (see [software requirements](#software) above and [build instructions](development/BuildingDaphne.md)). 
 For further flags that can be set at runtime to activate additional functionality, run ``daphne --help``.
 
 ### Building and running with containers [Alternative path for building and running the system and the tests]
 If one wants to avoid installing dependencies and avoid conflicting with his/her existing installed libraries, one may use containers.
 - you need to install Docker or Singularity: Docker version 20.10.2 or higher | Singularity version 3.7.0-1.el7 or higher are sufficient
-- you can use the provided docker file to create an image that contains all dependencies as follows:
+- you can use the provided docker files and scripts to create and run DAPHNE.
+
+The following creates two images (daphneeu/daphne-dev; daphneeu/daphne-dev-interactive):
 ```bash
-cd daphne/deploy
-docker build -t <ImageTag> .
-#the image can be built from the dockerhub docker://ahmedeleliemy/test-workflow:latest as well
-docker run -v absolute_path_to_daphne/:absolute_path_to_daphne_in_the_container -it <ImageTag> bash
-[root@<some_container_ID>]cd absolute_path_to_daphne_in_the_container
-[root@<some_container_ID>]./build.sh #or ./test.sh  
+cd container
+./build-containers.sh
 ```
- - you can also use Singularity containers instead of docker as follows:
+
+Running in an interactive container can be done with this run script, which takes care of mounting your 
+current directory and handling permissions:
+```bash
+cd container
+./run-daphne-dev-interactive.sh
+```
+ - you can also use Singularity containers instead of Docker as follows:
   ```bash
-singularity build <ImageName.sif> docker://ahmedeleliemy/test-workflow
 #one can also use [Singularity python](https://singularityhub.github.io/singularity-cli/)
 #to convert the provided Dockerfile into Singularity recipe 
+singularity build <ImageName.sif> docker://daphneeu/daphne-dev
+
+# This command will place you in a shell in the container, your home directory and /tmp mounted. 
 singularity shell <ImageName.sif>
-Singularity> cd daphne
-Singularity> ./build.sh #or ./test.sh  
+Singularity> cd <your/daphne/directory>
+Singularity> ./build.sh #or ./test.sh
 ```
 - Because the container instance works on the same folder, if one already built the system outside the container, it is recommended to clean all build files to avoid conflicts.
-- One may also do the commits from within the containers as normal.
+- One may also do the commits from within the containers as normal (this holds for Singularity. With Docker images, your home
+directory and therefore your .gitconfig is usually not available).
 
-For more about building and running with containers, refer to the directory `deploy/` and its [README.md](/deploy/README.md) and further documentation in [Deploy.md](/doc/Deploy.md).
+For more about building and running with containers, refer to the directory `containers/` and its [README.md](/containers/README.md). 
+For documentation of using containers in conjunction with our cluster deployment scripts, refer to [Deploy.md](/doc/Deploy.md).
 
 ### Exploring the Source Code
 
@@ -169,8 +188,13 @@ As an **entry point for exploring the source code**, you might want to have a lo
 
 On the top-level, there are the following directories:
 
-- `build`: everything generated during build (executables, libraries, generated source code)
-- `doc`: documentation
+- `bin`: after compilation, generated binaries will be placed here (e.g., daphne)
+- `build`: temporary build output
+- `containers`: scripts and configuration files to get/build/run with Docker or Singularity containers
+- `deploy`: shell scripts to ease deployment in SLURM clusters
+- `doc`: documentation written in markdown (e.g., what you are reading at the moment)
+- `lib`: after compilation, generated library files will be placed here (e.g., libAllKernels.so, libCUDAKernels.so, ...)
+- `scripts`: a collection of algorithms and examples written in DAPHNE's own domain specific language ([DaphneDSL](DaphneDSLLanguageRef.md))
 - `src`: the actual source code, subdivided into the individual components of the system
 - `test`: test cases
 - `thirdparty`: required external software

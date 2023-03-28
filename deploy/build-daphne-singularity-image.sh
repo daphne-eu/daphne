@@ -15,6 +15,6 @@
 # limitations under the License.
 
 # This script builds the "daphne.sif" singularity image from the Docker 
-# image ahmedeleliemy/test-workflow, also contained in this folder.
+# image daphneeu/daphne-dev
 
-singularity build daphne.sif docker://ahmedeleliemy/test-workflow
+singularity build daphne.sif docker://daphneeu/daphne-dev
