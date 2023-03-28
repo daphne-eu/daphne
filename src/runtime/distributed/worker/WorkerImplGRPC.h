@@ -42,7 +42,7 @@ public:
                          ::distributed::ComputeResult *response) ;
     grpc::Status TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                         ::distributed::Matrix *response) ;
+                         ::distributed::Data *response) ;
 
     distributed::Worker::AsyncService service_;
 };

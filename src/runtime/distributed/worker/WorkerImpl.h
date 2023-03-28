@@ -48,7 +48,7 @@ public:
         std::string identifier;
         size_t numRows, numCols;
         std::string toString(){
-            return identifier+","+std::to_string(numRows)+","+std::to_string(numCols);
+            return identifier + "," + std::to_string(numRows) + "," + std::to_string(numCols);
         }
     };
 
@@ -69,7 +69,7 @@ public:
      * @param mlirCode mlir code fragment
      * @return WorkerImpl::Status contains if everything went fine, with an optional error message
      */
-    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode) ;
+    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs, const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode) ;
 
     /**
      * @brief Returns a matrix stored in worker's memory

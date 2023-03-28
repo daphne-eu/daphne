@@ -19,18 +19,14 @@
 
 #include <mpi.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/worker/MPISerializer.h>
 
 #include <runtime/distributed/worker/WorkerImpl.h>
 #include <runtime/distributed/worker/MPIHelper.h>
-
-#include <unistd.h>
-#include <iostream>
-#include <sstream>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
+#include <runtime/local/io/DaphneSerializer.h>
 
-class MPIWorker: WorkerImpl {
+class MPIWorker : WorkerImpl {
     public:
         MPIWorker(){//TODO
             MPI_Comm_rank(MPI_COMM_WORLD, &id);
@@ -53,58 +49,23 @@ class MPIWorker: WorkerImpl {
             }
         }
         
-        WorkerImpl::Status doCompute(std::vector<StoredInfo> * outputsStoredInfo, std::vector<StoredInfo> inputsStoredInfo, std::string mlirCode)
-        {
-            return this->Compute(outputsStoredInfo, inputsStoredInfo, mlirCode);
-        }
-        StoredInfo doStore(Structure *mat)
-        {
-                return this->Store(mat);
-        }
-        StoredInfo doStore(double *val)
-        {
-              return  this->Store(val);
-        }
     private:
         int id;
         int myState=LISTENING;
         int temp=0;
-        std::vector<StoredInfo> allReceivedInputs;
-        std::vector<std::string> currentPipelineIdentifiers;
-        void getCurrentPipelineInputs(std::vector<StoredInfo> *currentPipelineInputs, std::vector<std::string> currentPipelineIdentifiers)
-        {
-            for(size_t i=0;i<currentPipelineIdentifiers.size();i++)
-            {
-                for(size_t j=0;j< allReceivedInputs.size();j++)
-                {
-                    if(currentPipelineIdentifiers.at(i)==allReceivedInputs.at(j).identifier)
-                    {
-                        currentPipelineInputs->push_back(allReceivedInputs.at(j));
-                        break;
-                    }
-                }
-            }
-        }
-        StoredInfo updateInputs (distributed::Data * message, void * data, int messageLength)
+        StoredInfo updateInputs (const std::vector<char> &buffer, int messageLength)
         {
             StoredInfo info;
-            MPISerializer::deserializeStructure(message, data, messageLength);
-            if(message->matrix().matrix_case()){
-                auto matrix = &message->matrix();
-                DenseMatrix<double> *mat= DataObjectFactory::create<DenseMatrix<double>>(message->mutable_matrix()->num_rows(), message->mutable_matrix()->num_cols(), false);
-                //Structure *res =  dynamic_cast<DenseMatrix<double> *>(temp);
-                ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*matrix, mat);
-                info = this->doStore(mat);
+            if (DF_Dtype(buffer) == DF_data_t::Value_t) {
+                double val = DaphneSerializer<double>::load(buffer);
+                info= this->Store(&val);
+                
+            } else {                
+                Structure *mat = DF_load(buffer);
+                info = this->Store(mat);
             }
-            else
-            {
-                double val= message->value().f64();
-                info= this->doStore(&val);
-            }
-            allReceivedInputs.push_back(info);
             //std::cout<<"input object has been received and identifier "<<info.identifier<<" has been added at " << id<<std::endl;
-            currentPipelineIdentifiers.push_back(info.identifier);
-           // std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
+            // std::cout<<"id "<<id<<" added something " << inputs.size()<<std::endl;
             return info; 
         }
         
@@ -113,25 +74,25 @@ class MPIWorker: WorkerImpl {
             for(size_t i=0;i<outputs.size();i++)
             {
                 StoredInfo tempInfo=outputs.at(i);
-                Structure * res =Transfer(tempInfo);
-                void * dataToSend;
-                size_t messageLength;
-                MPISerializer::serializeStructure<Structure>(&dataToSend, res, false, &messageLength); 
-                int  len= messageLength;
-                MPI_Send(dataToSend, len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);
+                Structure *res = Transfer(tempInfo);
+                std::vector<char> dataToSend;
+                size_t messageLength = DaphneSerializer<Structure>::save(res, dataToSend);
+                
+                int len = messageLength;
+                MPI_Send(dataToSend.data(), len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);
               //  std::string message = "result from ("+ std::to_string(id) +") is:\n";
                // displayDataStructure(res, message);
-                free(dataToSend);
             }
 
         }
        
-        void prepareBufferForMessage(void ** data, int * messageLength, MPI_Datatype type, int source, int tag)
+        void prepareBufferForMessage(std::vector<char> &buffer, int * messageLength, MPI_Datatype type, int source, int tag)
         {
             MPI_Status messageStatus;
             MPI_Recv(messageLength, 1, type, source, tag, MPI_COMM_WORLD, &messageStatus);
-           // std::cout<< id<<" in distribute size " <<*messageLength << " tag " << tag <<std::endl;
-            *data = malloc(*messageLength * sizeof(unsigned char));
+            // std::cout<< id<<" in distribute size " <<*messageLength << " tag " << tag <<std::endl;            
+            if (buffer.capacity() < size_t(*messageLength))
+                buffer.reserve(size_t(*messageLength));
         } 
         
         void sendDataACK(StoredInfo info)
@@ -161,62 +122,53 @@ class MPIWorker: WorkerImpl {
             int source = status.MPI_SOURCE;
             int tag = status.MPI_TAG;
             MPI_Status messageStatus;
-            void * data;
+            std::vector<char> buffer;
             //char * mlirCode;
-            int messageLength;
-            //DenseMatrix<double> *mat=nullptr;
+            int messageLength;            
             //double val;
-            distributed::Data protoMsgData;
-            distributed::Task protoMsgTask;
+            MPIHelper::Task MsgTask;
             std::string printData="";
-            //size_t index=0, rows=0, cols=0;
             StoredInfo info;
             std::vector<StoredInfo> outputs;
-            std::vector<StoredInfo> currentPipelineInputs;
             std::string identifier;
             WorkerImpl::Status exStatus(true);
             switch(tag){
                 case BROADCAST:
-                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, BROADCAST);
-                    MPI_Bcast(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
-                    info=updateInputs(&protoMsgData, data, messageLength);
+                    prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, BROADCAST);
+                    MPI_Bcast(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
+                    info = updateInputs(buffer, messageLength);
                     //MPIHelper::displayData(protoMsgData, id);
-                    free(data);
                     sendDataACK(info);
                 break;
                 case OBJECTIDENTIFIERSIZE:
                    // std::cout<<"Identifier Message "<<std::endl;
-                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, OBJECTIDENTIFIERSIZE);
-                    MPI_Recv(data, messageLength, MPI_CHAR, COORDINATOR, OBJECTIDENTIFIER,MPI_COMM_WORLD, &messageStatus);
-                    identifier = std::string((const char *) data);
+                    prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, OBJECTIDENTIFIERSIZE);
+                    MPI_Recv(buffer.data(), messageLength, MPI_CHAR, COORDINATOR, OBJECTIDENTIFIER,MPI_COMM_WORLD, &messageStatus);
+                    identifier = std::string(buffer.data());
                    // std::cout<<"identifier "<<identifier <<" received at "<< id<<std::endl;
-                    currentPipelineIdentifiers.push_back(identifier);
                 break;
                 case DATASIZE:
-                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, DATASIZE);
-                    MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA,MPI_COMM_WORLD, &messageStatus);
-                    info=updateInputs(&protoMsgData, data, messageLength);
+                    prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, DATASIZE);
+                    MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, DATA,MPI_COMM_WORLD, &messageStatus);
+                    info = updateInputs(buffer, messageLength);
                     //std::cout<<"rank " << id <<"will send ack" <<std::endl;
-                    //MPIHelper::displayData(protoMsgData,id);
-                    free(data);
+                    //MPIHelper::displayData(protoMsgData,id);                    
                     sendDataACK(info);
                     //std::cout<<"rank " << id <<" sent ack" <<std::endl;
                 break;
 
                 case MLIRSIZE:
-                    prepareBufferForMessage(&data, &messageLength, MPI_INT, source, MLIRSIZE);
-                    MPI_Recv(data, messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
-                    protoMsgTask.ParseFromArray(data, messageLength);
+                    prepareBufferForMessage(buffer, &messageLength, MPI_INT, source, MLIRSIZE);
+                    MPI_Recv(buffer.data(), messageLength, MPI_UNSIGNED_CHAR, COORDINATOR, MLIR,MPI_COMM_WORLD, &messageStatus);
                     //printData = "worker "+std::to_string(id)+" got MLIR "+protoMsgTask.mlir_code();
-                    getCurrentPipelineInputs(&currentPipelineInputs, currentPipelineIdentifiers);
-                    exStatus=this->doCompute(&outputs,currentPipelineInputs , protoMsgTask.mlir_code());
+                    MsgTask.deserialize(buffer);
+                    
+                    exStatus = this->Compute(&outputs, MsgTask.inputs, MsgTask.mlir_code);
                     //std::cout<<printData<<std::endl;
                     //if(!(exStatus.ok()))
                     //    std::cout<<"error!";    
                     // std::cout<<"computation is done"<<std::endl;
-                    sendResult(outputs);
-                    currentPipelineIdentifiers.clear();
-                    free(data);
+                    sendResult(outputs);                    
                 break;
 
                 case DETACH:

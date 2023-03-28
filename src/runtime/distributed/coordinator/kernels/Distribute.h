@@ -15,7 +15,6 @@
  */
 
 #pragma once
-
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -27,7 +26,6 @@
 #include <runtime/distributed/worker/WorkerImpl.h>
 
 #ifdef USE_MPI
-    #include <runtime/distributed/worker/MPISerializer.h>
     #include <runtime/distributed/worker/MPIHelper.h>
 #endif 
 
@@ -84,11 +82,10 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                //std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                continue;
             }
-            size_t messageLength;
-            MPISerializer::serializeStructure<DT>(&dataToSend, mat ,false, &messageLength, dp->range->r_start, dp->range->r_len, dp->range->c_start, dp->range->c_len);
-            MPIHelper::distributeData(messageLength, dataToSend,rank);
-            targetGroup.push_back(rank);
-            free(dataToSend);  
+            auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
+            messageLengths[rank] = DaphneSerializer<typename std::remove_const<DT>::type>::save(slicedMat, dataToSend);                        
+            MPIHelper::distributeData(messageLengths[rank], dataToSend.data(),rank+1);
+            targetGroup.push_back(rank+1);            
         }
         for(size_t i=0;i<targetGroup.size();i++)
         {
@@ -143,11 +140,11 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
 
             std::vector<char> buffer;
             
-            auto slicedMat = mat->sliceRow(range.r_start, range.r_start + range.r_len);
+            auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
             // DT is const Structure, but we only provide template specialization for structure.
             // TODO should we implement an additional specialization or remove constness from template parameter?
             auto length = DaphneSerializer<typename std::remove_const<DT>::type>::save(slicedMat, buffer);            
-            protoMsg.mutable_matrix()->set_bytes(buffer.data(), length);
+            protoMsg.set_bytes(buffer.data(), length);
 
             StoredInfo storedInfo({dp->dp_id}); 
             caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);

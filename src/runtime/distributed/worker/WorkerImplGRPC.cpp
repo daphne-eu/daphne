@@ -64,36 +64,14 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
                          ::distributed::StoredData *response) 
 {
     StoredInfo storedInfo;
-    switch (request->data_case()){
-        case distributed::Data::DataCase::kMatrix:
-        {
-            Structure *mat = nullptr;
-            // Zero copy buffer
-            std::vector<char> buf(static_cast<const char*>(request->matrix().bytes().data()), static_cast<const char*>(request->matrix().bytes().data()) + request->matrix().bytes().size());
-            mat = DF_load(buf);
-            storedInfo = WorkerImpl::Store<Structure>(mat);
-            break;
-        }
-        case distributed::Data::DataCase::kValue:
-        {
-            auto protoVal = &request->value();
-            switch (protoVal->value_case()){
-                case distributed::Value::ValueCase::kF64:
-                {
-                    double val = double(protoVal->f64());
-                    storedInfo = WorkerImpl::Store(&val);
-                    break;
-                }
-                default: {
-                    throw std::runtime_error(protoVal->value_case() + " not supported atm");
-                    break; 
-                }
-            }
-            break;
-        }
-        default:
-            throw std::runtime_error("Store: data not set");
-            break;
+    // Zero copy buffer
+    const std::vector<char> buffer(static_cast<const char*>(request->bytes().data()), static_cast<const char*>(request->bytes().data()) + request->bytes().size()); 
+    if (DF_Dtype(buffer) == DF_data_t::Value_t) {
+        double val = DaphneSerializer<double>::load(buffer);
+        storedInfo = WorkerImpl::Store(&val);
+    } else {
+        Structure *mat = DF_load(buffer);
+        storedInfo = WorkerImpl::Store(mat);
     }
     response->set_identifier(storedInfo.identifier);
     response->set_num_rows(storedInfo.numRows);
@@ -129,7 +107,7 @@ grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context,
 
 grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                         ::distributed::Matrix *response)
+                         ::distributed::Data *response)
 {
     StoredInfo info({request->identifier(), request->num_rows(), request->num_cols()});
     std::vector<char> buffer;

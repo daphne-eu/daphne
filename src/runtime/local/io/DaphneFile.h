@@ -26,7 +26,7 @@ struct DF_header {
 	uint64_t nbcols;
 } __attribute__((__packed__));
 
-enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3};
+enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3, Value_t = 4};
 
 struct DF_body {
 	uint64_t rx; // row index

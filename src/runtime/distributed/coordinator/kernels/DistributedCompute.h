@@ -84,25 +84,20 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
         size_t messageLengths[worldSize]; 
         for (int rank=0;rank<worldSize;rank++) // we currently exclude the coordinator
         {
-
-            distributed::Task task;
+            MPIHelper::Task task;
             std::string addr= std::to_string(rank+1);
-            for (size_t i = 0; i < numOutputs; i++)
+            for (size_t i = 0; i < numInputs; i++)
             {
                 auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
                 auto distrData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-                distributed::StoredData protoData;
-                //std::cout<<"identifier " << distrData.identifier<<std::endl;
-                protoData.set_identifier(distrData.identifier); 
-                protoData.set_num_cols(distrData.numCols);
-                protoData.set_num_rows(distrData.numRows);
-
-                *task.add_inputs()->mutable_stored() = protoData;
+                
+                MPIHelper::StoredInfo storedData({distrData.identifier, distrData.numRows, distrData.numCols});                
+                task.inputs.push_back(storedData);
             }
-            task.set_mlir_code(mlirCode);
-            MPISerializer::serializeTask(&taskToSend, &messageLengths[rank], &task);
-            MPIHelper::distributeTask(messageLengths[rank], taskToSend,rank+1);
-            free(taskToSend);
+            task.mlir_code = mlirCode;
+            task.serialize(taskBuffer);
+            messageLengths[rank] = task.sizeInBytes();
+            MPIHelper::distributeTask(messageLengths[rank], taskBuffer.data(),rank+1);            
         }
 
     }

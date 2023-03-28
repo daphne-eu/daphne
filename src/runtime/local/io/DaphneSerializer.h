@@ -142,15 +142,15 @@ struct DaphneDeserializerChunks {
     Iterator end();
 };
 
-template <class DTArg>
+template <class DTArg, bool isFundumental = std::is_fundamental<DTArg>::value>
 struct DaphneSerializer { 
     static size_t length(const DTArg *arg);
     static size_t save(const DTArg *arg, std::vector<char> &buf, size_t serializeFromByte = 0, size_t chunkSize = 0);
-    static DTArg *load(const void *buf);
+    static Structure *load(const std::vector<char> &buf, DTArg *arg = nullptr, size_t deserializeFromByte = 0, size_t chunkSize = 0);
 };
 
 template <typename VT>
-struct DaphneSerializer<DenseMatrix<VT>> {
+struct DaphneSerializer<DenseMatrix<VT>, false> {
 
     static size_t length(const DenseMatrix<VT> *arg) {
         size_t len = 0;
@@ -171,7 +171,8 @@ struct DaphneSerializer<DenseMatrix<VT>> {
         size_t serializationIdx = 0;
         chunkSize = chunkSize != 0 ? chunkSize : DaphneSerializer<DenseMatrix<VT>>::length(arg);
 
-        buffer.reserve(chunkSize);
+        if (buffer.capacity() < chunkSize) // Maybe if is unecessary here..
+            buffer.reserve(chunkSize);
 
         if (serializeFromByte == 0 && chunkSize < 60)
             throw std::runtime_error("Minimum starting chunk size 60 bytes"); // For now..?
@@ -315,7 +316,7 @@ struct DaphneSerializer<DenseMatrix<VT>> {
 };
 
 template <typename VT>
-struct DaphneSerializer<CSRMatrix<VT>> {
+struct DaphneSerializer<CSRMatrix<VT>, false> {
     const CSRMatrix<VT> *matrix;
     CSRMatrix<VT> **matrixPtr;
     size_t chunkSize;
@@ -362,7 +363,9 @@ struct DaphneSerializer<CSRMatrix<VT>> {
         size_t serializationIdx = 0;
 
         chunkSize = chunkSize == 0 ? DaphneSerializer<CSRMatrix<VT>>::length(arg) : chunkSize;
-        buffer.reserve(chunkSize);
+        
+        if (buffer.capacity() < chunkSize) // Maybe if is unecessary here..
+            buffer.reserve(chunkSize);
 
         if (serializeFromByte == 0 && chunkSize < 60)
             throw std::runtime_error("Minimum starting chunk size 60 bytes"); // For now..?
@@ -771,6 +774,48 @@ struct DaphneSerializer<Structure> {
 
     static Structure *load(const void *buf) {
        throw std::runtime_error("not implemented");
+    };
+};
+
+/* Partial specialization for fundumental types */
+template<typename VT>
+struct DaphneSerializer<VT, true> {
+    static size_t length(const VT arg) {
+        size_t len = 0;
+        len += sizeof(DF_header);
+        len += sizeof(ValueTypeCode);
+        len += sizeof(VT);
+        return len;
+    };
+    static size_t save(const VT &arg, std::vector<char> &buf) {
+        if (buf.capacity() < length(arg))
+            buf.reserve(length(arg));
+
+        size_t bufferIdx = 0;
+
+        DF_header h;
+        h.version = 1;
+        h.dt = (uint8_t)DF_data_t::Value_t;
+        
+        std::copy(reinterpret_cast<char*>(&h), reinterpret_cast<char*>(&h) + sizeof(h), buf.begin() + bufferIdx);
+        bufferIdx += sizeof(h);
+
+        const ValueTypeCode vt = ValueTypeUtils::codeFor<VT>;
+        std::copy(reinterpret_cast<const char*>(&vt), reinterpret_cast<const char*>(&vt) + sizeof(vt), buf.begin() + bufferIdx);
+        bufferIdx += sizeof(vt);
+
+        std::copy(reinterpret_cast<const char*>(&arg), reinterpret_cast<const char*>(&arg) + sizeof(VT), buf.begin() + bufferIdx);
+        return length(arg);
+    };
+    static VT load(const std::vector<char> &buf) {        
+        
+        size_t bufferIdx = 0;
+        bufferIdx += sizeof(DF_header);
+        bufferIdx += sizeof(ValueTypeCode);
+        double val;
+        std::copy(buf.begin() + bufferIdx, buf.begin() + sizeof(VT), reinterpret_cast<char*>(&val));
+
+        return val;
     };
 };
 
