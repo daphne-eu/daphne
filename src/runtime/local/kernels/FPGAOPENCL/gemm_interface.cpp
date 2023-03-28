@@ -42,6 +42,8 @@
 #include <runtime/local/context/FPGAContext.h>
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/kernels/FPGAOPENCL/gemm_interface.h>
+#include <runtime/local/kernels/FPGAOPENCL/kernel_utils.h>
+
 
 
 
@@ -74,15 +76,8 @@ using namespace aocl_utils;
     }
 
 #define ACL_ALIGNMENT 64
-void *acl_aligned_malloc(size_t size) {
-    void *result = NULL;
-    posix_memalign(&result, ACL_ALIGNMENT, size);
-    return result;
-}
 
-void cleanup() {}
-
-const char *kernel_name[] = {
+const char *sgemm_kernel_name[] = {
     "kernel_A_loader",
     "kernel_B_loader",
     "kernel_unloader_WAIT_FINISH",
@@ -90,19 +85,6 @@ const char *kernel_name[] = {
     "kernel_B_feeder",
     "kernel_Out"
 };
-
-double compute_kernel_execution_time(cl_event &event, double &start_d, double &end_d) {
-    cl_ulong start, end;
-
-    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL);
-    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL);
-
-    start_d = (double)1.0e-9 * start;
-    end_d = (double)1.0e-9 * end;
-    //return (double)(end-start);
-    return (double)1.0e-9 * (end - start); // nanoseconds to seconds
-}
-
 
 int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const int OUTERMOST_J, const int OUTERMOST_K, DCTX(ctx)) {
     const int TOTAL_I = III * II * OUTERMOST_I;
@@ -284,7 +266,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     cl_kernel kernel[NUM_KERNELS_TO_CREATE];
 
     for (int j = 0; j < NUM_KERNELS_TO_CREATE; j++) {
-        kernel[j] = clCreateKernel(program, (const char *)kernel_name[j], &status);
+        kernel[j] = clCreateKernel(program, (const char *)sgemm_kernel_name[j], &status);
         CHECK(status);
     }
 #ifndef NDEBUG
@@ -442,7 +424,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
         // Alternatively, can use clEnqueueTaskKernel
 #ifndef NDEBUG
-        DPRINTF("clEnqueueNDRangeKernel[%d]: %s!\n", i, kernel_name[i]);
+        DPRINTF("clEnqueueNDRangeKernel[%d]: %s!\n", i, sgemm_kernel_name[i]);
 #endif
 	status = clEnqueueNDRangeKernel(
             cmdQueue[i],
@@ -507,7 +489,7 @@ int sgemm(const float *A, const float *B, float *C, const int OUTERMOST_I, const
     k_latest_end_time = k_end_time[NUM_KERNELS_TO_CREATE - 1];
 
     for (int i = 0; i < NUM_KERNELS_TO_CREATE; i++) {
-        printf("  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec time = %.5f s, start=%.5f s, end=%.5f s\n", kernel_name[i], k_exec_time[i], k_start_time[i], k_end_time[i]);
+        printf("  Kernel execution time on FPGA: %s, \n   \t\t\t\t\t\t\t\t\texec time = %.5f s, start=%.5f s, end=%.5f s\n", sgemm_kernel_name[i], k_exec_time[i], k_start_time[i], k_end_time[i]);
     }
 //#endif
  

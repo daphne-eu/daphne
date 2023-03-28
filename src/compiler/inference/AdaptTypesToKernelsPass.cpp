@@ -38,9 +38,9 @@ using namespace mlir;
  */
 // TODO This is not always correct for idxMin() and idxMax(): while their output always has an integer value
 // type, it is not always safe to cast their input to integers.
-struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, FunctionPass>
+struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>>
 {
-    void runOnFunction() final;
+    void runOnOperation() final;
 };
 
 // TODO This should become a general utility.
@@ -63,11 +63,11 @@ Type setValueType(Type t, Type vt) {
         return vt;
 }
 
-void AdaptTypesToKernelsPass::runOnFunction()
+void AdaptTypesToKernelsPass::runOnOperation()
 {
-    FuncOp f = getFunction();
+    func::FuncOp f = getOperation();
     OpBuilder builder(f.getContext());
-    f.body().front().walk([&](Operation* op) {
+    f.getBody().front().walk([&](Operation* op) {
         const size_t numOperands = op->getNumOperands();
 
         // Depending on the related trait, detemine which inputs to harmonize with the output.

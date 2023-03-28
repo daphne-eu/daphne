@@ -4,7 +4,8 @@ def f(a) {
         return 1;
     }
     print("fallback");
-    return 0;
+    # TODO Workaround, see the comment in early_return_2.daphne.
+    return 2;
 }
 def g(a) {
     if (a > 0) {
@@ -13,7 +14,7 @@ def g(a) {
         return 1;
     }
     print("fallback");
-    return 0;
+    return 2;
 }
 
 print(f(10));

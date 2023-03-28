@@ -57,7 +57,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         DaphneDSLVisitor visitor(module, builder, args, sourceName, userConf);
         visitor.visitScript(ctx);
 
-        mlir::Location loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
+        mlir::Location loc = mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
         if(!builder.getBlock()->empty()) {
             loc = builder.getBlock()->back().getLoc();
         }
@@ -68,7 +68,7 @@ void DaphneDSLParser::parseStream(mlir::OpBuilder & builder, std::istream & stre
         funcBlock->getArgumentTypes(),
         terminator->getOperandTypes()
     );
-    auto loc = mlir::FileLineColLoc::get(builder.getIdentifier(sourceName), 0, 0);
-    auto func = builder.create<mlir::FuncOp>(loc, "main", funcType);
+    auto loc = mlir::FileLineColLoc::get(builder.getStringAttr(sourceName), 0, 0);
+    auto func = builder.create<mlir::func::FuncOp>(loc, "main", funcType);
     func.push_back(funcBlock);
 }

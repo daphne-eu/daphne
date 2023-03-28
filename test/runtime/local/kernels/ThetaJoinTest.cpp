@@ -26,6 +26,7 @@
 #include <runtime/local/datastructures/Frame.h>
 // @todo: remove after fix
 #include <mlir/IR/Location.h>
+#include <mlir/IR/BuiltinAttributes.h>
 #include <runtime/local/kernels/CheckEq.h>
 
 #include <catch.hpp>

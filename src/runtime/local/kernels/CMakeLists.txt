@@ -72,7 +72,7 @@ add_custom_command(
         WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/
 )
 
-list(APPEND LIBS DataStructures IO ProtoDataConverter BLAS::BLAS)
+list(APPEND LIBS DataStructures IO ProtoDataConverter BLAS::BLAS MLIRParser)
 
 # The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
 add_library(AllKernels SHARED
@@ -94,9 +94,9 @@ else()
     list(APPEND LIBS LLVMSupport)
 endif()
 
-list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
-target_link_libraries(AllKernels PUBLIC ${LIBS})
+list(APPEND LIBS Arrow::arrow_shared Parquet::parquet_shared DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES})
 
 # Add MorphStore API to project
 add_subdirectory(MorphStore)

@@ -39,7 +39,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
     WHEN ("Sending a task where no outputs are expected")
     {
 
-        std::string task("func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+        std::string task("func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
             "() -> () {\n"
             "  \"daphne.return\"() : () -> ()\n"
             "}\n");
@@ -56,7 +56,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
 
     WHEN ("Sending simple random generation task")
     {
-        std::string task("func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+        std::string task("func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
             "() -> !daphne.Matrix<?x?xf64> {\n"
             "    %3 = \"daphne.constant\"() {value = 2 : si64} : () -> si64\n"
             "    %4 = \"daphne.cast\"(%3) : (si64) -> index\n"
@@ -85,7 +85,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
         std::vector<WorkerImpl::StoredInfo> inputs, outputs;
         inputs.push_back(WorkerImpl::StoredInfo({dirPath + "mat.csv", 2, 4}));
         std::string task(
-            "func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+            "func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
                 "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
                 "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
                 "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"
@@ -109,7 +109,7 @@ TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_D
         inputs.push_back(WorkerImpl::StoredInfo({identification , rows, cols}));
 
         std::string task(
-            "func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
+            "func.func @" + WorkerImpl::DISTRIBUTED_FUNCTION_NAME +
                 "(%mat: !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64> {\n"
                 "  %r = \"daphne.ewAdd\"(%mat, %mat) : (!daphne.Matrix<?x?xf64>, !daphne.Matrix<?x?xf64>) -> !daphne.Matrix<?x?xf64>\n"
                 "  \"daphne.return\"(%r) : (!daphne.Matrix<?x?xf64>) -> ()\n"

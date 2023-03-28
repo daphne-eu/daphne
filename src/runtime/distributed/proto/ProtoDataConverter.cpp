@@ -65,6 +65,7 @@ void ProtoDataConverter<DenseMatrix<VT>>::convertFromProto(const distributed::Ma
         }
     }
 }
+
 template<typename VT>
 void ProtoDataConverter<DenseMatrix<VT>>::convertFromProto(const distributed::Matrix &matProto, DenseMatrix<VT> *mat)
 {

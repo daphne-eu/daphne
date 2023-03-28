@@ -18,8 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
-#include <mlir/Dialect/StandardOps/IR/Ops.h>
-#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/Pass/Pass.h>
 
 using namespace mlir;
@@ -45,10 +44,10 @@ using namespace mlir;
  *   object that is still needed in a surrounding scope, i.e., to prevent
  *   double frees.
  */
-struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, FunctionPass>
+struct ManageObjRefsPass : public PassWrapper<ManageObjRefsPass, OperationPass<func::FuncOp>>
 {
     explicit ManageObjRefsPass() {}
-    void runOnFunction() final;
+    void runOnOperation() final;
 };
 
 /**
@@ -130,7 +129,7 @@ void processValue(OpBuilder builder, Value v) {
         // DecRefOp before the CreateDaphneContextOp, otherwise we will run
         // into problems during/after lowering to kernel calls.
         Block * pb = v.getParentBlock();
-        if(auto fo = dyn_cast<FuncOp>(pb->getParentOp())) {
+        if(auto fo = dyn_cast<func::FuncOp>(pb->getParentOp())) {
             Value dctx = CompilerUtils::getDaphneContext(fo);
             builder.setInsertionPointAfterValue(dctx);
         }
@@ -200,7 +199,7 @@ void processBlock(OpBuilder builder, Block * b) {
                 incRefArgs(op, builder);
         }
         // Loops and function calls.
-        else if(isa<scf::WhileOp, scf::ForOp, CallOp, daphne::GenericCallOp>(op))
+        else if(isa<scf::WhileOp, scf::ForOp, func::CallOp, daphne::GenericCallOp>(op))
             incRefArgs(op, builder);
         // YieldOp of IfOp.
         else if(isa<scf::YieldOp>(op) && isa<scf::IfOp>(op.getParentOp())) {
@@ -243,11 +242,11 @@ void processBlock(OpBuilder builder, Block * b) {
     }
 }
 
-void ManageObjRefsPass::runOnFunction()
+void ManageObjRefsPass::runOnOperation()
 {
-    FuncOp f = getFunction();
+    func::FuncOp f = getOperation();
     OpBuilder builder(f.getContext());
-    processBlock(builder, &(f.body().front()));
+    processBlock(builder, &(f.getBody().front()));
 }
 
 std::unique_ptr<Pass> daphne::createManageObjRefsPass()

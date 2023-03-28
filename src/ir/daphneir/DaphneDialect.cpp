@@ -21,13 +21,13 @@
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES
 #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
+#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
 
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
-#include "mlir/IR/FunctionSupport.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
@@ -67,7 +67,9 @@ mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(OpBuilder &bui
 mlir::Type mlir::daphne::DaphneDialect::parseType(mlir::DialectAsmParser &parser) const
 {
     llvm::StringRef keyword;
-    parser.parseKeyword(&keyword);
+    mlir::ParseResult pr = parser.parseKeyword(&keyword);
+    if(mlir::failed(pr))
+        throw std::runtime_error("parsing a DaphneIR type failed");
     // `Matrix` `<` (`?` | \d+) `x` (`?` | \d+) `x` \type
     //      (`:` (
     //          `sp` `[` \float `]` |
@@ -340,10 +342,10 @@ namespace mlir::daphne {
     MatrixRepresentation MatrixType::getRepresentation() const { return getImpl()->representation; }
 }
 
-mlir::OpFoldResult mlir::daphne::ConstantOp::fold(mlir::ArrayRef<mlir::Attribute> operands)
+mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
 {
-    assert(operands.empty() && "constant has no operands");
-    return value();
+    assert(adaptor.getOperands().empty() && "constant has no operands");
+    return getValue();
 }
 
 ::mlir::LogicalResult mlir::daphne::MatrixType::verify(
@@ -423,29 +425,29 @@ mlir::LogicalResult mlir::daphne::VectorizedPipelineOp::canonicalize(mlir::daphn
         }
         else {
             resultsToReplace.push_back(result);
-            outRows.push_back(op.out_rows()[resultIx]);
-            outCols.push_back(op.out_cols()[resultIx]);
-            vCombineAttrs.push_back(op.combines()[resultIx]);
+            outRows.push_back(op.getOutRows()[resultIx]);
+            outCols.push_back(op.getOutCols()[resultIx]);
+            vCombineAttrs.push_back(op.getCombines()[resultIx]);
         }
     }
-    op.body().front().getTerminator()->eraseOperands(eraseIxs);
-    if(!op.cuda().getBlocks().empty())
-        op.cuda().front().getTerminator()->eraseOperands(eraseIxs);
+    op.getBody().front().getTerminator()->eraseOperands(eraseIxs);
+    if(!op.getCuda().getBlocks().empty())
+        op.getCuda().front().getTerminator()->eraseOperands(eraseIxs);
 
     if(resultsToReplace.size() == op->getNumResults()) {
         return failure();
     }
     auto pipelineOp = rewriter.create<daphne::VectorizedPipelineOp>(op.getLoc(),
         ValueRange(resultsToReplace).getTypes(),
-        op.inputs(),
+        op.getInputs(),
         outRows,
         outCols,
-        op.splits(),
+        op.getSplits(),
         rewriter.getArrayAttr(vCombineAttrs),
-        op.ctx());
-    pipelineOp.body().takeBody(op.body());
-    if(!op.cuda().getBlocks().empty())
-        pipelineOp.cuda().takeBody(op.cuda());
+        op.getCtx());
+    pipelineOp.getBody().takeBody(op.getBody());
+    if(!op.getCuda().getBlocks().empty())
+        pipelineOp.getCuda().takeBody(op.getCuda());
     for (auto e : llvm::enumerate(resultsToReplace)) {
         auto resultToReplace = e.value();
         auto i = e.index();
@@ -469,8 +471,6 @@ mlir::Attribute constFoldBinaryOp(mlir::Type resultType, llvm::ArrayRef<mlir::At
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    if(operands[0].getType() != operands[1].getType())
-        return {};
 
     if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
         auto lhs = operands[0].cast<AttrElementT>();
@@ -488,8 +488,6 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
         return {};
-    if(operands[0].getType() != operands[1].getType())
-        return {};
 
     if(operands[0].isa<AttrElementT>() && operands[1].isa<AttrElementT>()) {
         auto lhs = operands[0].cast<AttrElementT>();
@@ -503,12 +501,13 @@ mlir::Attribute constFoldBinaryCmpOp(llvm::ArrayRef<mlir::Attribute> operands,
 // Fold implementations
 // ****************************************************************************
 
-mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::CastOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     if (isTrivialCast()) {
         if (operands[0])
             return {operands[0]};
         else
-            return {arg()};
+            return {getArg()};
     }
     if(auto in = operands[0].dyn_cast_or_null<IntegerAttr>()) {
         auto apInt = in.getValue();
@@ -562,7 +561,8 @@ mlir::OpFoldResult mlir::daphne::CastOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwAddOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwAddOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a + b; };
     // TODO: we could check overflows
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a + b; };
@@ -573,7 +573,8 @@ mlir::OpFoldResult mlir::daphne::EwAddOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwSubOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwSubOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a - b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a - b; };
     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
@@ -583,7 +584,8 @@ mlir::OpFoldResult mlir::daphne::EwSubOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMulOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwMulOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a * b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a * b; };
     if(auto res = constFoldBinaryOp<FloatAttr>(getType(), operands, floatOp))
@@ -593,7 +595,8 @@ mlir::OpFoldResult mlir::daphne::EwMulOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwDivOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwDivOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a / b; };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(b == 0) {
@@ -625,7 +628,8 @@ mlir::OpFoldResult mlir::daphne::EwDivOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwPowOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwPowOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     // TODO: EwPowOp integer constant folding
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
         return std::pow(a.convertToDouble(), b.convertToDouble());
@@ -635,7 +639,8 @@ mlir::OpFoldResult mlir::daphne::EwPowOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwModOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwModOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(b == 0) {
             std::string msg = "Can't compute mod 0";
@@ -663,7 +668,8 @@ mlir::OpFoldResult mlir::daphne::EwModOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwLogOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwLogOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) {
         // Equivalent to log_b(a)
         return ilogb(a) / ilogb(b);
@@ -673,7 +679,8 @@ mlir::OpFoldResult mlir::daphne::EwLogOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMinOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwMinOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::minimum(a, b); };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(a.slt(b))
@@ -700,7 +707,8 @@ mlir::OpFoldResult mlir::daphne::EwMinOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return llvm::maximum(a, b); };
     auto sintOp = [&](const llvm::APInt &a, const llvm::APInt &b) {
         if(a.sgt(b))
@@ -727,7 +735,8 @@ mlir::OpFoldResult mlir::daphne::EwMaxOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwAndOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwAndOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto boolOp = [](const bool &a, const bool &b) { return a && b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) && (b != 0); };
     if(auto res = constFoldBinaryCmpOp<BoolAttr>(operands, boolOp))
@@ -738,7 +747,8 @@ mlir::OpFoldResult mlir::daphne::EwAndOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwOrOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwOrOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto boolOp = [](const bool &a, const bool &b) { return a || b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) || (b != 0); };
     if(auto res = constFoldBinaryCmpOp<BoolAttr>(operands, boolOp))
@@ -749,7 +759,8 @@ mlir::OpFoldResult mlir::daphne::EwOrOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwXorOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwXorOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto boolOp = [](const bool &a, const bool &b) { return a ^ b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return (a != 0) ^ (b != 0); };
     if(auto res = constFoldBinaryCmpOp<BoolAttr>(operands, boolOp))
@@ -760,11 +771,10 @@ mlir::OpFoldResult mlir::daphne::EwXorOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
-        return {};
-    if(operands[0].getType() != operands[1].getType())
         return {};
 
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
@@ -779,11 +789,10 @@ mlir::OpFoldResult mlir::daphne::EwConcatOp::fold(ArrayRef<Attribute> operands) 
 
 // TODO This is duplicated from EwConcatOp. Actually, ConcatOp itself is only
 // a temporary workaround, so it should be removed altogether later.
-mlir::OpFoldResult mlir::daphne::ConcatOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::ConcatOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     assert(operands.size() == 2 && "binary op takes two operands");
     if(!operands[0] || !operands[1])
-        return {};
-    if(operands[0].getType() != operands[1].getType())
         return {};
 
     if(operands[0].isa<StringAttr>() && operands[1].isa<StringAttr>()) {
@@ -796,7 +805,8 @@ mlir::OpFoldResult mlir::daphne::ConcatOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwEqOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwEqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
     // TODO: fix bool return
@@ -807,7 +817,8 @@ mlir::OpFoldResult mlir::daphne::EwEqOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
     // TODO: fix bool return
@@ -818,7 +829,8 @@ mlir::OpFoldResult mlir::daphne::EwNeqOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwLtOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwLtOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a < b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
@@ -836,7 +848,8 @@ mlir::OpFoldResult mlir::daphne::EwLtOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwLeOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwLeOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a <= b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
@@ -854,7 +867,8 @@ mlir::OpFoldResult mlir::daphne::EwLeOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwGtOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwGtOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a > b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
@@ -872,7 +886,8 @@ mlir::OpFoldResult mlir::daphne::EwGtOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::EwGeOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a >= b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
@@ -890,7 +905,8 @@ mlir::OpFoldResult mlir::daphne::EwGeOp::fold(ArrayRef<Attribute> operands) {
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::MorphStoreSelectEqOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectEqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a == b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a == b; };
     // TODO: fix bool return
@@ -901,7 +917,8 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectEqOp::fold(ArrayRef<Attribute> 
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::MorphStoreSelectNeqOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectNeqOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a != b; };
     auto intOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a != b; };
     // TODO: fix bool return
@@ -912,7 +929,8 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectNeqOp::fold(ArrayRef<Attribute>
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::MorphStoreSelectLtOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectLtOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a < b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.slt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ult(b); };
@@ -930,7 +948,8 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectLtOp::fold(ArrayRef<Attribute> 
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::MorphStoreSelectLeOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectLeOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a <= b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sle(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ule(b); };
@@ -948,7 +967,8 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectLeOp::fold(ArrayRef<Attribute> 
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::MorphStoreSelectGtOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectGtOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a > b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sgt(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.ugt(b); };
@@ -966,7 +986,8 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectGtOp::fold(ArrayRef<Attribute> 
     return {};
 }
 
-mlir::OpFoldResult mlir::daphne::MorphStoreSelectGeOp::fold(ArrayRef<Attribute> operands) {
+mlir::OpFoldResult mlir::daphne::MorphStoreSelectGeOp::fold(FoldAdaptor adaptor) {
+    ArrayRef<Attribute> operands = adaptor.getOperands();
     auto floatOp = [](const llvm::APFloat &a, const llvm::APFloat &b) { return a >= b; };
     auto sintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.sge(b); };
     auto uintOp = [](const llvm::APInt &a, const llvm::APInt &b) { return a.uge(b); };
@@ -992,10 +1013,10 @@ mlir::OpFoldResult mlir::daphne::MorphStoreSelectGeOp::fold(ArrayRef<Attribute> 
 mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
         mlir::daphne::MatMulOp op, PatternRewriter &rewriter
 ) {    
-    mlir::Value lhs = op.lhs();
-    mlir::Value rhs = op.rhs();
-    mlir::Value transa = op.transa();
-    mlir::Value transb = op.transb();
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
+    mlir::Value transa = op.getTransa();
+    mlir::Value transb = op.getTransb();
 
     // TODO If transa or transb are not constant, we cannot continue on the respective side;
     // we cannot just assume false then.
@@ -1013,19 +1034,19 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
 
 #if 0
     if(lhsTransposeOp) {
-        lhs = lhsTransposeOp.arg();
+        lhs = lhsTransposeOp.getArg();
         ta = !ta;
     }
 #endif
     if(rhsTransposeOp) {
-        rhs = rhsTransposeOp.arg();
+        rhs = rhsTransposeOp.getArg();
         tb = !tb;
     }
 
     rewriter.replaceOpWithNewOp<mlir::daphne::MatMulOp>(
         op, op.getType(), lhs, rhs,
-        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), rewriter.getBoolAttr(ta))),
-        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), rewriter.getBoolAttr(tb)))
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), ta)),
+        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), tb))
     );
     return mlir::success();
 }
@@ -1039,7 +1060,7 @@ mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(
 ) {
     ssize_t numRows = -1;
     
-    mlir::Type inTy = op.arg().getType();
+    mlir::Type inTy = op.getArg().getType();
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
         numRows = t.getNumRows();
     else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
@@ -1047,7 +1068,7 @@ mlir::LogicalResult mlir::daphne::NumRowsOp::canonicalize(
     
     if(numRows != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getIndexAttr(numRows)
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numRows)
         );
         return mlir::success();
     }
@@ -1063,7 +1084,7 @@ mlir::LogicalResult mlir::daphne::NumColsOp::canonicalize(
 ) {
     ssize_t numCols = -1;
     
-    mlir::Type inTy = op.arg().getType();
+    mlir::Type inTy = op.getArg().getType();
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>())
         numCols = t.getNumCols();
     else if(auto t = inTy.dyn_cast<mlir::daphne::FrameType>())
@@ -1071,7 +1092,7 @@ mlir::LogicalResult mlir::daphne::NumColsOp::canonicalize(
     
     if(numCols != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getIndexAttr(numCols)
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numCols)
         );
         return mlir::success();
     }
@@ -1088,7 +1109,7 @@ mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(
     ssize_t numRows = -1;
     ssize_t numCols = -1;
     
-    mlir::Type inTy = op.arg().getType();
+    mlir::Type inTy = op.getArg().getType();
     if(auto t = inTy.dyn_cast<mlir::daphne::MatrixType>()) {
         numRows = t.getNumRows();
         numCols = t.getNumCols();
@@ -1100,7 +1121,7 @@ mlir::LogicalResult mlir::daphne::NumCellsOp::canonicalize(
     
     if(numRows != -1 && numCols != -1) {
         rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(
-                op, rewriter.getIndexAttr(numRows * numCols)
+                op, rewriter.getIndexType(), rewriter.getIndexAttr(numRows * numCols)
         );
         return mlir::success();
     }
@@ -1122,12 +1143,12 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
     matchAndRewrite(
             mlir::daphne::DistributeOp op, mlir::PatternRewriter &rewriter
     ) const override {
-        mlir::daphne::ReadOp readOp = op.mat().getDefiningOp<mlir::daphne::ReadOp>();
+        mlir::daphne::ReadOp readOp = op.getMat().getDefiningOp<mlir::daphne::ReadOp>();
         if(!readOp || !readOp.getOperation()->hasOneUse())
             return mlir::failure();
         rewriter.replaceOp(
                 op, {rewriter.create<mlir::daphne::DistributedReadOp>(
-                        readOp.getLoc(), op.getType(), readOp.fileName()
+                        readOp.getLoc(), op.getType(), readOp.getFileName()
                 )}
         );
         // TODO Instead of erasing the ReadOp here, the compiler should
@@ -1153,8 +1174,8 @@ struct SimplifyDistributeRead : public mlir::OpRewritePattern<mlir::daphne::Dist
 mlir::LogicalResult mlir::daphne::EwAddOp::canonicalize(
         mlir::daphne::EwAddOp op, PatternRewriter &rewriter
 ) {
-    mlir::Value lhs = op.lhs();
-    mlir::Value rhs = op.rhs();
+    mlir::Value lhs = op.getLhs();
+    mlir::Value rhs = op.getRhs();
     const bool lhsIsStr = lhs.getType().isa<mlir::daphne::StringType>();
     const bool rhsIsStr = rhs.getType().isa<mlir::daphne::StringType>();
     if(lhsIsStr || rhsIsStr) {

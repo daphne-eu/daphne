@@ -91,15 +91,11 @@ struct Read<DenseMatrix<VT>> {
 	case 1:
 		readMM(res, filename);
 		break;
-#ifdef USE_ARROW
 	case 2:
 		if(res == nullptr)
-			res = DataObjectFactory::create<DenseMatrix<VT>>(
-				fmd.numRows, fmd.numCols, false
-			);
+			res = DataObjectFactory::create<DenseMatrix<VT>>(fmd.numRows, fmd.numCols, false);
 		readParquet(res, filename, fmd.numRows, fmd.numCols);
 		break;
-#endif
 	case 3:
 		readDaphne(res, filename);
                 break;
@@ -135,15 +131,11 @@ struct Read<CSRMatrix<VT>> {
 	case 1:
 		readMM(res, filename);
 		break;
-#ifdef USE_ARROW
 	case 2:
 		if(res == nullptr)
-			res = DataObjectFactory::create<CSRMatrix<VT>>(
-				fmd.numRows, fmd.numCols, fmd.numNonZeros, false
-			);
+			res = DataObjectFactory::create<CSRMatrix<VT>>(fmd.numRows, fmd.numCols, fmd.numNonZeros, false);
 		readParquet(res, filename,fmd.numRows, fmd.numCols,fmd.numNonZeros, false);
 		break;
-#endif
 	case 3:
 		readDaphne(res, filename);
                 break;

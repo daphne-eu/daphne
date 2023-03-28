@@ -39,6 +39,7 @@ set(TEST_SOURCES
         api/cli/parser/MetaDataParserTest.cpp
         api/cli/scoping/ScopingTest.cpp
         api/cli/scriptargs/ScriptArgsTest.cpp
+        api/cli/secondorder/SecondOrderTest.cpp
         api/cli/sql/SQLTest.cpp
         api/cli/sql/SQLResultTest.cpp
         api/cli/syntax/SyntaxTest.cpp
@@ -87,6 +88,7 @@ set(TEST_SOURCES
         runtime/local/kernels/EwUnaryScaTest.cpp
         runtime/local/kernels/ExtractColTest.cpp
         runtime/local/kernels/ExtractRowTest.cpp
+        runtime/local/kernels/FilterColTest.cpp
         runtime/local/kernels/FilterRowTest.cpp
         runtime/local/kernels/GroupJoinTest.cpp
         runtime/local/kernels/GroupTest.cpp
@@ -94,6 +96,7 @@ set(TEST_SOURCES
         runtime/local/kernels/InnerJoinTest.cpp
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
+        runtime/local/kernels/MapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/OrderTest.cpp
         runtime/local/kernels/QuantizeTest.cpp

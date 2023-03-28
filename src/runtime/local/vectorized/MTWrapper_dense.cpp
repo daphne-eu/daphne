@@ -353,3 +353,4 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
 
 template class MTWrapper<DenseMatrix<double>>;
 template class MTWrapper<DenseMatrix<float>>;
+template class MTWrapper<DenseMatrix<int64_t>>;

@@ -17,7 +17,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
-#include <mlir/Dialect/SCF/SCF.h>
+#include <mlir/Dialect/SCF/IR/SCF.h>
 #include <mlir/IR/Operation.h>
 #include <mlir/Pass/Pass.h>
 
@@ -28,7 +28,7 @@
 
 using namespace mlir;
 
-class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresentationsPass, FunctionPass> {
+class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresentationsPass, OperationPass<func::FuncOp>> {
     static WalkResult walkOp(Operation *op) {
         if(returnsKnownProperties(op)) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
@@ -53,8 +53,8 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
             // Special treatment for some SCF operations
             // ----------------------------------------------------------------
             else if(auto whileOp = llvm::dyn_cast<scf::WhileOp>(op)) {
-                Block &beforeBlock = whileOp.before().front();
-                Block &afterBlock = whileOp.after().front();
+                Block &beforeBlock = whileOp.getBefore().front();
+                Block &afterBlock = whileOp.getAfter().front();
                 // Transfer the WhileOp's operand types to the block arguments
                 // and results to fulfill constraints on the WhileOp.
                 for(size_t i = 0 ; i < whileOp.getNumOperands() ; i++) {
@@ -88,7 +88,7 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
                 return WalkResult::skip();
             }
             else if(auto forOp = llvm::dyn_cast<scf::ForOp>(op)) {
-                Block &block = forOp.region().front();
+                Block &block = forOp.getRegion().front();
                 const size_t numIndVars = forOp.getNumInductionVars();
                 // Transfer the ForOp's operand types to the block arguments
                 // and results to fulfill constraints on the ForOp.
@@ -151,13 +151,14 @@ class SelectMatrixRepresentationsPass : public PassWrapper<SelectMatrixRepresent
     };
 
 public:
-    void runOnFunction() override {
-        getFunction().walk<WalkOrder::PreOrder>(walkOp);
+    void runOnOperation() override {
+        func::FuncOp f = getOperation();
+        f.walk<WalkOrder::PreOrder>(walkOp);
         // infer function return types
         // TODO: cast for UDFs?
-        getFunction().setType(FunctionType::get(&getContext(),
-            getFunction().getType().getInputs(),
-            getFunction().body().back().getTerminator()->getOperandTypes()));
+        f.setType(FunctionType::get(&getContext(),
+            f.getFunctionType().getInputs(),
+            f.getBody().back().getTerminator()->getOperandTypes()));
     }
 
     static bool returnsKnownProperties(Operation *op) {

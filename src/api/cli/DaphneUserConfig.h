@@ -18,6 +18,7 @@
 #pragma once
 
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
+#include "runtime/local/datastructures/IAllocationDescriptor.h"
 
 #include <vector>
 #include <string>
@@ -54,7 +55,8 @@ struct DaphneUserConfig {
     bool explain_obj_ref_mgnt = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
-	victimSelectionLogic victimSelection = SEQPRI;
+	VictimSelectionLogic victimSelection = SEQPRI;
+    ALLOCATION_TYPE distributedBackEndSetup= ALLOCATION_TYPE::DIST_MPI; // default value
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     

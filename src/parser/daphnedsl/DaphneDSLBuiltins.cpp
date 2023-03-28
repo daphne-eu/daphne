@@ -168,7 +168,7 @@ mlir::Value DaphneDSLBuiltins::createSameTypeUnaryOp(mlir::Location loc, const s
 mlir::Value DaphneDSLBuiltins::createTriOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args, bool upper) {
     checkNumArgsExact(func, args.size(), 3);
     mlir::Value arg = args[0];
-    mlir::Value upper2 = builder.create<mlir::daphne::ConstantOp>(loc, builder.getIntegerAttr(builder.getI1Type(), upper));
+    mlir::Value upper2 = builder.create<mlir::daphne::ConstantOp>(loc, upper);
     mlir::Value diag = utils.castBoolIf(args[1]);
     mlir::Value values = utils.castBoolIf(args[2]);
     return static_cast<mlir::Value>(builder.create<mlir::daphne::TriOp>(
@@ -903,10 +903,10 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         checkNumArgsBetween(func, numArgs, 1, 3);
         mlir::Value arg = args[0];
         mlir::Value newline = (numArgs < 2)
-                ? builder.create<ConstantOp>(loc, builder.getBoolAttr(true))
+                ? builder.create<ConstantOp>(loc, true)
                 : utils.castBoolIf(args[1]);
         mlir::Value err = (numArgs < 3)
-                ? builder.create<ConstantOp>(loc, builder.getBoolAttr(false))
+                ? builder.create<ConstantOp>(loc, false)
                 : utils.castBoolIf(args[2]);
         return builder.create<PrintOp>(
                 loc, arg, newline, err
@@ -1033,6 +1033,24 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, builder.getIntegerType(64, true)
         ));
     }
+
+    // ****************************************************************************
+    // Higher-order operations
+    // ****************************************************************************
+
+    if(func == "map") {
+        checkNumArgsExact(func, numArgs, 2);
+        mlir::Value source = args[0];
+
+        auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
+        mlir::Attribute attr = co.getValue();
+
+        return static_cast<mlir::Value>(builder.create<MapOp>(
+            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()
+        ));
+
+    }
+
 
     // ********************************************************************
 

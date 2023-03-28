@@ -19,43 +19,43 @@
 
 include "mlir/Pass/PassBase.td"
 
-def DistributeComputations : FunctionPass<"distribute-computations"> {
+def DistributeComputations : Pass<"distribute-computations", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createDistributeComputationsPass()";
 }
 
-def DistributePipelines : FunctionPass<"distribute-pipelines"> {
+def DistributePipelines : Pass<"distribute-pipelines", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createDistributePipelinesPass()";
 }
 
-def Inference: FunctionPass<"inference"> {
+def Inference: Pass<"inference", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createInferencePass()";
 }
 
-def SelectMatrixRepresentations: FunctionPass<"select-matrix-representations"> {
+def SelectMatrixRepresentations: Pass<"select-matrix-representations", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createSelectMatrixRepresentationsPass()";
 }
 
-def AdaptTypesToKernels: FunctionPass<"adapt-types-to-kernels"> {
+def AdaptTypesToKernels: Pass<"adapt-types-to-kernels", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createAdaptTypesToKernelsPass()";
 }
 
-def ManageObjRefs : FunctionPass<"manage-obj-refs"> {
+def ManageObjRefs : Pass<"manage-obj-refs", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createManageObjRefsPass()";
 }
 
-def PrintIR : FunctionPass<"print-ir"> {
+def PrintIR : Pass<"print-ir", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createPrintIRPass()";
 }
 
-def RewriteSqlOpPass : FunctionPass<"rewrite-sqlop"> {
+def RewriteSqlOpPass : Pass<"rewrite-sqlop", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createRewriteSqlOpPass()";
 }
 
-def SpecializeGenericFunctionsPass : FunctionPass<"specialize-generic-funcs"> {
+def SpecializeGenericFunctionsPass : Pass<"specialize-generic-funcs", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createSpecializeGenericFunctionsPass()";
 }
 
-def WhileLoopInvariantCodeMotionPass : FunctionPass<"while-loop-invariant-code-motion"> {
+def WhileLoopInvariantCodeMotionPass : Pass<"while-loop-invariant-code-motion", "::mlir::func::FuncOp"> {
     let constructor = "mlir::daphne::createWhileLoopInvariantCodeMotionPass()";
 }
 

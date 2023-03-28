@@ -26,6 +26,7 @@ set(LIBS
         MLIRDaphneInference
         MLIRDaphneTransforms
         MLIRExecutionEngine
+        MLIRReconcileUnrealizedCasts
         )
 
 set(DaphneIrExecutor_Dependencies AllKernels)
