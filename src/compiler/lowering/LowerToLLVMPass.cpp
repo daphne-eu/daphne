@@ -571,8 +571,6 @@ public:
 
         std::vector<Value> kernelOperands{op.getArg(), udfFnPtr};
 
-        // TODO(phil): preferably lower this in a pass before since
-        // LowerToLLVMPass also lowers CallKernelOp(in RewriteKernelCallOp)
         auto kernel = rewriter.create<daphne::CallKernelOp>(
             loc,
             callee.str(),
