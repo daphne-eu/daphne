@@ -67,6 +67,8 @@ public:
     { return distributedData; }
     void updateDistributedData(DistributedData data_)
     { distributedData = data_; }
+    int getRank()
+    { return processRankID; }
 };
 
 #endif //SRC_RUNTIME_LOCAL_DATASTRUCTURE_ALLOCATION_DESCRIPTORMPH_H
