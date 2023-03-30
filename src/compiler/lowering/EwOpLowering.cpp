@@ -99,7 +99,6 @@ class EwAddOpLowering
     mlir::LogicalResult matchAndRewrite(
         mlir::daphne::EwAddOp op, OpAdaptor adaptor,
         mlir::ConversionPatternRewriter &rewriter) const override {
-        std::cout << "EwAdd\n";
         auto lhs = adaptor.getLhs();
         auto rhs = adaptor.getRhs();
 
@@ -115,7 +114,6 @@ class EwAddOpLowering
                 op.getOperation(), adaptor.getOperands());
             return mlir::success();
         }
-        std::cout << "EwAdd with Matrix\n";
 
         // for now assume matrix is LHS and float
 

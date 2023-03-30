@@ -150,9 +150,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after LowerDenseMatrixPass"));
 
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR before MapOpLoweringPass"));
             pm.addPass(mlir::daphne::createMapOpLoweringPass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after MapOpLoweringPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR after MapOpLoweringPass"));
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR before EwOpLoweringPass"));
             pm.addPass(mlir::daphne::createEwOpLoweringPass());
