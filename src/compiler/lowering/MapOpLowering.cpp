@@ -58,6 +58,10 @@ class InlineMapOpLowering
         // udfFuncOp.getArgumentTypes()[0].dump();
         // auto region = udfFuncOp.getCallableRegion();
 
+        mlir::ModuleOp module = op->getParentOfType<mlir::ModuleOp>();
+        LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.getFunc());
+        udfFuncOp.dump();
+
         mlir::Value cst_one = rewriter.create<mlir::arith::ConstantOp>(
             loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(1.0));
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
@@ -98,6 +102,14 @@ struct MapOpLoweringPass
 }  // end anonymous namespace
 
 void MapOpLoweringPass::runOnOperation() {
+    // mlir::ModuleOp module = getOperation();
+    // module.dump();
+    // module.getBody(0)->back().walk([&](mlir::daphne::MapOp mapOp) {
+    //     mapOp.dump();
+    //     LLVM::LLVMFuncOp udfFuncOp =
+    //         module.lookupSymbol<LLVM::LLVMFuncOp>(mapOp.getFunc());
+    //     udfFuncOp->dump();
+    // });
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
