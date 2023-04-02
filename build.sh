@@ -394,7 +394,7 @@ abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
 arrowVersion=11.0.0
-openMPIVersion="4.1.5"
+openMPIVersion=4.1.5
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -478,7 +478,7 @@ while [[ $# -gt 0 ]]; do
     --mpi)
         echo using MPI
         export BUILD_MPI="-DUSE_MPI=ON"
-        ;;    
+        ;;
     --debug)
         echo building DEBUG version
         export BUILD_DEBUG="-DCMAKE_BUILD_TYPE=Debug"
@@ -605,7 +605,7 @@ if [ $WITH_DEPS -gt 0 ]; then
 
         # enable fail on error again
         set -e
-        cmake --build "${buildPrefix}/${antlrCppRuntimeDirName}" --target install
+        cmake --build "${buildPrefix}/${antlrCppRuntimeDirName}" --target install/strip
 
         dependency_install_success "antlr_v${antlrVersion}"
     else
@@ -690,7 +690,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     if ! is_dependency_installed "absl_v${abslVersion}"; then
         cmake -S "$abslPath" -B "$buildPrefix/absl" -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
             -DCMAKE_INSTALL_PREFIX="$installPrefix" -DCMAKE_CXX_STANDARD=17 -DABSL_PROPAGATE_CXX_STD=ON
-        cmake --build "$buildPrefix/absl" --target install
+        cmake --build "$buildPrefix/absl" --target install/strip
         dependency_install_success "absl_v${abslVersion}"
     else
         daphne_msg "No need to build Abseil again."
@@ -750,7 +750,7 @@ if [ $WITH_DEPS -gt 0 ]; then
             -DCMAKE_INCLUDE_PATH="$installPrefix/include" \
             -DgRPC_ABSL_PROVIDER=package \
             -DgRPC_ZLIB_PROVIDER=package
-        cmake --build "$buildPrefix/$grpcDirName" --target install
+        cmake --build "$buildPrefix/$grpcDirName" --target install/strip
         dependency_install_success "grpc_v${grpcVersion}"
     else
         daphne_msg "No need to build GRPC again."
@@ -773,7 +773,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
             -DCMAKE_INSTALL_PREFIX="${installPrefix}" \
             -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
-        cmake --build "${buildPrefix}/${arrowDirName}" --target install
+        cmake --build "${buildPrefix}/${arrowDirName}" --target install/strip
         dependency_install_success "arrow_v${arrowVersion}"
     else
         daphne_msg "No need to build Arrow again."
@@ -830,7 +830,7 @@ if [ $WITH_DEPS -gt 0 ]; then
             -DLLVM_ENABLE_RTTI=ON \
             -DCMAKE_INSTALL_PREFIX="$installPrefix"
         cmake --build "$buildPrefix/$llvmName" --target check-mlir
-        cmake --build "$buildPrefix/$llvmName" --target install
+        cmake --build "$buildPrefix/$llvmName" --target install/strip
         echo "$llvmCommit" >"$llvmCommitFilePath"
         cd - >/dev/null
         dependency_install_success "llvm_v${llvmCommit}"
