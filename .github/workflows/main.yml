@@ -57,3 +57,11 @@ jobs:
 
     - name: "Run a simple daph script"
       run: bin/daphne scripts/examples/hello-world.daph
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v3
+      with:
+        name: daphne
+        path: |
+          bin/
+          lib/
