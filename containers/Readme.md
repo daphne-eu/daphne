@@ -34,8 +34,8 @@ in [GettingStarted.md](../doc/GettingStarted.md)
 The content of the scripts is quite self-explanatory but here's a shortlisting of what can be done:
 * **build-containers.sh**: Use this script to build your local Docker images. Alternatively, they can also be pulled 
 from Docker Hub: ``docker pull daphneeu/daphne-dev-interactive``
-* **run-daphne-dev-interactive.sh**: This script properly starts the daphne-dev-interactive container
-* **run-daphne-dev.sh**: Starts the non-interactive container, sets UID for permissions and mounts the current directory.
+* **run-docker-example.sh**: Use this as the starting point to customize scripts to launch the DAPHNE docker images from 
+your command line.
 
 ### Building a container
 To build the DAPHNE containers, use the provided ``build-containers.sh`` script contained in this directory.
@@ -48,7 +48,5 @@ with build.sh (which by defaults tries to build the dependencies in the ``thirdp
 ``./build.sh --no-deps --installPrefix /usr/local``
 
 ### TODO
-* **daphneeu/daphne** container with a prebuilt DAPHNE executable
-* CUDA and OneAPI images
 * Rebuilding the containers automatically for latest changes
 * Images of released versions of DAPHNE 

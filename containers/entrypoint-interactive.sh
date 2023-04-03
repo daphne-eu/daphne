@@ -16,7 +16,7 @@
 
 /usr/sbin/groupadd -g "$GID" dockerusers
 /usr/sbin/useradd -c 'Docker Container User' -u $UID -g "$GID" -G sudo -m -s /bin/bash -d /home/"$USER" "$USER"
-printf "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo EDITOR="tee -a" visudo >> /dev/null
+printf "${USER} ALL=(ALL:ALL) NOPASSWD:ALL" | sudo EDITOR="tee -a" visudo #>> /dev/null
 touch /home/"$USER"/.sudo_as_admin_successful
 exec su "$USER"
 # set a default password

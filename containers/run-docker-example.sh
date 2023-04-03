@@ -14,12 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+echo "Use this as an example to start DAPHNE docker containers. Copy and customize for the various flavors."
+
 DOCKER_IMAGE=daphneeu/daphne-dev
+#DOCKER_IMAGE=daphneeu/daphne-dev-interactive
+DOCKER_TAG=latest
+#DOCKER_TAG=cuda-12.0.1-cudnn8-devel-ubuntu20.04_2023-04-03
 DAPHNE_ROOT=$PWD
 
-LD_LIBRARY_PATH=/daphne/lib:$LD_LIBRARY_PATH
-PATH=/daphne/bin:$PATH
+CUDA_PATH=/usr/local/cuda
+LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:$LD_LIBRARY_PATH
+PATH=$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
+# uncomment to pass GPU devices to the container
+#DEVICE_FLAGS=--gpus all
 
 # shellcheck disable=SC2046
 # shellcheck disable=SC2068
-docker run --user=$(id -u):$(id -g) --rm -w $DAPHNE_ROOT -e TERM=screen-256color -v "$DAPHNE_ROOT:$DAPHNE_ROOT" $DOCKER_IMAGE $@
+docker run "$DEVICE_FLAGS" --user=$(id -u):$(id -g) --rm -w "$DAPHNE_ROOT" -v "$DAPHNE_ROOT:$DAPHNE_ROOT" \
+    -e TERM=screen-256color -e PATH="$PATH" -e LD_LIBRARY_PATH="$LD_LIBRARY_PATH" -e USER=$(id -n -u) -e UID=$(id -u) \
+    "$DOCKER_IMAGE:$DOCKER_TAG" $@

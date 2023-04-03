@@ -28,11 +28,16 @@ Newer versions should work as well, older versions might work as well.
 
 ##### Operating system
 
-| OS        | distribution/version known to work (*) | Comment                                                                 |
-|-----------|----------------------------------------|-------------------------------------------------------------------------|
-| GNU/Linux | Manjaro                                | Last checked in January 2023                                            ||
-| GNU/Linux | Ubuntu 20.04 - 22.10                   | All versions in that range work. 20.04 needs CMake installed from Snap. |
-| GNU/Linux | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, custom toolchain needed                 |
+| OS         | distribution/version known to work (*) | Comment                                                                    |
+|------------|----------------------------------------|----------------------------------------------------------------------------|
+| GNU/Linux  | Manjaro                                | Last checked in January 2023                                               ||
+| GNU/Linux  | Ubuntu 20.04 - 22.10                   | All versions in that range work. 20.04 needs CMake installed from Snap.    |
+| GNU/Linux  | Ubuntu 18.04                           | Used with Intel PAC D5005 FPGA, custom toolchain needed                    |
+| MS Windows | 10 Build 19041, 11                     | Should work in Ubuntu WSL, using the provided Docker images is recommended |
+
+##### Windows
+Installing WSL and Docker should be straight forward using the documentation proveded by [Microsoft](https://learn.microsoft.com/en-us/windows/wsl/). On an installed WSL container
+launching DAPHNE via Docker (see below) should work the same way as in a native installation.
 
 ##### Software
 
