@@ -94,7 +94,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             //std::string message="coordinator got the following from (" + address +") ";
             //MPIHelper::displayDataStructure(toDisplay,message);
 
-            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_load(buffer));
+            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_deserialize(buffer));
             auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
             auto slicedMatValues = slicedMat->getValues();
             for (size_t r = 0; r < dp->range->r_len; r++) {
@@ -161,7 +161,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
             }
             // Zero copy buffer
             std::vector<char> buf(static_cast<const char*>(matProto.bytes().data()), static_cast<const char*>(matProto.bytes().data()) + matProto.bytes().size()); 
-            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_load(buf));
+            auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_deserialize(buf));
             auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
             auto slicedMatValues = slicedMat->getValues();
             for (size_t r = 0; r < dp->range->r_len; r++){

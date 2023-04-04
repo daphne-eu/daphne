@@ -79,9 +79,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
 
         LoadPartitioningDistributed<DTRes, AllocationDescriptorMPI>::SetOutputsMetadata(res, numOutputs, vectorCombine, dctx);
         
-        std::vector<char> taskBuffer;        
-        void *taskToSend;
-        size_t messageLengths[worldSize]; 
+        std::vector<char> taskBuffer;
         for (int rank=0;rank<worldSize;rank++) // we currently exclude the coordinator
         {
             MPIHelper::Task task;
@@ -96,8 +94,8 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             }
             task.mlir_code = mlirCode;
             task.serialize(taskBuffer);
-            messageLengths[rank] = task.sizeInBytes();
-            MPIHelper::distributeTask(messageLengths[rank], taskBuffer.data(),rank+1);            
+            auto len = task.sizeInBytes();
+            MPIHelper::distributeTask(len, taskBuffer.data(),rank+1);            
         }
 
     }

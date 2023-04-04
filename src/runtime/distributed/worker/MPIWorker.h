@@ -57,11 +57,11 @@ class MPIWorker : WorkerImpl {
         {
             StoredInfo info;
             if (DF_Dtype(buffer) == DF_data_t::Value_t) {
-                double val = DaphneSerializer<double>::load(buffer);
+                double val = DaphneSerializer<double>::deserialize(buffer);
                 info= this->Store(&val);
                 
             } else {                
-                Structure *mat = DF_load(buffer);
+                Structure *mat = DF_deserialize(buffer);
                 info = this->Store(mat);
             }
             //std::cout<<"input object has been received and identifier "<<info.identifier<<" has been added at " << id<<std::endl;
@@ -76,7 +76,7 @@ class MPIWorker : WorkerImpl {
                 StoredInfo tempInfo=outputs.at(i);
                 Structure *res = Transfer(tempInfo);
                 std::vector<char> dataToSend;
-                size_t messageLength = DaphneSerializer<Structure>::save(res, dataToSend);
+                size_t messageLength = DaphneSerializer<Structure>::serialize(res, dataToSend);
                 
                 int len = messageLength;
                 MPI_Send(dataToSend.data(), len, MPI_UNSIGNED_CHAR, COORDINATOR, OUTPUT, MPI_COMM_WORLD);

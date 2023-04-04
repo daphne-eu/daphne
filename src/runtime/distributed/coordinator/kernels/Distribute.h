@@ -15,11 +15,11 @@
  */
 
 #pragma once
+
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
-#include <runtime/local/io/DaphneSerializer.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
@@ -64,7 +64,7 @@ template<class DT>
 struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
 {
     static void apply(DT *mat, DCTX(dctx)) {        
-        void *dataToSend;
+        std::vector<char> dataToSend;
         std::vector<int> targetGroup;  
 
         LoadPartitioningDistributed<DT, AllocationDescriptorMPI> partioner(DistributionSchema::DISTRIBUTE, mat, dctx);        
@@ -83,8 +83,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                continue;
             }
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
-            messageLengths[rank] = DaphneSerializer<typename std::remove_const<DT>::type>::save(slicedMat, dataToSend);                        
-            MPIHelper::distributeData(messageLengths[rank], dataToSend.data(),rank+1);
+            auto len = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, dataToSend);                        
+            MPIHelper::distributeData(len, dataToSend.data(),rank+1);
             targetGroup.push_back(rank+1);            
         }
         for(size_t i=0;i<targetGroup.size();i++)
@@ -143,7 +143,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
             // DT is const Structure, but we only provide template specialization for structure.
             // TODO should we implement an additional specialization or remove constness from template parameter?
-            auto length = DaphneSerializer<typename std::remove_const<DT>::type>::save(slicedMat, buffer);            
+            auto length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, buffer);            
             protoMsg.set_bytes(buffer.data(), length);
 
             StoredInfo storedInfo({dp->dp_id}); 

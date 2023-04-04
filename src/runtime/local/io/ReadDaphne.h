@@ -74,7 +74,7 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
 
         f.read(buf.data(), len);
 
-        res = DaphneSerializer<DenseMatrix<VT>>::load(buf);
+        res = DaphneSerializer<DenseMatrix<VT>>::deserialize(buf);
 
         f.close();
         return;
@@ -94,7 +94,7 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
         std::vector<char> buf(len);
         f.read(buf.data(), len);
 
-        res = DaphneSerializer<CSRMatrix<VT>>::load(buf);
+        res = DaphneSerializer<CSRMatrix<VT>>::deserialize(buf);
 
         f.close();
         return;

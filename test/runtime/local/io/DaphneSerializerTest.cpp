@@ -33,7 +33,7 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES int8_t, int32_t, int64_t, uint8_t, uint32_t, uint64_t, float, double
 
-TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer save/load", TAG_IO, (DATA_TYPES), (VALUE_TYPES)) {
+TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer serialize/deserialize", TAG_IO, (DATA_TYPES), (VALUE_TYPES)) {
   using DT = TestType;  
 
   auto mat = genGivenVals<DT>(5, {
@@ -46,9 +46,9 @@ TEMPLATE_PRODUCT_TEST_CASE("DaphneSerializer save/load", TAG_IO, (DATA_TYPES), (
   
   // Serialize and deserialize
   std::vector<char> buffer;
-  DaphneSerializer<DT>::save(mat, buffer);
+  DaphneSerializer<DT>::serialize(mat, buffer);
 
-  auto newMat = dynamic_cast<DT*>(DF_load(buffer));
+  auto newMat = dynamic_cast<DT*>(DF_deserialize(buffer));
 
   CHECK(*newMat == *mat);
 

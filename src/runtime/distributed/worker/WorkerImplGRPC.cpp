@@ -67,10 +67,10 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
     // Zero copy buffer
     const std::vector<char> buffer(static_cast<const char*>(request->bytes().data()), static_cast<const char*>(request->bytes().data()) + request->bytes().size()); 
     if (DF_Dtype(buffer) == DF_data_t::Value_t) {
-        double val = DaphneSerializer<double>::load(buffer);
+        double val = DaphneSerializer<double>::deserialize(buffer);
         storedInfo = WorkerImpl::Store(&val);
     } else {
-        Structure *mat = DF_load(buffer);
+        Structure *mat = DF_deserialize(buffer);
         storedInfo = WorkerImpl::Store(mat);
     }
     response->set_identifier(storedInfo.identifier);
@@ -113,7 +113,7 @@ grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,
     std::vector<char> buffer;
     size_t bufferLength;
     Structure *mat = Transfer(info);
-    bufferLength = DaphneSerializer<Structure>::save(mat, buffer);
+    bufferLength = DaphneSerializer<Structure>::serialize(mat, buffer);
     response->set_bytes(buffer.data(), bufferLength);
     return ::grpc::Status::OK;
 }

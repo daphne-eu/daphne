@@ -222,7 +222,7 @@ void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> sr
 
 template<typename ValueType>
 size_t DenseMatrix<ValueType>::serialize(std::vector<char> &buf) const {
-    return DaphneSerializer<DenseMatrix<ValueType>>::save(this, buf);
+    return DaphneSerializer<DenseMatrix<ValueType>>::serialize(this, buf);
 }
 
 template<>

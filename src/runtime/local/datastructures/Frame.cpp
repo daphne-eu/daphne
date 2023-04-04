@@ -25,5 +25,5 @@ std::ostream & operator<<(std::ostream & os, const Frame & obj)
 }
 
 size_t Frame::serialize(std::vector<char> &buf) const {
-    return DaphneSerializer<Frame>::save(this, buf);
+    return DaphneSerializer<Frame>::serialize(this, buf);
 }

@@ -72,7 +72,7 @@ struct WriteDaphne<DenseMatrix<VT>> {
 		
 		size_t len = DaphneSerializer<DenseMatrix<VT>>::length(arg);
 		std::vector<char> buf(len);
-		DaphneSerializer<DenseMatrix<VT>>::save(arg, buf);
+		DaphneSerializer<DenseMatrix<VT>>::serialize(arg, buf);
 		f.write(buf.data(), len);
 
 		f.close();
@@ -95,7 +95,7 @@ struct WriteDaphne<CSRMatrix<VT>> {
 		size_t len = DaphneSerializer<CSRMatrix<VT>>::length(arg);
 		std::vector<char> buf(len);
 		
-		DaphneSerializer<CSRMatrix<VT>>::save(arg, buf);
+		DaphneSerializer<CSRMatrix<VT>>::serialize(arg, buf);
 		f.write(buf.data(), len);
 
 		f.close();

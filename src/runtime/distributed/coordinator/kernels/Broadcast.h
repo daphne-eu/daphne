@@ -77,10 +77,10 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             double val = *ptr;
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false);
             dataToSend.reserve(sizeof(double));
-            messageLength = DaphneSerializer<double>::save(val, dataToSend);        
+            messageLength = DaphneSerializer<double>::serialize(val, dataToSend);        
         }
         else {
-            messageLength = DaphneSerializer<typename std::remove_const<DT>::type>::save(mat, dataToSend);
+            messageLength = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(mat, dataToSend);
         }
         std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
         
@@ -93,13 +93,13 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             {
                 //std::cout<<"data is already placed at rank "<<rank<<std::endl;
                 auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-                MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
+                MPIHelper::sendObjectIdentifier(data.identifier, rank);
                // std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                 continue;
             }
             targetGroup.push_back(rank);  
         }
-        if((int)targetGroup.size()==worldSize){
+        if((int)targetGroup.size()==MPIHelper::getCommSize() - 1){ // exclude coordinator
             MPIHelper::sendData(messageLength, dataToSend.data());
            // std::cout<<"data has been send to all "<<std::endl;
         }
@@ -158,7 +158,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         if (isScalar) {
             auto ptr = (double*)(&mat);        
             double val = *ptr;
-            auto length = DaphneSerializer<double>::save(val, buffer);
+            auto length = DaphneSerializer<double>::serialize(val, buffer);
             protoMsg.set_bytes(buffer.data(), length);
 
             // Need matrix for metadata, type of matrix does not really matter.
@@ -167,7 +167,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         else { // Not scalar
             // DT is const Structure, but we only provide template specialization for structure.
             // TODO should we implement an additional specialization or remove constness from template parameter?
-            size_t length = DaphneSerializer<typename std::remove_const<DT>::type>::save(mat, buffer);
+            size_t length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(mat, buffer);
             protoMsg.set_bytes(buffer.data(), length);            
         }
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
