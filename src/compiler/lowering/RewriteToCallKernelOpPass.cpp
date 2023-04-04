@@ -508,7 +508,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
                            mlir::linalg::LinalgDialect,
                            mlir::arith::ArithDialect, mlir::BuiltinDialect>();
 
-    target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp>();
+    target.addLegalOp<ModuleOp, func::FuncOp, func::CallOp, func::ReturnOp>();
     target.addIllegalDialect<daphne::DaphneDialect>();
     target.addLegalOp<
             daphne::ConstantOp,

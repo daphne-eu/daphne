@@ -165,33 +165,16 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // pm.addPass(mlir::createConvertFuncToLLVMPass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR before EwOpLoweringPass"));
-            // pm.addPass(mlir::daphne::createEwOpLoweringPass());
+            pm.addPass(mlir::daphne::createEwOpLoweringPass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR after EwOpLoweringPass"));
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after EwOpLoweringPass"));
 
-
-            // TODO(phil) maybe add createAffineScalarReplacementPass
-
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createLinalgBufferizePass());
-
+            // pm.addPass(mlir::createLoopFusionPass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after createLinalgBufferizePass"));
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createConvertLinalgToLoopsPass());
-            // // pm.addPass(mlir::createConvertLinalgToLLVMPass());
-            //
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after createConvertLinalgToLoopsPass"));
-
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createBufferLoopHoistingPass());
-            // pm.addNestedPass<mlir::FuncOp>(mlir::createLoopCoalescingPass());
-            pm.addPass(mlir::createLoopFusionPass());
-
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after affine fusion"));
+            //     "IR after affine fusion"));
             pm.addPass(mlir::createLowerAffinePass());
         }
 

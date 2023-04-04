@@ -14,26 +14,34 @@
  * limitations under the License.
  */
 
-#include "mlir/Support/LogicalResult.h"
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+
 #include <ir/daphneir/DaphneOpsEnums.cpp.inc>
+
+#include "mlir/Support/LogicalResult.h"
 #define GET_OP_CLASSES
 #include <ir/daphneir/DaphneOps.cpp.inc>
 #define GET_TYPEDEF_CLASSES
-#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
-#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
+#include <llvm/ADT/APInt.h>
+#include <llvm/ADT/APSInt.h>
+#include <llvm/ADT/BitVector.h>
 
+#include <ir/daphneir/DaphneOpsDialect.cpp.inc>
+#include <ir/daphneir/DaphneOpsTypes.cpp.inc>
+
+#include "llvm/ADT/ArrayRef.h"
 #include "mlir/IR/Builders.h"
-#include "mlir/IR/PatternMatch.h"
+#include "mlir/IR/BuiltinOps.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/DialectImplementation.h"
+#include "mlir/IR/FunctionImplementation.h"
 #include "mlir/IR/OpDefinition.h"
 #include "mlir/IR/OpImplementation.h"
 #include "mlir/IR/Operation.h"
+#include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/SymbolTable.h"
-#include "mlir/IR/BuiltinOps.h"
 #include "mlir/Interfaces/CallInterfaces.h"
 #include "mlir/Interfaces/CastInterfaces.h"
 #include "mlir/Interfaces/ControlFlowInterfaces.h"
@@ -41,10 +49,59 @@
 #include "mlir/Interfaces/SideEffectInterfaces.h"
 #include "mlir/Interfaces/VectorInterfaces.h"
 #include "mlir/Interfaces/ViewLikeInterface.h"
+#include "mlir/Transforms/InliningUtils.h"
 
-#include <llvm/ADT/BitVector.h>
-#include <llvm/ADT/APInt.h>
-#include <llvm/ADT/APSInt.h>
+struct DaphneInlinerInterface : public mlir::DialectInlinerInterface {
+  using DialectInlinerInterface::DialectInlinerInterface;
+
+  //===--------------------------------------------------------------------===//
+  // Analysis Hooks
+  //===--------------------------------------------------------------------===//
+
+  /// All call operations within toy can be inlined.
+  bool isLegalToInline(mlir::Operation *call, mlir::Operation *callable,
+                       bool wouldBeCloned) const final {
+    return true;
+  }
+
+  /// All operations within toy can be inlined.
+  bool isLegalToInline(mlir::Operation *, mlir::Region *, bool, mlir::IRMapping &) const final {
+    return true;
+  }
+
+  // All functions within toy can be inlined.
+  bool isLegalToInline(mlir::Region *, mlir::Region *, bool, mlir::IRMapping &) const final {
+    return true;
+  }
+
+  //===--------------------------------------------------------------------===//
+  // Transformation Hooks
+  //===--------------------------------------------------------------------===//
+
+  /// Handle the given inlined terminator(toy.return) by replacing it with a new
+  /// operation as necessary.
+  void handleTerminator(mlir::Operation *op,
+                        mlir::ArrayRef<mlir::Value> valuesToRepl) const final {
+    // Only "toy.return" needs to be handled here.
+    auto returnOp = mlir::dyn_cast<mlir::daphne::ReturnOp>(op);
+
+    // Replace the values directly with the return operands.
+    assert(returnOp.getNumOperands() == valuesToRepl.size());
+    for (const auto &it : llvm::enumerate(returnOp.getOperands()))
+      valuesToRepl[it.index()].replaceAllUsesWith(it.value());
+  }
+
+  /// Attempts to materialize a conversion for a type mismatch between a call
+  /// from this dialect, and a callable region. This method should generate an
+  /// operation that takes 'input' as the only operand, and produces a single
+  /// result of 'resultType'. If a conversion can not be generated, nullptr
+  /// should be returned.
+  mlir::Operation *materializeCallConversion(mlir::OpBuilder &builder, mlir::Value input,
+                                       mlir::Type resultType,
+                                       mlir::Location conversionLoc) const final {
+    return builder.create<mlir::daphne::CastOp>(conversionLoc, resultType, input);
+  }
+};
 
 void mlir::daphne::DaphneDialect::initialize()
 {
@@ -56,6 +113,7 @@ void mlir::daphne::DaphneDialect::initialize()
         #define GET_TYPEDEF_LIST
         #include <ir/daphneir/DaphneOpsTypes.cpp.inc>
     >();
+    addInterfaces<DaphneInlinerInterface>();
 }
 
 mlir::Operation *mlir::daphne::DaphneDialect::materializeConstant(OpBuilder &builder,

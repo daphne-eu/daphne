@@ -29,23 +29,8 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Transforms/DialectConversion.h"
-#include "llvm/MC/MCInstrDesc.h"
 
 using namespace mlir;
-
-
-// TODO(phil): really needed? currently no error on daphne.return
-struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
-{
-    using OpRewritePattern<daphne::ReturnOp>::OpRewritePattern;
-
-    LogicalResult matchAndRewrite(daphne::ReturnOp op,
-                                  PatternRewriter &rewriter) const final
-    {
-        rewriter.replaceOpWithNewOp<func::ReturnOp>(op, op.getOperands());
-        return success();
-    }
-};
 
 class InlineMapOpLowering
     : public mlir::OpConversionPattern<mlir::daphne::MapOp> {
@@ -66,22 +51,9 @@ class InlineMapOpLowering
 
         mlir::Value lhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
             loc, lhsMemRefType, adaptor.getArg());
-
-        // auto module = op->getParentOp()->getParentOfType<mlir::ModuleOp>();
-        // mlir::ModuleOp modOp = module.dyn_cast<mlir::ModuleOp>();
-        // LLVM::LLVMFuncOp udfFuncOp =
-        // module.lookupSymbol<LLVM::LLVMFuncOp>(op.getFunc());
-        // udfFuncOp.getArgumentTypes()[0].dump();
-        // auto region = udfFuncOp.getCallableRegion();
-
         mlir::ModuleOp module = op->getParentOfType<mlir::ModuleOp>();
         func::FuncOp udfFuncOp =
             module.lookupSymbol<func::FuncOp>(op.getFunc());
-
-        // Block *block = &udfFuncOp.getBody().getBlocks().front();
-
-        // rewriter.inlineRegionBefore(*op->getParentRegion(),
-        // &udfFuncOp.getBody().getBlocks().front());
 
         SmallVector<Value, 4> loopIvs;
 
@@ -100,52 +72,18 @@ class InlineMapOpLowering
             rewriter.eraseOp(&nested);
         }
         loopIvs.push_back(innerLoop.getInductionVar());
-        // rewriter.create<AffineYieldOp>(loc);
+        rewriter.create<AffineYieldOp>(loc);
         rewriter.setInsertionPointToStart(innerLoop.getBody());
+
         // inner loop body
         mlir::Value lhsValue = rewriter.create<AffineLoadOp>(loc, lhs, loopIvs);
-        mlir::Value res = rewriter.create<func::CallOp>(loc, udfFuncOp, ValueRange{lhsValue})->getResult(0);
+        mlir::Value res =
+            rewriter.create<func::CallOp>(loc, udfFuncOp, ValueRange{lhsValue})
+                ->getResult(0);
         rewriter.create<AffineStoreOp>(loc, res, lhs, loopIvs);
-        // rewriter.create<mlir::func::CallOp>(loc, udfFuncOp, {lhsValue});
-
-        // assuming a daphne.return at end of UDF
-        // mlir::daphne::ReturnOp retOp = block->getTerminator();
-        // block->getOperations().pop_back();
-
-        // Operation *v = &block->getOperations().back();
-
-        // rewriter.mergeBlocks(block,
-        // &innerLoop.getLoopBody().getBlocks().front(), {lhsValue});
-
-        // rewriter.setInsertionPointToEnd(innerLoop->getBlock());
-        // rewriter.create<AffineYieldOp>(loc);
-
-        rewriter.setInsertionPointToEnd(innerLoop.getBody());
-        rewriter.create<AffineYieldOp>(loc);
-
-        rewriter.setInsertionPointToEnd(outerLoop.getBody());
         rewriter.create<AffineYieldOp>(loc);
 
         rewriter.setInsertionPointAfter(outerLoop);
-
-        // mlir::Value cst_one = rewriter.create<mlir::arith::ConstantOp>(
-        //     loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(1.0));
-        // SmallVector<int64_t, 4> lowerBounds([>Rank=*/2, /*Value=<]0);
-        // SmallVector<int64_t, 4> steps([>Rank=*/2, /*Value=<]1);
-        // buildAffineLoopNest(
-        //     rewriter, op.getLoc(), lowerBounds,
-        //     {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, steps,
-        //     [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
-        //         // Call the processing function with the rewriter, the memref
-        //         // operands, and the loop induction variables. This function
-        //         // will return the value to store at the current index.
-        //         mlir::Value load =
-        //             nestedBuilder.create<AffineLoadOp>(loc, lhs, ivs);
-        //         mlir::Value add =
-        //             nestedBuilder.create<arith::AddFOp>(loc, load, cst_one);
-        //         nestedBuilder.create<AffineStoreOp>(loc, add, lhs, ivs);
-        //     });
-
         mlir::Value output =
             getDenseMatrixFromMemRef(op->getLoc(), rewriter, lhs, op.getType());
         rewriter.replaceOp(op, output);
@@ -169,14 +107,6 @@ struct MapOpLoweringPass
 }  // end anonymous namespace
 
 void MapOpLoweringPass::runOnOperation() {
-    // mlir::ModuleOp module = getOperation();
-    // module.dump();
-    // module.getBody(0)->back().walk([&](mlir::daphne::MapOp mapOp) {
-    //     mapOp.dump();
-    //     LLVM::LLVMFuncOp udfFuncOp =
-    //         module.lookupSymbol<LLVM::LLVMFuncOp>(mapOp.getFunc());
-    //     udfFuncOp->dump();
-    // });
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
     mlir::LowerToLLVMOptions llvmOptions(&getContext());
@@ -188,7 +118,7 @@ void MapOpLoweringPass::runOnOperation() {
 
     target.addIllegalOp<mlir::daphne::MapOp>();
 
-    patterns.insert<InlineMapOpLowering, ReturnOpLowering>(&getContext());
+    patterns.insert<InlineMapOpLowering>(&getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();
