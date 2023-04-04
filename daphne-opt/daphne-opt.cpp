@@ -26,6 +26,7 @@
 #include "mlir/Target/LLVMIR/Export.h"
 #include "mlir/Transforms/Passes.h"
 #include "runtime/local/context/DaphneContext.h"
+#include "mlir/Conversion/FuncToLLVM/ConvertFuncToLLVMPass.h"
 
 #include "ir/daphneir/Daphne.h"
 
@@ -95,10 +96,21 @@ int loadAndProcessMLIR(mlir::MLIRContext &context,
     // add daphne context creation pass
 
     passManager.addPass(mlir::daphne::createPrintIRPass(
-        "IR before LowerScalarOpsPass"));
-    passManager.addPass(mlir::daphne::createLowerScalarOpsPass());
-    passManager.addPass(
-        mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
+        "======== IR BEFORE ========="));
+    // passManager.addPass(mlir::createConvertFuncToLLVMPass());
+
+    passManager.addPass(mlir::daphne::createPrintIRPass(
+        "======== IR MIDDLE ========="));
+
+    passManager.addPass(mlir::createInlinerPass());
+
+    passManager.addPass(mlir::daphne::createPrintIRPass(
+        "======== IR AFTER ========="));
+    // passManager.addPass(mlir::createInlinerPass());
+
+    // passManager.addPass(mlir::daphne::createLowerScalarOpsPass());
+    // passManager.addPass(
+    //     mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
     // passManager.addPass(mlir::daphne::createLowerDenseMatrixPass());
     // module->dump();
     // passManager.addPass(mlir::createLowerAffinePass());
@@ -175,7 +187,7 @@ int main(int argc, char **argv) {
         return error;
     }
 
-    dumpLLVMIR(*module);
+    // dumpLLVMIR(*module);
     //  runJit(*module);
 
     return 0;
