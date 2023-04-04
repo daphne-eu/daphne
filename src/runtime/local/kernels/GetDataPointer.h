@@ -87,3 +87,71 @@ inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
     }
  *
  */
+
+/*
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<float>**res,
+        float *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<float>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_double__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<double>**res,
+        double *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<double>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_float(StridedMemRefType<float,2>
+ *res, const DenseMatrix<float>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<float>(input, ctx);
+    }
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_double(StridedMemRefType<double,2>
+ *res, const DenseMatrix<double>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<double>(input, ctx);
+    }
+    */
+
+
+/*
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<float>**res,
+        float *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<float>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_double__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<double>**res,
+        double *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<double>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+    void
+ _getDenseMatrixFromMemRef__DenseMatrix_int64_t__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<int64_t>**res,
+        int64_t *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<int64_t>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_float(StridedMemRefType<float,2>
+ *res, const DenseMatrix<float>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<float>(input, ctx);
+    }
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_double(StridedMemRefType<double,2>
+ *res, const DenseMatrix<double>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<double>(input, ctx);
+    }
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_int64_t(StridedMemRefType<int64_t,2>
+ *res, const DenseMatrix<int64_t>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<int64_t>(input, ctx);
+    }
+ */
