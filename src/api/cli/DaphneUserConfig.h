@@ -28,6 +28,7 @@ class DaphneLogger;
 #include <string>
 #include <memory>
 #include <map>
+#include <limits>
 
 /*
  * Container to pass around user configuration
@@ -66,6 +67,7 @@ struct DaphneUserConfig {
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;
     ALLOCATION_TYPE distributedBackEndSetup= ALLOCATION_TYPE::DIST_MPI; // default value
+    size_t max_distributed_serialization_chunk_size = std::numeric_limits<int>::max() - 1024; // 2GB (-1KB to make up for gRPC headers etc.) - which is the maximum size allowed by gRPC / MPI. TODO: Investigate what might be the optimal.
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
     // minimum considered log level (e.g., no logging below ERROR (essentially suppressing WARN, INFO, DEBUG and TRACE)

@@ -20,6 +20,7 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
+#include <memory>
 // ****************************************************************************
 // Class for async communication
 // ****************************************************************************
@@ -62,6 +63,10 @@ private:
     grpc::CompletionQueue cq_;
     DistributedContext *ctx;
 
+    std::map<std::string, AsyncClientCall*> calls;
+    std::map<std::string, std::unique_ptr<grpc::ClientAsyncWriter<Argument>>> writers;
+
+    size_t EMPTY_TAG = 0;
 public:
     DistributedGRPCCaller(DCTX(dctx)) {
         ctx = DistributedContext::get(dctx);
@@ -73,23 +78,41 @@ public:
     * 
     * @param  workerAddr An address (or channel) to make the call
     * @param  StoredInfo An StoredInfo type returned when call response is ready
-    * @param  arg Argument passed to the asynchronous call
     */
     void asyncStoreCall(
-        const std::string &workerAddr,
-        const StoredInfo &storedInfo,
-        const Argument &arg
+        const std::string &addr,
+        const StoredInfo &storedInfo
         )
     {
         AsyncClientCall *call = new AsyncClientCall;
-        call->storedInfo = storedInfo;
-
-        auto stub = ctx->stubs[workerAddr].get();
-        auto response_reader = stub->AsyncStore(&call->context_, arg, &cq_);
+        call->storedInfo = storedInfo; 
+        calls[addr] = call;
         
-        response_reader->Finish(&call->result, &call->status, (void*)call);
+        auto stub = ctx->stubs[addr].get();
+        writers[addr] = std::move(stub->AsyncStore(&call->context_, &call->result, &cq_, (void*)call));
+        void *tag;
+        bool ok;
+        cq_.Next(&tag, &ok);
+        // auto response_reader = stub->AsyncStore(&call->context_, arg, &cq_);
+        
+        // response_reader->Finish(&call->result, &call->status, (void*)call);
         callCounter++;
     }
+    
+    void sendDataStream(std::string addr, const distributed::Data &data){
+        writers[addr]->Write(data, (void*)calls[addr]);
+        void *tag;
+        bool ok;
+        cq_.Next(&tag, &ok);
+    }
+    void writesDone(){
+        for (auto &writer : writers){
+            // Use different tag, we won't be using this one.
+            writer.second->WritesDone((void*)EMPTY_TAG);
+            writer.second->Finish(&calls[writer.first]->status, (void*)calls[writer.first]);
+        }
+    }
+
     /**
     * @brief Enqueues an asynchronous Compute call to be executed.     
     * 
@@ -164,7 +187,9 @@ public:
     ResultData getNextResult() {
         void *got_tag;
         bool ok = false;
-        cq_.Next(&got_tag, &ok);
+        do {
+            cq_.Next(&got_tag, &ok);
+        } while(got_tag == (void*)EMPTY_TAG);
         callCounter--;
         AsyncClientCall *call = static_cast<AsyncClientCall*>(got_tag);    
         if (!(ok && call->status.ok())){

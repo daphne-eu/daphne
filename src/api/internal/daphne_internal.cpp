@@ -122,12 +122,19 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     static opt<ALLOCATION_TYPE> distributedBackEndSetup("dist_backend", cat(distributedBackEndSetupOptions), 
                                             desc("Choose the options for the distribution backend:"),
                                             values(
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange"),
-                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC_SYNC, "sync-gRPC", "Use remote procedure call (synchronous gRPC with threading) for internode data exchange (default)"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_MPI, "MPI", "Use message passing interface for internode data exchange (default)"),
+                                                    clEnumValN(ALLOCATION_TYPE::DIST_GRPC_SYNC, "sync-gRPC", "Use remote procedure call (synchronous gRPC with threading) for internode data exchange"),
                                                     clEnumValN(ALLOCATION_TYPE::DIST_GRPC_ASYNC, "async-gRPC", "Use remote procedure call (asynchronous gRPC) for internode data exchange")
                                                 ),
-                                            init(ALLOCATION_TYPE::DIST_GRPC_SYNC)
+                                            init(ALLOCATION_TYPE::DIST_MPI)
                                             );
+    static opt<size_t> maxDistrChunkSize("max-distr-chunk-size", cat(distributedBackEndSetupOptions), 
+                                            desc(
+                                                "Define the maximum chunk size per message for the distributed runtime (in bytes)"
+                                                "(default is close to maximum allowed ~2GB)"
+                                            ),
+                                            init(std::numeric_limits<int>::max() - 1024)
+                                        );
 
     
     // Scheduling options
@@ -385,6 +392,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         if(user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_MPI &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_SYNC &&  user_config.distributedBackEndSetup!=ALLOCATION_TYPE::DIST_GRPC_ASYNC)
             spdlog::warn("No backend has been selected. Wiil use the default 'MPI'");
     }
+    user_config.max_distributed_serialization_chunk_size = maxDistrChunkSize;    
     for (auto explain : explainArgList) {
         switch (explain) {
             case kernels:

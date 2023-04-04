@@ -65,6 +65,29 @@ TEST_CASE("Simple distributed execution test", TAG_DISTRIBUTED)
             CHECK(outLocal.str() == outDist.str());
         }
     }
+    SECTION("Distributed chunked messages"){
+        
+        auto filename = dirPath + "distributed_2.daphne";
+
+        std::stringstream outLocal;
+        std::stringstream errLocal;
+        int status = runDaphne(outLocal, errLocal, filename.c_str());
+
+        CHECK(errLocal.str() == "");
+        REQUIRE(status == StatusCode::SUCCESS);
+        // distributed run
+        auto envVar = "DISTRIBUTED_WORKERS";
+        std::stringstream outDist;
+        std::stringstream errDist;
+        setenv(envVar, distWorkerStr.c_str(), 1);
+        status = runDaphne(outDist, errDist, std::string("--max-distr-chunk-size=100").c_str(), std::string("--distributed").c_str(), std::string("--dist_backend=sync-gRPC").c_str(), filename.c_str());
+        unsetenv(envVar);
+        CHECK(errDist.str() == "");
+        REQUIRE(status == StatusCode::SUCCESS);
+
+        CHECK(outLocal.str() == outDist.str());
+    
+    }
     // SECTION("Distributed read operation"){
     //     auto filenameLocal = dirPath + "distributedRead/readLocalMat.daphne";
     //     auto filenameDistr = dirPath + "distributedRead/readDistrMat.daphne";
