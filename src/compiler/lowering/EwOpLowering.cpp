@@ -127,7 +127,7 @@ class EwModOpLowering
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
                 mlir::Value load =
                     nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
-                mlir::Value binaryOp{};
+                mlir::Value res{};
 
                 Value castedLhs =
                     this->typeConverter->materializeTargetConversion(
@@ -136,20 +136,60 @@ class EwModOpLowering
                             divisor.getType().getIntOrFloatBitWidth()),
                         ValueRange{load});
 
-                binaryOp =
-                    nestedBuilder.create<arith::AndIOp>(loc, castedLhs, rhs);
+                res = nestedBuilder.create<arith::AndIOp>(loc, castedLhs, rhs);
                 Value castedRes =
                     this->typeConverter->materializeSourceConversion(
-                        nestedBuilder, loc, divisor.getType(),
-                        ValueRange{binaryOp});
+                        nestedBuilder, loc, divisor.getType(), ValueRange{res});
 
                 nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef,
                                                     ivs);
             });
     }
 
-    void lowerEwModOp() const {
-        std::cout << "NO optimization ew mod op" << std::endl;
+    void lowerEwModOp(mlir::Value memRef, mlir::Value divisor,
+                      ArrayRef<int64_t> shape,
+                      ConversionPatternRewriter &rewriter, Location loc) const {
+        SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
+        SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
+        buildAffineLoopNest(
+            rewriter, loc, lowerBounds, shape, steps,
+            [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
+                mlir::Value load =
+                    nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+                mlir::Value res{};
+
+                // this is enough since divisor will be casted to float if
+                // matrix is float
+                if (divisor.getType().isa<mlir::FloatType>()) {
+                    res =
+                        nestedBuilder.create<arith::RemFOp>(loc, load, divisor);
+                    nestedBuilder.create<AffineStoreOp>(loc, res, memRef, ivs);
+                    return;
+                }
+
+                Value castedLhs =
+                    this->typeConverter->materializeTargetConversion(
+                        nestedBuilder, loc,
+                        nestedBuilder.getIntegerType(
+                            divisor.getType().getIntOrFloatBitWidth()),
+                        ValueRange{load});
+
+                Value castedRhs =
+                    this->typeConverter->materializeTargetConversion(
+                        nestedBuilder, loc,
+                        nestedBuilder.getIntegerType(
+                            divisor.getType().getIntOrFloatBitWidth()),
+                        ValueRange{divisor});
+
+                res = nestedBuilder.create<arith::RemSIOp>(loc, castedLhs,
+                                                           castedRhs);
+                Value castedRes =
+                    this->typeConverter->materializeSourceConversion(
+                        nestedBuilder, loc, divisor.getType(), ValueRange{res});
+
+                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef,
+                                                    ivs);
+            });
     }
 
     mlir::LogicalResult matchAndRewrite(
@@ -178,7 +218,9 @@ class EwModOpLowering
                             {lhsTensor.getNumRows(), lhsTensor.getNumCols()},
                             rewriter, op->getLoc());
         else
-            lowerEwModOp();
+            lowerEwModOp(lhs, rhs,
+                         {lhsTensor.getNumRows(), lhsTensor.getNumCols()},
+                         rewriter, op->getLoc());
 
         mlir::Value output =
             getDenseMatrixFromMemRef(op->getLoc(), rewriter, lhs, op.getType());
