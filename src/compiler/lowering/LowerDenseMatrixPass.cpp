@@ -21,13 +21,10 @@
 
 #include "compiler/utils/CompilerUtils.h"
 #include "compiler/utils/LoweringUtils.h"
-
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
-
 #include "llvm/ADT/APFloat.h"
 #include "llvm/ADT/ArrayRef.h"
-
 #include "mlir/Conversion/AffineToStandard/AffineToStandard.h"
 #include "mlir/Conversion/ArithToLLVM/ArithToLLVM.h"
 #include "mlir/Conversion/ControlFlowToLLVM/ControlFlowToLLVM.h"
@@ -139,6 +136,9 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         auto rhsCols = rhsTensor.getNumCols();
 
         auto tensorType = lhsTensor.getElementType();
+
+        // TODO(phil): if shape is unknown, e.g., row/col = -1 we can't create a
+        // MemRefType
         auto lhsMemRefType =
             mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
         auto rhsMemRefType =
@@ -160,7 +160,8 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
         // affineFillMemRef(3.0, rewriter, loc, nR, nC, op->getContext(), rhs);
 
         // Alloc output memref
-        mlir::Value outputMemRef = insertAllocAndDealloc(outputMemRefType, loc, rewriter);
+        mlir::Value outputMemRef =
+            insertAllocAndDealloc(outputMemRefType, loc, rewriter);
 
         // Fill the output MemRef
         affineFillMemRef(0.0, rewriter, loc, outputMemRefType.getShape(),
@@ -170,12 +171,12 @@ class MatMulOpLowering : public OpConversionPattern<daphne::MatMulOp> {
                      lhsMemRefType.getShape(), rhsMemRefType.getShape(),
                      op->getContext());
 
-        mlir::Value DM = getDenseMatrixFromMemRef(loc, rewriter, outputMemRef, op.getType());
+        mlir::Value DM =
+            getDenseMatrixFromMemRef(loc, rewriter, outputMemRef, op.getType());
         rewriter.replaceOp(op, DM);
         return success();
     }
 };
-
 
 class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
    public:
@@ -267,7 +268,6 @@ struct LowerDenseMatrixPass
 };
 }  // end anonymous namespace
 
-
 void LowerDenseMatrixPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
@@ -287,8 +287,7 @@ void LowerDenseMatrixPass::runOnOperation() {
     target.addIllegalOp<mlir::daphne::AllAggSumOp>();
     target.addIllegalOp<mlir::daphne::MatMulOp>();
 
-    patterns.insert<MatMulOpLowering, SumAllOpLowering>(
-        &getContext());
+    patterns.insert<MatMulOpLowering, SumAllOpLowering>(&getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();
