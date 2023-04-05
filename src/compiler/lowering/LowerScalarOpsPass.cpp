@@ -149,25 +149,18 @@ class ScalarOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
     }
 };
 
-using AddOpLowering =
-    ScalarOpLowering<mlir::daphne::EwAddOp, mlir::arith::AddIOp,
-                     mlir::arith::AddFOp>;
-// using SubOpLowering =
-// ScalarOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp,
-// mlir::arith::SubFOp>; using MulOpLowering =
-// ScalarOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp,
-// mlir::arith::MulFOp>; using DivOpLowering =
-// ScalarOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivFOp,
-// mlir::arith::DivFOp>;
+// clang-format off
+using AddOpLowering = ScalarOpLowering<mlir::daphne::EwAddOp, mlir::arith::AddIOp, mlir::arith::AddFOp>;
+using SubOpLowering = ScalarOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp, mlir::arith::SubFOp>;
+using MulOpLowering = ScalarOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp, mlir::arith::MulFOp>;
+//using DivOpLowering = ScalarOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivFOp, mlir::arith::DivFOp>;
 // // // TODO(phil): IPowIOp has been added to MathOps.td with 08b4cf3 Aug 10
-// using PowOpLowering = ScalarOpLowering<mlir::daphne::EwPowOp,
-// mlir::math::PowFOp, mlir::math::PowFOp>;
+// using PowOpLowering = ScalarOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp, mlir::math::PowFOp>;
 // // // TODO(phil): AbsIOp  has been added to MathOps.td with 7d9fc95 Aug 08
-// using AbsOpLowering = ScalarOpLowering<mlir::daphne::EwAbsOp,
-// mlir::math::AbsFOp, mlir::math::AbsFOp>;
+// using AbsOpLowering = ScalarOpLowering<mlir::daphne::EwAbsOp, mlir::math::AbsFOp, mlir::math::AbsFOp>;
 // // // TODO(phil)
-// using LnOpLowering = ScalarOpLowering<mlir::daphne::EwLnOp,
-// mlir::math::LogOp, mlir::math::LogOp>;
+// using LnOpLowering = ScalarOpLowering<mlir::daphne::EwLnOp, mlir::math::LogOp, mlir::math::LogOp>;
+// clang-format on
 
 namespace {
 struct LowerScalarOpsPass
@@ -184,7 +177,6 @@ struct LowerScalarOpsPass
 };
 }  // end anonymous namespace
 
-// TODO(phil): move to LoweringUtils
 void LowerScalarOpsPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());
@@ -202,14 +194,10 @@ void LowerScalarOpsPass::runOnOperation() {
         .addLegalDialect<mlir::arith::ArithDialect, mlir::memref::MemRefDialect,
                          mlir::AffineDialect, mlir::LLVM::LLVMDialect,
                          mlir::daphne::DaphneDialect, mlir::BuiltinDialect>();
-
     target.addIllegalOp<mlir::daphne::EwAddOp, mlir::daphne::EwSubOp,
                         mlir::daphne::EwMulOp>();
-
-    // patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering,
-    // DivOpLowering,
-    //              PowOpLowering, AbsOpLowering>(typeConverter, &getContext());
-    patterns.insert<AddOpLowering>(typeConverter, &getContext());
+    patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering>(typeConverter,
+                                                                 &getContext());
 
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns))))
