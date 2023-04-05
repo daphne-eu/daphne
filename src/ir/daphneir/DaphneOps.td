@@ -90,6 +90,7 @@ def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
     let description = [{ Constructs a DenseMatrix given a rank 2 StridedMemRefType. }];
 
     /* let arguments = (ins AnyMemRef:$arg); */
+    let hasCanonicalizeMethod = 1;
     let arguments = (ins Size:$base, Size:$offset, Size:$size0, Size:$size1, Size:$stride0, Size:$stride1);
     let results = (outs MatrixOrU:$res);
 }
@@ -97,7 +98,7 @@ def Daphne_GetDenseMatrixFromMemRef : Daphne_Op<"getDenseMatrixFromMemRef"> {
 def Daphne_GetMemRefDenseMatrix : Daphne_Op<"getMemRefDenseMatrix", [Pure]> {
     let summary = "Return a StridedMemRefType.";
     let description = [{ Constructs a StridedMemRefType with rank 2 from a DenseMatrix* with already allocated memory. }];
-
+    let hasCanonicalizeMethod = 1;
     let arguments = (ins DenseMatrix_T:$arg);
     let results = (outs AnyMemRef:$output);
 }

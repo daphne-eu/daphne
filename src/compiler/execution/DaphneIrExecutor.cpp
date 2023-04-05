@@ -134,18 +134,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
         }
 #endif
-        if (userConfig_.lower_scalar) {
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR before LowerScalarOpsPass"));
-            pm.addPass(mlir::daphne::createLowerScalarOpsPass());
-            pm.addPass(
-                mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
-        }
 
         if (userConfig_.codegen) {
-            if (userConfig_.explain_codegen)
-                pm.addPass(mlir::daphne::createPrintIRPass(
-                    "IR before LowerDenseMatrixPass"));
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
@@ -162,6 +152,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR after inlining"));
 
+            pm.addPass(mlir::daphne::createLowerScalarOpsPass());
+            pm.addPass(
+                mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
             // pm.addPass(mlir::createConvertFuncToLLVMPass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR before EwOpLoweringPass"));
@@ -172,9 +165,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after EwOpLoweringPass"));
 
-            // pm.addPass(mlir::createLoopFusionPass());
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after affine fusion"));
+            pm.addPass(mlir::createCanonicalizerPass());
+            //pm.addPass(mlir::createCSEPass());
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
+            pm.addPass(mlir::daphne::createPrintIRPass(
+                "IR after affine fusion"));
             pm.addPass(mlir::createLowerAffinePass());
         }
 
