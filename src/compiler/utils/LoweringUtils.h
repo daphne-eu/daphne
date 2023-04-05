@@ -26,6 +26,7 @@
 #include "mlir/IR/Location.h"
 #include "mlir/IR/Visitors.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "mlir/IR/Builders.h"
 
 mlir::Value insertAllocAndDealloc(mlir::MemRefType type, mlir::Location loc,
                                   mlir::PatternRewriter &rewriter);
@@ -43,3 +44,15 @@ void affineFillMemRef(double value, mlir::ConversionPatternRewriter &rewriter,
 mlir::Value getDenseMatrixFromMemRef(mlir::Location,
                                      mlir::ConversionPatternRewriter&,
                                      mlir::Value memRef, mlir::Type);
+
+llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                                 mlir::ValueRange inputs,
+                                                 mlir::Location loc);
+
+llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                               mlir::ValueRange inputs,
+                                               mlir::Location loc);
+
+mlir::Type convertFloat(mlir::FloatType floatType);
+
+mlir::Type convertInteger(mlir::IntegerType intType);

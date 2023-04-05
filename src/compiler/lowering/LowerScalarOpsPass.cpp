@@ -185,44 +185,6 @@ struct LowerScalarOpsPass
 }  // end anonymous namespace
 
 // TODO(phil): move to LoweringUtils
-Type convertFloat(mlir::FloatType floatType) {
-    return IntegerType::get(floatType.getContext(),
-                            floatType.getIntOrFloatBitWidth());
-}
-
-Type convertInteger(mlir::IntegerType intType) {
-    return IntegerType::get(intType.getContext(),
-                            intType.getIntOrFloatBitWidth());
-}
-
-llvm::Optional<Value> materializeCastFromIllegal(OpBuilder &builder, Type type,
-                                                 ValueRange inputs,
-                                                 Location loc) {
-    Type fromType = getElementTypeOrSelf(inputs[0].getType());
-    Type toType = getElementTypeOrSelf(type);
-
-    if ((!fromType.isSignedInteger() && !fromType.isUnsignedInteger()) ||
-        !toType.isSignlessInteger())
-        return std::nullopt;
-    // Use unrealized conversion casts to do signful->signless conversions.
-    return builder.create<UnrealizedConversionCastOp>(loc, type, inputs[0])
-        ->getResult(0);
-}
-
-llvm::Optional<Value> materializeCastToIllegal(OpBuilder &builder, Type type,
-                                               ValueRange inputs,
-                                               Location loc) {
-    Type fromType = getElementTypeOrSelf(inputs[0].getType());
-    Type toType = getElementTypeOrSelf(type);
-
-    if (!fromType.isSignlessInteger() ||
-        (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
-        return std::nullopt;
-    // Use unrealized conversion casts to do signless->signful conversions.
-    return builder.create<UnrealizedConversionCastOp>(loc, type, inputs[0])
-        ->getResult(0);
-}
-
 void LowerScalarOpsPass::runOnOperation() {
     mlir::ConversionTarget target(getContext());
     mlir::RewritePatternSet patterns(&getContext());

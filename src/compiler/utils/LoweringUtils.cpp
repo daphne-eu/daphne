@@ -16,6 +16,7 @@
 
 #include "LoweringUtils.h"
 #include "ir/daphneir/Daphne.h"
+#include "mlir/IR/TypeUtilities.h"
 
 /// Insert an allocation and deallocation for the given MemRefType.
 mlir::Value insertAllocAndDealloc(mlir::MemRefType type, mlir::Location loc,
@@ -122,3 +123,42 @@ mlir::Value getDenseMatrixFromMemRef(mlir::Location loc,
         loc, type, alignedPtr, offset, sizes[0], sizes[1], strides[0],
         strides[1]);
 }
+
+mlir::Type convertFloat(mlir::FloatType floatType) {
+    return mlir::IntegerType::get(floatType.getContext(),
+                            floatType.getIntOrFloatBitWidth());
+}
+
+mlir::Type convertInteger(mlir::IntegerType intType) {
+    return mlir::IntegerType::get(intType.getContext(),
+                            intType.getIntOrFloatBitWidth());
+}
+
+llvm::Optional<mlir::Value> materializeCastFromIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                                 mlir::ValueRange inputs,
+                                                 mlir::Location loc) {
+    mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
+    mlir::Type toType = getElementTypeOrSelf(type);
+
+    if ((!fromType.isSignedInteger() && !fromType.isUnsignedInteger()) ||
+        !toType.isSignlessInteger())
+        return std::nullopt;
+    // Use unrealized conversion casts to do signful->signless conversions.
+    return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
+        ->getResult(0);
+}
+
+llvm::Optional<mlir::Value> materializeCastToIllegal(mlir::OpBuilder &builder, mlir::Type type,
+                                               mlir::ValueRange inputs,
+                                               mlir::Location loc) {
+    mlir::Type fromType = getElementTypeOrSelf(inputs[0].getType());
+    mlir::Type toType = getElementTypeOrSelf(type);
+
+    if (!fromType.isSignlessInteger() ||
+        (!toType.isSignedInteger() && !toType.isUnsignedInteger()))
+        return std::nullopt;
+    // Use unrealized conversion casts to do signless->signful conversions.
+    return builder.create<mlir::UnrealizedConversionCastOp>(loc, type, inputs[0])
+        ->getResult(0);
+}
+
