@@ -48,35 +48,6 @@ using namespace mlir;
 // be combined into a single variadic result.
 const std::string ATTR_HASVARIADICRESULTS = "hasVariadicResults";
 
-#if 0
-// At the moment, all of these operations are lowered to kernel calls.
-template <typename BinaryOp, typename ReplIOp, typename ReplFOp>
-struct BinaryOpLowering : public OpConversionPattern<BinaryOp>
-{
-    using OpConversionPattern<BinaryOp>::OpConversionPattern;
-
-    LogicalResult
-    matchAndRewrite(BinaryOp op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override
-    {
-        Type type = op.getType();
-        if (type.isa<IntegerType>()) {
-            rewriter.replaceOpWithNewOp<ReplIOp>(op.getOperation(), adaptor.getOperands());
-        }
-        else if (type.isa<FloatType>()) {
-            rewriter.replaceOpWithNewOp<ReplFOp>(op.getOperation(), adaptor.getOperands());
-        }
-        else {
-            return failure();
-        }
-        return success();
-    }
-};
-using AddOpLowering = BinaryOpLowering<daphne::AddOp, AddIOp, AddFOp>;
-using SubOpLowering = BinaryOpLowering<daphne::SubOp, SubIOp, SubFOp>;
-using MulOpLowering = BinaryOpLowering<daphne::MulOp, MulIOp, MulFOp>;
-#endif
-
 struct ReturnOpLowering : public OpRewritePattern<daphne::ReturnOp>
 {
     using OpRewritePattern<daphne::ReturnOp>::OpRewritePattern;
