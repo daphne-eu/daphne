@@ -170,8 +170,8 @@ TEST_CASE("Frame sub-frame for empty source frame works properly", TAG_DATASTRUC
     double * colOrig2 = fOrig->getColumn<double>(2)->getValues();
     double * colSub0 = fSub->getColumn<double>(0)->getValues();
     int8_t * colSub1 = fSub->getColumn<int8_t>(1)->getValues();
-    CHECK((colSub0 >= colOrig2 && colSub0 < colOrig2 + numRowsOrig));
-    CHECK((colSub1 >= colOrig0 && colSub1 < colOrig0 + numRowsOrig));
+    CHECK(colSub0 == colOrig2);
+    CHECK(colSub1 == colOrig0);
     
     // Freeing both frames does not result in double-free errors.
     SECTION("Freeing the original frame first is fine") {
