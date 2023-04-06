@@ -35,7 +35,7 @@ F = 64;
 seed = 42;
 
 t_start = now();
-X = rand(N, Isize*Isize*C, 0, 256.0, 1.0, seed);
+X = rand(N, Isize*Isize*C, 0.0, 256.0, 1.0, seed);
 # print("X:",0); print(X);
 # print("X dims: ",0) ;print(nrow(X),0);print("x",0);print(ncol(X));
 
@@ -49,8 +49,8 @@ W = rand(F, C*Fsize*Fsize, 0.0, 1.0, 1.0, seed);
 b = rand(1, F, 0.0, 1.0, 1.0, seed);
 
 gamma = rand(F, 1, 1.0, 1.0, 1.0, seed);
-beta = rand(F, 1, 0.0, 0.0, 1.0, seed);
-ema_mean= rand(F, 1, 0.0, 0.0, 1.0, seed);
+beta = fill(0.0, F, 1);
+ema_mean = fill(0.0, F, 1);
 ema_var = rand(F, 1, 1.0, 1.0, 1.0, seed);
 eps = 0.00001;
 
