@@ -17,6 +17,7 @@
 #include "MetaDataObject.h"
 
 DataPlacement* MetaDataObject::addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r) {
+    std::lock_guard<std::mutex> guard(dp_mutex);
     data_placements[static_cast<size_t>(allocInfo->getType())].emplace_back(std::make_unique<DataPlacement>(
             allocInfo->clone(), r == nullptr ? nullptr : r->clone()));
     return data_placements[static_cast<size_t>(allocInfo->getType())].back().get();
@@ -28,6 +29,7 @@ auto MetaDataObject::getDataPlacementByType(ALLOCATION_TYPE type) const
 }
 
 DataPlacement *MetaDataObject::getDataPlacementByLocation(std::string location) const {
+    std::lock_guard<std::mutex> guard(dp_mutex);
     for (const auto &_omdType: data_placements) {
         for (auto &_omd: _omdType) {
             if(_omd->allocation->getLocation() == location)
@@ -37,7 +39,8 @@ DataPlacement *MetaDataObject::getDataPlacementByLocation(std::string location) 
     return nullptr;
 }
 
-void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {        
+void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {
+    std::lock_guard<std::mutex> guard(dp_mutex);
     for(auto &_omdType : data_placements) {
         for(auto& _omd : _omdType) {
             if(_omd->dp_id == id){
@@ -49,6 +52,7 @@ void MetaDataObject::updateRangeDataPlacementByID(size_t id, Range *r) {
 }
 
 DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
+    std::lock_guard<std::mutex> guard(dp_mutex);
     for (const auto &_omdType: data_placements) {
         for (auto &_omd: _omdType) {
             if(_omd->dp_id == id)
@@ -59,6 +63,7 @@ DataPlacement *MetaDataObject::getDataPlacementByID(size_t id) const {
 }
 
 const DataPlacement* MetaDataObject::findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const {
+    std::lock_guard<std::mutex> guard(dp_mutex);
     auto res = getDataPlacementByType(alloc_desc->getType());
     if(res->empty())
         return nullptr;
@@ -76,18 +81,22 @@ const DataPlacement* MetaDataObject::findDataPlacementByType(const IAllocationDe
 }
 
 bool MetaDataObject::isLatestVersion(size_t placement) const {
+    std::lock_guard<std::mutex> guard(lv_mutex);
     return (std::find(latest_version.begin(), latest_version.end(), placement) != latest_version.end());
 }
 
 void MetaDataObject::addLatest(size_t id) {
+    std::lock_guard<std::mutex> guard(lv_mutex);
     latest_version.push_back(id);
 }
 
 void MetaDataObject::setLatest(size_t id) {
+    std::lock_guard<std::mutex> guard(lv_mutex);
     latest_version.clear();
     latest_version.push_back(id);
 }
 
 auto MetaDataObject::getLatest() const -> std::vector<size_t> {
+    std::lock_guard<std::mutex> guard(lv_mutex);
     return latest_version;
 }

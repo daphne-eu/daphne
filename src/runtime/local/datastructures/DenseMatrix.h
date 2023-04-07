@@ -181,7 +181,7 @@ public:
     {
         auto[isLatest, id, ptr] = const_cast<DenseMatrix<ValueType> *>(this)->getValuesInternal(alloc_desc, range);
         if(!isLatest)
-            this->mdo.addLatest(id);
+            this->mdo->addLatest(id);
         return ptr;
     }
 
@@ -200,7 +200,7 @@ public:
     ValueType* getValues(IAllocationDescriptor* alloc_desc = nullptr, const Range* range = nullptr) {
         auto [isLatest, id, ptr] = const_cast<DenseMatrix<ValueType>*>(this)->getValuesInternal(alloc_desc, range);
         if(!isLatest)
-            this->mdo.setLatest(id);
+            this->mdo->setLatest(id);
         return ptr;
     }
     

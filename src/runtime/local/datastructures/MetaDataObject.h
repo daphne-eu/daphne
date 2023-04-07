@@ -20,8 +20,9 @@
 #include "Range.h"
 
 #include <algorithm>
-#include <memory>
 #include <array>
+#include <memory>
+#include <mutex>
 
 /**
  * @brief The MetaDataObject class contains meta data of a data structure (Frame, Matrix)
@@ -34,6 +35,8 @@ class MetaDataObject {
     std::array<std::vector<std::unique_ptr<DataPlacement>>,
             static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)> data_placements;
     std::vector<size_t> latest_version;
+    mutable std::mutex dp_mutex;
+    mutable std::mutex lv_mutex;
 
 public:
     DataPlacement *addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r = nullptr);

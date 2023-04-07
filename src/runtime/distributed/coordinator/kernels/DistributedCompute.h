@@ -122,8 +122,8 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                 remainingSize-=partitionSize;
                 std::string addr= std::to_string(rank+1);
                 // If dp already exists for this worker, update the range and data
-                if (auto dp = (*res[i])->getMetaDataObject().getDataPlacementByLocation(addr)) { 
-                    (*res[i])->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                if (auto dp = (*res[i])->getMetaDataObject()->getDataPlacementByLocation(addr)) { 
+                    (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
                     dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);                    
                 }
                 else { // else create new dp entry   
@@ -131,7 +131,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
                                             rank+1,
                                             dctx,
                                             data);                                    
-                    ((*res[i]))->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
+                    ((*res[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);                    
                 } 
             }
         }
@@ -144,7 +144,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_MPI, DTRes, const Structure>
             std::string addr= std::to_string(rank+1);
             for (size_t i = 0; i < numOutputs; i++)
             {
-                auto dp = args[i]->getMetaDataObject().getDataPlacementByLocation(addr);
+                auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
                 auto distrData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
                 distributed::StoredData protoData;
                 //std::cout<<"identifier " << distrData.identifier<<std::endl;
@@ -237,8 +237,8 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                 }
 
                 // If dp already exists for this worker, update the range and data
-                if (auto dp = (*res[i])->getMetaDataObject().getDataPlacementByLocation(addr)) { 
-                    (*res[i])->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                if (auto dp = (*res[i])->getMetaDataObject()->getDataPlacementByLocation(addr)) { 
+                    (*res[i])->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
                     dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);                    
                 }
                 else { // else create new dp entry   
@@ -246,13 +246,13 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
                                             dctx,
                                             addr,
                                             data);                                    
-                    ((*res[i]))->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
+                    ((*res[i]))->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);                    
                 } 
             }
 
             distributed::Task task;
             for (size_t i = 0; i < numInputs; i++){
-                auto dp = args[i]->getMetaDataObject().getDataPlacementByLocation(addr);
+                auto dp = args[i]->getMetaDataObject()->getDataPlacementByLocation(addr);
                 auto distrData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
 
                 distributed::StoredData protoData;
@@ -279,7 +279,7 @@ struct DistributedCompute<ALLOCATION_TYPE::DIST_GRPC, DTRes, const Structure>
             
             for (int o = 0; o < computeResult.outputs_size(); o++){            
                 auto resMat = *res[o];
-                auto dp = resMat->getMetaDataObject().getDataPlacementByLocation(addr);
+                auto dp = resMat->getMetaDataObject()->getDataPlacementByLocation(addr);
 
                 auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
                 data.identifier = computeResult.outputs()[o].stored().identifier();
