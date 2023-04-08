@@ -64,13 +64,13 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
                          ::distributed::StoredData *response) 
 {
     StoredInfo storedInfo;
-    // Zero copy buffer
-    const std::vector<char> buffer(static_cast<const char*>(request->bytes().data()), static_cast<const char*>(request->bytes().data()) + request->bytes().size()); 
+    auto buffer = request->bytes().data();
+    auto len = request->bytes().size();
     if (DF_Dtype(buffer) == DF_data_t::Value_t) {
         double val = DaphneSerializer<double>::deserialize(buffer);
         storedInfo = WorkerImpl::Store(&val);
     } else {
-        Structure *mat = DF_deserialize(buffer);
+        Structure *mat = DF_deserialize(buffer, len);
         storedInfo = WorkerImpl::Store(mat);
     }
     response->set_identifier(storedInfo.identifier);
