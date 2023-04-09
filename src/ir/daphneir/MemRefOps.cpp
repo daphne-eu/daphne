@@ -19,19 +19,17 @@ mlir::LogicalResult mlir::daphne::GetMemRefDenseMatrix::canonicalize(
     op->dump();
 #endif
 
-    mlir::Operation *prevNode = op->getPrevNode();
+    mlir::Operation *dmNode = op->getOperand(0).getDefiningOp();
 
-    while (!llvm::isa<mlir::daphne::GetDenseMatrixFromMemRef>(prevNode)) {
-        prevNode = prevNode->getPrevNode();
-        if (!prevNode) return failure();
-    }
+    if (!llvm::isa<mlir::daphne::GetDenseMatrixFromMemRef>(dmNode))
+        return failure();
 
     mlir::Operation *originalMemRefOp =
-        prevNode->getPrevNode()->getOperand(0).getDefiningOp();
+        dmNode->getPrevNode()->getOperand(0).getDefiningOp();
     op.replaceAllUsesWith(originalMemRefOp);
 
     rewriter.eraseOp(op);
-    if (prevNode->getUsers().empty()) rewriter.eraseOp(prevNode);
+    if (dmNode->getUsers().empty()) rewriter.eraseOp(dmNode);
     return mlir::success();
 }
 
