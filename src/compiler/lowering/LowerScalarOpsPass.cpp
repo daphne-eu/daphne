@@ -28,11 +28,11 @@
 using namespace mlir;
 
 template <class BinaryOp, class IOp, class FOp>
-class ScalarOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
+class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
     using OpAdaptor = typename mlir::OpConversionPattern<BinaryOp>::OpAdaptor;
 
    public:
-    ScalarOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
+    BinaryOpLowering(mlir::TypeConverter &typeConverter, mlir::MLIRContext *ctx)
         : mlir::OpConversionPattern<BinaryOp>(typeConverter, ctx) {
         this->setDebugName("ScalarOpLowering");
     }
@@ -98,6 +98,8 @@ class ScalarOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
             rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
                 op->getLoc(), lhsMemRefType, adaptor.getLhs());
 
+        mlir::Value outputMemRef =
+            insertAllocAndDealloc(lhsMemRefType, op->getLoc(), rewriter);
         SmallVector<int64_t, 4> lowerBounds(/*Rank=*/2, /*Value=*/0);
         SmallVector<int64_t, 4> steps(/*Rank=*/2, /*Value=*/1);
         buildAffineLoopNest(
@@ -115,7 +117,7 @@ class ScalarOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                     binaryOp =
                         nestedBuilder.create<FOp>(loc, load, adaptor.getRhs());
 
-                    nestedBuilder.create<AffineStoreOp>(loc, binaryOp, memRef,
+                    nestedBuilder.create<AffineStoreOp>(loc, binaryOp, outputMemRef,
                                                         ivs);
                     return;
                 }
@@ -139,20 +141,21 @@ class ScalarOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
                     this->typeConverter->materializeSourceConversion(
                         nestedBuilder, loc, adaptor.getRhs().getType(),
                         ValueRange{binaryOp});
-                nestedBuilder.create<AffineStoreOp>(loc, castedRes, memRef,
+                nestedBuilder.create<AffineStoreOp>(loc, castedRes, outputMemRef,
                                                     ivs);
             });
         mlir::Value output = getDenseMatrixFromMemRef(op->getLoc(), rewriter,
-                                                      memRef, op.getType());
+                                                      outputMemRef, op.getType());
         rewriter.replaceOp(op, output);
         return mlir::success();
     }
 };
 
 // clang-format off
-using AddOpLowering = ScalarOpLowering<mlir::daphne::EwAddOp, mlir::arith::AddIOp, mlir::arith::AddFOp>;
-using SubOpLowering = ScalarOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp, mlir::arith::SubFOp>;
-using MulOpLowering = ScalarOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp, mlir::arith::MulFOp>;
+using AddOpLowering = BinaryOpLowering<mlir::daphne::EwAddOp, mlir::arith::AddIOp, mlir::arith::AddFOp>;
+using SubOpLowering = BinaryOpLowering<mlir::daphne::EwSubOp, mlir::arith::SubIOp, mlir::arith::SubFOp>;
+using MulOpLowering = BinaryOpLowering<mlir::daphne::EwMulOp, mlir::arith::MulIOp, mlir::arith::MulFOp>;
+// using SqrtOpLowering = BinaryOpLowering<mlir::daphne::EwSqrtOp, mlir::math::SqrtOp, mlir::math::SqrtOp>;
 //using DivOpLowering = ScalarOpLowering<mlir::daphne::EwDivOp, mlir::arith::DivFOp, mlir::arith::DivFOp>;
 // // // TODO(phil): IPowIOp has been added to MathOps.td with 08b4cf3 Aug 10
 // using PowOpLowering = ScalarOpLowering<mlir::daphne::EwPowOp, mlir::math::PowFOp, mlir::math::PowFOp>;
