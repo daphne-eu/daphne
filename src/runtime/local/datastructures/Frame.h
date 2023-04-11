@@ -264,9 +264,13 @@ class Frame : public Structure {
             Structure(rowUpperExcl - rowLowerIncl, numCols)
     {
         assert(src && "src must not be null");
-        assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
-        assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-        assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+        
+        // Only check conditions, if input Frame has not zero rows and the expected output has not zero rows.
+        if(!(rowLowerIncl == rowUpperExcl && rowLowerIncl == 0 && src->numRows == 0)) {
+            assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+            assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
+            assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+        }
         for(size_t i = 0; i < numCols; i++)
             assert((colIdxs[i] < src->numCols) && "some colIdx is out of bounds");
         
