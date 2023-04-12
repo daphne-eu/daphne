@@ -18,7 +18,7 @@
 #include "mlir/Transforms/DialectConversion.h"
 #include "llvm/Support/Debug.h"
 
-#define DEBUG_TYPE "mod-opt"
+#define DEBUG_TYPE "dm-opt"
 
 using namespace mlir;
 
