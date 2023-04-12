@@ -29,6 +29,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
     WhileLoopInvariantCodeMotionPass.cpp
+    DenseMatrixTransformPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
@@ -37,6 +38,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     LINK_COMPONENTS
     Core
 )
+
 target_link_libraries(MLIRDaphneTransforms PUBLIC
     CompilerUtils
     MLIRSCFToControlFlow

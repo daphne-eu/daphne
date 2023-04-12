@@ -93,6 +93,7 @@ class EwMulOpLowering
     }
 };
 
+// TODO(phil): x % 2^n == x < 0 ? x | ~(2n - 1) : x & (2n - 1)
 // TODO(phil): split into files EwModOptimization.cpp
 class EwModOpLowering
     : public mlir::OpConversionPattern<mlir::daphne::EwModOp> {
@@ -264,7 +265,7 @@ void EwOpLoweringPass::runOnOperation() {
     target.addLegalDialect<mlir::BuiltinDialect>();
     target.addLegalDialect<mlir::daphne::DaphneDialect>();
 
-    target.addIllegalOp<mlir::daphne::EwModOp, mlir::daphne::EwAddOp,
+    target.addIllegalOp<mlir::daphne::EwModOp,
                         mlir::daphne::EwMulOp>();
 
     patterns.insert<EwModOpLowering, EwMulOpLowering>(typeConverter,

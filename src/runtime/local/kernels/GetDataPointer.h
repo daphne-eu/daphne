@@ -118,6 +118,9 @@ inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
 
 
 /*
+    void _ewBitwiseAnd__DenseMatrix_uint64_t__DenseMatrix_uint64_t__uint64_t(DenseMatrix<uint64_t> ** res, const DenseMatrix<uint64_t> * lhs, uint64_t rhs, DCTX(ctx)) {
+        ewBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t>(BinaryOpCode::BITWISE_AND, *res, lhs, rhs, ctx);
+    }
     void
  _getDenseMatrixFromMemRef__DenseMatrix_float__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<float>**res,
         float *basePtr, size_t offset, size_t size0, size_t size1,
@@ -140,6 +143,13 @@ inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
  stride0, stride1, ctx);
     }
     void
+ _getDenseMatrixFromMemRef__DenseMatrix_uint64_t__size_t__size_t__size_t__size_t__size_t__size_t(DenseMatrix<uint64_t>**res,
+        uint64_t *basePtr, size_t offset, size_t size0, size_t size1,
+        size_t stride0, size_t stride1, DaphneContext *ctx) {
+        convertMemRefToDenseMatrix<uint64_t>(*res, basePtr, offset, size0, size1,
+ stride0, stride1, ctx);
+    }
+    void
  _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_float(StridedMemRefType<float,2>
  *res, const DenseMatrix<float>* input, DCTX(ctx)) { *res =
  convertDenseMatrixToMemRef<float>(input, ctx);
@@ -153,5 +163,10 @@ inline StridedMemRefType<T, 2> convertDenseMatrixToMemRef(
  _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_int64_t(StridedMemRefType<int64_t,2>
  *res, const DenseMatrix<int64_t>* input, DCTX(ctx)) { *res =
  convertDenseMatrixToMemRef<int64_t>(input, ctx);
+    }
+    void
+ _getMemRefDenseMatrix__StridedMemRefType___DenseMatrix_uint64_t(StridedMemRefType<uint64_t,2>
+ *res, const DenseMatrix<uint64_t>* input, DCTX(ctx)) { *res =
+ convertDenseMatrixToMemRef<uint64_t>(input, ctx);
     }
  */

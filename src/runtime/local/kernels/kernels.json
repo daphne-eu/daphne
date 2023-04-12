@@ -855,7 +855,7 @@
                     ["Frame", "Frame", "double"],
                     ["Frame", "Frame", "int64_t"]
                 ],
-                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "MOD"]
+                "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "MOD", "BITWISE_AND"]
             }
         ]
     },
@@ -901,7 +901,7 @@
             ["uint32_t", "uint32_t", "uint32_t"],
             ["size_t", "size_t", "size_t"]
         ],
-        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+        "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR", "BITWISE_AND"]
     },
     {
         "kernelTemplate": {
@@ -992,6 +992,7 @@
             [["DenseMatrix", "float"], "float"],
             [["DenseMatrix", "double"], "double"],
             [["DenseMatrix", "int64_t"], "int64_t"],
+            [["DenseMatrix", "uint64_t"], "uint64_t"],
             [["DenseMatrix", "uint8_t"], "uint8_t"]
         ]
     },
