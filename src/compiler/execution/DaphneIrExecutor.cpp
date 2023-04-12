@@ -138,7 +138,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if (userConfig_.codegen) {
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR beofre DM opt"));
-            pm.addPass(mlir::daphne::createDenseMatrixOptimizationPass());
+            pm.addPass(mlir::daphne::createDenseMatrixTransformPass());
 
             pm.addPass(mlir::daphne::createPrintIRPass(
                 "IR beofre LowerDenseMatrixPass"));

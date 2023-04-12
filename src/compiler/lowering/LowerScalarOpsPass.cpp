@@ -20,6 +20,7 @@
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/IR/TypeUtilities.h"
 #include "mlir/IR/UseDefLists.h"
+#include "mlir/IR/Value.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Support/LLVM.h"
 #include "mlir/Support/LogicalResult.h"
@@ -94,9 +95,20 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
         auto lhsMemRefType =
             mlir::MemRefType::get({lhsRows, lhsCols}, tensorType);
 
-        mlir::Value memRef =
+        mlir::Type elementType{};
+        mlir::Value memRefLhs =
             rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
                 op->getLoc(), lhsMemRefType, adaptor.getLhs());
+        mlir::Value memRefRhs{};
+        bool isMatrixMatrix = rhs.getType().template isa<mlir::daphne::MatrixType>();
+
+        if (isMatrixMatrix) {
+            memRefRhs = rewriter.create<mlir::daphne::GetMemRefDenseMatrix>(
+                op->getLoc(), lhsMemRefType, adaptor.getRhs());
+            elementType = lhsMemRefType.getElementType();
+        } else {
+            elementType = rhs.getType();
+        }
 
         mlir::Value outputMemRef =
             insertAllocAndDealloc(lhsMemRefType, op->getLoc(), rewriter);
@@ -106,43 +118,59 @@ class BinaryOpLowering final : public mlir::OpConversionPattern<BinaryOp> {
             rewriter, op.getLoc(), lowerBounds,
             {lhsTensor.getNumRows(), lhsTensor.getNumCols()}, steps,
             [&](OpBuilder &nestedBuilder, Location loc, ValueRange ivs) {
-                mlir::Value load =
-                    nestedBuilder.create<AffineLoadOp>(loc, memRef, ivs);
+                mlir::Value loadLhs =
+                    nestedBuilder.create<AffineLoadOp>(loc, memRefLhs, ivs);
                 mlir::Value binaryOp{};
 
                 // TODO(phil): cast only LHS/RHS in case only one of them is not
                 // signless/float, currently expects LHS and RHS to be of same
                 // type
-                if (rhs.getType().template isa<mlir::FloatType>()) {
+                if (adaptor.getRhs().getType().template isa<mlir::FloatType>()) {
                     binaryOp =
-                        nestedBuilder.create<FOp>(loc, load, adaptor.getRhs());
+                        nestedBuilder.create<FOp>(loc, loadLhs, adaptor.getRhs());
 
                     nestedBuilder.create<AffineStoreOp>(loc, binaryOp, outputMemRef,
                                                         ivs);
                     return;
                 }
 
-                Value castedLhs =
-                    this->typeConverter->materializeTargetConversion(
-                        nestedBuilder, loc,
-                        nestedBuilder.getIntegerType(
-                            adaptor.getRhs().getType().getIntOrFloatBitWidth()),
-                        ValueRange{load});
+                mlir::Value rhs{};
+                if (isMatrixMatrix)
+                    rhs = nestedBuilder.create<AffineLoadOp>(loc, memRefRhs, ivs);
+                else
+                    rhs = adaptor.getRhs();
 
-                Value castedRhs =
-                    this->typeConverter->materializeTargetConversion(
-                        nestedBuilder, loc,
-                        nestedBuilder.getIntegerType(
-                            adaptor.getRhs().getType().getIntOrFloatBitWidth()),
-                        ValueRange{adaptor.getRhs()});
+                if (elementType.isInteger(
+                        // is integer
+                        elementType.getIntOrFloatBitWidth())) {
+                    Value castedLhs =
+                        this->typeConverter->materializeTargetConversion(
+                            nestedBuilder, loc,
+                            nestedBuilder.getIntegerType(
+                                lhsMemRefType.getElementTypeBitWidth()),
+                            ValueRange{loadLhs});
 
-                binaryOp = nestedBuilder.create<IOp>(loc, castedLhs, castedRhs);
-                Value castedRes =
-                    this->typeConverter->materializeSourceConversion(
-                        nestedBuilder, loc, adaptor.getRhs().getType(),
-                        ValueRange{binaryOp});
-                nestedBuilder.create<AffineStoreOp>(loc, castedRes, outputMemRef,
-                                                    ivs);
+                    Value castedRhs =
+                        this->typeConverter->materializeTargetConversion(
+                            nestedBuilder, loc,
+                            nestedBuilder.getIntegerType(
+                                lhsMemRefType.getElementTypeBitWidth()),
+                            ValueRange{rhs});
+
+                    binaryOp =
+                        nestedBuilder.create<IOp>(loc, castedLhs, castedRhs);
+                    Value castedRes =
+                        this->typeConverter->materializeSourceConversion(
+                            nestedBuilder, loc, elementType,
+                            ValueRange{binaryOp});
+                    nestedBuilder.create<AffineStoreOp>(loc, castedRes,
+                                                        outputMemRef, ivs);
+                } else {
+                    // is float
+                    binaryOp = nestedBuilder.create<FOp>(loc, loadLhs, rhs);
+                    nestedBuilder.create<AffineStoreOp>(loc, binaryOp,
+                                                        outputMemRef, ivs);
+                }
             });
         mlir::Value output = getDenseMatrixFromMemRef(op->getLoc(), rewriter,
                                                       outputMemRef, op.getType());
@@ -197,8 +225,27 @@ void LowerScalarOpsPass::runOnOperation() {
         .addLegalDialect<mlir::arith::ArithDialect, mlir::memref::MemRefDialect,
                          mlir::AffineDialect, mlir::LLVM::LLVMDialect,
                          mlir::daphne::DaphneDialect, mlir::BuiltinDialect>();
-    target.addIllegalOp<mlir::daphne::EwAddOp, mlir::daphne::EwSubOp,
-                        mlir::daphne::EwMulOp>();
+
+    // math::sqrt only supports floating point
+    target.addDynamicallyLegalOp<mlir::daphne::EwSqrtOp>(
+        [&](mlir::daphne::EwSqrtOp op) {
+            return isa<mlir::IntegerType>(op.getArg().getType());
+        });
+
+    target.addDynamicallyLegalOp<mlir::daphne::EwAddOp, mlir::daphne::EwSubOp,
+                                 mlir::daphne::EwMulOp>([](Operation *op) {
+        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
+            op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
+            mlir::daphne::MatrixType lhs = op->getOperandTypes()[0].template dyn_cast<mlir::daphne::MatrixType>();
+            mlir::daphne::MatrixType rhs = op->getOperandTypes()[1].template dyn_cast<mlir::daphne::MatrixType>();
+            if (lhs.getNumRows() != rhs.getNumRows() || lhs.getNumCols() != rhs.getNumCols())
+                return true;
+
+            return false;
+        }
+        return false;
+    });
+
     patterns.insert<AddOpLowering, SubOpLowering, MulOpLowering>(typeConverter,
                                                                  &getContext());
 
