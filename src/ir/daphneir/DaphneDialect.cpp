@@ -810,6 +810,10 @@ mlir::OpFoldResult mlir::daphne::EwAndOp::fold(FoldAdaptor adaptor) {
     return {};
 }
 
+mlir::OpFoldResult mlir::daphne::EwBitwiseAndOp::fold(FoldAdaptor adaptor) {
+    return {};
+}
+
 mlir::OpFoldResult mlir::daphne::EwOrOp::fold(FoldAdaptor adaptor) {
     ArrayRef<Attribute> operands = adaptor.getOperands();
     auto boolOp = [](const bool &a, const bool &b) { return a || b; };

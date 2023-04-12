@@ -310,6 +310,12 @@ def Daphne_EwOrOp     : Daphne_EwBinaryOp<"ewOr" , NumScalar, [Commutative, Valu
 def Daphne_EwXorOp    : Daphne_EwBinaryOp<"ewXor", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
 
 // ----------------------------------------------------------------------------
+// Bitwise
+// ----------------------------------------------------------------------------
+
+def Daphne_EwBitwiseAndOp    : Daphne_EwBinaryOp<"ewBitwiseAnd", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
+
+// ----------------------------------------------------------------------------
 // Strings
 // ----------------------------------------------------------------------------
 

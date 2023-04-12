@@ -42,6 +42,9 @@ enum class BinaryOpCode {
     AND,
     OR,
 
+    // Bitwise.
+    BITWISE_AND,
+
     ISSYM,
 };
 

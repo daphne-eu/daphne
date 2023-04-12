@@ -94,6 +94,63 @@ struct EwBinaryObjSca<DenseMatrix<VT>, DenseMatrix<VT>, VT> {
 };
 
 template <>
+struct EwBinaryObjSca<DenseMatrix<uint64_t>, DenseMatrix<uint64_t>, uint64_t> {
+    static void apply(BinaryOpCode opCode, DenseMatrix<uint64_t>*& res,
+                      const DenseMatrix<uint64_t>* lhs, uint64_t rhs, DCTX(ctx)) {
+        const size_t numRows = lhs->getNumRows();
+        const size_t numCols = lhs->getNumCols();
+
+        if (res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<uint64_t>>(numRows, numCols,
+                                                             false);
+
+        const uint64_t* valuesLhs = lhs->getValues();
+        uint64_t* valuesRes = res->getValues();
+
+        if (opCode == BinaryOpCode::MOD) {
+            if (rhs % 2 == 0) {
+                for (size_t r = 0; r < numRows; r++) {
+                    for (size_t c = 0; c < numCols; c++)
+                        valuesRes[c] = valuesLhs[c] & (rhs - 1);
+                    valuesLhs += lhs->getRowSkip();
+                    valuesRes += res->getRowSkip();
+                }
+                return;
+            }
+
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++)
+                    valuesRes[c] = std::fmod(valuesLhs[c], rhs);
+                valuesLhs += lhs->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+            return;
+        }
+
+        if (opCode == BinaryOpCode::BITWISE_AND) {
+            for (size_t r = 0; r < numRows; r++) {
+                for (size_t c = 0; c < numCols; c++)
+                    valuesRes[c] = valuesLhs[c] & rhs;
+                valuesLhs += lhs->getRowSkip();
+                valuesRes += res->getRowSkip();
+            }
+            return;
+        }
+
+        EwBinaryScaFuncPtr<uint64_t, uint64_t, uint64_t> func =
+            getEwBinaryScaFuncPtr<uint64_t, uint64_t, uint64_t>(opCode);
+
+        // TODO(phil): also remove func for other BinaryOpCode?
+        for (size_t r = 0; r < numRows; r++) {
+            for (size_t c = 0; c < numCols; c++)
+                valuesRes[c] = func(valuesLhs[c], rhs, ctx);
+            valuesLhs += lhs->getRowSkip();
+            valuesRes += res->getRowSkip();
+        }
+    }
+};
+
+template <>
 struct EwBinaryObjSca<DenseMatrix<int64_t>, DenseMatrix<int64_t>, int64_t> {
     static void apply(BinaryOpCode opCode, DenseMatrix<int64_t>*& res,
                       const DenseMatrix<int64_t>* lhs, int64_t rhs, DCTX(ctx)) {
