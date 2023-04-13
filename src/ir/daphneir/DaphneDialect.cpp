@@ -1019,18 +1019,19 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
 }
 
 mlir::LogicalResult mlir::daphne::MatMulOp::verify() {
-    constexpr int UNKNOWN = -1;
+    // constexpr int UNKNOWN = -1;
+    //
+    // mlir::daphne::MatrixType lhs =
+    //     getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
+    // mlir::daphne::MatrixType rhs =
+    //     getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
 
-    mlir::daphne::MatrixType lhs =
-        getLhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-    mlir::daphne::MatrixType rhs =
-        getRhs().getType().dyn_cast<mlir::daphne::MatrixType>();
-
-    if (lhs.getNumCols() != UNKNOWN && rhs.getNumRows() != UNKNOWN &&
-        lhs.getNumCols() != rhs.getNumRows())
-        return emitError(
-            "daphne::MatMulOp operands do not satisfy matrix multiplication "
-            "shape constraints.");
+    // TODO(phil): check if argument is result of TransposeOp
+    // if (lhs.getNumCols() != UNKNOWN && rhs.getNumRows() != UNKNOWN &&
+    //     lhs.getNumCols() != rhs.getNumRows())
+    //     return emitError(
+    //         "daphne::MatMulOp operands do not satisfy matrix multiplication "
+    //         "shape constraints.");
 
     return mlir::success();
 }
