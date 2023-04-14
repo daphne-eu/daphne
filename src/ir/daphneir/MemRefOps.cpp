@@ -36,6 +36,10 @@ mlir::LogicalResult mlir::daphne::GetMemRefDenseMatrix::canonicalize(
 mlir::LogicalResult mlir::daphne::GetDenseMatrixFromMemRef::canonicalize(
     mlir::daphne::GetDenseMatrixFromMemRef op,
     mlir::PatternRewriter &rewriter) {
+
+    mlir::Operation *extractPtr = op->getPrevNode();
+    extractPtr->moveAfter(extractPtr->getOperand(0).getDefiningOp());
+    op->moveAfter(extractPtr);
     return mlir::success();
 }
 
