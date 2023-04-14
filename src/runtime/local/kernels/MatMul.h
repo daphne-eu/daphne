@@ -98,20 +98,20 @@ struct MatMul<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>> {
                 static_cast<int>(res->getRowSkip()));
         else                     // Matrix-Matrix
         {
-            int N = nr1;
-            double *A = (double*)lhs->getValues();
-            double *B = (double*)rhs->getValues();
-            double *C = (double*)res->getValues();
-            for (int row = 0; row < N; ++row) {
-                for (int inner = 0; inner < N; ++inner) {
-                    for (int col = 0; col < N; ++col) {
-                        C[row * N + col] += A[row * N + inner] * B[inner * N + col];
-                    }
-                }
-            }
-            // cblas_dgemm(CblasRowMajor, transa ? CblasTrans : CblasNoTrans, transb ? CblasTrans : CblasNoTrans, nr1, nc2, nc1,
-            //     1, lhs->getValues(), static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
-            //     static_cast<int>(rhs->getRowSkip()), 0, res->getValues(), static_cast<int>(res->getRowSkip()));
+            // int N = nr1;
+            // double *A = (double*)lhs->getValues();
+            // double *B = (double*)rhs->getValues();
+            // double *C = (double*)res->getValues();
+            // for (int row = 0; row < N; ++row) {
+            //     for (int inner = 0; inner < N; ++inner) {
+            //         for (int col = 0; col < N; ++col) {
+            //             C[row * N + col] += A[row * N + inner] * B[inner * N + col];
+            //         }
+            //     }
+            // }
+            cblas_dgemm(CblasRowMajor, transa ? CblasTrans : CblasNoTrans, transb ? CblasTrans : CblasNoTrans, nr1, nc2, nc1,
+                1, lhs->getValues(), static_cast<int>(lhs->getRowSkip()), rhs->getValues(),
+                static_cast<int>(rhs->getRowSkip()), 0, res->getValues(), static_cast<int>(res->getRowSkip()));
 
         }
     }
