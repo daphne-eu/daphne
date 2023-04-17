@@ -236,13 +236,26 @@ void LowerScalarOpsPass::runOnOperation() {
                                  mlir::daphne::EwMulOp>([](Operation *op) {
         if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>() &&
             op->getOperandTypes()[1].isa<mlir::daphne::MatrixType>()) {
-            mlir::daphne::MatrixType lhs = op->getOperandTypes()[0].template dyn_cast<mlir::daphne::MatrixType>();
-            mlir::daphne::MatrixType rhs = op->getOperandTypes()[1].template dyn_cast<mlir::daphne::MatrixType>();
-            if (lhs.getNumRows() != rhs.getNumRows() || lhs.getNumCols() != rhs.getNumCols())
+            mlir::daphne::MatrixType lhs =
+                op->getOperandTypes()[0]
+                    .template dyn_cast<mlir::daphne::MatrixType>();
+            mlir::daphne::MatrixType rhs =
+                op->getOperandTypes()[1]
+                    .template dyn_cast<mlir::daphne::MatrixType>();
+            if (lhs.getNumRows() != rhs.getNumRows() ||
+                lhs.getNumCols() != rhs.getNumCols() ||
+                lhs.getNumRows() == -1 || lhs.getNumCols() == -1)
                 return true;
 
             return false;
         }
+
+        if (op->getOperandTypes()[0].isa<mlir::daphne::MatrixType>()) {
+            mlir::daphne::MatrixType lhsTensor =
+                op->getOperandTypes()[0].dyn_cast<mlir::daphne::MatrixType>();
+            return lhsTensor.getNumRows() == -1 || lhsTensor.getNumCols() == -1;
+        }
+
         return false;
     });
 
