@@ -84,8 +84,19 @@ DT * genGivenVals(size_t numRows, const std::vector<typename DT::VT> & elements,
 template<typename VT>
 struct GenGivenVals<DenseMatrix<VT>> {
     static DenseMatrix<VT> * generate(size_t numRows, const std::vector<VT> & elements, size_t minNumNonZeros = 0) {
+        if(numRows == 0)
+            // We could return a 0x0 matrix, but this is often not what we want.
+            // In many (test) cases, we want a 0xm matrix, but the number of columns
+            // cannot be inferred if there are no elements. In such cases, callers
+            // should rather construct a 0xm matrix via DataObjectFactory::create().
+            throw std::runtime_error("genGivenVals(): numRows must not be zero");
+
         const size_t numCells = elements.size();
-        assert((numCells % numRows == 0) && "number of given data elements must be divisible by given number of rows");
+        if(numCells % numRows)
+            throw std::runtime_error(
+                    "genGivenVals(): the number of given data elements must be "
+                    "divisible by given number of rows"
+            );
         const size_t numCols = numCells / numRows;
         auto res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
         memcpy(res->getValues(), elements.data(), numCells * sizeof(VT));

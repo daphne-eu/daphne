@@ -29,65 +29,102 @@ TEMPLATE_PRODUCT_TEST_CASE("CTable", TAG_KERNELS, (DenseMatrix, CSRMatrix), (int
     using DTRes = TestType;
     using VT = typename DTRes::VT;
 
-    DenseMatrix<VT> * m0 = nullptr;
-    DenseMatrix<VT> * m1 = nullptr;
+    DenseMatrix<int64_t> * ys = nullptr;
+    DenseMatrix<int64_t> * xs = nullptr;
+    VT weight;
+    int64_t resNumRows;
+    int64_t resNumCols;
     DTRes * exp = nullptr;
     
-    SECTION("Very small") {
-        m0 = genGivenVals<DenseMatrix<VT>>(1, {2});
-        m1 = genGivenVals<DenseMatrix<VT>>(1, {2});
+    SECTION("example 1") {
+        ys = genGivenVals<DenseMatrix<int64_t>>(1, {0});
+        xs = genGivenVals<DenseMatrix<int64_t>>(1, {0});
+        weight = 3;
+        resNumRows = -1;
+        resNumCols = -1;
+
+        exp = genGivenVals<DTRes>(1, {3});
+    }
+    SECTION("example 2: automatic shape") {
+        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        weight = 3;
+        resNumRows = -1;
+        resNumCols = -1;
+
+        exp = genGivenVals<DTRes>(6, {
+            0, 0, 0, 0,
+            0, 0, 3, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 6,
+            0, 3, 0, 0
+        });
+    }
+    SECTION("example 2: crop #rows") {
+        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        weight = 3;
+        resNumRows = 4;
+        resNumCols = -1;
+
+        exp = genGivenVals<DTRes>(4, {
+            0, 0, 0, 0,
+            0, 0, 3, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+        });
+    }
+    SECTION("example 2: crop #cols") {
+        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        weight = 3;
+        resNumRows = -1;
+        resNumCols = 3;
+
+        exp = genGivenVals<DTRes>(6, {
+            0, 0, 0,
+            0, 0, 3,
+            0, 0, 0,
+            0, 0, 0,
+            0, 0, 0,
+            0, 3, 0,
+        });
+    }
+    SECTION("example 2: crop both") {
+        ys = genGivenVals<DenseMatrix<int64_t>>(4, {1, 4, 5, 4});
+        xs = genGivenVals<DenseMatrix<int64_t>>(4, {2, 3, 1, 3});
+        weight = 3;
+        resNumRows = 4;
+        resNumCols = 3;
+
+        exp = genGivenVals<DTRes>(4, {
+            0, 0, 0,
+            0, 0, 3,
+            0, 0, 0,
+            0, 0, 0
+        });
+    }
+    SECTION("example 3: more items than cells") {
+        ys = genGivenVals<DenseMatrix<int64_t>>(12, {0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2});
+        xs = genGivenVals<DenseMatrix<int64_t>>(12, {0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1});
+        weight = 3;
+        resNumRows = -1;
+        resNumCols = -1;
 
         exp = genGivenVals<DTRes>(3, {
-            0, 0, 0,
-            0, 0, 0,
-            0, 0, 1,
-        });
-    }
-    SECTION("Small1") {
-        m0 = genGivenVals<DenseMatrix<VT>>(4, {2,4,5,4,});
-        m1 = genGivenVals<DenseMatrix<VT>>(4, {0,3,1,3,});
-
-        exp = genGivenVals<DTRes>(6, {
-            0, 0, 0, 0,
-            0, 0, 0, 0,
-            1, 0, 0, 0,
-            0, 0, 0, 0,
-            0, 0, 0, 2,
-            0, 1, 0, 0,
-        });
-    }
-    SECTION("Small2") {
-        m0 = genGivenVals<DenseMatrix<VT>>(4, {1,2,3,4,});
-        m1 = genGivenVals<DenseMatrix<VT>>(4, {3,2,1,4,});
-
-        exp = genGivenVals<DTRes>(5, {
-            0, 0, 0, 0, 0,
-            0, 0, 0, 1, 0,
-            0, 0, 1, 0, 0,
-            0, 1, 0, 0, 0,
-            0, 0, 0, 0, 1,
-        });
-    }
-    SECTION("Larger") {
-        m0 = genGivenVals<DenseMatrix<VT>>(7, {2,4,5,4,5,1,0,});
-        m1 = genGivenVals<DenseMatrix<VT>>(7, {0,3,1,3,1,6,3,});
-
-        exp = genGivenVals<DTRes>(6, {
-            0, 0, 0, 1, 0, 0, 0, 
-            0, 0, 0, 0, 0, 0, 1, 
-            1, 0, 0, 0, 0, 0, 0,
-            0, 0, 0, 0, 0, 0, 0, 
-            0, 0, 0, 2, 0, 0, 0,
-            0, 2, 0, 0, 0, 0, 0,
+            6, 6,
+            6, 6,
+            6, 6
         });
     }
     
     DTRes * res = nullptr;
-    ctable(res, m0, m1, nullptr);
+    ctable(res, ys, xs, weight, resNumRows, resNumCols, nullptr);
     CHECK(*res == *exp);
 
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
+    DataObjectFactory::destroy(ys);
+    DataObjectFactory::destroy(xs);
     DataObjectFactory::destroy(exp);
     DataObjectFactory::destroy(res);
 }

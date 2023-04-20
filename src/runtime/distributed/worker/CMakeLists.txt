@@ -40,6 +40,8 @@ set(LIBS
         CallData
         Proto
         DaphneMetaDataParser
+        Arrow::arrow_shared
+        Parquet::parquet_shared
         )
 
 add_library(WorkerImpl ${SOURCES})

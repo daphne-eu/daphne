@@ -195,7 +195,7 @@ void processBlock(OpBuilder builder, Block * b) {
         
         // Casts that will not call a kernel.
         if(auto co = dyn_cast<daphne::CastOp>(op)) {
-            if(co.isTrivialCast() || co.isMatrixPropertyCast())
+            if(co.isTrivialCast() || co.isRemovePropertyCast())
                 incRefArgs(op, builder);
         }
         // Loops and function calls.

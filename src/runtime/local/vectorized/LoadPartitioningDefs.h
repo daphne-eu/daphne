@@ -22,7 +22,7 @@ enum QueueTypeOption {
     PERCPU
 };
 
-enum victimSelectionLogic {
+enum VictimSelectionLogic {
     SEQ=0,
     SEQPRI,
     RANDOM,

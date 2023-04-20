@@ -51,35 +51,62 @@ For example the following builds the main test target.
 
 ### Clean
 
-Clean all build directories, i.e., the daphne build dir `<project_root>/build` and the build directory of the dependencies 
-`<project_root>/thirdparty/build`:
+Clean all build directories, i.e., the daphne build dir `<project_root>/build` and the build output in 
+`<project_root>/bin` and `<project_root>/lib`
 
 ```bash
 ./build.sh --clean
 ```
 
-Clean all download and build directories, i.e., `<project_root>/build`, `<project_root>/thirdparty/installed`, `<project_root>/thirdparty/build`, `<project_root>/thirdparty/sources`, and `<project_root>/thirdparty/download-cache`:
+Clean all downloads and extracted archive directories, i.e., `<thirdparty_dir>`/download-cache, `<thirdparty_dir>`/sources
+and `<thirdparty_dir>`/*.download.success files: 
+
+```bash
+./build.sh --cleanCache
+```
+
+Clean third party build output, i.e., `<thirdparty_dir>/installed`, `<thirdparty_dir>/build` and 
+`<thirdparty_dir>`/*.install.success files:
+
+```bash
+./build.sh --cleanDeps
+```
+
+Clean everything (DAPHNE build output and third party directory)
 
 ```bash
 ./build.sh --cleanAll
 ```
+
+### Minimize long compile times of dependencies
+The most time consuming part of getting DAPHNE compiled is building the third party dependencies.
+To avoid this, one can either use a prebuilt container image (in combination with some parameters to the build script 
+see below)) or at least build the dependencies once and subsequently point to the directory where the third party
+dependencies get installed. The bulid script must be invoked with the following two parameters to achieve this:
+``` ./build.sh --no-deps --installPrefix <path/to/installed/deps  ```. 
+
+If you have built DAPHNE and **change the installPrefix directory**, it is required to clean up and build again:
+``` ./build.sh --clean ```
+
 ### Options
 All possible options for the build script:
 
-| Option             | Effect                                                                                  |
-|--------------------|-----------------------------------------------------------------------------------------|
-| -h, --help         | Print the help page                                                                     |
-| --clean            | Clean build directories                                                                 |
-| --cleanAll         | Clean build directories and download directories                                        |
-| --target \<target> | Build specific target                                                                   |
-| -nf, --no-fancy    | Disable colorized output                                                                |
-| -y, --yes          | Accept prompt (e.g., when executing the clean command)                                  |
-| --cuda             | Compile with support for GPU operations using the CUDA SDK                              |
-| --debug            | Compile the daphne binary with debug symbols                                            |
-| --oneapi           | Compile with support for accelerated operations using the OneAPI SDK                    |
-| --fpgaopencl       | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On |
-| --arrow            | Compile with support for Apache Arrow                                                   |
-
+| Option                  | Effect                                                                                     |
+|-------------------------|--------------------------------------------------------------------------------------------|
+| -h, --help              | Print the help page                                                                        |
+| --installPrefix \<path> | Install third party dependencies in \<path> (default: <project_root>/thirdparty/installed) | 
+| --clean                 | Clean DAPHNE build output (<project_root>/{bin,build,lib})                                 |
+| --cleanCache            | Clean downloaded and extracted third party artifacts                                       |
+| --cleanDeps             | Clean third party dependency build output and installed files                              |
+| --cleanAll              | Clean DAPHNE build output and reset the third party directory to the state in the git repo |
+| --target \<target>      | Build specific target                                                                      |
+| -nf, --no-fancy         | Disable colorized output                                                                   |
+| --no-deps               | Avoid building third party dependencies                                                    |
+| -y, --yes               | Accept prompt (e.g., when executing the clean command)                                     |
+| --cuda                  | Compile with support for GPU operations using the CUDA SDK                                 |
+| --debug                 | Compile the daphne binary with debug symbols                                               |
+| --oneapi                | Compile with support for accelerated operations using the OneAPI SDK                       |
+| --fpgaopencl            | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On    |
 
 ## 2. Extension
 ### Overview over the build script
@@ -101,7 +128,9 @@ The following list contains a rough overview over the segments and the concrete 
 3. Clean build directories
    1. **clean(** \<array ref dirs> \<array ref files> **)** // removes all given directories (1. parameter) and all given files (2. parameter) from disk
    2. **cleanBuildDirs()** // cleans build dirs (daphne and dependency build dirs)
-   3. **cleanAll()** // cleans daphne build dir and wipes all dependencies from disk 
+   3. **cleanAll()** // cleans daphne build dir and wipes all dependencies from disk (resetting the third party directory) 
+   4. **cleanDeps()** // removes third party build output
+   5. **cleanCache()** // removes downloaded third party artifacts (but leaving git submodules (only LLVM/MLIR at the time of writing)
 4. Create / Check Indicator-files
    1. **dependency_install_success(** \<dep> **)** // used after successful build of a dependency; creates related indicator file 
    2. **dependency_download_success(** \<dep> **)** // used after successful download of a dependency; creates related indicator file

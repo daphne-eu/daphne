@@ -509,7 +509,7 @@ void RewriteToCallKernelOpPass::runOnOperation()
             daphne::MapOp
     >();
     target.addDynamicallyLegalOp<daphne::CastOp>([](daphne::CastOp op) {
-        return op.isTrivialCast() || op.isMatrixPropertyCast();
+        return op.isTrivialCast() || op.isRemovePropertyCast();
     });
 
     // Determine the DaphneContext valid in the MLIR function being rewritten.

@@ -87,7 +87,7 @@ struct CastOpLowering : public OpRewritePattern<daphne::CastOp> {
 
     LogicalResult matchAndRewrite(daphne::CastOp op,
                                   PatternRewriter &rewriter) const final {
-        if(op.isTrivialCast() || op.isMatrixPropertyCast()) {
+        if(op.isTrivialCast() || op.isRemovePropertyCast()) {
             rewriter.replaceOp(op, op.getOperand());
             return success();
         }

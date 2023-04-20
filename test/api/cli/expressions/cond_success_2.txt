@@ -1,0 +1,53 @@
+boolean matrix condition
+matrix-matrix values
+DenseMatrix(2x1, int64_t)
+20
+11
+matrix-scalar values
+DenseMatrix(2x1, int64_t)
+20
+11
+scalar-matrix values
+DenseMatrix(2x1, int64_t)
+20
+10
+scalar-scalar values
+DenseMatrix(2x1, int64_t)
+20
+10
+
+integer matrix condition
+matrix-matrix values
+DenseMatrix(2x1, int64_t)
+20
+11
+matrix-scalar values
+DenseMatrix(2x1, int64_t)
+20
+11
+scalar-matrix values
+DenseMatrix(2x1, int64_t)
+20
+10
+scalar-scalar values
+DenseMatrix(2x1, int64_t)
+20
+10
+
+floating-point matrix condition
+matrix-matrix values
+DenseMatrix(2x1, int64_t)
+20
+11
+matrix-scalar values
+DenseMatrix(2x1, int64_t)
+20
+11
+scalar-matrix values
+DenseMatrix(2x1, int64_t)
+20
+10
+scalar-scalar values
+DenseMatrix(2x1, int64_t)
+20
+10

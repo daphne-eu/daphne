@@ -93,7 +93,7 @@ expr:
     | lhs=expr op=('=='|'!='|'<'|'<='|'>'|'>=') rhs=expr # cmpExpr
     | lhs=expr op='&&' rhs=expr # conjExpr
     | lhs=expr op='||' rhs=expr # disjExpr
-    | cond=expr '?' thenExpr=expr ':' elseExpr=expr # ternExpr
+    | cond=expr '?' thenExpr=expr ':' elseExpr=expr # condExpr
     | '[' (literal (',' literal)*)? ']' # matrixLiteralExpr
     ;
 

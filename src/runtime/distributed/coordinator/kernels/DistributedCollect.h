@@ -27,6 +27,10 @@
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPIHelper.h>
+#endif
+
 #include <cassert>
 #include <cstddef>
 
@@ -56,6 +60,57 @@ void distributedCollect(DT *&mat, DCTX(dctx))
 // (Partial) template specializations for different distributed backends
 // ****************************************************************************
 
+
+// ----------------------------------------------------------------------------
+// MPI
+// ----------------------------------------------------------------------------
+#ifdef USE_MPI
+template<class DT>
+struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
+{
+    static void apply(DT *&mat, DCTX(dctx)) 
+    {
+        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
+        int worldSize= MPIHelper::getCommSize()-1;
+        auto collectedDataItems=0u;
+        for(int rank=0; rank<worldSize ; rank++) // we currently exclude the coordinator
+        {
+            //if(rank==COORDINATOR)
+            //    continue;
+            int target_rank;    
+            distributed::Data protoMessage=MPIHelper::getResults(&target_rank);    
+            std::string address = std::to_string(target_rank);  
+            auto dp=mat->getMetaDataObject()->getDataPlacementByLocation(address);   
+            auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
+            if(std::stoi(address)==COORDINATOR)
+                continue;
+            //std::cout<<"from distributed collect address " <<address<< " rows from "<< dp->range->r_start<< " to "<< (dp->range->r_start + dp->range->r_len) <<" cols from " <<  dp->range->c_start << " to " << (dp->range->c_start + dp->range->c_len)  <<std::endl;
+            auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();                  
+            auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
+            //auto toDisplay = DataObjectFactory::create<DenseMatrix<double>>(dp->range->r_len, dp->range->c_len, false);
+            if (!denseMat){
+                throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+            }
+            
+            //ProtoDataConverter<DenseMatrix<double>>::convertFromProto(protoMessage.matrix(),toDisplay);
+            //std::string message="coordinator got the following from (" + address +") ";
+            //MPIHelper::displayDataStructure(toDisplay,message);
+
+            ProtoDataConverter<DenseMatrix<double>>::convertFromProto(
+                protoMessage.matrix(), denseMat,
+                dp->range->r_start, dp->range->r_start + dp->range->r_len,
+                dp->range->c_start, dp->range->c_start + dp->range->c_len);
+            collectedDataItems+=  dp->range->r_len *  dp->range->c_len;
+            data.isPlacedAtWorker = false;
+            dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
+            // this is to handle the case when not all workers participate in the computation, i.e., number of workers is larger than of the work items
+            if(collectedDataItems == denseMat->getNumRows() * denseMat->getNumCols())
+                break;
+        }
+    };
+};
+#endif
+
 // ----------------------------------------------------------------------------
 // GRPC
 // ----------------------------------------------------------------------------
@@ -73,7 +128,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
 
-        auto dpVector = mat->getMetaDataObject().getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        auto dpVector = mat->getMetaDataObject()->getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
             auto address = dp->allocation->getLocation();
             
@@ -92,7 +147,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto dp_id = response.storedInfo.dp_id;
-            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
 
             auto matProto = response.result;

@@ -42,7 +42,9 @@ WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
 {
 }
 
-WorkerImpl::~WorkerImpl() = default;
+WorkerImpl::~WorkerImpl(){
+
+}
 
 
 template<>

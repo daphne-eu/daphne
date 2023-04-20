@@ -210,4 +210,42 @@ public:
         return isObjType(v.getType());
     }
 
+    /**
+     * @brief Returns the value type of the given scalar/matrix/frame type.
+     * 
+     * For matrices and frames, the value type is extracted. For scalars,
+     * the type itself is the value type.
+     * 
+     * @param t the given scalar/matrix/frame type
+     * @return the value type of the given type
+     */
+    static mlir::Type getValueType(mlir::Type t) {
+        if(auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return mt.getElementType();
+        if(auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+            throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
+        else // TODO Check if this is really a scalar.
+            return t;
+    }
+
+    /**
+     * @brief Sets the value type of the given scalar/matrix/frame type to the
+     * given value type and returns this derived type.
+     * 
+     * For matrices and frames, the value type is set to the given value type.
+     * For scalars, the given value type itself is returned.
+     * 
+     * @param t the scalar/matrix/frame type whose value type shall be set
+     * @param vt the value type to use
+     * @return the derived scalar/matrix/frame type
+     */
+    static mlir::Type setValueType(mlir::Type t, mlir::Type vt) {
+        if(auto mt = t.dyn_cast<mlir::daphne::MatrixType>())
+            return mt.withElementType(vt);
+        if(auto ft = t.dyn_cast<mlir::daphne::FrameType>())
+            throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
+        else // TODO Check if this is really a scalar.
+            return vt;
+    }
+
 };

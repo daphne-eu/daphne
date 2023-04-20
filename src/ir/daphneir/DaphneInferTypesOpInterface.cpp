@@ -93,6 +93,16 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
         );
 }
 
+std::vector<Type> daphne::FilterColOp::inferTypes() {
+    if(auto mt = getSource().getType().dyn_cast<daphne::MatrixType>())
+        return {mt.withSameElementType()};
+    else
+        // TODO See #484.
+        throw std::runtime_error(
+                "currently, FilterColOp can only infer its type for matrix inputs"
+        );
+}
+
 std::vector<Type> daphne::CreateFrameOp::inferTypes() {
     std::vector<Type> colTypes;
     for(Value col : getCols())
@@ -198,6 +208,61 @@ std::vector<Type> daphne::OrderOp::inferTypes() {
 
 std::vector<Type> daphne::SliceColOp::inferTypes() {
     throw std::runtime_error("type inference not implemented for SliceColOp"); // TODO
+}
+
+std::vector<Type> daphne::CondOp::inferTypes() {
+    Type condTy = getCond().getType();
+    if(condTy.isa<daphne::UnknownType>())
+        return {daphne::UnknownType::get(getContext())};
+    if(auto condMatTy = condTy.dyn_cast<daphne::MatrixType>()) {
+        Type thenTy = getThenVal().getType();
+        Type elseTy = getElseVal().getType();
+
+        if(thenTy.isa<daphne::FrameType>() || elseTy.isa<daphne::FrameType>())
+            throw std::runtime_error(
+                 "CondOp does not support frames for the then-value or else-value if "
+                 "the condition is a matrix"
+            );
+
+        Type thenValTy = CompilerUtils::getValueType(thenTy);
+        Type elseValTy = CompilerUtils::getValueType(elseTy);
+
+        if(thenValTy != elseValTy)
+            throw std::runtime_error(
+                    "the then/else-values of CondOp must have the same value type"
+            );
+
+        return {daphne::MatrixType::get(getContext(), thenValTy)};
+    }
+    else if(auto condFrmTy = condTy.dyn_cast<daphne::FrameType>())
+        throw std::runtime_error("CondOp does not support frames for the condition yet");
+    else { // cond is a scalar // TODO check if it is really a scalar
+        Type thenTy = getThenVal().getType();
+        Type elseTy = getElseVal().getType();
+        
+        // Remove any properties of matrix/frame except for the value types,
+        // such that they don't interfere with the type comparison below,
+        // and since we don't want them in the inferred type.
+        if(auto thenMatTy = thenTy.dyn_cast<daphne::MatrixType>())
+            thenTy = thenMatTy.withSameElementType();
+        else if(auto thenFrmTy = thenTy.dyn_cast<daphne::FrameType>())
+            thenTy = thenFrmTy.withSameColumnTypes();
+        if(auto elseMatTy = elseTy.dyn_cast<daphne::MatrixType>())
+            elseTy = elseMatTy.withSameElementType();
+        else if(auto elseFrmTy = elseTy.dyn_cast<daphne::FrameType>())
+            elseTy = elseFrmTy.withSameColumnTypes();
+
+        if(thenTy != elseTy) {
+            throw std::runtime_error(
+                    "the then/else-values of CondOp must have the same type if "
+                    "the condition is a scalar"
+            );
+        }
+
+        // It is important that all matrix/frame properties except for the
+        // value have been removed.
+        return {thenTy};
+    }
 }
 
 // ****************************************************************************

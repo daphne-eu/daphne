@@ -25,7 +25,9 @@
 #include <runtime/distributed/coordinator/kernels/DistributedCompute.h>
 
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
-
+#ifdef USE_MPI
+    #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
+#endif
 
 
 #include <mlir/InitAllDialects.h>
@@ -69,9 +71,8 @@ public:
         
         // Backend Implementation 
         // gRPC hard-coded selection
-        // TODO choose implementation based on configFile/command-line argument        
-        const auto alloc_type = ALLOCATION_TYPE::DIST_GRPC;
-
+        const auto allocation_type=_dctx->getUserConfig().distributedBackEndSetup;
+        //std::cout<<"Distributed wrapper " <<std::endl;
         // output allocation for row-wise combine
         for(size_t i = 0; i < numOutputs; ++i) {
             if(*(res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
@@ -101,6 +102,11 @@ public:
         
         // Parse mlir code fragment to determin pipeline inputs/outputs
         auto inputTypes = getPipelineInputTypes(mlirCode);
+        std::vector<bool> scalars;
+        for(auto t : inputTypes)
+        {
+            scalars.push_back(t!=INPUT_TYPE::Matrix);
+        }
         // Distribute and broadcast inputs        
         // Each primitive sends information to workers and changes the Structures' metadata information 
         for (auto i = 0u; i < numInputs; ++i) {
@@ -109,30 +115,68 @@ public:
             // (i.e. rows/cols splitted accordingly). If it does then we can skip.
             if (isBroadcast(splits[i], inputs[i])){
                 auto type = inputTypes.at(i);
-                if (type==INPUT_TYPE::Matrix) {            
-                    broadcast<alloc_type>(inputs[i], false, _dctx);
+                if (type==INPUT_TYPE::Matrix) {
+                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI           
+                            broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], false, _dctx);
+#endif
+                        }
+                        else { 
+                             broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], false, _dctx);
+                        }
                 }
                 else {
-                    broadcast<alloc_type>(inputs[i], true, _dctx);
+                        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI 
+                             broadcast<ALLOCATION_TYPE::DIST_MPI>(inputs[i], true, _dctx);
+#endif
+                        }
+                        else {
+                            broadcast<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], true, _dctx);
+                        }
                 }
             }
             else {
                 assert(splits[i] == VectorSplit::ROWS && "only row split supported for now");
                 // std::cout << i << " distr: " << inputs[i]->getNumRows() << " x " << inputs[i]->getNumCols() << std::endl;
-                distribute<alloc_type>(inputs[i], _dctx);        
+                if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI 
+                        distribute<ALLOCATION_TYPE::DIST_MPI>(inputs[i], _dctx);
+#endif
+                }
+                else {
+                        distribute<ALLOCATION_TYPE::DIST_GRPC>(inputs[i], _dctx);       
+                }        
             }
         }
 
-          
-        distributedCompute<alloc_type>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+        if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI   
+            distributedCompute<ALLOCATION_TYPE::DIST_MPI>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);
+#endif        
+         }
+        else {
+            distributedCompute<ALLOCATION_TYPE::DIST_GRPC>(res, numOutputs, inputs, numInputs, mlirCode, combines, _dctx);   
+        }
+        //handle my part as coordinator we currently exclude the coordinator
+        /*if(alloc_type==ALLOCATION_TYPE::DIST_MPI)
+        {
+            bool isScalar=true;
+            MPICoordinator::handleCoordinationPart<DT>(res, numOutputs, inputs, numInputs, mlirCode, scalars , combines, _dctx);
+        }*/
 
         // Collect
         for (size_t o = 0; o < numOutputs; o++){
             assert ((combines[o] == VectorCombine::ROWS || combines[o] == VectorCombine::COLS) && "we only support rows/cols combine atm");
-            distributedCollect<alloc_type>(*res[o], _dctx);           
-        }
-        
-        
+            if(allocation_type==ALLOCATION_TYPE::DIST_MPI){
+#ifdef USE_MPI 
+                distributedCollect<ALLOCATION_TYPE::DIST_MPI>(*res[o], _dctx);      
+#endif
+            }
+            else {
+                 distributedCollect<ALLOCATION_TYPE::DIST_GRPC>(*res[o], _dctx);
+            }
+        }      
     }
 
 private:
@@ -146,13 +190,14 @@ private:
         // is it safe to pass null for mlir::DaphneContext? 
         // Fixme: is it ok to allow unregistered dialects?
         mlir::MLIRContext ctx;
+        ctx.getOrLoadDialect<mlir::func::FuncDialect>();
         ctx.allowUnregisteredDialects();
+        //std::cout<<mlirCode<<std::endl;
         mlir::OwningOpRef<mlir::ModuleOp> module(mlir::parseSourceString<mlir::ModuleOp>(mlirCode, &ctx));
         if (!module) {
             auto message = "DistributedWrapper: Failed to parse source string.\n";
             throw std::runtime_error(message);
         }
-
         auto *distOp = module->lookupSymbol("dist");
         mlir::func::FuncOp distFunc;
         if (!(distFunc = llvm::dyn_cast_or_null<mlir::func::FuncOp>(distOp))) {

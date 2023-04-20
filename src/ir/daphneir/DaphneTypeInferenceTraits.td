@@ -38,6 +38,7 @@ def DataTypeFrm: NativeOpTrait<"DataTypeFrm">;
 // ============================================================================
 
 def ValueTypeFromFirstArg: NativeOpTrait<"ValueTypeFromFirstArg">;
+def ValueTypeFromThirdArg: NativeOpTrait<"ValueTypeFromThirdArg">;
 def ValueTypeFromArgs: NativeOpTrait<"ValueTypeFromArgs">;
 def ValueTypeFromArgsFP: NativeOpTrait<"ValueTypeFromArgsFP">;
 def ValueTypeFromArgsInt: NativeOpTrait<"ValueTypeFromArgsInt">;

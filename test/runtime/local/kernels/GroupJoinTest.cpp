@@ -61,7 +61,7 @@ TEST_CASE("GroupJoin", TAG_KERNELS) {
     CHECK(res->getColumnType(0) == ValueTypeCode::SI64);
     CHECK(res->getColumnType(1) == ValueTypeCode::F64);
     CHECK(res->getLabels()[0] == "d.id");
-    CHECK(res->getLabels()[1] == "f.agg");
+    CHECK(res->getLabels()[1] == "SUM(f.agg)");
     CHECK(lhsTid->getNumRows() == 2);
     CHECK(lhsTid->getNumCols() == 1);
     

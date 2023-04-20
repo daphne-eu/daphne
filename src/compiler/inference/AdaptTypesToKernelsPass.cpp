@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 #include <ir/daphneir/Passes.h>
 
@@ -42,26 +43,6 @@ struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, Ope
 {
     void runOnOperation() final;
 };
-
-// TODO This should become a general utility.
-Type getValueType(Type t) {
-    if(auto mt = t.dyn_cast<daphne::MatrixType>())
-        return mt.getElementType();
-    if(auto ft = t.dyn_cast<daphne::FrameType>())
-        throw std::runtime_error("getValueType() doesn't support frames yet"); // TODO
-    else // TODO Check if this is really a scalar.
-        return t;
-}
-
-// TODO This should become a general utility.
-Type setValueType(Type t, Type vt) {
-    if(auto mt = t.dyn_cast<daphne::MatrixType>())
-        return mt.withElementType(vt);
-    if(auto ft = t.dyn_cast<daphne::FrameType>())
-        throw std::runtime_error("setValueType() doesn't support frames yet"); // TODO
-    else // TODO Check if this is really a scalar.
-        return vt;
-}
 
 void AdaptTypesToKernelsPass::runOnOperation()
 {
@@ -93,17 +74,17 @@ void AdaptTypesToKernelsPass::runOnOperation()
                 })
             )) {
                 // Insert casts where necessary.
-                Type resVTy = getValueType(resTy);
+                Type resVTy = CompilerUtils::getValueType(resTy);
                 builder.setInsertionPoint(op);
                 for(size_t i : operandIdxs) {
                     Value argVal = op->getOperand(i);
                     Type argTy = argVal.getType();
-                    if(getValueType(argTy) != resVTy) {
+                    if(CompilerUtils::getValueType(argTy) != resVTy) {
                         op->setOperand(
                                 i,
                                 builder.create<daphne::CastOp>(
                                         argVal.getLoc(),
-                                        setValueType(argTy, resVTy),
+                                        CompilerUtils::setValueType(argTy, resVTy),
                                         argVal
                                 )
                         );

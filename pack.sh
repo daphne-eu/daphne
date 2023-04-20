@@ -20,7 +20,7 @@ set -e
 function exit_with_usage {
   cat << EOF
 usage: pack.sh --version VERSION --feature FEATURE
---feature FEATURE......a feature flag like --cuda, --arrow, etc (omit or "none" for plain Daphne)
+--feature FEATURE......a feature flag like --cuda, etc (omit or "none" for plain Daphne)
 EOF
   exit 1
 }
@@ -66,7 +66,6 @@ fi
 
 # shellcheck disable=SC2254
 case "$FEATURE" in
-  arrow) ;&
   cuda)  ;&
   debug) ;&
   fpgaopencl)

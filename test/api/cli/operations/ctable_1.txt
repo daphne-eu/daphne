@@ -1,6 +1,135 @@
-DenseMatrix(2x2, int64_t)
-0 1
-2 0
-DenseMatrix(2x2, double)
-0 1
-2 0
+ctable(ys, xs)
+DenseMatrix(1x1, double)
+1
+DenseMatrix(6x4, double)
+0 0 0 0
+0 0 1 0
+0 0 0 0
+0 0 0 0
+0 0 0 2
+0 1 0 0
+DenseMatrix(3x2, double)
+2 2
+2 2
+2 2
+
+ctable(ys, xs, weight)
+DenseMatrix(1x1, int64_t)
+3
+DenseMatrix(1x1, double)
+0.3
+DenseMatrix(6x4, int64_t)
+0 0 0 0
+0 0 3 0
+0 0 0 0
+0 0 0 0
+0 0 0 6
+0 3 0 0
+DenseMatrix(6x4, double)
+0 0 0 0
+0 0 0.3 0
+0 0 0 0
+0 0 0 0
+0 0 0 0.6
+0 0.3 0 0
+
+ctable(ys, xs, resNumRows, resNumCols)
+DenseMatrix(6x4, double)
+0 0 0 0
+0 0 1 0
+0 0 0 0
+0 0 0 0
+0 0 0 2
+0 1 0 0
+DenseMatrix(4x4, double)
+0 0 0 0
+0 0 1 0
+0 0 0 0
+0 0 0 0
+DenseMatrix(6x3, double)
+0 0 0
+0 0 1
+0 0 0
+0 0 0
+0 0 0
+0 1 0
+DenseMatrix(4x3, double)
+0 0 0
+0 0 1
+0 0 0
+0 0 0
+DenseMatrix(8x4, double)
+0 0 0 0
+0 0 1 0
+0 0 0 0
+0 0 0 0
+0 0 0 2
+0 1 0 0
+0 0 0 0
+0 0 0 0
+DenseMatrix(6x5, double)
+0 0 0 0 0
+0 0 1 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 2 0
+0 1 0 0 0
+DenseMatrix(8x5, double)
+0 0 0 0 0
+0 0 1 0 0
+0 0 0 0 0
+0 0 0 0 0
+0 0 0 2 0
+0 1 0 0 0
+0 0 0 0 0
+0 0 0 0 0
+
+ctable(ys, xs, weight, resNumRows, resNumCols)
+DenseMatrix(6x4, int64_t)
+0 0 0 0
+0 0 3 0
+0 0 0 0
+0 0 0 0
+0 0 0 6
+0 3 0 0
+DenseMatrix(6x4, double)
+0 0 0 0
+0 0 0.3 0
+0 0 0 0
+0 0 0 0
+0 0 0 0.6
+0 0.3 0 0
+DenseMatrix(4x4, int64_t)
+0 0 0 0
+0 0 3 0
+0 0 0 0
+0 0 0 0
+DenseMatrix(4x4, double)
+0 0 0 0
+0 0 0.3 0
+0 0 0 0
+0 0 0 0
+DenseMatrix(6x3, int64_t)
+0 0 0
+0 0 3
+0 0 0
+0 0 0
+0 0 0
+0 3 0
+DenseMatrix(6x3, double)
+0 0 0
+0 0 0.3
+0 0 0
+0 0 0
+0 0 0
+0 0.3 0
+DenseMatrix(4x3, int64_t)
+0 0 0
+0 0 3
+0 0 0
+0 0 0
+DenseMatrix(4x3, double)
+0 0 0
+0 0 0.3
+0 0 0
+0 0 0

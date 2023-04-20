@@ -265,12 +265,11 @@ This is supported for addressing rows and columns in matrices and frames.
 
   *Examples*
   ```
-  pos1 = seq(5, 1, -2); # [5, 3, 1]
-  X[pos1, ]             # extracts rows 5, 3, and 1
-
-  pos2 = fill(2, 3, 1); # [2, 2, 2]
-  X[, pos2]             # extracts column 2 three times
+  X[ [5, 1, 3], ] # extracts rows 5, 1, and 3
+  X[, [2, 2, 2] ] # extracts column 2 three times
   ```
+
+  Note that, when using matrix literals to specify the positions, a space must be left between the opening/closing bracket `[`/`]` of the indexing and that of the matrix literal, in order to avoid confusion with the indexing by bit vector.
 
 A few remarks on positions:
 - Counting starts at zero.
@@ -299,24 +298,28 @@ So far, this is only supported for addressing columns of frames.
   X[100:200, "revenue"] # extracts rows 100 through 199 of the column labeled "revenue"
   ```
 
-##### Indexing by bit vector (filtering)
+##### Indexing by bit vector
 
-So far, this is only supported for addressing rows of frames.
+This is not supported for addressing columns of frames yet.
 
-In contrast to indexing with positions and labels, indexing by bit vector specifies for each row whether to retain it or not.
-It expects a column (*n x 1*) matrix with as many rows as the input data object.
-"Bit" vector is meant in a conceptual sense, the actual value type can be any integer or floating-point type, but all entries must be either zero or one.
-- If the *i*-th entry of the bit vector is zero, the *i*-th row of the input is skipped
-- If the *i*-th entry of the bit vector is one, the *i*-th row of the input is retained
+For each row/column, a single zero/one entry ("bit") must be provided.
+More precisely, a (*r x 1*) matrix is required on data objects with *r* rows, and a (*c x 1*) matrix is required on data objects with *c* columns.
+Only the rows/columns with a corresponding 1-value in the bit vector are present in the result.
+
+Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
 
 *Examples*
 ```
-bv = seq(1, 5, 1) <= 3; # [1, 1, 1, 0, 0]
-X[[bv, ]]               # extracts rows 0, 1, 2
+# Assume X is a 4x3 matrix.
+X[[[0, 1, 1, 0], ]]           # extracts rows 1 and 2
+                              # same as X[[1, 2], ]
+X[[, [1, 0, 1] ]]             # extracts columns 0 and 2
+                              # same as X[, [0, 2]]
+X[[[0, 1, 1, 0], [1, 0, 1] ]] # extracts columns 0 and 2 of rows 1 and 2
+                              # same as X[[1, 2], [0, 2]]
 ```
-
-Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
-Furthermore, the specification of columns must be omitted here.
+  
+Note that, when using a matrix literal to provide the column bit vector, there must be a space between the closing bracket `]` of the matrix literal and the closing double bracket `]]` of the indexing expression, e.g., `X[[, [0] ]]` instead of `X[[, [0]]]`.
 
 #### Casts
 
@@ -347,7 +350,7 @@ Note that casting to frames does not support changing the value/column type yet,
 
 #### Function calls
 
-Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as *user-defined* functions, but the syntax is the same in both cases:
+Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as [*user-defined* functions](#user-defined-functions-udfs), but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parentheses.
 
 *Examples*
@@ -364,9 +367,22 @@ DaphneDSL supports the conditional expression with the general syntax:
 condition ? then-value : else-value
 ```
 
+The condition can be either a scalar or a matrix.
+- *Condition is a scalar:*
+  If the condition is `true` (when casted to boolean), then the result is the `then-value`.
+  Otherwise, the result is the `else-value`.
+  The `then-value` and the `else-value` must have the same type.
+- *Condition is a matrix (elementwise application):*
+  In this case, the condition matrix can be of any value type, but must only contain 0 or 1 values of that type (for all other values, the behavior is unspecified).
+  The `then-value` and `else-value` must be matrices of the same shape as the condition and must have the same value type as each other.
+  The `?:`-operator is applied in an elementwise fashion, i.e., individually for each triple of corresponding elements in condition/`then-value`/`else-value`.
+  The `then-value` and `else-value` may also be scalars, in which case they are treated like matrices with a constant value.
+  The result is a matrix of the same shape as the condition and the same value type as the `then-value`/`else-value`.
+
 *Examples*
 ```
-(i > 5) ? 42.0 : -42.0
+(i > 5) ? 42.0 : -42.0                      # 42.0 if i > 5, -42.0 otherwise
+[1, 0, 0, 1] ? [1.0, 2.0, 3.0, 4.0] : 99.9  # [1.0, 99.9, 99.9, 4.0]
 ```
 
 ## Statements

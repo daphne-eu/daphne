@@ -486,7 +486,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
         mlir::Value valElse = symbolTable.get(*it, owElse).value;
         if(valThen.getType() != valElse.getType())
             // TODO We could try to cast the types.
-            throw std::runtime_error("type missmatch");
+            throw std::runtime_error("type mismatch");
         resultsThen.push_back(valThen);
         resultsElse.push_back(valElse);
     }
@@ -1037,25 +1037,30 @@ antlrcpp::Any DaphneDSLVisitor::visitCastExpr(DaphneDSLGrammarParser::CastExprCo
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxFilterExpr(DaphneDSLGrammarParser::RightIdxFilterExprContext * ctx) {
     mlir::Value obj = utils.valueOrError(visit(ctx->obj));
-    mlir::Type objType = obj.getType();
-    if(ctx->rows && ctx->cols)
-        throw std::runtime_error(
-                "currently right indexing supports either rows or columns, "
-                "but not both at the same time"
+
+    if(ctx->rows) // rows specified
+        obj = builder.create<mlir::daphne::FilterRowOp>(
+                utils.getLoc(ctx->rows->start),
+                obj.getType(),
+                obj,
+                utils.valueOrError(visit(ctx->rows))
         );
-    if(ctx->rows) {
-        mlir::Value rows = utils.valueOrError(visit(ctx->rows));
-        return static_cast<mlir::Value>(builder.create<mlir::daphne::FilterRowOp>(
-                utils.getLoc(ctx->rows->start), objType, obj, rows
-        ));
-    }
-    if(ctx->cols)
-        throw std::runtime_error(
-                "currently right indexing (for filter) supports only rows"
+    if(ctx->cols) // cols specified
+        obj = builder.create<mlir::daphne::FilterColOp>(
+                utils.getLoc(ctx->cols->start),
+                obj.getType(), // TODO Not correct for frames, see #484.
+                obj,
+                utils.valueOrError(visit(ctx->cols))
         );
-    throw std::runtime_error(
-            "right indexing requires the specification of rows and/or columns"
-    );
+
+    // Note: If rows and cols are specified, we create two filter steps.
+    // This can be inefficient, but it is simpler for now.
+    // TODO Create a combined FilterOp
+
+    // Note: If neither rows nor cols are specified, we simply return the
+    // object.
+
+    return obj;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitRightIdxExtractExpr(DaphneDSLGrammarParser::RightIdxExtractExprContext * ctx) {
@@ -1213,52 +1218,14 @@ antlrcpp::Any DaphneDSLVisitor::visitDisjExpr(DaphneDSLGrammarParser::DisjExprCo
     throw std::runtime_error("unexpected op symbol");
 }
 
-antlrcpp::Any DaphneDSLVisitor::visitTernExpr(DaphneDSLGrammarParser::TernExprContext * ctx) {
-    mlir::Value cond = utils.castBoolIf(utils.valueOrError(visit(ctx->cond)));
-    mlir::Location loc = utils.getLoc(ctx->start);
-
-    mlir::OpBuilder oldBuilder = builder;
-
-    // Generate the operations for the then-block.
-    mlir::Block thenBlock;
-    builder.setInsertionPointToEnd(&thenBlock);
-    mlir::Value valThen = utils.valueOrError(visit(ctx->thenExpr));
-
-    // Generate the operations for the else-block
-    mlir::Block elseBlock;
-    builder.setInsertionPointToEnd(&elseBlock);
-    mlir::Value valElse = utils.valueOrError(visit(ctx->elseExpr));
-
-    if(valThen.getType() != valElse.getType())
-        // TODO We could try to cast the types.
-        throw std::runtime_error("type missmatch");
-
-    // Create yield-operations in both branches.
-    builder.setInsertionPointToEnd(&thenBlock);
-    builder.create<mlir::scf::YieldOp>(loc, valThen);
-    builder.setInsertionPointToEnd(&elseBlock);
-    builder.create<mlir::scf::YieldOp>(loc, valElse);
-
-    // Restore the old state of the builder.
-    builder = oldBuilder;
-
-    // Helper functions to move the operations in the two blocks created above
-    // into the actual branches of the if-operation.
-    auto insertThenBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
-        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), thenBlock.getOperations());
-    };
-    auto insertElseBlockDo = [&](mlir::OpBuilder & nested, mlir::Location loc) {
-        nested.getBlock()->getOperations().splice(nested.getBlock()->end(), elseBlock.getOperations());
-    };
-
-    auto ifOp = builder.create<mlir::scf::IfOp>(
-        loc,
-        cond,
-        insertThenBlockDo,
-        insertElseBlockDo
-    );
-
-    return static_cast<mlir::Value>(ifOp.getResults()[0]);
+antlrcpp::Any DaphneDSLVisitor::visitCondExpr(DaphneDSLGrammarParser::CondExprContext * ctx) {
+    return static_cast<mlir::Value>(builder.create<mlir::daphne::CondOp>(
+            utils.getLoc(ctx->start),
+            utils.unknownType,
+            utils.valueOrError(visit(ctx->cond)),
+            utils.valueOrError(visit(ctx->thenExpr)),
+            utils.valueOrError(visit(ctx->elseExpr))
+    ));
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitMatrixLiteralExpr(DaphneDSLGrammarParser::MatrixLiteralExprContext * ctx) {

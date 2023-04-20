@@ -249,7 +249,7 @@ def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [ValueTypeFromArgs
     let hasCanonicalizeMethod = 1;
 }
 def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, EwSparseIfBoth, CUDASupport]>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, Commutative, EwSparseIfEither]>;
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, Commutative, EwSparseIfEither, CUDASupport]>;
 def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CUDASupport]>;
 def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CUDASupport]>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs]>;
@@ -302,6 +302,20 @@ def Daphne_EwLtOp  : Daphne_EwCmpOp<"ewLt" , AnyScalar>;
 def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
 def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
 def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
+
+// ****************************************************************************
+// Elementwise ternary
+// ****************************************************************************
+
+def Daphne_CondOp : Daphne_Op<"cond", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
+]> {
+    let arguments = (ins AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$cond, AnyType:$thenVal, AnyType:$elseVal);
+    let results = (outs AnyType:$res);
+
+    let hasCanonicalizeMethod = 1;
+}
 
 // ****************************************************************************
 // Aggregation and statistical
@@ -647,13 +661,13 @@ class Daphne_ActivationForwardOp<string name, list<Trait> traits = []> :
     let results = (outs MatrixOf<[FloatScalar]>:$data);
 }
 
-def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"reluForward">;
+def Daphne_ReluForwardOp : Daphne_ActivationForwardOp<"Relu_Forward", [ CUDASupport ]>;
 
 // ----------------------------------------------------------------------------
 // Affine
 // ----------------------------------------------------------------------------
 
-def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
+def Daphne_AffineForwardOp : Daphne_Op<"affineForward", [ CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$weights,
             MatrixOf<[FloatScalar]>:$bias);
 
@@ -664,7 +678,7 @@ def Daphne_AffineForwardOp : Daphne_Op<"affineForward"> {
 // Batch Normalization
 // ----------------------------------------------------------------------------
 
-def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
+def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"BatchNorm_Forward", [ CUDASupport ]> {
     let arguments = (ins
             MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$gamma, MatrixOf<[FloatScalar]>:$beta,
             MatrixOf<[FloatScalar]>:$emaMean, MatrixOf<[FloatScalar]>:$emaVar, FloatScalar:$eps);
@@ -675,7 +689,7 @@ def Daphne_BatchNorm2DTestForwardOp : Daphne_Op<"batchNorm2DTestForward"> {
 // Bias Addition
 // ----------------------------------------------------------------------------
 
-def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward"> {
+def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward", [ CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$bias);
 
     let results = (outs MatrixOf<[FloatScalar]>:$data);
@@ -685,7 +699,7 @@ def Daphne_BiasAddForwardOp : Daphne_Op<"biasAddForward"> {
 // Convolution
 // ----------------------------------------------------------------------------
 
-def Daphne_Conv2DForwardOp : Daphne_Op<"conv2DForward"> {
+def Daphne_Conv2DForwardOp : Daphne_Op<"Convolution_Forward", [ CUDASupport ]> {
     let arguments = (ins
         MatrixOf<[FloatScalar]>:$input, MatrixOf<[FloatScalar]>:$filter, MatrixOf<[FloatScalar]>:$bias,
         // input shape
@@ -737,13 +751,13 @@ class Daphne_PoolForwardOp<string name, list<Trait> traits = []> : Daphne_Op<nam
     let results = (outs MatrixOf<[FloatScalar]>:$data, Size:$outHeight, Size:$outWidth);
 }
 
-def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward">;
-def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward">;
+def Daphne_MaxPoolForwardOp : Daphne_PoolForwardOp<"maxPoolForward", [ CUDASupport ]>;
+def Daphne_AvgPoolForwardOp : Daphne_PoolForwardOp<"avgPoolForward", [ CUDASupport ]>;
 
 // ----------------------------------------------------------------------------
 // Softmax
 // ----------------------------------------------------------------------------
-def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward"> {
+def Daphne_SoftmaxForwardOp : Daphne_Op<"softmaxForward", [ CUDASupport ]> {
     let arguments = (ins  MatrixOf<[FloatScalar]>:$input);
 
     let results = (outs MatrixOf<[FloatScalar]>:$data);
@@ -782,12 +796,10 @@ def Daphne_ReplaceOp : Daphne_Op<"replace", [
 }
 
 def Daphne_CTableOp : Daphne_Op<"ctable", [
-    DataTypeMat, ValueTypeFromArgs, // inference of value type is debatable
-    CastArgsToResType
+    DataTypeMat, ValueTypeFromThirdArg,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
-    //// TODO The last three arguments should be optional.
-    //let arguments = (ins MatrixOrU:$lhs, AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$rhs, AnyTypeOf<[Matrix, AnyScalar, Unknown]>:$weights, Size:$outHeight, Size:$outWidth);
-    let arguments = (ins MatrixOrU:$lhs, MatrixOrU:$rhs);
+    let arguments = (ins MatrixOrU:$lhs, MatrixOrU:$rhs, NumScalar:$weight, SI64:$resNumRows, SI64:$resNumCols);
     let results = (outs MatrixOrU:$res);
 }
 
@@ -994,11 +1006,37 @@ def Daphne_FilterRowOp : Daphne_Op<"filterRow", [
         The *i*-th row of `source` is contained in the result, if the *i*-th
         entry of `selectedRows` is a one (in its respective value type).
 
-        Note that `ExtractRowOp` is similar, but works with positions lists
-        instead of bit vectors.
+        Note that `ExtractRowOp` and `SliceRowOp` are similar, but work with
+        positions instead of bit vectors.
     }];
 
     let arguments = (ins MatrixOrFrame:$source, MatrixOrU:$selectedRows);
+    let results = (outs MatrixOrFrame:$res);
+}
+
+def Daphne_FilterColOp : Daphne_Op<"filterCol", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    // TODO Support frame label inference, (see #484).
+    /*DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,*/
+    NumRowsFromArg
+]> {
+    let summary = "Filters the columns of a data object according to a bit vector";
+
+    let description = [{
+        Filters the columns of a data object (matrix or frame) according to a bit
+        vector. The argument `selectedCols` must be a single-column matrix. All
+        its entries must be zero or one. The value type of `selectedCols` does
+        not need to be boolean, it could also be an integer or floating-point
+        type. The number of entries (rows) in `selectedCols` and the number of
+        columns in `source` must be the same.
+        The *i*-th column of `source` is contained in the result, if the *i*-th
+        entry of `selectedCols` is a one (in its respective value type).
+
+        Note that `ExtractColOp` and `SliceColOp` are similar, but work with
+        positions instead of bit vectors.
+    }];
+
+    let arguments = (ins MatrixOrFrame:$source, MatrixOrU:$selectedCols);
     let results = (outs MatrixOrFrame:$res);
 }
 
@@ -1081,18 +1119,21 @@ def Daphne_CastOp : Daphne_Op<"cast", [
             return getArg().getType() == getRes().getType();
         }
         /**
-         * @brief This cast just removes detailed properties from a matrix type, making them unknown instead.
+         * @brief Checks if this cast just removes detailed properties from a matrix/frame type,
+         * to make them unknown instead.
          *
          * Usually casts like this need to exist to make the IR correct for SCF operations.
          * @return true if this cast just tags some known information unknown, false otherwise
          */
-        bool isMatrixPropertyCast() {
-            auto inTy = getArg().getType().dyn_cast<daphne::MatrixType>();
-            auto outTy = getRes().getType().dyn_cast<daphne::MatrixType>();
-            if (inTy && outTy && inTy.isSpecializationOf(outTy)) {
-                return true;
-            }
-            return false;
+        bool isRemovePropertyCast() {
+            Type argTy = getArg().getType();
+            Type resTy = getRes().getType();
+            auto argMatTy = argTy.dyn_cast<daphne::MatrixType>();
+            auto resMatTy = resTy.dyn_cast<daphne::MatrixType>();
+            auto argFrmTy = argTy.dyn_cast<daphne::FrameType>();
+            auto resFrmTy = resTy.dyn_cast<daphne::FrameType>();
+            return (argMatTy && resMatTy && argMatTy.isSpecializationOf(resMatTy))
+                || (argFrmTy && resFrmTy && argFrmTy.isSpecializationOf(resFrmTy));
         }
     }];
 }

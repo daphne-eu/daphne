@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#ifdef USE_ARROW
-
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
@@ -85,5 +83,3 @@ TEMPLATE_PRODUCT_TEST_CASE("ReadParquet, DenseMatrix", TAG_IO, (DenseMatrix), (d
 
   DataObjectFactory::destroy(m);
 }
-
-#endif
