@@ -94,8 +94,8 @@ set(BLA_STATIC ON)
 find_package(BLAS)
 
 # Add TSL to include path
-set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${THIRDPARTY_INCLUDE}/TSL )
-
+# set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${THIRDPARTY_INCLUDE}/TSL )
+include_directories(${THIRDPARTY_INCLUDE}/TSL)
 
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources
