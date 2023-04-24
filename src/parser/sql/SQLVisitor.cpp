@@ -18,6 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include "antlr4-runtime.h"
+#include "mlir/IR/OpDefinition.h"
 
 #include <stdexcept>
 #include <string>
@@ -191,6 +192,31 @@ mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
                 toCast,
                 numRow,
                 utils.castSizeIf(one)
+            ));
+    }
+}
+
+mlir::Value SQLVisitor::castToMatrixColumnWithOneEntry(mlir::Value toCast){
+    mlir::Location loc = builder.getUnknownLoc();
+
+    if(toCast.getType().isa<mlir::daphne::MatrixType>()){
+        return toCast;
+    }else{
+
+        mlir::Value one = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(
+                loc, static_cast<int64_t>(1)
+            ));
+
+        mlir::Value size = utils.castSizeIf(one);
+
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::FillOp>(
+                loc,
+                utils.matrixOf(toCast),
+                toCast,
+                size,
+                size
             ));
     }
 }
@@ -902,8 +928,75 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //  the currentFrame. This Matrix is the result of this function.
     std::string newColumnName = "group_" + ctx->var->getText();
 
-    if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)){  //Not allowed Function Call
-        throw std::runtime_error("Use of an aggregation function without a group clause");
+    // Run aggreagation for whole column
+    if(!isBitSet(sqlFlag, (int64_t)SQLBit::group) && isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){  
+        mlir::Location loc = utils.getLoc(ctx->start);
+
+        antlrcpp::Any vVar = visit(ctx->var);
+
+        mlir::Value col = utils.valueOrError(vVar);
+
+        mlir::Type resTypeCol = col.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
+
+        const std::string &func = ctx->func->getText();
+
+        mlir::Value result; 
+        if(func == "count"){
+            result = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::AllAggSumOp>(
+                loc,
+                resTypeCol,
+                col
+                )
+            );
+        }
+        if(func == "sum"){
+            result = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::AllAggSumOp>(
+                loc,
+                resTypeCol,
+                col
+                )
+            );
+        }
+        if(func == "min"){
+            result = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::AllAggMinOp>(
+                loc,
+                resTypeCol,
+                col
+                ) 
+            );
+        }
+        if(func == "max"){
+            result = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::AllAggMaxOp>(
+                loc,
+                resTypeCol,
+                col
+                )
+            );
+        }
+        if(func == "avg"){
+            result = static_cast<mlir::Value>(
+            builder.create<mlir::daphne::AllAggMeanOp>(
+                loc,
+                resTypeCol,
+                col
+                )
+            );
+        }
+
+        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
+
+        mlir::Value resultMatrix = castToMatrixColumnWithOneEntry(result);
+
+        return resultMatrix;
+
+        std::stringstream x;
+        x << "Error: " << func << " does not name an aggregation Function for Group\n";
+        throw std::runtime_error(x.str());
+        
     }
     if(isBitSet(sqlFlag, (int64_t)SQLBit::agg)){ //Not allowed nested Function Call
         throw std::runtime_error("Nested Aggregation Functions");
