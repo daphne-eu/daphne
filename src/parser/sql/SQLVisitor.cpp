@@ -942,13 +942,12 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
 
         mlir::Value result; 
         if(func == "count"){
-            result = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::AllAggSumOp>(
+            result = utils.castSI64If(static_cast<mlir::Value>(
+            builder.create<mlir::daphne::NumRowsOp>(
                 loc,
-                resTypeCol,
+                utils.sizeType,
                 col
-                )
-            );
+            )));
         }
         if(func == "sum"){
             result = static_cast<mlir::Value>(
