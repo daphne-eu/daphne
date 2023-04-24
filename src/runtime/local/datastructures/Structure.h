@@ -40,9 +40,11 @@ protected:
     size_t numRows;
     size_t numCols;
 
-    Structure(size_t numRows, size_t numCols) : refCounter(1), numRows(numRows), numCols(numCols) { };
+    Structure(size_t numRows, size_t numCols) : refCounter(1), numRows(numRows), numCols(numCols) {
+        mdo = std::make_shared<MetaDataObject>();
+    };
 
-    mutable MetaDataObject mdo;
+    mutable std::shared_ptr<MetaDataObject> mdo;
 
 public:
     virtual ~Structure() = default;
@@ -59,8 +61,8 @@ public:
         return refCounter;
     }
     
-    MetaDataObject& getMetaDataObject() const {
-        return mdo;
+    MetaDataObject* getMetaDataObject() const {
+        return mdo.get();
     }
 
     /**

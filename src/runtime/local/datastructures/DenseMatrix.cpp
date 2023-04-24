@@ -26,7 +26,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
                 << numRows << "x" << numCols << " req.mem.: " << static_cast<float>(bufferSize()) / (1048576) << "Mb"
                 <<  std::endl;
 #endif
-        new_data_placement = this->mdo.addDataPlacement(allocInfo);
+        new_data_placement = this->mdo->addDataPlacement(allocInfo);
         new_data_placement->allocation->createAllocation(bufferSize(), zero);
     }
     else {
@@ -34,9 +34,9 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
         alloc_shared_values();
         if(zero)
             memset(values.get(), 0, maxNumRows * numCols * sizeof(ValueType));
-        new_data_placement = this->mdo.addDataPlacement(&myHostAllocInfo);
+        new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
     }
-    this->mdo.addLatest(new_data_placement->dp_id);
+    this->mdo->addLatest(new_data_placement->dp_id);
 }
 
 template<typename ValueType>
@@ -44,8 +44,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_
         Matrix<ValueType>(numRows, numCols), rowSkip(numCols), values(values), lastAppendedRowIdx(0),
         lastAppendedColIdx(0) {
     AllocationDescriptorHost myHostAllocInfo;
-    DataPlacement* new_data_placement = this->mdo.addDataPlacement(&myHostAllocInfo);
-    this->mdo.addLatest(new_data_placement->dp_id);
+    DataPlacement* new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
+    this->mdo->addLatest(new_data_placement->dp_id);
 }
 
 template<typename ValueType>
@@ -61,13 +61,22 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
     assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
     assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
 
+    // ToDo: manage host mem (values) in a data placement
+    AllocationDescriptorHost myHostAllocInfo;
+    Range r(rowLowerIncl, colLowerIncl, rowLowerIncl+rowUpperExcl, colLowerIncl+colUpperExcl);
     rowSkip = src->rowSkip;
     auto offset = rowLowerIncl * src->rowSkip + colLowerIncl;
-    alloc_shared_values(src->values, offset);
-    // ToDo: handle object meta data
-    AllocationDescriptorHost myHostAllocInfo;
-    auto new_placement = this->mdo.addDataPlacement(&myHostAllocInfo);
-    this->mdo.addLatest(new_placement->dp_id);
+    this->mdo = src->mdo;
+    if(!src->values) {
+        const_cast<DenseMatrix<ValueType>*>(src)->alloc_shared_values();
+        this->mdo->addDataPlacement(&myHostAllocInfo);
+        alloc_shared_values(src->values, offset);
+        this->mdo->addDataPlacement(&myHostAllocInfo, &r);
+    }
+    else {
+        alloc_shared_values(src->values, offset);
+        this->mdo->addDataPlacement(&myHostAllocInfo, &r);
+    }
 }
 
 template<typename ValueType>
@@ -76,18 +85,18 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
     // If no range information is provided we assume the full range that this matrix covers
     if(range == nullptr || *range == Range(*this)) {
         if(alloc_desc) {
-            auto ret = this->mdo.findDataPlacementByType(alloc_desc, range);
+            auto ret = this->mdo->findDataPlacementByType(alloc_desc, range);
             if(!ret) {
                 // find other allocation type X (preferably host allocation) to transfer from in latest_version
 
                 // tuple content: <is latest, latest-id, ptr-to-data-placement>
                 std::tuple<bool, size_t, ValueType *> result = std::make_tuple(false, 0, nullptr);
-                auto latest = this->mdo.getLatest();
+                auto latest = this->mdo->getLatest();
                 DataPlacement *placement;
                 for (auto &placement_id: latest) {
-                    placement = this->mdo.getDataPlacementByID(placement_id);
+                    placement = this->mdo->getDataPlacementByID(placement_id);
                     if(placement->range == nullptr || *(placement->range) == Range{0, 0, this->getNumRows(),
-                                                                                   this->getNumCols()}) {
+                            this->getNumCols()}) {
                         std::get<0>(result) = true;
                         std::get<1>(result) = placement->dp_id;
                         // prefer host allocation
@@ -103,13 +112,13 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
                     AllocationDescriptorHost myHostAllocInfo;
                     if(!values)
                         this->alloc_shared_values();
-                    this->mdo.addDataPlacement(&myHostAllocInfo);
+                    this->mdo->addDataPlacement(&myHostAllocInfo);
                     placement->allocation->transferFrom(reinterpret_cast<std::byte *>(values.get()), bufferSize());
                     std::get<2>(result) = values.get();
                 }
 
                 // create new data placement
-                auto new_data_placement = const_cast<DenseMatrix<ValueType> *>(this)->mdo.addDataPlacement(alloc_desc);
+                auto new_data_placement = const_cast<DenseMatrix<ValueType> *>(this)->mdo->addDataPlacement(alloc_desc);
                 new_data_placement->allocation->createAllocation(bufferSize(), false);
 
                 // transfer to requested data placement
@@ -118,7 +127,7 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
                         new_data_placement->allocation->getData().get()));
             }
             else {
-                bool latest = this->mdo.isLatestVersion(ret->dp_id);
+                bool latest = this->mdo->isLatestVersion(ret->dp_id);
                 if(!latest) {
                     ret->allocation->transferTo(reinterpret_cast<std::byte *>(values.get()), bufferSize());
                 }
@@ -129,10 +138,10 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
         else {
             // if no alloc info was provided we try to get/create a full host allocation and return that
             std::tuple<bool, size_t, ValueType *> result = std::make_tuple(false, 0, nullptr);
-            auto latest = this->mdo.getLatest();
+            auto latest = this->mdo->getLatest();
             DataPlacement *placement;
             for (auto &placement_id: latest) {
-                placement = this->mdo.getDataPlacementByID(placement_id);
+                placement = this->mdo->getDataPlacementByID(placement_id);
                 if(placement->range == nullptr || *(placement->range) == Range{0, 0, this->getNumRows(),
                         this->getNumCols()}) {
                     std::get<0>(result) = true;
@@ -148,9 +157,12 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
             // if we found a data placement that is not in host memory, transfer it there before returning
             if(std::get<0>(result) == true && std::get<2>(result) == nullptr) {
                 AllocationDescriptorHost myHostAllocInfo;
+
+                // ToDo: this needs fixing in the context of matrix views
                 if(!values)
-                    const_cast<DenseMatrix<ValueType> *>(this)->alloc_shared_values();
-                this->mdo.addDataPlacement(&myHostAllocInfo);
+                    const_cast<DenseMatrix<ValueType>*>(this)->alloc_shared_values();
+
+                this->mdo->addDataPlacement(&myHostAllocInfo);
                 placement->allocation->transferFrom(reinterpret_cast<std::byte *>(values.get()), bufferSize());
                 std::get<2>(result) = values.get();
             }

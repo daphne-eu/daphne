@@ -84,9 +84,9 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         range.c_len = mat->getNumCols();
         for (int rank=0;rank<worldSize;rank++){   // we currently exclude the coordinator
             std::string address=std::to_string(rank+1); // to skip coordinator  
-            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
             if (dp!=nullptr) {                
-                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
                 auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
                 data.ix = DistributedIndex(0, 0);
                 dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
@@ -97,7 +97,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
                 AllocationDescriptorMPI allocationDescriptor (rank+1, /* to exclude coordinator*/  
                                                                 dctx,
                                                                 data);
-                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
+                dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
@@ -134,7 +134,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             WorkerImpl::StoredInfo dataAcknowledgement=MPIHelper::getDataAcknowledgement(&rank);
             //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
-            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
             data.identifier = dataAcknowledgement.identifier;
             data.numRows = dataAcknowledgement.numRows;
@@ -194,8 +194,8 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             // If DataPlacement dp already exists simply
             // update range (in case we have a different one) and distributed data
             DataPlacement *dp;
-            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
-                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);
+            if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
                 auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
                 data.ix = DistributedIndex(0, 0);
                 dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
@@ -206,7 +206,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
                 AllocationDescriptorGRPC allocationDescriptor (dctx, 
                                                                 workerAddr,  
                                                                 data);
-                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);
+                dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
             }
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
@@ -218,7 +218,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();            
             auto dp_id = response.storedInfo.dp_id;
-            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
 
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
 

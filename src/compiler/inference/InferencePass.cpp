@@ -112,21 +112,23 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                         );
                     // Set the infered shapes on all results of this operation.
                     for(size_t i = 0 ; i < numRes ; i++) {
-                        const ssize_t numRows = shapes[i].first;
-                        const ssize_t numCols = shapes[i].second;
-                        Value rv = op->getResult(i);
-                        const Type rt = rv.getType();
-                        if(auto mt = rt.dyn_cast<daphne::MatrixType>())
-                            rv.setType(mt.withShape(numRows, numCols));
-                        else if(auto ft = rt.dyn_cast<daphne::FrameType>())
-                            rv.setType(ft.withShape(numRows, numCols));
-                        else
-                            throw std::runtime_error(
-                                "shape inference cannot set the shape of op " +
-                                    op->getName().getStringRef().str() +
-                                    " operand " + std::to_string(i) + ", since it "
-                                                                      "is neither a matrix nor a frame"
-                            );
+                        if(op->getResultTypes()[i].isa<mlir::daphne::MatrixType>()) {
+                            const ssize_t numRows = shapes[i].first;
+                            const ssize_t numCols = shapes[i].second;
+                            Value rv = op->getResult(i);
+                            const Type rt = rv.getType();
+                            if (auto mt = rt.dyn_cast<daphne::MatrixType>())
+                                rv.setType(mt.withShape(numRows, numCols));
+                            else if (auto ft = rt.dyn_cast<daphne::FrameType>())
+                                rv.setType(ft.withShape(numRows, numCols));
+                            else
+                                throw std::runtime_error(
+                                        "shape inference cannot set the shape of op " +
+                                        op->getName().getStringRef().str() +
+                                        " operand " + std::to_string(i) + ", since it "
+                                                                          "is neither a matrix nor a frame"
+                                );
+                        }
                     }
                 }
                 if (doSparsityInference) {
@@ -143,22 +145,24 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                     // Set the inferred sparsities on all results of this operation.
                     for(size_t i = 0 ; i < numRes ; i++) {
                         const double sparsity = sparsities[i];
-                        Value rv = op->getResult(i);
-                        const Type rt = rv.getType();
-                        auto mt = rt.dyn_cast<daphne::MatrixType>();
-                        auto ft = rt.dyn_cast<daphne::FrameType>();
-                        if(mt)
-                            rv.setType(mt.withSparsity(sparsity));
-                        else if((ft && sparsity != -1) || !ft)
-                            // We do not support sparsity for frames, but if the
-                            // sparsity for a frame result is provided as
-                            // unknown (-1) that's okay.
-                            throw std::runtime_error(
-                                "sparsity inference cannot set the shape of op " +
-                                    op->getName().getStringRef().str() +
-                                    " operand " + std::to_string(i) + ", since it "
-                                                                      "is not a matrix"
-                            );
+                        if(op->getResultTypes()[i].isa<mlir::daphne::MatrixType>()) {
+                            Value rv = op->getResult(i);
+                            const Type rt = rv.getType();
+                            auto mt = rt.dyn_cast<daphne::MatrixType>();
+                            auto ft = rt.dyn_cast<daphne::FrameType>();
+                            if (mt)
+                                rv.setType(mt.withSparsity(sparsity));
+                            else if ((ft && sparsity != -1) || !ft)
+                                // We do not support sparsity for frames, but if the
+                                // sparsity for a frame result is provided as
+                                // unknown (-1) that's okay.
+                                throw std::runtime_error(
+                                        "sparsity inference cannot set the shape of op " +
+                                        op->getName().getStringRef().str() +
+                                        " operand " + std::to_string(i) + ", since it "
+                                                                          "is not a matrix"
+                                );
+                        }
                     }
                 }
             }

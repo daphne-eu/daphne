@@ -80,7 +80,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
             int target_rank;    
             distributed::Data protoMessage=MPIHelper::getResults(&target_rank);    
             std::string address = std::to_string(target_rank);  
-            auto dp=mat->getMetaDataObject().getDataPlacementByLocation(address);   
+            auto dp=mat->getMetaDataObject()->getDataPlacementByLocation(address);   
             auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
             if(std::stoi(address)==COORDINATOR)
                 continue;
@@ -128,7 +128,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Matrix> caller;
 
 
-        auto dpVector = mat->getMetaDataObject().getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        auto dpVector = mat->getMetaDataObject()->getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
         for (auto &dp : *dpVector) {
             auto address = dp->allocation->getLocation();
             
@@ -147,7 +147,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         while (!caller.isQueueEmpty()){
             auto response = caller.getNextResult();
             auto dp_id = response.storedInfo.dp_id;
-            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
 
             auto matProto = response.result;

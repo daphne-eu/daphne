@@ -101,9 +101,9 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             range.c_start = startCol;
             range.c_len = colCount;
             std::string address=std::to_string(rank+1);
-            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
             if (dp!=nullptr) {                
-                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);     
                 auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
                 data.ix = DistributedIndex(rank, 0);     
                 dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
@@ -114,7 +114,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
                                                             dctx,
                                                             data);
                 data.ix = DistributedIndex(rank, 0);
-                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
+                dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);                    
             }
             //std::cout<<"rank "<< rank+1<< " will work on rows from " << startRow << " to "  << startRow+rowCount<<std::endl;
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
@@ -142,7 +142,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             }
             WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             std::string address = std::to_string(rank);
-            DataPlacement *dp = mat->getMetaDataObject().getDataPlacementByLocation(address);
+            DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
             auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
             data.identifier = dataAcknowledgement.identifier ;
             data.numRows = dataAcknowledgement.numRows;
@@ -191,8 +191,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             // If dp already exists simply
             // update range (in case we have a different one) and distribute data
             DataPlacement *dp;
-            if ((dp = mat->getMetaDataObject().getDataPlacementByLocation(workerAddr))) {                
-                mat->getMetaDataObject().updateRangeDataPlacementByID(dp->dp_id, &range);     
+            if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {                
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);     
                 auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
                 // TODO Currently we do not support distributing/splitting 
                 // by columns. When we do, this should be changed (e.g. Index(0, workerIx))
@@ -208,7 +208,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
                                             dctx,
                                             workerAddr,
                                             data);
-                dp = mat->getMetaDataObject().addDataPlacement(&allocationDescriptor, &range);                    
+                dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);                    
             }
             // keep track of processed rows
             // Skip if already placed at workers
@@ -242,7 +242,7 @@ struct Distribute<ALLOCATION_TYPE::DIST_GRPC, DT>
             
             auto storedData = response.result;            
 
-            auto dp = mat->getMetaDataObject().getDataPlacementByID(dp_id);
+            auto dp = mat->getMetaDataObject()->getDataPlacementByID(dp_id);
             
             auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
             data.identifier = storedData.identifier();
