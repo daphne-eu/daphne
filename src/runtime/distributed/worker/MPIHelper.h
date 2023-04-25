@@ -4,6 +4,7 @@
 #include <mpi.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/distributed/worker/MPISerializer.h>
+#include <runtime/distributed/worker/WorkerImpl.h>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
