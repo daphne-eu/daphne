@@ -1,0 +1,2 @@
+Frame(1x2, [sum(lhs.a):int64_t, min(lhs.a):int64_t])
+45 0

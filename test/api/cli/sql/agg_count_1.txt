@@ -1,0 +1,2 @@
+Frame(1x1, [count(lhs.a):int64_t])
+10

@@ -1,0 +1,2 @@
+Frame(1x2, [sum(lhs.a):int64_t, avg(lhs.b):double])
+45 33

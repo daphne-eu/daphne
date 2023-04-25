@@ -1,0 +1,2 @@
+Frame(1x1, [max(lhs.a):int64_t])
+9
