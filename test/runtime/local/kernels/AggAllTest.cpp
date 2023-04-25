@@ -82,9 +82,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     
-    checkAggAll(AggOpCode::MIN, m0, 0);
-    checkAggAll(AggOpCode::MIN, m1, 2);
-    checkAggAll(AggOpCode::MIN, m2, 0);
+    // In case of min the result type is the same as the input type
+    checkAggAll(AggOpCode::MIN, m0, (typename DT::VT)0);
+    checkAggAll(AggOpCode::MIN, m1, (typename DT::VT)2);
+    checkAggAll(AggOpCode::MIN, m2, (typename DT::VT)0);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
