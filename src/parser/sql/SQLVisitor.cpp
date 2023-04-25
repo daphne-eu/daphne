@@ -228,7 +228,7 @@ mlir::Value SQLVisitor::castToIntMatrixColumn(mlir::Value toCast){
     mlir::Type resType = utils.matrixOf(vt);
 
     if(toCastMatrix.getType() != resType){
-        mlir::Value toCastFrame = matrixToFrame(toCastMatrix, "meh"); // We need this step because castOp can't cast a matrix to a matrix
+        mlir::Value toCastFrame = matrixToFrame(toCastMatrix, "TempCol"); // We need this step because castOp can't cast a matrix to a matrix
 
         return static_cast<mlir::Value>(builder.create<mlir::daphne::CastOp>(
                 loc, resType, toCastFrame
