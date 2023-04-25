@@ -993,7 +993,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         return resultMatrix;
 
         std::stringstream x;
-        x << "Error: " << func << " does not name an aggregation Function for Group\n";
+        x << "Error: " << func << " does not name an supported aggregation function \n";
         throw std::runtime_error(x.str());
         
     }
