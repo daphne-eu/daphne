@@ -182,7 +182,7 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
             bytesToCopy = (chunkSize > (serializationIdx - serializeFromByte) + valuesSize) ?
                 valuesSize : (chunkSize - bufferIdx);
         } else {
-            bytesToCopy = (serializeFromByte + chunkSize > valuesSize) ?
+            bytesToCopy = (serializeFromByte + chunkSize > valuesSize + serializationIdx) ?
                 (valuesSize + serializationIdx - serializeFromByte) : (chunkSize - bufferIdx);
         }
 
@@ -284,18 +284,30 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
         if (deserializeFromByte == 0 && chunkSize < 60)
             throw std::runtime_error("Minimum starting chunk size 60 bytes"); // For now..?
         
-        size_t bufIdx = 0;        
+        size_t bufIdx = 0;     
+        size_t serializationIdx = 0;   
         
         if (deserializeFromByte == 0) {
             matrix = deserializeHeader(buf, matrix);
             bufIdx += BUFFER_HEADER;
         }
+        serializationIdx += BUFFER_HEADER;
         
         auto valuesArg = matrix->getValues();
-        
+        size_t bytesToCopy = 0;
+        size_t valuesSize = matrix->getNumRows() * matrix->getNumCols() * sizeof(VT);
+
         size_t valuesOffset = deserializeFromByte == 0 ? 0 : deserializeFromByte - BUFFER_HEADER;
-        chunkSize = bufIdx + chunkSize > length(matrix) ? length(matrix) - bufIdx : chunkSize;
-        std::copy(buf + bufIdx, buf + bufIdx + chunkSize, reinterpret_cast<char*>(valuesArg) + valuesOffset);
+
+        if (deserializeFromByte < serializationIdx) {
+            bytesToCopy = (chunkSize > (serializationIdx - deserializeFromByte) + valuesSize) ?
+                valuesSize : (chunkSize - bufIdx);
+        } else {
+            bytesToCopy = (deserializeFromByte + chunkSize > valuesSize + serializationIdx) ?
+                (valuesSize + serializationIdx - deserializeFromByte) : (chunkSize - bufIdx);
+        }
+
+        std::copy(buf + bufIdx, buf + bufIdx + bytesToCopy, reinterpret_cast<char*>(valuesArg) + valuesOffset);
         
         return matrix;
     };
@@ -358,10 +370,11 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
         // rowOffsets
         len += ((arg->getNumRows() + 1) * sizeof(size_t));
         // colIdxs
-        size_t nzb = 0;
-        for (size_t r = 0; r < arg->getNumRows(); r++){
-            nzb += arg->getNumNonZeros(r);            
-        }
+        // size_t nzb = 0;
+        // for (size_t r = 0; r < arg->getNumRows(); r++){
+        //     nzb += arg->getNumNonZeros(r);            
+        // }
+        size_t nzb = arg->getMaxNumNonZeros();
         len += (nzb * sizeof(size_t));
         // non-zero values
         len += (nzb * sizeof(VT));
@@ -626,8 +639,8 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
         if (deserializeFromByte == 0) {
             matrix = deserializeHeader(buffer, matrix);
             bufferIdx += BUFFER_HEADER;
-            serializationIdx += BUFFER_HEADER;
         }
+        serializationIdx += BUFFER_HEADER;
         
         if (deserializeFromByte < serializationIdx + sizeof(size_t) * (matrix->getNumRows() + 1)) {
             size_t * rowOffsets = matrix->getRowOffsets();
@@ -647,7 +660,7 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
         if (chunkSize <= bufferIdx)
             return matrix;
 
-        size_t nzb = matrix->getNumNonZeros();
+        size_t nzb = matrix->getMaxNumNonZeros();
         if (deserializeFromByte < serializationIdx + sizeof(size_t) * nzb) {
             size_t * colIdxs = matrix->getColIdxs();
             size_t colIdxs_offset = deserializeFromByte < serializationIdx ? 0 : deserializeFromByte - serializationIdx; 
@@ -1237,8 +1250,6 @@ public:
      */
     DT* DeserializeNextChunk(std::vector<char> &buffer) {
         auto chunkSize = buffer.capacity();
-        if (buffer.capacity() < chunkSize)
-            buffer.reserve(chunkSize);
         
         size_t startOffset;        
         size_t bufferIdx = 0;

@@ -153,6 +153,9 @@ public:
         this->numRows = numRows;
     }
     
+    size_t getMaxNumNonZeros() const {
+        return maxNumNonZeros;
+    }
     size_t getNumNonZeros() const {
         return rowOffsets.get()[numRows] - rowOffsets.get()[0];
     }
