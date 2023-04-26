@@ -1331,7 +1331,7 @@ struct DaphneSerializerChunks
                 throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
             serializedData.second.reserve(chunkSize);
 
-            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second, numberOfBytesSerialized, chunkSize);
+            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second.data(), chunkSize, numberOfBytesSerialized);
             numberOfBytesSerialized += serializedData.first;
         };
 
@@ -1342,7 +1342,7 @@ struct DaphneSerializerChunks
         Iterator operator++()
         {
             index++;
-            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second, chunkSize, numberOfBytesSerialized);
+            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second.data(), chunkSize, numberOfBytesSerialized);
             numberOfBytesSerialized += serializedData.first;
             return *this;
         };
@@ -1432,7 +1432,7 @@ struct DaphneDeserializerChunks
         // Prefix increment
         Iterator operator++() {
             index++;
-            *matrixPtr = DaphneSerializer<DT>::deserialize(serializedData.second, *matrixPtr, numberOfBytesDeserialized, serializedData.first);
+            *matrixPtr = DaphneSerializer<DT>::deserialize(serializedData.second.data(), serializedData.first, *matrixPtr, numberOfBytesDeserialized);
             numberOfBytesDeserialized += serializedData.first;
             return *this;
         }
