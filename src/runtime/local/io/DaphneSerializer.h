@@ -40,108 +40,6 @@ inline ValueTypeCode DF_Vtype(const std::vector<char>& buf) {
     return *vt;
 }
 
-/* Iterator, used for serializing in chunks. */
-template<class DT>
-struct DaphneSerializerChunks{
-    DT *matrix;
-    size_t chunkSize;
-    DaphneSerializerChunks(DT *matrix, size_t chunkSize = 1024) : matrix(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
-    };
-    struct Iterator {        
-        using iterator_category = std::input_iterator_tag;
-        // using difference_type = // todo
-        
-        using buffer = std::vector<char>;
-        using value_type = std::pair<size_t, buffer>; // TODO verify this
-        using pointer = std::pair<size_t, buffer>*;
-        using reference = std::pair<size_t, buffer>&; // TODO verify this
-    private:
-        const DT *matrix;
-        size_t chunkSize;
-        value_type serializedData;
-    public:        
-        size_t numberOfBytesSerialized = 0;
-        size_t index;
-        
-        // Constructors
-        Iterator() {};
-        Iterator(const DT *matrix, size_t chunkSize = 1024);
-
-        reference operator*() { return serializedData; }
-        pointer operator->() { return &serializedData; }
-
-        // Prefix increment
-        Iterator& operator++();
-        
-        // Postfix increment
-        Iterator operator++(int) {
-            Iterator tmp = *this;
-            ++(*this);
-            return  tmp;;
-        }
-
-        friend bool operator== (const Iterator& a, const Iterator& b) { return a.index == b.index; };
-        friend bool operator!= (const Iterator& a, const Iterator& b) { return a.index != b.index; };
-    };
-    Iterator begin(){
-        return Iterator(matrix, chunkSize);
-    }
-    Iterator end();
-};
-
-/* Iterator, used for deserializing in chunks. */
-template<class DT>
-struct DaphneDeserializerChunks {
-    DT **matrixPtr;
-    size_t chunkSize;
-    DaphneDeserializerChunks(DT **matrix, size_t chunkSize = 1024) : matrixPtr(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
-    };
-    struct Iterator {        
-        using iterator_category = std::output_iterator_tag;
-        // using difference_type = // todo
-        
-        using buffer = std::vector<char>;
-        using value_type = std::pair<size_t, buffer>; // TODO verify this
-        using pointer = std::pair<size_t, buffer>*;
-        using reference = std::pair<size_t, buffer>&; // TODO verify this
-        DT **matrixPtr;
-    private:
-        size_t chunkSize;
-        value_type serializedData;    
-    public:        
-        size_t numberOfBytesSerialized = 0;
-        size_t index;
-        
-        // Constructors
-        Iterator() {};
-        Iterator(DT **matrix, size_t chunkSize = 1024);
-
-        reference operator*() { return serializedData; }
-        pointer operator->() { return &serializedData; }
-
-        // Prefix increment
-        Iterator& operator++();
-        
-        // Postfix increment
-        Iterator operator++(int) {
-            Iterator tmp = *this; 
-            ++(*this);
-            return  tmp;;
-        }
-
-        friend bool operator== (const Iterator& a, const Iterator& b) { return a.index == b.index; };
-        friend bool operator!= (const Iterator& a, const Iterator& b) { return a.index != b.index; };
-    };
-    Iterator begin() {
-        return Iterator(matrixPtr, chunkSize);
-    }
-    Iterator end();
-};
-
 template <class DTArg, bool isFundumental = std::is_fundamental<DTArg>::value>
 struct DaphneSerializer { 
     static size_t length(const DTArg *arg);
@@ -812,7 +710,7 @@ struct DaphneSerializer<VT, true> {
         size_t bufferIdx = 0;
         bufferIdx += sizeof(DF_header);
         bufferIdx += sizeof(ValueTypeCode);
-        double val;
+        VT val;
         std::copy(buf.begin() + bufferIdx, buf.begin() + sizeof(VT), reinterpret_cast<char*>(&val));
 
         return val;
@@ -849,58 +747,152 @@ inline Structure *DF_deserialize(const std::vector<char> &buf) {
     }
 }
 
-/* Serialization in chunks */
-template<class DT>
-DaphneSerializerChunks<DT>::Iterator::Iterator(const DT *matrix, size_t chunkSize) : matrix(matrix), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0) {    
-    if (chunkSize < 60)
-        throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
-    serializedData.second.reserve(chunkSize);
+/* Iterator, used for serializing in chunks. */
+template <class DT>
+struct DaphneSerializerChunks
+{
+    DT *matrix;
+    size_t chunkSize;
+    DaphneSerializerChunks(DT *matrix, size_t chunkSize = 1024) : matrix(matrix), chunkSize(chunkSize) {
+        if (chunkSize < 60)
+            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    };
+    struct Iterator {
+        using iterator_category = std::input_iterator_tag;
+        // using difference_type = // todo
 
-    serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second, numberOfBytesSerialized, chunkSize);
-    numberOfBytesSerialized += serializedData.first;
+        using buffer = std::vector<char>;
+        using value_type = std::pair<size_t, buffer>; // TODO verify this
+        using pointer = std::pair<size_t, buffer> *;
+        using reference = std::pair<size_t, buffer> &; // TODO verify this
+    private:
+        const DT *matrix;
+        size_t chunkSize;
+        value_type serializedData;
+
+    public:
+        size_t numberOfBytesSerialized = 0;
+        size_t index;
+
+        // Constructors
+        Iterator(){};
+        Iterator(const DT *matrix, size_t chunkSize) : matrix(matrix), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0)
+        {
+            if (chunkSize < 60)
+                throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+            serializedData.second.reserve(chunkSize);
+
+            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second, numberOfBytesSerialized, chunkSize);
+            numberOfBytesSerialized += serializedData.first;
+        };
+
+        reference operator*() { return serializedData; }
+        pointer operator->() { return &serializedData; }
+
+        // Prefix increment
+        Iterator operator++()
+        {
+            index++;
+            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second, numberOfBytesSerialized, chunkSize);
+            numberOfBytesSerialized += serializedData.first;
+            return *this;
+        };
+        // Postfix increment
+        Iterator operator++(int)
+        {
+            Iterator tmp = *this;
+            ++(*this);
+            return tmp;
+            ;
+        }
+
+        friend bool operator==(const Iterator &a, const Iterator &b) { return a.index == b.index; };
+        friend bool operator!=(const Iterator &a, const Iterator &b) { return a.index != b.index; };
+    };
+    Iterator begin() {
+        return Iterator(matrix, chunkSize);
+    }
+
+    // Iterator end
+    Iterator end() {
+        Iterator iter;
+        iter.index = DaphneSerializer<DT>::length(matrix) / chunkSize + 1;
+        return iter;
+    }
 };
 
-// Prefix increment
-template<class DT>
-typename DaphneSerializerChunks<DT>::Iterator &DaphneSerializerChunks<DT>::Iterator::operator++() { 
-    index++;
-    serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second, numberOfBytesSerialized, chunkSize);
-    numberOfBytesSerialized += serializedData.first;
-    return *this;
-};
-// Iterator end
-template<class DT>
-typename DaphneSerializerChunks<DT>::Iterator DaphneSerializerChunks<DT>::end() {
-    Iterator iter;
-    iter.index = DaphneSerializer<DT>::length(matrix) / chunkSize + 1;
-    return iter;    
-}
-/* Deserialization in chunks */
-template<class DT>
-DaphneDeserializerChunks<DT>::Iterator::Iterator(DT **matrix, size_t chunkSize) : matrixPtr(matrix), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0) {    
-    if (chunkSize < 60)
-        throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?    
-    serializedData.second.reserve(chunkSize);
-};
+/* Iterator, used for deserializing in chunks. */
+template <class DT>
+struct DaphneDeserializerChunks
+{
+    DT **matrixPtr;
+    size_t chunkSize;
+    DaphneDeserializerChunks(DT **matrix, size_t chunkSize = 1024) : matrixPtr(matrix), chunkSize(chunkSize)
+    {
+        if (chunkSize < 60)
+            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    };
+    struct Iterator
+    {
+        using iterator_category = std::output_iterator_tag;
+        // using difference_type = // todo
 
-// Prefix increment
-template<class DT>
-typename DaphneDeserializerChunks<DT>::Iterator &DaphneDeserializerChunks<DT>::Iterator::operator++() { 
-    index++;
-    *matrixPtr = DaphneSerializer<DT>::deserialize(serializedData.second, *matrixPtr, numberOfBytesSerialized, serializedData.first);
-    numberOfBytesSerialized += serializedData.first;
-    return *this;
-}
-// Iterator end
-template<class DT>
-typename DaphneDeserializerChunks<DT>::Iterator DaphneDeserializerChunks<DT>::end() {
-    Iterator iter;
-    // If we just initialized the iterator is possible that we have no information about the deserialized object
-    // but the buffer is also uninitialized. If matrix is uninitialized we simply set Iterator::end() as 1, otherwise
-    // we calculate it based on matrix information.
-    if (*matrixPtr != nullptr)
-        iter.index = DaphneSerializer<DT>::length(*matrixPtr) / chunkSize + 1;
-    else
-        iter.index = 1;
-    return iter;    
-}
+        using buffer = std::vector<char>;
+        using value_type = std::pair<size_t, buffer>; // TODO verify this
+        using pointer = std::pair<size_t, buffer> *;
+        using reference = std::pair<size_t, buffer> &; // TODO verify this
+        DT **matrixPtr;
+
+    private:
+        size_t chunkSize;
+        value_type serializedData;
+
+    public:
+        size_t numberOfBytesSerialized = 0;
+        size_t index;
+
+        // Constructors
+        Iterator(){};
+        Iterator(DT **matrix, size_t chunkSize) : matrixPtr(matrix), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0) {
+            if (chunkSize < 60)
+                throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+            serializedData.second.reserve(chunkSize);
+        };
+
+        reference operator*() { return serializedData; }
+        pointer operator->() { return &serializedData; }
+
+        // Prefix increment
+        Iterator operator++() {
+            index++;
+            *matrixPtr = DaphneSerializer<DT>::deserialize(serializedData.second, *matrixPtr, numberOfBytesSerialized, serializedData.first);
+            numberOfBytesSerialized += serializedData.first;
+            return *this;
+        }
+        // Postfix increment
+        Iterator operator++(int)
+        {
+            Iterator tmp = *this;
+            ++(*this);
+            return tmp;            
+        }
+
+        friend bool operator==(const Iterator &a, const Iterator &b) { return a.index == b.index; };
+        friend bool operator!=(const Iterator &a, const Iterator &b) { return a.index != b.index; };
+    };
+    Iterator begin() {
+        return Iterator(matrixPtr, chunkSize);
+    }
+    // Iterator end
+    Iterator end() {
+        Iterator iter;
+        // If we just initialized the iterator is possible that we have no information about the deserialized object
+        // but the buffer is also uninitialized. If matrix is uninitialized we simply set Iterator::end() as 1, otherwise
+        // we calculate it based on matrix information.
+        if (*matrixPtr != nullptr)
+            iter.index = DaphneSerializer<DT>::length(*matrixPtr) / chunkSize + 1;
+        else
+            iter.index = 1;
+        return iter;
+    }
+};
