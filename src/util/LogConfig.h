@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,11 @@
 
 #pragma once
 
-#include "runtime/local/context/DaphneContext.h"
-#include "runtime/local/context/CUDAContext.h"
+#include <string>
 
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-namespace CUDA {
-    void createCUDAContext(DCTX(ctx));
-}
+struct LogConfig {
+    std::string name;
+    std::string filename;
+    int level;
+    std::string format;
+};

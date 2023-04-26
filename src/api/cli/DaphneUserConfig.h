@@ -19,7 +19,10 @@
 
 #include <api/daphnelib/DaphneLibResult.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
-#include "runtime/local/datastructures/IAllocationDescriptor.h"
+#include <runtime/local/datastructures/IAllocationDescriptor.h>
+#include <util/LogConfig.h>
+#include <util/DaphneLogger.h>
+class DaphneLogger;
 
 #include <vector>
 #include <string>
@@ -60,6 +63,8 @@ struct DaphneUserConfig {
     ALLOCATION_TYPE distributedBackEndSetup= ALLOCATION_TYPE::DIST_MPI; // default value
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
+    std::vector<LogConfig> loggers;
+    DaphneLogger* log_ptr{};
     
 #ifdef USE_CUDA
     // User config holds once context atm for convenience until we have proper system infrastructure

@@ -26,6 +26,7 @@
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <parser/config/ConfigParser.h>
+#include <util/DaphneLogger.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -43,7 +44,8 @@
 #include <unordered_map>
 
 #include <cstdlib>
-#include <cstring>
+
+[[maybe_unused]] std::unique_ptr<DaphneLogger> logger;
 
 using namespace std;
 using namespace mlir;
@@ -303,6 +305,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         if (configFile != configFileInitValue && ConfigParser::fileExists(configFile)) {
             ConfigParser::readUserConfig(configFile, user_config);
         }
+        else {
+//            spdlog::warn("No configuration file provided - using defaults!");
+            user_config.loggers.push_back(LogConfig({"default", "daphne-output.txt",
+                    static_cast<int>(spdlog::level::warn), "\">>>>>>>>> %H:%M:%S %z %v\""}));
+        }
     }
     catch(std::exception & e) {
         std::cerr << "Error while reading user config: " << e.what() << std::endl;
@@ -415,6 +422,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
+    
+    logger = std::make_unique<DaphneLogger>(user_config);
 
     // ************************************************************************
     // Compile and execute script

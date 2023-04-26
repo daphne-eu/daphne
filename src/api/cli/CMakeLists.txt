@@ -18,7 +18,10 @@
 # The daphne executable for running DAPHNE on the command line.
 
 # These dependencies are linked at runtime
-set(LIB_DEPS  MLIRDaphneOpsIncGen AllKernels)
+set(LIB_DEPS MLIRDaphneOpsIncGen AllKernels)
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    list(APPEND LIB_DEPS CUDAKernels)
+endif()
 
 add_llvm_executable(daphne daphne.cpp DaphneUserConfig.h DEPENDS ${LIB_DEPS})
 set_target_properties(daphne PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

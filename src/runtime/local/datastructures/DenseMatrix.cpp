@@ -16,6 +16,8 @@
 
 #include "DenseMatrix.h"
 
+#include <spdlog/spdlog.h>
+
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo) :
         Matrix<ValueType>(maxNumRows, numCols), is_view(false), rowSkip(numCols),
@@ -23,11 +25,10 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
 {
     DataPlacement* new_data_placement;
     if(allocInfo != nullptr) {
-#ifndef NDEBUG
-        std::cerr << "creating dense matrix of allocation type " << static_cast<int>(allocInfo->getType()) << ", dims: "
-                << numRows << "x" << numCols << " req.mem.: " << static_cast<float>(getBufferSize()) / (1048576) << "Mb"
-                <<  std::endl;
-#endif
+        spdlog::get("default")->debug("Creating {} x {} dense matrix of type: {}. Required memory: {} Mb",
+                numRows, numCols, static_cast<int>(allocInfo->getType()),
+                static_cast<float>(getBufferSize()) / (1048576));
+
         new_data_placement = this->mdo->addDataPlacement(allocInfo);
         new_data_placement->allocation->createAllocation(getBufferSize(), zero);
     }

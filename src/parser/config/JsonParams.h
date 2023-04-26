@@ -44,13 +44,12 @@ struct DaphneConfigJsonParams {
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
-
     inline static const std::string CUDA_DEVICES = "cuda_devices";
-
     inline static const std::string LIB_DIR = "libdir";
     inline static const std::string LIBRARY_PATHS = "library_paths";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
-
+    inline static const std::string LOGGING = "logging";
+    
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
@@ -73,7 +72,8 @@ struct DaphneConfigJsonParams {
             CUDA_DEVICES,
             LIB_DIR,
             LIBRARY_PATHS,
-            DAPHNEDSL_IMPORT_PATHS
+            DAPHNEDSL_IMPORT_PATHS,
+            LOGGING
     };
 };
 

@@ -28,16 +28,12 @@ set(LIBS
         DaphneConfigParser
         DaphneMetaDataParser
         ProtoDataConverter
+        Util
         WorkerImpl
 )
 
-if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-    list(APPEND LIBS CUDA::cudart)
-    list(APPEND LIB_DEPS CUDAKernels)
-endif()
-
 if(USE_FPGAOPENCL)
-    list(APPEND LIB_DEPS FPGAOPENCLKernels)
+    list(APPEND LIBS FPGAOPENCLKernels)
 endif()
 
 # ************************************************************************
@@ -49,3 +45,8 @@ endif()
 add_library(DaphneInternal STATIC daphne_internal.cpp) # DaphneUserConfig.h
 set_target_properties(DaphneInternal PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 target_link_libraries(DaphneInternal PRIVATE ${LIBS} ${MPI_LIBRARIES})
+
+if(USE_CUDA AND CMAKE_CUDA_COMPILER)
+    #    list(APPEND LIBS CUDAKernels)
+    target_include_directories(DaphneInternal PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+endif()

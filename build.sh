@@ -396,6 +396,7 @@ nlohmannjsonVersion=3.10.5
 arrowVersion=11.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
+spdlogVersion=1.11.0
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -779,7 +780,27 @@ if [ $WITH_DEPS -gt 0 ]; then
     else
         daphne_msg "No need to build Arrow again."
     fi
+    #------------------------------------------------------------------------------
+    # spdlog
+    #------------------------------------------------------------------------------
+    spdlogDirName="spdlog-$spdlogVersion"
+    spdlogArtifactFileName=$spdlogDirName.tar.gz
+    if ! is_dependency_downloaded "spdlog_v${spdlogVersion}"; then
+        rm -rf "${sourcePrefix:?}/${spdlogDirName}"
+        wget "https://github.com/gabime/spdlog/archive/refs/tags/v$spdlogVersion.tar.gz" -qO \
+            "$cacheDir/$spdlogArtifactFileName"
+        tar xzf "$cacheDir/$spdlogArtifactFileName" --directory="$sourcePrefix"
+        dependency_download_success "spdlog_v${spdlogVersion}"
+    fi
 
+    if ! is_dependency_installed "spdlog_v${spdlogVersion}"; then
+        cmake -G Ninja -S "${sourcePrefix}/${spdlogDirName}" -B "${buildPrefix}/${spdlogDirName}" \
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+        cmake --build "${buildPrefix}/${spdlogDirName}" --target install/strip
+        dependency_install_success "spdlog_v${spdlogVersion}"
+    else
+        daphne_msg "No need to build spdlog again."
+    fi
     #------------------------------------------------------------------------------
     # Eigen
     #------------------------------------------------------------------------------

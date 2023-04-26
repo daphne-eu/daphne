@@ -26,6 +26,8 @@
 #include <runtime/local/vectorized/WorkerCPU.h>
 #include <runtime/local/vectorized/WorkerGPU.h>
 
+#include <spdlog/spdlog.h>
+
 #include <fstream>
 #include <functional>
 #include <queue>
@@ -237,8 +239,11 @@ public:
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
 #ifndef NDEBUG
-        std::cerr << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
+        std::stringstream ss;
+        ss << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;
+        spdlog::debug(ss.str());
+//        std::cerr << ss.str();
 #endif
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,18 +16,8 @@
 
 #pragma once
 
-#include <api/cli/DaphneUserConfig.h>
-#include <runtime/local/context/DaphneContext.h>
+static DaphneUserConfig user_config{};
 
-#include <cstdint>
+static std::unique_ptr<DaphneLogger> logger;
 
-// ****************************************************************************
-// Convenience function
-// ****************************************************************************
-
-static void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
-    auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
-    if(config->log_ptr)
-        config->log_ptr->registerLoggers();
-    res = new DaphneContext(*config);
-}
+std::unique_ptr<DaphneContext> setupContextAndLogger();

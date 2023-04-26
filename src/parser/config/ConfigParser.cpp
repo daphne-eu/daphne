@@ -16,9 +16,16 @@
 
 #include <parser/config/ConfigParser.h>
 #include <parser/config/JsonParams.h>
+#include <util/DaphneLogger.h>
 
 #include <iostream>
 #include <fstream>
+
+int readLogLevel(const std::string& level) {
+    std::string level_lowercase(level);
+    std::transform(level.begin(), level.end(), level_lowercase.begin(), ::tolower);
+    return static_cast<int>(spdlog::level::from_str(level_lowercase));
+}
 
 bool ConfigParser::fileExists(const std::string& filename) {
     // Open the given config file.
@@ -68,7 +75,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme = jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
         if (config.taskPartitioningScheme == SelfSchedulingScheme::INVALID) {
-            throw std::invalid_argument("Invalid value for enum \"SelfSchedulingScheme\"" + config.taskPartitioningScheme);
+            throw std::invalid_argument(std::string("Invalid value for enum \"SelfSchedulingScheme\"")
+                    .append(std::to_string(static_cast<int>(config.taskPartitioningScheme))));
         }
     }
     if (keyExists(jf, DaphneConfigJsonParams::NUMBER_OF_THREADS))
@@ -83,8 +91,20 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.libdir = jf.at(DaphneConfigJsonParams::LIB_DIR).get<std::string>();
     if (keyExists(jf, DaphneConfigJsonParams::LIBRARY_PATHS))
         config.library_paths = jf.at(DaphneConfigJsonParams::LIBRARY_PATHS).get<std::vector<std::string>>();
-    if (keyExists(jf, DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS))
-        config.daphnedsl_import_paths = jf.at(DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS).get<std::map<std::string, std::vector<std::string>>>();
+    if (keyExists(jf, DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS)) {
+        config.daphnedsl_import_paths = jf.at(DaphneConfigJsonParams::DAPHNEDSL_IMPORT_PATHS).get<std::map<std::string,
+                std::vector<std::string>>>();
+    }
+    if (keyExists(jf, DaphneConfigJsonParams::LOGGING)) {
+        for (const auto&[key, val]: jf.at(DaphneConfigJsonParams::LOGGING).items()) {
+//            spdlog::warn(key);
+//            for (const auto&[key2, val2]: val.items()) {
+//                spdlog::warn(key2);
+//                spdlog::warn(val2);
+//            }
+            config.loggers.emplace_back(LogConfig({val.at("name"), val.at("filename"), readLogLevel(val.at("level")), val.at("format")}));
+        }
+    }
 //} catch (const nlohmann::detail::type_error& ex) {
 //    std::cerr << ex.what() << std::endl;
 //} catch (const nlohmann::detail::out_of_range& ex) {
@@ -107,6 +127,9 @@ void ConfigParser::checkAnyUnexpectedKeys(const nlohmann::basic_json<>& j, const
                 break;
             }
         }
-        if (!flag) throw std::invalid_argument("Unexpected key '" + key + "' in '" + filename + "' file");
+        if (!flag) {
+            throw std::invalid_argument(std::string("Unexpected key '").append(key).append("' in '").append(filename)
+                .append("' file"));
+        }
     }
 }
