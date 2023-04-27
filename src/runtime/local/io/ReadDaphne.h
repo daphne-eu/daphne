@@ -66,15 +66,13 @@ template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
         f.open(filename, std::ios::in|std::ios::binary);
         // TODO: check f.good()
 
-        f.seekg(0, f.end);
-        size_t len = f.tellg();
-        f.seekg(f.beg);
-
-		std::vector<char> buf(len);
-
-        f.read(buf.data(), len);
-
-        res = DaphneSerializer<DenseMatrix<VT>>::deserialize(buf);
+	 	auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
+		for (auto it = deser.begin(); it != deser.end(); ++it){
+			it->first = DEFAULT_CHUNK_SIZE;
+        	f.read(it->second.data(), it->first);
+			// in case we read less than that
+			it->first = f.gcount();
+		}
 
         f.close();
         return;
@@ -87,14 +85,13 @@ template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
         f.open(filename, std::ios::in|std::ios::binary);
         // TODO: check f.good()
 
-        f.seekg(0, f.end);
-        size_t len = f.tellg();
-        f.seekg(f.beg);
-
-        std::vector<char> buf(len);
-        f.read(buf.data(), len);
-
-        res = DaphneSerializer<CSRMatrix<VT>>::deserialize(buf);
+		auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
+		for (auto it = deser.begin(); it != deser.end(); ++it){
+			it->first = DEFAULT_CHUNK_SIZE;
+        	f.read(it->second.data(), it->first);
+			// in case we read less than that
+			it->first = f.gcount();
+		}
 
         f.close();
         return;

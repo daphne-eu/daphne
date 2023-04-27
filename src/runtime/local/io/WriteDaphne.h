@@ -70,10 +70,10 @@ struct WriteDaphne<DenseMatrix<VT>> {
 		f.open(filename, std::ios::out|std::ios::binary);
 		// TODO: check f.good()
 		
-		size_t len = DaphneSerializer<DenseMatrix<VT>>::length(arg);
-		std::vector<char> buf(len);
-		DaphneSerializer<DenseMatrix<VT>>::serialize(arg, buf);
-		f.write(buf.data(), len);
+		auto ser = DaphneSerializerChunks<const DenseMatrix<VT>>(arg, DEFAULT_CHUNK_SIZE);
+		for (auto it = ser.begin(); it != ser.end(); ++it){
+			f.write(it->second.data(), it->first);
+		}
 
 		f.close();
 
@@ -92,11 +92,10 @@ struct WriteDaphne<CSRMatrix<VT>> {
 		f.open(filename, std::ios::out|std::ios::binary);
 		// TODO: check f.good()
 		
-		size_t len = DaphneSerializer<CSRMatrix<VT>>::length(arg);
-		std::vector<char> buf(len);
-		
-		DaphneSerializer<CSRMatrix<VT>>::serialize(arg, buf);
-		f.write(buf.data(), len);
+		auto ser = DaphneSerializerChunks<const CSRMatrix<VT>>(arg, DEFAULT_CHUNK_SIZE);
+		for (auto it = ser.begin(); it != ser.end(); ++it){
+			f.write(it->second.data(), it->first);
+		}
 
 		f.close();
 		

@@ -328,6 +328,8 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
 
 };
 
+template<typename VT>
+struct DaphneSerializer<const DenseMatrix<VT>, false> : public DaphneSerializer<DenseMatrix<VT>, false> { };
 template <typename VT>
 struct DaphneSerializer<CSRMatrix<VT>, false> {
     const CSRMatrix<VT> *matrix;
@@ -759,6 +761,8 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
     }
 };
 
+template<typename VT>
+struct DaphneSerializer<const CSRMatrix<VT>, false> : public DaphneSerializer<CSRMatrix<VT>, false> { };
 template <>
 struct DaphneSerializer<Frame> {
     static size_t length(const Frame *arg) {
