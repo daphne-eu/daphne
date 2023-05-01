@@ -23,11 +23,14 @@
 
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
-from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
+from api.python.utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES
 from api.python.utils.helpers import create_params_string
 
 import numpy as np
+import pandas as pd
 
+import os
+import json
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -40,7 +43,7 @@ class OperationNode(DAGNode):
     _output_types: Optional[Iterable[VALID_INPUT_TYPES]]
     _source_node: Optional["DAGNode"]
     _brackets: bool
-    data: np.array
+    data: Optional[Union[pd.DataFrame, np.array]]
 
     def __init__(self, daphne_context,operation:str, 
                 unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None,
@@ -70,10 +73,26 @@ class OperationNode(DAGNode):
             result = self._script.build_code(self)
             self._script.execute()
             self._script.clear(self)
+            if self._output_type == OutputType.FRAME:
+                df = pd.read_csv(result)
+                with open(result + ".meta", "r") as f:
+                    fmd = json.load(f)
+                    df.columns = [x["label"] for x in fmd["schema"]]
+                result = df
+                self.clear_tmp()
+            elif self._output_type == OutputType.MATRIX:
+                arr = np.genfromtxt(result, delimiter=',')
+                self.clear_tmp()
+                return arr
+               
             if result is None:
                 return
-            return np.genfromtxt(result, delimiter=',')
-    
+            return result
+
+    def clear_tmp(self):
+       for f in os.listdir(TMP_PATH):
+          os.remove(os.path.join(TMP_PATH, f))
+
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
         if self._brackets:
             return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}];'

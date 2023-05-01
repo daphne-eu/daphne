@@ -23,10 +23,12 @@
 
 __all__ = ["DaphneContext"]
 
+from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH
 
 import numpy as np
+import pandas as pd
 
 from typing import Sequence, Dict, Union
 
@@ -39,6 +41,14 @@ class DaphneContext(object):
         """
         unnamed_params = ['\"'+file+'\"']
         return Matrix(self, 'readMatrix', unnamed_params)
+        
+    def readFrame(self, file) -> Matrix:
+        """Reads a frame from a file.
+        :param file: The path to the file containing the data.
+        :return: The data in the file as a Frame.
+        """
+        unnamed_params = ['\"'+file+'\"']
+        return Frame(self, 'readFrame', unnamed_params)
     
     def from_numpy(self, mat: np.array) -> Matrix:
         """Generates a DAGNode representing a matrix with data given by a numpy array.
@@ -52,6 +62,19 @@ class DaphneContext(object):
         named_params = []
         return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
         
+    def from_pandas(self, df: pd.DataFrame) -> Frame:
+        """Generates a DAGNode representing a Frame with data given by a pandas DataFrame.
+        :param df: The pandas DataFrame.
+        :param args: unnamed parameters
+        :param kwargs: named parameters
+        :return: A Frame
+        """
+
+        # Data transfer via files.
+        unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+        named_params = []
+        return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df)
+    
     def fill(self, arg, rows:int, cols:int) -> 'Matrix':
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)

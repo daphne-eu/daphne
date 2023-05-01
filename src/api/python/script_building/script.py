@@ -24,8 +24,6 @@
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
 
-import numpy as np
-
 import os
 from typing import List, Dict, TYPE_CHECKING
 
@@ -52,7 +50,10 @@ class DaphneDSLScript:
             self.out_var_name.append(baseOutVarString)
             if dag_root.output_type == OutputType.MATRIX:
                 self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return str(TMP_PATH+"/" + baseOutVarString+ ".csv")
+                return TMP_PATH + "/" + baseOutVarString + ".csv"
+            elif dag_root.output_type == OutputType.FRAME:
+                self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
+                return TMP_PATH + "/" + baseOutVarString + ".csv"
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
@@ -95,7 +96,7 @@ class DaphneDSLScript:
         if dag_node._source_node is not None:
             self._dfs_dag_nodes(dag_node._source_node)
         # For each node do the dfs operation and save the variable names in `input_var_names`.
-        # Fet variable names of unnamed parameters.
+        # Get variable names of unnamed parameters.
 
         unnamed_input_vars = [self._dfs_dag_nodes(input_node) for input_node in dag_node.unnamed_input_nodes]
 
