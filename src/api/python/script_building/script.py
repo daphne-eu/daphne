@@ -20,11 +20,14 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-import os
-from typing import List, Dict, TYPE_CHECKING
+
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
+
 import numpy as np
+
+import os
+from typing import List, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -47,7 +50,7 @@ class DaphneDSLScript:
         baseOutVarString = self._dfs_dag_nodes(dag_root)
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
-            if(dag_root.output_type == OutputType.MATRIX):
+            if dag_root.output_type == OutputType.MATRIX:
                 self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
                 return str(TMP_PATH+"/" + baseOutVarString+ ".csv")
             else:
@@ -67,17 +70,17 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-        
         os.chdir(PROTOTYPE_PATH)
+
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
         os.system("bin/daphne tmpdaphne.daphne")
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
-        """depth first search to create code from DAG
+        """Uses Depth-First-Search to create code from DAG
         :param dag_node: current DAG node
-        :return: variable name the current DAG node operation created
+        :return: the variable name the current DAG node operation created
         """
         if not isinstance(dag_node, DAGNode):
             if isinstance(dag_node, bool):
@@ -95,7 +98,6 @@ class DaphneDSLScript:
         named_input_vars = {}
         if isinstance(dag_node.named_input_nodes, dict):
             for name, input_node in dag_node.named_input_nodes.items():
-                
                 named_input_vars[name] = self._dfs_dag_nodes(input_node)
                 if isinstance(input_node, DAGNode) and input_node._output_type == OutputType.LIST:
                     dag_node._daphnedsl_name = named_input_vars[name] + name
@@ -116,7 +118,7 @@ class DaphneDSLScript:
         dag_node._daphnedsl_name = ""
         for n in dag_node.unnamed_input_nodes:
             self._dfs_clear_dag_nodes(n)
-        if(isinstance(dag_node.named_input_nodes, dict)):
+        if isinstance(dag_node.named_input_nodes, dict):
             for name,n in dag_node.named_input_nodes.items():
                 self._dfs_clear_dag_nodes(n)
         if dag_node._source_node is not None:
