@@ -86,41 +86,61 @@ class DaphneDSLScript:
             if isinstance(dag_node, bool):
                 return 'TRUE' if dag_node else 'FALSE'
             return str(dag_node)
-        #if node has name -> its already defined in the script -> reuse it
+
+        # If the node already has a name, then it is already defined
+        # in the script, therefore reuse.
         if dag_node.daphnedsl_name != "":
             return dag_node.daphnedsl_name
         
         if dag_node._source_node is not None:
             self._dfs_dag_nodes(dag_node._source_node)
-        
-        unnamed_input_vars = [self._dfs_dag_nodes(input_node) for input_node in dag_node._unnamed_input_nodes]
-        
+        # For each node do the dfs operation and save the variable names in `input_var_names`.
+        # Fet variable names of unnamed parameters.
+
+        unnamed_input_vars = [self._dfs_dag_nodes(input_node) for input_node in dag_node.unnamed_input_nodes]
+
         named_input_vars = {}
-        if isinstance(dag_node.named_input_nodes, dict):
+        if dag_node.named_input_nodes:
             for name, input_node in dag_node.named_input_nodes.items():
                 named_input_vars[name] = self._dfs_dag_nodes(input_node)
                 if isinstance(input_node, DAGNode) and input_node._output_type == OutputType.LIST:
-                    dag_node._daphnedsl_name = named_input_vars[name] + name
-                    return dag_node._daphnedsl_name
+                    dag_node.daphnedsl_name = named_input_vars[name] + name
+                    return dag_node.daphnedsl_name
 
-        
-        if dag_node._daphnedsl_name != "":
-            return dag_node._daphnedsl_name
+        # Check if the node gets a name after multi-returns.
+        # If it has, return that name.
+        if dag_node.daphnedsl_name != "":
+            return dag_node.daphnedsl_name
 
-        dag_node._daphnedsl_name = self._next_unique_var()
-        code_line = dag_node.code_line(dag_node.daphnedsl_name, unnamed_input_vars, named_input_vars)
+        dag_node.daphnedsl_name = self._next_unique_var()
+
+        if dag_node.is_python_local_data:
+            self.add_input_from_python(dag_node.daphnedsl_name, dag_node)
+
+        code_line = dag_node.code_line(
+            dag_node.daphnedsl_name, unnamed_input_vars, named_input_vars)
         self.add_code(code_line)
-        return dag_node._daphnedsl_name
+        return dag_node.daphnedsl_name
+
+    def add_input_from_python(self, var_name: str, input_var: DAGNode) -> None:
+        """Add an input for our preparedScript. Should only be executed for data that is python local.
+        :param var_name: name of variable
+        :param input_var: the DAGNode object which has data
+        """
+        self.inputs[var_name] = input_var
 
     def _dfs_clear_dag_nodes(self, dag_node:VALID_INPUT_TYPES)->str:
         if not isinstance(dag_node, DAGNode):
             return
+        if not dag_node._daphnedsl_name:
+            return
         dag_node._daphnedsl_name = ""
         for n in dag_node.unnamed_input_nodes:
             self._dfs_clear_dag_nodes(n)
-        if isinstance(dag_node.named_input_nodes, dict):
-            for name,n in dag_node.named_input_nodes.items():
-                self._dfs_clear_dag_nodes(n)
+        if not dag_node.named_input_nodes:
+            return
+        for name,n in dag_node._named_input_nodes.items():
+            self._dfs_clear_dag_nodes(n)
         if dag_node._source_node is not None:
             self._dfs_clear_dag_nodes(dag_node._source_node)
 
