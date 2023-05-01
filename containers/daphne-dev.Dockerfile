@@ -70,7 +70,7 @@ WORKDIR /
 FROM ${FINAL_BASE_IMAGE} as daphne-dev
 ARG DEBIAN_FRONTEND="noninteractive"
 RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recommends install  \
-    libssl1.1 libxml2-dev zlib1g-dev libtinfo-dev uuid-dev python3-numpy \
+    libssl1.1 libxml2-dev zlib1g-dev libtinfo-dev uuid-dev python3-numpy python3-pandas \
     build-essential ninja-build openjdk-11-jdk-headless pkg-config \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=daphne-deps-compile /usr/local/bin/ /usr/local/bin/

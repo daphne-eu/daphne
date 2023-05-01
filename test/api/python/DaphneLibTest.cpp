@@ -41,6 +41,7 @@ const std::string dirPath = "test/api/python/";
     }
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
+MAKE_TEST_CASE("data_transfer_pandas_1")
 MAKE_TEST_CASE("random_matrix_generation")
 MAKE_TEST_CASE("random_matrix_sum")
 MAKE_TEST_CASE("random_matrix_addition")
@@ -49,5 +50,6 @@ MAKE_TEST_CASE("random_matrix_mult")
 MAKE_TEST_CASE("random_matrix_div")
 MAKE_TEST_CASE("random_matrix_functions")
 MAKE_TEST_CASE("scalar_ops")
+MAKE_TEST_CASE("frame_cartesian")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
