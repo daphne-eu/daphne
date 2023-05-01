@@ -32,6 +32,14 @@ from typing import Sequence, Dict, Union
 
 class DaphneContext(object):
 
+    def readMatrix(self, file) -> Matrix:
+        """Reads a matrix from a file.
+        :param file: The path to the file containing the data.
+        :return: The data in the file as a Matrix.
+        """
+        unnamed_params = ['\"'+file+'\"']
+        return Matrix(self, 'readMatrix', unnamed_params)
+    
     def from_numpy(self, mat: np.array) -> Matrix:
         """Generates a DAGNode representing a matrix with data given by a numpy array.
         :param mat: The numpy array.
@@ -44,6 +52,14 @@ class DaphneContext(object):
         named_params = []
         return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
         
+    def fill(self, arg, rows:int, cols:int) -> 'Matrix':
+        named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
+        return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)
+    
+    def seq(self, start, end, inc) -> 'Matrix':
+        named_input_nodes = {'start':start, 'end':end, 'inc':inc}
+        return Matrix(self, 'seq', [], named_input_nodes=named_input_nodes)
+
     def rand(self,
              rows: int, cols: int,
              min: Union[float, int] = None, max: Union[float, int] = None,
