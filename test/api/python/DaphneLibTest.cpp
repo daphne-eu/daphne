@@ -40,7 +40,7 @@ const std::string dirPath = "test/api/python/";
         } \
     }
 
-MAKE_TEST_CASE("file_transfer_numpy_1")
+MAKE_TEST_CASE("data_transfer_numpy_1")
 MAKE_TEST_CASE("random_matrix_generation")
 MAKE_TEST_CASE("random_matrix_sum")
 MAKE_TEST_CASE("random_matrix_addition")

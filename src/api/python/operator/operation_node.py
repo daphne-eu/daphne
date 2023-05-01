@@ -20,12 +20,16 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
+
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
 from api.python.utils.consts import BINARY_OPERATIONS, VALID_INPUT_TYPES
 from api.python.utils.helpers import create_params_string
+
 import numpy as np
+
+from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
+
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
@@ -72,7 +76,7 @@ class OperationNode(DAGNode):
     
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str])->str:
         if self._brackets:
-            return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}]'
+            return f'{var_name}={unnamed_input_vars[0]}[{",".join(unnamed_input_vars[1:])}];'
         if self.operation in BINARY_OPERATIONS:
             assert len(
                 named_input_vars) == 0, 'named parameters can not be used with binary operations'

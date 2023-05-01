@@ -20,15 +20,21 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
+
 __all__ = ["Matrix"]
+
+
+from api.python.operator.operation_node import OperationNode
+from api.python.operator.nodes.scalar import Scalar
+from api.python.script_building.dag import OutputType
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
+
+import numpy as np
+
+import json
 import os
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.scalar import Scalar
-import numpy as np
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
@@ -53,14 +59,17 @@ class Matrix(OperationNode):
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
         
         if self._is_numpy():
-            
             with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
                 np.savetxt(f, self._np_array, delimiter=",")
-                f.close()
-
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
-                f.write("{\"numRows\":"+str(np.shape(self._np_array)[0])+",\"numCols\":"+str(np.shape(self._np_array)[1])+",\"valueType\":\""+self.getDType(self._np_array.dtype)+"\"}")
-                f.close()
+                json.dump(
+                    {
+                        "numRows": np.shape(self._np_array)[0],
+                        "numCols": np.shape(self._np_array)[1],
+                        "valueType": self.getDType(self._np_array.dtype),
+                    },
+                    f, indent=2
+                )
         return code_line
 
     def getDType(self, d_type):
@@ -155,7 +164,9 @@ class Matrix(OperationNode):
         elif axis is None:
             return Scalar(self.daphne_context,'sum', [self])
         raise ValueError(
-            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+            f"axis has to be either 0, 1 or None, for column, row or complete {self.operation}"
+        )
+
         
     def sqrt(self) -> 'OperationNode':
         """Calculate sqrt of matrix.
