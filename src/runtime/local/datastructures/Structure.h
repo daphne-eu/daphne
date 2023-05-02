@@ -37,6 +37,8 @@ private:
     friend void DataObjectFactory::destroy(const DataType * obj);
 
 protected:
+    size_t row_offset{};
+    size_t col_offset{};
     size_t numRows;
     size_t numCols;
 

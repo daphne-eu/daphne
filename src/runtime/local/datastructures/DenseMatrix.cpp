@@ -15,6 +15,7 @@
  */
 
 #include "DenseMatrix.h"
+
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo) :
         Matrix<ValueType>(maxNumRows, numCols), rowSkip(numCols), lastAppendedRowIdx(0), lastAppendedColIdx(0)
@@ -49,9 +50,9 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_
 }
 
 template<typename ValueType>
-DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl, size_t colLowerIncl,
-        size_t colUpperExcl) : Matrix<ValueType>(rowUpperExcl - rowLowerIncl, colUpperExcl - colLowerIncl),
-        lastAppendedRowIdx(0), lastAppendedColIdx(0)
+DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl,
+        size_t colLowerIncl, size_t colUpperExcl) : Matrix<ValueType>(rowUpperExcl - rowLowerIncl,
+        colUpperExcl - colLowerIncl),  lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
     assert(src && "src must not be null");
     assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
@@ -60,22 +61,26 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
     assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
     assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
     assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
-
-    // ToDo: manage host mem (values) in a data placement
-    AllocationDescriptorHost myHostAllocInfo;
-    Range r(rowLowerIncl, colLowerIncl, rowLowerIncl+rowUpperExcl, colLowerIncl+colUpperExcl);
+    
+    this->row_offset = rowLowerIncl;
+    this->col_offset = colLowerIncl;
     rowSkip = src->rowSkip;
     auto offset = rowLowerIncl * src->rowSkip + colLowerIncl;
-    this->mdo = src->mdo;
-    if(!src->values) {
-        const_cast<DenseMatrix<ValueType>*>(src)->alloc_shared_values();
-        this->mdo->addDataPlacement(&myHostAllocInfo);
+    
+    // ToDo: manage host mem (values) in a data placement
+    if(src->values)
         alloc_shared_values(src->values, offset);
-        this->mdo->addDataPlacement(&myHostAllocInfo, &r);
-    }
-    else {
-        alloc_shared_values(src->values, offset);
-        this->mdo->addDataPlacement(&myHostAllocInfo, &r);
+    
+    // FIXME: This clones the meta data to avoid locking (thread synchronization for data copy)
+    for(int i = 0; i < static_cast<int>(ALLOCATION_TYPE::NUM_ALLOC_TYPES); i++) {
+        auto placements = src->mdo->getDataPlacementByType(static_cast<ALLOCATION_TYPE>(i));
+        for(auto it = placements->begin(); it != placements->end(); it++) {
+            auto src_alloc = it->get()->allocation.get();
+            auto src_range = it->get()->range.get();
+            auto new_data_placement = this->mdo->addDataPlacement(src_alloc, src_range);
+            if(src->mdo->isLatestVersion(it->get()->dp_id))
+                this->mdo->addLatest(new_data_placement->dp_id);
+        }
     }
 }
 
@@ -142,8 +147,10 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
             DataPlacement *placement;
             for (auto &placement_id: latest) {
                 placement = this->mdo->getDataPlacementByID(placement_id);
-                if(placement->range == nullptr || *(placement->range) == Range{0, 0, this->getNumRows(),
-                        this->getNumCols()}) {
+                
+                // only consider allocations covering full range of matrix
+                if(placement->range == nullptr || *(placement->range) == Range{this->row_offset, this->col_offset,
+                        this->getNumRows(), this->getNumCols()}) {
                     std::get<0>(result) = true;
                     std::get<1>(result) = placement->dp_id;
                     // prefer host allocation
