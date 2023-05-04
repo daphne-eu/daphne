@@ -20,6 +20,7 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
+
 from itertools import chain
 from typing import Dict, Iterable, Sequence
 from api.python.utils.consts import VALID_INPUT_TYPES

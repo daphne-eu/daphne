@@ -20,14 +20,16 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
+
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.scalar import Scalar
+from api.python.script_building.dag import OutputType
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
+from api.python.utils.helpers import create_params_string
+
 import numpy as np
 
-from helpers import create_params_string
+from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 
 class MultiReturn(OperationNode):
     _np_array: np.array
