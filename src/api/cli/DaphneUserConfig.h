@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <api/daphnelib/DaphneLibResult.h>
 #include <runtime/local/vectorized/LoadPartitioningDefs.h>
 #include "runtime/local/datastructures/IAllocationDescriptor.h"
 
@@ -77,4 +78,9 @@ struct DaphneUserConfig {
     std::string libdir;
     std::vector<std::string> library_paths;
     std::map<std::string, std::vector<std::string>> daphnedsl_import_paths;
+
+
+    // TODO Maybe the DaphneLib result should better reside in the DaphneContext,
+    // but having it here is simpler for now.
+    DaphneLibResult* result_struct = nullptr;
 };

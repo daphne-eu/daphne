@@ -25,7 +25,7 @@ __all__ = ["DaphneContext"]
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH
+from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
@@ -50,17 +50,44 @@ class DaphneContext(object):
         unnamed_params = ['\"'+file+'\"']
         return Frame(self, 'readFrame', unnamed_params)
     
-    def from_numpy(self, mat: np.array) -> Matrix:
+    def from_numpy(self, mat: np.array, shared_memory=True) -> Matrix:
         """Generates a DAGNode representing a matrix with data given by a numpy array.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :return: The data from numpy as a Matrix.
         """
         
-        # Data transfer via a file.
-        unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
-        named_params = []
-        return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+        if shared_memory:
+            # Data transfer via shared memory.
+            address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
+            upper = (address & 0xFFFFFFFF00000000) >> 32
+            lower = (address & 0xFFFFFFFF)
+            d_type = mat.dtype
+            if d_type == np.double or d_type == np.float64:
+                vtc = F64
+            elif d_type == np.float32:
+                vtc = F32
+            elif d_type == np.int8:
+                vtc = SI8
+            elif d_type == np.int32:
+                vtc = SI32
+            elif d_type == np.int64:
+                vtc = SI64
+            elif d_type == np.uint8:
+                vtc = UI8
+            elif d_type == np.uint32:
+                vtc = UI32
+            elif d_type == np.uint64:
+                vtc = UI64
+            else:
+                print("unsupported numpy dtype")
+            
+            return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], mat.shape[1], vtc], local_data=mat)
+        else:
+            # Data transfer via a file.
+            unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+            named_params = []
+            return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
         
     def from_pandas(self, df: pd.DataFrame) -> Frame:
         """Generates a DAGNode representing a Frame with data given by a pandas DataFrame.

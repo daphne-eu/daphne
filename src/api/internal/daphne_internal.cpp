@@ -21,6 +21,7 @@
 #include <api/cli/StatusCode.h>
 #include <api/internal/daphne_internal.h>
 #include <api/cli/DaphneUserConfig.h>
+#include <api/daphnelib/DaphneLibResult.h>
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
@@ -68,7 +69,7 @@ void printVersion(llvm::raw_ostream& os) {
       << "https://github.com/daphne-eu/daphne\n";
 }
     
-int startDAPHNE(int argc, const char** argv, int *id){
+int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id){
     // ************************************************************************
     // Parse command line arguments
     // ************************************************************************
@@ -401,6 +402,9 @@ int startDAPHNE(int argc, const char** argv, int *id){
     if(!user_config.libdir.empty() && user_config.use_cuda)
             user_config.library_paths.push_back(user_config.libdir + "/libCUDAKernels.so");
 
+    // For DaphneLib (Python API).
+    user_config.result_struct = daphneLibRes;
+
     // Extract script args.
     unordered_map<string, string> scriptArgsFinal;
     try {
@@ -469,9 +473,9 @@ int startDAPHNE(int argc, const char** argv, int *id){
 }
 
 
-int mainInternal(int argc, const char** argv){
+int mainInternal(int argc, const char** argv, DaphneLibResult* daphneLibRes){
     int id=-1; // this  -1 would not change if the user did not select mpi backend during execution
-    int res=startDAPHNE(argc, argv, &id);
+    int res=startDAPHNE(argc, argv, daphneLibRes, &id);
 
 #ifdef USE_MPI    
     if(id==COORDINATOR)

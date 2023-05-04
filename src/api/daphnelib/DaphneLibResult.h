@@ -14,8 +14,13 @@
  * limitations under the License.
  */
 
-#include <api/internal/daphne_internal.h>
+#pragma once
 
-int main(int argc, const char** argv) {
-    return mainInternal(argc, argv, nullptr);
-}
+#include <cinttypes>
+
+struct DaphneLibResult {
+    void* address;
+    int64_t rows;
+    int64_t cols;
+    int64_t vtc;
+};

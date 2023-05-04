@@ -23,14 +23,16 @@
 
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
-from api.python.utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES
+from api.python.utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from api.python.utils.daphnelib import DaphneLib, DaphneLibResult
 from api.python.utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd
 
-import os
+import ctypes
 import json
+import os
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -67,10 +69,10 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
 
-    def compute(self):
+    def compute(self, type="shared memory"):
         if self._result_var is None:
             self._script = DaphneDSLScript(self.daphne_context)
-            result = self._script.build_code(self)
+            result = self._script.build_code(self, type)
             self._script.execute()
             self._script.clear(self)
             if self._output_type == OutputType.FRAME:
@@ -80,7 +82,14 @@ class OperationNode(DAGNode):
                     df.columns = [x["label"] for x in fmd["schema"]]
                 result = df
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX:
+            elif self._output_type == OutputType.MATRIX and type=="shared memory":
+                daphneLibResult = DaphneLib.getResult()
+                result = np.ctypeslib.as_array(
+                    ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
+                    shape=[daphneLibResult.rows, daphneLibResult.cols]
+                )
+                self.clear_tmp()
+            elif self._output_type == OutputType.MATRIX and type=="files":
                 arr = np.genfromtxt(result, delimiter=',')
                 self.clear_tmp()
                 return arr
@@ -106,3 +115,23 @@ class OperationNode(DAGNode):
             return f'{self.operation}({inputs_comma_sep});'
         else:
             return f'{var_name}={self.operation}({inputs_comma_sep});'
+
+    def getType(self, vtc):
+        if vtc == F64:
+            return ctypes.c_double
+        elif vtc == F32:
+            return ctypes.c_float
+        elif vtc == SI64:
+            return ctypes.c_int64
+        elif vtc == SI32:
+            return ctypes.c_int32
+        elif vtc == SI8:
+            return ctypes.c_int8
+        elif vtc == UI64:
+            return ctypes.c_uint64
+        elif vtc == UI32:
+            return ctypes.c_uint32
+        elif vtc == UI8:
+            return ctypes.c_uint8
+        else:
+            raise RuntimeError(f"unknown value type code: {vtc}")

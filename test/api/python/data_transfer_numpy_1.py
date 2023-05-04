@@ -31,4 +31,4 @@ m1.shape = (2, 3)
 
 dctx = DaphneContext()
 
-(dctx.from_numpy(m1)).print().compute()
+(dctx.from_numpy(m1, shared_memory=False)).print().compute()

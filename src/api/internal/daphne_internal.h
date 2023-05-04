@@ -16,4 +16,6 @@
 
 #pragma once
 
-int mainInternal(int argc, const char** argv);
+#include <api/daphnelib/DaphneLibResult.h>
+
+int mainInternal(int argc, const char** argv, DaphneLibResult* daphneLibRes);

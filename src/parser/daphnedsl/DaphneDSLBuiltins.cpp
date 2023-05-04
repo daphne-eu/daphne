@@ -991,6 +991,50 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
         mlir::Value filename = args[1];
         return builder.create<WriteOp>(loc, arg, filename);
     }
+    if(func == "receiveFromNumpy") {
+        checkNumArgsExact(func, numArgs, 5);
+        
+        mlir::Value upper = utils.castUI32If(args[0]);
+        mlir::Value lower = utils.castUI32If(args[1]);
+        mlir::Value rows = args[2];
+        mlir::Value cols = args[3];
+        mlir::Value valueType = args[4];
+
+        int64_t valueTypeCode = CompilerUtils::constantOrThrow<int64_t>(
+                valueType, "the value type code in ReceiveFromNumpyOp must be a constant"
+        );
+
+        // TODO Is there a utility for this mapping from value type code to MLIR type?
+        mlir::Type vt;
+        if(valueTypeCode == (int64_t)ValueTypeCode::F32)
+            vt = builder.getF32Type();
+        else if(valueTypeCode == (int64_t)ValueTypeCode::F64)
+            vt = builder.getF64Type();
+        else if(valueTypeCode == (int64_t)ValueTypeCode::SI8)
+            vt = builder.getIntegerType(8, true);
+        else if(valueTypeCode == (int64_t)ValueTypeCode::SI32)
+            vt = builder.getIntegerType(32, true);
+        else if(valueTypeCode == (int64_t)ValueTypeCode::SI64)
+            vt = builder.getIntegerType(64, true);
+        else if(valueTypeCode == (int64_t)ValueTypeCode::UI8)
+            vt = builder.getIntegerType(8, false);
+        else if(valueTypeCode == (int64_t)ValueTypeCode::UI32)
+            vt = builder.getIntegerType(32, false);
+        else if(valueTypeCode == (int64_t)ValueTypeCode::UI64)
+            vt = builder.getIntegerType(64, false);
+        else
+            throw std::runtime_error("invalid value type code");
+
+        return static_cast<mlir::Value>(builder.create<ReceiveFromNumpyOp>(
+                loc, utils.matrixOf(vt), upper, lower, rows, cols
+        ));
+    }
+    if(func == "saveDaphneLibResult") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Value arg = args[0];
+        return builder.create<SaveDaphneLibResultOp>(loc, arg);
+    }
+
     // --------------------------------------------------------------------
     // Low-level
     // --------------------------------------------------------------------

@@ -14,12 +14,28 @@
  * limitations under the License.
  */
 
+#include <api/daphnelib/DaphneLibResult.h>
 #include <api/internal/daphne_internal.h>
 
+/**
+ * @brief This is *the* DaphneLibResult instance.
+ */
+DaphneLibResult daphneLibRes;
+
+/**
+ * @brief Returns the result of a DaphneLib invocation.
+ */
+extern "C" DaphneLibResult getResult() {
+    return daphneLibRes;
+}
+
+/**
+ * @brief Invokes DAPHNE with the specified DaphneDSL script and certain default arguments.
+ */
 extern "C" int daphne(const char* scriptPath) {
     // Assumes that python3 is invoked from the DAPHNE root directory.
     const char * argv[] = {"daphne", "--libdir", "lib", scriptPath};
     int argc = 4;
 
-    return mainInternal(argc, argv);
+    return mainInternal(argc, argv, &daphneLibRes);
 }
