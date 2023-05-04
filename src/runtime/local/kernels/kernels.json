@@ -331,6 +331,50 @@
     },
     {
         "kernelTemplate": {
+            "header": "EigenCal.h",
+            "opName": "eigenCal",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes1",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRes2",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes1 *&",
+                    "name": "res1"
+                },
+                {
+                    "type": "DTRes2 *&",
+                    "name": "res2"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "inMat"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "double"], ["DenseMatrix", "double"],["DenseMatrix", "double"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "float"],["DenseMatrix", "float"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "CastSca.h",
             "opName": "castSca",
             "returnType": "VTRes",

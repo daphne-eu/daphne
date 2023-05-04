@@ -395,6 +395,7 @@ grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
 arrowVersion=11.0.0
 openMPIVersion=4.1.5
+eigenVersion=3.4.0
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -777,6 +778,26 @@ if [ $WITH_DEPS -gt 0 ]; then
         dependency_install_success "arrow_v${arrowVersion}"
     else
         daphne_msg "No need to build Arrow again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # Eigen
+    #------------------------------------------------------------------------------
+    eigenDirName="eigen-${eigenVersion}"
+    if ! is_dependency_downloaded "eigen_v${eigenVersion}"; then
+      wget https://gitlab.com/libeigen/eigen/-/archive/${eigenVersion}/eigen-${eigenVersion}.tar.bz2 -qP "${cacheDir}"
+      rm -rf ${sourcePrefix}/${eigenDirName}
+      tar xf "$cacheDir/eigen-${eigenVersion}.tar.bz2" --directory "$sourcePrefix"
+      cd ${sourcePrefix}/${eigenDirName}
+      dependency_download_success "eigen_v${eigenVersion}"
+    fi
+    if ! is_dependency_installed "eigen_v${eigenVersion}"; then
+      cmake -G Ninja -S "${sourcePrefix}/${eigenDirName}" -B "${buildPrefix}/${eigenDirName}" \
+          -DCMAKE_INSTALL_PREFIX=${installPrefix}
+      cmake --build "${buildPrefix}/${eigenDirName}" --target install/strip
+      dependency_install_success "eigen_v${eigenVersion}"
+    else
+      daphne_msg "No need to build eigen again."
     fi
 
     #------------------------------------------------------------------------------
