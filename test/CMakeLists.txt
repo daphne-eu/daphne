@@ -136,7 +136,7 @@ endif()
 
 add_executable(run_tests ${TEST_SOURCES})
 set_target_properties(run_tests PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-add_dependencies(run_tests daphne DistributedWorker)
+add_dependencies(run_tests daphne daphnelib DistributedWorker)
 
 get_property(dialect_libs GLOBAL PROPERTY MLIR_DIALECT_LIBS)
 set(LIBS AllKernels ${dialect_libs} DataStructures DaphneDSLParser MLIRDaphne WorkerImpl Proto Util ${OPENBLAS_LIBRARIES} DaphneConfigParser DaphneMetaDataParser)

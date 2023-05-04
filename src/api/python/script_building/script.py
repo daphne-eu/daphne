@@ -23,7 +23,9 @@
 
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
+from api.python.utils.daphnelib import DaphneLib
 
+import ctypes
 import os
 from typing import List, Dict, TYPE_CHECKING
 
@@ -44,13 +46,19 @@ class DaphneDSLScript:
         self.out_var_name = []
         self._variable_counter = 0
     
-    def build_code(self, dag_root: DAGNode):
+    def build_code(self, dag_root: DAGNode, type="shared memory"):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
             if dag_root.output_type == OutputType.MATRIX:
-                self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return TMP_PATH + "/" + baseOutVarString + ".csv"
+                if type == "files":
+                    self.add_code(f'writeMatrix({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
+                    return TMP_PATH +"/" + baseOutVarString + ".csv"
+                elif type == "shared memory":
+                    self.add_code(f'saveDaphneLibResult({baseOutVarString});')
+                    return None
+                else:
+                    raise RuntimeError(f"unknown way to transfer the data: '{type}'")
             elif dag_root.output_type == OutputType.FRAME:
                 self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
                 return TMP_PATH + "/" + baseOutVarString + ".csv"
@@ -71,12 +79,13 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-        os.chdir(PROTOTYPE_PATH)
-
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
         temp_out_file.close()
-        os.system("bin/daphne tmpdaphne.daphne")
+        
+        #os.environ['OPENBLAS_NUM_THREADS'] = '1'
+        res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+        #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """Uses Depth-First-Search to create code from DAG
