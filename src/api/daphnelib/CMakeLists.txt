@@ -1,4 +1,4 @@
-# Copyright 2021 The DAPHNE Consortium
+# Copyright 2023 The DAPHNE Consortium
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,15 +15,10 @@
 # ************************************************************************
 # daphnelib shared library
 # ************************************************************************
-# The daphne executable for running DAPHNE on the command line.
+# The shared library for using DAPHNE from Python.
 
-# These dependencies are linked at runtime
-set(LIB_DEPS  MLIRDaphneOpsIncGen AllKernels)
+# TODO This target would also need the LIB_DEPS from daphne
 
-add_llvm_executable(daphne daphne.cpp DaphneUserConfig.h DEPENDS ${LIB_DEPS})
-set_target_properties(daphne PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-
-llvm_update_compile_flags(daphne)
-target_link_libraries(daphne PRIVATE DaphneInternal)
-
-mlir_check_all_link_libraries(daphne)
+add_library(daphnelib SHARED daphnelib.cpp)
+set_target_properties(daphnelib PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
+target_link_libraries(daphnelib PRIVATE DaphneInternal)

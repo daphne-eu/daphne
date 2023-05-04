@@ -16,6 +16,10 @@
 
 #include <api/internal/daphne_internal.h>
 
-int main(int argc, const char** argv) {
+extern "C" int daphne(const char* scriptPath) {
+    // Assumes that python3 is invoked from the DAPHNE root directory.
+    const char * argv[] = {"daphne", "--libdir", "lib", scriptPath};
+    int argc = 4;
+
     return mainInternal(argc, argv);
 }

@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-#include <api/internal/daphne_internal.h>
+#pragma once
 
-int main(int argc, const char** argv) {
-    return mainInternal(argc, argv);
-}
+int mainInternal(int argc, const char** argv);
