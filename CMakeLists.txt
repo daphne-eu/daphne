@@ -154,6 +154,8 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 
 add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/api/cli)
+add_subdirectory(src/api/daphnelib)
+add_subdirectory(src/api/internal)
 add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)
