@@ -23,7 +23,6 @@
 
 __all__ = ["Matrix"]
 
-
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
