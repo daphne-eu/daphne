@@ -53,6 +53,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | pkg-config                           | 0.29.1                    |                                                                                                                                         |
 | python3                              | 3.8.5                     |                                                                                                                                         |
 | numpy                                | 1.19.5                    |                                                                                                                                         |
+| pandas                               | 0.25.3                    |                                                                                                                                         |
 | java (e.g. openjdk)                  | 11 (1.7 should be fine)   |                                                                                                                                         |
 | gfortran                             | 9.3.0                     |                                                                                                                                         |
 | uuid-dev                             |                           |                                                                                                                                         |
