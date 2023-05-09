@@ -16,14 +16,19 @@ thirdparty/*
 
 # Python
 __pycache__/
-/venv
+/venv*
 
 # Jetbrains IDE
 .idea/
-cmake-*/
 
 tmpdaphne.daphne
 
 # release scripts output
 /artifacts
 
+bin/
+logs/
+profiler/
+precompiled-dependencies/
+/cmake*/
+/data

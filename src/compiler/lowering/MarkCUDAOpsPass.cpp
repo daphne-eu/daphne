@@ -151,7 +151,7 @@ struct MarkCUDAOpsPass : public PassWrapper<MarkCUDAOpsPass, OperationPass<func:
     }
     
     bool checkUseCUDA(Operation* op) const {
-//        std::cout << "checkUseCUDA: " << op->getName().getStringRef().str() << std::endl;
+        std::cout << "checkUseCUDA: " << op->getName().getStringRef().str() << std::endl;
         bool use_cuda = op->hasTrait<mlir::OpTrait::CUDASupport>();
 #ifndef NDEBUG
         std::string name(op->getName().getStringRef().str());
