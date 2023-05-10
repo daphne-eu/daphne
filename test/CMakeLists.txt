@@ -126,6 +126,7 @@ set(TEST_SOURCES
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND TEST_SOURCES
+            runtime/local/kernels/CUDA/FillTest.cpp
             runtime/local/kernels/CUDA/MatMulTest.cpp
             runtime/local/kernels/CUDA_ContextTest.cpp
             runtime/local/kernels/DNNActivationTest.cpp

@@ -35,6 +35,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PREFIX}/BatchNorm.cpp
             ${PREFIX}/BiasAdd.cpp
             ${PREFIX}/Convolution.cpp
+            ${PREFIX}/Fill.cu
             ${PREFIX}/Pooling.cpp
             ${PREFIX}/Softmax.cpp
             ${PREFIX}/ColBind.cu

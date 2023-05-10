@@ -72,7 +72,7 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs MatrixOrU:$res);

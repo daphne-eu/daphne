@@ -77,6 +77,12 @@ public:
 
     [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
 
+    static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
+
+    std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);
+
+    void free(size_t id);
+
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
     cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
@@ -86,10 +92,8 @@ public:
     cudnnConvolutionDescriptor_t conv_desc{};
     cudnnBatchNormMode_t bn_mode = CUDNN_BATCHNORM_SPATIAL;
 
-    static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
-
-
-    std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);
-    void free(size_t id);
+    // A block size of 256 works well in many cases.
+    // Putting it here to avoid hard coding things elsewhere.
+    const uint32_t default_block_size = 256;
     
 };

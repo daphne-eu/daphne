@@ -172,10 +172,8 @@ public:
         );
     }
 
-    [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
-        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
-    }
-    
+    static bool isMatrixComputation(mlir::Operation *v);
+
     /**
      * @brief Returns the DAPHNE context used in the given function.
      * 

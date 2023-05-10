@@ -144,3 +144,10 @@ bool CompilerUtils::constantOrDefault<bool>(mlir::Value v, bool d) {
 [[maybe_unused]] FileMetaData CompilerUtils::getFileMetaData(mlir::Value filename) {
     return MetaDataParser::readMetaData(constantOrThrow<std::string>(filename));
 }
+
+bool CompilerUtils::isMatrixComputation(mlir::Operation *v) {
+    return
+            llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); })
+            ||
+            llvm::any_of(v->getResultTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); });
+}
