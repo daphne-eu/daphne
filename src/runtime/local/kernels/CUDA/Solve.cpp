@@ -102,7 +102,7 @@ namespace CUDA {
 //    CudaUniquePtr<VT> d_A(new VT, &cuda_deleter<VT>);
         VT *d_A{};
         CHECK_CUBLAS(cublasSetStream(ctx->getCublasHandle(), ctx->getCuSolverStream()));
-        CHECK_CUDART(cudaMallocAsync(reinterpret_cast<void **>(&d_A), lhs->bufferSize(), ctx->getCuSolverStream()));
+        CHECK_CUDART(cudaMallocAsync(reinterpret_cast<void **>(&d_A), lhs->getBufferSize(), ctx->getCuSolverStream()));
         const VT blend_alpha = 1.0f;
         const VT blend_beta = 0.0f;
 
@@ -111,7 +111,7 @@ namespace CUDA {
         auto &m = nc1;
 //    auto d_A = const_cast<VT*>(lhs->getValues(&alloc_desc));
         CHECK_CUDART(
-                cudaMemcpyAsync(res->getValues(&alloc_desc), rhs->getValues(&alloc_desc), rhs->bufferSize(), cudaMemcpyDeviceToDevice,
+                cudaMemcpyAsync(res->getValues(&alloc_desc), rhs->getValues(&alloc_desc), rhs->getBufferSize(), cudaMemcpyDeviceToDevice,
                                 ctx->getCuSolverStream()));
         auto d_B = res->getValues(&alloc_desc);
         auto lda = m;

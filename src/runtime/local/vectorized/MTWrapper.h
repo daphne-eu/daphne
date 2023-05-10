@@ -168,7 +168,7 @@ protected:
             if((*res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 (*res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
-                mem_required += static_cast<DT*>((*res[i]))->bufferSize();
+                mem_required += static_cast<DT*>((*res[i]))->getBufferSize();
             }
         }
         return mem_required;

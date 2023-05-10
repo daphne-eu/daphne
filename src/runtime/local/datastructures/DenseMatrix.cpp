@@ -18,17 +18,18 @@
 
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, IAllocationDescriptor* allocInfo) :
-        Matrix<ValueType>(maxNumRows, numCols), rowSkip(numCols), lastAppendedRowIdx(0), lastAppendedColIdx(0)
+        Matrix<ValueType>(maxNumRows, numCols), is_view(false), rowSkip(numCols),
+        bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
     DataPlacement* new_data_placement;
     if(allocInfo != nullptr) {
 #ifndef NDEBUG
         std::cerr << "creating dense matrix of allocation type " << static_cast<int>(allocInfo->getType()) << ", dims: "
-                << numRows << "x" << numCols << " req.mem.: " << static_cast<float>(bufferSize()) / (1048576) << "Mb"
+                << numRows << "x" << numCols << " req.mem.: " << static_cast<float>(getBufferSize()) / (1048576) << "Mb"
                 <<  std::endl;
 #endif
         new_data_placement = this->mdo->addDataPlacement(allocInfo);
-        new_data_placement->allocation->createAllocation(bufferSize(), zero);
+        new_data_placement->allocation->createAllocation(getBufferSize(), zero);
     }
     else {
         AllocationDescriptorHost myHostAllocInfo;
@@ -42,8 +43,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
 
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_ptr<ValueType[]>& values) :
-        Matrix<ValueType>(numRows, numCols), rowSkip(numCols), values(values), lastAppendedRowIdx(0),
-        lastAppendedColIdx(0) {
+        Matrix<ValueType>(numRows, numCols), is_view(false), rowSkip(numCols), values(values),
+        bufferSize(numRows*numCols*sizeof(ValueType)), lastAppendedRowIdx(0), lastAppendedColIdx(0)  {
     AllocationDescriptorHost myHostAllocInfo;
     DataPlacement* new_data_placement = this->mdo->addDataPlacement(&myHostAllocInfo);
     this->mdo->addLatest(new_data_placement->dp_id);
@@ -52,7 +53,8 @@ DenseMatrix<ValueType>::DenseMatrix(size_t numRows, size_t numCols, std::shared_
 template<typename ValueType>
 DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl,
         size_t colLowerIncl, size_t colUpperExcl) : Matrix<ValueType>(rowUpperExcl - rowLowerIncl,
-        colUpperExcl - colLowerIncl),  lastAppendedRowIdx(0), lastAppendedColIdx(0)
+        colUpperExcl - colLowerIncl),  is_view(true), bufferSize(numRows*numCols*sizeof(ValueType)),
+        lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
     assert(src && "src must not be null");
     assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
@@ -65,11 +67,12 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
     this->row_offset = rowLowerIncl;
     this->col_offset = colLowerIncl;
     rowSkip = src->rowSkip;
-    auto offset = rowLowerIncl * src->rowSkip + colLowerIncl;
-    
+
     // ToDo: manage host mem (values) in a data placement
-    if(src->values)
-        alloc_shared_values(src->values, offset);
+    if(src->values) {
+        alloc_shared_values(src->values, offset());
+        bufferSize = numRows*rowSkip*sizeof(ValueType);
+    }
     
     // FIXME: This clones the meta data to avoid locking (thread synchronization for data copy)
     for(int i = 0; i < static_cast<int>(ALLOCATION_TYPE::NUM_ALLOC_TYPES); i++) {
@@ -118,23 +121,23 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
                     if(!values)
                         this->alloc_shared_values();
                     this->mdo->addDataPlacement(&myHostAllocInfo);
-                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(values.get()), bufferSize());
-                    std::get<2>(result) = values.get();
+                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
+                    std::get<2>(result) = startAddress();
                 }
 
                 // create new data placement
                 auto new_data_placement = const_cast<DenseMatrix<ValueType> *>(this)->mdo->addDataPlacement(alloc_desc);
-                new_data_placement->allocation->createAllocation(bufferSize(), false);
+                new_data_placement->allocation->createAllocation(getBufferSize(), false);
 
                 // transfer to requested data placement
-                new_data_placement->allocation->transferTo(reinterpret_cast<std::byte *>(values.get()), bufferSize());
+                new_data_placement->allocation->transferTo(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
                 return std::make_tuple(false, new_data_placement->dp_id, reinterpret_cast<ValueType *>(
                         new_data_placement->allocation->getData().get()));
             }
             else {
                 bool latest = this->mdo->isLatestVersion(ret->dp_id);
                 if(!latest) {
-                    ret->allocation->transferTo(reinterpret_cast<std::byte *>(values.get()), bufferSize());
+                    ret->allocation->transferTo(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
                 }
                 return std::make_tuple(latest, ret->dp_id, reinterpret_cast<ValueType *>(ret->allocation->getData()
                         .get()));
@@ -155,7 +158,7 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
                     std::get<1>(result) = placement->dp_id;
                     // prefer host allocation
                     if(placement->allocation->getType() == ALLOCATION_TYPE::HOST) {
-                        std::get<2>(result) = reinterpret_cast<ValueType *>(values.get());
+                        std::get<2>(result) = reinterpret_cast<ValueType *>(startAddress());
                         break;
                     }
                 }
@@ -170,8 +173,13 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
                     const_cast<DenseMatrix<ValueType>*>(this)->alloc_shared_values();
 
                 this->mdo->addDataPlacement(&myHostAllocInfo);
-                placement->allocation->transferFrom(reinterpret_cast<std::byte *>(values.get()), bufferSize());
-                std::get<2>(result) = values.get();
+//                std::cout << "bufferSize: " << getBufferSize() << " RxRS: " << this->getNumRows() * this->getRowSkip() * sizeof(ValueType) << std::endl;
+//                if(getBufferSize() != this->getNumRows() * this->getRowSkip()) {
+//                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(startAddress()), this->getNumRows() * this->getRowSkip() * sizeof(ValueType));
+//                }
+//                else
+                    placement->allocation->transferFrom(reinterpret_cast<std::byte *>(startAddress()), getBufferSize());
+                std::get<2>(result) = startAddress();
             }
             if(std::get<2>(result) == nullptr)
                 throw std::runtime_error("Error: no object meta data in matrix");
@@ -206,17 +214,9 @@ void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> sr
         values = std::shared_ptr<ValueType[]>(src, src.get() + offset);
     }
     else
-        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
+//        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
+        values = std::shared_ptr<ValueType[]>(new ValueType[numRows * getRowSkip()]);
 }
-
-template<typename ValueType>
-size_t DenseMatrix<ValueType>::bufferSize() {
-    return this->getNumItems() * sizeof(ValueType);
-}
-
-
-
-
 
 // ----------------------------------------------------------------------------
 // const char* specialization
@@ -290,10 +290,6 @@ void DenseMatrix<const char*>::alloc_shared_strings(std::shared_ptr<CharBuf> src
         strBuf = std::make_shared<CharBuf>(strBufferCapacity_, getNumItems());
         appendZerosRange(&values[0], getNumItems());
     }
-}
-
-size_t DenseMatrix<const char*>::bufferSize() {
-    return this->getNumItems() * sizeof(const char*);
 }
 
 // explicitly instantiate to satisfy linker
