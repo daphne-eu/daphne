@@ -763,7 +763,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     arrowArtifactFileName=$arrowDirName.tar.gz
     if ! is_dependency_downloaded "arrow_v${arrowVersion}"; then
         rm -rf "${sourcePrefix:?}/${arrowDirName}"
-        wget "https://dlcdn.apache.org/arrow/arrow-$arrowVersion/$arrowArtifactFileName" -qP "$cacheDir"
+        wget "https://archive.apache.org/dist/arrow/arrow-$arrowVersion/$arrowArtifactFileName" -qP "$cacheDir"
         tar xzf "$cacheDir/$arrowArtifactFileName" --directory="$sourcePrefix"
         daphne_msg "Applying 0004-arrow-git-log.patch"
         patch -Np0 -i "$patchDir/0004-arrow-git-log.patch" -d "$sourcePrefix/$arrowDirName"
