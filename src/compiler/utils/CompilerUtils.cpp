@@ -78,6 +78,13 @@ int64_t CompilerUtils::constantOrThrow<int64_t>(mlir::Value v, const std::string
 }
 
 template<>
+uint64_t CompilerUtils::constantOrThrow<uint64_t>(mlir::Value v, const std::string & errorMsg) {
+    return constantOrThrowHelper<uint64_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}, errorMsg, "integer"
+    );
+}
+
+template<>
 float CompilerUtils::constantOrThrow<float>(mlir::Value v, const std::string & errorMsg) {
     return constantOrThrowHelper<float, mlir::FloatAttr>(
             v, [](mlir::FloatAttr attr){return attr.getValue().convertToFloat();}, errorMsg, "float"

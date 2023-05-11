@@ -16,6 +16,7 @@
 
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
+#include <runtime/local/datastructures/Structure.h>
 
 #include <mlir/IR/Value.h>
 
@@ -298,6 +299,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::CTableOp::inferShape() {
         CompilerUtils::constantOrDefault<ssize_t>(getResNumRows(), -1),
         CompilerUtils::constantOrDefault<ssize_t>(getResNumCols(), -1)
     }};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::MatrixConstantOp::inferShape() {
+    const Structure* mat = reinterpret_cast<const Structure*>(CompilerUtils::constantOrThrow<uint64_t>(getMatrixAddr()));
+    return {{mat->getNumRows(), mat->getNumCols()}};
 }
 
 // ****************************************************************************
