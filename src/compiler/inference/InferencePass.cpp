@@ -81,19 +81,11 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
         if(returnsUnknownType(op))
             daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
 
-        // Frame label inference.
-        if(cfg.frameLabelInference && returnsFrameWithUnknownLabels(op)) {
-            if(auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
-                inferFrameLabelsOp.inferFrameLabels();
-            // Else: Not a problem, since currently we use the frame labels
-            // only to aid type inference, and for this purpose, we don't
-            // need the labels in all cases.
-        }
-
-        // Shape or Sparsity inference.
+        // Inference of interesting properties.
         bool doShapeInference = cfg.shapeInference && returnsUnknownShape(op);
         bool doSparsityInference = cfg.sparsityInference && returnsUnknownSparsity(op);
-        if(doShapeInference || doSparsityInference) {
+        bool doFrameLabelInference = cfg.frameLabelInference && returnsFrameWithUnknownLabels(op);
+        if(doShapeInference || doSparsityInference || doFrameLabelInference) {
             const bool isScfOp = op->getDialect() == op->getContext()->getOrLoadDialect<scf::SCFDialect>();
             // ----------------------------------------------------------------
             // Handle all non-SCF operations
@@ -164,6 +156,13 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                                 );
                         }
                     }
+                }
+                if (doFrameLabelInference) {
+                    if(auto inferFrameLabelsOp = llvm::dyn_cast<daphne::InferFrameLabels>(op))
+                        inferFrameLabelsOp.inferFrameLabels();
+                    // Else: Not a problem, since currently we use the frame labels
+                    // only to aid type inference, and for this purpose, we don't
+                    // need the labels in all cases.
                 }
             }
             // ----------------------------------------------------------------
