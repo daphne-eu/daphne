@@ -189,10 +189,22 @@ template<class ConcreteOp>
 class ValueTypesConcat : public TraitBase<ConcreteOp, ValueTypesConcat> {};
 
 /**
+ * @brief The value type (of the single result) is `SI64`.
+ */
+template<class ConcreteOp>
+class ValueTypeSI64 : public TraitBase<ConcreteOp, ValueTypeSI64> {};
+
+/**
  * @brief The value type (of the single result) is `Size`.
  */
 template<class ConcreteOp>
 class ValueTypeSize : public TraitBase<ConcreteOp, ValueTypeSize> {};
+
+/**
+ * @brief The value type (of the single result) is `String`.
+ */
+template<class ConcreteOp>
+class ValueTypeStr : public TraitBase<ConcreteOp, ValueTypeStr> {};
     
 // ============================================================================
 // Traits determining data type and value type together

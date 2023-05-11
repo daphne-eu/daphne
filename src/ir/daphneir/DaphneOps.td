@@ -137,7 +137,9 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 // Matrix/frame dimensions
 // ****************************************************************************
 
-class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [Pure])> {
+class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
+    DataTypeSca, ValueTypeSize, Pure
+])> {
     let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs Size:$res);
 
@@ -279,7 +281,7 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 
 // TODO This is just a quick and dirty solution that should be properly
 // integrated with EwConcatOp above.
-def Daphne_ConcatOp : Daphne_Op<"concat"> {
+def Daphne_ConcatOp : Daphne_Op<"concat", [DataTypeSca, ValueTypeStr]> {
     let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
     let results = (outs StrScalar:$res);
 
@@ -1098,7 +1100,7 @@ def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
 // Conversions, casts, and copying
 // ****************************************************************************
 
-def Daphne_ToStringOp : Daphne_Op<"toString"> {
+def Daphne_ToStringOp : Daphne_Op<"toString", [DataTypeSca, ValueTypeStr]> {
     // TODO In the future, we might introduce more arguments, e.g. for
     // formatting a single value.
     let arguments = (ins MatrixOrFrame:$arg, StrScalar:$rowSep, StrScalar:$colSep);
@@ -1153,7 +1155,7 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
     let results = (outs MatrixOrU:$res);
 }
 
-def Daphne_GetColIdxOp : Daphne_Op<"getColIdx">{
+def Daphne_GetColIdxOp : Daphne_Op<"getColIdx", [DataTypeSca, ValueTypeSize]>{
     let arguments = (ins Frame:$frame, StrScalar:$columnName);
     let results = (outs Size:$res);
 }
@@ -1289,7 +1291,7 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot", [
 // Measurements
 // ****************************************************************************
 
-def Daphne_NowOp : Daphne_Op<"now"> {
+def Daphne_NowOp : Daphne_Op<"now", [DataTypeSca, ValueTypeSI64]> {
     let summary = "Returns the current time since the epoch in nano seconds.";
     let description = [{
         Take care if you use this for time measurements! This is currently just

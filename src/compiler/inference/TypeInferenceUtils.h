@@ -290,8 +290,12 @@ mlir::Type inferTypeByTraits(O * op) {
                 break;
         }
     }
+    else if(op->template hasTrait<ValueTypeSI64>())
+        resVts = {IntegerType::get(ctx, 64, IntegerType::SignednessSemantics::Signed)};
     else if(op->template hasTrait<ValueTypeSize>())
         resVts = {IndexType::get(ctx)};
+    else if(op->template hasTrait<ValueTypeStr>())
+        resVts = {daphne::StringType::get(ctx)};
 
     // --------------------------------------------------------------------
     // Create the result type
