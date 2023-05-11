@@ -869,7 +869,6 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // Cartesian product and joins
 // ----------------------------------------------------------------------------
 
-// TODO Implement #row inference
 def Daphne_CartesianOp : Daphne_Op<"cartesian", [
     DataTypeFrm, ValueTypesConcat,
     NumColsFromSumOfAllArgs,

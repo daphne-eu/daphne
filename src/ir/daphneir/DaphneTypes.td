@@ -62,7 +62,7 @@ def Matrix : Daphne_Type<"Matrix"> {
         // Creates a MatrixType from mere element type information, with all
         // other parameters reset.
         TypeBuilder<(ins "::mlir::Type":$elementType), [{
-            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Dense);
+            return Base::get($_ctxt, elementType, -1, -1, -1.0, MatrixRepresentation::Default);
         }]>,
     ];
 
