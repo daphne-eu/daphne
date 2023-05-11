@@ -1,0 +1,10 @@
+// #cols of matrix changes in while-loop.
+
+X = [0];
+C = [1];
+i = 0;
+while(i <= 2) {
+    X = cbind(X, C);
+    i = i + 1;
+}
+print(X);

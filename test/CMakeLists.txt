@@ -30,7 +30,7 @@ set(TEST_SOURCES
         api/cli/io/ReadTest.cpp
         api/cli/import/ImportTest.cpp
         api/cli/indexing/IndexingTest.cpp
-        api/cli/inference/SparsityTest.cpp
+        api/cli/inference/InferenceTest.cpp
         api/cli/io/ReadTest.cpp
         api/cli/literals/LiteralsTest.cpp
         api/cli/operations/ConstantFoldingTest.cpp

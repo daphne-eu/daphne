@@ -1,0 +1,21 @@
+// Different properties of multiple variables aften then/else-branches.
+
+// So that the if-then-else isn't optimized away.
+rnd = as.scalar(rand(1, 1, 1, 1, 0.5, -1));
+
+X = [0.1];
+Y = [0.2];
+Z = [0.3];
+if(rnd) {
+    X = rbind(X, [0.11]);
+    Y = rbind(Y, [0.22]);
+    Z = rbind(Z, [0.33]);
+}
+else {
+    X = cbind(X, [0.11]);
+    Y = cbind(Y, [0.22]);
+    Z = cbind(Z, [0.33]);
+}
+print(X);
+print(Y);
+print(Z);

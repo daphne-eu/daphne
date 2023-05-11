@@ -15,6 +15,7 @@
  */
 
 #include <api/cli/Utils.h>
+#include <api/cli/StatusCode.h>
 
 #include <tags.h>
 
@@ -25,17 +26,27 @@
 
 const std::string dirPath = "test/api/cli/inference/";
 
-#define MAKE_TEST_CASE(name, count) \
-    TEST_CASE(name, TAG_INFERENCE) { \
+#define MAKE_SUCCESS_TEST_CASE(name, count) \
+    TEST_CASE(name ", inference success", TAG_INFERENCE) { \
         for(unsigned i = 1; i <= count; i++) { \
-            DYNAMIC_SECTION(name "_" << i << ".daphne") { \
-                checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, name, i); \
+            DYNAMIC_SECTION(name "_success_" << i << ".daphne") { \
+                checkDaphneStatusCodeSimple(StatusCode::SUCCESS, dirPath, name "_success", i); \
             } \
         } \
     }
 
-// check that inference works, even if changes happen in SCF ops
-MAKE_TEST_CASE("if_sparsity", 1);
-MAKE_TEST_CASE("for_sparsity", 1);
-MAKE_TEST_CASE("while_sparsity", 1);
-// TODO: more complex checks
+#define MAKE_FAILURE_TEST_CASE(name, count) \
+    TEST_CASE(name ", inference failure", TAG_INFERENCE) { \
+        for(unsigned i = 1; i <= count; i++) { \
+            DYNAMIC_SECTION(name "_failure_" << i << ".daphne") { \
+                checkDaphneFailsSimple(dirPath, name "_failure", i); \
+            } \
+        } \
+    }
+
+MAKE_SUCCESS_TEST_CASE("if", 8);
+MAKE_FAILURE_TEST_CASE("if", 1);
+MAKE_SUCCESS_TEST_CASE("for", 8);
+MAKE_FAILURE_TEST_CASE("for", 1);
+MAKE_SUCCESS_TEST_CASE("while", 8);
+MAKE_FAILURE_TEST_CASE("while", 1);
