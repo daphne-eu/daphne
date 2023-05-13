@@ -135,15 +135,21 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
     daphne::InferenceConfig cfg;
 
     /**
-     * @brief Sets the type of all results of the given operation to unknown
-     * to undo any prior type and property inference.
+     * @brief Sets all properties of all results of the given operation to unknown
+     * to undo any prior property inference.
+     * 
+     * The data/value types are retained.
      */
     std::function<WalkResult(Operation*)> walkSetUnknown = [&](Operation * op) {
-        // For some operations, the result type cannot be inferred and must be retained.
         // For all other operations, we reset the types of all results to unknown.
-        if(!llvm::isa<daphne::ConstantOp, daphne::MatrixConstantOp, daphne::CastOp, daphne::ReadOp>(op))
-            for(size_t i = 0; i < op->getNumResults(); i++)
-                op->getResult(i).setType(daphne::UnknownType::get(op->getContext()));
+        for(size_t i = 0; i < op->getNumResults(); i++) {
+            Type t = op->getResult(i).getType();
+            if(auto mt = t.dyn_cast<daphne::MatrixType>())
+                t = mt.withSameElementType();
+            else if(auto ft = t.dyn_cast<daphne::FrameType>())
+                t = ft.withSameColumnTypes();
+            op->getResult(i).setType(t);
+        }
         return WalkResult::advance();
     };
 
