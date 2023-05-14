@@ -14,19 +14,21 @@
  * limitations under the License.
  */
 
-import "lmDS_.daph";
+import "lmCG_.daph";
 
 # Command-line arguments:
 # XY      ... file name of the input file
 # icpt    ... intercept, must be in [0, 1, 2]
 # reg     ... regularization, recommended: 0.0000001
+# tol     ... tolerance, recommended: 0.0000001
+# maxi    ... maximim number of iterations, recommended: 0 (no maximum)
 # verbose ... whether to print verbose output, must be in [false, true]
 
 XY = readMatrix($XY);
 X = XY[, :(ncol(XY) - 1)];
 y = XY[, ncol(XY) - 1];
 
-b = lmDS_.m_lmDS(X, y, $icpt, $reg, $verbose);
+b = lmCG_.m_lmCG(X, y, $icpt, $reg, $tol, $maxi, $verbose);
 
 print("");
 print("RESULT");
