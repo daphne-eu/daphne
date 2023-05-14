@@ -1266,12 +1266,20 @@ mlir::LogicalResult mlir::daphne::CondOp::canonicalize(mlir::daphne::CondOp op,
             if(elseFrmTy.getLabels() != nullptr)
                 elseVal = rewriter.create<mlir::daphne::CastOp>(loc, elseFrmTy.withLabels(nullptr), elseVal);
         
-        if(thenVal.getType() != elseVal.getType())
-            // TODO We could try to cast the types.
-            throw std::runtime_error(
-                    "the then/else-values of CondOp must have the same type if "
-                    "the condition is a scalar"
-            );
+        // Check if the types of the then-value and the else-value are the same.
+        if(thenVal.getType() != elseVal.getType()) {
+            if(thenVal.getType().isa<daphne::UnknownType>() || elseVal.getType().isa<daphne::UnknownType>())
+                // If one of them is unknown, we abort the rewrite (but this is not an error).
+                // The type may become known later, this rewrite will be triggered again.
+                return mlir::failure();
+            else
+                // If both types are known, but different, this is an error.
+                // TODO We could try to cast the types.
+                throw std::runtime_error(
+                        "the then/else-values of CondOp must have the same type if "
+                        "the condition is a scalar 1"
+                );
+        }
             
         {
             // Save the insertion point (automatically restored at the end of the block).
