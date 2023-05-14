@@ -251,9 +251,15 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
 def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [ValueTypeFromArgs/*, Commutative*/, EwSparseIfBoth, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, EwSparseIfBoth, CUDASupport]>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, Commutative, EwSparseIfEither, CUDASupport]>;
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CUDASupport]>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, EwSparseIfBoth, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, Commutative, EwSparseIfEither, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
 def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CUDASupport]>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs]>;
 def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgsFP]>;

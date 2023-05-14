@@ -196,11 +196,14 @@ The following table shows which combinations of inputs are allowed and which res
 | --- | --- | --- | --- |
 | scalar | scalar | scalar | binary operation of two scalars |
 | matrix (n x m) | scalar | matrix (n x m) | element-wise operation of each value with scalar |
+| scalar | matrix (n x m) | matrix (n x m) | element-wise operation of scalar with each value **(*)** |
 | matrix (n x m) | matrix (n x m) | matrix (n x m) | element-wise operation on corresponding values |
 | matrix (n x m) | matrix (1 x m) | matrix (n x m) | broadcasting of row-vector |
 | matrix (n x m) | matrix (n x 1) | matrix (n x m) | broadcasting of column-vector |
 
-In the future, we will also support broadcasting of scalars and row/column-matrices as the left-hand-side operands.
+**(*)** *Scalar-`op`-matrix* operations are so far only supported for `+`, `-`, `*`, `/`; for `/` only if the matrix is of a floating-point value type.
+
+In the future, we will fully support *scalar-`op`-matrix* operations as well as row/column-matrices as the left-hand-side operands.
 
 *Examples*
 ```

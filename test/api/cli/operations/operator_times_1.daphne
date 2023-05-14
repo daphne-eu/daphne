@@ -1,12 +1,21 @@
 // '*' for multiplication.
+
+print("scalar * scalar");
 print(1 * 2);
 print(1.5 * 1.5);
 print(1 * 2.5);
-print("");
+
+print("matrix * matrix");
 print([1, 2] * [3, 4]);
 print([1.5, 2.5] * [3.0, 4.0]);
 print([1, 2] * [3.5, 4.5]);
-print("");
+
+print("matrix * scalar");
 print([1, 2] * 3);
 print([1.5, 2.5] * 3.0);
 print([1, 2] * 3.5);
+
+print("scalar * matrix");
+print(3 * [1, 2]);
+print(3.0 * [1.5, 2.5]);
+print(3.5 * [1, 2]);
