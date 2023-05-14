@@ -179,8 +179,9 @@ The following built-in functions all follow the same scheme:
 
 - **`agg`**`(arg:matrix, axis:si64)`
 
-  Row-wise (`axis` == 1) or column-wise (`axis` == 0) aggregation over the matrix *(n x m)* `arg` using aggregation function `agg` (see table below).
-  Returns an *(n x 1)* column-matrix in case of row-wise aggregation, or an *(m x 1)* row-matrix in case of column-wise aggregation.
+  Row or column aggregation over a *(n x m)* matrix `arg` using aggregation function `agg` (see table below).
+  - `axis` == 0: calculate one aggregate per row; the result is a *(n x 1)* (column) matrix
+  - `axis` == 1: calculate one aggregate per column; the result is a *(1 x m)* (row) matrix
 
 | function | meaning |
 | ----- | ----- |
