@@ -1428,6 +1428,24 @@ def Daphne_DecRefOp : Daphne_Op<"decRef"> {
 }
 
 // ****************************************************************************
+// Profiling
+// ****************************************************************************
+
+def Daphne_StartProfilingOp : Daphne_Op<"startProfiling"> {
+    let summary = "Starts profiling";
+
+    let arguments = (ins); // no arguments
+    let results = (outs); // no results
+}
+
+def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
+    let summary = "Stops profiling";
+
+    let arguments = (ins); //no arguments
+    let results = (outs); // no results
+}
+
+// ****************************************************************************
 // Old operations
 // ****************************************************************************
 // These are currently still need for the prototype to work. They will be

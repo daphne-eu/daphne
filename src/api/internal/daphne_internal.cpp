@@ -266,6 +266,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         llvm::cl::init(configFileInitValue)
     );
 
+    static opt<bool> enableProfiling (
+            "enable-profiling", cat(daphneOptions),
+            desc("Enable profiling support")
+    );
+
     // Positional arguments ---------------------------------------------------
     
     static opt<string> inputFile(Positional, desc("script"), Required);
@@ -404,6 +409,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         user_config.use_fpgaopencl = true;
     }
 
+    if(enableProfiling) {
+        user_config.enable_profiling = true;
+    }
 
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)

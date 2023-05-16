@@ -136,6 +136,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if (userConfig_.use_distributed)
             pm.addPass(mlir::daphne::createDistributePipelinesPass());
 
+        if (userConfig_.enable_profiling)
+            pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createProfilingPass());
+
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInsertDaphneContextPass(userConfig_));
 
 #ifdef USE_CUDA

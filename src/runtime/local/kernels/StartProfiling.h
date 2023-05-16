@@ -14,8 +14,16 @@
  * limitations under the License.
  */
 
-#include <api/internal/daphne_internal.h>
+#pragma once
 
-int main(int argc, const char** argv) {
-    return mainInternal(argc, argv, nullptr);
+#include <runtime/local/context/DaphneContext.h>
+
+#include <papi.h>
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+
+void startProfiling(DCTX(ctx)) {
+    PAPI_hl_region_begin("fixme");
 }

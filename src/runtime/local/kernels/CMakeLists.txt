@@ -100,6 +100,10 @@ else()
     list(APPEND LIBS LLVMSupport Util MLIRDaphneInference)
 endif()
 
-list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES})
+list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
+list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
+
+find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB})

@@ -46,6 +46,7 @@ struct DaphneUserConfig {
     bool hyperthreadingEnabled = false;
     bool debugMultiThreading = false;
     bool use_fpgaopencl = false;
+    bool enable_profiling = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;

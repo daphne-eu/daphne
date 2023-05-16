@@ -3552,5 +3552,29 @@
                 ]
             }
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "StartProfiling.h",
+            "opName": "startProfiling",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "instantiations": [
+            []
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "StopProfiling.h",
+            "opName": "stopProfiling",
+            "returnType": "void",
+            "templateParams": [],
+            "runtimeParams": []
+        },
+        "instantiations": [
+            []
+        ]
     }
 ]
