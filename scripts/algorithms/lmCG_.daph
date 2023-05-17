@@ -123,7 +123,7 @@ def m_lmCG(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64, tol:f64,
 
   while (i < max_iteration && norm_r2 > norm_r2_target)
   {
-    ssX_p = fill(0.0, 1, 1); # TODO this should not be necessary
+    ssX_p = [0.0]; # TODO this should not be necessary
     if (intercept_status == 2) {
       ssX_p = scale_X * p;
       ssX_p [m_ext - 1, ] = ssX_p [m_ext - 1, ] + t(shift_X) @ p;
