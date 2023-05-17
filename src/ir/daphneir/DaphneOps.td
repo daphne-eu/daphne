@@ -491,7 +491,8 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
 }
 
 def Daphne_SliceRowOp : Daphne_Op<"sliceRow", [
-    TypeFromFirstArg
+    TypeFromFirstArg,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 
@@ -532,7 +533,8 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
 }
 
 def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
-    DeclareOpInterfaceMethods<InferTypesOpInterface>
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -548,14 +550,16 @@ def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
 // TODO Create combined InsertOp (see #238).
 
 def Daphne_InsertRowOp : Daphne_Op<"insertRow", [
-    TypeFromFirstArg // this is debatable
+    TypeFromFirstArg, // this is debatable
+    ShapeFromArg
 ]> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$rowLowerIncl, Size:$rowUpperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
 def Daphne_InsertColOp : Daphne_Op<"insertCol", [
-    TypeFromFirstArg // this is debatable
+    TypeFromFirstArg, // this is debatable
+    ShapeFromArg
 ]> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$colLowerIncl, Size:$colUpperExcl);
     let results = (outs MatrixOrFrame:$res);

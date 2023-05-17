@@ -306,6 +306,102 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::MatrixConstantOp::inferShape() 
     return {{mat->getNumRows(), mat->getNumCols()}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceRowOp::inferShape() {
+    Type srcTy = getSource().getType();
+    ssize_t srcNumRows;
+    ssize_t srcNumCols;
+    if(auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+        srcNumRows = srcMatTy.getNumRows();
+        srcNumCols = srcMatTy.getNumCols();
+    }
+    else if(auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+        srcNumRows = srcFrmTy.getNumRows();
+        srcNumCols = srcFrmTy.getNumCols();
+    }
+    else
+        // If this is the case, shape inference shouldn't have been called.
+        throw std::runtime_error(
+                "SliceRowOp shape inference does only support matrix and frame inputs"
+        );
+    
+    auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
+    auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
+
+    ssize_t resNumRows = -1;
+    if(srcNumRows != -1 && loIn.first && upEx.first) {
+        ssize_t loInPos = loIn.second;
+        ssize_t upExPos = upEx.second;
+        if(loInPos < 0 || loInPos >= srcNumRows)
+            throw std::runtime_error(
+                "SliceRowOp shape inference: lowerIncl must be in [0, numRows), "
+                "but is " + std::to_string(loInPos) +
+                " with " + std::to_string(srcNumRows) + " rows"
+            );
+        if(upExPos < 0 || upExPos > srcNumRows)
+            throw std::runtime_error(
+                "SliceRowOp shape inference: upperExcl must be in [0, numRows], "
+                "but is " + std::to_string(upExPos) +
+                " with " + std::to_string(srcNumRows) + " rows"
+            );
+        if(loInPos > upExPos)
+            throw std::runtime_error(
+                "SliceRowOp shape inference: lowerIncl must not be greater than upperExcl"
+                " (found " + std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")"
+            );
+        resNumRows = upExPos - loInPos;
+    }
+
+    return {{resNumRows, srcNumCols}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
+    Type srcTy = getSource().getType();
+    ssize_t srcNumRows;
+    ssize_t srcNumCols;
+    if(auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>()) {
+        srcNumRows = srcMatTy.getNumRows();
+        srcNumCols = srcMatTy.getNumCols();
+    }
+    else if(auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+        srcNumRows = srcFrmTy.getNumRows();
+        srcNumCols = srcFrmTy.getNumCols();
+    }
+    else
+        // If this is the case, shape inference shouldn't have been called.
+        throw std::runtime_error(
+                "SliceColOp shape inference does only support matrix and frame inputs"
+        );
+    
+    auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
+    auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
+
+    ssize_t resNumCols = -1;
+    if(srcNumCols != -1 && loIn.first && upEx.first) {
+        ssize_t loInPos = loIn.second;
+        ssize_t upExPos = upEx.second;
+        if(loInPos < 0 || loInPos >= srcNumCols)
+            throw std::runtime_error(
+                "SliceColOp shape inference: lowerIncl must be in [0, numCols), "
+                "but is " + std::to_string(loInPos) +
+                " with " + std::to_string(srcNumCols) + " cols"
+            );
+        if(upExPos < 0 || upExPos > srcNumCols)
+            throw std::runtime_error(
+                "SliceColOp shape inference: upperExcl must be in [0, numCols], "
+                "but is " + std::to_string(upExPos) +
+                " with " + std::to_string(srcNumCols) + " cols"
+            );
+        if(loInPos > upExPos)
+            throw std::runtime_error(
+                "SliceColOp shape inference: lowerIncl must not be greater than upperExcl"
+                " (found " + std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")"
+            );
+        resNumCols = upEx.second - loIn.second;
+    }
+
+    return {{srcNumRows, resNumCols}};
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************
