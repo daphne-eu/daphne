@@ -70,7 +70,7 @@ def m_lmDS(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64,
   if (intercept_status == 2)  # scale-&-shift X columns to mean 0, variance 1
   {                           # Important assumption: X [, m_ext - 1] = ones_n
     avg_X_cols = t(sum(X, 1)) / n;
-    var_X_cols = (t(sum (X ^ 2, 1)) - n * (avg_X_cols ^ 2)) / (n - 1);
+    var_X_cols = (t(sum (X ^ 2.0, 1)) - n * (avg_X_cols ^ 2.0)) / (n - 1);
     is_unsafe = (var_X_cols <= 0);
     scale_X = 1.0 / sqrt (var_X_cols * (1 - is_unsafe) + is_unsafe);
     scale_X [m_ext - 1, 0] = [1.0];

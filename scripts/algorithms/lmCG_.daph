@@ -75,9 +75,9 @@ def m_lmCG(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64, tol:f64,
   if (intercept_status == 2)  # scale-&-shift X columns to mean 0, variance 1
   {                           # Important assumption: X [, m_ext - 1] = ones_n
     avg_X_cols = t(sum(X, 1)) / n;
-    var_X_cols = (t(sum (X ^ 2, 1)) - n * (avg_X_cols ^ 2)) / (n - 1);
-    is_unsafe = (var_X_cols <= 0);
-    scale_X = 1.0 / sqrt (var_X_cols * (1 - is_unsafe) + is_unsafe);
+    var_X_cols = (t(sum (X ^ 2.0, 1)) - n * (avg_X_cols ^ 2.0)) / (n - 1);
+    is_unsafe = (var_X_cols <= 0.0);
+    scale_X = 1.0 / sqrt (var_X_cols * (1.0 - is_unsafe) + is_unsafe);
     scale_X [m_ext - 1, 0] = [1.0];
     shift_X = (0 - avg_X_cols) * scale_X;
     shift_X [m_ext - 1, 0] = [0.0];
@@ -109,16 +109,16 @@ def m_lmCG(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64, tol:f64,
   # BEGIN THE CONJUGATE GRADIENT ALGORITHM
   if (verbose) print ("Running the CG algorithm...");
 
-  r = (0 - t(X)) @ y;
+  r = (0.0 - t(X)) @ y;
 
   if (intercept_status == 2) {
     r = scale_X * r + shift_X @ r [m_ext - 1, ];
   }
 
-  p = 0 - r;
-  norm_r2 = sum (r ^ 2);
+  p = 0.0 - r;
+  norm_r2 = sum (r ^ 2.0);
   norm_r2_initial = norm_r2;
-  norm_r2_target = norm_r2_initial * tolerance ^ 2;
+  norm_r2_target = norm_r2_initial * tolerance ^ 2.0;
   if (verbose) print ("||r|| initial value = " + sqrt (norm_r2_initial) + ",  target value = " + sqrt (norm_r2_target));
 
   while (i < max_iteration && norm_r2 > norm_r2_target)
@@ -143,7 +143,7 @@ def m_lmCG(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64, tol:f64,
     r = r + a * q;
     old_norm_r2 = norm_r2;
     norm_r2 = sum (r ^ 2);
-    p = (0 - r) + (norm_r2 / old_norm_r2) * p;
+    p = (0.0 - r) + (norm_r2 / old_norm_r2) * p;
     i = i + 1;
     if (verbose) print ("Iteration " + i + ":  ||r|| / ||r init|| = " + sqrt (norm_r2 / norm_r2_initial));
   }
