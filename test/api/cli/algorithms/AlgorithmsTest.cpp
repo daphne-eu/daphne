@@ -73,19 +73,31 @@ TEST_CASE("lm", TAG_ALGORITHMS) {
 TEST_CASE("lmDS-lmCG", TAG_ALGORITHMS) {
     for(int icpt : {0, 1, 2}) {
         DYNAMIC_SECTION("icpt=" << icpt) {
-            // Non-vectorized (no --vec).
+            // Non-vectorized (no --vec), IPA constant propagation on.
             checkDaphneStatusCode(
                     StatusCode::SUCCESS, dirPath + "lmDS-lmCG.daphne",
-                    "--args", ("r=100,c=20,icpt=" + std::to_string(icpt) + ",write=true,suffix=\"__novec\"").c_str()
+                    "--args", ("r=100,c=20,icpt=" + std::to_string(icpt) + ",write=true,suffix=\"__novec_ipacp\"").c_str()
             );
-            // Vectorized (--vec).
+            // Vectorized (--vec), IPA constant propagation on.
             checkDaphneStatusCode(
                     StatusCode::SUCCESS, dirPath + "lmDS-lmCG.daphne",
-                    "--args", ("r=100,c=20,icpt=" + std::to_string(icpt) + ",write=true,suffix=\"__vec\"").c_str(),
+                    "--args", ("r=100,c=20,icpt=" + std::to_string(icpt) + ",write=true,suffix=\"__vec_ipacp\"").c_str(),
                     "--vec"
             );
+            // Non-vectorized (no --vec), IPA constant propagation off.
+            checkDaphneStatusCode(
+                    StatusCode::SUCCESS, dirPath + "lmDS-lmCG.daphne",
+                    "--args", ("r=100,c=20,icpt=" + std::to_string(icpt) + ",write=true,suffix=\"__novec_noipacp\"").c_str(),
+                    "--no-ipa-const-propa"
+            );
+            // Vectorized (--vec), IPA constant propagation off.
+            checkDaphneStatusCode(
+                    StatusCode::SUCCESS, dirPath + "lmDS-lmCG.daphne",
+                    "--args", ("r=100,c=20,icpt=" + std::to_string(icpt) + ",write=true,suffix=\"__vec_noipacp\"").c_str(),
+                    "--vec", "--no-ipa-const-propa"
+            );
             // Compare DS to CG and non-vectorized to vectorized.
-            compareDaphneToStr("1\n1\n1\n", dirPath + "lmDS-lmCG_check.daphne");
+            compareDaphneToStr("1\n1\n1\n1\n1\n1\n1\n", dirPath + "lmDS-lmCG_check.daphne");
         }
     }
 }

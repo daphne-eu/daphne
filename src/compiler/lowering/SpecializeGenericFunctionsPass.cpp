@@ -189,6 +189,12 @@ namespace {
         std::set<func::FuncOp> visited;
         std::set<func::FuncOp> called;
 
+        const DaphneUserConfig& userConfig;
+
+    public:
+        explicit SpecializeGenericFunctionsPass(const DaphneUserConfig& cfg) : userConfig(cfg) {}
+
+    private:
         /**
          * @brief Create a specialized version of the template function.
          * @param templateFunction The template function.
@@ -214,7 +220,7 @@ namespace {
 
             bool insertedConst = false;
             // Don't propagate constants into untyped functions, since that still causes problems for some reason.
-            if(!isUntypedFunction(templateFunction)) {
+            if(userConfig.use_ipa_const_propa && !isUntypedFunction(templateFunction)) {
                 // Insert compile-time constant scalar call operands into the function.
                 Block & specializedFuncBodyBlock = specializedFunc.getBody().front();
                 builder.setInsertionPointToStart(&specializedFuncBodyBlock);
@@ -249,12 +255,14 @@ namespace {
          * @return either an existing and matching `FuncOp`, `nullptr` otherwise
          */
         func::FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp templateFunction) {
-            // If any call operand is a compile-time constant scalar, we don't reuse an existing specialization,
-            // but create a new one while propagating the constant to the function body.
-            // TODO We could reuse a former specialization that uses the same constant.
-            for(Value v : operands)
-                if(CompilerUtils::constantOfAnyType(v))
-                    return nullptr;
+            if(userConfig.use_ipa_const_propa) {
+                // If any call operand is a compile-time constant scalar, we don't reuse an existing specialization,
+                // but create a new one while propagating the constant to the function body.
+                // TODO We could reuse a former specialization that uses the same constant.
+                for(Value v : operands)
+                    if(CompilerUtils::constantOfAnyType(v))
+                        return nullptr;
+            }
 
             // Try to find a reusable function specialization based on types and data properties.
             auto eqIt = specializedVersions.equal_range(templateFunction.getSymName().str());
@@ -419,6 +427,6 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
     }
 }
 
-std::unique_ptr<Pass> daphne::createSpecializeGenericFunctionsPass() {
-    return std::make_unique<SpecializeGenericFunctionsPass>();
+std::unique_ptr<Pass> daphne::createSpecializeGenericFunctionsPass(const DaphneUserConfig& cfg) {
+    return std::make_unique<SpecializeGenericFunctionsPass>(cfg);
 }

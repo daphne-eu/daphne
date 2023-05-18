@@ -197,6 +197,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                     "objects' reference counters"
             )
     );
+    static opt<bool> noIPAConstPropa(
+            "no-ipa-const-propa", cat(daphneOptions),
+            desc("Switch off inter-procedural constant propagation")
+    );
     static opt<bool> selectMatrixRepr(
             "select-matrix-repr", cat(daphneOptions),
             desc(
@@ -325,6 +329,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_vectorized_exec = useVectorizedPipelines;
     user_config.use_distributed = useDistributedRuntime; 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
+    user_config.use_ipa_const_propa = !noIPAConstPropa;
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;

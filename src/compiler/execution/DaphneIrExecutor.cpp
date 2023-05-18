@@ -69,7 +69,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.enableVerifier(false);
             if(userConfig_.explain_parsing)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after parsing:"));
-            pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass());
+            pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass(userConfig_));
             //pm.addPass(mlir::daphne::createPrintIRPass("IR after specializing generic functions:"));
             if(failed(pm.run(module))) {
                 module->dump();

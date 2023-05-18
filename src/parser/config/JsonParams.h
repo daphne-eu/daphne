@@ -28,6 +28,7 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA_ = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
+    inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -54,6 +55,7 @@ struct DaphneConfigJsonParams {
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
+            USE_IPA_CONST_PROPA,
             CUDA_FUSE_ANY,
             VECTORIZED_SINGLE_QUEUE,
             DEBUG_LLVM,

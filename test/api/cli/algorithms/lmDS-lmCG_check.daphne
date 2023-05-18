@@ -24,12 +24,20 @@ def isEqApprox(x:matrix<f64>, y:matrix<f64>) -> bool {
 }
 
 # Load the results of lmDS and lmCG for non-vectorized and vectorized processing.
-b_DS__novec = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__novec.csv");
-b_CG__novec = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__novec.csv");
-b_DS__vec   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__vec.csv");
-b_CG__vec   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__vec.csv");
+b_DS__novec_ipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__novec_ipacp.csv");
+b_CG__novec_ipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__novec_ipacp.csv");
+b_DS__vec_ipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__vec_ipacp.csv");
+b_CG__vec_ipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__vec_ipacp.csv");
+b_DS__novec_noipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__novec_noipacp.csv");
+b_CG__novec_noipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__novec_noipacp.csv");
+b_DS__vec_noipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__vec_noipacp.csv");
+b_CG__vec_noipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__vec_noipacp.csv");
 
 # Compare the results.
-print(isEqApprox(b_DS__novec, b_CG__novec)); # novec: DS vs. CG
-print(isEqApprox(b_DS__novec, b_DS__vec));   # DS: novec vs. vec
-print(isEqApprox(b_CG__novec, b_CG__vec));   # CG: novec vs. vec
+print(isEqApprox(b_DS__novec_ipacp, b_CG__novec_ipacp)); # ipacp: novec: DS vs. CG
+print(isEqApprox(b_DS__novec_ipacp, b_DS__vec_ipacp));   # ipacp: DS: novec vs. vec
+print(isEqApprox(b_CG__novec_ipacp, b_CG__vec_ipacp));   # ipacp: CG: novec vs. vec
+print(isEqApprox(b_DS__novec_ipacp, b_DS__novec_noipacp)); # DS novec: ipacp vs. noipacp
+print(isEqApprox(b_CG__novec_ipacp, b_CG__novec_noipacp)); # CG novec: ipacp vs. noipacp
+print(isEqApprox(b_DS__vec_ipacp, b_DS__vec_noipacp));     # DS vec: ipacp vs. noipacp
+print(isEqApprox(b_CG__vec_ipacp, b_CG__vec_noipacp));     # CG vec: ipacp vs. noipacp
