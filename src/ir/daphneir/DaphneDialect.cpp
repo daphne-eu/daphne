@@ -962,6 +962,7 @@ mlir::LogicalResult mlir::daphne::MatMulOp::canonicalize(
     }
 
 #if 0
+    // TODO Adapt PhyOperatorSelectionPass once this code is turned on again.
     if(lhsTransposeOp) {
         lhs = lhsTransposeOp.getArg();
         ta = !ta;

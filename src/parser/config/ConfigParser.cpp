@@ -50,6 +50,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.use_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::USE_OBJ_REF_MGNT).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_IPA_CONST_PROPA))
         config.use_ipa_const_propa = jf.at(DaphneConfigJsonParams::USE_IPA_CONST_PROPA).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::USE_PHY_OP_SELECTION))
+        config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))
@@ -70,6 +72,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_select_matrix_repr = jf.at(DaphneConfigJsonParams::EXPLAIN_SELECT_MATRIX_REPR).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_SQL))
         config.explain_sql = jf.at(DaphneConfigJsonParams::EXPLAIN_SQL).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_PHY_OP_SELECTION))
+        config.explain_phy_op_selection = jf.at(DaphneConfigJsonParams::EXPLAIN_PHY_OP_SELECTION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_TYPE_ADAPTATION))
         config.explain_type_adaptation = jf.at(DaphneConfigJsonParams::EXPLAIN_TYPE_ADAPTATION).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_VECTORIZED))

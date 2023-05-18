@@ -40,6 +40,7 @@ struct DaphneUserConfig {
     bool use_distributed = false;
     bool use_obj_ref_mgnt = true;
     bool use_ipa_const_propa = true;
+    bool use_phy_op_selection = true;
     bool cuda_fuse_any = false;
     bool vectorized_single_queue = false;
     bool prePartitionRows = false;
@@ -57,6 +58,7 @@ struct DaphneUserConfig {
     bool explain_property_inference = false;
     bool explain_select_matrix_repr = false;
     bool explain_sql = false;
+    bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;

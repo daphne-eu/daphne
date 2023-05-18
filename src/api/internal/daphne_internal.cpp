@@ -201,6 +201,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "no-ipa-const-propa", cat(daphneOptions),
             desc("Switch off inter-procedural constant propagation")
     );
+    static opt<bool> noPhyOpSelection(
+            "no-phy-op-selection", cat(daphneOptions),
+            desc("Switch off physical operator selection, use default kernels for all operations")
+    );
     static opt<bool> selectMatrixRepr(
             "select-matrix-repr", cat(daphneOptions),
             desc(
@@ -233,6 +237,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       property_inference,
       select_matrix_repr,
       sql,
+      phy_op_selection,
       type_adaptation,
       vectorized,
       obj_ref_mgnt
@@ -248,6 +253,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
             clEnumVal(select_matrix_repr, "Show DaphneIR after selecting physical matrix representations"),
+            clEnumVal(phy_op_selection, "Show DaphneIR after selecting physical operators"),
             clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
@@ -332,6 +338,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.use_distributed = useDistributedRuntime; 
     user_config.use_obj_ref_mgnt = !noObjRefMgnt;
     user_config.use_ipa_const_propa = !noIPAConstPropa;
+    user_config.use_phy_op_selection = !noPhyOpSelection;
     user_config.libdir = libDir.getValue();
     user_config.library_paths.push_back(user_config.libdir + "/libAllKernels.so");
     user_config.taskPartitioningScheme = taskPartitioningScheme;
@@ -371,6 +378,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case sql:
                 user_config.explain_sql = true;
+                break;
+            case phy_op_selection:
+                user_config.explain_phy_op_selection = true;
                 break;
             case type_adaptation:
                 user_config.explain_type_adaptation = true;

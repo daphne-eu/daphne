@@ -103,11 +103,17 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
         pm.addPass(mlir::createCanonicalizerPass());
 
-        if(selectMatrixRepresentations_) {
+        if(selectMatrixRepresentations_)
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
-            if(userConfig_.explain_select_matrix_repr)
-                pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations"));
+        if(userConfig_.explain_select_matrix_repr)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations"));
+
+        if(userConfig_.use_phy_op_selection) {
+            pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
+            pm.addPass(mlir::createCSEPass());
         }
+        if(userConfig_.explain_phy_op_selection)
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting physical operators"));
 
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createAdaptTypesToKernelsPass());
         if(userConfig_.explain_type_adaptation)
