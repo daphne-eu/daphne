@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#include <compiler/utils/CompilerUtils.h>
 #include "ir/daphneir/Daphne.h"
 #include "ir/daphneir/Passes.h"
 
@@ -31,6 +33,25 @@
 using namespace mlir;
 
 namespace {
+
+    /**
+     * @brief Checks if the function is untyped, i.e., if at least one of the inputs is
+     * of unknown type.
+     * 
+     * @param op The `FuncOp` to check
+     * @return true if `FuncOp` is untyped, false otherwise
+     */
+    bool isUntypedFunction(func::FuncOp op) {
+        return llvm::any_of(
+                op.getFunctionType().getInputs(),
+                [&](Type ty) {
+                    auto matTy = ty.dyn_cast<daphne::MatrixType>();
+                    return
+                        ty.isa<daphne::UnknownType>() ||
+                        (matTy && (matTy.getElementType().isa<daphne::UnknownType>()));
+                }
+        );
+    }
 
     /**
      * @brief Checks if the function is a template, by checking the types of input arguments.
@@ -143,8 +164,17 @@ namespace {
         // Run inference
         mlir::PassManager pm(function->getContext(), "func.func");
         pm.enableVerifier(false);
-        pm.addPass(createCanonicalizerPass()); // necessary for constant folding
+        // TODO There is a cyclic dependency between (shape) inference and
+        // constant folding (included in canonicalization), at the moment we
+        // run only three iterations of both passes (see #173).
         pm.addPass(daphne::createInferencePass({true, true, true, true, true}));
+        pm.addPass(createCanonicalizerPass());
+        pm.addPass(daphne::createInferencePass({true, true, true, true, true}));
+        pm.addPass(createCanonicalizerPass());
+        pm.addPass(daphne::createInferencePass({true, true, true, true, true}));
+        pm.addPass(createCanonicalizerPass());
+        pm.addPass(daphne::createInferencePass({true, true, true, true, true}));
+        pm.addPass(createCanonicalizerPass());
         if(failed(pm.run(function))) {
             function.emitError() << "could not infer types for a call of function template: " << function.getName();
             return nullptr;
@@ -163,9 +193,10 @@ namespace {
          * @brief Create a specialized version of the template function.
          * @param templateFunction The template function.
          * @param specializedTypes The specialized function arguments
+         * @param operands The operands of the call operation
          * @return The specialized function
          */
-        func::FuncOp createSpecializedFunction(func::FuncOp templateFunction, TypeRange specializedTypes) {
+        func::FuncOp createSpecializedFunction(func::FuncOp templateFunction, TypeRange specializedTypes, ValueRange operands) {
             OpBuilder builder(templateFunction);
             auto specializedFunc = templateFunction.clone();
             builder.insert(specializedFunc);
@@ -173,7 +204,6 @@ namespace {
             auto uniqueFuncName = uniqueSpecializedFuncName(templateFunction.getSymName().str());
             specializedFunc.setName(uniqueFuncName);
             functions.insert({uniqueFuncName, specializedFunc});
-            specializedVersions.insert({templateFunction.getSymName().str(), specializedFunc});
 
             // change argument types
             specializedFunc
@@ -181,16 +211,52 @@ namespace {
             for(auto it : llvm::zip(specializedFunc.getArguments(), specializedTypes)) {
                 std::get<0>(it).setType(std::get<1>(it));
             }
+
+            bool insertedConst = false;
+            // Don't propagate constants into untyped functions, since that still causes problems for some reason.
+            if(!isUntypedFunction(templateFunction)) {
+                // Insert compile-time constant scalar call operands into the function.
+                Block & specializedFuncBodyBlock = specializedFunc.getBody().front();
+                builder.setInsertionPointToStart(&specializedFuncBodyBlock);
+                for(auto it : llvm::enumerate(operands)) {
+                    auto i = it.index();
+                    Value v = it.value();
+                    if(Operation * co = CompilerUtils::constantOfAnyType(v)) {
+                        // Clone the constant operation into the function body.
+                        Operation * coNew = co->clone();
+                        builder.insert(coNew);
+                        // Replace all uses of the corresponding block argument by the newly inserted constant.
+                        specializedFuncBodyBlock.getArgument(i).replaceAllUsesWith(coNew->getResult(0));
+                        // TODO We could even remove the corresponding function argument.
+                        insertedConst = true;
+                    }
+                }
+            }
+            // Remember the newly specialized function for reuse only if we did not insert any constant
+            // call operands.
+            // TODO We could reuse it for other calls with the same constant (it's just more book-keeping effort).
+            if(!insertedConst)
+                specializedVersions.insert({templateFunction.getSymName().str(), specializedFunc});
+
             return inferTypesInFunction(specializedFunc);
         }
 
         /**
          * @brief Try to reuse an existing specialization for the given template function
-         * @param operandTypes Operand types of the operation
-         * @param templateFunction The template function called by the operation
+         * @param operandTypes Operand types of the call operation
+         * @param operands Operands of the call operation or an empty list if the operands are not available
+         * @param templateFunction The template function called by the call operation
          * @return either an existing and matching `FuncOp`, `nullptr` otherwise
          */
-        func::FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, func::FuncOp templateFunction) {
+        func::FuncOp tryReuseExistingSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp templateFunction) {
+            // If any call operand is a compile-time constant scalar, we don't reuse an existing specialization,
+            // but create a new one while propagating the constant to the function body.
+            // TODO We could reuse a former specialization that uses the same constant.
+            for(Value v : operands)
+                if(CompilerUtils::constantOfAnyType(v))
+                    return nullptr;
+
+            // Try to find a reusable function specialization based on types and data properties.
             auto eqIt = specializedVersions.equal_range(templateFunction.getSymName().str());
             for(auto it = eqIt.first ; it != eqIt.second ; ++it) {
                 auto specializedFunc = it->second;
@@ -200,24 +266,26 @@ namespace {
                     return specializedFunc;
                 }
             }
+
             return nullptr;
         }
 
         /**
          * @brief Try to reuse an existing specializtion if one exists, else creates a new 
          *  specialization
-         * @param operandTypes Operand types of the operation
-         * @param calledFunction The function called by the operation
+         * @param operandTypes Operand types of the call operation
+         * @param operands Operands of the call operation or an empty list if the operands are not available
+         * @param calledFunction The function called by the call operation
          * @return A `FuncOp`for the specialization
          */
-        func::FuncOp createOrReuseSpecialization(TypeRange operandTypes, func::FuncOp calledFunction) {
+        func::FuncOp createOrReuseSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp calledFunction) {
             // check for existing specialization that matches
-            func::FuncOp specializedFunc = tryReuseExistingSpecialization(operandTypes, calledFunction);
+            func::FuncOp specializedFunc = tryReuseExistingSpecialization(operandTypes, operands, calledFunction);
             if(!specializedFunc) {
                 // Create specialized function
                 auto specializedTypes =
                     getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes);
-                specializedFunc = createSpecializedFunction(calledFunction, specializedTypes);
+                specializedFunc = createSpecializedFunction(calledFunction, specializedTypes, operands);
             }
             return specializedFunc;
         }
@@ -234,8 +302,14 @@ namespace {
             // Specialize all functions called directly
             function.walk([&](daphne::GenericCallOp callOp) {
                 auto calledFunction = functions[callOp.getCallee().str()];
-                if(isFunctionTemplate(calledFunction)) {
-                    func::FuncOp specializedFunc = createOrReuseSpecialization(callOp.getOperandTypes(), calledFunction);
+                bool hasConstantInput = llvm::any_of(
+                        callOp.getOperands(),
+                        [&](Value v) {
+                            return CompilerUtils::constantOfAnyType != nullptr;
+                        }
+                );
+                if(isFunctionTemplate(calledFunction) || hasConstantInput) {
+                    func::FuncOp specializedFunc = createOrReuseSpecialization(callOp.getOperandTypes(), callOp.getOperands(), calledFunction);
                     callOp.setCalleeAttr(specializedFunc.getSymNameAttr());
                     if(fixResultTypes(callOp->getResults(), specializedFunc.getFunctionType())) {
                         inferTypesInFunction(function);
@@ -256,7 +330,7 @@ namespace {
                      // Get the element type of the matrix the function should be mapped on
                     mlir::Type opTy = mapOp.getArg().getType();
                     auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
-                    func::FuncOp specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), calledFunction);
+                    func::FuncOp specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction);
                     mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
  
                     // We only allow functions that return exactly one result for mapOp
