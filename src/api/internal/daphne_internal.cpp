@@ -231,6 +231,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
       parsing,
       parsing_simplified,
       property_inference,
+      select_matrix_repr,
       sql,
       type_adaptation,
       vectorized,
@@ -246,6 +247,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             clEnumVal(parsing_simplified, "Show DaphneIR after parsing and some simplifications"),
             clEnumVal(sql, "Show DaphneIR after SQL parsing"),
             clEnumVal(property_inference, "Show DaphneIR after property inference"),
+            clEnumVal(select_matrix_repr, "Show DaphneIR after selecting physical matrix representations"),
             clEnumVal(type_adaptation, "Show DaphneIR after adapting types to available kernels"),
             clEnumVal(vectorized, "Show DaphneIR after vectorization"),
             clEnumVal(obj_ref_mgnt, "Show DaphneIR after managing object references"),
@@ -363,6 +365,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
                 break;
             case property_inference:
                 user_config.explain_property_inference = true;
+                break;
+            case select_matrix_repr:
+                user_config.explain_select_matrix_repr = true;
                 break;
             case sql:
                 user_config.explain_sql = true;
