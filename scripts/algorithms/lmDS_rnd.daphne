@@ -1,0 +1,46 @@
+/*
+ * Copyright 2023 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import "lmDS_.daph";
+
+# Command-line arguments:
+# r      ... the number of rows of the randomly generated feature matrix
+# c      ... the number of columns of the randomly generated feature matrix
+# icpt   ... the intercept value, must be in [0, 1, 2]
+# rep    ... the number of repetitions
+
+# Generate some random data.
+X = rand($r, $c, 0.0, 1.0, 1, 12345);
+y = rand($r,  1, 0.0, 1.0, 1, 67890);
+
+# Parameters.
+reg = 0.0000001;
+verbose = false;
+
+# Calculate and print something, such that the algorithm invocations are not optimized away.
+foo = 0.0;
+
+# Execute lmDS.
+for(rep in 1:$rep) {
+    t0 = now();
+    b = lmDS_.m_lmDS(X, y, $icpt, reg, verbose);
+    t1 = now();
+    print((t1 - t0) + ";", false);
+    foo = foo + sum(b);
+}
+print("\t", false);
+
+print(foo);
