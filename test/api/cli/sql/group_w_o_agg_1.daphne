@@ -1,0 +1,10 @@
+# Tests Group by without aggregation
+lhs = createFrame(
+    [  0,  1,  1,  3,  1,  5,  1,  3,  0,  9],
+    "a");
+
+registerView("lhs", lhs);
+
+res = sql("SELECT lhs.a FROM lhs GROUP BY lhs.a;");
+
+print(res);
