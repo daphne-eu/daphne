@@ -808,6 +808,15 @@ if [ $WITH_DEPS -gt 0 ]; then
         dependency_download_success "${dep_arrow[@]}"
     fi
 
+    # this works around a build error that occurs on Ubuntu with Boost installed
+    if [ $(lsb_release -is) == "Ubuntu" ]; then
+        if [ $(dpkg -l | grep libboost | wc -l) == "" ]; then
+            daphne_msg "Setting BOOST_ROOT=/usr on Ubuntu Linux with libboost installed"
+            sleep 5
+            export BOOST_ROOT=/usr
+        fi
+    fi
+
     if ! is_dependency_installed "${dep_arrow[@]}"; then
         cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
             -DCMAKE_INSTALL_PREFIX="${installPrefix}" \
