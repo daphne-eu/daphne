@@ -113,6 +113,36 @@ creating a suitable script from the ``containers/run-docker-example.sh`` bluepri
 with build.sh (which by defaults tries to build the dependencies in the ``thirdparty`` subdirectory) the following 
 parameters are required: ``./build.sh --no-deps --installPrefix /usr/local``
 
+## Misc little helpers
+**1. With an ssh tunnel** the ssh access feature of the dev docker container (daphneeu/daphne-dev) can conveniently be used to
+work inside the container with remote development features of several popular IDEs. The scenario would be as follows:
+   * Compute node in a data-center running the daphne-dev docker container. This machine shall be reachable by the IP address 
+     192.168.0.123 in our example. 
+   * The docker container on the compute node gets assigned the docker-internal IP address of 172.17.0.2. This address is not 
+   reachable from outside of the compute node. This is the address where the sshd inside the container is listening on port 22.
+   * A DAPHNE user sitting at their workstation running VSCode with Remote-SSH extension. IP address of this host is not relevant 
+   but this computer needs to have a network connection to the compute node of course.
+     - With the setup above the following command would provide a tunnel from the workstation into the container.
+     Once the tunnel is up, the Remote-SSH plugin of VSCode can connect with the docker user/password to port 2345 on the
+     localhost address of the workstation.
+     - ``` ssh compute-node-user@192.168.0.123 -L 2345:172.17.0.2:22```
+
+    
+**2. The password** of a running daphneeu/daphne-dev container can be retrieved (if it's been forgotten and scrolled out of sight)
+by searching the log output of the container.
+   * First retrieve the container id:
+    ``` bash
+    $ docker ps
+    CONTAINER ID   IMAGE                             COMMAND                  CREATED       STATUS       PORTS     NAMES
+    99a5b6c85bbb   daphneeu/daphne-dev:latest_BASE   "/entrypoint-interac…"   2 hours ago   Up 2 hours   22/tcp    tender_mcclintock
+    ```
+    *  The password can subsequently be retrieved with 
+    ``` bash
+    $ docker logs 99a5b6c85bbb | grep password
+    Use docker-username with password Docker!4556 for SSH login
+    ```
+
+
 
 [//]: # (### TODO)
 [//]: # (* Rebuilding the containers automatically for latest changes)
