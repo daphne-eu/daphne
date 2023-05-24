@@ -1,0 +1,7 @@
+// Data type changes in for-loop.
+
+X = [0]; // matrix
+C = createFrame([1]); // frame
+for(i in 0:2)
+    X = rbind(X, C); // frame
+print(X);

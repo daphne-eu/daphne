@@ -32,6 +32,8 @@
 
 #include <vector>
 
+#include "run_tests.h"
+
 template<typename DT>
 DT* genInput() {
     return genGivenVals<DT>(2, {
@@ -61,12 +63,7 @@ void check(const DT* in, const DT* exp, DaphneContext* dctx) {
 TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
-#ifdef USE_CUDA
-    CUDA::createCUDAContext(dctx.get());
-#endif
-
+    auto dctx = setupContextAndLogger();
 
     // two rgb "images" of 5x5 pixels
     auto inputs = genInput<DT>();
@@ -89,8 +86,8 @@ TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_avg", TAG_DNN, (DenseMatrix), (float, doubl
 TEMPLATE_PRODUCT_TEST_CASE("pool_fwd_max", TAG_DNN, (DenseMatrix), (float, double)) { // NOLINT(cert-err58-cpp)
     using DT = TestType;
 
-    DaphneUserConfig user_config{};
-    auto dctx = std::make_unique<DaphneContext>(user_config);
+    auto dctx = setupContextAndLogger();
+
 #ifdef USE_CUDA
     CUDA::createCUDAContext(dctx.get());
 #endif

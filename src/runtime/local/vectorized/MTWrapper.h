@@ -26,6 +26,8 @@
 #include <runtime/local/vectorized/WorkerCPU.h>
 #include <runtime/local/vectorized/WorkerGPU.h>
 
+#include <spdlog/spdlog.h>
+
 #include <fstream>
 #include <functional>
 #include <queue>
@@ -168,7 +170,7 @@ protected:
             if((*res[i]) == nullptr && outRows[i] != -1 && outCols[i] != -1) {
                 auto zeroOut = combines[i] == mlir::daphne::VectorCombine::ADD;
                 (*res[i]) = DataObjectFactory::create<DT>(outRows[i], outCols[i], zeroOut);
-                mem_required += static_cast<DT*>((*res[i]))->bufferSize();
+                mem_required += static_cast<DT*>((*res[i]))->getBufferSize();
             }
         }
         return mem_required;
@@ -237,8 +239,11 @@ public:
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
 #ifndef NDEBUG
-        std::cerr << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
+        std::stringstream ss;
+        ss << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
                   << std::endl;
+        spdlog::debug(ss.str());
+//        std::cerr << ss.str();
 #endif
     }
 

@@ -14,9 +14,6 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H
-
 #pragma once
 
 #include <api/cli/DaphneUserConfig.h>
@@ -28,9 +25,9 @@
 // Convenience function
 // ****************************************************************************
 
-void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
+static void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
+    if(config->log_ptr)
+        config->log_ptr->registerLoggers();
     res = new DaphneContext(*config);
 }
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_CREATEDAPHNECONTEXT_H

@@ -1,0 +1,10 @@
+// Matrix literals in functions.
+// (Checking the life time of the runtime matrix object backing the matrix literal.)
+
+def f() {
+    print([11, 22, 33]);
+}
+
+f();
+f();
+f();

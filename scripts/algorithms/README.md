@@ -18,7 +18,7 @@ limitations under the License.
 
 ## Example data
 
-To get some toy example data, you may execute the following commands from the repositories root directory:
+To get some toy example data, you may execute the following commands from the repository's root directory:
 
 ```bash
 mkdir data
@@ -62,6 +62,13 @@ Aborted (core dumped)
 
 ```bash
 bin/daphne scripts/algorithms/lmDS.daph XY=\"data/wine.csv\" icpt=0 reg=0.0000001 verbose=true
+```
+<!-- successful with --vec -->
+
+### Linear Regression using the Conjugate Gradient method
+
+```bash
+bin/daphne scripts/algorithms/lmDS.daph XY=\"data/wine.csv\" icpt=0 reg=0.0000001 tol=0.0000001 maxi=0 verbose=true
 ```
 <!-- successful with --vec -->
 

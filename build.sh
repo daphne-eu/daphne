@@ -395,6 +395,9 @@ grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
 arrowVersion=11.0.0
 openMPIVersion=4.1.5
+eigenVersion=3.4.0
+spdlogVersion=1.11.0
+papiVersion=7.0.1
 
 #******************************************************************************
 # Set some prefixes, paths and dirs
@@ -762,7 +765,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     arrowArtifactFileName=$arrowDirName.tar.gz
     if ! is_dependency_downloaded "arrow_v${arrowVersion}"; then
         rm -rf "${sourcePrefix:?}/${arrowDirName}"
-        wget "https://dlcdn.apache.org/arrow/arrow-$arrowVersion/$arrowArtifactFileName" -qP "$cacheDir"
+        wget "https://archive.apache.org/dist/arrow/arrow-$arrowVersion/$arrowArtifactFileName" -qP "$cacheDir"
         tar xzf "$cacheDir/$arrowArtifactFileName" --directory="$sourcePrefix"
         daphne_msg "Applying 0004-arrow-git-log.patch"
         patch -Np0 -i "$patchDir/0004-arrow-git-log.patch" -d "$sourcePrefix/$arrowDirName"
@@ -777,6 +780,74 @@ if [ $WITH_DEPS -gt 0 ]; then
         dependency_install_success "arrow_v${arrowVersion}"
     else
         daphne_msg "No need to build Arrow again."
+    fi
+    #------------------------------------------------------------------------------
+    # spdlog
+    #------------------------------------------------------------------------------
+    spdlogDirName="spdlog-$spdlogVersion"
+    spdlogArtifactFileName=$spdlogDirName.tar.gz
+    if ! is_dependency_downloaded "spdlog_v${spdlogVersion}"; then
+        rm -rf "${sourcePrefix:?}/${spdlogDirName}"
+        wget "https://github.com/gabime/spdlog/archive/refs/tags/v$spdlogVersion.tar.gz" -qO \
+            "$cacheDir/$spdlogArtifactFileName"
+        tar xzf "$cacheDir/$spdlogArtifactFileName" --directory="$sourcePrefix"
+        dependency_download_success "spdlog_v${spdlogVersion}"
+    fi
+
+    if ! is_dependency_installed "spdlog_v${spdlogVersion}"; then
+        cmake -G Ninja -S "${sourcePrefix}/${spdlogDirName}" -B "${buildPrefix}/${spdlogDirName}" \
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+        cmake --build "${buildPrefix}/${spdlogDirName}" --target install/strip
+        dependency_install_success "spdlog_v${spdlogVersion}"
+    else
+        daphne_msg "No need to build spdlog again."
+    fi
+    #------------------------------------------------------------------------------
+    # Eigen
+    #------------------------------------------------------------------------------
+    eigenDirName="eigen-${eigenVersion}"
+    if ! is_dependency_downloaded "eigen_v${eigenVersion}"; then
+      wget https://gitlab.com/libeigen/eigen/-/archive/${eigenVersion}/eigen-${eigenVersion}.tar.bz2 -qP "${cacheDir}"
+      rm -rf ${sourcePrefix}/${eigenDirName}
+      tar xf "$cacheDir/eigen-${eigenVersion}.tar.bz2" --directory "$sourcePrefix"
+      cd ${sourcePrefix}/${eigenDirName}
+      dependency_download_success "eigen_v${eigenVersion}"
+    fi
+    if ! is_dependency_installed "eigen_v${eigenVersion}"; then
+      cmake -G Ninja -S "${sourcePrefix}/${eigenDirName}" -B "${buildPrefix}/${eigenDirName}" \
+          -DCMAKE_INSTALL_PREFIX=${installPrefix}
+      cmake --build "${buildPrefix}/${eigenDirName}" --target install/strip
+      dependency_install_success "eigen_v${eigenVersion}"
+    else
+      daphne_msg "No need to build eigen again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # PAPI (Performance Application Programming Interface)
+    #------------------------------------------------------------------------------
+    papiDirName="papi-$papiVersion"
+    papiTarName="${papiDirName}.tar.gz"
+    papiInstDirName=$installPrefix
+    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+        daphne_msg "Get PAPI version ${papiVersion}"
+        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+            -qO "${cacheDir}/${papiTarName}"
+        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+        dependency_download_success "papi_v${papiVersion}"
+    fi
+    if ! is_dependency_installed "papi_v${papiVersion}"; then
+        cd "$sourcePrefix/$papiDirName/src"
+        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+
+        # optimizes for multiple x86_64 architectures
+        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
+        make install
+        cd - > /dev/null
+        dependency_install_success "papi_v${papiVersion}"
+    else
+        daphne_msg "No need to build PAPI again."
     fi
 
     #------------------------------------------------------------------------------

@@ -20,15 +20,20 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
+
 __all__ = ["Matrix"]
+
+from api.python.operator.operation_node import OperationNode
+from api.python.operator.nodes.scalar import Scalar
+from api.python.script_building.dag import OutputType
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
+
+import numpy as np
+
+import json
 import os
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.scalar import Scalar
-import numpy as np
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
@@ -52,15 +57,18 @@ class Matrix(OperationNode):
                   named_input_vars: Dict[str, str]) -> str:
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
         
-        if self._is_numpy():
-            
+        if self._is_numpy() and self.operation == "readMatrix":
             with open(TMP_PATH+"/"+var_name+".csv", "wb") as f:
                 np.savetxt(f, self._np_array, delimiter=",")
-                f.close()
-
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
-                f.write("{\"numRows\":"+str(np.shape(self._np_array)[0])+",\"numCols\":"+str(np.shape(self._np_array)[1])+",\"valueType\":\""+self.getDType(self._np_array.dtype)+"\"}")
-                f.close()
+                json.dump(
+                    {
+                        "numRows": np.shape(self._np_array)[0],
+                        "numCols": np.shape(self._np_array)[1],
+                        "valueType": self.getDType(self._np_array.dtype),
+                    },
+                    f, indent=2
+                )
         return code_line
 
     def getDType(self, d_type):
@@ -86,11 +94,11 @@ class Matrix(OperationNode):
     def _is_numpy(self) -> bool:
         return self._np_array is not None
     
-    def compute(self) -> Union[np.array]:
+    def compute(self, type="shared memory") -> Union[np.array]:
         if self._is_numpy():
             return self._np_array
         else:
-            return super().compute()
+            return super().compute(type)
 
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '+', [self, other])
@@ -143,19 +151,19 @@ class Matrix(OperationNode):
     def __matmul__(self, other: 'Matrix') -> 'Matrix':
         return Matrix(self.daphne_context, '@', [self, other])
 
+    def __getitem__(self,  pos):
+        if not isinstance(pos, int):
+            i, x = pos
+            return Matrix(self.daphne_context,'',[self, i, x], brackets=True)
+
     def sum(self, axis: int = None) -> 'OperationNode':
         """Calculate sum of matrix.
         :param axis: can be 0 or 1 to do either row or column sums
         :return: `Matrix` representing operation
         """
-        if axis == 0:
-            return Matrix(self.daphne_context,'colSums', [self])
-        elif axis == 1:
-            return Matrix(self.daphne_context,'rowSums', [self])
-        elif axis is None:
+        if axis is None:
             return Scalar(self.daphne_context,'sum', [self])
-        raise ValueError(
-            f"Axis has to be either 0, 1 or None, for column, row or complete {self.operation}")
+        return Matrix(self.daphne_context,'sum', [self, axis])
         
     def sqrt(self) -> 'OperationNode':
         """Calculate sqrt of matrix.
@@ -163,6 +171,41 @@ class Matrix(OperationNode):
         """
         return Matrix(self.daphne_context,'sqrt', [self])
     
+    def aggMin(self, axis: int = None) -> 'OperationNode':
+        if axis is not None:
+            return Matrix(self.daphne_context, 'aggMin', [self, axis])
+        return Scalar(self.daphne_context, 'aggMin', [self])
+
+    def aggMax(self, axis: int = None) -> 'OperationNode':
+        if axis is not None:
+            return Matrix(self.daphne_context, 'aggMax', [self, axis])
+        return Scalar(self.daphne_context, 'aggMax', [self])
+    
+    def mean(self, axis: int = None) -> 'OperationNode':
+        if axis is not None:
+            return Matrix(self.daphne_context, 'mean', [self, axis])
+        return Scalar(self.daphne_context, 'mean', [self])
+
+    def stddev(self, axis: int = None) -> 'OperationNode':
+        if axis is not None:
+            return Matrix(self.daphne_context, 'stddev', [self, axis])
+        return Scalar(self.daphne_context, 'stddev', [self])
+    
+    def ncol(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'ncol', [self])
+
+    def nrow(self) -> 'OperationNode':
+        return Scalar(self.daphne_context, 'nrow', [self])
+
+    def diagMatrix(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 'diagMatrix', [self])
+    
+    def solve(self, other: 'Matrix') -> 'Matrix':
+        return Matrix(self.daphne_context, 'solve', [self, other])
+
+    def t(self) -> 'OperationNode':
+        return Matrix(self.daphne_context, 't', [self])
+        
     def max(self, other: 'Matrix') -> 'Matrix':
         """Calculate elementwise max of two matrices.
         :param other: another matrix
@@ -177,5 +220,8 @@ class Matrix(OperationNode):
         """
         return Matrix(self.daphne_context, 'min', [self, other])
         
+    def write(self, file: str) -> 'OperationNode':
+        return OperationNode(self.daphne_context, 'writeMatrix', [self,'\"'+file+'\"'], output_type=OutputType.NONE)
+    
     def print(self):
         return OperationNode(self.daphne_context,'print',[self], output_type=OutputType.NONE)

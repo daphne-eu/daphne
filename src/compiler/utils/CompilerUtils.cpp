@@ -78,6 +78,13 @@ int64_t CompilerUtils::constantOrThrow<int64_t>(mlir::Value v, const std::string
 }
 
 template<>
+uint64_t CompilerUtils::constantOrThrow<uint64_t>(mlir::Value v, const std::string & errorMsg) {
+    return constantOrThrowHelper<uint64_t, mlir::IntegerAttr>(
+            v, [](mlir::IntegerAttr attr){return attr.getValue().getLimitedValue();}, errorMsg, "integer"
+    );
+}
+
+template<>
 float CompilerUtils::constantOrThrow<float>(mlir::Value v, const std::string & errorMsg) {
     return constantOrThrowHelper<float, mlir::FloatAttr>(
             v, [](mlir::FloatAttr attr){return attr.getValue().convertToFloat();}, errorMsg, "float"
@@ -143,4 +150,11 @@ bool CompilerUtils::constantOrDefault<bool>(mlir::Value v, bool d) {
 
 [[maybe_unused]] FileMetaData CompilerUtils::getFileMetaData(mlir::Value filename) {
     return MetaDataParser::readMetaData(constantOrThrow<std::string>(filename));
+}
+
+bool CompilerUtils::isMatrixComputation(mlir::Operation *v) {
+    return
+            llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); })
+            ||
+            llvm::any_of(v->getResultTypes(), [&](mlir::Type ty){ return ty.isa<mlir::daphne::MatrixType>(); });
 }

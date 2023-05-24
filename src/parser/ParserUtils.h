@@ -184,6 +184,7 @@ public:
         if(name == "ui32") return builder.getIntegerType(32, false);
         if(name == "ui8") return builder.getIntegerType(8, false);
         if(name == "str") return strType;
+        if(name == "bool") return boolType;
         throw std::runtime_error("unsupported value type: " + name);
     }
 

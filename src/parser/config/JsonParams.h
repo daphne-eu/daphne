@@ -28,6 +28,8 @@ struct DaphneConfigJsonParams {
     inline static const std::string USE_CUDA_ = "use_cuda";
     inline static const std::string USE_VECTORIZED_EXEC = "use_vectorized_exec";
     inline static const std::string USE_OBJ_REF_MGNT = "use_obj_ref_mgnt";
+    inline static const std::string USE_IPA_CONST_PROPA = "use_ipa_const_propa";
+    inline static const std::string USE_PHY_OP_SELECTION = "use_phy_op_selection";
     inline static const std::string CUDA_FUSE_ANY = "cuda_fuse_any";
     inline static const std::string VECTORIZED_SINGLE_QUEUE = "vectorized_single_queue";
 
@@ -37,24 +39,27 @@ struct DaphneConfigJsonParams {
     inline static const std::string EXPLAIN_PARSING = "explain_parsing";
     inline static const std::string EXPLAIN_PARSING_SIMPLIFIED = "explain_parsing_simplified";
     inline static const std::string EXPLAIN_PROPERTY_INFERENCE = "explain_property_inference";
+    inline static const std::string EXPLAIN_SELECT_MATRIX_REPR = "explain_select_matrix_repr";
     inline static const std::string EXPLAIN_SQL = "explain_sql";
+    inline static const std::string EXPLAIN_PHY_OP_SELECTION = "explain_phy_op_selection";
     inline static const std::string EXPLAIN_TYPE_ADAPTATION = "explain_type_adaptation";
     inline static const std::string EXPLAIN_VECTORIZED = "explain_vectorized";
     inline static const std::string EXPLAIN_OBJ_REF_MGNT = "explain_obj_ref_mgnt";
     inline static const std::string TASK_PARTITIONING_SCHEME = "taskPartitioningScheme";
     inline static const std::string NUMBER_OF_THREADS = "numberOfThreads";
     inline static const std::string MINIMUM_TASK_SIZE = "minimumTaskSize";
-
     inline static const std::string CUDA_DEVICES = "cuda_devices";
-
     inline static const std::string LIB_DIR = "libdir";
     inline static const std::string LIBRARY_PATHS = "library_paths";
     inline static const std::string DAPHNEDSL_IMPORT_PATHS = "daphnedsl_import_paths";
-
+    inline static const std::string LOGGING = "logging";
+    
     inline static const std::string JSON_PARAMS[] = {
             USE_CUDA_,
             USE_VECTORIZED_EXEC,
             USE_OBJ_REF_MGNT,
+            USE_IPA_CONST_PROPA,
+            USE_PHY_OP_SELECTION,
             CUDA_FUSE_ANY,
             VECTORIZED_SINGLE_QUEUE,
             DEBUG_LLVM,
@@ -63,7 +68,9 @@ struct DaphneConfigJsonParams {
             EXPLAIN_PARSING,
             EXPLAIN_PARSING_SIMPLIFIED,
             EXPLAIN_PROPERTY_INFERENCE,
+            EXPLAIN_SELECT_MATRIX_REPR,
             EXPLAIN_SQL,
+            EXPLAIN_PHY_OP_SELECTION,
             EXPLAIN_TYPE_ADAPTATION,
             EXPLAIN_VECTORIZED,
             EXPLAIN_OBJ_REF_MGNT,
@@ -73,7 +80,8 @@ struct DaphneConfigJsonParams {
             CUDA_DEVICES,
             LIB_DIR,
             LIBRARY_PATHS,
-            DAPHNEDSL_IMPORT_PATHS
+            DAPHNEDSL_IMPORT_PATHS,
+            LOGGING
     };
 };
 

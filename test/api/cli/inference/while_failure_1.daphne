@@ -1,0 +1,10 @@
+// Data type changes in while-loop.
+
+X = [0]; // matrix
+C = createFrame([1]); // frame
+i = 0;
+while(i <= 2) {
+    X = rbind(X, C); // frame
+    i = i + 1;
+}
+print(X);

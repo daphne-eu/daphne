@@ -1,6 +1,0 @@
-// Check that our inference doesn't throw errors if sparsity changes during while loop
-G = rand(10, 10, 1.0, 1.0, 0.1, -1);
-while (sum(G) < 0.5) {
-    G = G + rand(10, 10, 1.0, 1.0, 0.2, -1);
-}
-print(G);

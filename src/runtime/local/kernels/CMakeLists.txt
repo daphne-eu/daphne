@@ -15,6 +15,10 @@
 # Specifies how to generate the file "kernels.cpp" (which resides in the build
 # directory) as the basis for the pre-compiled kernels library.
 
+set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # The library of pre-compiled CUDA kernels
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     add_custom_command(
@@ -29,12 +33,14 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CUDA)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
+            ${PREFIX}/CreateCUDAContext.cpp
             ${PREFIX}/AggCol.cu
             ${PREFIX}/Activation.cpp
             ${PREFIX}/Affine.cpp
             ${PREFIX}/BatchNorm.cpp
             ${PREFIX}/BiasAdd.cpp
             ${PREFIX}/Convolution.cpp
+            ${PREFIX}/Fill.cu
             ${PREFIX}/Pooling.cpp
             ${PREFIX}/Softmax.cpp
             ${PREFIX}/ColBind.cu
@@ -60,7 +66,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             PATH_SUFFIXES nvidia/current lib64 lib/x64 lib)
 
     target_link_libraries(CUDAKernels PUBLIC DataStructures LLVMSupport MLIRDaphne MLIRDaphneTransforms CUDA::cudart CUDA::cublasLt CUDA::cublas
-            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver)
+            CUDA::cusparse ${CUDA_cudnn_LIBRARY} CUDA::cusolver Util MLIRDaphneInference)
     set_target_properties(CUDAKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 endif()
 
@@ -83,17 +89,21 @@ add_library(AllKernels SHARED
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
-)
+        )
 set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)
-target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
+    target_include_directories(AllKernels PUBLIC ${CUDAToolkit_INCLUDE_DIRS})
     list(APPEND LIBS CUDAKernels)
 else()
     # This can only appear once, so it's either included in CUDAKernels or appended here to AllKernels directly
-    list(APPEND LIBS LLVMSupport)
+    list(APPEND LIBS LLVMSupport Util MLIRDaphneInference)
 endif()
 
-list(APPEND LIBS Arrow::arrow_shared Parquet::parquet_shared DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES})
+list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
+list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
+
+find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
+
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB})

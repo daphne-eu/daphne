@@ -65,6 +65,21 @@ private:
 public:
 
     /**
+     * @brief If the given `Value` is defined by some constant operation, return that constant
+     * operation; otherwise, return `nullptr`.
+     * 
+     * @param v The `Value`.
+     * @return The defining constant operation or `nullptr`.
+     */
+    static mlir::Operation * constantOfAnyType(mlir::Value v) {
+        if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>())
+            return co;
+        if(auto co = v.getDefiningOp<mlir::arith::ConstantOp>())
+            return co;
+        return nullptr;
+    }
+
+    /**
      * @brief Returns if the given `Value` is a constant, and if so, also the constant itself.
      * 
      * @tparam T The C++ type of the constant to extract.
@@ -172,10 +187,8 @@ public:
         );
     }
 
-    [[maybe_unused]] static bool isMatrixComputation(mlir::Operation *v) {
-        return llvm::any_of(v->getOperandTypes(), [&](mlir::Type ty) { return ty.isa<mlir::daphne::MatrixType>(); });
-    }
-    
+    static bool isMatrixComputation(mlir::Operation *v);
+
     /**
      * @brief Returns the DAPHNE context used in the given function.
      * 

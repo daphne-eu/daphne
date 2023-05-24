@@ -1,0 +1,11 @@
+// Different data types after then/else branches.
+
+// So that the if-then-else isn't optimized away.
+rnd = as.scalar(rand(1, 1, 0, 1, 1, -1));
+
+X = 0; // scalar
+if(rnd)
+    X = [1]; // matrix
+else
+    X = 2; // scalar
+print(X);

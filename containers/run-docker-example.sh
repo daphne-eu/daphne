@@ -17,19 +17,48 @@
 echo "Use this as an example to start DAPHNE docker containers. Copy and customize for the various flavors."
 
 DOCKER_IMAGE=daphneeu/daphne-dev
-#DOCKER_IMAGE=daphneeu/daphne-dev-interactive
-DOCKER_TAG=latest
-#DOCKER_TAG=cuda-12.0.1-cudnn8-devel-ubuntu20.04_2023-04-03
+DOCKER_TAG=latest_BASE
+#DOCKER_TAG=latest_CUDA
+
+# run this script from the base path of your DAPHNE source tree
 DAPHNE_ROOT=$PWD
 
-CUDA_PATH=/usr/local/cuda
-LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:$LD_LIBRARY_PATH
-PATH=$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
-# uncomment to pass GPU devices to the container
-#DEVICE_FLAGS=--gpus all
+# the directory used *inside* the container to bind-mount your source directory
+DAPHNE_ROOT_CONTAINER=/daphne
 
-# shellcheck disable=SC2046
-# shellcheck disable=SC2068
-docker run "$DEVICE_FLAGS" --user=$(id -u):$(id -g) --rm -w "$DAPHNE_ROOT" -v "$DAPHNE_ROOT:$DAPHNE_ROOT" \
-    -e TERM=screen-256color -e PATH="$PATH" -e LD_LIBRARY_PATH="$LD_LIBRARY_PATH" -e USER=$(id -n -u) -e UID=$(id -u) \
-    "$DOCKER_IMAGE:$DOCKER_TAG" $@
+# user info to set up your user inside the container (to avoid creating files that then belong to the root user)
+USERNAME=$(id -n -u)
+GID=$(id -g)
+
+# some environment setup
+CUDA_PATH=/usr/local/cuda
+LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:/usr/local/lib:$LD_LIBRARY_PATH
+PATH=$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
+
+# uncomment the appropriate to pass GPU devices to the container (goes hand in hand with DOCKER_TAG)
+DEVICE_FLAGS=""
+#DEVICE_FLAGS="--gpus all"
+
+# this might be needed if a debugging session is run in the container
+DEBUG_FLAGS=""
+#DEBUG_FLAGS="--cap-add=SYS_PTRACE --security-opt seccomp=unconfined"
+
+# set bash as the default command if none is provided
+command=$*
+if [ "$#" -eq 0 ]; then
+    command=bash
+fi
+
+# non-interactive: launch with PWD mounted
+#docker run $DEVICE_FLAGS --user=$UID:$GID --rm -w "$DAPHNE_ROOT" -v "$DAPHNE_ROOT:$DAPHNE_ROOT" \
+#    -e TERM=screen-256color -e PATH="$PATH" -e LD_LIBRARY_PATH="$LD_LIBRARY_PATH" -e USER=$USERNAME -e UID=$UID \
+#    "$DOCKER_IMAGE:$DOCKER_TAG" $@
+
+# for interactive use:
+docker run $DEBUG_FLAGS $DEVICE_FLAGS -it --rm --hostname daphne-container -w $DAPHNE_ROOT_CONTAINER \
+    -v "$DAPHNE_ROOT:$DAPHNE_ROOT_CONTAINER" -e GID=$GID -e TERM=screen-256color -e PATH -e LD_LIBRARY_PATH \
+    -e USER=$USERNAME -e UID=$UID \
+    "$DOCKER_IMAGE:$DOCKER_TAG" $command
+
+# move this up to above the DOCKER_IMAGE line to override the entrypoint:
+#    --entrypoint /daphne/containers/entrypoint-interactive.sh

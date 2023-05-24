@@ -43,7 +43,9 @@ def ValueTypeFromArgs: NativeOpTrait<"ValueTypeFromArgs">;
 def ValueTypeFromArgsFP: NativeOpTrait<"ValueTypeFromArgsFP">;
 def ValueTypeFromArgsInt: NativeOpTrait<"ValueTypeFromArgsInt">;
 def ValueTypesConcat: NativeOpTrait<"ValueTypesConcat">;
+def ValueTypeSI64: NativeOpTrait<"ValueTypeSI64">;
 def ValueTypeSize: NativeOpTrait<"ValueTypeSize">;
+def ValueTypeStr: NativeOpTrait<"ValueTypeStr">;
 
 // ****************************************************************************
 // Traits determining data type and value type together
