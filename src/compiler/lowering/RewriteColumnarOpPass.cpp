@@ -43,6 +43,11 @@ namespace
 
             rewriter.replaceOpWithNewOp<mlir::daphne::ConstantOp>(castOp, static_cast<int64_t>(1));
             auto cast = rewriter.create<mlir::daphne::CastOp>(castOp->getLoc(), castOp->getResult(0).getType(), castOp->getOperand(0));
+            mlir::Type vt = mlir::daphne::UnknownType::get(rewriter.getContext());
+            mlir::Type resType = mlir::daphne::ColumnType::get(
+                rewriter.getContext(), vt
+            );
+            auto cast2 = rewriter.create<mlir::daphne::CastOp>(castOp->getLoc(), resType, castOp->getOperand(0));
             auto gt = rewriter.replaceOpWithNewOp<mlir::daphne::EwLeOp>(geOp, cast, geOp->getOperand(1));
             //gt->getUsers();
 
