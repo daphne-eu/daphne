@@ -60,6 +60,9 @@ done
 export PYTHONPATH="$PYTHONPATH:$PWD/src/"
 mkdir --parents src/api/python/tmp
 
+# this speeds up the vectorized tests
+export OPENBLAS_NUM_THREADS=1
+
 # Run tests.
 # shellcheck disable=SC2086
 ./bin/run_tests $catch2_options
