@@ -312,6 +312,18 @@ def Daphne_EwLeOp  : Daphne_EwCmpOp<"ewLe" , AnyScalar>;
 def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
 def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 
+class Daphne_ColumnCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
+: Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs])> {
+    
+}
+
+def Daphne_ColumnEqOp  : Daphne_ColumnCmpOp<"columnEq" , AnyScalar, [Commutative]>;
+def Daphne_ColumnNeqOp : Daphne_ColumnCmpOp<"columnNeq", AnyScalar, [Commutative]>;
+def Daphne_ColumnLtOp  : Daphne_ColumnCmpOp<"columnLt" , AnyScalar>;
+def Daphne_ColumnLeOp  : Daphne_ColumnCmpOp<"columnLe" , AnyScalar>;
+def Daphne_ColumnGtOp  : Daphne_ColumnCmpOp<"columnGt" , AnyScalar>;
+def Daphne_ColumnGeOp  : Daphne_ColumnCmpOp<"columnGe" , AnyScalar>;
+
 // ****************************************************************************
 // Elementwise ternary
 // ****************************************************************************
