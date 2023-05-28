@@ -40,7 +40,7 @@
 # B     The model fit
 # ---------------------------------------------------------------------------------------------
 
-def m_lmDS(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64,
+def lmDS(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64,
  verbose:bool) -> matrix<f64> {
   intercept_status = icpt;
   regularization = reg;

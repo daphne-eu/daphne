@@ -36,7 +36,7 @@ foo = 0.0;
 # Execute lmDS.
 for(rep in 1:$rep) {
     t0 = now();
-    b = lmDS_.m_lmDS(X, y, $icpt, reg, verbose);
+    b = lmDS_.lmDS(X, y, $icpt, reg, verbose);
     t1 = now();
     print((t1 - t0) + ";", false);
     foo = foo + sum(b);

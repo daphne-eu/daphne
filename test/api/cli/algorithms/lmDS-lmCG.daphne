@@ -36,8 +36,8 @@ tol = 0.0000001;
 maxi = 0;
 
 # Execute lmDS and lmCG.
-b_DS = lmDS_.m_lmDS(X, y, $icpt, reg, verbose);
-b_CG = lmCG_.m_lmCG(X, y, $icpt, reg, tol, maxi, verbose);
+b_DS = lmDS_.lmDS(X, y, $icpt, reg, verbose);
+b_CG = lmCG_.lmCG(X, y, $icpt, reg, tol, maxi, verbose);
 
 if($write) {
     # Write the results for external comparison.
