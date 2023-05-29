@@ -43,4 +43,5 @@ for(rep in 1:$rep) {
 }
 print("\t", false);
 
-print(foo);
+print(foo, false);
+print("\t", false);
