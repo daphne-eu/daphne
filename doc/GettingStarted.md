@@ -45,7 +45,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 |--------------------------------------|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------|
 | GCC/G++                              | 9.3.0                     | Last checked version: 12.2                                                                                                              |
 | clang                                | 10.0.0                    |                                                                                                                                         |
-| cmake                                | 3.17                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
+| cmake                                | 3.20                      | On Ubuntu 20.04, install by `sudo snap install cmake --classic` to fulfill the version requirement; `apt` provides only version 3.16.3. |
 | git                                  | 2.25.1                    |                                                                                                                                         |
 | libssl-dev                           | 1.1.1                     | Dependency introduced while optimizing grpc build (which used to build ssl unnecessarily)                                               |
 | libpfm4-dev                          | 4.10                      | This dependency is needed for profiling support [DAPHNE-#479]                                                                           |
