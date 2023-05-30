@@ -18,5 +18,14 @@
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
     "library_paths": [],
-    "daphnedsl_import_paths": {}
+    "daphnedsl_import_paths": {},
+    "logging": [
+        {
+            "comment": "ToDo: multiple sinks and loggers could be configurable here",
+            "name": "default",
+            "level": "DEBUG",
+            "filename": "daphne-output.txt",
+            "format": "[%H:%M:%S] [%n] [%^---%L---%$] %v"
+        }
+    ]
 }

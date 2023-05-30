@@ -1,0 +1,16 @@
+// If-statement nested into while-loop that changes the #rows of a matrix.
+
+X = [0];
+C = [1];
+i = 0;
+while(i <= 2) {
+    X = rbind(X, C);
+
+    // So that the if-then-else isn't optimized away.
+    rnd = as.scalar(rand(1, 1, 1, 1, 0.5, -1));
+    if(rnd)
+        X = X + 1;
+
+    i = i + 1;
+}
+print(X);

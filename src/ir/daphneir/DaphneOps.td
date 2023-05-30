@@ -72,14 +72,15 @@ class Daphne_Op<string mnemonic, list<Trait> traits = []> :
 
 def Daphne_FillOp : Daphne_Op<"fill", [
     DataTypeMat, ValueTypeFromFirstArg,
-    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>
+    NumRowsFromIthScalar<1>, NumColsFromIthScalar<2>, CUDASupport
 ]> {
     let arguments = (ins AnyScalar:$arg, Size:$numRows, Size:$numCols);
     let results = (outs MatrixOrU:$res);
 }
 
 def Daphne_MatrixConstantOp : Daphne_Op<"matrixConstant", [
-    DataTypeMat
+    DataTypeMat,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]>{
     let arguments = (ins UI64:$matrixAddr);
     let results = (outs MatrixOrU:$res);
@@ -136,7 +137,9 @@ def Daphne_SeqOp : Daphne_Op<"seq", [
 // Matrix/frame dimensions
 // ****************************************************************************
 
-class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [Pure])> {
+class Daphne_NumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
+    DataTypeSca, ValueTypeSize, Pure
+])> {
     let arguments = (ins MatrixOrFrame:$arg);
     let results = (outs Size:$res);
 
@@ -248,9 +251,15 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
 def Daphne_EwAddOp    : Daphne_EwBinaryOp<"ewAdd", NumScalar, [ValueTypeFromArgs/*, Commutative*/, EwSparseIfBoth, CUDASupport]> {
     let hasCanonicalizeMethod = 1;
 }
-def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, EwSparseIfBoth, CUDASupport]>;
-def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, Commutative, EwSparseIfEither, CUDASupport]>;
-def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CUDASupport]>;
+def Daphne_EwSubOp    : Daphne_EwBinaryOp<"ewSub", NumScalar, [ValueTypeFromArgs, EwSparseIfBoth, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
+def Daphne_EwMulOp    : Daphne_EwBinaryOp<"ewMul", NumScalar, [ValueTypeFromArgs, Commutative, EwSparseIfEither, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
+def Daphne_EwDivOp    : Daphne_EwBinaryOp<"ewDiv", NumScalar, [ValueTypeFromArgs, CUDASupport]> {
+    let hasCanonicalizeMethod = 1;
+}
 def Daphne_EwPowOp    : Daphne_EwBinaryOp<"ewPow", NumScalar, [ValueTypeFromArgs, CUDASupport]>;
 def Daphne_EwModOp    : Daphne_EwBinaryOp<"ewMod", NumScalar, [ValueTypeFromArgs]>;
 def Daphne_EwLogOp    : Daphne_EwBinaryOp<"ewLog", NumScalar, [ValueTypeFromArgsFP]>;
@@ -278,7 +287,7 @@ def Daphne_EwConcatOp : Daphne_EwBinaryOp<"ewConcat", StrScalar>;
 
 // TODO This is just a quick and dirty solution that should be properly
 // integrated with EwConcatOp above.
-def Daphne_ConcatOp : Daphne_Op<"concat"> {
+def Daphne_ConcatOp : Daphne_Op<"concat", [DataTypeSca, ValueTypeStr]> {
     let arguments = (ins StrScalar:$lhs, StrScalar:$rhs);
     let results = (outs StrScalar:$res);
 
@@ -482,7 +491,8 @@ def Daphne_ExtractRowOp : Daphne_Op<"extractRow", [
 }
 
 def Daphne_SliceRowOp : Daphne_Op<"sliceRow", [
-    TypeFromFirstArg
+    TypeFromFirstArg,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     let summary = "Copies the specified rows from the argument to the result.";
 
@@ -523,7 +533,8 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
 }
 
 def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
-    DeclareOpInterfaceMethods<InferTypesOpInterface>
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -539,14 +550,16 @@ def Daphne_SliceColOp : Daphne_Op<"sliceCol", [
 // TODO Create combined InsertOp (see #238).
 
 def Daphne_InsertRowOp : Daphne_Op<"insertRow", [
-    TypeFromFirstArg // this is debatable
+    TypeFromFirstArg, // this is debatable
+    ShapeFromArg
 ]> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$rowLowerIncl, Size:$rowUpperExcl);
     let results = (outs MatrixOrFrame:$res);
 }
 
 def Daphne_InsertColOp : Daphne_Op<"insertCol", [
-    TypeFromFirstArg // this is debatable
+    TypeFromFirstArg, // this is debatable
+    ShapeFromArg
 ]> {
     let arguments = (ins MatrixOrFrame:$arg, MatrixOrFrame:$ins, Size:$colLowerIncl, Size:$colUpperExcl);
     let results = (outs MatrixOrFrame:$res);
@@ -866,7 +879,6 @@ def Daphne_ExceptOp : Daphne_SetOp<"except">;
 // Cartesian product and joins
 // ----------------------------------------------------------------------------
 
-// TODO Implement #row inference
 def Daphne_CartesianOp : Daphne_Op<"cartesian", [
     DataTypeFrm, ValueTypesConcat,
     NumColsFromSumOfAllArgs,
@@ -1097,7 +1109,7 @@ def Daphne_SetColLabelsPrefixOp : Daphne_Op<"setColLabelsPrefix", [
 // Conversions, casts, and copying
 // ****************************************************************************
 
-def Daphne_ToStringOp : Daphne_Op<"toString"> {
+def Daphne_ToStringOp : Daphne_Op<"toString", [DataTypeSca, ValueTypeStr]> {
     // TODO In the future, we might introduce more arguments, e.g. for
     // formatting a single value.
     let arguments = (ins MatrixOrFrame:$arg, StrScalar:$rowSep, StrScalar:$colSep);
@@ -1152,7 +1164,7 @@ def Daphne_QuantizeOp : Daphne_Op<"quantize", [
     let results = (outs MatrixOrU:$res);
 }
 
-def Daphne_GetColIdxOp : Daphne_Op<"getColIdx">{
+def Daphne_GetColIdxOp : Daphne_Op<"getColIdx", [DataTypeSca, ValueTypeSize]>{
     let arguments = (ins Frame:$frame, StrScalar:$columnName);
     let results = (outs Size:$res);
 }
@@ -1227,6 +1239,16 @@ def Daphne_WriteOp : Daphne_Op<"write"> {
     let results = (outs); // no results
 }
 
+def Daphne_ReceiveFromNumpyOp: Daphne_Op<"receiveFromNumpy">{
+    let arguments = (ins UI32:$upper, UI32:$lower, SI64:$rows, SI64:$cols);
+    let results = (outs MatrixOrU:$res);
+}
+
+def Daphne_SaveDaphneLibResultOp : Daphne_Op<"saveDaphneLibResult"> {
+    let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
 // ----------------------------------------------------------------------------
 // Low-level
 // ----------------------------------------------------------------------------
@@ -1278,7 +1300,7 @@ def Daphne_OneHotOp : Daphne_Op<"oneHot", [
 // Measurements
 // ****************************************************************************
 
-def Daphne_NowOp : Daphne_Op<"now"> {
+def Daphne_NowOp : Daphne_Op<"now", [DataTypeSca, ValueTypeSI64]> {
     let summary = "Returns the current time since the epoch in nano seconds.";
     let description = [{
         Take care if you use this for time measurements! This is currently just
@@ -1406,6 +1428,24 @@ def Daphne_DecRefOp : Daphne_Op<"decRef"> {
     let summary = "Decreases the reference counter of the underlying runtime data object and frees it if the reference counter becomes zero.";
 
     let arguments = (ins MatrixOrFrame:$arg);
+    let results = (outs); // no results
+}
+
+// ****************************************************************************
+// Profiling
+// ****************************************************************************
+
+def Daphne_StartProfilingOp : Daphne_Op<"startProfiling"> {
+    let summary = "Starts profiling";
+
+    let arguments = (ins); // no arguments
+    let results = (outs); // no results
+}
+
+def Daphne_StopProfilingOp : Daphne_Op<"stopProfiling"> {
+    let summary = "Stops profiling";
+
+    let arguments = (ins); //no arguments
     let results = (outs); // no results
 }
 

@@ -1,0 +1,11 @@
+// Multiple different properties of frame after then/else-branches.
+
+// So that the if-then-else isn't optimized away.
+rnd = as.scalar(rand(1, 1, 1, 1, 0.5, -1));
+
+X = createFrame([0], "a");
+if(rnd)
+    X = createFrame([1], "b");
+else
+    X = createFrame([2, 3], "c");
+print(X);

@@ -35,14 +35,12 @@ class MetaDataObject {
     std::array<std::vector<std::unique_ptr<DataPlacement>>,
             static_cast<size_t>(ALLOCATION_TYPE::NUM_ALLOC_TYPES)> data_placements;
     std::vector<size_t> latest_version;
-    mutable std::mutex dp_mutex;
-    mutable std::mutex lv_mutex;
 
 public:
     DataPlacement *addDataPlacement(const IAllocationDescriptor *allocInfo, Range *r = nullptr);
     const DataPlacement *findDataPlacementByType(const IAllocationDescriptor *alloc_desc, const Range *range) const;
     [[nodiscard]] DataPlacement *getDataPlacementByID(size_t id) const;
-    [[nodiscard]] DataPlacement *getDataPlacementByLocation(std::string location) const;
+    [[nodiscard]] DataPlacement *getDataPlacementByLocation(const std::string& location) const;
     [[nodiscard]] auto getDataPlacementByType(ALLOCATION_TYPE type) const ->
             const std::vector<std::unique_ptr<DataPlacement>>*;
     void updateRangeDataPlacementByID(size_t id, Range *r);

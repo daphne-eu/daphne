@@ -1,0 +1,8 @@
+// Matrix literals in while-loops.
+// (Checking the life time of the runtime matrix object backing the matrix literal.)
+
+i = 1;
+while(i <= 3) {
+    print([11, 22, 33]);
+    i = i + 1;
+}

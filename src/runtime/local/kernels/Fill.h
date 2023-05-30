@@ -14,16 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_FILL_H
-#define SRC_RUNTIME_LOCAL_KERNELS_FILL_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
 #include <cassert>
-#include <cstddef>
-#include <cstdint>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -58,15 +55,12 @@ struct Fill<DenseMatrix<VT>, VT> {
         assert(numCols > 0 && "numCols must be > 0");
 
         if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
+            res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
 
-        VT * valuesRes = res->getValues();
-        for(size_t r = 0; r < numRows; r++) {
-            for(size_t c = 0; c < numCols; c++)
-                valuesRes[c] = arg;
-            valuesRes += res->getRowSkip();
+        if(arg != 0) {
+            VT *valuesRes = res->getValues();
+            for(auto i = 0ul; i < res->getNumItems(); ++i)
+                valuesRes[i] = arg;
         }
     }
 };
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_FILL_H

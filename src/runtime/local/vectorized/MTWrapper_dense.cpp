@@ -325,7 +325,7 @@ void MTWrapper<DenseMatrix<VT>>::combineOutputs(DenseMatrix<VT>***& res_, DenseM
         if (combines[i] == mlir::daphne::VectorCombine::ROWS) {
             const auto &const_res_cuda = *res_cuda;
             auto data_dest = res->getValues();
-            CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValues(&alloc_desc), const_res_cuda.bufferSize(),
+            CHECK_CUDART(cudaMemcpy(data_dest, const_res_cuda.getValues(&alloc_desc), const_res_cuda.getBufferSize(),
                                     cudaMemcpyDeviceToHost));
 //            debugPrintCUDABuffer("MTWrapperDense: combine outputs", const_res_cuda.getValues(&alloc_desc), const_res_cuda.getNumItems());
             DataObjectFactory::destroy(res_cuda);

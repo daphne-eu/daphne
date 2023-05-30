@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
-#define SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H
+#pragma once
 
 #include <runtime/local/context/DaphneContext.h>
 
@@ -34,7 +33,7 @@
  * @param arg The data object to print.
  */
 template<class DT>
-void printObj(const DT * arg, bool newline, bool err, DCTX(ctx)) {
+void printObj(const DT * arg, [[maybe_unused]] bool newline, bool err, DCTX(ctx)) {
     arg->print(err ? std::cerr : std::cout);
 }
 
@@ -45,5 +44,3 @@ void printObj(const char * arg, bool newline, bool err, DCTX(ctx)) {
     if(newline)
         os << std::endl;
 }
-
-#endif //SRC_RUNTIME_LOCAL_KERNELS_PRINTOBJ_H

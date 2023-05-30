@@ -20,7 +20,6 @@
 #include <runtime/local/kernels/MatMul.h>
 #include <runtime/local/kernels/Transpose.h>
 #include <runtime/local/kernels/Syrk.h>
-#include <runtime/local/kernels/PrintObj.h>
 
 #include <tags.h>
 

@@ -17,7 +17,9 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
-
+#ifdef USE_MPI
+    #include <runtime/distributed/worker/MPIHelper.h>
+#endif 
 #include <vector>
 #include <cstdlib>
 #include <string>
@@ -29,30 +31,40 @@ class DistributedContext final : public IContext {
 private:
     std::vector<std::string> workers;
 public:
-    DistributedContext() {
+    DistributedContext(const DaphneUserConfig &cfg) {
 
-        // TODO: Get the list of distributed workers from daphne user config/cli arguments and
-        // keep environmental variables optional.
-        auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+        if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_GRPC) {
+            // TODO: Get the list of distributed workers from daphne user config/cli arguments and
+            // keep environmental variables optional.
+            auto envVar = std::getenv("DISTRIBUTED_WORKERS");
+            if (envVar == nullptr) {
+                throw std::runtime_error("--distributed execution is set with gRPC but EV DISTRIBUTED_WORKERS is empty");
+            }
 
-        if (envVar == nullptr) {
-            throw std::runtime_error("--distributed execution is set but EV DISTRIBUTED_WORKERS is empty");
+            std::string workersStr(envVar);
+            std::string delimiter(",");
+
+            size_t pos;
+            while ((pos = workersStr.find(delimiter)) != std::string::npos) {
+                workers.push_back(workersStr.substr(0, pos));
+                workersStr.erase(0, pos + delimiter.size());
+            }
+            workers.push_back(workersStr);
+        } else if (cfg.distributedBackEndSetup == ALLOCATION_TYPE::DIST_MPI) {
+#ifdef USE_MPI
+            // Exclude Coordinator
+            size_t worldSize = MPIHelper::getCommSize();
+            // We use strings for the addresses for consistency with other frameworks (e.g. gRPC)
+            // Exclude coordinator
+            for (size_t i = 1; i < worldSize; i++) 
+                workers.push_back(std::to_string(i));
+#endif
         }
-
-        std::string workersStr(envVar);
-        std::string delimiter(",");
-
-        size_t pos;
-        while ((pos = workersStr.find(delimiter)) != std::string::npos) {
-            workers.push_back(workersStr.substr(0, pos));
-            workersStr.erase(0, pos + delimiter.size());
-        }
-        workers.push_back(workersStr);
     }
     ~DistributedContext() = default;
 
-    static std::unique_ptr<IContext> createDistributedContext() {
-        auto ctx = std::unique_ptr<DistributedContext>(new DistributedContext());
+    static std::unique_ptr<IContext> createDistributedContext(const DaphneUserConfig &cfg) {
+        auto ctx = std::unique_ptr<DistributedContext>(new DistributedContext(cfg));
         return ctx;
     };
 

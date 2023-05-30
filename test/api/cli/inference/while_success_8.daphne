@@ -1,0 +1,15 @@
+// Properties of multiple variables change in while-loop.
+
+X = [0.1];
+Y = [0.2];
+Z = [0.3];
+i = 0;
+while(i <= 2) {
+    X = cbind(X, fill(0.11, 1, 1));
+    Y = cbind(Y, fill(0.22, 1, 1));
+    Z = cbind(Z, fill(0.33, 1, 1));
+    i = i + 1;
+}
+print(X);
+print(Y);
+print(Z);

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.20)
 
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
@@ -23,6 +23,7 @@ project(daphne-prototype LANGUAGES CXX C)
 set(CMAKE_BUILD_WITH_INSTALL_NAME_DIR ON)
 set(CMAKE_CXX_STANDARD 17 CACHE STRING "C++ standard to conform to")
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 set(CMAKE_CXX_FLAGS_DEBUG="${CMAKE_CXX_FLAGS_DEBUG} -O0")
 # silence a warning about DEPFILE path transformations (used in LLVM)
 cmake_policy(SET CMP0116 OLD)
@@ -151,6 +152,9 @@ endif()
 find_package(Arrow REQUIRED)
 find_package(Parquet REQUIRED)
 
+# support for Eigen library
+find_package (Eigen3 REQUIRED)
+
 option(USE_FPGAOPENCL "Whether to activate compilation of FPGA OpenCL features" OFF)
 if(USE_FPGAOPENCL)
 	if(NOT DEFINED ENV{QUARTUSDIR})
@@ -177,6 +181,8 @@ include_directories(${PROJECT_BINARY_DIR}/src)
 
 add_subdirectory(src/ir/daphneir)
 add_subdirectory(src/api/cli)
+add_subdirectory(src/api/daphnelib)
+add_subdirectory(src/api/internal)
 add_subdirectory(src/compiler/execution)
 add_subdirectory(src/compiler/explanation)
 add_subdirectory(src/compiler/inference)

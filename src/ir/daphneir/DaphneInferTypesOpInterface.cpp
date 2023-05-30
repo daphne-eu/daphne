@@ -196,7 +196,7 @@ std::vector<Type> daphne::OneHotOp::inferTypes() {
 }
 
 std::vector<Type> daphne::OrderOp::inferTypes() {
-    // TODO Take into accout if indexes or data shall be returned.
+    // TODO Take into account if indexes or data shall be returned.
     Type srcType = getArg().getType();
     Type t;
     if(auto mt = srcType.dyn_cast<daphne::MatrixType>())

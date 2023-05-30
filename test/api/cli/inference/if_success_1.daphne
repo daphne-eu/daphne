@@ -1,0 +1,11 @@
+// Different #rows of matrix after then/else-branches.
+
+// So that the if-then-else isn't optimized away.
+rnd = as.scalar(rand(1, 1, 1, 1, 0.5, -1));
+
+X = [0];
+if(rnd)
+    X = [1];
+else
+    X = [2, 3];
+print(X);

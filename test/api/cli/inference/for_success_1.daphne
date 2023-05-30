@@ -1,0 +1,7 @@
+// #rows of matrix changes in for-loop.
+
+X = [0];
+C = [1];
+for(i in 0:2)
+    X = rbind(X, C);
+print(X);

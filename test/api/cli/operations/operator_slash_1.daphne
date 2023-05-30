@@ -1,12 +1,21 @@
 // '/' for division.
+
+print("scalar / scalar");
 print(4 / 2);
 print(1.0 / 2.0);
 print(2.25 / 1.5);
-print("");
+
+print("matrix / matrix");
 print([6, 8] / [3, 4]);
 print([4.5, 1.0] / [1.5, 2.0]);
 print([1, 2] / [2.0, 2.0]);
-print("");
+
+print("matrix / scalar");
 print([4, 2] / 2);
 print([4.5, 3.0] / 1.5);
 print([1, 2] / 2.0);
+
+print("scalar / matrix");
+// print(4 / [4, 2]);  // not supported yet for integers
+print(5.0 / [2.5, 2.0]);
+print(2.0 / [1.0, 2.0]);

@@ -17,11 +17,10 @@ thirdparty/*
 
 # Python
 __pycache__/
-/venv
+/venv*
 
 # Jetbrains IDE
 .idea/
-cmake-*/
 
 tmpdaphne.daphne
 
@@ -35,3 +34,11 @@ tmpdaphne.daphne
 # local symlinks for convenience
 TSLGen
 TSL
+
+
+bin/
+logs/
+profiler/
+precompiled-dependencies/
+/cmake*/
+/data

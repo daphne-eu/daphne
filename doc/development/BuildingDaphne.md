@@ -11,7 +11,7 @@ generation of the executable.
 
 ### How long does a build take?
 
-The first run will take a while, due to long compilation times of the dependencies (~40 minutes on a 12 vcore laptop, ~10 minutes on a 128 vcore cluster node). But they only have to be compiled once (except updates).
+The first run will take a while, due to long compilation times of the dependencies (~1 hour on a 16 vcore desktop, ~10 minutes on a 128 vcore cluster node). But they only have to be compiled once (except updates).
 Following builds only take a few seconds/minutes.
 
 Contents:
@@ -79,9 +79,9 @@ Clean everything (DAPHNE build output and third party directory)
 ```
 
 ### Minimize long compile times of dependencies
-The most time consuming part of getting DAPHNE compiled is building the third party dependencies.
+The most time-consuming part of getting DAPHNE compiled is building the third party dependencies.
 To avoid this, one can either use a prebuilt container image (in combination with some parameters to the build script 
-see below)) or at least build the dependencies once and subsequently point to the directory where the third party
+see below) or at least build the dependencies once and subsequently point to the directory where the third party
 dependencies get installed. The bulid script must be invoked with the following two parameters to achieve this:
 ``` ./build.sh --no-deps --installPrefix <path/to/installed/deps  ```. 
 
@@ -108,17 +108,21 @@ All possible options for the build script:
 | --oneapi                | Compile with support for accelerated operations using the OneAPI SDK                       |
 | --fpgaopencl            | Compile with support for FPGA operations using the Intel FPGA SDK or OneAPI+FPGA Add-On    |
 
-## 2. Extension
-### Overview over the build script
-The build script is divided into segments, visualized by
-```
-#******************************************************************************
-# Segment name
-#******************************************************************************
-```
-Each segment should only contain functionality related to the segment name.
 
-The following list contains a rough overview over the segments and the concrete functions or functionality done here. 
+
+---
+
+## 2. Extension
+### 2.1 Overview over the build script
+The build script is divided into sections, visualized by
+```
+#******************************************************************************
+# #1 Section name
+#******************************************************************************
+```
+Each section should only contain functionality related to the section name.
+
+The following list contains a rough overview over the sections and the concrete functions or functionality done here. 
 1. Help message
    1. **printHelp()** // prints help message
 2. Build message helper
@@ -136,55 +140,67 @@ The following list contains a rough overview over the segments and the concrete 
    2. **dependency_download_success(** \<dep> **)** // used after successful download of a dependency; creates related indicator file
    3. **is_dependency_installed(** \<dep> **)** // checks if dependency is already installed/built successfully
    4. **is_dependency_downloaded(** \<dep> **)** // checks if dependency is already downloaded successfully
-5. Version configuration
+5. Versions of third party dependencies
    1. Versions of the software dependencies are configured here
-6. Set some paths
+6. Set some prefixes, paths and dirs
    1. Definition of project related paths
    2. Configuration of path prefixes. For example all build directories are prefixed with `buildPrefix`. If fast storage 
       is available on the system, build directories could be redirected with this central configuration.
 7. Parse arguments
    1. Parsing
    2. Updating git submodules
-8. Download and install third-party material if necessary
+8. Download and install third-party dependencies if requested (default is yes, omit with --no-deps))
    1. Antlr
    2. catch2
    3. OpenBLAS
    4. nlohmannjson
    5. abseil-cpp - Required by gRPC. Compiled separately to apply a patch.
-   6. gRPC
-   7. MLIR
+   6. MPI (Default is MPI library is OpenMPI but cut can be any)
+   7. gRPC
+   8. Arrow / Parquet
+   9. MLIR
 9. Build DAPHNE target
    1. Compilation of the DAPHNE-target ('daphne' is default)
 
-### Adding a dependency
-1. Create a new subsegment in segment 8.
-2. Define needed dependency variables
-   1. DirName
-   2. Version
-   3. Dep-specific paths
-   4. Dep-specific files
-   5. etc.
-3. Download the dependency, encased by:
+### 2.2 Adding a dependency
+1. If the dependency is fixed to a specific version, add it to the dependency versions section (section 5).
+2. Create a new segment in section 8 for the new dependency.
+3. Define needed dependency variables:
+   1. Directory Name (which is used by the script to locate the dependency in different stages)
+   2. Create an internal version variable in form of an array with two entries. Those are used for internal versioning and updating of the dependency without rebuilding each time.
+      1. First: Name and version of the dependency as a string of the form `<dep_name>_v${dep_version}` (This one is updated, if a new version of the dependency is choosen.)
+      2. Second: Thirdparty Version of the dependency as a string of the form `v1` (This one is incremented each time by hand, if something changes on the path system of the dependency or DAPHNE itself. This way already existing projects are updated automatically, if something changes.)
+   3. Optionals: Dep-specific paths, Dep-specific files, etc.
+4. Download the dependency, encased by:
     ```
-    dep_dirname="<dep_name>"
-    dep_version="<dep_version>"
-    if ! is_dependency_downloaded "<dep_name>_v${dep_version}"; then
+    # in segment 5
+    <dep>_version="<dep_version>"
+
+    # in segment 8
+    # ----
+    # 8.x Your dependency
+    # ----
+    <dep>_dirname="<dep_name>" # 3.1
+    <dep>_version_internal=("<dep_name>_v${<dep>_version}" "v1") # 3.2
+    <dep>... # 3.3
+    if ! is_dependency_downloaded "${<dep>_version_internal[@]}"; then
     
         # do your stuff here
     
-        dependency_download_success "<dep_name>_v${dep_version}"
+        dependency_download_success "${<dep>_version_internal[@]}"
     fi
     ```
-4. Install the dependency (if necessary), encased by:
+    > Hint: It is recommended to use the paths defined in section 6 for dependency downloads and installations. There are predefined paths like 'cacheDir', 'sourcePrefix', 'buildPrefix' and 'installPrefix'. Take a look at other dependencies to see how to use them.
+5. Install the dependency (if necessary), encased by:
     ```
-    if ! is_dependency_installed "<dep_name>_v${dep_version}"; then
+    if ! is_dependency_installed "${<dep>_version_internal[@]}"; then
     
         # do your stuff here
     
-        dependency_install_success "<dep_name>_v${dep_version}"
+        dependency_install_success "${<dep>_version_internal[@]}"
     fi
     ```
-5. Define a flag for the build script if your dependency is optional or poses unnecessary 
+6. Define a flag for the build script if your dependency is optional or poses unnecessary 
    overhead for users (e.g., CUDA is optional as the CUDA SDK is a considerably sized package that only owners of Nvidia hardware would want to install).
 
    See section 7 about argument parsing. Quick guide: define a variable and its default value and add an item to the argument handling loop.

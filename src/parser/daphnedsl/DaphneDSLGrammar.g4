@@ -147,7 +147,7 @@ VALUE_TYPE:
         'f64' | 'f32' |
         'si64' | 'si32' | 'si8' |
         'ui64' | 'ui32' | 'ui8' |
-        'str'
+        'str' | 'bool'
     ) ;
 
 INT_LITERAL:

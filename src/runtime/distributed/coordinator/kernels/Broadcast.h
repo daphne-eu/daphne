@@ -26,6 +26,7 @@
 #include <runtime/local/datastructures/Range.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
 #include <runtime/distributed/proto/DistributedGRPCCaller.h>
+#include <runtime/distributed/coordinator/scheduling/LoadPartitioningDistributed.h>
 
 #ifdef USE_MPI
 #include <runtime/distributed/worker/MPIHelper.h>
@@ -75,41 +76,23 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
         //auto ptr = (double*)(&mat);
         MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
         std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
-        int worldSize = MPIHelper::getCommSize();
-        worldSize--; // to exclude coordinator
-        Range range;
-        range.r_start = 0;
-        range.c_start = 0;
-        range.r_len = mat->getNumRows();
-        range.c_len = mat->getNumCols();
-        for (int rank=0;rank<worldSize;rank++){   // we currently exclude the coordinator
-            std::string address=std::to_string(rank+1); // to skip coordinator  
-            DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
-            if (dp!=nullptr) {                
-                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
-                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-                data.ix = DistributedIndex(0, 0);
-                dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).updateDistributedData(data);
-            }
-            else {  // else create new dp entry
-                DistributedData data;
-                data.ix = DistributedIndex(0, 0);
-                AllocationDescriptorMPI allocationDescriptor (rank+1, /* to exclude coordinator*/  
-                                                                dctx,
-                                                                data);
-                dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
-            }
+        
+        LoadPartitioningDistributed<DT, AllocationDescriptorMPI> partioner(DistributionSchema::BROADCAST, mat, dctx);
+        while (partioner.HasNextChunk()){
+            auto dp = partioner.GetNextChunk();
+            auto rank = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getRank();
+            
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                 //std::cout<<"data is already placed at rank "<<rank<<std::endl;
                 auto data =dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
-                MPIHelper::sendObjectIdentifier(data.identifier, rank+1);
+                MPIHelper::sendObjectIdentifier(data.identifier, rank);
                // std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                 continue;
             }
-            targetGroup.push_back(rank+1);  
+            targetGroup.push_back(rank);  
         }
-        if((int)targetGroup.size()==worldSize){
+        if((int)targetGroup.size()==MPIHelper::getCommSize() - 1){ // exclude coordinator
             MPIHelper::sendData(messageLength, dataToSend);
            // std::cout<<"data has been send to all "<<std::endl;
         }
@@ -182,37 +165,15 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
             }
             ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix());
         }
+        LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
         
-        Range range;
-        range.r_start = 0;
-        range.c_start = 0;
-        range.r_len = mat->getNumRows();
-        range.c_len = mat->getNumCols();        
-        for (auto i=0ul; i < workers.size(); i++){
-            auto workerAddr = workers.at(i);
-
-            // If DataPlacement dp already exists simply
-            // update range (in case we have a different one) and distributed data
-            DataPlacement *dp;
-            if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {                
-                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
-                auto data = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();
-                data.ix = DistributedIndex(0, 0);
-                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);
-            }
-            else {  // else create new dp entry
-                DistributedData data;
-                data.ix = DistributedIndex(0, 0);
-                AllocationDescriptorGRPC allocationDescriptor (dctx, 
-                                                                workerAddr,  
-                                                                data);
-                dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
-            }
+        while(partioner.HasNextChunk()){
+            auto dp = partioner.GetNextChunk();
             if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
                 continue;
             
             StoredInfo storedInfo({dp->dp_id});
-            caller.asyncStoreCall(workerAddr, storedInfo, protoMsg);
+            caller.asyncStoreCall(dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation(), storedInfo, protoMsg);
         }       
         
         while (!caller.isQueueEmpty()){

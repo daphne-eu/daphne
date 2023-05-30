@@ -137,3 +137,8 @@ void debugPrintCUDABuffer(std::string_view title, const T* data, size_t num_item
     std::cerr << "\n";
 }
 #endif
+
+static inline uint32_t divup(unsigned n, unsigned div)
+{
+    return (n + div - 1) / div;
+}

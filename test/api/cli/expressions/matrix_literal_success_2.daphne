@@ -1,0 +1,5 @@
+// Matrix literals in for-loops.
+// (Checking the life time of the runtime matrix object backing the matrix literal.)
+
+for(i in 1:3)
+    print([11, 22, 33]);

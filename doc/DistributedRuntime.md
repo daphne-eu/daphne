@@ -34,7 +34,8 @@ HPC tool as SLURM (scripts that start the workers locally or remotely, natively 
 This document focuses on:
 - how to start distributed workers
 - executing Daphne scripts on the distributed runtime
-
+- DAPHNE's distributed runtime has two different backends. This page explains how things work with the **gRPC backend**. 
+A brief introduction to the other backend using **OpenMPI** can be viewed in [this document](MPI-Usage.md). 
 
 ## Build the Daphne prototype
 

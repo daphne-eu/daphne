@@ -1,0 +1,43 @@
+/*
+ * Copyright 2023 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+# Returns `true` if the two given column vectors contain approximately
+# the same elements, `false` otherwise.
+def isEqApprox(x:matrix<f64>, y:matrix<f64>) -> bool {
+    eps = 0.00001;
+    # The check `<= eps` ensures that potential NaNs result in 0 and
+    # thus make the check return `false`.
+    return as.bool(sum(abs(x - y) <= eps) == nrow(x));
+}
+
+# Load the results of lmDS and lmCG for non-vectorized and vectorized processing.
+b_DS__novec_ipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__novec_ipacp.csv");
+b_CG__novec_ipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__novec_ipacp.csv");
+b_DS__vec_ipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__vec_ipacp.csv");
+b_CG__vec_ipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__vec_ipacp.csv");
+b_DS__novec_noipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__novec_noipacp.csv");
+b_CG__novec_noipacp = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__novec_noipacp.csv");
+b_DS__vec_noipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_DS__vec_noipacp.csv");
+b_CG__vec_noipacp   = readMatrix("test/api/cli/algorithms/lmDS-lmCG__b_CG__vec_noipacp.csv");
+
+# Compare the results.
+print(isEqApprox(b_DS__novec_ipacp, b_CG__novec_ipacp)); # ipacp: novec: DS vs. CG
+print(isEqApprox(b_DS__novec_ipacp, b_DS__vec_ipacp));   # ipacp: DS: novec vs. vec
+print(isEqApprox(b_CG__novec_ipacp, b_CG__vec_ipacp));   # ipacp: CG: novec vs. vec
+print(isEqApprox(b_DS__novec_ipacp, b_DS__novec_noipacp)); # DS novec: ipacp vs. noipacp
+print(isEqApprox(b_CG__novec_ipacp, b_CG__novec_noipacp)); # CG novec: ipacp vs. noipacp
+print(isEqApprox(b_DS__vec_ipacp, b_DS__vec_noipacp));     # DS vec: ipacp vs. noipacp
+print(isEqApprox(b_CG__vec_ipacp, b_CG__vec_noipacp));     # CG vec: ipacp vs. noipacp

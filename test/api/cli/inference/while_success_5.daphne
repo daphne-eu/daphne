@@ -1,0 +1,9 @@
+// #rows of frame changes in while-loop.
+
+X = createFrame([1, 2, 3]);
+i = 0;
+while(i <= 3) {
+    X = X[seq(0, i, 1), ];
+    i = i + 1;
+}
+print(X);

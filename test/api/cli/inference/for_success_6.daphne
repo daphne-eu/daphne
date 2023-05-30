@@ -1,0 +1,6 @@
+// Labels of frame change in for-loop
+
+X = createFrame([0], "a");
+for(i in 1:3)
+    X = createFrame(fill(i, 1, 1), "b");
+print(X);

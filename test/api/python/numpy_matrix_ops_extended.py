@@ -21,27 +21,23 @@
 #
 # -------------------------------------------------------------
 
-
 import numpy as np
 from api.python.context.daphne_context import DaphneContext
 
-dim = 5
-m1 = np.array(np.random.randint(10, size=dim*dim), dtype=np.double)
-m2 = np.array(np.random.randint(10, size=dim*dim), dtype=np.double)
-m1.shape=(dim,dim)
-m2.shape=(dim,dim)
-daphne_context = DaphneContext()
+m1 = np.array([1,  2, 3,  4], dtype=np.double)
+m2 = np.array([1, -1, 1, -1], dtype=np.double)
+m1.shape = (2, 2)
+m2.shape = (2, 2)
+dctx = DaphneContext()
 
+res = (dctx.from_numpy(m1) @ dctx.from_numpy(m2)).compute()
+print(res.sum())
 
-result = (daphne_context.from_numpy(m1)@daphne_context.from_numpy(m2)).compute()
-print(result.sum())
+res = (dctx.from_numpy(m1) < dctx.from_numpy(m2)).compute()
+print(res.sum())
 
-result = (daphne_context.from_numpy(m1)<daphne_context.from_numpy(m2)).compute()
-print(result.sum())
+res = (dctx.from_numpy(m1) > dctx.from_numpy(m2)).compute()
+print(res.sum())
 
-result = (daphne_context.from_numpy(m1)>daphne_context.from_numpy(m2)).compute()
-print(result.sum())
-
-result = (daphne_context.from_numpy(m1)==daphne_context.from_numpy(m2)).compute()
-print(result.sum())
-
+res = (dctx.from_numpy(m1) == dctx.from_numpy(m2)).compute()
+print(res.sum())
