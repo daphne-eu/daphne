@@ -10,7 +10,7 @@ build_*/
 thirdparty/*
 !thirdparty/llvm-project/
 !thirdparty/patches/
-!thirdparty/sources/TSLGenerator/
+!thirdparty/sources/TSLGenerator
 
 # Visual Studio Code
 .vscode/
