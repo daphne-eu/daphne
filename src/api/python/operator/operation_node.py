@@ -93,6 +93,14 @@ class OperationNode(DAGNode):
                 arr = np.genfromtxt(result, delimiter=',')
                 self.clear_tmp()
                 return arr
+            elif self._output_type == OutputType.SCALAR:
+                # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
+                daphneLibResult = DaphneLib.getResult()
+                result = np.ctypeslib.as_array(
+                    ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
+                    shape=[daphneLibResult.rows, daphneLibResult.cols]
+                )[0, 0]
+                self.clear_tmp()
                
             if result is None:
                 return

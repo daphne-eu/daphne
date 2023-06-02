@@ -62,6 +62,10 @@ class DaphneDSLScript:
             elif dag_root.output_type == OutputType.FRAME:
                 self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
                 return TMP_PATH + "/" + baseOutVarString + ".csv"
+            elif dag_root.output_type == OutputType.SCALAR:
+                # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
+                self.add_code(f'saveDaphneLibResult(as.matrix({baseOutVarString}));')
+                return None
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
