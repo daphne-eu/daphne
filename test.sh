@@ -58,7 +58,6 @@ done
 
 # Preparations for running DaphneLib (Python API) tests.
 export PYTHONPATH="$PYTHONPATH:$PWD/src/"
-mkdir --parents src/api/python/tmp
 
 # this speeds up the vectorized tests
 export OPENBLAS_NUM_THREADS=1
