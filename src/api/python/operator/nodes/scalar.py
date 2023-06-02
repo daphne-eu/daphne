@@ -39,7 +39,7 @@ class Scalar(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', operation: str,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
-                 output_type: OutputType = OutputType.DOUBLE,
+                 output_type: OutputType = OutputType.SCALAR,
                  assign: bool = False) -> 'Scalar':
         self.__assign = assign
         super().__init__(daphne_context, operation, unnamed_input_nodes=unnamed_input_nodes,
