@@ -1,20 +1,7 @@
-<!--
-Copyright 2021 The DAPHNE Consortium
+# Overview
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+![DAPHNE Logo](assets/logo_medium.png)
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
--->
-
-# Documentation
 - [Quickstart](/doc/Quickstart.md)
 - [Getting Started](/doc/GettingStarted.md)
 
@@ -24,10 +11,10 @@ limitations under the License.
 - [Running DAPHNE in a Local Environment](/doc/RunningDaphneLocally.md)
 - [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
 - [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
-- [DaphneLib: DAPHNE's Python API](/doc/DaphneLib.md)
-- [DaphneLib API Reference](/doc/DaphneLibAPIRef.md)
-- [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
-- [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
+- [DaphneLib: DAPHNE's Python API](/doc/DaphneLib/Overview.md)
+- [DaphneLib API Reference](/doc/DaphneLib/APIRef.md)
+- [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md)
+- [DaphneDSL Built-in Functions](/doc/DaphneDSL/Builtins.md)
 - [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)
 - [A Few Early Example Algorithms in DaphneDSL](/scripts/algorithms/)
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)

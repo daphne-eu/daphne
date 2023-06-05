@@ -1,0 +1,39 @@
+name: Build HTML Docs from Markdown and Push to GitHub Pages Branch
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build Docs
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Prepare Docs
+        run: |
+          cp CONTRIBUTING.md doc/development/Contributing.md
+          sed -ri 's@(\(/doc/[a-zA-Z0-9/]*)(.md)@\1@g' doc/*.md
+          sed -ri 's@(\(/doc/[a-zA-Z0-9/]*)(.md)@\1@g' doc/**/*.md
+          sed -ri 's@\(/([a-zA-Z0-9]*.[a-zA-Z0-9]*)@\(https://github.com/daphne-eu/daphne/tree/main/\1@g' doc/*.md
+          sed -ri 's@\(/([a-zA-Z0-9]*.[a-zA-Z0-9]*)@\(https://github.com/daphne-eu/daphne/tree/main/\1@g' doc/**/*.md
+          sed -ri 's@]\(/([a-z]+)@]\(https://github.com/daphne-eu/daphne/tree/main/\1@g' doc/*.md
+          sed -ri 's@]\(/([a-z]+)@]\(https://github.com/daphne-eu/daphne/tree/main/\1@g' doc/**/*.md
+          sed -i 's@](https://github.com/daphne-eu/daphne/tree/main/doc/@](/daphne/@g' doc/*.md
+          sed -i 's@](https://github.com/daphne-eu/daphne/tree/main/doc/@](/daphne/@g' doc/**/*.md
+          sed -ri 's@]\(/issues/([0-9]+)@]\(https://github.com/daphne-eu/daphne/issues/\1@g' doc/*.md
+      - name: Build
+        uses: Tiryoh/actions-mkdocs@v0
+        with:
+          mkdocs_version: 'latest'
+          requirements: 'doc/docs-build-requirements.txt'
+          configfile: 'mkdocs.yml' # option
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./doc_build

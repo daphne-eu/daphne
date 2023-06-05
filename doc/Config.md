@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# DAPHNE Configuration: Getting Information from the User
+# Configuration - Getting Information from the User
 
 The behavior of the DAPHNE system can be influenced by the user by means of a cascading configuration mechanism.
 There is a set of options that can be passed from the user to the system.
@@ -27,13 +27,14 @@ The cascade consists of the following steps:
 - (In the future, DaphneDSL will also offer means to change the configuration at run-time.)
 
 The `DaphneUserConfig` is available to all parts of the code, including:
+
 - The DAPHNE compiler: The `DaphneUserConfig` is passed to the `DaphneIrExecutor` and from there to all passes that need it.
 - The DAPHNE runtime: The `DaphneUserConfig` is part of the `DaphneContext`, which is passed to all kernels.
 
 Hence, information provided by the user can be used to influence both, the compiler and the runtime.
 *The use of environment variables to pass information into the system is discouraged.*
 
-### How to extend the configuration?
+## How to extend the configuration?
 
 If you need to add additional information from the user, you must take roughly the following steps:
 

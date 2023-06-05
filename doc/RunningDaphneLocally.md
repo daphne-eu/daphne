@@ -14,7 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Running DAPHNE in a Local Environment
+# Running DAPHNE Locally
+
+Running DAPHNE in a local environment.
 
 This document explains how to run DAPHNE on a local machine.
 For more details on running DAPHNE in a distributed setup, please see the documentation on the [distributed runtime](/doc/DistributedRuntime.md) and [distributed deployment](/doc/Deploy.md).
@@ -22,14 +24,16 @@ For more details on running DAPHNE in a distributed setup, please see the docume
 Before DAPHNE can be executed, the system must be built using `./build.sh` (for more details see [Getting Started](/doc/GettingStarted.md)).
 The main executable of the DAPHNE system is `bin/daphne`.
 The general scheme of an invocation of DAPHNE looks as follows:
-```
+
+```bash
 bin/daphne [options] script [arguments]
 ```
 
-Where `script` is a [DaphneDSL](/doc/DaphneDSLLanguageRef.md) file.
+Where `script` is a [DaphneDSL](/doc/DaphneDSL/LanguageRef.md) file.
 
 *Example:*
-```
+
+```bash
 bin/daphne scripts/examples/hello-world.daph
 ```
 
@@ -41,9 +45,11 @@ Arguments to the DaphneDSL script can be provided as space-separated pairs of th
 These can the accessed as `$key` in the DaphneDSL script.
 
 *Example:*
-```
+
+```bash
 bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
 ```
+
 *This example executes a simplified variant of the k-means clustering algorithm on random data with 1000 rows and 20 features using 5 centroids and a fixed number of 10 iterations.*
 
 `value` must be a valid DaphneDSL literal, e.g., `key=123` (signed 64-bit integer), `key=-12.3` (double-precision floating-point), or `key="hello"` (string).
@@ -56,22 +62,23 @@ To see the full list of available options, invoke `bin/daphne --help`.
 
 In the following, a few noteworthy general options are mentioned.
 Note that some of the more specific options are described in the documentation pages on the respective topics, e.g., [distributed execution](/doc/DistributedRuntime.md), [scheduling](/doc/SchedulingOptions.md), [configuration](/doc/Config.md), [FPGA configuration](/doc/FPGAconfiguration.md), etc.
- 
+
 - **`--explain`**
 
-  Prints the MLIR-based intermediate representation (IR), the so-called *DaphneIR*, after the specified compiler passes.
-  For instance, to see the IR after parsing (and some initial simplifications) and after property inference, invoke
-  ```
-  bin/daphne --explain parsing_simplified,property_inference test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
-  ```
+    Prints the MLIR-based intermediate representation (IR), the so-called *DaphneIR*, after the specified compiler passes.
+    For instance, to see the IR after parsing (and some initial simplifications) and after property inference, invoke
+
+    ```bash
+    bin/daphne --explain parsing_simplified,property_inference test/api/cli/algorithms/kmeans.daphne r=1000 f=20 c=5 i=10
+    ```
 
 - **`--vec`**
 
-  Turns on DAPHNE's vectorized execution engine, which fuses qualifying operations into vectorized pipelines. *Experimental feature.*
+    Turns on DAPHNE's vectorized execution engine, which fuses qualifying operations into vectorized pipelines. *Experimental feature.*
   
 - **`--select-matrix-repr`**
 
-  Turns on the automatic selection of a suitable matrix representation (currently dense or sparse (CSR)). *Experimental feature.*
+    Turns on the automatic selection of a suitable matrix representation (currently dense or sparse (CSR)). *Experimental feature.*
 
 ## Return Codes
 
@@ -94,24 +101,30 @@ In many (but not yet all) cases, there will be an error message indicating what 
 *Examples:*
 
 - **Wrong way of passing string literals as DaphneDSL script arguments.**
-  ```
-  line 1:0 mismatched input 'foo' expecting {'true', 'false', INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL}
-  Parser error: unexpected literal
-  ```
-  Maybe you tried to pass a string as an argument to a DaphneDSL script and forgot the quotation marks or they got lost.
-  Pass strings as `bin/daphne script.daphne foo=\"abc\"` (not `foo=abc` or `foo="abc"`) on a terminal.
+
+    ```text
+    line 1:0 mismatched input 'foo' expecting {'true', 'false', INT_LITERAL, FLOAT_LITERAL, STRING_LITERAL}
+    Parser error: unexpected literal
+    ```
+
+    Maybe you tried to pass a string as an argument to a DaphneDSL script and forgot the quotation marks or they got lost.
+    Pass strings as `bin/daphne script.daphne foo=\"abc\"` (not `foo=abc` or `foo="abc"`) on a terminal.
 
 - **Missing metadata file.**
-  ```
-  Parser error: Could not open file 'data/foo.csv.meta' for reading meta data.
-  ```
-  Maybe you try to read a dataset called `data/foo.csv`, but the required [metadata file](/doc/FileMetaDataFormat.md) `data/foo.csv.meta` does not exist.
+  
+    ```text
+    Parser error: Could not open file 'data/foo.csv.meta' for reading meta data.
+    ```
+
+    Maybe you try to read a dataset called `data/foo.csv`, but the required [metadata file](/doc/FileMetaDataFormat.md) `data/foo.csv.meta` does not exist.
   
 - **Using the old file metadata format.**
-  ```
-  Parser error: [json.exception.parse_error.101] parse error at line 1, column 7: syntax error while parsing value - unexpected ','; expected end of input
-  ```
-  Maybe you try to read a dataset with `readMatrix()` or `readFrame()` in DaphneDSL, but the file metadata file does not have the right structure. Note that we changed the initial one-line text-based format to a more human-readable [JSON-based format](/doc/FileMetaDataFormat.md).
+
+    ```text
+    Parser error: [json.exception.parse_error.101] parse error at line 1, column 7: syntax error while parsing value - unexpected ','; expected end of input
+    ```
+
+    Maybe you try to read a dataset with `readMatrix()` or `readFrame()` in DaphneDSL, but the file metadata file does not have the right structure. Note that we changed the initial one-line text-based format to a more human-readable [JSON-based format](/doc/FileMetaDataFormat.md).
 
 ### `JIT session error: Symbols not found: ...`
 
@@ -125,7 +138,7 @@ Developers can fix this problem by adding the respective instantiation in `src/r
 
 *Example:*
 
-```
+```text
 JIT session error: Symbols not found: [ _ewAdd__int32_t__int32_t__int32_t ]
 JIT-Engine invocation failed: Failed to materialize symbols: { (main, { _mlir_ciface_main, _mlir_main, _mlir__mlir_ciface_main, main }) }Program aborted due to an unhandled Error:
 Failed to materialize symbols: { (main, { _mlir_ciface_main, _mlir_main, _mlir__mlir_ciface_main, main }) }
@@ -134,14 +147,15 @@ Aborted (core dumped)
 
 ### `Failed to create MemoryBuffer for: ...`
 
-This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `bin/daphne`. 
+This error occurs when `daphne` is not invoked from the repository's root directory `daphne/` as `bin/daphne`.
 It will be fixed in the future (see issue #445).
 In the meantime, please always invoke `daphne` from the repository's root directory `daphne/`.
 
 *Example:*
 
-```
+```text
 Failed to create MemoryBuffer for: lib/libAllKernels.so
 Error: No such file or directory
 ```
+
 *Typically followed by an error or the type `JIT session error: Symbols not found: ...`, which is described above.*
