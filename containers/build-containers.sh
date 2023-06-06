@@ -39,7 +39,7 @@ TIMESTAMP_RFC3339=$(date --rfc-3339=seconds)
 BUILD_OUTPUT_LOGFILE=docker-build-log-$TIMESTAMP_MINUTES.txt
 
 function build_daphne() {
-    docker build --progress=plain --tag "$IMAGE_REPO:$DAPHNE_TAG" --tag "$IMAGE_REPO:latest" \
+    sudo docker build --progress=plain --tag "$IMAGE_REPO:$DAPHNE_TAG" --tag "$IMAGE_REPO:latest" \
         --build-arg NUM_CORES="$(nproc)" --build-arg TIMESTAMP="$TIMESTAMP_DATE" \
         --build-arg GIT_HASH="$(curl -s https://api.github.com/repos/$GH_USER/$GIT_REPO/branches/$GIT_BRANCH | \
                 jq --raw-output '.commit["sha"]' -)" \
@@ -91,7 +91,7 @@ BASE_IMAGE=ubuntu:20.04
 DAPHNE_TAG=${TIMESTAMP_DATE}_BASE_ubuntu20.04
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
-docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_BASE
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_BASE
 
 #------------------------------------------------------------------------------
 # Images for DAPHNE development (CUDA)
@@ -102,7 +102,7 @@ BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_TAG=${TIMESTAMP_DATE}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
-docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_CUDA
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_CUDA
 
 #-----------------------------------------------------------------------------
 # Images for DAPHNE development (OneAPI)
@@ -124,7 +124,7 @@ DAPHNE_TAG=${TIMESTAMP_DATE}_BASE_ubuntu20.04
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 DAPHNE_BUILD_FLAGS="--mpi"
 build_daphne
-docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_BASE
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_BASE
 
 #-----------------------------------------------------------------------------
 # Images for running DAPHNE (CUDA)
@@ -137,5 +137,5 @@ BASE_IMAGE=daphneeu/daphne-dev
 FINAL_BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_BUILD_FLAGS="--mpi --cuda"
 build_daphne
-docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_CUDA
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_CUDA
 set +e

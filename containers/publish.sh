@@ -31,14 +31,14 @@ if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
   ARCH=ARMV8
 fi
 
-docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
-docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
+sudo docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
+sudo docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
 
-docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE-ubuntu20.04
-docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE-ubuntu20.04
+sudo docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE-ubuntu20.04
+sudo docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE-ubuntu20.04
 
-docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
-docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
+sudo docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
+sudo docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
 
-docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu20.04
-docker push daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu20.04
+sudo docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu20.04
+sudo docker push daphneeu/daphne:${VERSION}_${ARCH}_BASE_ubuntu20.04
