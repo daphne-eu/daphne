@@ -23,9 +23,9 @@ exit
 
 TIMESTAMP_DATE=$(date -I)
 #VERSION=$TIMESTAMP_DATE
-VERSION=v0.2
+VERSION=v0.2-rc0
 
-ARCH=X86_64
+ARCH=X86-64
 if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
   echo "Building for ARMv8 architecture"
   ARCH=ARMV8
@@ -35,7 +35,7 @@ sudo docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8
 sudo docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-devel-ubuntu20.04
 
 sudo docker tag daphneeu/daphne-dev:${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04 daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE-ubuntu20.04
-sudo docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE-ubuntu20.04
+sudo docker push daphneeu/daphne-dev:${VERSION}_${ARCH}_BASE_ubuntu20.04
 
 sudo docker tag daphneeu/daphne:${TIMESTAMP_DATE}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04 daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04
 sudo docker push daphneeu/daphne:${VERSION}_${ARCH}_CUDA_12.1.1-cudnn8-runtime-ubuntu20.04

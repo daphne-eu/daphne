@@ -395,11 +395,11 @@ function clean_param_check() {
 #******************************************************************************
 antlrVersion=4.9.2
 catch2Version=2.13.8
-openBlasVersion=0.3.19
+openBlasVersion=0.3.23
 abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
-arrowVersion=11.0.0
+arrowVersion=12.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
@@ -425,6 +425,8 @@ sourcePrefix="${myPrefix}/sources"
 cacheDir="${myPrefix}/download-cache"
 
 mkdir -p "$cacheDir"
+mkdir -p "$sourcePrefix"
+
 thirdpartyFlagsDir="${thirdpartyPath}/flags"
 
 # Create the flags directory and migrate any flags that might be there to avoid unnecessary recompilation.
@@ -563,6 +565,15 @@ fi
 # #8 Download and install third-party dependencies if requested (default is yes, omit with --no-deps))
 #******************************************************************************
 if [ $WITH_DEPS -gt 0 ]; then
+    LLVM_ARCH=X86
+    # optimizes for multiple x86_64 architectures
+    PAPI_OBLAS_ARCH=NEHALEM
+    # Determine CPU architecture to compile for
+    if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
+      echo "Building for ARMv8 architecture"
+      LLVM_ARCH=AArch64
+      PAPI_OBLAS_ARCH=ARMV8
+    fi
 
     # Directory name of the LLVM dependency
     llvmName="llvm-project"
@@ -582,6 +593,35 @@ if [ $WITH_DEPS -gt 0 ]; then
         elif [ ! "$(ls -A ${thirdpartyPath}/${llvmName})" ] && [ $WITH_SUBMODULE_UPDATE -ne 0 ]; then
             git submodule update --init --recursive
         fi
+    fi
+
+
+    #------------------------------------------------------------------------------
+    # PAPI (Performance Application Programming Interface)
+    #------------------------------------------------------------------------------
+    papiDirName="papi-$papiVersion"
+    papiTarName="${papiDirName}.tar.gz"
+    papiInstDirName=$installPrefix
+    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+        daphne_msg "Get PAPI version ${papiVersion}"
+        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+            -qO "${cacheDir}/${papiTarName}"
+        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+        dependency_download_success "papi_v${papiVersion}"
+    fi
+    if ! is_dependency_installed "papi_v${papiVersion}"; then
+        cd "$sourcePrefix/$papiDirName/src"
+        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+
+
+        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        make install
+        cd - > /dev/null
+        dependency_install_success "papi_v${papiVersion}"
+    else
+        daphne_msg "No need to build PAPI again."
     fi
 
 
@@ -680,8 +720,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     if ! is_dependency_installed "${dep_openBlas[@]}"; then
         cd "$sourcePrefix/$openBlasDirName"
         make clean
-        # optimizes for multiple x86_64 architectures
-        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
+        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
         make PREFIX="$openBlasInstDirName" install
         cd - >/dev/null
         dependency_install_success "${dep_openBlas[@]}"
@@ -868,34 +907,6 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # PAPI (Performance Application Programming Interface)
-    #------------------------------------------------------------------------------
-    papiDirName="papi-$papiVersion"
-    papiTarName="${papiDirName}.tar.gz"
-    papiInstDirName=$installPrefix
-    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
-        daphne_msg "Get PAPI version ${papiVersion}"
-        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
-            -qO "${cacheDir}/${papiTarName}"
-        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
-        dependency_download_success "papi_v${papiVersion}"
-    fi
-    if ! is_dependency_installed "papi_v${papiVersion}"; then
-        cd "$sourcePrefix/$papiDirName/src"
-        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
-        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
-            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
-
-        # optimizes for multiple x86_64 architectures
-        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
-        make install
-        cd - > /dev/null
-        dependency_install_success "papi_v${papiVersion}"
-    else
-        daphne_msg "No need to build PAPI again."
-    fi
-
-    #------------------------------------------------------------------------------
     # #8.9 Build MLIR
     #------------------------------------------------------------------------------
     # We rarely need to build MLIR/LLVM, only during the first build of the
@@ -939,7 +950,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         cmake -G Ninja -S llvm -B "$buildPrefix/$llvmName" \
             -DLLVM_ENABLE_PROJECTS=mlir \
             -DLLVM_BUILD_EXAMPLES=OFF \
-            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_TARGETS_TO_BUILD="$LLVM_ARCH" \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_ASSERTIONS=ON \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \

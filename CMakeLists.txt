@@ -72,8 +72,8 @@ SET(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 set(BLA_VENDOR OpenBLAS)
-set(BLA_STATIC ON)
-find_package(BLAS)
+set(BLA_STATIC OFF)
+find_package(BLAS REQUIRED)
 
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources

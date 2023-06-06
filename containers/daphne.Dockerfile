@@ -68,13 +68,7 @@ RUN apt-get -qq -y update && apt-get -y upgrade && apt-get -y --no-install-recom
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 COPY --from=daphne-build $DAPHNE_DIR/bin/* /usr/local/bin
 COPY --from=daphne-build $DAPHNE_DIR/lib/* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libparquet.so* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libarrow.so* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libantlr*.so* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libopen*.so* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libmpi*.so* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libpapi*.so* /usr/local/lib
-COPY --from=daphne-build /usr/local/lib/libpapi*.so* /usr/local/lib
+COPY --from=daphne-build /usr/local/lib/lib*.so* /usr/local/lib
 
 RUN ldconfig
 ENTRYPOINT ["/usr/local/bin/daphne"]

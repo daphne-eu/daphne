@@ -25,6 +25,11 @@ echo "For verbose output add --progress=plain to the docker build command"
 echo
 sleep 4
 
+ARCH=X86-64
+if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
+  echo "Building for ARMv8 architecture"
+  ARCH=ARMV8
+fi
 GIT_REPO=daphne
 GIT_BRANCH="main"
 GH_USER="daphne-eu"
@@ -62,13 +67,14 @@ function build_daphne() {
 #build_daphne -deps
 #exit
 
-GIT_BRANCH="future-deps"
-GH_USER="corepointer"
-DAPHNE_REPO_URL="https://github.com/$GH_USER/$GIT_REPO.git"
+# this is to get the github-actions container ahead of main with 3rd party deps
+#GIT_BRANCH="future-deps"
+#GH_USER="corepointer"
+#DAPHNE_REPO_URL="https://github.com/$GH_USER/$GIT_REPO.git"
 
 DAPHNE_TARGET=daphne-deps
 BASE_IMAGE=ubuntu:20.04
-DAPHNE_TAG=$TIMESTAMP_DATE
+DAPHNE_TAG=$TIMESTAMP_DATE_${ARCH}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 #bulid deps stage
 build_daphne -deps
@@ -78,7 +84,7 @@ DAPHNE_TARGET=github-action
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -deps
 
-## switch to main branch to build images from there (by default)
+## switch to main branch to build images from there (by default;only relevant if future-deps branch is used)
 GIT_BRANCH="main"
 GH_USER="daphne-eu"
 DAPHNE_REPO_URL="https://github.com/$GH_USER/$GIT_REPO.git"
@@ -88,10 +94,10 @@ DAPHNE_REPO_URL="https://github.com/$GH_USER/$GIT_REPO.git"
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne-dev
 BASE_IMAGE=ubuntu:20.04
-DAPHNE_TAG=${TIMESTAMP_DATE}_BASE_ubuntu20.04
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
-sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_BASE
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_BASE
 
 #------------------------------------------------------------------------------
 # Images for DAPHNE development (CUDA)
@@ -99,10 +105,10 @@ sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_BASE
 DAPHNE_TARGET=daphne-dev
 CUDA_TAG=12.1.1-cudnn8-devel-ubuntu20.04
 BASE_IMAGE=nvidia/cuda:$CUDA_TAG
-DAPHNE_TAG=${TIMESTAMP_DATE}_CUDA_${CUDA_TAG}
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 build_daphne -dev
-sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_CUDA
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_${ARCH}_CUDA
 
 #-----------------------------------------------------------------------------
 # Images for DAPHNE development (OneAPI)
@@ -120,22 +126,22 @@ sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne-dev:latest_CUDA
 DAPHNE_TARGET=daphne
 BASE_IMAGE=daphneeu/daphne-deps
 FINAL_BASE_IMAGE=ubuntu:20.04
-DAPHNE_TAG=${TIMESTAMP_DATE}_BASE_ubuntu20.04
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_BASE_ubuntu20.04
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 DAPHNE_BUILD_FLAGS="--mpi"
 build_daphne
-sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_BASE
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_BASE
 
 #-----------------------------------------------------------------------------
 # Images for running DAPHNE (CUDA)
 #------------------------------------------------------------------------------
 DAPHNE_TARGET=daphne
 CUDA_TAG=12.1.1-cudnn8-runtime-ubuntu20.04
-DAPHNE_TAG=${TIMESTAMP_DATE}_CUDA_${CUDA_TAG}
+DAPHNE_TAG=${TIMESTAMP_DATE}_${ARCH}_CUDA_${CUDA_TAG}
 IMAGE_REPO=daphneeu/$DAPHNE_TARGET
 BASE_IMAGE=daphneeu/daphne-dev
 FINAL_BASE_IMAGE=nvidia/cuda:$CUDA_TAG
 DAPHNE_BUILD_FLAGS="--mpi --cuda"
 build_daphne
-sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_CUDA
+sudo docker tag $IMAGE_REPO:$DAPHNE_TAG daphneeu/daphne:latest_${ARCH}_CUDA
 set +e
