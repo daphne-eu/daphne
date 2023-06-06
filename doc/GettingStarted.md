@@ -59,6 +59,7 @@ launching DAPHNE via Docker (see below) should work the same way as in a native 
 | gfortran                             | 9.3.0                     |                                                                                                                                         |
 | uuid-dev                             |                           |                                                                                                                                         |
 | wget                                 |                           | Used to fetch additional dependencies and other artefacts                                                                               |
+| jq                                   |                           | json commandline processor used in docker image generation scripts                                                                      |
 | ***                                  | ***                       | ***                                                                                                                                     |
 | CUDA SDK                             | 11.7.1                    | Optional for CUDA ops                                                                                                                   |
 | OneAPI SDK                           | 2022.x                    | Optional for OneAPI ops                                                                                                                 |
