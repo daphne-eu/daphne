@@ -1,2 +1,2 @@
-Frame(1x1, [avg(lhs.a):double])
+Frame(1x1, [avg(f.a):double])
 4.5

@@ -1,10 +1,11 @@
-# Tests Agg with max with multiple maximums without group clause
-lhs = createFrame(
+# Aggregation with max with multiple maximums without group clause.
+
+f = createFrame(
     [  0,  1,  2,  3,  4,  5,  6,  7,  9,  9],
     "a");
 
-registerView("lhs", lhs);
+registerView("f", f);
 
-res = sql("SELECT max(lhs.a) FROM lhs;");
+res = sql("SELECT max(f.a) FROM f;");
 
 print(res);

@@ -196,31 +196,6 @@ mlir::Value SQLVisitor::castToMatrixColumn(mlir::Value toCast){
     }
 }
 
-mlir::Value SQLVisitor::castToMatrixColumnWithOneEntry(mlir::Value toCast){
-    mlir::Location loc = builder.getUnknownLoc();
-
-    if(toCast.getType().isa<mlir::daphne::MatrixType>()){
-        return toCast;
-    }else{
-
-        mlir::Value one = static_cast<mlir::Value>(
-            builder.create<mlir::daphne::ConstantOp>(
-                loc, static_cast<int64_t>(1)
-            ));
-
-        mlir::Value size = utils.castSizeIf(one);
-
-        return static_cast<mlir::Value>(
-            builder.create<mlir::daphne::FillOp>(
-                loc,
-                utils.matrixOf(toCast),
-                toCast,
-                size,
-                size
-            ));
-    }
-}
-
 mlir::Value SQLVisitor::castToIntMatrixColumn(mlir::Value toCast){
     mlir::Location loc = builder.getUnknownLoc();
     mlir::Value toCastMatrix = castToMatrixColumn(toCast);
@@ -932,9 +907,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group) && isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){  
         mlir::Location loc = utils.getLoc(ctx->start);
 
-        antlrcpp::Any vVar = visit(ctx->var);
-
-        mlir::Value col = utils.valueOrError(vVar);
+        mlir::Value col = utils.valueOrError(visit(ctx->var));
 
         mlir::Type resTypeCol = col.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
 
@@ -988,12 +961,10 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
 
         std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
 
-        mlir::Value resultMatrix = castToMatrixColumnWithOneEntry(result);
-
-        return resultMatrix;
+        return utils.castIf(utils.matrixOf(result), result);
 
         std::stringstream x;
-        x << "Error: " << func << " does not name an supported aggregation function \n";
+        x << "Error: " << func << " does not name a supported aggregation function";
         throw std::runtime_error(x.str());
         
     }

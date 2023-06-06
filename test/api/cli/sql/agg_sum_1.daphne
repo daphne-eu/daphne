@@ -1,10 +1,11 @@
-# Tests Agg with sum without group clause
-lhs = createFrame(
+# Aggregation with sum without group clause.
+
+f = createFrame(
     [  0,  1,  2,  3,  4,  5,  6,  7,  8,  9],
     "a");
 
-registerView("lhs", lhs);
+registerView("f", f);
 
-res = sql("SELECT sum(lhs.a) FROM lhs;");
+res = sql("SELECT sum(f.a) FROM f;");
 
 print(res);
