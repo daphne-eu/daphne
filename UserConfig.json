@@ -20,12 +20,28 @@
     "library_paths": [],
     "daphnedsl_import_paths": {},
     "logging": [
+        { "log-level-limit": "OFF" },
         {
             "comment": "ToDo: multiple sinks and loggers could be configurable here",
             "name": "default",
-            "level": "DEBUG",
+            "level": "INFO",
             "filename": "daphne-output.txt",
             "format": "[%H:%M:%S] [%n] [%^---%L---%$] %v"
+        },
+        {
+            "comment": "This configuration controls logging in the GPU compiler pass only",
+            "name": "compiler::cuda",
+            "level": "TRACE",
+            "filename": "compiler-trace-cuda.txt",
+            "format": "%^[%L %n]:%$ %v"
+        },
+        {
+            "comment": "general runtime CUDA debug log",
+            "name": "runtime::cuda",
+            "level": "DEBUG",
+            "filename": "compiler-debug-cuda.txt",
+            "format": "%^[%L %n]:%$ %v"
         }
+
     ]
 }

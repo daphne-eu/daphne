@@ -43,6 +43,7 @@ limitations under the License.
 - [Extending DAPHNE with more scheduling knobs](/doc/development/ExtendingSchedulingKnobs.md)
 - [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
+- [Logging in DAPHNE](/doc/development/Logging.md)
 
 ### Source Code Documentation
 

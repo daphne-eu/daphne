@@ -46,6 +46,7 @@
 
 #include <cstdlib>
 
+// global logger handle for this executable
 [[maybe_unused]] std::unique_ptr<DaphneLogger> logger;
 
 using namespace std;
@@ -326,18 +327,17 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     // Initialize user configuration.
     DaphneUserConfig user_config{};
+
+    // This log line would unconditionally be printed as no logger is configured yet
+//    spdlog::info("Reading user config");
+
     try {
         if (configFile != configFileInitValue && ConfigParser::fileExists(configFile)) {
             ConfigParser::readUserConfig(configFile, user_config);
         }
-        else {
-//            spdlog::warn("No configuration file provided - using defaults!");
-            user_config.loggers.push_back(LogConfig({"default", "daphne-output.txt",
-                    static_cast<int>(spdlog::level::warn), "\">>>>>>>>> %H:%M:%S %z %v\""}));
-        }
     }
     catch(std::exception & e) {
-        std::cerr << "Error while reading user config: " << e.what() << std::endl;
+        spdlog::error("Error while reading user config:\n{}", e.what());
         return StatusCode::PARSER_ERROR;
     }
     

@@ -18,8 +18,8 @@ echo "Use this as an example to start DAPHNE docker containers. Copy and customi
 echo "Add sudo to docker invocation if needed in your setup"
 
 DOCKER_IMAGE=daphneeu/daphne-dev
-DOCKER_TAG=latest_BASE
-#DOCKER_TAG=latest_CUDA
+#DOCKER_TAG=latest_BASE
+DOCKER_TAG=latest_CUDA
 
 # run this script from the base path of your DAPHNE source tree
 DAPHNE_ROOT=$PWD
@@ -37,8 +37,8 @@ LD_LIBRARY_PATH=$CUDA_PATH/lib64:$DAPHNE_ROOT/lib:/usr/local/lib:$LD_LIBRARY_PAT
 PATH=$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
 
 # uncomment the appropriate to pass GPU devices to the container (goes hand in hand with DOCKER_TAG)
-DEVICE_FLAGS=""
-#DEVICE_FLAGS="--gpus all"
+#DEVICE_FLAGS=""
+DEVICE_FLAGS="--gpus all"
 
 # this might be needed if a debugging session is run in the container
 DEBUG_FLAGS=""
