@@ -140,7 +140,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
     DataObjectFactory::destroy(m2exp);
 }
 
-// The value types of argument and result can be assumed to be size_t.
+// The value type of the result can be assumed to be size_t.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<size_t>;
@@ -171,7 +171,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VAL
     DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
-// The value types of argument and result can be assumed to be size_t.
+// The value type of the result can be assumed to be size_t.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<size_t>;

@@ -57,20 +57,8 @@ using EwBinaryScaFuncPtr = VTRes (*)(VTLhs, VTRhs, DCTX());
  */
 template<typename VTRes, typename VTLhs, typename VTRhs>
 EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCode) {
-#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
-    // For now we support only homogeneous inputs for min/max.
-    // If we have the same time, instantiate for min/max
-    if constexpr(std::is_same_v<VTLhs, VTRhs>) {
-        switch (opCode) {
-            // Min/max.
-            MAKE_CASE(BinaryOpCode::MIN)
-            MAKE_CASE(BinaryOpCode::MAX)
-            default:
-                ; // do nothing
-        }
-    }
-    // Here we instantiate everything else and throw on error if we have heterogeneous instantiation for min/max
     switch (opCode) {
+#define MAKE_CASE(opCode) case opCode: return &EwBinarySca<opCode, VTRes, VTLhs, VTRhs>::apply;
         // Arithmetic.
         MAKE_CASE(BinaryOpCode::ADD)
         MAKE_CASE(BinaryOpCode::SUB)
@@ -86,15 +74,13 @@ EwBinaryScaFuncPtr<VTRes, VTLhs, VTRhs> getEwBinaryScaFuncPtr(BinaryOpCode opCod
         MAKE_CASE(BinaryOpCode::LE)
         MAKE_CASE(BinaryOpCode::GT)
         MAKE_CASE(BinaryOpCode::GE)
+        // Min/max.
+        MAKE_CASE(BinaryOpCode::MIN)
+        MAKE_CASE(BinaryOpCode::MAX)
         // Logical.
         MAKE_CASE(BinaryOpCode::AND)
         MAKE_CASE(BinaryOpCode::OR)
 #undef MAKE_CASE
-        // homogeneous value types: this is unreachable
-        // heterogeneous value types: we throw an error for min/max
-        case BinaryOpCode::MIN: 
-        case BinaryOpCode::MAX: 
-            throw std::runtime_error("min/max do not support heterogeneous inputs");
         default:
             throw std::runtime_error("unknown BinaryOpCode");
     }
