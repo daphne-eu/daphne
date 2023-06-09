@@ -96,7 +96,7 @@ find_package(BLAS)
 
 # Add TSL to include path
 # set( CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ${THIRDPARTY_INCLUDE}/TSL )
-include_directories(${THIRDPARTY_INCLUDE}/TSL)
+# include_directories(${THIRDPARTY_INCLUDE}/TSL)
 
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources
@@ -167,6 +167,23 @@ if(USE_FPGAOPENCL)
 endif()
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
+
+
+# *****************************************************************************
+# Dependency // SIMDOperators
+# *****************************************************************************
+include(FetchContent)
+
+FetchContent_Declare(
+  SIMDOperators
+  GIT_REPOSITORY https://github.com/db-tu-dresden/SIMDOperators.git
+  GIT_TAG        daphne # or a later release
+)
+
+FetchContent_MakeAvailable(SIMDOperators)
+
+
+
 
 # *****************************************************************************
 # Project-specific include directories
