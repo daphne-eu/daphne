@@ -855,13 +855,15 @@ if [ $WITH_DEPS -gt 0 ]; then
     #------------------------------------------------------------------------------
     # TSL (Template SIMD Library)
     #------------------------------------------------------------------------------
-    if ! is_dependency_installed "TSL"; then
+    dep_tsl=("tsl_v1" "v1")
+    if ! is_dependency_installed "${dep_tsl[@]}"; then
         daphne_msg "Install TSL."
         tsl_generator="${sourcePrefix}/TSLGenerator"
         tsl_output="${installPrefix}/include/TSL"
+        mkdir -p "${tsl_output}"
         # python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
-        cmake ${tsl_generator} -B ${tsl_generator}/build -D GENERATOR_OUTPUT_PATH=${tsl_output}
-        dependency_install_success "TSL"
+        cmake "${tsl_generator}" -B "${tsl_generator}/build" -D DESTINATION="${tsl_output}"
+        dependency_install_success "${dep_tsl[@]}"
     else
         daphne_msg "No need to generate TSL again."
     fi
