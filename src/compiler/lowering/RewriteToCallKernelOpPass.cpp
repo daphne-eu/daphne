@@ -211,21 +211,21 @@ namespace
                 const size_t numODSOperands = getNumODSOperands(op);
                 for(size_t i = 0; i < numODSOperands; i++) {
                     auto odsOpInfo = getODSOperandInfo(op, i);
-                    unsigned tempidx = std::get<0>(odsOpInfo);
+                    const unsigned idx = std::get<0>(odsOpInfo);
                     const unsigned len = std::get<1>(odsOpInfo);
                     const bool isVariadic = std::get<2>(odsOpInfo);
                     
                     // The group operation currently expects at least four inputs due to the
                     // expectation of a aggregation. To make the group operation possible without aggregations,
-                    // we have to use this workaround to be able to set the type for the aggregations.
-                    // This works, as the type for the aggregation functions is the same as the one for the 
-                    // select column names, i.e. a string.
-                    if(llvm::dyn_cast<daphne::GroupOp>(op) && tempidx >= operandTypes.size()) {
-                        tempidx = operandTypes.size()-1;
+                    // we have to use this workaround to create the correct name and skip the creation
+                    // of the varidic pack ops. Should be changed when reworking the lowering to kernels.
+                    if(llvm::dyn_cast<daphne::GroupOp>(op) && idx >= operandTypes.size()) {
+                        callee << "__char_variadic__size_t";
+                        continue;
+                    } else {
+                        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
                     }
-                    const unsigned idx = tempidx;
 
-                    callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);
                     if(isVariadic) {
                         // Variadic operand.
                         callee << "_variadic__size_t";

@@ -1,4 +1,4 @@
-Frame(5x1, [lhs.a:int64_t])
+Frame(5x1, [f.a:int64_t])
 0
 1
 3
