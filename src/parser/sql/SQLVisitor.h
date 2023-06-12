@@ -148,6 +148,11 @@ class SQLVisitor : public SQLGrammarVisitor {
     //group has group clause, activated codegen, is a complex general Expression, is a complex Group Expression, has aggregation function.
     int64_t sqlFlag = 0;
 
+    //Counter for the group names, to enable multiple aggregations on the same column and to avoid name clashes.
+    //We need two counter, as we need to reproduce the same names when actually doing the code generation.
+    int64_t groupCounter = 0;
+    int64_t groupCounterCodegen = 0;
+
 public:
     [[maybe_unused]] explicit SQLVisitor(mlir::OpBuilder & builder) : utils(builder), builder(builder) {
     };

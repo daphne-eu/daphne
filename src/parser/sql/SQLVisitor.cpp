@@ -916,7 +916,9 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //Codegeneration = true:
     //  The function looks up the unique name again and extracts a matrix from
     //  the currentFrame. This Matrix is the result of this function.
-    std::string newColumnName = "group_" + ctx->var->getText();
+    std::string newColumnName = "group_" + std::to_string(groupCounter) + "_"  + ctx->var->getText();
+    // Increment groupCounter
+    groupCounter++;
 
     // Run aggreagation for whole column
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group) && isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){  
@@ -1002,6 +1004,9 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         currentFrame = addMatrixToCurrentFrame(matrix, newColumnName);
         return nullptr;
     }else{ //Get Column after Group
+        std::string newColumnName = "group_" + std::to_string(groupCounterCodegen) + "_" + ctx->var->getText();
+        // Increment groupCounter
+        groupCounterCodegen++;
         std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
         return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
