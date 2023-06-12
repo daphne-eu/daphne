@@ -91,6 +91,7 @@ generalExpr:
     | lhs=generalExpr op=CMP_OP rhs=generalExpr # cmpExpr
     | lhs=generalExpr SQL_AND rhs=generalExpr # andExpr
     | lhs=generalExpr SQL_OR rhs=generalExpr # orExpr
+    | '*' # starExpr
     ;
 
 tableReference:

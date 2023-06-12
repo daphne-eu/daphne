@@ -885,6 +885,16 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     return extractMatrixFromFrame(currentFrame, colname);
 }
 
+antlrcpp::Any SQLVisitor::visitStarExpr(
+    SQLGrammarParser::StarExprContext * ctx
+)
+{
+    if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
+        return nullptr;
+    }
+    throw std::runtime_error("Use of the asterisk for selection not supported");
+}
+
 antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     SQLGrammarParser::GroupAggExprContext * ctx
 )

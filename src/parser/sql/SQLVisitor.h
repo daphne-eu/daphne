@@ -209,6 +209,8 @@ public:
 //generalExpr
     antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
 
+    antlrcpp::Any visitStarExpr(SQLGrammarParser::StarExprContext * ctx) override;
+
     antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) override;
 
     antlrcpp::Any visitGroupAggExpr(SQLGrammarParser::GroupAggExprContext * ctx) override;
