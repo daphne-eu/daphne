@@ -95,6 +95,11 @@ class SQLVisitor : public SQLGrammarVisitor {
      */
     std::string getEnumLabelExt(const std::string& func);
 
+    /**
+     * @brief returns the frame only containing a column with given name as string.
+     */
+    mlir::Value extractFrameFromFrame(mlir::Value frame,std::string columnName);
+
 
 //Data Structures and access functions
     std::unordered_map <std::string, mlir::Value> view; //name, mlir::Value
@@ -142,6 +147,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     std::vector<mlir::Value> groupName;
     std::vector<mlir::Value> columnName;
     std::vector<mlir::Attribute> functionName;
+    std::set<std::string> groundGroupColumns;
 
     //Flags
     enum class SQLBit{group=0, codegen, agg, checkgroup};

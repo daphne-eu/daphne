@@ -103,7 +103,7 @@ MAKE_TEST_CASE("agg_sum", 1)
 
 MAKE_TEST_CASE("reuseString", 2)
 
-MAKE_TEST_CASE("select_asterisk", 1)
+MAKE_TEST_CASE("select_asterisk", 4)
 
 
 // TODO Use the scripts testing failure cases.
