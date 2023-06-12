@@ -946,6 +946,10 @@ antlrcpp::Any SQLVisitor::visitStarExpr(
             );
         }
         return resultFrame;
+    } else if(!isBitSet(sqlFlag, (int64_t)SQLBit::group)        //If group is not active
+            && isBitSet(sqlFlag, (int64_t)SQLBit::agg)          //AND there is an aggreagtion
+            && isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){    //AND codegen is active)
+        throw std::runtime_error("Using the asterisk with only aggregation functions is not allowed");
     } else {
         return currentFrame;
     }
