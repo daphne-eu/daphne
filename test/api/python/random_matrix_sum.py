@@ -27,4 +27,4 @@ from api.python.context.daphne_context import DaphneContext
 daphne_context = DaphneContext()
 
 m1 = daphne_context.rand(rows=5,cols=5,min=1,max=5,sparsity=0.5,seed=123)
-m1.sum().compute()
+print(m1.sum().compute())

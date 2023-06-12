@@ -24,6 +24,8 @@ limitations under the License.
 - [Running DAPHNE in a Local Environment](/doc/RunningDaphneLocally.md)
 - [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
 - [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
+- [DaphneLib: DAPHNE's Python API](/doc/DaphneLib.md)
+- [DaphneLib API Reference](/doc/DaphneLibAPIRef.md)
 - [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)
 - [DaphneDSL Built-in Functions](/doc/DaphneDSLBuiltins.md)
 - [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)

@@ -28,7 +28,6 @@
 #include <cassert>
 #include <cstddef>
 
-
 // ****************************************************************************
 // Struct for partial template specialization
 // res1 matrix for eigenvalues, res2 matrix for eigenvectors
@@ -77,11 +76,14 @@ struct EigenCal<DenseMatrix<double>,DenseMatrix<double>,DenseMatrix<double>> {
         Eigen::MatrixXd eigenVectors = s.eigenvectors().real().cast <double> ();
         Eigen::MatrixXd eigenValues = s.eigenvalues().real().cast <double> ();
 
+        // TODO wrap the eigenValues, eigenVectors pointer into a shared_ptr and then use
+        //that to create the DenseMatrix
+
         if(res1 == nullptr)
-                 res1= DataObjectFactory::create<DenseMatrix<double>>(eigenValuesrows, eigenValuescols, false);
+             res1= DataObjectFactory::create<DenseMatrix<double>>(eigenValuesrows, eigenValuescols, false);
 
         if(res2 == nullptr)
-                 res2= DataObjectFactory::create<DenseMatrix<double>>(eigenVectorsrows, eigenVectorscols, false);
+             res2= DataObjectFactory::create<DenseMatrix<double>>(eigenVectorsrows, eigenVectorscols, false);
 
 
         for(size_t r = 0; r < eigenValuesrows; r++) {
@@ -120,29 +122,32 @@ struct EigenCal<DenseMatrix<float>,DenseMatrix<float>,DenseMatrix<float>> {
         Eigen::MatrixXf eigenVectors = s.eigenvectors().real().cast <float> ();
         Eigen::MatrixXf eigenValues = s.eigenvalues().real().cast <float> ();
 
+        // When it comes to float number, it has been noticed than at the rounding part, errors occured at the sign of the results.
+        // So one needs this iteration to make sure that the the results are correct manually.
+
         for (size_t i = 0; i < eigenVectorscols; i++) {
-            Eigen::VectorXcf ev = eigenVectors.col(i);
-            size_t max_index = 0;
-            for (int32_t j = 1; j < ev.size(); j++) {
-                if (std::abs(ev(j)) > std::abs(ev(max_index)))
-                    max_index = j;
+        Eigen::VectorXcf ev = eigenVectors.col(i);
+        size_t max_index = 0;
+        for (int32_t j = 1; j < ev.size(); j++) {
+            if (std::abs(ev(j)) > std::abs(ev(max_index)))
+                max_index = j;
             }
             if (ev(max_index).real() < 0)
                 eigenVectors.col(i) *= -1;
+            }
+
+            if(res1 == nullptr)
+                res1= DataObjectFactory::create<DenseMatrix<float>>(eigenValuesrows, eigenValuescols, false);
+
+            if(res2 == nullptr)
+                res2= DataObjectFactory::create<DenseMatrix<float>>(eigenVectorsrows, eigenVectorscols, false);
+
+            for(size_t r = 0; r < eigenValuesrows; r++)
+                for(size_t c = 0; c < eigenValuescols; c++)
+                    res1->set(r,c,s.eigenvalues()[r].real());
+
+            for(size_t r = 0; r < eigenVectorsrows; r++)
+                for(size_t c = 0; c < eigenVectorscols; c++)
+                    res2->set(r,c,eigenVectors.coeff(r, c));
         }
-
-        if(res1 == nullptr)
-            res1= DataObjectFactory::create<DenseMatrix<float>>(eigenValuesrows, eigenValuescols, false);
-
-        if(res2 == nullptr)
-            res2= DataObjectFactory::create<DenseMatrix<float>>(eigenVectorsrows, eigenVectorscols, false);
-
-        for(size_t r = 0; r < eigenValuesrows; r++)
-            for(size_t c = 0; c < eigenValuescols; c++)
-                res1->set(r,c,s.eigenvalues()[r].real());
-
-        for(size_t r = 0; r < eigenVectorsrows; r++)
-            for(size_t c = 0; c < eigenVectorscols; c++)
-                res2->set(r,c,eigenVectors.coeff(r, c));
-    }
 };

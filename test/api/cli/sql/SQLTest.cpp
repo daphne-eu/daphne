@@ -94,6 +94,13 @@ MAKE_TEST_CASE("thetaJoin_lessEqual", 2)
 MAKE_TEST_CASE("thetaJoin_notEqual", 2)
 MAKE_TEST_CASE("thetaJoin_combinedCompare", 2)
 
+MAKE_TEST_CASE("agg_avg", 1)
+MAKE_TEST_CASE("agg_count", 1)
+MAKE_TEST_CASE("agg_max", 2)
+MAKE_TEST_CASE("agg_min", 2)
+MAKE_TEST_CASE("agg_multiple", 2)
+MAKE_TEST_CASE("agg_sum", 1)
+
 MAKE_TEST_CASE("reuseString", 2)
 
 MAKE_TEST_CASE("group_w_o_agg", 1)
