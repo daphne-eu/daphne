@@ -539,6 +539,11 @@ antlrcpp::Any SQLVisitor::visitSelectExpr(
 
     //we get a Matrix or int/float value. From this we generate a Matrix.
     mlir::Value expr = utils.valueOrError(vExpr);
+
+    if(expr.getType().isa<mlir::daphne::FrameType>()){
+        return expr;
+    }
+
     matrix = castToMatrixColumn(expr);
 
     //Now we look up what the label for the result should be
@@ -892,7 +897,7 @@ antlrcpp::Any SQLVisitor::visitStarExpr(
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
-    throw std::runtime_error("Use of the asterisk for selection not supported");
+    return currentFrame;
 }
 
 antlrcpp::Any SQLVisitor::visitGroupAggExpr(
