@@ -355,39 +355,30 @@ function cleanAll {
 # #4 Create / Check Indicator-files
 #******************************************************************************
 
+
+
 #// creates indicator file which indicates successful dependency installation in <projectRoot>/thirdparty/
 #// param 1 dependency name
 function dependency_install_success() {
     dep_version="${2}"
     if [ -z "${dep_version}" ]; then dep_version="v1"; fi
     daphne_msg "Successfully installed ${1}."
-    touch "${thirdpartyFlagsDir}/${1}.install.${dep_version}.success"
+    touch "${tflags}/${1}.install.success"
 }
 function dependency_download_success() {
     dep_version="${2}"
     if [ -z "${dep_version}" ]; then dep_version="v1"; fi
     daphne_msg "Successfully downloaded ${1}."
-    touch "${thirdpartyFlagsDir}/${1}.download.${dep_version}.success"
+    touch "${tflags}/${1}.download.success"
 }
 
 #// checks if dependency is installed successfully
 #// param 1 dependency name
 function is_dependency_installed() {
-    dep_version="${2}"
-    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
-    [ -e "${thirdpartyFlagsDir}/${1}.install.${dep_version}.success" ]
+    [ -e "${tflags}/${1}.install.success" ]
 }
 function is_dependency_downloaded() {
-    dep_version="${2}"
-    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
-    [ -e "${thirdpartyFlagsDir}/${1}.download.${dep_version}.success" ]
-}
-
-function clean_param_check() {
-    if [ "$par_clean" -gt 0 ]; then
-        echo "Only *one* clean parameter (clean/cleanAll/cleanDeps/cleanCache) is allowed!"
-        exit 1
-    fi
+    [ -e "${tflags}/${1}.download.success" ]
 }
 
 #******************************************************************************
@@ -443,6 +434,9 @@ if [ ! -d "$thirdpartyFlagsDir" ]; then
         fi
     done
 fi
+
+mkdir -p ${thirdpartyPath}/flags
+tflags=${thirdpartyPath}/flags
 
 #******************************************************************************
 # #7 Parse arguments
@@ -876,6 +870,57 @@ if [ $WITH_DEPS -gt 0 ]; then
             "$cacheDir/$spdlogArtifactFileName"
         tar xzf "$cacheDir/$spdlogArtifactFileName" --directory="$sourcePrefix"
         dependency_download_success "spdlog_v${spdlogVersion}"
+fi
+
+#------------------------------------------------------------------------------
+# TSL (Template SIMD Library)
+#------------------------------------------------------------------------------
+if ! is_dependency_installed "TSL"; then
+    daphne_msg "Install TSL."
+    tsl_generator="${sourcePrefix}/TSLGenerator/main.py"
+    tsl_output="${installPrefix}/include/TSL"
+    python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
+    dependency_install_success "TSL"
+else
+    daphne_msg "No need to generate TSL again."
+fi
+
+
+
+
+#------------------------------------------------------------------------------
+# Build MLIR
+#------------------------------------------------------------------------------
+# We rarely need to build MLIR/LLVM, only during the first build of the
+# prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
+# builds (which take several seconds even if there is nothing to do), we store
+# the LLVM commit hash we built into a file, and only rebuild MLIR/LLVM if this
+# file does not exist (first build of the prototype) or does not contain the
+# expected hash (upgrade of the LLVM sub-module).
+
+llvmName="llvm-project"
+llvmCommit="llvmCommit-local-none"
+cd "${thirdpartyPath}/${llvmName}"
+if [ -e .git ] # Note: .git in the submodule is not a directory.
+then
+  submodule_path=$(cat .git | cut -d ' ' -f 2)
+
+  # if the third party directory was loaded from gh action cache, this path will not exist
+  if [ -d $submodule_path ]; then
+    llvmCommit="$(git log -1 --format=%H)"
+  else
+    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
+  fi
+else
+    # download and set up LLVM code if compilation is run without the local working copy being checked out from git
+    # e.g., compiling from released source artifact
+    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
+    llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
+    llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
+    if ! is_dependency_downloaded "llvm_${llvmCommit}"; then
+        wget https://github.com/llvm/llvm-project/archive/${llvmCommit}.tar.gz -qO "${llvmSnapshotPath}"
+        tar xzf "${llvmSnapshotPath}" --strip-components=1
+        dependency_download_success "llvm_${llvmCommit}"
     fi
 
     if ! is_dependency_installed "spdlog_v${spdlogVersion}"; then

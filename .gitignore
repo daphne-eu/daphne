@@ -26,9 +26,6 @@ tmpdaphne.daphne
 # release scripts output
 /artifacts
 
-bin/
-logs/
-profiler/
-precompiled-dependencies/
-/cmake*/
-/data
+# clang cache
+.cache
+
