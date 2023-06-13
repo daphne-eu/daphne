@@ -38,6 +38,7 @@ select:
     whereClause?
     groupByClause?
     orderByClause?
+    limitClause?
     ;
 
 subquery:
@@ -77,6 +78,9 @@ havingClause:
 orderByClause:
     SQL_ORDER SQL_BY selectIdent orderInformation
     (',' selectIdent orderInformation)*;
+
+limitClause:
+    SQL_LIMIT limit=INT_LITERAL;
 
 orderInformation:
     (asc=SQL_ASC|desc=SQL_DESC)?;
@@ -139,6 +143,7 @@ SQL_ASC: A S C;
 SQL_DESC: D E S C;
 SQL_AND: A N D;
 SQL_OR: O R;
+SQL_LIMIT: L I M I T;
 
 fragment A: [aA];
 fragment B: [bB];
