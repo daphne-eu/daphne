@@ -31,33 +31,38 @@
 #define DATA_TYPES DenseMatrix, CSRMatrix
 #define VALUE_TYPES double, uint32_t
 
-template<class DT>
-void checkAggAll(AggOpCode opCode, const DT * arg, typename DT::VT exp) {
-    typename DT::VT res = aggAll<DT>(opCode, arg, nullptr);
+template<typename VTRes, class DTArg>
+void checkAggAll(AggOpCode opCode, const DTArg * arg, VTRes exp) {
+    VTRes res = aggAll<VTRes, DTArg>(opCode, arg, nullptr);
     CHECK(res == exp);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    
-    auto m0 = genGivenVals<DT>(3, {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    });
-    auto m1 = genGivenVals<DT>(3, {
-        3, 0, 2, 0,
-        0, 0, 1, 1,
-        2, 5, 0, 0,
-    });
-    
-    checkAggAll(AggOpCode::SUM, m0, 0);
-    checkAggAll(AggOpCode::SUM, m1, 14);
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
+// The value types of argument and result could be different, so we need to
+// test various combinations.
+#define SUM_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("sum - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType; \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m1 = genGivenVals<DTArg>(3, { \
+        3, 0, 2, 0, \
+        0, 0, 1, 1, \
+        2, 5, 0, 0, \
+    }); \
+     \
+    checkAggAll(AggOpCode::SUM, m0, (VTRes)0); \
+    checkAggAll(AggOpCode::SUM, m1, (VTRes)14); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m1); \
 }
+SUM_TEST_CASE(int64_t)
+SUM_TEST_CASE(double)
 
+// The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -77,15 +82,17 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     
-    checkAggAll(AggOpCode::MIN, m0, 0);
-    checkAggAll(AggOpCode::MIN, m1, 2);
-    checkAggAll(AggOpCode::MIN, m2, 0);
+    // In case of min the result type is the same as the input type
+    checkAggAll(AggOpCode::MIN, m0, (typename DT::VT)0);
+    checkAggAll(AggOpCode::MIN, m1, (typename DT::VT)2);
+    checkAggAll(AggOpCode::MIN, m2, (typename DT::VT)0);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
 }
 
+// The value types of argument and result can be assumed to be the same.
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
     
@@ -104,41 +111,45 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 2, 0, 0,
         0, 0, 5, 0,
     });
-    
-    checkAggAll(AggOpCode::MAX, m0, 0);
-    checkAggAll(AggOpCode::MAX, m1, 9);
-    checkAggAll(AggOpCode::MAX, m2, 9);
+
+    // In case of max the result type is the same as the input type
+    checkAggAll(AggOpCode::MAX, m0, (typename DT::VT)0);
+    checkAggAll(AggOpCode::MAX, m1, (typename DT::VT)9);
+    checkAggAll(AggOpCode::MAX, m2, (typename DT::VT)9);
     
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
 }
 
-
-TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
-    using DT = TestType;
-    
-    auto m0 = genGivenVals<DT>(3, {
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-        0, 0, 0, 0,
-    });
-    auto m1 = genGivenVals<DT>(3, {
-        4, 6, 3, 9,
-        2, 2, 8, 9,
-        4, 4, 5, 4,
-    });
-    auto m2 = genGivenVals<DT>(3, {
-        4, 0, 0, 9,
-        0, 6, 0, 0,
-        0, 0, 5, 0,
-    });
-    
-    checkAggAll(AggOpCode::MEAN, m0, 0);
-    checkAggAll(AggOpCode::MEAN, m1, 5);
-    checkAggAll(AggOpCode::MEAN, m2, 2);
-    
-    DataObjectFactory::destroy(m0);
-    DataObjectFactory::destroy(m1);
-    DataObjectFactory::destroy(m2);
+// The value types of argument and result could be different, so we need to
+// test various combinations.
+#define MEAN_TEST_CASE(VTRes) TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mean - result value type: " #VTRes), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) { \
+    using DTArg = TestType;  \
+     \
+    auto m0 = genGivenVals<DTArg>(3, { \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+        0, 0, 0, 0, \
+    }); \
+    auto m1 = genGivenVals<DTArg>(3, { \
+        1, 6, 3, 9, \
+        2, 2, 8, 9, \
+        4, 4, 5, 4, \
+    }); \
+    auto m2 = genGivenVals<DTArg>(3, { \
+        4, 0, 0, 9, \
+        0, 6, 0, 0, \
+        0, 0, 5, 0, \
+    }); \
+     \
+    checkAggAll(AggOpCode::MEAN, m0, (VTRes)0); \
+    checkAggAll(AggOpCode::MEAN, m1, (VTRes)4.75); \
+    checkAggAll(AggOpCode::MEAN, m2, (VTRes)2); \
+     \
+    DataObjectFactory::destroy(m0); \
+    DataObjectFactory::destroy(m1); \
+    DataObjectFactory::destroy(m2); \
 }
+MEAN_TEST_CASE(int64_t);
+MEAN_TEST_CASE(double);

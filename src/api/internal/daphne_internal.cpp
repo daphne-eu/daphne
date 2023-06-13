@@ -38,6 +38,7 @@
     #include <runtime/local/kernels/CUDA/HostUtils.h>
 #endif
 
+#include <chrono>
 #include <exception>
 #include <iostream>
 #include <string>
@@ -72,6 +73,9 @@ void printVersion(llvm::raw_ostream& os) {
 }
     
 int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id){
+    using clock = std::chrono::high_resolution_clock;
+    clock::time_point tpBeg = clock::now();
+
     // ************************************************************************
     // Parse command line arguments
     // ************************************************************************
@@ -292,6 +296,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             "enable-profiling", cat(daphneOptions),
             desc("Enable profiling support")
     );
+    static opt<bool> timing (
+            "timing", cat(daphneOptions),
+            desc("Enable timing of high-level steps (start-up, parsing, compilation, execution) and print the times to stderr in JSON format")
+    );
 
     // Positional arguments ---------------------------------------------------
     
@@ -468,8 +476,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     logger = std::make_unique<DaphneLogger>(user_config);
 
     // ************************************************************************
-    // Compile and execute script
+    // Parse, compile and execute DaphneDSL script
     // ************************************************************************
+
+    clock::time_point tpBegPars = clock::now();
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor executor(selectMatrixRepr, user_config);
@@ -494,6 +504,8 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         return StatusCode::PARSER_ERROR;
     }
 
+    clock::time_point tpBegComp = clock::now();
+
     // Further, process the module, including optimization and lowering passes.
     try{
         if (!executor.runPasses(moduleOp)) {
@@ -507,8 +519,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     // JIT-compile the module and execute it.
     // module->dump(); // print the LLVM IR representation
+    clock::time_point tpBegExec;
     try{
         auto engine = executor.createExecutionEngine(moduleOp);
+        tpBegExec = clock::now();
         auto error = engine->invoke("main");
         if (error) {
             llvm::errs() << "JIT-Engine invocation failed: " << error;
@@ -518,6 +532,24 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     catch(std::exception & e){
         std::cerr << "Execution error: " << e.what() << std::endl;
         return StatusCode::EXECUTION_ERROR;
+    }
+    clock::time_point tpEnd = clock::now();
+
+    if(timing) {
+        // Calculate durations of the individual high-level steps of DAPHNE.
+        double durStrt  = chrono::duration_cast<chrono::duration<double>>(tpBegPars - tpBeg    ).count();
+        double durPars  = chrono::duration_cast<chrono::duration<double>>(tpBegComp - tpBegPars).count();
+        double durComp  = chrono::duration_cast<chrono::duration<double>>(tpBegExec - tpBegComp).count();
+        double durExec  = chrono::duration_cast<chrono::duration<double>>(tpEnd     - tpBegExec).count();
+        double durTotal = chrono::duration_cast<chrono::duration<double>>(tpEnd     - tpBeg    ).count();
+        // Output durations in JSON.
+        std::cerr << "{";
+        std::cerr << "\"startup_seconds\": "     << durStrt  << ", ";
+        std::cerr << "\"parsing_seconds\": "     << durPars  << ", ";
+        std::cerr << "\"compilation_seconds\": " << durComp  << ", ";
+        std::cerr << "\"execution_seconds\": "   << durExec  << ", ";
+        std::cerr << "\"total_seconds\": "       << durTotal;
+        std::cerr << "}" << std::endl;
     }
 
     return StatusCode::SUCCESS;

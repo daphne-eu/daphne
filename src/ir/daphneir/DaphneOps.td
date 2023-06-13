@@ -648,7 +648,7 @@ def Daphne_OrderOp : Daphne_Op<"order", [
 // Matrix decompositions & co
 // ****************************************************************************
 
-def Daphne_EigenOp : Daphne_Op<"eigen"> {
+def Daphne_EigenOp : Daphne_Op<"eigenCal"> {
     let arguments = (ins MatrixOf<[FloatScalar]>:$arg);
     let results = (outs MatrixOf<[FloatScalar]>:$eigenValues, MatrixOf<[FloatScalar]>:$eigenVectors);
 }

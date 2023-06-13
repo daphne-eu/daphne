@@ -28,7 +28,7 @@ XY = readMatrix($XY);
 X = XY[, :(ncol(XY) - 1)];
 y = XY[, ncol(XY) - 1];
 
-b = lmCG_.m_lmCG(X, y, $icpt, $reg, $tol, $maxi, $verbose);
+b = lmCG_.lmCG(X, y, $icpt, $reg, $tol, $maxi, $verbose);
 
 print("");
 print("RESULT");

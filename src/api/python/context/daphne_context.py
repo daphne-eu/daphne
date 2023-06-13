@@ -34,7 +34,7 @@ from typing import Sequence, Dict, Union
 
 class DaphneContext(object):
 
-    def readMatrix(self, file) -> Matrix:
+    def readMatrix(self, file: str) -> Matrix:
         """Reads a matrix from a file.
         :param file: The path to the file containing the data.
         :return: The data in the file as a Matrix.
@@ -42,7 +42,7 @@ class DaphneContext(object):
         unnamed_params = ['\"'+file+'\"']
         return Matrix(self, 'readMatrix', unnamed_params)
         
-    def readFrame(self, file) -> Matrix:
+    def readFrame(self, file: str) -> Frame:
         """Reads a frame from a file.
         :param file: The path to the file containing the data.
         :return: The data in the file as a Frame.
@@ -51,7 +51,7 @@ class DaphneContext(object):
         return Frame(self, 'readFrame', unnamed_params)
     
     def from_numpy(self, mat: np.array, shared_memory=True) -> Matrix:
-        """Generates a DAGNode representing a matrix with data given by a numpy array.
+        """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :return: The data from numpy as a Matrix.
@@ -90,7 +90,7 @@ class DaphneContext(object):
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
         
     def from_pandas(self, df: pd.DataFrame) -> Frame:
-        """Generates a DAGNode representing a Frame with data given by a pandas DataFrame.
+        """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
         :param df: The pandas DataFrame.
         :param args: unnamed parameters
         :param kwargs: named parameters
@@ -102,11 +102,11 @@ class DaphneContext(object):
         named_params = []
         return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df)
     
-    def fill(self, arg, rows:int, cols:int) -> 'Matrix':
+    def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)
     
-    def seq(self, start, end, inc) -> 'Matrix':
+    def seq(self, start, end, inc) -> Matrix:
         named_input_nodes = {'start':start, 'end':end, 'inc':inc}
         return Matrix(self, 'seq', [], named_input_nodes=named_input_nodes)
 
@@ -115,7 +115,7 @@ class DaphneContext(object):
              min: Union[float, int] = None, max: Union[float, int] = None,
              sparsity: Union[float, int] = 0,
              seed: Union[float, int] = 0
-    ) -> 'Matrix':
+    ) -> Matrix:
         """Generates a matrix filled with random values.
         :param rows: number of rows
         :param cols: number of columns

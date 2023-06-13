@@ -43,7 +43,7 @@
 # B     The model fit
 # ---------------------------------------------------------------------------------------------
 
-def m_lmCG(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64, tol:f64,
+def lmCG(X:matrix<f64>, y:matrix<f64>, icpt:si64, reg:f64, tol:f64,
  maxi:si64, verbose:bool) -> matrix<f64> {
   intercept_status = icpt;
   regularization = reg;
