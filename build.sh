@@ -1009,3 +1009,4 @@ build_ts_end=$(date +%s%N)
 daphne_msg "Successfully built Daphne://${target} (took $(printableTimestamp $((build_ts_end - build_ts_begin))))"
 
 set +e
+
