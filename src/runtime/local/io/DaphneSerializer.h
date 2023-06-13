@@ -31,6 +31,10 @@
 #include <iterator>
 #include <climits>
 
+// ****************************************************************************
+// Helper functions
+// ****************************************************************************
+
 /**
  * @brief Deserializes a DF_data_t struct.
 */
@@ -48,12 +52,32 @@ inline ValueTypeCode DF_Vtype(const char *buf) {
 }
 inline ValueTypeCode DF_Vtype(const std::vector<char>& buf) { return DF_Vtype(buf.data()); }
 
+
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+/**
+ * @brief Serialize and deserialize Daphne objects.
+*/
 template <class DTArg, bool isFundumental = std::is_fundamental<DTArg>::value>
 struct DaphneSerializer { 
     static size_t length(const DTArg *arg);
     static size_t serialize(const DTArg *arg, char *buf, size_t chunkSize = 0, size_t serializeFromByte = 0);
     static Structure *deserialize(const char *buf, size_t chunkSize = 0, DTArg *arg = nullptr, size_t deserializeFromByte = 0);
 };
+
+
+// ****************************************************************************
+// (Partial) template specializations for different data/value types
+// ****************************************************************************
+
+// ----------------------------------------------------------------------------
+// DenseMatrix
+// ----------------------------------------------------------------------------
+
+/**
+ * @brief Serialize and deserialize DenseMatrix of any type.
+*/
 template <typename VT>
 struct DaphneSerializer<DenseMatrix<VT>, false> {
     /**
@@ -61,11 +85,11 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
      */
     static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
     // Size of the header
-    static const size_t BUFFER_HEADER = 45;
+    static const size_t HEADER_BUFFER_SIZE = 45;
     /**
      * @brief Returns the size of the header.
     */
-    static size_t headerSize(const DenseMatrix<VT> *arg) { return BUFFER_HEADER; }
+    static size_t headerSize(const DenseMatrix<VT> *arg) { return HEADER_BUFFER_SIZE; }
 
     /**
      * @brief Calculates the byte length of the object.
@@ -149,7 +173,7 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
      * 
      * @param arg The daphne Matrix
      * @param buffer A pointer to char, the buffer that data will be serialized to.
-     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE)
+     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE). Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin. 
     */
     static size_t serialize(const DenseMatrix<VT> *arg, char *buffer, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
@@ -161,9 +185,9 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
             throw std::runtime_error("Buffer is nullptr");
         }
 
-
-        if (serializeFromByte == 0 && chunkSize < 60)
-            throw std::runtime_error("Minimum starting chunk size 60 bytes"); // For now..?
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (serializeFromByte == 0 && chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum starting chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
 
         if (serializeFromByte == 0) {
             auto bytesWritten = serializeHeader(arg, buffer);
@@ -274,29 +298,30 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
      * Notice that index is related to the byte length of the matrix (provided by length(matrix)).
      * 
      * @param buf The buffer containing the serialized data.
-     * @param chunkSize The size of the buffer.
+     * @param chunkSize The size of the buffer. Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
      * @param matrix The result matrix to write data.
      * @param deserializeFromByte (Optional) The index of the @matrix that deserialization should begin writing data.
      * @return DenseMatrix<VT>* The result matrix.
      */
     static DenseMatrix<VT> *deserialize(const char *buf, size_t chunkSize, DenseMatrix<VT> *matrix = nullptr, size_t deserializeFromByte = 0) {
-        if (deserializeFromByte == 0 && chunkSize < 60)
-            throw std::runtime_error("Minimum starting chunk size 60 bytes"); // For now..?
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (deserializeFromByte == 0 && chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum starting chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
         
         size_t bufIdx = 0;     
         size_t serializationIdx = 0;   
         
         if (deserializeFromByte == 0) {
             matrix = deserializeHeader(buf, matrix);
-            bufIdx += BUFFER_HEADER;
+            bufIdx += HEADER_BUFFER_SIZE;
         }
-        serializationIdx += BUFFER_HEADER;
+        serializationIdx += HEADER_BUFFER_SIZE;
         
         auto valuesArg = matrix->getValues();
         size_t bytesToCopy = 0;
         size_t valuesSize = matrix->getNumRows() * matrix->getNumCols() * sizeof(VT);
 
-        size_t valuesOffset = deserializeFromByte == 0 ? 0 : deserializeFromByte - BUFFER_HEADER;
+        size_t valuesOffset = deserializeFromByte == 0 ? 0 : deserializeFromByte - HEADER_BUFFER_SIZE;
 
         if (deserializeFromByte < serializationIdx) {
             bytesToCopy = (chunkSize > (serializationIdx - deserializeFromByte) + valuesSize) ?
@@ -327,8 +352,19 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
 
 };
 
+// ----------------------------------------------------------------------------
+// const DenseMatrix
+// ----------------------------------------------------------------------------
+
 template<typename VT>
 struct DaphneSerializer<const DenseMatrix<VT>, false> : public DaphneSerializer<DenseMatrix<VT>, false> { };
+
+// ----------------------------------------------------------------------------
+// CSRMatrix
+// ----------------------------------------------------------------------------
+/**
+ * @brief Serialize and deserialize CSRMatrix of any type.
+*/
 template <typename VT>
 struct DaphneSerializer<CSRMatrix<VT>, false> {
     const CSRMatrix<VT> *matrix;
@@ -339,19 +375,21 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
      */
     static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
     // Size of the header
-    static const size_t BUFFER_HEADER = 53;
+    static const size_t HEADER_BUFFER_SIZE = 53;
     /**
      * @brief Returns the size of the header.
     */
-    static size_t headerSize(const CSRMatrix<VT> *arg) { return BUFFER_HEADER; }
+    static size_t headerSize(const CSRMatrix<VT> *arg) { return HEADER_BUFFER_SIZE; }
     
-    DaphneSerializer(const CSRMatrix<VT> *matrix, size_t chunkSize = 1024) : matrix(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    DaphneSerializer(const CSRMatrix<VT> *matrix, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : matrix(matrix), chunkSize(chunkSize) {
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
     };
-    DaphneSerializer(CSRMatrix<VT> **matrix, size_t chunkSize = 1024) : matrixPtr(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    DaphneSerializer(CSRMatrix<VT> **matrix, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : matrixPtr(matrix), chunkSize(chunkSize) {
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
     };
     /**
      * @brief Calculates the byte length of the object.
@@ -458,12 +496,16 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
      * 
      * @param arg The daphne Matrix
      * @param buffer A pointer to char, the buffer that data will be serialized to.
-     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE)
+     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE). Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin. 
     */
     static size_t serialize(const CSRMatrix<VT> *arg, char *buffer, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
         size_t bufferIdx = 0;
         size_t serializationIdx = 0;
+
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
 
         if (serializeFromByte == 0) {
             auto bytesWritten = serializeHeader(arg, buffer);            
@@ -635,17 +677,18 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
      * @return CSRMatrix<VT>* The result matrix.
      */
     static CSRMatrix<VT> *deserialize(const char *buffer, size_t chunkSize, CSRMatrix<VT> * matrix = nullptr, size_t deserializeFromByte = 0) {            
-        if (deserializeFromByte == 0 && chunkSize < 60)
-            throw std::runtime_error("Minimum starting chunk size 60 bytes"); // For now..?
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (deserializeFromByte == 0 && chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum starting chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
 
         size_t bufferIdx = 0;
         size_t serializationIdx = 0;
 
         if (deserializeFromByte == 0) {
             matrix = deserializeHeader(buffer, matrix);
-            bufferIdx += BUFFER_HEADER;
+            bufferIdx += HEADER_BUFFER_SIZE;
         }
-        serializationIdx += BUFFER_HEADER;
+        serializationIdx += HEADER_BUFFER_SIZE;
         
         if (deserializeFromByte < serializationIdx + sizeof(size_t) * (matrix->getNumRows() + 1)) {
             size_t * rowOffsets = matrix->getRowOffsets();
@@ -764,8 +807,14 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
     }
 };
 
+// ----------------------------------------------------------------------------
+// const CSRMatrix
+// ----------------------------------------------------------------------------
 template<typename VT>
 struct DaphneSerializer<const CSRMatrix<VT>, false> : public DaphneSerializer<CSRMatrix<VT>, false> { };
+// ----------------------------------------------------------------------------
+// Frame
+// ----------------------------------------------------------------------------
 template <>
 struct DaphneSerializer<Frame> {
     static size_t length(const Frame *arg) {
@@ -785,23 +834,39 @@ struct DaphneSerializer<Frame> {
    };
 };
 
+// ----------------------------------------------------------------------------
+// Structure
+// ----------------------------------------------------------------------------
+/**
+ * @brief Serialize and deserialize Structure types.
+ * 
+ * Uses dynamic casts to downcast the Structure to a specific Daphne object (Dense, CSR, Frame) and uses the appropriate templated class.
+*/
 template<>
 struct DaphneSerializer<Structure> {
     /**
      * @brief The default serialization chunk size
      */
     static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
+
+    // Since at least one chunk will contain the header and we do not know the specific type of the object (Dense, CSR, etc.),
+    // the minimum chunk size should be the maximum possible header size in bytes (so the header won't be partially serialized).    
+    // TODO Other types?
+    static const size_t HEADER_BUFFER_SIZE = std::max(
+        DaphneSerializer<DenseMatrix<double>>::HEADER_BUFFER_SIZE,
+        DaphneSerializer<CSRMatrix<double>>::HEADER_BUFFER_SIZE
+    );
     
-    const Structure *matrix;
-    Structure **matrixPtr;
+    const Structure *obj;
+    Structure **objPtr;
     size_t chunkSize;
-    DaphneSerializer(const Structure *matrix, size_t chunkSize = 1024) : matrix(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    DaphneSerializer(const Structure *obj, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : obj(obj), chunkSize(chunkSize) {
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
     };
-    DaphneSerializer(Structure **matrix, size_t chunkSize = 1024) : matrixPtr(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    DaphneSerializer(Structure **obj, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : objPtr(obj), chunkSize(chunkSize) {
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
     };
     // TODO Use macros for dynamic_casts
 
@@ -1070,7 +1135,12 @@ struct DaphneSerializer<Structure> {
     };
 };
 
-/* Partial specialization for fundumental types */
+// ----------------------------------------------------------------------------
+// Partial specialization for fundumental types */
+// ----------------------------------------------------------------------------
+/**
+ * @brief Serialize and deserialize value types.
+*/
 template<typename VT>
 struct DaphneSerializer<VT, true> {
     static size_t length(const VT arg) {
@@ -1129,6 +1199,15 @@ struct DaphneSerializer<VT, true> {
     }
 };
 
+
+/**
+ * @brief Deserializes a buffer to a Daphne object.
+ * 
+ * @param buf pointer to buffer.
+ * @param bufferSize size of buffer in bytes.
+ * 
+ * @return Pointer to structure of deserialized object.
+*/
 inline Structure *DF_deserialize(const char *buf, size_t bufferSize) {
     if (DF_Dtype(buf) == DF_data_t::DenseMatrix_t) {
         switch(DF_Vtype(buf)) {
@@ -1158,6 +1237,13 @@ inline Structure *DF_deserialize(const char *buf, size_t bufferSize) {
         throw std::runtime_error("unknown value type code");
     }
 }
+
+/**
+ * @brief Deserializes a vector<char> buffer to a Daphne object.
+ * @param buf the vector<char> buffer.
+ * 
+ * @return Pointer to structure of deserialized object.
+*/
 inline Structure *DF_deserialize(const std::vector<char> &buf) {
     return DF_deserialize(buf.data(), buf.capacity());
 }
@@ -1166,6 +1252,7 @@ inline Structure *DF_deserialize(const std::vector<char> &buf) {
  * @brief Serialization out of order.
  * 
  * This class can be used to serialize an object in an out of order fashion. 
+ * The serialized chunks produced, can be used to reconstruct the object in any order.
  * All serialized chunks contain a header that is used to determine characteristics of the object (rows, cols, types)
  * and in addition the index of the chunk.
  * 
@@ -1181,18 +1268,18 @@ public:
      * @brief The default serialization chunk size
      */
     static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
-    DT *matrix;
+    DT *obj;
     size_t chunkSize;
     size_t startOffset = 0; 
 
     /**
      * @brief Construct a new Daphne Serializer Out Of Order Chunks object
      * 
-     * @param matrix The matrix to serialize
+     * @param obj The object to serialize
      * @param chunkSize_ (optional) The chunk size what will be used for each chunk (default DEFAULT_SERIALIZATION_BUFFER_SIZE)
      */
-    DaphneSerializerOutOfOrderChunks(DT *matrix, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE) : matrix(matrix), chunkSize(chunkSize_), startOffset(0) {
-        chunkSize = chunkSize_ == 0 ? DaphneSerializer<DT>::length(matrix) : chunkSize_;
+    DaphneSerializerOutOfOrderChunks(DT *obj, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE) : obj(obj), chunkSize(chunkSize_), startOffset(0) {
+        chunkSize = chunkSize_ == 0 ? DaphneSerializer<DT>::length(obj) : chunkSize_;
     };
 
     public:
@@ -1200,7 +1287,7 @@ public:
         size_t index;
 
     /**
-     * @brief Serializes the next chunk of data for the given matrix
+     * @brief Serializes the next chunk of data for the given object
      * 
      * @param buffer The buffer to write data
      * @return size_t The number of bytes written to buffer (max = chunkSize)
@@ -1212,14 +1299,14 @@ public:
             buffer.reserve(chunkSize);
         
         // Serialize header (needed for all chunks, we don't know which arrives first)
-        auto bufferIdx = DaphneSerializer<DT>::serializeHeader(matrix, buffer.data());
+        auto bufferIdx = DaphneSerializer<DT>::serializeHeader(obj, buffer.data());
         
         // Serialize startOffset index
         std::memcpy(buffer.data() + bufferIdx, reinterpret_cast<char*>(&startOffset), sizeof(startOffset));
         bufferIdx += sizeof(startOffset);
 
         // TODO use locks for parallel serialization
-        size_t len = DaphneSerializer<DT>::serialize(matrix, buffer.data() + bufferIdx, chunkSize - bufferIdx, startOffset);
+        size_t len = DaphneSerializer<DT>::serialize(obj, buffer.data() + bufferIdx, chunkSize - bufferIdx, startOffset);
         bufferIdx += len;
         startOffset += len;
 
@@ -1232,7 +1319,7 @@ public:
      * @return false 
      */
     bool HasNextChunk() {
-        return startOffset != DaphneSerializer<DT>::length(matrix);
+        return startOffset != DaphneSerializer<DT>::length(obj);
     }
 };
 
@@ -1240,6 +1327,7 @@ public:
  * @brief Deserialization out of order.
  * 
  * This class deserializes chunks created with the DaphneSerializationOutOfOrder class.
+ * The chunks can be provided in any random order.
  * All chunks should contain a header containing information about the deserialized object along with an index,
  * specifying at which byte-index deserialization should continue for each chunk.
  */
@@ -1249,20 +1337,20 @@ private:
     std::mutex lock;
 
 public:
-    DT *matrix;
+    DT *obj;
     size_t bytesDeserialized; 
 
     /**
      * @brief Construct a new Daphne Deserializer Out Of Order Chunks object
      * 
      */
-    DaphneDeserializerOutOfOrderChunks() : matrix(nullptr), bytesDeserialized(0) {};
+    DaphneDeserializerOutOfOrderChunks() : obj(nullptr), bytesDeserialized(0) {};
 
     /**
-     * @brief Deserializes a chunk and writes the contents to the matrix.
+     * @brief Deserializes a chunk and writes the contents to the object.
      * 
      * @param buffer A std::vector<char> containing the serialized data.
-     * @return DT* The partially deserialized matrix.
+     * @return DT* The partially deserialized object.
      */
     DT* DeserializeNextChunk(std::vector<char> &buffer) {
         auto chunkSize = buffer.capacity();
@@ -1270,31 +1358,31 @@ public:
         size_t startOffset;        
         size_t bufferIdx = 0;
 
-        if (matrix == nullptr) 
-            matrix = DaphneSerializer<DT>::deserializeHeader(buffer.data(), matrix);
-        bufferIdx += DaphneSerializer<DT>::headerSize(matrix);
+        if (obj == nullptr) 
+            obj = DaphneSerializer<DT>::deserializeHeader(buffer.data(), obj);
+        bufferIdx += DaphneSerializer<DT>::headerSize(obj);
 
         std::memcpy(reinterpret_cast<char*>(&startOffset), buffer.data() + bufferIdx, sizeof(size_t));
         bufferIdx += sizeof(size_t);
         
         // TODO use locks for parallel deserialization
         size_t deserializeLength = chunkSize - bufferIdx;
-        matrix = DaphneSerializer<DT>::deserialize(buffer.data() + bufferIdx, deserializeLength, matrix, startOffset);
+        obj = DaphneSerializer<DT>::deserialize(buffer.data() + bufferIdx, deserializeLength, obj, startOffset);
         bytesDeserialized += deserializeLength;
 
-        return matrix;
+        return obj;
     }
     /**
-     * @brief Returns true if matrix is not fully deserialized, else false.
+     * @brief Returns true if object is not fully deserialized, else false.
      * 
      * @return true 
      * @return false 
      */
     bool HasNextChunk() {
-        if (matrix == nullptr)
+        if (obj == nullptr)
             return true;
         else
-            return bytesDeserialized < DaphneSerializer<DT>::length(matrix);
+            return bytesDeserialized < DaphneSerializer<DT>::length(obj);
     }
 };
 
@@ -1310,17 +1398,24 @@ struct DaphneSerializerChunks
      * @brief The default serialization chunk size
      */
     static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
-    DT *matrix;
+
+    /**
+     * @brief The buffer size should be at least big enough to serialize the header.
+    */
+    static const size_t HEADER_BUFFER_SIZE = DaphneSerializer<DT>::HEADER_BUFFER_SIZE;
+
+    DT *obj;
     size_t chunkSize;
     /**
      * @brief Construct a new Daphne Serializer Chunks object
      * 
-     * @param matrix The matrix to serialize
-     * @param chunkSize (Optional) The chunk size (default DEFAULT_SERIALIZATION_BUFFER_SIZE). Minimum size 60 bytes.
+     * @param obj The object to serialize
+     * @param chunkSize (Optional) The chunk size (default DEFAULT_SERIALIZATION_BUFFER_SIZE). Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
      */
-    DaphneSerializerChunks(DT *matrix, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : matrix(matrix), chunkSize(chunkSize) {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+    DaphneSerializerChunks(DT *obj, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : obj(obj), chunkSize(chunkSize) {
+        // Since at least one chunk will contain the header, the minimum chunk size should be HEADER_BUFFER_SIZE bytes (so the header won't be partially serialized).
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
     };
     /**
      * @brief An iterator used to serialize the object
@@ -1335,7 +1430,7 @@ struct DaphneSerializerChunks
         using pointer = std::pair<size_t, buffer> *;
         using reference = std::pair<size_t, buffer> &; // TODO verify this
     private:
-        const DT *matrix;
+        const DT *obj;
         size_t chunkSize;
         value_type serializedData;
 
@@ -1345,13 +1440,13 @@ struct DaphneSerializerChunks
 
         // Constructors
         Iterator(){};
-        Iterator(const DT *matrix, size_t chunkSize) : matrix(matrix), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0)
+        Iterator(const DT *obj, size_t chunkSize) : obj(obj), chunkSize(chunkSize), numberOfBytesSerialized(0), index(0)
         {
-            if (chunkSize < 60)
-                throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+            if (chunkSize < HEADER_BUFFER_SIZE)
+                throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
             serializedData.second.reserve(chunkSize);
 
-            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second.data(), chunkSize, numberOfBytesSerialized);
+            serializedData.first = DaphneSerializer<DT>::serialize(obj, serializedData.second.data(), chunkSize, numberOfBytesSerialized);
             numberOfBytesSerialized += serializedData.first;
         };
 
@@ -1362,7 +1457,7 @@ struct DaphneSerializerChunks
         Iterator operator++()
         {
             index++;
-            serializedData.first = DaphneSerializer<DT>::serialize(matrix, serializedData.second.data(), chunkSize, numberOfBytesSerialized);
+            serializedData.first = DaphneSerializer<DT>::serialize(obj, serializedData.second.data(), chunkSize, numberOfBytesSerialized);
             numberOfBytesSerialized += serializedData.first;
             return *this;
         };
@@ -1384,7 +1479,7 @@ struct DaphneSerializerChunks
      * @return Iterator 
      */
     Iterator begin() {
-        return Iterator(matrix, chunkSize);
+        return Iterator(obj, chunkSize);
     }
 
     /**
@@ -1394,7 +1489,7 @@ struct DaphneSerializerChunks
      */
     Iterator end() {
         Iterator iter;
-        iter.index = DaphneSerializer<DT>::length(matrix) / chunkSize + 1;
+        iter.index = DaphneSerializer<DT>::length(obj) / chunkSize + 1;
         return iter;
     }
 };
@@ -1406,18 +1501,23 @@ struct DaphneSerializerChunks
 template <class DT>
 struct DaphneDeserializerChunks
 {
-    DT **matrixPtr;
+    /**
+     * @brief The buffer size should be at least big enough to serialize the header.
+    */
+    static const size_t HEADER_BUFFER_SIZE = DaphneSerializer<DT>::HEADER_BUFFER_SIZE;
+
+    DT **objPtr;
     size_t chunkSize;
     /**
      * @brief Construct a new Daphne Deserializer Chunks object
      * 
-     * @param matrix The matrix to write data to.
+     * @param obj The object to write data to.
      * @param chunkSize The chunk size used to deserialize
      */
-    DaphneDeserializerChunks(DT **matrix, size_t chunkSize) : matrixPtr(matrix), chunkSize(chunkSize)
+    DaphneDeserializerChunks(DT **obj, size_t chunkSize) : objPtr(obj), chunkSize(chunkSize)
     {
-        if (chunkSize < 60)
-            throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+        if (chunkSize < HEADER_BUFFER_SIZE)
+            throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
     };
     struct Iterator
     {
@@ -1428,7 +1528,7 @@ struct DaphneDeserializerChunks
         using value_type = std::pair<size_t, buffer>; // TODO verify this
         using pointer = std::pair<size_t, buffer> *;
         using reference = std::pair<size_t, buffer> &; // TODO verify this
-        DT **matrixPtr;
+        DT **objPtr;
 
     private:
         size_t chunkSize;
@@ -1440,9 +1540,9 @@ struct DaphneDeserializerChunks
 
         // Constructors
         Iterator(){};
-        Iterator(DT **matrix, size_t chunkSize) : matrixPtr(matrix), chunkSize(chunkSize), numberOfBytesDeserialized(0), index(0) {
-            if (chunkSize < 60)
-                throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
+        Iterator(DT **obj, size_t chunkSize) : objPtr(obj), chunkSize(chunkSize), numberOfBytesDeserialized(0), index(0) {
+            if (chunkSize < HEADER_BUFFER_SIZE)
+                throw std::runtime_error("Minimum chunk size " + std::to_string(HEADER_BUFFER_SIZE) + " bytes"); // For now..?
             serializedData.second.reserve(chunkSize);
         };
 
@@ -1452,7 +1552,7 @@ struct DaphneDeserializerChunks
         // Prefix increment
         Iterator operator++() {
             index++;
-            *matrixPtr = DaphneSerializer<DT>::deserialize(serializedData.second.data(), serializedData.first, *matrixPtr, numberOfBytesDeserialized);
+            *objPtr = DaphneSerializer<DT>::deserialize(serializedData.second.data(), serializedData.first, *objPtr, numberOfBytesDeserialized);
             numberOfBytesDeserialized += serializedData.first;
             return *this;
         }
@@ -1468,16 +1568,16 @@ struct DaphneDeserializerChunks
         friend bool operator!=(const Iterator &a, const Iterator &b) { return a.index != b.index; };
     };
     Iterator begin() {
-        return Iterator(matrixPtr, chunkSize);
+        return Iterator(objPtr, chunkSize);
     }
     // Iterator end
     Iterator end() {
         Iterator iter;
         // If we just initialized the iterator is possible that we have no information about the deserialized object
-        // but the buffer is also uninitialized. If matrix is uninitialized we simply set Iterator::end() as 1, otherwise
-        // we calculate it based on matrix information.
-        if (*matrixPtr != nullptr)
-            iter.index = DaphneSerializer<DT>::length(*matrixPtr) / chunkSize + 1;
+        // but the buffer is also uninitialized. If object is uninitialized we simply set Iterator::end() as 1, otherwise
+        // we calculate it based on object information.
+        if (*objPtr != nullptr)
+            iter.index = DaphneSerializer<DT>::length(*objPtr) / chunkSize + 1;
         else
             iter.index = 1;
         return iter;
