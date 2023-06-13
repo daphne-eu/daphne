@@ -38,13 +38,14 @@
 #include <vector>
 #include <stdlib.h>
 
-
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
-template <class DTRes> struct ReadDaphne {
-  static void apply(DTRes *&res, const char *filename) = delete;
+template <class DTRes>
+struct ReadDaphne
+{
+	static void apply(DTRes *&res, const char *filename) = delete;
 };
 
 // ****************************************************************************
@@ -52,97 +53,105 @@ template <class DTRes> struct ReadDaphne {
 // ****************************************************************************
 
 template <class DTRes>
-void readDaphne(DTRes *&res, const char *filename) {
-  ReadDaphne<DTRes>::apply(res, filename);
+void readDaphne(DTRes *&res, const char *filename)
+{
+	ReadDaphne<DTRes>::apply(res, filename);
 }
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
 
-template <typename VT> struct ReadDaphne<DenseMatrix<VT>> {
-    static void apply(DenseMatrix<VT> *&res, const char *filename) {
-        std::ifstream f;
-        f.open(filename, std::ios::in|std::ios::binary);
-        // TODO: check f.good()
+template <typename VT>
+struct ReadDaphne<DenseMatrix<VT>>
+{
+	static void apply(DenseMatrix<VT> *&res, const char *filename)
+	{
+		std::ifstream f;
+		f.open(filename, std::ios::in | std::ios::binary);
+		// TODO: check f.good()
 
-	 	auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
-		for (auto it = deser.begin(); it != deser.end(); ++it){
+		auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
+		for (auto it = deser.begin(); it != deser.end(); ++it) {
 			it->first = DEFAULT_CHUNK_SIZE;
-        	f.read(it->second.data(), it->first);
+			f.read(it->second.data(), it->first);
 			// in case we read less than that
 			it->first = f.gcount();
 		}
 
-        f.close();
-        return;
-    }
+		f.close();
+		return;
+	}
 };
 
-template <typename VT> struct ReadDaphne<CSRMatrix<VT>> {
-    static void apply(CSRMatrix<VT> *&res, const char *filename) {
-        std::ifstream f;
-        f.open(filename, std::ios::in|std::ios::binary);
-        // TODO: check f.good()
+template <typename VT>
+struct ReadDaphne<CSRMatrix<VT>>
+{
+	static void apply(CSRMatrix<VT> *&res, const char *filename)
+	{
+		std::ifstream f;
+		f.open(filename, std::ios::in | std::ios::binary);
+		// TODO: check f.good()
 
 		auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
-		for (auto it = deser.begin(); it != deser.end(); ++it){
+		for (auto it = deser.begin(); it != deser.end(); ++it) {
 			it->first = DEFAULT_CHUNK_SIZE;
-        	f.read(it->second.data(), it->first);
+			f.read(it->second.data(), it->first);
 			// in case we read less than that
 			it->first = f.gcount();
 		}
 
-        f.close();
-        return;
-    }
+		f.close();
+		return;
+	}
 };
 
-template <> struct ReadDaphne<Frame> {
-  static void apply(Frame *&res, const char *filename){
+template <>
+struct ReadDaphne<Frame>
+{
+	static void apply(Frame *&res, const char *filename)
+	{
+		std::ifstream f;
+		f.open(filename, std::ios::in | std::ios::binary);
+		// TODO: check f.good()
 
-    std::ifstream f;
-    f.open(filename, std::ios::in|std::ios::binary);
-    // TODO: check f.good()
+		// read commong part of the header
+		DF_header h;
+		f.read((char *)&h, sizeof(h));
 
-    // read commong part of the header
-    DF_header h;
-    f.read((char *)&h, sizeof(h));
+		if (h.dt == (uint8_t)DF_data_t::Frame_t) {
+			// read rest of the header
+			ValueTypeCode *schema = new ValueTypeCode[h.nbcols];
+			for (uint64_t c = 0; c < h.nbcols; c++) {
+				f.read((char *)&(schema[c]), sizeof(ValueTypeCode));
+			}
 
-    if (h.dt == (uint8_t)DF_data_t::Frame_t) {
-	    // read rest of the header
-	    ValueTypeCode * schema = new ValueTypeCode[h.nbcols];
-	    for (uint64_t c = 0; c < h.nbcols; c++) {
-		f.read((char *)&(schema[c]), sizeof(ValueTypeCode));
-	    }
+			std::string *labels = new std::string[h.nbcols];
+			for (uint64_t c = 0; c < h.nbcols; c++) {
+				uint16_t len;
+				f.read((char *)&len, sizeof(len));
+				f.read((char *)&(labels[c]), len);
+			}
 
-	    std::string *labels = new std::string[h.nbcols];
-	    for (uint64_t c = 0; c < h.nbcols; c++) {
-		uint16_t len;
-		f.read((char *) &len, sizeof(len));
-		f.read((char *) &(labels[c]), len);
-	    }
+			DF_body b;
+			f.read((char *)&b, sizeof(b));
+			// b is ignored for now - assumed to be 0,0
+			// TODO: consider multiple blocks
+			// Assuming a dense block representation
+			// TODO: Consider alternative representations for frames
 
-	    DF_body b;
-	    f.read((char *)&b, sizeof(b));
-	    // b is ignored for now - assumed to be 0,0
-	    //TODO: consider multiple blocks
-	    // Assuming a dense block representation
-	    // TODO: Consider alternative representations for frames
+			if (res == nullptr) {
+				res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols, schema, nullptr, false);
+			}
 
-	    if (res == nullptr) {
-		res = DataObjectFactory::create<Frame>(h.nbrows, h.nbcols, schema, nullptr, false);
-	    }
+			uint8_t **rawCols = new uint8_t *[h.nbcols];
+			for (size_t i = 0; i < h.nbcols; i++) {
+				rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
+			}
 
-	    uint8_t ** rawCols = new uint8_t * [h.nbcols];
-            for(size_t i = 0; i < h.nbcols; i++) {
-                rawCols[i] = reinterpret_cast<uint8_t *>(res->getColumnRaw(i));
-            }
-
-	    for (size_t r=0; r < h.nbrows; r++) {
-				for (size_t c = 0; c < h.nbcols; c++)
-				{
-					switch (schema[c])
+			for (size_t r = 0; r < h.nbrows; r++) {
+				for (size_t c = 0; c < h.nbcols; c++) {
+					switch (schema[c]) 
 					{
 					case ValueTypeCode::SI8:
 						int8_t val_si8;
@@ -188,12 +197,12 @@ template <> struct ReadDaphne<Frame> {
 						throw std::runtime_error("ReadDaphne::apply: unknown value type code");
 					}
 				}
-		}
+			}
 
-	delete[] rawCols;
-	delete[] schema;
-    }
-    f.close();
-    return;
-  }
+			delete[] rawCols;
+			delete[] schema;
+		}
+		f.close();
+		return;
+	}
 };
