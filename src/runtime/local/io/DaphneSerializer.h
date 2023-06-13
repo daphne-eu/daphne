@@ -76,7 +76,10 @@ struct DaphneSerializer {
 // ----------------------------------------------------------------------------
 
 /**
- * @brief Serialize and deserialize DenseMatrix of any type.
+ * @brief Serialize and deserialize DenseMatrix data types.
+ * 
+ * Contains static methods for finding the length in bytes, serializing and
+ * deserializing DenseMatrix objects.
 */
 template <typename VT>
 struct DaphneSerializer<DenseMatrix<VT>, false> {
@@ -363,7 +366,10 @@ struct DaphneSerializer<const DenseMatrix<VT>, false> : public DaphneSerializer<
 // CSRMatrix
 // ----------------------------------------------------------------------------
 /**
- * @brief Serialize and deserialize CSRMatrix of any type.
+ * @brief Serialize and deserialize CSRMatrix data types.
+ * 
+ * Contains static methods for finding the length in bytes, serializing and
+ * deserializing CSRMatrix objects.
 */
 template <typename VT>
 struct DaphneSerializer<CSRMatrix<VT>, false> {
@@ -824,6 +830,13 @@ struct DaphneSerializer<const CSRMatrix<VT>, false> : public DaphneSerializer<CS
 // ----------------------------------------------------------------------------
 // Frame
 // ----------------------------------------------------------------------------
+
+/**
+ * @brief Serialize and deserialize Frame data types.
+ * 
+ * Contains static methods for finding the length in bytes, serializing and
+ * deserializing Frame objects.
+*/
 template <>
 struct DaphneSerializer<Frame> {
     static size_t length(const Frame *arg) {
@@ -1147,8 +1160,12 @@ struct DaphneSerializer<Structure> {
 // ----------------------------------------------------------------------------
 // Partial specialization for fundumental types */
 // ----------------------------------------------------------------------------
+
 /**
  * @brief Serialize and deserialize value types.
+ * 
+ * Contains static methods for finding the length in bytes, serializing and
+ * deserializing value types.
 */
 template<typename VT>
 struct DaphneSerializer<VT, true> {
