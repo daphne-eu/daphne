@@ -71,9 +71,9 @@ struct ReadDaphne<DenseMatrix<VT>>
 		f.open(filename, std::ios::in | std::ios::binary);
 		// TODO: check f.good()
 
-		auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
+		auto deser = DaphneDeserializerChunks<DenseMatrix<VT>>(&res, DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
 		for (auto it = deser.begin(); it != deser.end(); ++it) {
-			it->first = DEFAULT_CHUNK_SIZE;
+			it->first = DaphneSerializer<DenseMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
 			f.read(it->second.data(), it->first);
 			// in case we read less than that
 			it->first = f.gcount();
@@ -93,9 +93,9 @@ struct ReadDaphne<CSRMatrix<VT>>
 		f.open(filename, std::ios::in | std::ios::binary);
 		// TODO: check f.good()
 
-		auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(&res, DEFAULT_CHUNK_SIZE);
+		auto deser = DaphneDeserializerChunks<CSRMatrix<VT>>(&res, DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE);
 		for (auto it = deser.begin(); it != deser.end(); ++it) {
-			it->first = DEFAULT_CHUNK_SIZE;
+			it->first = DaphneSerializer<CSRMatrix<VT>>::DEFAULT_SERIALIZATION_BUFFER_SIZE;
 			f.read(it->second.data(), it->first);
 			// in case we read less than that
 			it->first = f.gcount();

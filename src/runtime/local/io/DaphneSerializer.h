@@ -32,11 +32,6 @@
 #include <climits>
 
 /**
- * @brief The default serialization chunk size
- */
-#define DEFAULT_CHUNK_SIZE 1048576 // 1MB
-
-/**
  * @brief Deserializes a DF_data_t struct.
 */
 inline DF_data_t DF_Dtype(const char *buf) { 
@@ -61,6 +56,10 @@ struct DaphneSerializer {
 };
 template <typename VT>
 struct DaphneSerializer<DenseMatrix<VT>, false> {
+    /**
+     * @brief The default serialization chunk size
+     */
+    static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
     // Size of the header
     static const size_t BUFFER_HEADER = 45;
     /**
@@ -150,10 +149,10 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
      * 
      * @param arg The daphne Matrix
      * @param buffer A pointer to char, the buffer that data will be serialized to.
-     * @param chunkSize Optional The size of the buffer (default is DEFAULT_CHUNK_SIZE)
+     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE)
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin. 
     */
-    static size_t serialize(const DenseMatrix<VT> *arg, char *buffer, size_t chunkSize = DEFAULT_CHUNK_SIZE, size_t serializeFromByte = 0) {
+    static size_t serialize(const DenseMatrix<VT> *arg, char *buffer, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
         size_t bufferIdx = 0;
         size_t serializationIdx = 0;
         chunkSize = chunkSize != 0 ? chunkSize : DaphneSerializer<DenseMatrix<VT>>::length(arg);
@@ -199,10 +198,10 @@ struct DaphneSerializer<DenseMatrix<VT>, false> {
      * 
      * @param arg The daphne Matrix
      * @param buffer A pointer to pointer to char, the buffer that data will be serialized to.
-     * @param chunkSize Optional The size of the buffer (default is DEFAULT_CHUNK_SIZE)
+     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE)
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin. 
     */
-    static size_t serialize(const DenseMatrix<VT> *arg, char **buffer, size_t chunkSize = DEFAULT_CHUNK_SIZE, size_t serializeFromByte = 0) {        
+    static size_t serialize(const DenseMatrix<VT> *arg, char **buffer, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {        
         if (*buffer == nullptr) {
             chunkSize = chunkSize != 0 ? chunkSize : DaphneSerializer<DenseMatrix<VT>>::length(arg);
             *buffer = new char[chunkSize];
@@ -335,6 +334,10 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
     const CSRMatrix<VT> *matrix;
     CSRMatrix<VT> **matrixPtr;
     size_t chunkSize;
+    /**
+     * @brief The default serialization chunk size
+     */
+    static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
     // Size of the header
     static const size_t BUFFER_HEADER = 53;
     /**
@@ -455,10 +458,10 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
      * 
      * @param arg The daphne Matrix
      * @param buffer A pointer to char, the buffer that data will be serialized to.
-     * @param chunkSize Optional The size of the buffer (default is DEFAULT_CHUNK_SIZE)
+     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE)
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin. 
     */
-    static size_t serialize(const CSRMatrix<VT> *arg, char *buffer, size_t chunkSize = DEFAULT_CHUNK_SIZE, size_t serializeFromByte = 0) {
+    static size_t serialize(const CSRMatrix<VT> *arg, char *buffer, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
         size_t bufferIdx = 0;
         size_t serializationIdx = 0;
 
@@ -552,10 +555,10 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
      * 
      * @param arg The daphne Matrix
      * @param buffer A pointer to pointer to char, the buffer that data will be serialized to.
-     * @param chunkSize Optional The size of the buffer (default is DEFAULT_CHUNK_SIZE)
+     * @param chunkSize Optional The size of the buffer (default is DEFAULT_SERIALIZATION_BUFFER_SIZE)
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin. 
     */
-    static size_t serialize(const CSRMatrix<VT> *arg, std::vector<char> &buffer, size_t chunkSize = DEFAULT_CHUNK_SIZE, size_t serializeFromByte = 0) {
+    static size_t serialize(const CSRMatrix<VT> *arg, std::vector<char> &buffer, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE, size_t serializeFromByte = 0) {
         chunkSize = chunkSize == 0 ? DaphneSerializer<CSRMatrix<VT>>::length(arg) : chunkSize;
         
         if (buffer.capacity() < chunkSize) // Maybe if is unecessary here..
@@ -784,6 +787,11 @@ struct DaphneSerializer<Frame> {
 
 template<>
 struct DaphneSerializer<Structure> {
+    /**
+     * @brief The default serialization chunk size
+     */
+    static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
+    
     const Structure *matrix;
     Structure **matrixPtr;
     size_t chunkSize;
@@ -928,7 +936,7 @@ struct DaphneSerializer<Structure> {
      * 
      * @param arg A pointer to the object.
      * @param buf The buffer to serialize data.
-     * @param chunkSize (Optional) The size of the buffer, default is DEFAULT_CHUNK_SIZE
+     * @param chunkSize (Optional) The size of the buffer, default is DEFAULT_SERIALIZATION_BUFFER_SIZE
      * @param serializeFromByte Optional The byte index of the object, at which serialization should begin (default 0)
      * @return size_t 
      */
@@ -1169,6 +1177,10 @@ private:
     std::mutex lock;    
 
 public:
+    /**
+     * @brief The default serialization chunk size
+     */
+    static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
     DT *matrix;
     size_t chunkSize;
     size_t startOffset = 0; 
@@ -1177,9 +1189,9 @@ public:
      * @brief Construct a new Daphne Serializer Out Of Order Chunks object
      * 
      * @param matrix The matrix to serialize
-     * @param chunkSize_ (optional) The chunk size what will be used for each chunk (default DEFAULT_CHUNK_SIZE)
+     * @param chunkSize_ (optional) The chunk size what will be used for each chunk (default DEFAULT_SERIALIZATION_BUFFER_SIZE)
      */
-    DaphneSerializerOutOfOrderChunks(DT *matrix, size_t chunkSize_ = DEFAULT_CHUNK_SIZE) : matrix(matrix), chunkSize(chunkSize_), startOffset(0) {
+    DaphneSerializerOutOfOrderChunks(DT *matrix, size_t chunkSize_ = DEFAULT_SERIALIZATION_BUFFER_SIZE) : matrix(matrix), chunkSize(chunkSize_), startOffset(0) {
         chunkSize = chunkSize_ == 0 ? DaphneSerializer<DT>::length(matrix) : chunkSize_;
     };
 
@@ -1294,15 +1306,19 @@ public:
 template <class DT>
 struct DaphneSerializerChunks
 {
+    /**
+     * @brief The default serialization chunk size
+     */
+    static const size_t DEFAULT_SERIALIZATION_BUFFER_SIZE = 1048576;
     DT *matrix;
     size_t chunkSize;
     /**
      * @brief Construct a new Daphne Serializer Chunks object
      * 
      * @param matrix The matrix to serialize
-     * @param chunkSize (Optional) The chunk size (default DEFAULT_CHUNK_SIZE). Minimum size 60 bytes.
+     * @param chunkSize (Optional) The chunk size (default DEFAULT_SERIALIZATION_BUFFER_SIZE). Minimum size 60 bytes.
      */
-    DaphneSerializerChunks(DT *matrix, size_t chunkSize = DEFAULT_CHUNK_SIZE) : matrix(matrix), chunkSize(chunkSize) {
+    DaphneSerializerChunks(DT *matrix, size_t chunkSize = DEFAULT_SERIALIZATION_BUFFER_SIZE) : matrix(matrix), chunkSize(chunkSize) {
         if (chunkSize < 60)
             throw std::runtime_error("Minimum chunk size 60 bytes"); // For now..?
     };
