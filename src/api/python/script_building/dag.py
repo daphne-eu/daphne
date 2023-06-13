@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Any, Dict, Sequence, Union, Optional
 class OutputType(Enum):
     MATRIX = auto()
     NONE = auto()
-    DOUBLE = auto()
+    SCALAR = auto()
     FRAME = auto()
 
 class DAGNode(ABC):

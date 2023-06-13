@@ -52,6 +52,7 @@ class SQLVisitor : public SQLGrammarVisitor {
      * @brief casts a single Attribute Value to a Matrix. Save for Matrix Input.
      */
     mlir::Value castToMatrixColumn(mlir::Value toCast);
+    mlir::Value castToMatrixColumnWithOneEntry(mlir::Value toCast);
     mlir::Value castToIntMatrixColumn(mlir::Value toCast);
     /**
      * @brief Creates a Frame out of a Matrix Column and a name

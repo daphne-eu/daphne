@@ -106,29 +106,29 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(selectMatrixRepresentations_)
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createSelectMatrixRepresentationsPass());
         if(userConfig_.explain_select_matrix_repr)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting matrix representations:"));
 
         if(userConfig_.use_phy_op_selection) {
             pm.addPass(mlir::daphne::createPhyOperatorSelectionPass());
             pm.addPass(mlir::createCSEPass());
         }
         if(userConfig_.explain_phy_op_selection)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting physical operators"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after selecting physical operators:"));
 
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createAdaptTypesToKernelsPass());
         if(userConfig_.explain_type_adaptation)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after type adaptation"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after type adaptation:"));
 
 #if 0
         if (userConfig_.use_distributed) {
             pm.addPass(mlir::daphne::createDistributeComputationsPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution"));
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution:"));
             pm.addPass(mlir::createCSEPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE"));
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - CSE:"));
             pm.addPass(mlir::createCanonicalizerPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - canonicalization"));
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - canonicalization:"));
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createWhileLoopInvariantCodeMotionPass());
-            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM"));
+            //pm.addPass(mlir::daphne::createPrintIRPass("IR after distribution - WhileLICM:"));
         }
 #endif
         
@@ -140,7 +140,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::createCanonicalizerPass());
         }
         if(userConfig_.explain_vectorized)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after vectorization:"));
         
         if (userConfig_.use_distributed)
             pm.addPass(mlir::daphne::createDistributePipelinesPass());
@@ -170,18 +170,18 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if(userConfig_.use_obj_ref_mgnt)
             pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createManageObjRefsPass());
         if(userConfig_.explain_obj_ref_mgnt)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after managing object references:"));
 
         pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createRewriteToCallKernelOpPass());
         if(userConfig_.explain_kernels)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after kernel lowering:"));
 
         pm.addPass(mlir::createConvertSCFToCFPass());
         pm.addNestedPass<mlir::func::FuncOp>(mlir::LLVM::createRequestCWrappersPass());
         pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
         pm.addPass(mlir::createReconcileUnrealizedCastsPass());
         if(userConfig_.explain_llvm)
-            pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
+            pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering:"));
 
         if (failed(pm.run(module))) {
             module->dump();

@@ -26,7 +26,7 @@ XY = readMatrix($XY);
 X = XY[, :(ncol(XY) - 1)];
 y = XY[, ncol(XY) - 1];
 
-b = lmDS_.m_lmDS(X, y, $icpt, $reg, $verbose);
+b = lmDS_.lmDS(X, y, $icpt, $reg, $verbose);
 
 print("");
 print("RESULT");

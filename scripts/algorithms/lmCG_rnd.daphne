@@ -38,11 +38,12 @@ foo = 0.0;
 # Execute lmCG.
 for(rep in 1:$rep) {
     t0 = now();
-    b = lmCG_.m_lmCG(X, y, $icpt, reg, tol, maxi, verbose);
+    b = lmCG_.lmCG(X, y, $icpt, reg, tol, maxi, verbose);
     t1 = now();
     print((t1 - t0) + ";", false);
     foo = foo + sum(b);
 }
 print("\t", false);
 
-print(foo);
+print(foo, false);
+print("\t", false);

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.17)
+cmake_minimum_required(VERSION 3.20)
 
 # Build release version by default (override with -DCMAKE_BUILD_TYPE=Debug in your initial cmake invocation)
 # This needs to be set *before* the project() command
@@ -72,8 +72,8 @@ SET(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 
 set(BLA_VENDOR OpenBLAS)
-set(BLA_STATIC ON)
-find_package(BLAS)
+set(BLA_STATIC OFF)
+find_package(BLAS REQUIRED)
 
 # specify multiple paths in CMAKE_PREFIX_PATH separated by semicolon to add multiple include dirs
 # to make compile/exec in container plus finding includes in local IDE work, specify both, local third party sources

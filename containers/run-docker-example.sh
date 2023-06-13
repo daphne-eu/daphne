@@ -15,6 +15,7 @@
 # limitations under the License.
 
 echo "Use this as an example to start DAPHNE docker containers. Copy and customize for the various flavors."
+echo "Add sudo to docker invocation if needed in your setup"
 
 DOCKER_IMAGE=daphneeu/daphne-dev
 DOCKER_TAG=latest_BASE

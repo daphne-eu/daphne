@@ -14,13 +14,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+# This is the main build script of Daphne. It downloads and builds all third-party dependencies and then builds Daphne.
+# It is required if you freshly cloned the repository or if you want to update the third-party dependencies.
+# It is not required if you only want to build Daphne from your IDE for example after you already built it once.
+# In this case you need to adapt the cmake settings according to the cmake call in section 9.
+#
+# For more information about the build script and contribution guidelines please refer to the doc/development/BuildingDaphne.md
+
+
 # Stop immediately if any command fails.
 set -e
 
 build_ts_begin=$(date +%s%N)
 
 #******************************************************************************
-# Help message
+# #1 Help message
 #******************************************************************************
 
 function printHelp {
@@ -53,7 +62,7 @@ function printHelp {
 }
 
 #******************************************************************************
-# Build message helper
+# #2 Build message helper
 #******************************************************************************
 # Daphne Colors
 daphne_red_fg='\e[38;2;247;1;70m'
@@ -204,7 +213,7 @@ function printLogo() {
 }
 
 #******************************************************************************
-# Clean build directories
+# #3 Clean build directories
 #******************************************************************************
 
 function clean() {
@@ -294,14 +303,7 @@ function cleanDeps {
 
     local dirs=("${buildPrefix}" "${installPrefix}")
     local files=(
-        "${thirdpartyPath}/absl_v"*".install.success"
-        "${thirdpartyPath}/antlr_v"*".install.success"
-        "${thirdpartyPath}/catch2_v"*".install.success"
-        "${thirdpartyPath}/grpc_v"*".install.success"
-        "${thirdpartyPath}/nlohmannjson_v"*".install.success"
-        "${thirdpartyPath}/openBlas_v"*".install.success"
-        "${thirdpartyPath}/llvm_v"*".install.success"
-        "${thirdpartyPath}/arrow_v"*".install.success"
+        "${thirdpartyFlagsDir}/"*".install."*".success"
         "${llvmCommitFilePath}")
 
     clean dirs files
@@ -313,11 +315,7 @@ function cleanCache {
     local dirs=("${sourcePrefix}" "${cacheDir}")
 
     local files=(
-        "${thirdpartyPath}/absl_v"*".download.success"
-        "${thirdpartyPath}/antlr_v"*".download.success"
-        "${thirdpartyPath}/grpc_v"*".download.success"
-        "${thirdpartyPath}/openBlas_v"*".download.success"
-        "${thirdpartyPath}/arrow_v"*".download.success"
+        "${thirdpartyFlagsDir}/"*".download."*".success"
     )
 
     clean dirs files
@@ -325,8 +323,8 @@ function cleanCache {
 
 function cleanAll {
     cd "$projectRoot"
-    message="This will delete the DAPHNE build output and everyting in $thirdpartyPath and reset this directory to its \
-last state in git."
+    message="This will delete the DAPHNE build output and everyting in $thirdpartyPath and reset this directory to its"
+    message+=" last state in git.\n"
     if [ "$fancy" -eq 0 ] || ! [ -t 1 ]; then
         printf "WARNING! ${message}"
     else
@@ -354,27 +352,35 @@ last state in git."
 }
 
 #******************************************************************************
-# Create / Check Indicator-files
+# #4 Create / Check Indicator-files
 #******************************************************************************
 
 #// creates indicator file which indicates successful dependency installation in <projectRoot>/thirdparty/
 #// param 1 dependency name
 function dependency_install_success() {
+    dep_version="${2}"
+    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
     daphne_msg "Successfully installed ${1}."
-    touch "${thirdpartyPath}/${1}.install.success"
+    touch "${thirdpartyFlagsDir}/${1}.install.${dep_version}.success"
 }
 function dependency_download_success() {
+    dep_version="${2}"
+    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
     daphne_msg "Successfully downloaded ${1}."
-    touch "${thirdpartyPath}/${1}.download.success"
+    touch "${thirdpartyFlagsDir}/${1}.download.${dep_version}.success"
 }
 
 #// checks if dependency is installed successfully
 #// param 1 dependency name
 function is_dependency_installed() {
-    [ -e "${thirdpartyPath}/${1}.install.success" ]
+    dep_version="${2}"
+    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
+    [ -e "${thirdpartyFlagsDir}/${1}.install.${dep_version}.success" ]
 }
 function is_dependency_downloaded() {
-    [ -e "${thirdpartyPath}/${1}.download.success" ]
+    dep_version="${2}"
+    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
+    [ -e "${thirdpartyFlagsDir}/${1}.download.${dep_version}.success" ]
 }
 
 function clean_param_check() {
@@ -385,22 +391,22 @@ function clean_param_check() {
 }
 
 #******************************************************************************
-# versions of third party dependencies
+# #5 Versions of third party dependencies
 #******************************************************************************
 antlrVersion=4.9.2
 catch2Version=2.13.8
-openBlasVersion=0.3.19
+openBlasVersion=0.3.23
 abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
-arrowVersion=11.0.0
+arrowVersion=12.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
 papiVersion=7.0.1
 
 #******************************************************************************
-# Set some prefixes, paths and dirs
+# #6 Set some prefixes, paths and dirs
 #******************************************************************************
 
 projectRoot="$(pwd)"
@@ -419,9 +425,27 @@ sourcePrefix="${myPrefix}/sources"
 cacheDir="${myPrefix}/download-cache"
 
 mkdir -p "$cacheDir"
+mkdir -p "$sourcePrefix"
+
+thirdpartyFlagsDir="${thirdpartyPath}/flags"
+
+# Create the flags directory and migrate any flags that might be there to avoid unnecessary recompilation.
+if [ ! -d "$thirdpartyFlagsDir" ]; then
+    dep_version="v1."
+    p=-7
+    mkdir -p "${thirdpartyPath}/flags"
+    for file in $thirdpartyPath/*.success; do
+        if [ -f $file ]; then
+            old_filename=$(basename "$file")
+            new_filename="${old_filename:0:p}$dep_version${old_filename:p}"
+            echo "Moving $old_filename to flags/$new_filename"
+            mv "$file" "$thirdpartyFlagsDir/$new_filename"
+        fi
+    done
+fi
 
 #******************************************************************************
-# Parse arguments
+# #7 Parse arguments
 #******************************************************************************
 
 # Defaults.
@@ -537,8 +561,19 @@ if [ "$fancy" -eq 1 ] && [ ! -d "${projectRoot}/build" ]; then
     sleep 1
 fi
 
-# Process dependencies if requested (--with-deps)
+#******************************************************************************
+# #8 Download and install third-party dependencies if requested (default is yes, omit with --no-deps))
+#******************************************************************************
 if [ $WITH_DEPS -gt 0 ]; then
+    LLVM_ARCH=X86
+    # optimizes for multiple x86_64 architectures
+    PAPI_OBLAS_ARCH=NEHALEM
+    # Determine CPU architecture to compile for
+    if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
+      echo "Building for ARMv8 architecture"
+      LLVM_ARCH=AArch64
+      PAPI_OBLAS_ARCH=ARMV8
+    fi
 
     # Directory name of the LLVM dependency
     llvmName="llvm-project"
@@ -560,19 +595,46 @@ if [ $WITH_DEPS -gt 0 ]; then
         fi
     fi
 
-    #******************************************************************************
-    # Download and install third-party material if necessary
-    #******************************************************************************
 
     #------------------------------------------------------------------------------
-    # Antlr4 (parser)
+    # PAPI (Performance Application Programming Interface)
+    #------------------------------------------------------------------------------
+    papiDirName="papi-$papiVersion"
+    papiTarName="${papiDirName}.tar.gz"
+    papiInstDirName=$installPrefix
+    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+        daphne_msg "Get PAPI version ${papiVersion}"
+        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+            -qO "${cacheDir}/${papiTarName}"
+        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+        dependency_download_success "papi_v${papiVersion}"
+    fi
+    if ! is_dependency_installed "papi_v${papiVersion}"; then
+        cd "$sourcePrefix/$papiDirName/src"
+        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+
+
+        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        make install
+        cd - > /dev/null
+        dependency_install_success "papi_v${papiVersion}"
+    else
+        daphne_msg "No need to build PAPI again."
+    fi
+
+
+    #------------------------------------------------------------------------------
+    # #8.1 Antlr4 (parser)
     #------------------------------------------------------------------------------
     antlrJarName="antlr-${antlrVersion}-complete.jar"
     antlrCppRuntimeDirName="antlr4-cpp-runtime-${antlrVersion}-source"
     antlrCppRuntimeZipName="${antlrCppRuntimeDirName}.zip"
+    dep_antlr=("antlr_v${antlrVersion}" "v1")
 
     # Download antlr4 C++ run-time if it does not exist yet.
-    if ! is_dependency_downloaded "antlr_v${antlrVersion}"; then
+    if ! is_dependency_downloaded "${dep_antlr[@]}"; then
         daphne_msg "Get Antlr version ${antlrVersion}"
         # Download antlr4 jar if it does not exist yet.
         daphne_msg "Download Antlr v${antlrVersion} java archive"
@@ -582,10 +644,10 @@ if [ $WITH_DEPS -gt 0 ]; then
         rm -rf "${sourcePrefix:?}/$antlrCppRuntimeDirName"
         mkdir --parents "$sourcePrefix/$antlrCppRuntimeDirName"
         unzip -q "$cacheDir/$antlrCppRuntimeZipName" -d "$sourcePrefix/$antlrCppRuntimeDirName"
-        dependency_download_success "antlr_v${antlrVersion}"
+        dependency_download_success "${dep_antlr[@]}"
     fi
     # build antlr4 C++ run-time
-    if ! is_dependency_installed "antlr_v${antlrVersion}"; then
+    if ! is_dependency_installed "${dep_antlr[@]}"; then
         mkdir -p "$installPrefix"/share/antlr4/
         cp "$cacheDir/$antlrJarName" "$installPrefix/share/antlr4/$antlrJarName"
 
@@ -610,20 +672,22 @@ if [ $WITH_DEPS -gt 0 ]; then
         set -e
         cmake --build "${buildPrefix}/${antlrCppRuntimeDirName}" --target install/strip
 
-        dependency_install_success "antlr_v${antlrVersion}"
+        dependency_install_success "${dep_antlr[@]}"
     else
         daphne_msg "No need to build Antlr4 again."
     fi
 
     #------------------------------------------------------------------------------
-    # catch2 (unit test framework)
+    # #8.2 catch2 (unit test framework)
     #------------------------------------------------------------------------------
     # Download catch2 release zip (if necessary), and unpack the single header file
     # (if necessary).
     catch2Name="catch2"
     catch2ZipName="v$catch2Version.zip"
     catch2SingleHeaderInstalledPath=$installPrefix/include/catch.hpp
-    if ! is_dependency_installed "catch2_v${catch2Version}"; then
+    dep_catch2=("catch2_v${catch2Version}" "v1")
+    
+    if ! is_dependency_installed "${dep_catch2[@]}"; then
         daphne_msg "Get catch2 version ${catch2Version}"
         mkdir --parents "${thirdpartyPath}/${catch2Name}"
         cd "${thirdpartyPath}/${catch2Name}"
@@ -633,100 +697,109 @@ if [ $WITH_DEPS -gt 0 ]; then
             unzip -q -p "$cacheDir/$catch2Name-$catch2ZipName" "Catch2-$catch2Version/single_include/catch2/catch.hpp" \
                 >"$catch2SingleHeaderInstalledPath"
         fi
-        dependency_install_success "catch2_v${catch2Version}"
+        dependency_install_success "${dep_catch2[@]}"
     else
         daphne_msg "No need to download Catch2 again."
     fi
 
     #------------------------------------------------------------------------------
-    # OpenBLAS (basic linear algebra subprograms)
+    # #8.3 OpenBLAS (basic linear algebra subprograms)
     #------------------------------------------------------------------------------
     openBlasDirName="OpenBLAS-$openBlasVersion"
     openBlasZipName="${openBlasDirName}.zip"
     openBlasInstDirName=$installPrefix
-    if ! is_dependency_downloaded "openBlas_v${openBlasVersion}"; then
+    dep_openBlas=("openBlas_v${openBlasVersion}" "v1")
+
+    if ! is_dependency_downloaded "${dep_openBlas[@]}"; then
         daphne_msg "Get OpenBlas version ${openBlasVersion}"
         wget "https://github.com/xianyi/OpenBLAS/releases/download/v${openBlasVersion}/${openBlasZipName}" \
             -qO "${cacheDir}/${openBlasZipName}"
         unzip -q "$cacheDir/$openBlasZipName" -d "$sourcePrefix"
-        dependency_download_success "openBlas_v${openBlasVersion}"
+        dependency_download_success "${dep_openBlas[@]}"
     fi
-    if ! is_dependency_installed "openBlas_v${openBlasVersion}"; then
+    if ! is_dependency_installed "${dep_openBlas[@]}"; then
         cd "$sourcePrefix/$openBlasDirName"
         make clean
-        # optimizes for multiple x86_64 architectures
-        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
+        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
         make PREFIX="$openBlasInstDirName" install
         cd - >/dev/null
-        dependency_install_success "openBlas_v${openBlasVersion}"
+        dependency_install_success "${dep_openBlas[@]}"
     else
         daphne_msg "No need to build OpenBlas again."
     fi
 
     #------------------------------------------------------------------------------
-    # nlohmann/json (library for JSON parsing)
+    # #8.4 nlohmann/json (library for JSON parsing)
     #------------------------------------------------------------------------------
     nlohmannjsonDirName=nlohmannjson
     nlohmannjsonSingleHeaderName=json.hpp
-    if ! is_dependency_installed "nlohmannjson_v${nlohmannjsonVersion}"; then
+    dep_nlohmannjson=("nlohmannjson_v${nlohmannjsonVersion}" "v1")
+
+    if ! is_dependency_installed "${dep_nlohmannjson[@]}"; then
         daphne_msg "Get nlohmannjson version ${nlohmannjsonVersion}"
         mkdir -p "${installPrefix}/include/${nlohmannjsonDirName}"
         wget "https://github.com/nlohmann/json/releases/download/v$nlohmannjsonVersion/$nlohmannjsonSingleHeaderName" \
             -qO "${installPrefix}/include/${nlohmannjsonDirName}/${nlohmannjsonSingleHeaderName}"
-        dependency_install_success "nlohmannjson_v${nlohmannjsonVersion}"
+        dependency_install_success "${dep_nlohmannjson[@]}"
     else
         daphne_msg "No need to download nlohmannjson again."
     fi
 
     #------------------------------------------------------------------------------
-    # abseil (compiled separately to apply a patch)
+    # #8.5 abseil (compiled separately to apply a patch)
     #------------------------------------------------------------------------------
     abslPath=$sourcePrefix/abseil-cpp
-    if ! is_dependency_downloaded "absl_v${abslVersion}"; then
+    dep_absl=("absl_v${abslVersion}" "v1")
+
+    if ! is_dependency_downloaded "${dep_absl[@]}"; then
         daphne_msg "Get abseil version ${abslVersion}"
         rm -rf "$abslPath"
         git clone --depth 1 --branch "$abslVersion" https://github.com/abseil/abseil-cpp.git "$abslPath"
         daphne_msg "Applying 0002-absl-stdmax-params.patch"
         patch -Np1 -i "${patchDir}/0002-absl-stdmax-params.patch" -d "$abslPath"
-        dependency_download_success "absl_v${abslVersion}"
+        dependency_download_success "${dep_absl[@]}"
     fi
-    if ! is_dependency_installed "absl_v${abslVersion}"; then
+    if ! is_dependency_installed "${dep_absl[@]}"; then
         cmake -S "$abslPath" -B "$buildPrefix/absl" -G Ninja -DCMAKE_POSITION_INDEPENDENT_CODE=TRUE \
             -DCMAKE_INSTALL_PREFIX="$installPrefix" -DCMAKE_CXX_STANDARD=17 -DABSL_PROPAGATE_CXX_STD=ON
         cmake --build "$buildPrefix/absl" --target install/strip
-        dependency_install_success "absl_v${abslVersion}"
+        dependency_install_success "${dep_absl[@]}"
     else
         daphne_msg "No need to build Abseil again."
     fi
 
     #------------------------------------------------------------------------------
-    # MPI (Default is MPI library is OpenMPI but cut can be any)
+    # #8.6 MPI (Default is MPI library is OpenMPI but cut can be any)
     #------------------------------------------------------------------------------
     MPIZipName=openmpi-$openMPIVersion.tar.gz
     MPIInstDirName=$installPrefix
-    if ! is_dependency_downloaded "openmpi_v${openMPIVersion}"; then
+    dep_mpi=("openmpi_v${openMPIVersion}" "v1")
+
+    if ! is_dependency_downloaded "${dep_mpi[@]}"; then
         daphne_msg "Get openmpi version ${openMPIVersion}"
         wget "https://download.open-mpi.org/release/open-mpi/v4.1/$MPIZipName" -qO "${cacheDir}/${MPIZipName}"
         tar -xf "$cacheDir/$MPIZipName" --directory "$sourcePrefix"
-        dependency_download_success "openmpi_v${openMPIVersion}"
+        dependency_download_success "${dep_mpi[@]}"
         mkdir --parents "$MPIInstDirName"
     fi
-    if ! is_dependency_installed "openmpi_v${openMPIVersion}"; then
+    if ! is_dependency_installed "${dep_mpi[@]}"; then
         cd "$sourcePrefix/openmpi-$openMPIVersion"
         ./configure --prefix="$MPIInstDirName"
         make -j"$(nproc)" all
         make install
         cd -
-        dependency_install_success "openmpi_v${openMPIVersion}"
+        dependency_install_success "${dep_mpi[@]}"
     else
         daphne_msg "No need to build OpenMPI again"
     fi
     #------------------------------------------------------------------------------
-    # gRPC
+    # #8.7 gRPC
     #------------------------------------------------------------------------------
     grpcDirName="grpc"
     grpcInstDir=$installPrefix
-    if ! is_dependency_downloaded "grpc_v${grpcVersion}"; then
+    dep_grpc=("grpc_v${grpcVersion}" "v1")
+
+    if ! is_dependency_downloaded "${dep_grpc[@]}"; then
         daphne_msg "Get grpc version ${grpcVersion}"
         # Download gRPC source code.
         if [ -d "${sourcePrefix}/${grpcDirName}" ]; then
@@ -741,9 +814,9 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "Applying 0003-protobuf-override.patch"
         patch -Np1 -i "${patchDir}/0003-protobuf-override.patch" -d "$sourcePrefix/$grpcDirName/third_party/protobuf"
         popd
-        dependency_download_success "grpc_v${grpcVersion}"
+        dependency_download_success "${dep_grpc[@]}"
     fi
-    if ! is_dependency_installed "grpc_v${grpcVersion}"; then
+    if ! is_dependency_installed "${dep_grpc[@]}"; then
         cmake -G Ninja -S "$sourcePrefix/$grpcDirName" -B "$buildPrefix/$grpcDirName" \
             -DCMAKE_INSTALL_PREFIX="$grpcInstDir" \
             -DCMAKE_BUILD_TYPE=Release \
@@ -754,30 +827,41 @@ if [ $WITH_DEPS -gt 0 ]; then
             -DgRPC_ABSL_PROVIDER=package \
             -DgRPC_ZLIB_PROVIDER=package
         cmake --build "$buildPrefix/$grpcDirName" --target install/strip
-        dependency_install_success "grpc_v${grpcVersion}"
+        dependency_install_success "${dep_grpc[@]}"
     else
         daphne_msg "No need to build GRPC again."
     fi
     #------------------------------------------------------------------------------
-    # Arrow / Parquet
+    # #8.8 Arrow / Parquet
     #------------------------------------------------------------------------------
     arrowDirName="apache-arrow-$arrowVersion"
     arrowArtifactFileName=$arrowDirName.tar.gz
-    if ! is_dependency_downloaded "arrow_v${arrowVersion}"; then
+    dep_arrow=("arrow_v${arrowVersion}" "v1")
+
+    if ! is_dependency_downloaded "${dep_arrow[@]}"; then
         rm -rf "${sourcePrefix:?}/${arrowDirName}"
         wget "https://archive.apache.org/dist/arrow/arrow-$arrowVersion/$arrowArtifactFileName" -qP "$cacheDir"
         tar xzf "$cacheDir/$arrowArtifactFileName" --directory="$sourcePrefix"
         daphne_msg "Applying 0004-arrow-git-log.patch"
         patch -Np0 -i "$patchDir/0004-arrow-git-log.patch" -d "$sourcePrefix/$arrowDirName"
-        dependency_download_success "arrow_v${arrowVersion}"
+        dependency_download_success "${dep_arrow[@]}"
     fi
 
-    if ! is_dependency_installed "arrow_v${arrowVersion}"; then
+    # this works around a build error that occurs on Ubuntu with Boost installed
+    if [ $(lsb_release -is) == "Ubuntu" ]; then
+        if [ $(dpkg -l | grep libboost | wc -l) == "" ]; then
+            daphne_msg "Setting BOOST_ROOT=/usr on Ubuntu Linux with libboost installed"
+            sleep 5
+            export BOOST_ROOT=/usr
+        fi
+    fi
+
+    if ! is_dependency_installed "${dep_arrow[@]}"; then
         cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
             -DCMAKE_INSTALL_PREFIX="${installPrefix}" \
             -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
         cmake --build "${buildPrefix}/${arrowDirName}" --target install/strip
-        dependency_install_success "arrow_v${arrowVersion}"
+        dependency_install_success "${dep_arrow[@]}"
     else
         daphne_msg "No need to build Arrow again."
     fi
@@ -823,35 +907,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 
     #------------------------------------------------------------------------------
-    # PAPI (Performance Application Programming Interface)
-    #------------------------------------------------------------------------------
-    papiDirName="papi-$papiVersion"
-    papiTarName="${papiDirName}.tar.gz"
-    papiInstDirName=$installPrefix
-    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
-        daphne_msg "Get PAPI version ${papiVersion}"
-        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
-            -qO "${cacheDir}/${papiTarName}"
-        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
-        dependency_download_success "papi_v${papiVersion}"
-    fi
-    if ! is_dependency_installed "papi_v${papiVersion}"; then
-        cd "$sourcePrefix/$papiDirName/src"
-        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
-        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
-            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
-
-        # optimizes for multiple x86_64 architectures
-        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
-        make install
-        cd - > /dev/null
-        dependency_install_success "papi_v${papiVersion}"
-    else
-        daphne_msg "No need to build PAPI again."
-    fi
-
-    #------------------------------------------------------------------------------
-    # Build MLIR
+    # #8.9 Build MLIR
     #------------------------------------------------------------------------------
     # We rarely need to build MLIR/LLVM, only during the first build of the
     # prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
@@ -894,7 +950,7 @@ if [ $WITH_DEPS -gt 0 ]; then
         cmake -G Ninja -S llvm -B "$buildPrefix/$llvmName" \
             -DLLVM_ENABLE_PROJECTS=mlir \
             -DLLVM_BUILD_EXAMPLES=OFF \
-            -DLLVM_TARGETS_TO_BUILD="X86" \
+            -DLLVM_TARGETS_TO_BUILD="$LLVM_ARCH" \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_ASSERTIONS=ON \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
@@ -924,9 +980,9 @@ if [ $WITH_DEPS -gt 0 ]; then
     fi
 fi
 
-# *****************************************************************************
-# Build DAPHNE target.
-# *****************************************************************************
+#******************************************************************************
+# #9 Build DAPHNE target.
+#******************************************************************************
 
 daphne_msg "Build Daphne"
 
