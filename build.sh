@@ -363,22 +363,33 @@ function dependency_install_success() {
     dep_version="${2}"
     if [ -z "${dep_version}" ]; then dep_version="v1"; fi
     daphne_msg "Successfully installed ${1}."
-    touch "${tflags}/${1}.install.success"
+    touch "${thirdpartyFlagsDir}/${1}.install.${dep_version}.success"
 }
 function dependency_download_success() {
     dep_version="${2}"
     if [ -z "${dep_version}" ]; then dep_version="v1"; fi
     daphne_msg "Successfully downloaded ${1}."
-    touch "${tflags}/${1}.download.success"
+    touch "${thirdpartyFlagsDir}/${1}.download.${dep_version}.success"
 }
 
 #// checks if dependency is installed successfully
 #// param 1 dependency name
 function is_dependency_installed() {
-    [ -e "${tflags}/${1}.install.success" ]
+    dep_version="${2}"
+    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
+    [ -e "${thirdpartyFlagsDir}/${1}.install.${dep_version}.success" ]
 }
 function is_dependency_downloaded() {
-    [ -e "${tflags}/${1}.download.success" ]
+    dep_version="${2}"
+    if [ -z "${dep_version}" ]; then dep_version="v1"; fi
+    [ -e "${thirdpartyFlagsDir}/${1}.download.${dep_version}.success" ]
+}
+
+function clean_param_check() {
+    if [ "$par_clean" -gt 0 ]; then
+        echo "Only *one* clean parameter (clean/cleanAll/cleanDeps/cleanCache) is allowed!"
+        exit 1
+    fi
 }
 
 #******************************************************************************
@@ -386,11 +397,11 @@ function is_dependency_downloaded() {
 #******************************************************************************
 antlrVersion=4.9.2
 catch2Version=2.13.8
-openBlasVersion=0.3.23
+openBlasVersion=0.3.19
 abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
-arrowVersion=12.0.0
+arrowVersion=11.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
@@ -416,8 +427,6 @@ sourcePrefix="${myPrefix}/sources"
 cacheDir="${myPrefix}/download-cache"
 
 mkdir -p "$cacheDir"
-mkdir -p "$sourcePrefix"
-
 thirdpartyFlagsDir="${thirdpartyPath}/flags"
 
 # Create the flags directory and migrate any flags that might be there to avoid unnecessary recompilation.
@@ -435,8 +444,7 @@ if [ ! -d "$thirdpartyFlagsDir" ]; then
     done
 fi
 
-mkdir -p ${thirdpartyPath}/flags
-tflags=${thirdpartyPath}/flags
+
 
 #******************************************************************************
 # #7 Parse arguments
@@ -559,15 +567,6 @@ fi
 # #8 Download and install third-party dependencies if requested (default is yes, omit with --no-deps))
 #******************************************************************************
 if [ $WITH_DEPS -gt 0 ]; then
-    LLVM_ARCH=X86
-    # optimizes for multiple x86_64 architectures
-    PAPI_OBLAS_ARCH=NEHALEM
-    # Determine CPU architecture to compile for
-    if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
-      echo "Building for ARMv8 architecture"
-      LLVM_ARCH=AArch64
-      PAPI_OBLAS_ARCH=ARMV8
-    fi
 
     # Directory name of the LLVM dependency
     llvmName="llvm-project"
@@ -587,35 +586,6 @@ if [ $WITH_DEPS -gt 0 ]; then
         elif [ ! "$(ls -A ${thirdpartyPath}/${llvmName})" ] && [ $WITH_SUBMODULE_UPDATE -ne 0 ]; then
             git submodule update --init --recursive
         fi
-    fi
-
-
-    #------------------------------------------------------------------------------
-    # PAPI (Performance Application Programming Interface)
-    #------------------------------------------------------------------------------
-    papiDirName="papi-$papiVersion"
-    papiTarName="${papiDirName}.tar.gz"
-    papiInstDirName=$installPrefix
-    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
-        daphne_msg "Get PAPI version ${papiVersion}"
-        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
-            -qO "${cacheDir}/${papiTarName}"
-        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
-        dependency_download_success "papi_v${papiVersion}"
-    fi
-    if ! is_dependency_installed "papi_v${papiVersion}"; then
-        cd "$sourcePrefix/$papiDirName/src"
-        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
-        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
-            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
-
-
-        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
-        make install
-        cd - > /dev/null
-        dependency_install_success "papi_v${papiVersion}"
-    else
-        daphne_msg "No need to build PAPI again."
     fi
 
 
@@ -714,7 +684,8 @@ if [ $WITH_DEPS -gt 0 ]; then
     if ! is_dependency_installed "${dep_openBlas[@]}"; then
         cd "$sourcePrefix/$openBlasDirName"
         make clean
-        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        # optimizes for multiple x86_64 architectures
+        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
         make PREFIX="$openBlasInstDirName" install
         cd - >/dev/null
         dependency_install_success "${dep_openBlas[@]}"
@@ -870,57 +841,6 @@ if [ $WITH_DEPS -gt 0 ]; then
             "$cacheDir/$spdlogArtifactFileName"
         tar xzf "$cacheDir/$spdlogArtifactFileName" --directory="$sourcePrefix"
         dependency_download_success "spdlog_v${spdlogVersion}"
-fi
-
-#------------------------------------------------------------------------------
-# TSL (Template SIMD Library)
-#------------------------------------------------------------------------------
-if ! is_dependency_installed "TSL"; then
-    daphne_msg "Install TSL."
-    tsl_generator="${sourcePrefix}/TSLGenerator/main.py"
-    tsl_output="${installPrefix}/include/TSL"
-    python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
-    dependency_install_success "TSL"
-else
-    daphne_msg "No need to generate TSL again."
-fi
-
-
-
-
-#------------------------------------------------------------------------------
-# Build MLIR
-#------------------------------------------------------------------------------
-# We rarely need to build MLIR/LLVM, only during the first build of the
-# prototype and after upgrades of the LLVM sub-module. To avoid unnecessary
-# builds (which take several seconds even if there is nothing to do), we store
-# the LLVM commit hash we built into a file, and only rebuild MLIR/LLVM if this
-# file does not exist (first build of the prototype) or does not contain the
-# expected hash (upgrade of the LLVM sub-module).
-
-llvmName="llvm-project"
-llvmCommit="llvmCommit-local-none"
-cd "${thirdpartyPath}/${llvmName}"
-if [ -e .git ] # Note: .git in the submodule is not a directory.
-then
-  submodule_path=$(cat .git | cut -d ' ' -f 2)
-
-  # if the third party directory was loaded from gh action cache, this path will not exist
-  if [ -d $submodule_path ]; then
-    llvmCommit="$(git log -1 --format=%H)"
-  else
-    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
-  fi
-else
-    # download and set up LLVM code if compilation is run without the local working copy being checked out from git
-    # e.g., compiling from released source artifact
-    llvmCommit="20d454c79bbca7822eee88d188afb7a8747dac58"
-    llvmSnapshotArtifact="llvm_${llvmCommit}.tar.gz"
-    llvmSnapshotPath="${cacheDir}/${llvmSnapshotArtifact}"
-    if ! is_dependency_downloaded "llvm_${llvmCommit}"; then
-        wget https://github.com/llvm/llvm-project/archive/${llvmCommit}.tar.gz -qO "${llvmSnapshotPath}"
-        tar xzf "${llvmSnapshotPath}" --strip-components=1
-        dependency_download_success "llvm_${llvmCommit}"
     fi
 
     if ! is_dependency_installed "spdlog_v${spdlogVersion}"; then
@@ -931,6 +851,26 @@ else
     else
         daphne_msg "No need to build spdlog again."
     fi
+
+    #------------------------------------------------------------------------------
+    # TSL (Template SIMD Library)
+    #------------------------------------------------------------------------------
+    dep_tsl=("tsl_v1" "v1")
+    if ! is_dependency_installed "${dep_tsl[@]}"; then
+        daphne_msg "Install TSL."
+        tsl_generator="${sourcePrefix}/TSLGenerator"
+        tsl_output="${installPrefix}/include/TSL"
+        mkdir -p "${tsl_output}"
+        # python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
+        cmake "${tsl_generator}" -B "${tsl_generator}/build" -D DESTINATION="${tsl_output}"
+        dependency_install_success "${dep_tsl[@]}"
+    else
+        daphne_msg "No need to generate TSL again."
+    fi
+
+
+
+
     #------------------------------------------------------------------------------
     # Eigen
     #------------------------------------------------------------------------------
@@ -949,6 +889,34 @@ else
       dependency_install_success "eigen_v${eigenVersion}"
     else
       daphne_msg "No need to build eigen again."
+    fi
+
+    #------------------------------------------------------------------------------
+    # PAPI (Performance Application Programming Interface)
+    #------------------------------------------------------------------------------
+    papiDirName="papi-$papiVersion"
+    papiTarName="${papiDirName}.tar.gz"
+    papiInstDirName=$installPrefix
+    if ! is_dependency_downloaded "papi_v${papiVersion}"; then
+        daphne_msg "Get PAPI version ${papiVersion}"
+        wget "https://icl.utk.edu/projects/papi/downloads/${papiTarName}" \
+            -qO "${cacheDir}/${papiTarName}"
+        tar -xf "$cacheDir/$papiTarName" -C "$sourcePrefix"
+        dependency_download_success "papi_v${papiVersion}"
+    fi
+    if ! is_dependency_installed "papi_v${papiVersion}"; then
+        cd "$sourcePrefix/$papiDirName/src"
+        # FIXME: Add accelerator components (cuda, nvml, rocm, intel_gpu)
+        CFLAGS="-fPIC" ./configure --prefix="$papiInstDirName" \
+            --with-components="coretemp infiniband io lustre net powercap rapl sde stealtime" \
+
+        # optimizes for multiple x86_64 architectures
+        CFLAGS="-fPIC -DPIC" make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET=NEHALEM
+        make install
+        cd - > /dev/null
+        dependency_install_success "papi_v${papiVersion}"
+    else
+        daphne_msg "No need to build PAPI again."
     fi
 
     #------------------------------------------------------------------------------
@@ -995,7 +963,7 @@ else
         cmake -G Ninja -S llvm -B "$buildPrefix/$llvmName" \
             -DLLVM_ENABLE_PROJECTS=mlir \
             -DLLVM_BUILD_EXAMPLES=OFF \
-            -DLLVM_TARGETS_TO_BUILD="$LLVM_ARCH" \
+            -DLLVM_TARGETS_TO_BUILD="X86" \
             -DCMAKE_BUILD_TYPE=Release \
             -DLLVM_ENABLE_ASSERTIONS=ON \
             -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DLLVM_ENABLE_LLD=ON \
