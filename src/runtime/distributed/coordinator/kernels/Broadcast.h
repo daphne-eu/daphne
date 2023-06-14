@@ -19,8 +19,8 @@
 #include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
-#include <runtime/local/datastructures/DistributedAllocationHelpers.h>
+#include <runtime/local/io/DaphneSerializer.h>
+
 #include <runtime/local/datastructures/AllocationDescriptorGRPC.h>
 #include <runtime/local/datastructures/DataPlacement.h>
 #include <runtime/local/datastructures/Range.h>
@@ -32,7 +32,6 @@
 #include <runtime/distributed/worker/MPIHelper.h>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/distributed/worker/MPIWorker.h>
-#include <runtime/distributed/worker/MPISerializer.h>
 #endif
 
 #include <cassert>
@@ -72,9 +71,17 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
     static void apply(DT *&mat, bool isScalar, DCTX(dctx))
     {
         size_t messageLength=0;
-        void * dataToSend;
-        //auto ptr = (double*)(&mat);
-        MPISerializer::serializeStructure<DT>(&dataToSend, mat, isScalar, &messageLength); 
+        std::vector<char> dataToSend;
+        if (isScalar){
+            auto ptr = (double*)(&mat);
+            double val = *ptr;
+            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false);
+            dataToSend.reserve(sizeof(double));
+            messageLength = DaphneSerializer<double>::serialize(val, dataToSend);        
+        }
+        else {
+            messageLength = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(mat, dataToSend);
+        }
         std::vector<int> targetGroup; // We will not be able to take the advantage of broadcast if some mpi processes have the data
         
         LoadPartitioningDistributed<DT, AllocationDescriptorMPI> partioner(DistributionSchema::BROADCAST, mat, dctx);
@@ -85,7 +92,7 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             if (dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
             {
                 //std::cout<<"data is already placed at rank "<<rank<<std::endl;
-                auto data =dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
+                auto data = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();
                 MPIHelper::sendObjectIdentifier(data.identifier, rank);
                // std::cout<<"Identifier ( "<<data.identifier<< " ) has been send to " <<(rank+1)<<std::endl;
                 continue;
@@ -93,28 +100,27 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
             targetGroup.push_back(rank);  
         }
         if((int)targetGroup.size()==MPIHelper::getCommSize() - 1){ // exclude coordinator
-            MPIHelper::sendData(messageLength, dataToSend);
+            MPIHelper::sendData(messageLength, dataToSend.data());
            // std::cout<<"data has been send to all "<<std::endl;
         }
         else{
             for(int i=0;i<(int)targetGroup.size();i++){
-                    MPIHelper::distributeData(messageLength, dataToSend, targetGroup.at(i));
+                    MPIHelper::distributeData(messageLength, dataToSend.data(), targetGroup.at(i));
                     //std::cout<<"data has been send to rank "<<targetGroup.at(i)<<std::endl;
                 } 
         }
-        free(dataToSend);
         for(int i=0;i<(int)targetGroup.size();i++)
         { 
             //std::cout<<"From broadcast waiting for ack " << std::endl;
            
-            int rank=targetGroup.at(i);
-            if (rank==COORDINATOR)
+            int rank = targetGroup.at(i);
+            if (rank == COORDINATOR)
             {
 
                // std::cout<<"coordinator doe not need ack from itself" << std::endl;
                 continue;
             }
-            WorkerImpl::StoredInfo dataAcknowledgement=MPIHelper::getDataAcknowledgement(&rank);
+            WorkerImpl::StoredInfo dataAcknowledgement = MPIHelper::getDataAcknowledgement(&rank);
             //std::cout<<"received ack form worker " << rank<<std::endl;
             std::string address=std::to_string(rank);
             DataPlacement *dp = mat->getMetaDataObject()->getDataPlacementByLocation(address);
@@ -148,22 +154,21 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
         
         distributed::Data protoMsg;
 
-        double *val;
+        std::vector<char> buffer;
         if (isScalar) {
-            auto ptr = (double*)(&mat);
-            val = ptr;
-            auto protoVal = protoMsg.mutable_value();
-            protoVal->set_f64(*val);
+            auto ptr = (double*)(&mat);        
+            double val = *ptr;
+            auto length = DaphneSerializer<double>::serialize(val, buffer);
+            protoMsg.set_bytes(buffer.data(), length);
+
             // Need matrix for metadata, type of matrix does not really matter.
             mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
         } 
         else { // Not scalar
-            assert(mat != nullptr && "Matrix to broadcast is nullptr");
-            auto denseMat = dynamic_cast<const DenseMatrix<double>*>(mat);
-            if (!denseMat){
-                throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
-            }
-            ProtoDataConverter<DenseMatrix<double>>::convertToProto(denseMat, protoMsg.mutable_matrix());
+            // DT is const Structure, but we only provide template specialization for structure.
+            // TODO should we implement an additional specialization or remove constness from template parameter?
+            size_t length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(mat, buffer);
+            protoMsg.set_bytes(buffer.data(), length);            
         }
         LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
         

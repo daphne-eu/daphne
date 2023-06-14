@@ -82,9 +82,9 @@ void TransferCallData::Proceed() {
 
         new TransferCallData(worker, cq_);
 
-        grpc::Status status = worker->TransferGRPC(&ctx_, &storedData, &matrix);
+        grpc::Status status = worker->TransferGRPC(&ctx_, &storedData, &data);
 
-        responder_.Finish(matrix, status, this);
+        responder_.Finish(data, status, this);
     }
     else
     {

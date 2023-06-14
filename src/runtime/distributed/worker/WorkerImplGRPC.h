@@ -42,10 +42,7 @@ public:
                          ::distributed::ComputeResult *response) ;
     grpc::Status TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                         ::distributed::Matrix *response) ;
-
-    template<class DT>
-    DT* CreateMatrix(const ::distributed::Matrix *mat);
+                         ::distributed::Data *response) ;
 
     distributed::Worker::AsyncService service_;
 };
