@@ -84,8 +84,8 @@ struct Distribute<ALLOCATION_TYPE::DIST_MPI, DT>
             }
             auto slicedMat = mat->sliceRow(dp->range->r_start, dp->range->r_start + dp->range->r_len);
             auto len = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(slicedMat, dataToSend);                        
-            MPIHelper::distributeData(len, dataToSend.data(),rank+1);
-            targetGroup.push_back(rank+1);            
+            MPIHelper::distributeData(len, dataToSend.data(),rank);
+            targetGroup.push_back(rank);            
         }
         for(size_t i=0;i<targetGroup.size();i++)
         {
