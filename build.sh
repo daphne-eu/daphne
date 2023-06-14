@@ -884,6 +884,9 @@ if [ $WITH_DEPS -gt 0 ]; then
         mkdir -p "${tsl_output}"
         # python3 ${tsl_generator} --no-workaround-warnings -o ${tsl_output}
         cmake "${tsl_generator}" -B "${tsl_generator}/build" -D DESTINATION="${tsl_output}"
+        # install TSL requirements
+        pip3 install -r "${tsl_generator}/requirements.txt"
+
         dependency_install_success "${dep_tsl[@]}"
     else
         daphne_msg "No need to generate TSL again."
