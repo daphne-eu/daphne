@@ -230,8 +230,8 @@ class Daphne_EwBinaryOp<string name, Type scalarType, list<Trait> traits = []>
     ShapeEwBinary,
     CastArgsToResType
 ])> {
-    let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$rhs);
-    let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);
+    let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, ColumnOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[MatrixOf<[scalarType]>, ColumnOf<[scalarType]>, scalarType, Unknown]>:$rhs);
+    let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, ColumnOf<[scalarType]>, scalarType, Unknown]>:$res);
 
     let builders = [
         OpBuilder<(ins "Value":$lhs, "Value":$rhs), [{
@@ -1134,8 +1134,8 @@ def Daphne_CastOp : Daphne_Op<"cast", [
 ]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
-    let arguments = (ins AnyTypeOf<[MatrixOrFrame, AnyScalar, Unknown]>:$arg);
-    let results = (outs AnyTypeOf<[MatrixOrFrame, AnyScalar, Unknown]>:$res);
+    let arguments = (ins AnyTypeOf<[MatrixOrFrame, ColumnOrU, AnyScalar, Unknown]>:$arg);
+    let results = (outs AnyTypeOf<[MatrixOrFrame, ColumnOrU, AnyScalar, Unknown]>:$res);
     let hasFolder = 1;
 
     let extraClassDeclaration = [{

@@ -83,6 +83,14 @@ template<class ConcreteOp>
 class DataTypeMat : public TraitBase<ConcreteOp, DataTypeMat> {};
 
 /**
+ * @brief The data type (of the single result) is always `Column`.
+ * 
+ * Assumes that the operation has always exactly one result.
+ */
+template<class ConcreteOp>
+class DataTypeCol : public TraitBase<ConcreteOp, DataTypeCol> {};
+
+/**
  * @brief The data type (of the single result) is always `Frame`.
  * 
  * Assumes that the operation has always exactly one result.

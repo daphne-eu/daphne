@@ -373,6 +373,20 @@ def Column : Daphne_Type<"Column"> {
         }
     }];
 }
+def ColumnOrU : AnyTypeOf<[Column, Unknown]>;
 
+// TODO We could omit the "Of" and have it default to ScalarType.
+// A type constraint checking if a type is a column whose value type is one of
+// the given types (whereby Unknown is always allowed automatically).
+// Reuses MLIR's ContainerType constraint in a way inspired by MLIR's VectorOf.
+class ColumnOf<list<Type> allowedTypes> : AnyTypeOf<[
+        ContainerType<
+                AnyTypeOf<!listconcat(allowedTypes, [Unknown])>,
+                Column.predicate,
+                "$_self.dyn_cast<::mlir::daphne::ColumnType>().getColumnType()",
+                "column"
+        >,
+        Unknown
+]>;
 
 #endif //SRC_IR_DAPHNEIR_DAPHNETYPES_TD
