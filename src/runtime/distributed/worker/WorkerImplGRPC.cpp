@@ -18,7 +18,7 @@
 #include "WorkerImplGRPC.h"
 
 #include <runtime/distributed/proto/CallData.h>
-#include <runtime/distributed/proto/ProtoDataConverter.h>
+#include <runtime/local/io/DaphneSerializer.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 
 #include <grpcpp/grpcpp.h>
@@ -58,103 +58,21 @@ void WorkerImplGRPC::Wait() {
         }
     }
 }
-template<>
-DenseMatrix<double>* WorkerImplGRPC::CreateMatrix<DenseMatrix<double>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<DenseMatrix<double>>(mat->num_rows(), mat->num_cols(), false);
-}
-template<>
-DenseMatrix<int64_t>* WorkerImplGRPC::CreateMatrix<DenseMatrix<int64_t>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<DenseMatrix<int64_t>>(mat->num_rows(), mat->num_cols(), false);
-}
-template<>
-CSRMatrix<double>* WorkerImplGRPC::CreateMatrix<CSRMatrix<double>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<CSRMatrix<double>>(mat->num_rows(), mat->num_cols(), mat->csr_matrix().values_f64().cells_size(), true);
-}
-template<>
-CSRMatrix<int64_t>* WorkerImplGRPC::CreateMatrix<CSRMatrix<int64_t>>(const ::distributed::Matrix *mat) {
-    return DataObjectFactory::create<CSRMatrix<int64_t>>(mat->num_rows(), mat->num_cols(), mat->csr_matrix().values_i64().cells_size(), true);
-}
 
 grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
                          const ::distributed::Data *request,
                          ::distributed::StoredData *response) 
 {
     StoredInfo storedInfo;
-    switch (request->data_case()){
-        case distributed::Data::DataCase::kMatrix: {
-            Structure *mat = nullptr;
-            auto matrix = &request->matrix();
-            switch (matrix->matrix_case()) {
-                case distributed::Matrix::MatrixCase::kDenseMatrix:
-                    switch (matrix->dense_matrix().cells_case())
-                    {
-                    case distributed::DenseMatrix::CellsCase::kCellsI64:
-                    // TODO: initialize different type if VT is I32
-                    case distributed::DenseMatrix::CellsCase::kCellsI32:
-                        mat = CreateMatrix<DenseMatrix<int64_t>>(matrix);
-                        ProtoDataConverter<DenseMatrix<int64_t>>::convertFromProto(*matrix, dynamic_cast<DenseMatrix<int64_t>*>(mat));
-                        break;
-                    case distributed::DenseMatrix::CellsCase::kCellsF64:
-                    // TODO: initialize different type if VT is F32
-                    case distributed::DenseMatrix::CellsCase::kCellsF32:
-                        mat = CreateMatrix<DenseMatrix<double>>(matrix);
-                        ProtoDataConverter<DenseMatrix<double>>::convertFromProto(*matrix, dynamic_cast<DenseMatrix<double>*>(mat));
-                        break;    
-                    default:
-                        break;
-                    }
-                    break;
-                case distributed::Matrix::MatrixCase::kCsrMatrix:
-                    switch (matrix->csr_matrix().values_case())
-                    {
-                    case distributed::CSRMatrix::ValuesCase::kValuesI64:
-                    // TODO: initialize different type if VT is I32
-                    case distributed::CSRMatrix::ValuesCase::kValuesI32:
-                        mat = CreateMatrix<CSRMatrix<int64_t>>(matrix);
-                        ProtoDataConverter<CSRMatrix<int64_t>>::convertFromProto(*matrix, dynamic_cast<CSRMatrix<int64_t>*>(mat));
-                        break;
-                    case distributed::CSRMatrix::ValuesCase::kValuesF64:
-                    // TODO: initialize different type if VT is F32
-                    case distributed::CSRMatrix::ValuesCase::kValuesF32:
-                        mat = CreateMatrix<CSRMatrix<double>>(matrix);
-                        ProtoDataConverter<CSRMatrix<double>>::convertFromProto(*matrix, dynamic_cast<CSRMatrix<double>*>(mat));
-                        break;
-                    case distributed::CSRMatrix::ValuesCase::VALUES_NOT_SET:
-                    default:
-                        throw std::runtime_error("GRPC: Proto message 'Matrix': cell values not set");
-                    }
-                    break;
-                case distributed::Matrix::MatrixCase::MATRIX_NOT_SET:
-                default:
-                    throw std::runtime_error("GRPC: Proto message 'Matrix': matrix not set");
-            }
-            assert(mat != nullptr && "GRPC: proto message was not converted to Daphne Structure");
-            storedInfo = Store<Structure>(mat);
-            break; 
-        }
-        case distributed::Data::DataCase::kValue:
-        {
-            auto protoVal = &request->value();
-            switch (protoVal->value_case())
-            {
-                case distributed::Value::ValueCase::kF64:
-                {
-                    double val = double(protoVal->f64());
-                    storedInfo = Store(&val);
-                    break;
-                }
-                default:
-                    throw std::runtime_error(protoVal->value_case() + " not supported atm");
-                    break;
-            }
-            break;
-        }
-    default:
-        // error message         
-        return ::grpc::Status::CANCELLED;
-        break;
-    };
-
+    auto buffer = request->bytes().data();
+    auto len = request->bytes().size();
+    if (DF_Dtype(buffer) == DF_data_t::Value_t) {
+        double val = DaphneSerializer<double>::deserialize(buffer);
+        storedInfo = WorkerImpl::Store(&val);
+    } else {
+        Structure *mat = DF_deserialize(buffer, len);
+        storedInfo = WorkerImpl::Store(mat);
+    }
     response->set_identifier(storedInfo.identifier);
     response->set_num_rows(storedInfo.numRows);
     response->set_num_cols(storedInfo.numCols);
@@ -189,19 +107,13 @@ grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context,
 
 grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                         ::distributed::Matrix *response)
+                         ::distributed::Data *response)
 {
     StoredInfo info({request->identifier(), request->num_rows(), request->num_cols()});
+    std::vector<char> buffer;
+    size_t bufferLength;
     Structure *mat = Transfer(info);
-    if(auto matDT = dynamic_cast<DenseMatrix<double>*>(mat))        
-        ProtoDataConverter<DenseMatrix<double>>::convertToProto(matDT, response);
-    else if(auto matDT = dynamic_cast<DenseMatrix<int64_t>*>(mat))        
-        ProtoDataConverter<DenseMatrix<int64_t>>::convertToProto(matDT, response);
-    else if(auto matDT = dynamic_cast<CSRMatrix<int64_t>*>(mat))        
-        ProtoDataConverter<CSRMatrix<int64_t>>::convertToProto(matDT, response);
-    else if(auto matDT = dynamic_cast<CSRMatrix<double>*>(mat))        
-        ProtoDataConverter<CSRMatrix<double>>::convertToProto(matDT, response);
-    else 
-        std::runtime_error("Type is not supported atm");
+    bufferLength = DaphneSerializer<Structure>::serialize(mat, buffer);
+    response->set_bytes(buffer.data(), bufferLength);
     return ::grpc::Status::OK;
 }

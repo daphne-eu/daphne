@@ -27,7 +27,6 @@ set(LIBS
         DaphneIrExecutor
         DaphneConfigParser
         DaphneMetaDataParser
-        ProtoDataConverter
         Util
         WorkerImpl
 )
