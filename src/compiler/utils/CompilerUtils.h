@@ -158,6 +158,11 @@ public:
                     return "CSRMatrix_" + mlirTypeToCppTypeName(matTy.getElementType(), false);
                 }
             }
+        else if(auto colTy = t.dyn_cast<mlir::daphne::ColumnType>())
+            if(generalizeToStructure)
+                return "Structure";
+            else
+                return "Column_" + mlirTypeToCppTypeName(colTy.getColumnType(), false);
         else if(t.isa<mlir::daphne::FrameType>())
             if(generalizeToStructure)
                 return "Structure";
