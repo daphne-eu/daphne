@@ -949,49 +949,44 @@ struct TranspositionAwareMatMul : public mlir::OpRewritePattern<mlir::daphne::Ma
     matchAndRewrite(
             mlir::daphne::MatMulOp op, mlir::PatternRewriter &rewriter
     ) const override {
-    mlir::Value lhs = op.getLhs();
-    mlir::Value rhs = op.getRhs();
-    mlir::Value transa = op.getTransa();
-    mlir::Value transb = op.getTransb();
+        mlir::Value lhs = op.getLhs();
+        mlir::Value rhs = op.getRhs();
+        mlir::Value transa = op.getTransa();
+        mlir::Value transb = op.getTransb();
 
-    // TODO If transa or transb are not constant, we cannot continue on the respective side;
-    // we cannot just assume false then.
-    bool ta = CompilerUtils::constantOrDefault<bool>(transa, false);
-    bool tb = CompilerUtils::constantOrDefault<bool>(transb, false);
+        // TODO If transa or transb are not constant, we cannot continue on the respective side;
+        // we cannot just assume false then.
+        bool ta = CompilerUtils::constantOrDefault<bool>(transa, false);
+        bool tb = CompilerUtils::constantOrDefault<bool>(transb, false);
 
-    // TODO Turn on the transposition-awareness for the left-hand-side argument again (see #447).
-    // mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();
-    mlir::daphne::TransposeOp rhsTransposeOp = rhs.getDefiningOp<mlir::daphne::TransposeOp>();
+        // TODO Turn on the transposition-awareness for the left-hand-side argument again (see #447).
+        // mlir::daphne::TransposeOp lhsTransposeOp = lhs.getDefiningOp<mlir::daphne::TransposeOp>();
+        mlir::daphne::TransposeOp rhsTransposeOp = rhs.getDefiningOp<mlir::daphne::TransposeOp>();
 
-    //if (!lhsTransposeOp && !rhsTransposeOp){
-    if (!rhsTransposeOp){
-        return mlir::failure();
-    }
+        //if (!lhsTransposeOp && !rhsTransposeOp){
+        if (!rhsTransposeOp){
+            return mlir::failure();
+        }
 
 #if 0
-    // TODO Adapt PhyOperatorSelectionPass once this code is turned on again.
-    if(lhsTransposeOp) {
-        lhs = lhsTransposeOp.getArg();
-        ta = !ta;
-    }
+        // TODO Adapt PhyOperatorSelectionPass once this code is turned on again.
+        if(lhsTransposeOp) {
+            lhs = lhsTransposeOp.getArg();
+            ta = !ta;
+        }
 #endif
-    if(rhsTransposeOp) {
-        rhs = rhsTransposeOp.getArg();
-        tb = !tb;
-    }
+        if(rhsTransposeOp) {
+            rhs = rhsTransposeOp.getArg();
+            tb = !tb;
+        }
 
-    rewriter.replaceOpWithNewOp<mlir::daphne::MatMulOp>(
-        op, op.getType(), lhs, rhs,
-        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), ta)),
-        static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), tb))
-    );
+        rewriter.replaceOpWithNewOp<mlir::daphne::MatMulOp>(
+            op, op.getType(), lhs, rhs,
+            static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transa.getLoc(), ta)),
+            static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(transb.getLoc(), tb))
+        );
 
-    if(lhsTransposeOp)
-        rewriter.eraseOp(lhsTransposeOp);
-    if(rhsTransposeOp)
-        rewriter.eraseOp(rhsTransposeOp);
-        
-    return mlir::success();
+        return mlir::success();
     }
 };
 
@@ -1024,14 +1019,14 @@ struct MatMulChainOptimization : public mlir::OpRewritePattern<mlir::daphne::Mat
             }
             if (auto mm = llvm::dyn_cast<mlir::daphne::MatMulOp>(val.getDefiningOp())) {
                 matMuls.push_back(mm);
-                walk(mm.lhs(), mm.transa());
-                walk(mm.rhs(), mm.transb());
+                walk(mm.getLhs(), mm.getTransa());
+                walk(mm.getRhs(), mm.getTransb());
                 return;
             }
             matMulChain.push_back({val, trans});
         };
 
-        walk(op, op.transa());
+        walk(op, op.getTransa());
         const int chainLength = matMulChain.size();
 
         // no matrix multiplication chain; just a single matrix multiplication -> no rewrite
@@ -1044,13 +1039,13 @@ struct MatMulChainOptimization : public mlir::OpRewritePattern<mlir::daphne::Mat
         auto [val, trans] = matMulChain[0];
         if(auto mt = val.getType().dyn_cast<mlir::daphne::MatrixType>()) {
             if(auto co = trans.getDefiningOp<mlir::daphne::ConstantOp>())
-                co.value().dyn_cast<mlir::BoolAttr>().getValue() ?
+                co.getValue().dyn_cast<mlir::BoolAttr>().getValue() ?
                     dimensions.push_back(mt.getNumCols()) : dimensions.push_back(mt.getNumRows());
         }
         for (auto const& [val, trans] : matMulChain) {
             if(auto mt = val.getType().dyn_cast<mlir::daphne::MatrixType>()) {
                 if(auto co = trans.getDefiningOp<mlir::daphne::ConstantOp>())
-                    co.value().dyn_cast<mlir::BoolAttr>().getValue() ?
+                    co.getValue().dyn_cast<mlir::BoolAttr>().getValue() ?
                         dimensions.push_back(mt.getNumRows()) : dimensions.push_back(mt.getNumCols());
             }   
         }
@@ -1094,7 +1089,7 @@ struct MatMulChainOptimization : public mlir::OpRewritePattern<mlir::daphne::Mat
             mm.inferShape();
             // remember that this matMulOp is part of an already optimized chain
             optimized.insert(mm.getResult());
-            auto co = static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), rewriter.getBoolAttr(false)));
+            auto co = static_cast<mlir::Value>(rewriter.create<mlir::daphne::ConstantOp>(op.getLoc(), false));
             return { mm.getResult(), co};
         };
 
