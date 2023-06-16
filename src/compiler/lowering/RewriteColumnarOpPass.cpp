@@ -43,7 +43,9 @@ namespace
             cast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), resType, prevOp->getResult(0));
         }
         auto columnGe = rewriter.create<ColumnCmp>(prevOp->getLoc(), cast, geOp->getOperand(1));
-        rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(geOp, resTypeCast, columnGe->getResult(0));
+        auto finalCast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), resTypeCast, columnGe->getResult(0));
+        auto numRows = rewriter.create<mlir::daphne::NumRowsOp>(prevOp->getLoc(), rewriter.getIndexType(), cast->getOperand(0));
+        rewriter.replaceOpWithNewOp<mlir::daphne::PositionListBitmapConverterOp>(geOp, resTypeCast, finalCast->getResult(0), numRows);
         return success();
     }
 

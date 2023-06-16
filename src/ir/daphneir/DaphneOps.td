@@ -1162,6 +1162,14 @@ def Daphne_CastOp : Daphne_Op<"cast", [
     }];
 }
 
+def Daphne_PositionListBitmapConverterOp : Daphne_Op<"positionListBitmapConverter", [
+    TypeFromFirstArg,
+    ShapeFromArg
+]> {
+    let arguments = (ins Matrix:$arg, Size:$numRows);
+    let results = (outs Matrix:$res);
+}
+
 def Daphne_CopyOp : Daphne_Op<"copy", [
     TypeFromFirstArg
 ]> {

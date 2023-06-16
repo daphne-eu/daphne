@@ -3667,5 +3667,40 @@
         "instantiations": [
             []
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperators/PositionListBitmapConverter.h",
+            "opName": "positionListBitmapConverter",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "size_t",
+                    "name": "origLength"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
     }
 ]
