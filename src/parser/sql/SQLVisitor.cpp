@@ -837,14 +837,13 @@ antlrcpp::Any SQLVisitor::visitLimitClause(
 )
 {
     mlir::Location loc = utils.getLoc(ctx->start);
-    auto sizeTy = builder.getIndexType();
     
     mlir::Value start = builder.create<mlir::daphne::ConstantOp>(
-        loc, sizeTy, builder.getIndexAttr(0)
+        loc, utils.sizeType, builder.getIndexAttr(0)
     );
 
     mlir::Value end = builder.create<mlir::daphne::ConstantOp>(
-        loc, sizeTy, builder.getIndexAttr(stoi(ctx->limit->getText()))
+        loc, utils.sizeType, builder.getIndexAttr(stoi(ctx->limit->getText()))
     );
 
     std::vector<mlir::Type> currentFrame_colTypes;
