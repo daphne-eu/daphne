@@ -92,7 +92,7 @@ namespace
             }
             if(auto concreteOp = llvm::dyn_cast<daphne::GroupOp>(op)) {
                 auto idxAndLen = concreteOp.getODSOperandIndexAndLength(index);
-                static bool isVariadic[] = {false, true, true, true};
+                static bool isVariadic[] = {false, true, true};
                 return std::make_tuple(
                         idxAndLen.first,
                         idxAndLen.second,
@@ -215,10 +215,10 @@ namespace
                     const unsigned len = std::get<1>(odsOpInfo);
                     const bool isVariadic = std::get<2>(odsOpInfo);
                     
-                    // The group operation currently expects at least four inputs due to the
+                    // TODO The group operation currently expects at least four inputs due to the
                     // expectation of a aggregation. To make the group operation possible without aggregations,
                     // we have to use this workaround to create the correct name and skip the creation
-                    // of the varidic pack ops. Should be changed when reworking the lowering to kernels.
+                    // of the variadic pack ops. Should be changed when reworking the lowering to kernels.
                     if(llvm::dyn_cast<daphne::GroupOp>(op) && idx >= operandTypes.size()) {
                         callee << "__char_variadic__size_t";
                         continue;
