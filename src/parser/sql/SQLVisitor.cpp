@@ -18,7 +18,6 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include "antlr4-runtime.h"
-#include "mlir/Dialect/Index/IR/IndexDialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 #include "mlir/IR/OpDefinition.h"
 
@@ -846,11 +845,7 @@ antlrcpp::Any SQLVisitor::visitLimitClause(
         loc, utils.sizeType, builder.getIndexAttr(stoi(ctx->limit->getText()))
     );
 
-    std::vector<mlir::Type> currentFrame_colTypes;
-    for(mlir::Type t : currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())
-        currentFrame_colTypes.push_back(t);
-    mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), currentFrame_colTypes);
-
+    mlir::daphne::FrameType resType = currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().withSameColumnTypes();
     return static_cast<mlir::Value>(
         builder.create<mlir::daphne::SliceRowOp>(loc, resType, currentFrame, start, end)
     ); 
