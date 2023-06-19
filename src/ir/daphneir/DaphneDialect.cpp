@@ -366,6 +366,7 @@ mlir::OpFoldResult mlir::daphne::ConstantOp::fold(FoldAdaptor adaptor)
             || elementType.isF32()
             || elementType.isF64()
             || elementType.isIndex()
+            || elementType.isInteger(1)
         ) && (
             // Number of rows and columns are valid (-1 for unknown).
             numRows >= -1 && numCols >= -1
