@@ -25,4 +25,6 @@ set(PREFIX ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/SIMDOperators)
 #add_library(SIMDOperatorsKernels SHARED ${SIMDOperators_kernels_SRC})
 #set_target_properties(SIMDOperatorsKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 ### Link against common libs
+target_compile_options(AllKernels PUBLIC "-mfma")
+target_link_libraries(AllKernels PUBLIC SIMDOperators)
 #target_link_libraries(SIMDOperatorsKernels PUBLIC ${LIBS})
