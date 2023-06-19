@@ -16,7 +16,6 @@
 
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/datastructures/Structure.h>
 #include <runtime/local/kernels/InsertCol.h>
 #include <runtime/local/kernels/CheckEq.h>
 
@@ -35,14 +34,16 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DenseMatrix), (double, uin
     std::vector<typename DT::VT> vals = {0, 1,  2, 3,  4, 5};
     
      
+    auto arg = genGivenVals<DT>(3, vals); // 3x2
     SECTION("Check zero-copy") {
-        auto arg = genGivenVals<DT>(3, vals); // 3x2
-
         auto ins = genGivenVals<DT>(3, {100, 200, 400}); 
         auto exp = genGivenVals<DT>(3, {100, 1,  200, 3,  400, 5});
         DT * res = nullptr;
         insertCol<DT, DT>(res, arg, ins, 0, 1, nullptr);
         CHECK(*res == *exp);
+        // TODO We shouldn't check for pointer equality, since the crucial point
+        // about zero-copy here is to not copy the underlying data buffers, while
+        // creating a new DenseMatrix object would be okay.
         CHECK(res == arg);
         DataObjectFactory::destroy(exp);
         DataObjectFactory::destroy(ins);
@@ -50,19 +51,18 @@ TEMPLATE_PRODUCT_TEST_CASE("InsertCol", TAG_KERNELS, (DenseMatrix), (double, uin
     }
 
     SECTION("NO zero-copy") {
-        auto arg = genGivenVals<DT>(3, vals);
         auto view = DataObjectFactory::create<DT>(arg, 0, 2, 0, 2); 
 
         auto ins = genGivenVals<DT>(2, {100, 300}); 
 
-        auto exp_arg = genGivenVals<DT>(3, vals);
-        auto exp_view = genGivenVals<DT>(2, {0, 100, 2, 300});
+        auto expArg = genGivenVals<DT>(3, vals);
+        auto expView = genGivenVals<DT>(2, {0, 100, 2, 300});
         DT * res = nullptr;
         insertCol<DT, DT>(res, view, ins, 1, 2, nullptr);
-        CHECK(*res == *exp_view);
-        CHECK(*arg == *exp_arg);
-        DataObjectFactory::destroy(exp_view);
-        DataObjectFactory::destroy(exp_arg);
+        CHECK(*res == *expView);
+        CHECK(*arg == *expArg);
+        DataObjectFactory::destroy(expView);
+        DataObjectFactory::destroy(expArg);
         DataObjectFactory::destroy(ins);
         DataObjectFactory::destroy(view);
         DataObjectFactory::destroy(res);

@@ -89,7 +89,7 @@ struct InsertRow<DenseMatrix<VT>, DenseMatrix<VT>> {
         if((arg->getRefCounter() == 1 && arg->getValuesUseCount() == 1))
             zeroCopy = true;
 
-        // TODO: issue of returning an input
+        // TODO: issue of returning an input (see #221)
         if(zeroCopy){
             res = arg;
             res->increaseRefCounter();
