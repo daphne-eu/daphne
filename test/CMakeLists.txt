@@ -122,6 +122,7 @@ set(TEST_SOURCES
         runtime/local/kernels/TriTest.cpp
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
+        runtime/local/kernels/SIMDOperatorsDAPHNE/PositionListBitmapConverterTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )
@@ -171,7 +172,7 @@ add_executable(TSL_test run_tests.cpp runtime/local/kernels/TSL/TSLTest.cpp)
 set_target_properties(TSL_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 # include_dir, binary_dir
-# add_subdirectory( ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL)
+# add_subdirectory( ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL ${PROJECT_SOURCE_DIR}/build/_deps/simdoperators-src/src)
 
 add_dependencies(TSL_test daphne DistributedWorker)
 

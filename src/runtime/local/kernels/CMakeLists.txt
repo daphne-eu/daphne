@@ -109,4 +109,4 @@ find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib
 target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB})
 
 # Add SIMDOperators
-add_subdirectory(SIMDOperators)
+add_subdirectory(SIMDOperatorsDAPHNE)

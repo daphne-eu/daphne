@@ -34,7 +34,7 @@
 
 template<class DTRes, class DTArg>
 struct PositionListBitmapConverter {
-    static void apply(AggOpCode opCode, DTRes *& res, const DTArg * arg, const size_t origLength, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, const size_t origLength, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -67,12 +67,14 @@ struct PositionListBitmapConverter<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         VTRes * valuesRes = res->getValues();
 
         valuesRes += res->getRowSkip() * valuesArg[0];
+        size_t currentPosition = valuesArg[0];
         valuesArg += arg->getRowSkip();
 
-        for(size_t r = 0; r < numRows-1; r++) {
+        for(size_t r = 0; r < numRows; r++) {
             *valuesRes = static_cast<VTRes>(1);
+            valuesRes += res->getRowSkip() * (valuesArg[0] - currentPosition);
+            currentPosition = valuesArg[0];
             valuesArg += arg->getRowSkip();
-            valuesRes += res->getRowSkip() * valuesArg[0];
         }
     }
 };
