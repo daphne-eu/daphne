@@ -145,4 +145,12 @@ public:
      * @return 
      */
     virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
+
+    /**
+     * @brief Serializes the object to a void buffer.     
+     * 
+     * @param buf buffer to store bytes.
+     * @return The serialized buffer.
+     */
+    virtual size_t serialize(std::vector<char> &buf) const = 0;
 };

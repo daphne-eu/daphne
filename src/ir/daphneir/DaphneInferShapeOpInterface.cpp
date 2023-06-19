@@ -184,7 +184,7 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
     const size_t numRows = -1;
-    const size_t numCols = inferNumColsFromArgs(getKeyCol()) + inferNumColsFromArgs(getAggCol());
+    const size_t numCols = getKeyCol().size() + getAggCol().size();
     return {{numRows, numCols}};
 }
 

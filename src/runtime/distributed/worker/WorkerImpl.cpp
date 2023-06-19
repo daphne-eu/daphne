@@ -73,7 +73,7 @@ WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
     
 
 
-WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, std::vector<WorkerImpl::StoredInfo> inputs, std::string mlirCode)
+WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode)
 {
     // ToDo: user config
     DaphneUserConfig cfg;

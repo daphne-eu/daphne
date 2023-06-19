@@ -115,9 +115,9 @@ private:
     // What we get from the client.
     distributed::StoredData storedData;
     // What we send back to the client.
-    distributed::Matrix matrix;
+    distributed::Data data;
     // The means to get back to the client.
-    grpc::ServerAsyncResponseWriter<distributed::Matrix> responder_;
+    grpc::ServerAsyncResponseWriter<distributed::Data> responder_;
 
     // Let's implement a tiny state machine with the following states.
     enum CallStatus
