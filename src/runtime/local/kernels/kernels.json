@@ -3670,7 +3670,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperators/PositionListBitmapConverter.h",
+            "header": "SIMDOperatorsDAPHNE/PositionListBitmapConverter.h",
             "opName": "positionListBitmapConverter",
             "returnType": "void",
             "templateParams": [
