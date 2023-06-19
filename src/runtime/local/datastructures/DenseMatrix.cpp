@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <runtime/local/io/DaphneSerializer.h>
 #include "DenseMatrix.h"
 
 #include <spdlog/spdlog.h>
@@ -217,6 +218,16 @@ void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> sr
     else
 //        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
         values = std::shared_ptr<ValueType[]>(new ValueType[numRows * getRowSkip()]);
+}
+
+template<typename ValueType>
+size_t DenseMatrix<ValueType>::serialize(std::vector<char> &buf) const {
+    return DaphneSerializer<DenseMatrix<ValueType>>::serialize(this, buf);
+}
+
+template<>
+size_t DenseMatrix<bool>::serialize(std::vector<char> &buf) const{
+    throw std::runtime_error("DenseMatrix<bool> serialization not implemented");
 }
 
 // ----------------------------------------------------------------------------

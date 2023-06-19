@@ -14,30 +14,21 @@
  * limitations under the License.
  */
 
-#pragma once
+#include <runtime/local/io/DaphneSerializer.h>
 
-#include <cstdint>
+#include "CSRMatrix.h"
 
+template<typename ValueType>
+size_t CSRMatrix<ValueType>::serialize(std::vector<char> &buf) const {
+    return DaphneSerializer<CSRMatrix<ValueType>>::serialize(this, buf);
+}
 
-struct DF_header {
-	uint8_t version;
-	uint8_t dt;
-	uint64_t nbrows;
-	uint64_t nbcols;
-} __attribute__((__packed__));
-
-enum DF_data_t {reserved = 0, DenseMatrix_t = 1, CSRMatrix_t = 2, Frame_t = 3, Value_t = 4};
-
-struct DF_body {
-	uint64_t rx; // row index
-	uint64_t cx; // column index
-} __attribute__((__packed__));
-
-struct DF_body_block {
-	uint32_t nbrows;
-	uint32_t nbcols;
-	uint8_t bt;
-} __attribute__((__packed__));
-
-enum DF_body_t {empty = 0, dense = 1, sparse = 2, ultra_sparse = 3};
-
+// explicitly instantiate to satisfy linker
+template class CSRMatrix<double>;
+template class CSRMatrix<float>;
+template class CSRMatrix<int>;
+template class CSRMatrix<long>;
+template class CSRMatrix<signed char>;
+template class CSRMatrix<unsigned char>;
+template class CSRMatrix<unsigned int>;
+template class CSRMatrix<unsigned long>;
