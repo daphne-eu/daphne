@@ -196,7 +196,19 @@ The following built-in functions all follow the same scheme:
 
 ### Cumulative aggregation
 
-Cumulative aggregation is not supported yet, but we plan to offer at least **`cumSum`**, **`cumProd`**, **`cumMin`**, and **`cumMax`**.
+The following built-in functions all follow the same scheme:
+
+- **`cumAgg`**`(arg:matrix)`
+  
+  Cumulative aggregation over each column of the matrix `arg`.
+  Returns a matrix of the same shape as `arg`.
+
+| function | meaning |
+| ----- | ------ |
+| `cumSum` | cumulative sum |
+| `cumProd` | cumulative product |
+| `cumMin` | cumulative minimum |
+| `cumMax` | cumulative maximum |
 
 ## Reorganization
 
