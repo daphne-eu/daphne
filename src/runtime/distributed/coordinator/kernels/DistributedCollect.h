@@ -70,15 +70,14 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
     static void apply(DT *&mat, DCTX(dctx)) 
     {
         assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
-        int worldSize= MPIHelper::getCommSize()-1;
+        int worldSize= MPIHelper::getCommSize();
         auto collectedDataItems=0u;
-        for(int rank=0; rank<worldSize ; rank++) // we currently exclude the coordinator
+        for(int rank=0; rank<worldSize ; rank++) 
         {
-            //if(rank==COORDINATOR)
-            //    continue;
-            int target_rank;    
-            std::vector<char> buffer = MPIHelper::getResults(&target_rank);    
-            std::string address = std::to_string(target_rank);  
+            if(rank==COORDINATOR) // we currently exclude the coordinator
+               continue;
+            std::vector<char> buffer = MPIHelper::getResults(rank);    
+            std::string address = std::to_string(rank);  
             auto dp=mat->getMetaDataObject()->getDataPlacementByLocation(address);   
             auto distributedData = dynamic_cast<AllocationDescriptorMPI&>(*(dp->allocation)).getDistributedData();            
             if(std::stoi(address) == COORDINATOR)
