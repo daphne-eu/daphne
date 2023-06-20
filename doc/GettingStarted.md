@@ -126,21 +126,22 @@ For convenience, you can call the following to remove them all.
 See [this page](/doc/development/BuildingDaphne.md) for more information.
 
 ### Setting up the environment
+
 As DAPHNE uses shared libraries, these need to be found by the operating system's loader to link them at runtime. 
-Since most DAPHNE setups will not land in one of the standard directories (e.g., /usr/local/lib), environment variables 
-are a convenient way set everything up without interfering with system installations (where you might not even have 
+Since most DAPHNE setups will not end up in one of the standard directories (e.g., `/usr/local/lib`), environment variables 
+are a convenient way to set everything up without interfering with system installations (where you might not even have 
 administrative privileges to do so).
 
-``` 
+```bash
 # from your cloned DAPHNE repo or your otherwise extracted sources/binaries: 
 export DAPHNE_ROOT=$PWD 
 export LD_LIBRARY_PATH=$DAPHNE_ROOT/lib:$DAPHNE_ROOT/thirdparty/installed/lib:$LD_LIBRARY_PATH
-# optinally you can add the location of the DAPHNE executable to your PATH:
-export PATH=$DAPHNE_ROOT:bin:$PATH
+# optionally, you can add the location of the DAPHNE executable to your PATH:
+export PATH=$DAPHNE_ROOT/bin:$PATH
 ```
 
 If you're running/compiling DAPHNE from a container you'll most probably **_*_**not**_*_** need to set these environment
-variables (unless you have reason to customize your setup - then it is assumed that you know what you are doing)
+variables (unless you have reason to customize your setup - then it is assumed that you know what you are doing).
 
 ### Running the Tests
 
