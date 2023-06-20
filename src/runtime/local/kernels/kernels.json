@@ -97,6 +97,43 @@
     },
     {
         "kernelTemplate": {
+            "header": "AggCum.h",
+            "opName": "aggCum",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "PROD", "MIN", "MAX"]
+    },
+    {
+        "kernelTemplate": {
             "header": "AggRow.h",
             "opName": "aggRow",
             "returnType": "void",
