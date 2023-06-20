@@ -3716,5 +3716,55 @@
             [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnSelect.h",
+            "opName": "columnSelect",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTRhs",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "SelectOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "VTRhs",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], "uint64_t"],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t"],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], "size_t"]
+                ],
+                "opCodes": ["EQ", "NEQ", "LT", "LE", "GT", "GE"]
+            }
+        ]
     }
 ]
