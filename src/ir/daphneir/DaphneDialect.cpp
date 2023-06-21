@@ -287,11 +287,11 @@ void mlir::daphne::DaphneDialect::printType(mlir::Type type,
         os << "Unknown";
     else if (auto t = type.dyn_cast<mlir::daphne::ColumnType>()) {
         os << "Column<"
-                << unknownStrIf(t.getNumRows()) << ": ";
+                << unknownStrIf(t.getNumRows()) << "x";
         // Column types.
         mlir::Type cts = t.getColumnType();
         os << cts;
-        os << "], ";
+        os << ":, ";
         // Column labels.
         std::string * label = t.getLabel();
         if(label) {
