@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 The DAPHNE Consortium
+ * Copyright 2023 The DAPHNE Consortium
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,6 @@
 #include <runtime/local/kernels/SIMDOperatorsDAPHNE/SelectOpCode.h>
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
-#include <runtime/local/datastructures/CSRMatrix.h>
-#include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/AggOpCode.h>
-#include <runtime/local/kernels/EwBinarySca.h>
 #include <SIMDOperators/datastructure/column.hpp>
 #include <SIMDOperators/operators/select.hpp>
 

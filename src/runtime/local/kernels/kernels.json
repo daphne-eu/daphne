@@ -3766,5 +3766,50 @@
                 "opCodes": ["EQ", "NEQ", "LT", "LE", "GT", "GE"]
             }
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnProject.h",
+            "opName": "columnProject",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTData *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTPos *",
+                    "name": "pos"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
+                ]
+            }
+        ]
     }
 ]
