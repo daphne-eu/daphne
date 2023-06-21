@@ -327,13 +327,13 @@ def Daphne_ColumnLeOp  : Daphne_ColumnCmpOp<"columnLe" , AnyScalar>;
 def Daphne_ColumnGtOp  : Daphne_ColumnCmpOp<"columnGt" , AnyScalar>;
 def Daphne_ColumnGeOp  : Daphne_ColumnCmpOp<"columnGe" , AnyScalar>;
 
-class Daphne_ColumnProjectOp
+def Daphne_ColumnProjectOp
 : Daphne_Op<"columnProject", [
-    DataTypeFromArgs,
-    CastArgsToResType,
+    TypeFromFirstArg,
+    ShapeFromArg
 ]> {
-    let arguments = (ins ColumnOf<[AnyScalar]>:$data, ColumnOf<[AnyScalar]>:$pos);
-    let results = (outs ColumnOf<[AnyScalar]>:$res);
+    let arguments = (ins Column:$data, Column:$pos);
+    let results = (outs Column:$res);
 }
 
 // ****************************************************************************
@@ -1179,6 +1179,14 @@ def Daphne_PositionListBitmapConverterOp : Daphne_Op<"positionListBitmapConverte
     ShapeFromArg
 ]> {
     let arguments = (ins Matrix:$arg, Size:$numRows);
+    let results = (outs Matrix:$res);
+}
+
+def Daphne_BitmapPositionListConverterOp : Daphne_Op<"bitmapPositionListConverter", [
+    TypeFromFirstArg,
+    ShapeFromArg
+]> {
+    let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
 }
 

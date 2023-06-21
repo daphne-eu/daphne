@@ -123,6 +123,7 @@ set(TEST_SOURCES
         runtime/local/vectorized/MultiThreadedKernelTest.cpp
         runtime/local/kernels/CheckEqApproxTest.cpp
         runtime/local/kernels/SIMDOperatorsDAPHNE/PositionListBitmapConverterTest.cpp
+        runtime/local/kernels/SIMDOperatorsDAPHNE/BitmapPositionListConverterTest.cpp
 
 #        runtime/local/kernels/Morphstore/ProjectTest.cpp
 )

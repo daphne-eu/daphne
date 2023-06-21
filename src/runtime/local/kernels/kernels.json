@@ -3719,6 +3719,37 @@
     },
     {
         "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/BitmapPositionListConverter.h",
+            "opName": "bitmapPositionListConverter",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ]
+    },
+    {
+        "kernelTemplate": {
             "header": "SIMDOperatorsDAPHNE/ColumnSelect.h",
             "opName": "columnSelect",
             "returnType": "void",
