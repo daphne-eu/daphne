@@ -116,6 +116,8 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         // TODO The following is invalid when extracting multiple columns, but
         // we should better handle that during type inference.
         resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
+    else if(argType.isa<mlir::daphne::UnknownType>())
+        resType = utils.unknownType;
     else
         throw std::runtime_error("right indexing is only allowed on matrices and frames");
 
