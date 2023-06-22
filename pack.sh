@@ -137,7 +137,10 @@ if [[ $? == 0 ]];then
   cd "$daphneBuildDir"
   mkdir -p "$PACK_ROOT/bin"
   # shellcheck disable=SC2154
-  cp -a "$projectRoot"/{bin,deploy,doc,lib,scripts} "$PACK_ROOT"
+  cp -a "$projectRoot"/{container,deploy,doc,lib,scripts} "$PACK_ROOT"
+  mkdir -p "$PACK_ROOT"/{api,bin}
+  cp -a "$projectRoot"/src/api/python "$PACK_ROOT"/api/
+  cp -a "$projectRoot"/bin/{daphne,DistributedWorker} "$PACK_ROOT"/bin/
   # this assumes that the pack script is run from an environment that has third party deps in /usr/local
   # e.g. the daphne-dev docker container
   cp -a /usr/local/lib/lib*.so* "$PACK_ROOT/lib"
