@@ -920,7 +920,7 @@ antlrcpp::Any SQLVisitor::visitStarExpr(
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     } else if(isBitSet(sqlFlag, (int64_t)SQLBit::group)         //If group is active
-            && isBitSet(sqlFlag, (int64_t)SQLBit::agg)          //AND there is an aggreagtion
+            && !groundGroupColumns.empty()                                     //AND there is an aggregation
             && isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){    //AND codegen is active
         std::string columnName = groundGroupColumns.begin()->c_str();
         groundGroupColumns.erase(groundGroupColumns.begin());
