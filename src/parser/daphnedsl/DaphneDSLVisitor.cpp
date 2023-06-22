@@ -267,7 +267,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
     // Remove quotes
     path = path.substr(1, path.size() - 2);
     
-    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top()).parent_path());
+    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top())).parent_path();
     std::filesystem::path importingPath = path;
 
     //Determine the prefix from alias/filename
