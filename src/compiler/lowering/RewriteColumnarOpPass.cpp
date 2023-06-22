@@ -1,10 +1,12 @@
 #include "ir/daphneir/Daphne.h"
+#include "ir/daphneir/DaphneInferFrameLabelsOpInterface.h"
 #include "ir/daphneir/Passes.h"
 
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Transforms/DialectConversion.h"
+#include "llvm/Support/Casting.h"
 
 #include <memory>
 #include <utility>
@@ -57,18 +59,24 @@ namespace
         Operation *op,
         Operation *parent,
         std::set<Operation*> &visited,
-        std::map<Operation*, std::vector<std::string>> &columnNamesPerSuccessor
+        std::map<Operation*, std::set<std::string>> &columnNamesPerSuccessor
     ) {
         if(visited.find(op) != visited.end()) {
             return;
         }
+
         visited.insert(op);
+        if(llvm::dyn_cast<mlir::daphne::ExtractColOp>(op)) {
+            Operation * constantOp = op->getOperand(1).getDefiningOp();
+            columnNamesPerSuccessor[parent].insert(constantOp->getAttr("value").cast<mlir::StringAttr>().getValue().str());
+        }else if(llvm::dyn_cast<mlir::daphne::PrintOp>(op)) {
+            auto colNamesPrint = op->getOperand(0).getType().dyn_cast<mlir::daphne::FrameType>().getLabels();
+            for (auto label : *colNamesPrint) {
+                columnNamesPerSuccessor[parent].insert(label);
+            }
+        }
         for (auto indexedResult : llvm::enumerate(op->getResults())) {
             Value result = indexedResult.value();
-            if(llvm::dyn_cast<mlir::daphne::ExtractColOp>(op)) {
-                Operation * constantOp = op->getOperand(1).getDefiningOp();
-                columnNamesPerSuccessor[parent].push_back(constantOp->getAttr("value").cast<mlir::StringAttr>().getValue().str());
-            }
             for (Operation *userOp : result.getUsers()) {
                 dfsSuccessors(userOp, parent, visited, columnNamesPerSuccessor);
             }
@@ -103,10 +111,15 @@ namespace
                 if(!filterOp){
                     return failure();
                 };
+                auto x = filterOp.getOperand(0).getType().dyn_cast<mlir::daphne::FrameType>();
+                auto y = x.getLabels();
+                for (auto label : *y) {
+                    std::cout << label << std::endl;
+                }
                 std::vector<std::string> columnNames;
                 std::cout << filterOp->getNumResults() << std::endl;
                 Operation * currentOp = filterOp;
-                std::map<Operation*, std::vector<std::string>> columnNamesPerSuccessor;
+                std::map<Operation*, std::set<std::string>> columnNamesPerSuccessor;
                 std::set<Operation*> visited;
                 while (currentOp->getNumResults()) {
                     for (auto indexedResult : llvm::enumerate(currentOp->getResults())) {
@@ -125,7 +138,7 @@ namespace
                     Value result = indexedResult.value();
                     visited.insert(result.getDefiningOp());
                     for (Operation *userOp : result.getUsers()) {
-                        columnNamesPerSuccessor.insert({userOp ,std::vector<std::string>() });
+                        columnNamesPerSuccessor.insert({userOp ,std::set<std::string>() });
                         dfsSuccessors(userOp, userOp, visited, columnNamesPerSuccessor);
                     }
                 }
