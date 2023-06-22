@@ -797,10 +797,20 @@ bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type par
     auto argMatTy = argTy.dyn_cast<mlir::daphne::MatrixType>();
     auto paramMatTy = paramTy.dyn_cast<mlir::daphne::MatrixType>();
 
-    bool isMatchingUnknownMatrix =
-        argMatTy && paramMatTy && paramMatTy.getElementType() == utils.unknownType;
-
-    return paramTy == argTy || paramTy == utils.unknownType || isMatchingUnknownMatrix;
+    // TODO This is rather a workaround than a thorough solution, since
+    // unknown argument types do not really allow to check compatibility.
+    
+    // Argument type and parameter type are compatible if...
+    return
+        // ...they are the same, OR
+        paramTy == argTy ||
+        // ...at least one of them is unknown, OR
+        argTy == utils.unknownType || paramTy == utils.unknownType ||
+        // ...they are both matrices and at least one of them is of unknown value type.
+        (argMatTy && paramMatTy && (
+            argMatTy.getElementType() == utils.unknownType ||
+            paramMatTy.getElementType() == utils.unknownType
+        ));
 }
 
 std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
