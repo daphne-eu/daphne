@@ -15,7 +15,7 @@ limitations under the License.
 -->
 
 # Documentation
-
+- [Quickstart](/doc/Quickstart.md)
 - [Getting Started](/doc/GettingStarted.md)
 
 ## User Documentation
