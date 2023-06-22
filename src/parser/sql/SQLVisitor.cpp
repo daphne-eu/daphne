@@ -841,9 +841,9 @@ antlrcpp::Any SQLVisitor::visitLimitClause(
         loc, utils.sizeType, builder.getIndexAttr(0)
     );
 
-    mlir::Value end = builder.create<mlir::daphne::ConstantOp>(
-        loc, utils.sizeType, builder.getIndexAttr(stoi(ctx->limit->getText()))
-    );
+    mlir::Value literal = utils.valueOrError(visit(ctx->literal()));
+
+    mlir::Value end = utils.castSizeIf(literal);
 
     mlir::daphne::FrameType resType = currentFrame.getType().dyn_cast<mlir::daphne::FrameType>().withSameColumnTypes();
     return static_cast<mlir::Value>(

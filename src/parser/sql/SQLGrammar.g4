@@ -80,7 +80,7 @@ orderByClause:
     (',' selectIdent orderInformation)*;
 
 limitClause:
-    SQL_LIMIT limit=INT_LITERAL;
+    SQL_LIMIT literal;
 
 orderInformation:
     (asc=SQL_ASC|desc=SQL_DESC)?;
