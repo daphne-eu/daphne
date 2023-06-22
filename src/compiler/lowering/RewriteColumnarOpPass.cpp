@@ -45,7 +45,11 @@ namespace
         auto columnGe = rewriter.create<ColumnCmp>(prevOp->getLoc(), cast, cmpOp->getOperand(1));
         auto finalCast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), resTypeCast, columnGe->getResult(0));
         auto numRows = rewriter.create<mlir::daphne::NumRowsOp>(prevOp->getLoc(), rewriter.getIndexType(), cast->getOperand(0));
-        rewriter.replaceOpWithNewOp<mlir::daphne::PositionListBitmapConverterOp>(cmpOp, resTypeCast, finalCast->getResult(0), numRows);
+        auto res = rewriter.replaceOpWithNewOp<mlir::daphne::PositionListBitmapConverterOp>(cmpOp, resTypeCast, finalCast->getResult(0), numRows);
+        auto uses = cmpOp->getUses();
+        for (auto x = uses.begin(); x != uses.end(); x++) {
+            x->getOwner()->replaceUsesOfWith(cmpOp, res);
+        }
         return success();
     }
 
@@ -238,7 +242,6 @@ void RewriteColumnarOpPass::runOnOperation() {
     target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
     target.addIllegalOp<mlir::daphne::EwGeOp, mlir::daphne::EwGtOp, mlir::daphne::EwLeOp, mlir::daphne::EwLtOp, mlir::daphne::EwEqOp, mlir::daphne::EwNeqOp, mlir::daphne::FilterRowOp>();
-    target.addLegalOp<mlir::daphne::ColumnProjectOp>();
 
     patterns.add<ColumnarOpReplacement>(&getContext());
 
