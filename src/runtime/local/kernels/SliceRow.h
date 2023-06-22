@@ -60,7 +60,7 @@ struct SliceRow<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
         if (lowerIncl < 0) {
             throw std::runtime_error("SliceRow: lowerIncl must be >= 0");
-        } else if (upperExcl >= arg->getNumRows()) {
+        } else if (upperExcl > arg->getNumRows()) {
             throw std::runtime_error("SliceRow: upperExcl must be <= arg->getNumRows()");
         } else if (lowerIncl >= upperExcl) {
             throw std::runtime_error("SliceRow: lowerIncl must be < upperExcl");
@@ -77,7 +77,7 @@ template <> struct SliceRow<Frame, Frame> {
     static void apply(Frame *& res, const Frame * arg, size_t lowerIncl, size_t upperExcl, DCTX(ctx)) {
         if (lowerIncl < 0) {
             throw std::runtime_error("SliceRow: lowerIncl must be >= 0");
-        } else if (upperExcl >= arg->getNumRows()) {
+        } else if (upperExcl > arg->getNumRows()) {
             throw std::runtime_error("SliceRow: upperExcl must be <= arg->getNumRows()");
         } else if (lowerIncl >= upperExcl) {
             throw std::runtime_error("SliceRow: lowerIncl must be < upperExcl");
