@@ -137,35 +137,59 @@ The typical trigonometric functions:
 
 ## Elementwise binary
 
-The following built-in functions all follow the same scheme:
+DaphneDSL supports various elementwise binary operations.
+Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*.
+Some operations even support both, e.g., `pow(a, b)` and `a^b` have the same semantics.
+
+The built-in functions all follow the same scheme:
 
 - ***`binaryFunc`***`(lhs:scalar/matrix, rhs:scalar/matrix)`
   
   Applies the respective binary function (see table below) to the corresponding pairs of a value in the left-hand-side argument `lhs` and the right-hand-side argument `rhs`.
   Regarding the combinations of scalars and matrices, the same broadcasting semantics apply as for binary operations like `+`, `*`, etc. (see the [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)).
   
-Note that DaphneDSL support various other elementwise binary functions via operators in infix notation (see [DaphneDSL]()), e.g., `^`, `%`, `*`, `/`, `+`, `-`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`.
-
 ### Arithmetic
 
-| function | meaning |
-| ----- | ----- |
-| **`pow`** | exponentiation (`lhs` to the power of `rhs`) |
-| **`log`** | logarithm (logarithm of `lhs` to the base of `rhs`) |
-| **`mod`** | modulo |
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| | **`+`** | addition |
+| | **`-`** | subtraction |
+| | **`*`** | multiplication |
+| | **`/`** | division |
+| **`pow`** | **`^`** | exponentiation (`lhs` to the power of `rhs`) |
+| **`log`** | | logarithm (logarithm of `lhs` to the base of `rhs`) |
+| **`mod`** | **`%`** | modulo |
 
 ### Min/max
 
-| function | meaning |
-| ----- | ----- |
-| **`min`** | minimum |
-| **`max`** | maximum |
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| **`min`** | | minimum |
+| **`max`** | | maximum |
+
+### Logical
+
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| | **`&&`** | logical conjunction |
+| | **`\|\|`** | logical disjunction |
 
 ### Strings
 
-| function | meaning |
-| ----- | ----- |
-| **`concat`** | string concatenation |
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| **`concat`** | **`+`** | string concatenation |
+
+### Comparison
+
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| | **`==`** | equal |
+| | **`!=`** | not equal |
+| | **`<`** | less than |
+| | **`<=`** | less or equal |
+| | **`>`** | greater than |
+| | **`>=`** | greater or equal |
 
 ## Outer binary (generalized outer product)
 
