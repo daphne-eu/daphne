@@ -80,19 +80,19 @@ mlir::Value DaphneDSLBuiltins::createNumOp(mlir::Location loc, const std::string
     ));
 }
 
-template<class EwUnaryOp>
-mlir::Value DaphneDSLBuiltins::createEwUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
+template<class UnaryOp>
+mlir::Value DaphneDSLBuiltins::createUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 1);
-    return utils.retValWithInferedType(builder.create<EwUnaryOp>(
+    return utils.retValWithInferedType(builder.create<UnaryOp>(
             loc, utils.unknownType, args[0]
     ));
 }
 
-template<class EwBinaryOp>
-mlir::Value DaphneDSLBuiltins::createEwBinaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
+template<class BinaryOp>
+mlir::Value DaphneDSLBuiltins::createBinaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args) {
     checkNumArgsExact(func, args.size(), 2);
-    return utils.retValWithInferedType(builder.create<EwBinaryOp>(
-            loc, args[0], args[1]
+    return utils.retValWithInferedType(builder.create<BinaryOp>(
+            loc, utils.unknownType, args[0], args[1]
     ));
 }
 
@@ -436,51 +436,51 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     if(func == "abs")
-        return createEwUnaryOp<EwAbsOp>(loc, func, args);
+        return createUnaryOp<EwAbsOp>(loc, func, args);
     if(func == "sign")
-        return createEwUnaryOp<EwSignOp>(loc, func, args);
+        return createUnaryOp<EwSignOp>(loc, func, args);
     if(func == "exp")
-        return createEwUnaryOp<EwExpOp>(loc, func, args);
+        return createUnaryOp<EwExpOp>(loc, func, args);
     if(func == "ln")
-        return createEwUnaryOp<EwLnOp>(loc, func, args);
+        return createUnaryOp<EwLnOp>(loc, func, args);
     if(func == "mod")
-        return createEwBinaryOp<EwModOp>(loc, func, args);
+        return createBinaryOp<EwModOp>(loc, func, args);
     if(func == "sqrt")
-        return createEwUnaryOp<EwSqrtOp>(loc, func, args);
+        return createUnaryOp<EwSqrtOp>(loc, func, args);
 
     // --------------------------------------------------------------------
     // Rounding
     // --------------------------------------------------------------------
 
     if(func == "round")
-        return createEwUnaryOp<EwRoundOp>(loc, func, args);
+        return createUnaryOp<EwRoundOp>(loc, func, args);
     if(func == "floor")
-        return createEwUnaryOp<EwFloorOp>(loc, func, args);
+        return createUnaryOp<EwFloorOp>(loc, func, args);
     if(func == "ceil")
-        return createEwUnaryOp<EwCeilOp>(loc, func, args);
+        return createUnaryOp<EwCeilOp>(loc, func, args);
 
     // --------------------------------------------------------------------
     // Trigonometric
     // --------------------------------------------------------------------
 
     if(func == "sin")
-        return createEwUnaryOp<EwSinOp>(loc, func, args);
+        return createUnaryOp<EwSinOp>(loc, func, args);
     if(func == "cos")
-        return createEwUnaryOp<EwCosOp>(loc, func, args);
+        return createUnaryOp<EwCosOp>(loc, func, args);
     if(func == "tan")
-        return createEwUnaryOp<EwTanOp>(loc, func, args);
+        return createUnaryOp<EwTanOp>(loc, func, args);
     if(func == "sinh")
-        return createEwUnaryOp<EwSinhOp>(loc, func, args);
+        return createUnaryOp<EwSinhOp>(loc, func, args);
     if(func == "cosh")
-        return createEwUnaryOp<EwCoshOp>(loc, func, args);
+        return createUnaryOp<EwCoshOp>(loc, func, args);
     if(func == "tanh")
-        return createEwUnaryOp<EwTanhOp>(loc, func, args);
+        return createUnaryOp<EwTanhOp>(loc, func, args);
     if(func == "asin")
-        return createEwUnaryOp<EwAsinOp>(loc, func, args);
+        return createUnaryOp<EwAsinOp>(loc, func, args);
     if(func == "acos")
-        return createEwUnaryOp<EwAcosOp>(loc, func, args);
+        return createUnaryOp<EwAcosOp>(loc, func, args);
     if(func == "atan")
-        return createEwUnaryOp<EwAtanOp>(loc, func, args);
+        return createUnaryOp<EwAtanOp>(loc, func, args);
 
     // ********************************************************************
     // Elementwise binary
@@ -491,18 +491,18 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // --------------------------------------------------------------------
 
     if(func == "pow")
-        return createEwBinaryOp<EwPowOp>(loc, func, args);
+        return createBinaryOp<EwPowOp>(loc, func, args);
     if(func == "log")
-        return createEwBinaryOp<EwLogOp>(loc, func, args);
+        return createBinaryOp<EwLogOp>(loc, func, args);
 
     // --------------------------------------------------------------------
     // Min/max
     // --------------------------------------------------------------------
 
     if(func == "min")
-        return createEwBinaryOp<EwMinOp>(loc, func, args);
+        return createBinaryOp<EwMinOp>(loc, func, args);
     if(func == "max")
-        return createEwBinaryOp<EwMaxOp>(loc, func, args);
+        return createBinaryOp<EwMaxOp>(loc, func, args);
 
     // --------------------------------------------------------------------
     // Strings
