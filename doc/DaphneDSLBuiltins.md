@@ -42,6 +42,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Matrix/frame dimensions
 - Elementwise unary
 - Elementwise binary
+- Outer binary (generalized outer product)
 - Aggregation and statistical
 - Reorganization
 - Matrix decomposition & co
@@ -165,6 +166,68 @@ Note that DaphneDSL support various other elementwise binary functions via opera
 | function | meaning |
 | ----- | ----- |
 | **`concat`** | string concatenation |
+
+## Outer binary (generalized outer product)
+
+The following built-in functions all follow the same scheme:
+
+- ***`outerBinaryFunc`***`(lhs:matrix, rhs:matrix)`
+  
+  The argument `lhs` is expected to be a column *(m x 1)* matrix, and the argument `rhs` is expected to be a row *(1 x n)* matrix.
+  The result is a *(m x n)* matrix, whereby the element at position *(i, j)* is calculated by applying the respective binary function (see the table below) to the *i*-th element in `lhs` and the *j*-th element in `rhs`.
+  Schematically, this looks as follows (where `∘` is some binary operation):
+  ```
+         |    b0    b1 ...    bn rhs
+      ---+----------------------
+  lhs a0 | a0∘b0 a0∘b1 ... a0∘bn res
+      a1 | a1∘b0 a1∘b1 ... a1∘bn
+      .. | ..... .....     .....
+      am | am∘b0 am∘b1 ... am∘bn
+  ```
+  
+### Arithmetic
+
+| function | meaning |
+| ----- | ----- |
+| **`outerAdd`** | addition |
+| **`outerSub`** | subtraction |
+| **`outerMul`** | multiplication (the well-known *outer product*) |
+| **`outerDiv`** | division |
+| **`outerPow`** | exponentiation (`lhs` to the power of `rhs`) |
+| **`outerLog`** | logarithm (logarithm of `lhs` to the base of `rhs`) |
+| **`outerMod`** | modulo |
+
+### Min/max
+
+| function | meaning |
+| ----- | ----- |
+| **`outerMin`** | minimum |
+| **`outerMax`** | maximum |
+
+### Logical
+
+| function | meaning |
+| ----- | ----- |
+| **`outerAnd`** | logical conjunction |
+| **`outerOr`** | logical disjunction |
+| **`outerXor`** | logical exclusive disjunction |
+
+### Strings
+
+| function | meaning |
+| ----- | ----- |
+| **`outerConcat`** | string concatenation |
+
+### Comparison
+
+| function | meaning |
+| ----- | ----- |
+| **`outerEq`** | equal |
+| **`outerNeq`** | not equal |
+| **`outerLt`** | less than |
+| **`outerLe`** | less or equal |
+| **`outerGt`** | greater than |
+| **`outerGe`** | greater or equal |
 
 ## Aggregation and statistical
 

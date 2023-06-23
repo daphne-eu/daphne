@@ -516,6 +516,73 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     }
 
     // ********************************************************************
+    // Outer binary (generalized outer product)
+    // ********************************************************************
+
+    // --------------------------------------------------------------------
+    // Arithmetic
+    // --------------------------------------------------------------------
+
+    if(func == "outerAdd")
+        return createBinaryOp<OuterAddOp>(loc, func, args);
+    if(func == "outerSub")
+        return createBinaryOp<OuterSubOp>(loc, func, args);
+    if(func == "outerMul")
+        return createBinaryOp<OuterMulOp>(loc, func, args);
+    if(func == "outerDiv")
+        return createBinaryOp<OuterDivOp>(loc, func, args);
+    if(func == "outerPow")
+        return createBinaryOp<OuterPowOp>(loc, func, args);
+    if(func == "outerMod")
+        return createBinaryOp<OuterModOp>(loc, func, args);
+    if(func == "outerLog")
+        return createBinaryOp<OuterLogOp>(loc, func, args);
+
+    // --------------------------------------------------------------------
+    // Min/max
+    // --------------------------------------------------------------------
+
+    if(func == "outerMin")
+        return createBinaryOp<OuterMinOp>(loc, func, args);
+    if(func == "outerMax")
+        return createBinaryOp<OuterMaxOp>(loc, func, args);
+
+    // --------------------------------------------------------------------
+    // Logical
+    // --------------------------------------------------------------------
+
+    if(func == "outerAnd")
+        return createBinaryOp<OuterAndOp>(loc, func, args);
+    if(func == "outerOr")
+        return createBinaryOp<OuterOrOp>(loc, func, args);
+    if(func == "outerXor")
+        return createBinaryOp<OuterXorOp>(loc, func, args);
+
+    // --------------------------------------------------------------------
+    // Strings
+    // --------------------------------------------------------------------
+
+    if(func == "outerConcat")
+        return createBinaryOp<OuterConcatOp>(loc, func, args);
+
+    // --------------------------------------------------------------------
+    // Comparisons
+    // --------------------------------------------------------------------
+
+    if(func == "outerEq")
+        return createBinaryOp<OuterEqOp>(loc, func, args);
+    if(func == "outerNeq")
+        return createBinaryOp<OuterNeqOp>(loc, func, args);
+    if(func == "outerLt")
+        return createBinaryOp<OuterLtOp>(loc, func, args);
+    if(func == "outerLe")
+        return createBinaryOp<OuterLeOp>(loc, func, args);
+    if(func == "outerGt")
+        return createBinaryOp<OuterGtOp>(loc, func, args);
+    if(func == "outerGe")
+        return createBinaryOp<OuterGeOp>(loc, func, args);
+
+    // ********************************************************************
     // Aggregation and statistical
     // ********************************************************************
 
