@@ -56,13 +56,7 @@ template<typename VT>
 struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
     static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VT> * pos, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        std::shared_ptr<const tuddbs::Column<VT> > data_shared(data);
-        std::shared_ptr<const tuddbs::Column<VT> > pos_shared(pos);
-        std::shared_ptr<const tuddbs::Column<VT> > tmp;
-        tmp = tuddbs::project<ps>::apply(data_shared, pos_shared);
-        const tuddbs::Column<VT> * tmp2 = tmp.get();
-        tuddbs::Column<VT> * tmp3 = new tuddbs::Column<VT>(*tmp2);
-        res = tmp3;        
+        res = tuddbs::project<ps>::apply(data, pos);   
     }
 };
 
