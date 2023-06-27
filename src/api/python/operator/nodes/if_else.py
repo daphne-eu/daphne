@@ -43,19 +43,33 @@ class IfElse(OperationNode):
                  named_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'IfElse':
         _named_input_nodes = named_input_nodes
         
-        outer_vars = analyzer.get_outer_scope_variables(pred)
-        for i, var in enumerate(outer_vars):
+        outer_vars_pred = analyzer.get_outer_scope_variables(pred)
+        for i, var in enumerate(outer_vars_pred):
             inside_node = pred.__globals__.get(var)
             if var:
                 print(inside_node)
                 _named_input_nodes.update({f"var{i}": inside_node})
 
         _named_input_nodes.update({'cond': pred()})
+
+        outer_vars_true = analyzer.get_outer_scope_variables(true_fn)
+        outer_vars_false = analyzer.get_outer_scope_variables(false_fn)
+
+        outer_vars_both = list(set(outer_vars_true) & set(outer_vars_false))
+        for i, var in enumerate(outer_vars_both):
+            inside_node = true_fn.__globals__.get(var)
+            if var:
+                print(inside_node)
+                _named_input_nodes.update({f"i_var{i}": inside_node})
+
+        
         
         print(daphne_context.__dict__)
         super().__init__(daphne_context, 'for_loop', named_input_nodes=named_input_nodes,
                          output_type=OutputType.MATRIX)
         print(f"outer scope vars: {analyzer.get_outer_scope_variables(pred)}")
+
+        #self._source_node = Scalar(self.daphne_context, str(1), assign=True)
 
         self._true_fn = true_fn(named_input_nodes['node'])
         self._false_fn = false_fn(named_input_nodes['node'])
@@ -71,8 +85,12 @@ class IfElse(OperationNode):
         self._true_fn._script.build_code(self._true_fn)
         self._false_fn._script = NestedDaphneDSLScript(self._false_fn.daphne_context, parent_level+1)
         self._false_fn._script.build_code(self._false_fn)
-        #print(self._callback._script.daphnedsl_script)
-        multiline_str = f"if ({named_input_vars['cond']}) {{\n"
+        
+        pred_var = named_input_vars['cond']
+        if pred_var in ["TRUE", "FALSE"]:
+            pred_var = str(int(pred_var == "TRUE"))
+        
+        multiline_str = f"if ({pred_var}) {{\n"
         multiline_str += textwrap.indent(self._true_fn._script.daphnedsl_script, prefix="    ")
         multiline_str += textwrap.indent(f"{named_input_vars['node']}={self._true_fn.daphnedsl_name};\n", prefix="    ")
         multiline_str += "}"
