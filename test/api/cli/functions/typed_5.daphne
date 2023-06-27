@@ -1,0 +1,25 @@
+// overloading typed functions with different number of results
+
+def f(a:si64) -> si64 {
+    return a + 1;
+}
+def f(a:si64, b:si64) -> si64, si64 {
+    return a + 1, b - 1;
+}
+def f(a:f64) -> f64, f64, f64 {
+    return a + 1, a + 2, a + 3;
+}
+
+x = f(100);
+print(x);
+print("");
+
+y, z = f(200, 300);
+print(y);
+print(z);
+print("");
+
+a, b, c = f(1.23);
+print(a);
+print(b);
+print(c);
