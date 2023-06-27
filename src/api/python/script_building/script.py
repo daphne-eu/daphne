@@ -37,7 +37,7 @@ class DaphneDSLScript:
     daphnedsl_script :str
     inputs: Dict[str, DAGNode]
     out_var_name:List[str]
-    _variable_counter: int  
+    _variable_counter: int
 
     def __init__(self, context) -> None:
         self.daphne_context = context

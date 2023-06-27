@@ -25,10 +25,8 @@ __all__ = ["DaphneContext"]
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.scalar import Scalar
 from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.if_else import IfElse
-from api.python.operator.operation_node import OperationNode
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -141,7 +139,7 @@ class DaphneContext(object):
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
 
-    def for_loop(self, input_node: 'OperationNode', callback: Callable, start: int, end: int, step: int = None) -> 'ForLoop':
+    def for_loop(self, input_node: 'Matrix', callback: Callable, start: int, end: int, step: int = None) -> 'ForLoop':
         named_input_nodes = {
             "node": input_node,
             "start": start, 
@@ -151,7 +149,7 @@ class DaphneContext(object):
         node = ForLoop(self, callback, named_input_nodes)
         return node
 
-    def if_else(self, input_node: 'OperationNode', pred: Callable, true_fn: Callable, false_fn: Callable) -> 'IfElse':
+    def if_else(self, input_node: 'Matrix', pred: Callable, true_fn: Callable, false_fn: Callable) -> 'IfElse':
         named_input_nodes = {
             "node": input_node
         }
