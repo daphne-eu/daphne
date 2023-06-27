@@ -25,12 +25,16 @@ __all__ = ["DaphneContext"]
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
+from api.python.operator.nodes.scalar import Scalar
+from api.python.operator.nodes.for_loop import ForLoop
+from api.python.operator.nodes.if_else import IfElse
+from api.python.operator.operation_node import OperationNode
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
 
-from typing import Sequence, Dict, Union
+from typing import Sequence, Dict, Union, Callable
 
 class DaphneContext(object):
 
@@ -136,3 +140,19 @@ class DaphneContext(object):
             'rows': rows, 'cols': cols, 'min': min, 'max':max, 'sparsity':sparsity, 'seed':seed}
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
+
+    def for_loop(self, input_node: 'OperationNode', callback: Callable, start: int, end: int, step: int = None) -> 'ForLoop':
+        named_input_nodes = {
+            "node": input_node,
+            "start": start, 
+            "end": end,
+            "step": step
+        }
+        node = ForLoop(self, callback, named_input_nodes)
+        return node
+
+    def if_else(self, input_node: 'OperationNode', pred: Callable, true_fn: Callable, false_fn: Callable) -> 'IfElse':
+        named_input_nodes = {
+            "node": input_node
+        }
+        return IfElse(self, pred, true_fn, false_fn, named_input_nodes)
