@@ -59,7 +59,8 @@ namespace
         Operation *op,
         Operation *parent,
         std::set<Operation*> &visited,
-        std::map<Operation*, std::set<std::string>> &columnNamesPerSuccessor
+        std::map<Operation*, std::set<std::string>> &columnNamesPerSuccessor,
+        std::set<std::string> &distinctColumnNames
     ) {
         if(visited.find(op) != visited.end()) {
             return;
@@ -69,16 +70,18 @@ namespace
         if(llvm::dyn_cast<mlir::daphne::ExtractColOp>(op)) {
             Operation * constantOp = op->getOperand(1).getDefiningOp();
             columnNamesPerSuccessor[parent].insert(constantOp->getAttr("value").cast<mlir::StringAttr>().getValue().str());
+            distinctColumnNames.insert(constantOp->getAttr("value").cast<mlir::StringAttr>().getValue().str());
         }else if(llvm::dyn_cast<mlir::daphne::PrintOp>(op)) {
             auto colNamesPrint = op->getOperand(0).getType().dyn_cast<mlir::daphne::FrameType>().getLabels();
             for (auto label : *colNamesPrint) {
                 columnNamesPerSuccessor[parent].insert(label);
+                distinctColumnNames.insert(label);
             }
         }
         for (auto indexedResult : llvm::enumerate(op->getResults())) {
             Value result = indexedResult.value();
             for (Operation *userOp : result.getUsers()) {
-                dfsSuccessors(userOp, parent, visited, columnNamesPerSuccessor);
+                dfsSuccessors(userOp, parent, visited, columnNamesPerSuccessor, distinctColumnNames);
             }
         }
     }
@@ -118,6 +121,7 @@ namespace
                 }
                 std::cout << filterOp->getNumResults() << std::endl;
                 std::map<Operation*, std::set<std::string>> columnNamesPerSuccessor;
+                std::set<std::string> distinctColumnNames;
                 std::set<Operation*> visited;
 
                 for (auto indexedResult : llvm::enumerate(filterOp->getResults())) {
@@ -125,7 +129,7 @@ namespace
                     visited.insert(result.getDefiningOp());
                     for (Operation *userOp : result.getUsers()) {
                         columnNamesPerSuccessor.insert({userOp ,std::set<std::string>() });
-                        dfsSuccessors(userOp, userOp, visited, columnNamesPerSuccessor);
+                        dfsSuccessors(userOp, userOp, visited, columnNamesPerSuccessor, distinctColumnNames);
                     }
                 }
 
@@ -153,82 +157,63 @@ namespace
                 std::map<std::string, mlir::daphne::CastOp> matrixColumns;
                 std::map<std::string, mlir::daphne::ConstantOp> labelColumns;
 
-                for (auto it = columnNamesPerSuccessor.begin(); it != columnNamesPerSuccessor.end(); it++) {
-                    std::vector<mlir::daphne::ColumnProjectOp> columnProjectOps;
-                    std::vector<mlir::daphne::ConstantOp> columnNamesOps;
+                for (std::string columnName : distinctColumnNames) {
+                    // check if columns available in input frame
+                    if (std::find(y->begin(), y->end(), columnName) == y->end()) {
+                        continue;
+                    }
+                    // create a constant op with the label of the column
+                    auto colName = rewriter.create<mlir::daphne::ConstantOp>(filterOp->getLoc(), columnName);
+                    labelColumns.insert(std::pair<std::string,mlir::daphne::ConstantOp>{columnName, colName});
+                    // extract the column with the given label, cast it to column and project the position list onto it
+                    auto extract = rewriter.create<mlir::daphne::ExtractColOp>(filterOp->getLoc(), resTypeFrame, filterOp->getOperand(0), colName);
+                    auto cast = rewriter.create<mlir::daphne::CastOp>(filterOp->getLoc(), resType, extract->getResult(0));
+                    auto project = rewriter.create<mlir::daphne::ColumnProjectOp>(filterOp->getLoc(), resType, cast->getResult(0), pos->getResult(0));
+                    // cast the result back to a matrix and save result for later use
+                    mlir::daphne::CastOp castMatrix = rewriter.create<mlir::daphne::CastOp>(filterOp->getLoc(), resTypeMatrix, project->getResult(0));
+                    matrixColumns.insert(std::pair<std::string, mlir::daphne::CastOp>{columnName, castMatrix});
 
+                }
+
+                // Create a frame with all needed columns for each successor of the filterRowOp
+                for (auto it = columnNamesPerSuccessor.begin(); it != columnNamesPerSuccessor.end(); it++) {
                     std::set<std::string> columnNames;
                     // check if columns available in input frame
                     for (auto columnName : it->second) {
                         if (std::find(y->begin(), y->end(), columnName) != y->end()) {
                             columnNames.insert(columnName);
+                            std::cout <<"name " << columnName << std::endl;
                         }
                     }
 
                     auto successorOperation = it->first;
 
-                    for (auto columnName : columnNames) {
-                        if (matrixColumns.find(columnName) != matrixColumns.end()) {
-                            columnNamesOps.push_back(labelColumns.find(columnName)->second);
-                            continue;
-                        }
-                        auto colName = rewriter.create<mlir::daphne::ConstantOp>(filterOp->getLoc(), columnName);
-                        columnNamesOps.push_back(colName);
-                        labelColumns.insert(std::pair<std::string,mlir::daphne::ConstantOp>{columnName, colName});
-                        auto extract = rewriter.create<mlir::daphne::ExtractColOp>(filterOp->getLoc(), resTypeFrame, filterOp->getOperand(0), colName);
-                        auto cast = rewriter.create<mlir::daphne::CastOp>(filterOp->getLoc(), resType, extract->getResult(0));
-                        columnProjectOps.push_back(rewriter.create<mlir::daphne::ColumnProjectOp>(filterOp->getLoc(), resType, cast->getResult(0), pos->getResult(0)));
-                    } 
-
                     std::vector<mlir::Type> colTypes;
                     std::vector<mlir::Value> cols;
                     std::vector<mlir::Value> labels;
 
-                    if(columnNames.size() == 1) {
-                        mlir::daphne::CastOp castMatrix;
-                        if (!(matrixColumns.find(*(columnNames.begin())) != matrixColumns.end())) {
-                            castMatrix = rewriter.create<mlir::daphne::CastOp>(filterOp->getLoc(), resTypeMatrix, columnProjectOps[0]->getResult(0));
-                            matrixColumns.insert(std::pair<std::string, mlir::daphne::CastOp>{*(columnNames.begin()), castMatrix});
-                        } else {
-                            castMatrix = matrixColumns.find(*(columnNames.begin()))->second;
-                        }
+                    // Get the needed input matrix, labels and types for the frame
+                    for (size_t i = 0; i < columnNames.size(); i++) {
+                        mlir::daphne::CastOp castMatrix = matrixColumns.find(*std::next(columnNames.begin(), i))->second;
+                        mlir::daphne::ConstantOp columnNameOp = labelColumns.find(*std::next(columnNames.begin(), i))->second;
                         cols.push_back(castMatrix->getResult(0));
-                        labels.push_back(columnNamesOps[0]->getResult(0));
+                        labels.push_back(columnNameOp->getResult(0));
+                        colTypes.push_back(castMatrix->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
+                    }
+                    mlir::Type resTypeFrame = mlir::daphne::FrameType::get(
+                    rewriter.getContext(), colTypes
+                    );
 
-                        mlir::daphne::CreateFrameOp res;
-                        if(it == std::prev(columnNamesPerSuccessor.end())) {
-                            res = rewriter.replaceOpWithNewOp<mlir::daphne::CreateFrameOp>(filterOp, resTypeFrame, cols, labels);
-                        } else {
-                            res = rewriter.create<mlir::daphne::CreateFrameOp>(filterOp->getLoc(), resTypeFrame, cols, labels);
-                        }
-
-                        successorOperation->replaceUsesOfWith(filterOp, res);
+                    mlir::daphne::CreateFrameOp res;
+                    // We need to replace the filterRowOp with the CreateFrameOp of the final successor to create a valid IR
+                    if(it == std::prev(columnNamesPerSuccessor.end())) {
+                        res = rewriter.replaceOpWithNewOp<mlir::daphne::CreateFrameOp>(filterOp, resTypeFrame, cols, labels);
                     } else {
-                        for (size_t i = 0; i < columnNames.size(); i++) {
-                            mlir::daphne::CastOp castMatrix;
-                            if (!(matrixColumns.find(*std::next(columnNames.begin(), i)) != matrixColumns.end())) {
-                                castMatrix = rewriter.create<mlir::daphne::CastOp>(filterOp->getLoc(), resTypeMatrix, columnProjectOps[i]->getResult(0));
-                                matrixColumns.insert(std::pair<std::string, mlir::daphne::CastOp>{*std::next(columnNames.begin(), i), castMatrix});
-                            } else {
-                                castMatrix = matrixColumns.find(*(columnNames.begin()))->second;
-                            }
-                            cols.push_back(castMatrix->getResult(0));
-                            labels.push_back(columnNamesOps[i]->getResult(0));
-                            colTypes.push_back(castMatrix->getResult(0).getType().dyn_cast<mlir::daphne::MatrixType>().getElementType());
-                        }
-                        mlir::Type resTypeFrame = mlir::daphne::FrameType::get(
-                        rewriter.getContext(), colTypes
-                        );
+                        res = rewriter.create<mlir::daphne::CreateFrameOp>(filterOp->getLoc(), resTypeFrame, cols, labels);
+                    }
 
-                        mlir::daphne::CreateFrameOp res;
-                        if(it == std::prev(columnNamesPerSuccessor.end())) {
-                            res = rewriter.replaceOpWithNewOp<mlir::daphne::CreateFrameOp>(filterOp, resTypeFrame, cols, labels);
-                        } else {
-                            res = rewriter.create<mlir::daphne::CreateFrameOp>(filterOp->getLoc(), resTypeFrame, cols, labels);
-                        }
-
-                        successorOperation->replaceUsesOfWith(filterOp, res);
-                    } 
+                    successorOperation->replaceUsesOfWith(filterOp, res);
+                
                 }
 
                 return success();
