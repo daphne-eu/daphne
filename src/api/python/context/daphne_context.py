@@ -27,6 +27,7 @@ from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.if_else import IfElse
+from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -154,3 +155,9 @@ class DaphneContext(object):
             "node": input_node
         }
         return IfElse(self, pred, true_fn, false_fn, named_input_nodes)
+    
+    def while_loop(self, input_node: 'Matrix', pred: Callable, callback: Callable) -> 'WhileLoop':
+        named_input_nodes = {
+            "node": input_node
+        }
+        return WhileLoop(self, pred, callback, named_input_nodes)
