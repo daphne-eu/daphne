@@ -27,7 +27,6 @@ from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
 from api.python.script_building.nested_script import NestedDaphneDSLScript
-import numpy as np
 import textwrap
 
 from typing import TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Tuple, Union
@@ -42,41 +41,34 @@ class IfElse(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', pred, true_fn, false_fn,
                  named_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'IfElse':
         _named_input_nodes = named_input_nodes
-        
-        outer_vars_pred = analyzer.get_outer_scope_variables(pred)
-        for i, var in enumerate(outer_vars_pred):
-            inside_node = pred.__globals__.get(var)
-            if var:
-                print(inside_node)
-                _named_input_nodes.update({f"var{i}": inside_node})
-
-        _named_input_nodes.update({'cond': pred()})
 
         outer_vars_true = analyzer.get_outer_scope_variables(true_fn)
         outer_vars_false = analyzer.get_outer_scope_variables(false_fn)
 
-        outer_vars_both = list(set(outer_vars_true) & set(outer_vars_false))
+        outer_vars_both = {**outer_vars_true, **outer_vars_false}
         for i, var in enumerate(outer_vars_both):
-            inside_node = true_fn.__globals__.get(var)
-            if var:
-                print(inside_node)
-                _named_input_nodes.update({f"i_var{i}": inside_node})
+            node = outer_vars_both[var]
+            if node:
+                _named_input_nodes.update({f"i_var{i}": node})
+        
+        outer_vars_pred = analyzer.get_outer_scope_variables(pred)
 
+        for i, var in enumerate(outer_vars_pred):
+            node = outer_vars_pred[var]
+            if node:
+                _named_input_nodes.update({f"pred_var{i}": node})
+
+        _named_input_nodes.update({'cond': pred()})
         
-        
-        print(daphne_context.__dict__)
         super().__init__(daphne_context, 'for_loop', named_input_nodes=named_input_nodes,
                          output_type=OutputType.MATRIX)
-        print(f"outer scope vars: {analyzer.get_outer_scope_variables(pred)}")
-
-        #self._source_node = Scalar(self.daphne_context, str(1), assign=True)
 
         self._true_fn = true_fn(named_input_nodes['node'])
         self._false_fn = false_fn(named_input_nodes['node'])
         
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        print(f"input vars: {named_input_vars}")
+        #print(f"input vars: {named_input_vars}")
         parent_level = 1  # default
         if self._script:
             parent_level = self._script._nested_level

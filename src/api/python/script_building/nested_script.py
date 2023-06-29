@@ -37,11 +37,11 @@ if TYPE_CHECKING:
     from context.daphne_context import DaphneContext
 
 class NestedDaphneDSLScript(DaphneDSLScript):
-    input_var: str 
-    iter_var: str
-    def __init__(self, context, nested_level=1) -> None:
+    var_prefix: str
+    def __init__(self, context, nested_level=1, var_prefix='L') -> None:
         super().__init__(context)
         self._nested_level = nested_level
+        self.var_prefix = var_prefix
 
     def build_code(self, dag_root: DAGNode):
         self._dfs_dag_nodes(dag_root)
@@ -97,4 +97,4 @@ class NestedDaphneDSLScript(DaphneDSLScript):
     def _next_unique_var(self)->str:
         var_id = self._variable_counter
         self._variable_counter += 1
-        return f'L{self._nested_level}_V{var_id}'
+        return f'{self.var_prefix}{self._nested_level}_V{var_id}'
