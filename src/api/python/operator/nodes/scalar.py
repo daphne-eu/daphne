@@ -56,72 +56,72 @@ class Scalar(OperationNode):
         return super().compute()
     
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '+', [self, other])
+        return Scalar(self.daphne_context, ' + ', [self, other])
 
     # Left hand side
     def __radd__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '+', [other, self])
+        return Scalar(self.daphne_context, ' + ', [other, self])
 
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '-', [self, other])
+        return Scalar(self.daphne_context, ' - ', [self, other])
 
     # Left hand side
     def __rsub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '-', [other, self])
+        return Scalar(self.daphne_context, ' - ', [other, self])
 
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar( self.daphne_context,'*', [self, other])
+        return Scalar( self.daphne_context,' * ', [self, other])
 
     def __rmul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '*', [other, self])
+        return Scalar(self.daphne_context, ' * ', [other, self])
 
     def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '/', [self, other])
+        return Scalar(self.daphne_context, ' / ', [self, other])
 
     def __rtruediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '/', [other, self])
+        return Scalar(self.daphne_context, ' / ', [other, self])
 
     def __floordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '//', [self, other])
+        return Scalar(self.daphne_context, ' // ', [self, other])
 
     def __rfloordiv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Scalar':
-        return Scalar(self.daphne_context, '//', [other, self])
+        return Scalar(self.daphne_context, ' // ', [other, self])
 
     def __lt__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '<', [self, other])
+        return Scalar(self.daphne_context, ' < ', [self, other])
 
     def __rlt__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '<', [other, self])
+        return Scalar(self.daphne_context, ' < ', [other, self])
 
     def __le__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '<=', [self, other])
+        return Scalar(self.daphne_context, ' <= ', [self, other])
 
     def __rle__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '<=', [other, self])
+        return Scalar(self.daphne_context, ' <= ', [other, self])
 
     def __gt__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '>', [self, other])
+        return Scalar(self.daphne_context, ' > ', [self, other])
 
     def __rgt__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '>', [other, self])
+        return Scalar(self.daphne_context, ' > ', [other, self])
 
     def __ge__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '>=', [self, other])
+        return Scalar(self.daphne_context, ' >= ', [self, other])
 
     def __rge__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '>=', [other, self])
+        return Scalar(self.daphne_context, ' >= ', [other, self])
 
     def __eq__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '==', [self, other])
+        return Scalar(self.daphne_context, ' == ', [self, other])
 
     def __req__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '==', [other, self])
+        return Scalar(self.daphne_context, ' == ', [other, self])
 
     def __ne__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '!=', [self, other])
+        return Scalar(self.daphne_context, ' != ', [self, other])
 
     def __rne__(self, other) -> 'Scalar':
-        return Scalar(self.daphne_context, '!=', [other, self])
+        return Scalar(self.daphne_context, ' != ', [other, self])
     
     def sqrt(self) -> 'Scalar':
         return Scalar(self.daphne_context,'sqrt',[self])
