@@ -40,10 +40,12 @@ if TYPE_CHECKING:
     
 class Matrix(OperationNode):
     _np_array: np.array
+    __copy: bool
 
     def __init__(self, daphne_context: 'DaphneContext', operation:str, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None, 
-                local_data: np.array = None, brackets:bool = False)->'Matrix':
+                local_data: np.array = None, brackets:bool = False, copy: bool = False)->'Matrix':
+        self.__copy = copy
         is_python_local_data = False
         if local_data is not None:
            
@@ -55,6 +57,9 @@ class Matrix(OperationNode):
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
+        if self.__copy:
+            return f'{var_name}={unnamed_input_vars[0]};'
+        
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH)
         
         if self._is_numpy() and self.operation == "readMatrix":
