@@ -64,7 +64,7 @@ class ForLoop(OperationNode):
 
         self.copy = list()
         for node in unnamed_input_nodes:
-            new_matrix_node = Matrix(self, " + ", [node, 0])
+            new_matrix_node = Matrix(self, None, [node], copy=True)
             new_matrix_node._source_node = self
             self.copy.append(new_matrix_node)
         
