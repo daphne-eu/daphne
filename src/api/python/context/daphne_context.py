@@ -33,7 +33,7 @@ from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64,
 import numpy as np
 import pandas as pd
 
-from typing import Sequence, Dict, Union, Callable
+from typing import Union, Callable, List, Tuple
 
 class DaphneContext(object):
 
@@ -140,24 +140,21 @@ class DaphneContext(object):
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
 
-    def for_loop(self, input_node: 'Matrix', callback: Callable, start: int, end: int, step: int = None) -> 'ForLoop':
+    def for_loop(self, input_nodes: List['Matrix'], callback: Callable, start: int, end: int, step: Union[int, None] = None) -> Tuple['Matrix']:
         named_input_nodes = {
-            "node": input_node,
             "start": start, 
             "end": end,
             "step": step
         }
-        node = ForLoop(self, callback, named_input_nodes)
-        return node
+        # for i, node in enumerate(input_nodes):
+        #     named_input_nodes.update({f"node{i}": node})
+        node = ForLoop(self, callback, input_nodes, named_input_nodes)
+        return node.get_copy()
 
-    def if_else(self, input_node: 'Matrix', pred: Callable, true_fn: Callable, false_fn: Callable) -> 'IfElse':
-        named_input_nodes = {
-            "node": input_node
-        }
-        return IfElse(self, pred, true_fn, false_fn, named_input_nodes)
+    def if_else(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable) -> Tuple['Matrix']:
+        node = IfElse(self, pred, true_fn, false_fn, input_nodes)
+        return node.get_copy()
     
-    def while_loop(self, input_node: 'Matrix', pred: Callable, callback: Callable) -> 'WhileLoop':
-        named_input_nodes = {
-            "node": input_node
-        }
-        return WhileLoop(self, pred, callback, named_input_nodes)
+    def while_loop(self, input_nodes: List['Matrix'], pred: Callable, callback: Callable) -> Tuple['Matrix']:
+        node =  WhileLoop(self, pred, callback, input_nodes)
+        return node.get_copy()
