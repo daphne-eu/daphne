@@ -14,3 +14,7 @@ def get_outer_scope_variables(function: Callable):
         del globals[key]
 
     return {**free_vars, **globals}
+
+def get_number_argument(function: Callable):
+    arguments = inspect.signature(function).parameters
+    return len(arguments)

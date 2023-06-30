@@ -40,43 +40,66 @@ if TYPE_CHECKING:
 
 class ForLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', callback,
+                 unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
                  named_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'ForLoop':
+        if analyzer.get_number_argument(callback) != (len(unnamed_input_nodes) + 1):
+            raise ValueError(f"{callback} does not have the same number of arguments as input nodes + 1")
+
         _named_input_nodes = named_input_nodes
+        self.iter_num = Scalar(self, "0", assign=True)
+        _named_input_nodes.update({"iter": self.iter_num})
+
+        self._callback = callback(*unnamed_input_nodes, _named_input_nodes['iter'])
+        if (not isinstance(self._callback, tuple)):
+            self._callback = (self._callback, )
+
+        if len(self._callback) != len(unnamed_input_nodes):
+            raise ValueError(f"{callback} and does not have the same number return values as input nodes")
 
         outer_vars = analyzer.get_outer_scope_variables(callback)
         for i, var in enumerate(outer_vars):
             inside_node = callback.__globals__.get(var)
             if var:
                 _named_input_nodes.update({f"var{i}": inside_node})
+
+        self.copy = list()
+        for node in unnamed_input_nodes:
+            new_matrix_node = Matrix(self, "+", [node, 0])
+            new_matrix_node._source_node = self
+            self.copy.append(new_matrix_node)
         
-        self.iter_num = Scalar(self, "0", assign=True)
-        _named_input_nodes.update({"iter": self.iter_num})
-        
-        print(daphne_context.__dict__)
-        super().__init__(daphne_context, 'for_loop', named_input_nodes=named_input_nodes,
-                         output_type=OutputType.MATRIX)
-        print(f"outer scope vars: {analyzer.get_outer_scope_variables(callback)}")
-        
-        self._callback = callback(named_input_nodes['node'], named_input_nodes['iter'])
+        super().__init__(daphne_context, 'for_loop', unnamed_input_nodes=unnamed_input_nodes, named_input_nodes=_named_input_nodes,
+                         output_type=OutputType.NONE)
+
+    def get_copy(self):
+        return tuple(self.copy)
         
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        print(f"input vars: {named_input_vars}")
         parent_level = 1  # default
         if self._script:
             parent_level = self._script._nested_level
 
-        self._callback._script = NestedDaphneDSLScript(self._callback.daphne_context, parent_level+1)
-        self._callback._script.build_code(self._callback)
-        #print(self._callback._script.daphnedsl_script)
-        multiline_str = f"for({named_input_vars['iter']} in {named_input_vars['start']}:{named_input_vars['end']}:{named_input_vars['step']}) {{\n"
-        #multiline_str += f"    {named_input_vars['number']} = {named_input_vars['node']} + {self.daphnedsl_name};
-        multiline_str += textwrap.indent(self._callback._script.daphnedsl_script, prefix="    ")
-        multiline_str += textwrap.indent(f"{named_input_vars['node']}={self._callback.daphnedsl_name};\n", prefix="    ")
+        script = NestedDaphneDSLScript(self.daphne_context, parent_level+1)
+        names = script.build_code(self._callback)
+
+        multiline_str = str()
+        multiline_str += f"for({named_input_vars['iter']} in {named_input_vars['start']}:{named_input_vars['end']}:{named_input_vars['step']}) {{\n"
+        multiline_str += textwrap.indent(script.daphnedsl_script, prefix="    ")
+        for i, name in enumerate(names):
+            multiline_str += textwrap.indent(f"{unnamed_input_vars[i]}={name};\n", prefix="    ")
         multiline_str += "}"
-        self.daphnedsl_name = named_input_vars['node']
+
         return multiline_str
 
+        # multiline_str += f"{self.daphnedsl_name} = 0;\n"
+        # multiline_str += f"for({named_input_vars['iter']} in {named_input_vars['start']}:{named_input_vars['end']}:{named_input_vars['step']}) {{\n"
+        # multiline_str += textwrap.indent(self._callback._script.daphnedsl_script, prefix="    ")
+        # multiline_str += textwrap.indent(f"{named_input_vars['node']}={self._callback.daphnedsl_name};\n", prefix="    ")
+        # multiline_str += "}"
+        # self.daphnedsl_name = named_input_vars['node']
+        # return multiline_str
+
     def compute(self) -> None:
-        return super().compute()
+        raise NotImplementedError("'ForLoop' node is not intended to be computed")
