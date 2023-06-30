@@ -25,6 +25,7 @@ __all__ = ["DaphneContext"]
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
+from api.python.operator.nodes.matrix import Scalar
 from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.if_else import IfElse
 from api.python.operator.nodes.while_loop import WhileLoop
@@ -158,3 +159,9 @@ class DaphneContext(object):
     def while_loop(self, input_nodes: List['Matrix'], pred: Callable, callback: Callable) -> Tuple['Matrix']:
         node =  WhileLoop(self, pred, callback, input_nodes)
         return node.get_copy()
+    
+    def logical_and(self, left_operand: 'Scalar', right_operand: 'Scalar'):
+        return Scalar(self, ' && ', [left_operand, right_operand])
+    
+    def logical_or(self, left_operand: 'Scalar', right_operand: 'Scalar'):
+        return Scalar(self, ' || ', [left_operand, right_operand])
