@@ -58,9 +58,9 @@ class ForLoop(OperationNode):
 
         outer_vars = analyzer.get_outer_scope_variables(callback)
         for i, var in enumerate(outer_vars):
-            inside_node = callback.__globals__.get(var)
-            if var:
-                _named_input_nodes.update({f"var{i}": inside_node})
+            node = outer_vars[var]
+            if node:
+                _named_input_nodes.update({f"var{i}": node})
 
         self.copy = list()
         for node in unnamed_input_nodes:
