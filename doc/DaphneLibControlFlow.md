@@ -1,4 +1,9 @@
 # DaphneLib Complex Control Flow
+This documentation describe (for now) the functions for defining complex control flow in DaphneLib. 
+The following descriptions assume that the required context object is defined as:
+```python
+dctx = DaphneContext()
+```
 
 ## if-else statements
 *dctx.if_else(input_nodes, pred, true_fn, false_fn)*
@@ -28,5 +33,28 @@
 * pred: Callable  *(n arguments, 1 return value, n=[1, ...])*
 * callback: Callable  *(n arguments, n return values)*
 * returns: Tuple['Matrix']  *(length n)*
+
+## user-defined functions
+*@dctx.function* <-> *dctx.function(callback)*
+
+* callback: Callable
+* returns: Tuple['OperationNode']  *(length equals the return values of callback)*
+
+## logical operators
+### and-operator (`&&`)
+*dctx.logacal_and(left_operand, right_operand)*
+
+* left_operand: 'Scalar'
+* right_operand: 'Scalar'
+* returns: 'Scalar'
+
+### or-operator (`||`)
+*dctx.logacal_or(left_operand, right_operand)*
+
+* left_operand: 'Scalar'
+* right_operand: 'Scalar'
+* returns: 'Scalar'
+
+
 
 

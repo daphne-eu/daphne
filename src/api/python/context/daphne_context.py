@@ -165,3 +165,8 @@ class DaphneContext(object):
     
     def logical_or(self, left_operand: 'Scalar', right_operand: 'Scalar'):
         return Scalar(self, ' || ', [left_operand, right_operand])
+    
+    def function(self, callback: Callable):
+        def dctx_function(*args):
+            return callback(*args)
+        return dctx_function

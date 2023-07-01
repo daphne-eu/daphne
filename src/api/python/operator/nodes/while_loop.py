@@ -63,15 +63,15 @@ class WhileLoop(OperationNode):
 
         outer_vars_pred = analyzer.get_outer_scope_variables(pred)
         for i, var in enumerate(outer_vars_pred):
-            inside_node = pred.__globals__.get(var)
-            if var:
-                _named_input_nodes.update({f"p_var{i}": inside_node})
+            node = outer_vars_pred[var]
+            if node:
+                _named_input_nodes.update({f"p_var{i}": node})
 
         outer_vars = analyzer.get_outer_scope_variables(callback)
         for i, var in enumerate(outer_vars):
-            inside_node = callback.__globals__.get(var)
+            node = outer_vars[var]
             if var:
-                _named_input_nodes.update({f"var{i}": inside_node})
+                _named_input_nodes.update({f"var{i}": node})
 
         self.copy = list()
         for node in unnamed_input_nodes:
