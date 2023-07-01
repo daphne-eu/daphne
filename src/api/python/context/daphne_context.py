@@ -26,15 +26,16 @@ __all__ = ["DaphneContext"]
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.matrix import Scalar
+from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.for_loop import ForLoop
-from api.python.operator.nodes.if_else import IfElse
+from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd
 
-from typing import Union, Callable, List, Tuple
+from typing import Union, Callable, List, Tuple, Optional
 
 class DaphneContext(object):
 
@@ -141,32 +142,79 @@ class DaphneContext(object):
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
 
-    def for_loop(self, input_nodes: List['Matrix'], callback: Callable, start: int, end: int, step: Union[int, None] = None) -> Tuple['Matrix']:
+    def for_loop(self, input_nodes: List['Matrix'], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple['Matrix']:
+        """
+        Generates a for-loop block for lazy evaluation.
+        The generated block/operation cannot be directly computed
+        but any of the outputs can.
+        :param input_nodes: matrices for manipulation
+        :param callback: body functionality (n+1 arguments, n return values, n=[1, ...])
+        :param start
+        :param end
+        :param step
+        :return: manipulated matrices (length n)
+        """
         named_input_nodes = {
             "start": start, 
             "end": end,
             "step": step
         }
-        # for i, node in enumerate(input_nodes):
-        #     named_input_nodes.update({f"node{i}": node})
         node = ForLoop(self, callback, input_nodes, named_input_nodes)
-        return node.get_copy()
+        return node.get_output()
 
-    def if_else(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable) -> Tuple['Matrix']:
-        node = IfElse(self, pred, true_fn, false_fn, input_nodes)
-        return node.get_copy()
+    def cond(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable) -> Tuple['Matrix']:
+        """
+        Generates a if-else statement block for lazy evaluation.
+        The generated block/operation cannot be directly computed
+        but any of the outputs can.
+        :param input_nodes: matrices for manipulation
+        :param pred: the predicate (0 arguments, 1 return value)
+        :param true_fn: callable to be performed if pred evaluates to true (n arguments, n return values, n=[1, ...])
+        :param false_fn: callable to be performed if pred evaluates to false (n arguments, n return values)
+        :return: manipulated matrices (length n)
+        """
+        node = Cond(self, pred, true_fn, false_fn, input_nodes)
+        return node.get_output()
     
-    def while_loop(self, input_nodes: List['Matrix'], pred: Callable, callback: Callable) -> Tuple['Matrix']:
-        node =  WhileLoop(self, pred, callback, input_nodes)
-        return node.get_copy()
+    def while_loop(self, input_nodes: List['Matrix'], cond: Callable, callback: Callable) -> Tuple['Matrix']:
+        """
+        Generates a while-loop block for lazy evaluation.
+        The generated block/operation cannot be directly computed
+        but any of the outputs can.
+        :param input_nodes: matrices for manipulation
+        :param cond: the condition (n arguments, 1 return value)
+        :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
+        :return: manipulated matrices (length n)
+        """
+        node =  WhileLoop(self, cond, callback, input_nodes)
+        return node.get_output()
     
     def logical_and(self, left_operand: 'Scalar', right_operand: 'Scalar'):
+        """
+        Logical AND operation for lazy evaluation. 
+        :param left_operand
+        :param right_operand
+        :return new Scalar
+        """
         return Scalar(self, ' && ', [left_operand, right_operand])
     
     def logical_or(self, left_operand: 'Scalar', right_operand: 'Scalar'):
+        """
+        Logical OR operation for lazy evaluation. 
+        :param left_operand
+        :param right_operand
+        :return new Scalar
+        """
         return Scalar(self, ' || ', [left_operand, right_operand])
     
-    def function(self, callback: Callable):
+    def function(self, callback: Callable) -> Tuple['OperationNode']:
+        """
+        Generated user-defined function for lazy evaluation. 
+        The generated function cannot be directly computed
+        but any of the outputs can.
+        :param callback: callable with user-defined instructions
+        :return: output nodes (matrices, scalars or frames)
+        """
         def dctx_function(*args):
             return callback(*args)
         return dctx_function

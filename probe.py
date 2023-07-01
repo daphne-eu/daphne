@@ -46,7 +46,7 @@ def test_if_else1():
     def pred():
         return X.sum() < 10
     
-    cond_statement = dctx.if_else([X], lambda: X.sum() < 10, true_fn, false_fn)
+    cond_statement = dctx.cond([X], lambda: X.sum() < 10, true_fn, false_fn)
     return print((cond_statement[0]).compute())
 
 def test_if_else2():
@@ -64,7 +64,7 @@ def test_if_else2():
     def pred():
         return dctx.logical_and(X.sum() < 10, X.sum() > 200)
     
-    cond_statement = dctx.if_else([X], pred, true_fn, false_fn)
+    cond_statement = dctx.cond([X], pred, true_fn, false_fn)
     return print((cond_statement[0]).compute())
 
 def test_for_loop1():
@@ -72,7 +72,7 @@ def test_for_loop1():
     Y = dctx.fill(0.8, 5, 5)
 
     def body(x, i):
-        more = x + 10
+        more = x + Y
         return more + 1,
 
     output = dctx.for_loop([X], body, 1, 10, 2)
@@ -87,7 +87,7 @@ def test_for_loop2():
         more = x + 10
         return more + 1, y + 2
 
-    output = dctx.for_loop([X, Y], body, 1, 10, 2)
+    output = dctx.for_loop([X, Y], body, 1, 10)
     print((output[0] + output[1]).compute())
 
 def test_user_def_func():
@@ -96,7 +96,7 @@ def test_user_def_func():
     @dctx.function
     def increment_by_one(x):
         inter = x + 10
-        cond = dctx.if_else([x], lambda: inter.sum() > 0, lambda x: x + 5, lambda x: x - 5)
+        cond = dctx.cond([x], lambda: inter.sum() > 0, lambda x: x + 5, lambda x: x - 5)
         return x, x + 1, inter, cond[0]
     
     print((increment_by_one(X)[0] + increment_by_one(X)[0] + increment_by_one(X)[3]).compute())
