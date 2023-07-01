@@ -6,7 +6,7 @@ dctx = DaphneContext()
 ```
 
 ## if-else statements
-*dctx.if_else(input_nodes, pred, true_fn, false_fn)*
+*dctx.cond(input_nodes, pred, true_fn, false_fn)*
 
 * input_nodes: List['Matrix']
 * pred: Callable  *(0 arguments, 1 return value)*
@@ -27,10 +27,10 @@ dctx = DaphneContext()
 \* *callback* expects as last argument the interation variable and is to be used as scalar.
 
 ## while loops
-*dctx.while_loop(input_nodes, pred, callback)*
+*dctx.while_loop(input_nodes, cond, callback)*
 
 * input_nodes: List['Matrix']
-* pred: Callable  *(n arguments, 1 return value, n=[1, ...])*
+* cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
 * callback: Callable  *(n arguments, n return values)*
 * returns: Tuple['Matrix']  *(length n)*
 

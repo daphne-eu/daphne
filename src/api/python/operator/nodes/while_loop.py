@@ -23,26 +23,27 @@
 
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
 from api.python.script_building.nested_script import NestedDaphneDSLScript
-import numpy as np
-import textwrap
-
-from typing import TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Tuple, Union
-
 from api.python.utils import analyzer
+
+from typing import TYPE_CHECKING, Dict, Iterable, Sequence, Tuple, Callable
+import textwrap
+from copy import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
 
 class WhileLoop(OperationNode):
-    def __init__(self, daphne_context: 'DaphneContext', pred, callback,
+    def __init__(self, daphne_context: 'DaphneContext', cond: Callable, callback: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'WhileLoop':
-        if analyzer.get_number_argument(pred) != analyzer.get_number_argument(callback):
-            raise ValueError(f"{pred} and {callback} do not have the same number of arguents")
+        _named_input_nodes = dict()
+        _unnamed_input_nodes = copy(unnamed_input_nodes)
+
+        if analyzer.get_number_argument(cond) != analyzer.get_number_argument(callback):
+            raise ValueError(f"{cond} and {callback} do not have the same number of arguents")
         elif analyzer.get_number_argument(callback) != len(unnamed_input_nodes):
             raise ValueError(f"{callback} does not have the same number of arguments as input nodes")
 
@@ -50,44 +51,41 @@ class WhileLoop(OperationNode):
         if (not isinstance(self._callback, tuple)):
             self._callback = (self._callback, )
 
-        self._pred = pred(*unnamed_input_nodes)
-        if (not isinstance(self._pred, tuple)):
-            self._pred = (self._pred, )
+        self._cond = cond(*unnamed_input_nodes)
+        if (not isinstance(self._cond, tuple)):
+            self._cond = (self._cond, )
 
         if len(self._callback) != len(unnamed_input_nodes):
             raise ValueError(f"{callback} and does not have the same number return values as input nodes")
-        elif len(self._pred) != 1:
-            raise ValueError(f"{pred} do not have the 1 return value, but that is required")
+        elif len(self._cond) != 1:
+            raise ValueError(f"{cond} do not have the 1 return value, but that is required")
 
-        _named_input_nodes = dict()
-
-        outer_vars_pred = analyzer.get_outer_scope_variables(pred)
-        for i, var in enumerate(outer_vars_pred):
-            node = outer_vars_pred[var]
+        outer_vars_cond = analyzer.get_outer_scope_variables(cond)
+        for node in outer_vars_cond.values():
             if node:
-                _named_input_nodes.update({f"p_var{i}": node})
+                _unnamed_input_nodes.update(node)
 
         outer_vars = analyzer.get_outer_scope_variables(callback)
-        for i, var in enumerate(outer_vars):
-            node = outer_vars[var]
-            if var:
-                _named_input_nodes.update({f"var{i}": node})
+        for node in outer_vars.values():
+            if node:
+                _unnamed_input_nodes.append(node)
 
-        self.copy = list()
+        self._output = list()
         for node in unnamed_input_nodes:
             new_matrix_node = Matrix(self, None, [node], copy=True)
             new_matrix_node._source_node = self
-            self.copy.append(new_matrix_node)
+            self._output.append(new_matrix_node)
 
-        super().__init__(daphne_context, 'while_loop', unnamed_input_nodes=unnamed_input_nodes,
+        super().__init__(daphne_context, 'while_loop', unnamed_input_nodes=_unnamed_input_nodes,
             named_input_nodes=_named_input_nodes, output_type=OutputType.NONE)
 
-    def get_copy(self):
-        return tuple(self.copy)
+    def get_output(self) -> Tuple['Matrix']:
+        return tuple(self._output)
         
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
+        # var_name is reserved for the operation but never used
 
         parent_level = 1  # default
         if self._script:
@@ -96,34 +94,23 @@ class WhileLoop(OperationNode):
         callback_script = NestedDaphneDSLScript(self.daphne_context, parent_level+1)
         callback_names = callback_script.build_code(self._callback)
         
-        pred_script = NestedDaphneDSLScript(self.daphne_context, parent_level + 1, 'C')
-        pred_name = pred_script.build_code(self._pred)[0]
+        cond_script = NestedDaphneDSLScript(self.daphne_context, parent_level + 1, 'C')
+        cond_name = cond_script.build_code(self._cond)[0]
 
         callback_body = callback_script.daphnedsl_script
         for i, name in enumerate(callback_names):
             callback_body += f"{unnamed_input_vars[i]}={name};\n"
 
-        pred_body = pred_script.daphnedsl_script
+        cond_body = cond_script.daphnedsl_script
 
         multiline_str = str()
-        multiline_str += pred_body
-        multiline_str += f"while ({pred_name}) {{\n"
+        multiline_str += cond_body
+        multiline_str += f"while ({cond_name}) {{\n"
         multiline_str += textwrap.indent(callback_body, prefix="    ")
-        multiline_str += textwrap.indent(pred_body, prefix="    ")
+        multiline_str += textwrap.indent(cond_body, prefix="    ")
         multiline_str += "}"
 
         return multiline_str
-    
-        # multiline_str = ""
-        # multiline_str += f"{self._pred._script.daphnedsl_script}"
-        # multiline_str += f"while ({self._pred.daphnedsl_name}) {{\n"
-        # #multiline_str += f"    {named_input_vars['number']} = {named_input_vars['node']} + {self.daphnedsl_name};
-        # multiline_str += textwrap.indent(self._callback._script.daphnedsl_script, prefix="    ")
-        # multiline_str += textwrap.indent(f"{named_input_vars['node']}={self._callback.daphnedsl_name};\n", prefix="    ")
-        # multiline_str += textwrap.indent(f"{self._pred._script.daphnedsl_script}", prefix="    ")
-        # multiline_str += "}"
-        # self.daphnedsl_name = named_input_vars['node']
-        # try
 
     def compute(self) -> None:
         return super().compute()

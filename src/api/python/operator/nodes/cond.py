@@ -23,31 +23,33 @@
 
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
+from api.python.utils.consts import VALID_INPUT_TYPES
 from api.python.script_building.nested_script import NestedDaphneDSLScript
-import textwrap
-
-from typing import TYPE_CHECKING, Dict, Iterable, Optional, Sequence, Tuple, Union
-
 from api.python.utils import analyzer
+
+from typing import TYPE_CHECKING, Dict, Iterable, Sequence, Tuple, Callable
+import textwrap
+from copy import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
 
-class IfElse(OperationNode):
-    def __init__(self, daphne_context: 'DaphneContext', pred, true_fn, false_fn, 
-                 unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'IfElse':
+class Cond(OperationNode):
+    def __init__(self, daphne_context: 'DaphneContext', pred: Callable, true_fn: Callable, false_fn: Callable, 
+                 unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'Cond':
+        _named_input_nodes = dict()
+        _unnamed_input_nodes = copy(unnamed_input_nodes)
+
         if analyzer.get_number_argument(true_fn) != analyzer.get_number_argument(false_fn):
             raise ValueError(f"{true_fn} and {false_fn} do not have the same number of arguents")
         elif analyzer.get_number_argument(true_fn) != len(unnamed_input_nodes):
             raise ValueError(f"{true_fn} and {false_fn} do not have the same number of arguments as input nodes")
         elif analyzer.get_number_argument(pred) != 0:
             raise ValueError(f"{pred} has more then 0 arguments")
-        # ToDo: check number of return values of pred to be 1
-
+        elif isinstance(pred(), tuple):
+            raise ValueError(f"{pred} has more then 1 return values")
         
         self._true_fn = true_fn(*unnamed_input_nodes)
         if (not isinstance(self._true_fn, tuple)):
@@ -61,43 +63,37 @@ class IfElse(OperationNode):
             raise ValueError(f"{true_fn} and {false_fn} do not have the same number return values")
         elif len(self._true_fn) != len(unnamed_input_nodes):
             raise ValueError(f"{true_fn} and {false_fn} do not have the same number return values as input nodes")
-       
-        _named_input_nodes = dict()
 
         outer_vars_true = analyzer.get_outer_scope_variables(true_fn)
         outer_vars_false = analyzer.get_outer_scope_variables(false_fn)
-
         outer_vars_both = {**outer_vars_true, **outer_vars_false}
-        for i, var in enumerate(outer_vars_both):
-            node = outer_vars_both[var]
+        for node in outer_vars_both.values():
             if node:
-                _named_input_nodes.update({f"i_var{i}": node})
+                _unnamed_input_nodes.append(node)
         
         outer_vars_pred = analyzer.get_outer_scope_variables(pred)
-
-        for i, var in enumerate(outer_vars_pred):
-            node = outer_vars_pred[var]
+        for node in outer_vars_pred.values():
             if node:
-                _named_input_nodes.update({f"pred_var{i}": node})
+                _unnamed_input_nodes.append(node)
 
-        _named_input_nodes.update({'cond': pred()})
+        _named_input_nodes.update({'pred': pred()})
 
-        self.copy = list()
+        self._output = list()
         for node in unnamed_input_nodes:
             new_matrix_node = Matrix(self, None, [node], copy=True)
             new_matrix_node._source_node = self
-            self.copy.append(new_matrix_node)
+            self._output.append(new_matrix_node)
         
-        super().__init__(daphne_context, 'if_else', unnamed_input_nodes=unnamed_input_nodes, named_input_nodes=_named_input_nodes,
+        super().__init__(daphne_context, 'cond', unnamed_input_nodes=_unnamed_input_nodes, named_input_nodes=_named_input_nodes,
                          output_type=OutputType.NONE)
 
-
-    def get_copy(self):
-        return tuple(self.copy)
+    def get_output(self) -> Tuple['Matrix']:
+        return tuple(self._output)
         
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        #print(f"input vars: {named_input_vars}")
+        # var_name is reserved for the operation but never used
+
         parent_level = 1  # default
         if self._script:
             parent_level = self._script._nested_level
@@ -117,7 +113,7 @@ class IfElse(OperationNode):
             false_body += f"{unnamed_input_vars[i]}={name};\n"
 
         multiline_str = str()
-        multiline_str += f"if ({named_input_vars['cond']}) {{\n"
+        multiline_str += f"if ({named_input_vars['pred']}) {{\n"
         multiline_str += textwrap.indent(true_body, prefix="    ")
         multiline_str += "}"
         multiline_str += " else {\n"
@@ -126,16 +122,5 @@ class IfElse(OperationNode):
 
         return multiline_str 
 
-        # multiline_str = f"if ({named_input_vars['cond']}) {{\n"
-        # multiline_str += textwrap.indent(self._true_fn._script.daphnedsl_script, prefix="    ")
-        # multiline_str += textwrap.indent(f"{named_input_vars['node']}={self._true_fn.daphnedsl_name};\n", prefix="    ")
-        # multiline_str += "}"
-        # multiline_str += " else {\n"
-        # multiline_str += textwrap.indent(self._false_fn._script.daphnedsl_script, prefix="    ")
-        # multiline_str += textwrap.indent(f"{named_input_vars['node']}={self._false_fn.daphnedsl_name};\n", prefix="    ")
-        # multiline_str += "}"
-        # self.daphnedsl_name = named_input_vars['node']
-        # return multiline_str
-
     def compute(self) -> None:
-        return super().compute()
+        raise NotImplementedError("'Cond' node is not intended to be computed")
