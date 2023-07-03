@@ -31,6 +31,7 @@ limitations under the License.
 - [Using SQL in DaphneDSL](/doc/tutorial/sqlTutorial.md)
 - [A Few Early Example Algorithms in DaphneDSL](/scripts/algorithms/)
 - [FileMetaData Format (reading and writing data)](/doc/FileMetaDataFormat.md)
+- [Profiling DAPHNE using PAPI](/doc/Profiling.md)
 
 ## Developer Documentation
 
@@ -44,6 +45,7 @@ limitations under the License.
 - [Extending the DAPHNE Distributed Runtime](/doc/development/ExtendingDistributedRuntime.md)
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
+- [Profiling in DAPHNE](/doc/development/Profling.md)
 
 ### Source Code Documentation
 
