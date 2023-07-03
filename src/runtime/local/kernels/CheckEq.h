@@ -20,7 +20,7 @@
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Frame.h>
-#include <SIMDOperators/datastructure/column.hpp>
+#include <SIMDOperators/datastructures/column.hpp>
 
 // this include file is placed here to solve a compilation issue with spdlog and catch2
 #include <spdlog/spdlog.h>

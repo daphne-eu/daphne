@@ -315,6 +315,15 @@ def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 // ----------------------------------------------------------------------------
 // Columnar Operations
 // ----------------------------------------------------------------------------
+class Daphne_ColumnBinaryOp<string name, Type scalarType, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeFromArgs,
+    CastArgsToResType
+])> {
+    let arguments = (ins AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$rhs);
+    let results = (outs AnyTypeOf<[ColumnOf<[scalarType]>, Unknown]>:$res);
+}
+
 class Daphne_ColumnCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
 : Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs])> {
     
@@ -336,6 +345,48 @@ def Daphne_ColumnProjectOp
     let results = (outs Column:$res);
 }
 
+class Daphne_ColumnAggOp<string name, Type scalarType, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg])> {
+    let arguments = (ins ColumnOf<[scalarType]>:$arg);
+    let results = (outs ColumnOf<[scalarType]>:$res);
+}
+
+def Daphne_ColumnAggSumOp    : Daphne_ColumnAggOp<"columnSum", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_ColumnAggMinOp    : Daphne_ColumnAggOp<"columnMin", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_ColumnAggMaxOp    : Daphne_ColumnAggOp<"columnMax", NumScalar, [ValueTypeFromFirstArg]>;
+def Daphne_ColumnAggMeanOp   : Daphne_ColumnAggOp<"columnMean", NumScalar, [ValueTypeFromArgsFP]>;
+def Daphne_ColumnAggVarOp    : Daphne_ColumnAggOp<"columnVar", NumScalar, [ValueTypeFromArgsFP]>;
+def Daphne_ColumnAggStddevOp : Daphne_ColumnAggOp<"columnStddev", NumScalar, [ValueTypeFromArgsFP]>;
+
+def Daphne_ColumnJoinOp : Daphne_Op<"columnJoin", [
+//    DataTypeClm, ValueTypeFromFirstArg,
+]> {
+    let arguments = (ins ColumnOrU:$lhs, ColumnOrU:$rhs);
+    let results = (outs ColumnOrU:$resLhs, ColumnOrU:$resRhs);
+}
+
+def Daphne_ColumnBetweenOp : Daphne_Op<"columnBetween", 
+    [ValueTypeFromFirstArg]> {
+    let arguments = (ins Column:$data, AnyScalar:$lower, AnyScalar:$upper);
+    let results = (outs Column:$res);
+}
+
+def Daphne_ColumnAddOp    : Daphne_ColumnBinaryOp<"columnAdd", NumScalar, [ValueTypeFromArgs]> {
+    //let hasCanonicalizeMethod = 1;
+}
+def Daphne_ColumnSubOp    : Daphne_ColumnBinaryOp<"columnSub", NumScalar, [ValueTypeFromArgs]> {
+    //let hasCanonicalizeMethod = 1;
+}
+def Daphne_ColumnMulOp    : Daphne_ColumnBinaryOp<"columnMul", NumScalar, [ValueTypeFromArgs, Commutative]> {
+    //let hasCanonicalizeMethod = 1;
+}
+def Daphne_ColumnDivOp    : Daphne_ColumnBinaryOp<"columnDiv", NumScalar, [ValueTypeFromArgs]> {
+    //let hasCanonicalizeMethod = 1;
+}
+
+def Daphne_ColumnAndOp    : Daphne_ColumnBinaryOp<"columnAnd", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
+
+def Daphne_ColumnIntersectOp    : Daphne_ColumnBinaryOp<"columnIntersect", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
 // ****************************************************************************
 // Elementwise ternary
 // ****************************************************************************

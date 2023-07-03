@@ -19,7 +19,7 @@
 
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
-#include <SIMDOperators/datastructure/column.hpp>
+#include <SIMDOperators/datastructures/column.hpp>
 #include <SIMDOperators/operators/project.hpp>
 
 #include <cassert>

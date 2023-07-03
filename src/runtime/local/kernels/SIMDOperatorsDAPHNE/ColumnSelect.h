@@ -21,7 +21,7 @@
 #include <runtime/local/kernels/SIMDOperatorsDAPHNE/SelectOpCode.h>
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
-#include <SIMDOperators/datastructure/column.hpp>
+#include <SIMDOperators/datastructures/column.hpp>
 #include <SIMDOperators/operators/select.hpp>
 
 #include <cassert>
@@ -58,24 +58,20 @@ template<typename VT>
 struct ColumnSelect<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
     static void apply(SelectOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * lhs, VT rhs, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        std::shared_ptr<const tuddbs::Column<VT> > lhs_shared(lhs);
-        std::shared_ptr<const tuddbs::Column<VT> > tmp;
+
         if (opCode == SelectOpCode::LT) {
-            tmp = tuddbs::select<ps, tsl::functors::less_than>::apply(lhs_shared, rhs);
+            res = tuddbs::select<ps, tsl::functors::less_than>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::LE) {
-            tmp = tuddbs::select<ps, tsl::functors::less_than_or_equal>::apply(lhs_shared, rhs);
+            res = tuddbs::select<ps, tsl::functors::less_than_or_equal>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::GT) {
-            tmp = tuddbs::select<ps, tsl::functors::greater_than>::apply(lhs_shared, rhs);
+            res = tuddbs::select<ps, tsl::functors::greater_than>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::GE) {
-            tmp = tuddbs::select<ps, tsl::functors::greater_than_or_equal>::apply(lhs_shared, rhs);
+            res = tuddbs::select<ps, tsl::functors::greater_than_or_equal>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::EQ) {
-            tmp = tuddbs::select<ps, tsl::functors::equal>::apply(lhs_shared, rhs);
+            res = tuddbs::select<ps, tsl::functors::equal>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::NEQ) {
-            tmp = tuddbs::select<ps, tsl::functors::nequal>::apply(lhs_shared, rhs);
+            res = tuddbs::select<ps, tsl::functors::nequal>::apply(lhs, rhs);
         }
-        const tuddbs::Column<VT> * tmp2 = tmp.get();
-        tuddbs::Column<VT> * tmp3 = new tuddbs::Column<VT>(*tmp2);
-        res = tmp3;
         
     }
 };

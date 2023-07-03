@@ -23,7 +23,7 @@
 #include <runtime/local/datastructures/Frame.h>
 #include <runtime/local/datastructures/ValueTypeCode.h>
 #include <runtime/local/datastructures/ValueTypeUtils.h>
-#include "SIMDOperators/datastructure/column.hpp"
+#include "SIMDOperators/datastructures/column.hpp"
 
 // ****************************************************************************
 // Struct for partial template specialization

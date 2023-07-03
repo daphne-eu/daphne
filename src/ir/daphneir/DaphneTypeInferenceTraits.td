@@ -33,6 +33,7 @@ def DataTypeSca: NativeOpTrait<"DataTypeSca">;
 def DataTypeMat: NativeOpTrait<"DataTypeMat">;
 def DataTypeClm: NativeOpTrait<"DataTypeClm">;
 def DataTypeFrm: NativeOpTrait<"DataTypeFrm">;
+def DataTypeCol: NativeOpTrait<"DataTypeCol">;
 
 // ============================================================================
 // Value type
