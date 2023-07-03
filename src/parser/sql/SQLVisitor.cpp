@@ -54,6 +54,14 @@ void toggleBit(int64_t& flag, int64_t position){
     setBit(flag, position, !isBitSet(flag, position));
 }
 
+/**
+ * @brief Creates a lower cast version of a string
+ */
+std::string toLower(std::string str){
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
+}
+
 // ****************************************************************************
 // Member Helper functions
 // ****************************************************************************
@@ -911,7 +919,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
 
         mlir::Type resTypeCol = col.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
 
-        const std::string &func = ctx->func->getText();
+        std::string func = toLower(ctx->func->getText());
 
         mlir::Value result; 
         if(func == "count"){
@@ -959,7 +967,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
             );
         }
 
-        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
+        std::string newColumnNameAppended = getEnumLabelExt(func) + "(" + newColumnName + ")";
 
         return utils.castIf(utils.matrixOf(result), result);
 
@@ -975,7 +983,8 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //create Column pre Group for in group Aggregation
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         columnName.push_back(createStringConstant(newColumnName));
-        functionName.push_back(getGroupEnum(ctx->func->getText()));
+        const std::string &func = toLower(ctx->func->getText());
+        functionName.push_back(getGroupEnum(func));
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
@@ -987,7 +996,8 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         currentFrame = addMatrixToCurrentFrame(matrix, newColumnName);
         return nullptr;
     }else{ //Get Column after Group
-        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
+        const std::string &func = toLower(ctx->func->getText());
+        std::string newColumnNameAppended = getEnumLabelExt(func) + "(" + newColumnName + ")";
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
         return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
     }
