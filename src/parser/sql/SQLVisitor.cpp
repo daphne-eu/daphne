@@ -18,6 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include "antlr4-runtime.h"
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include <stdexcept>
@@ -512,6 +513,10 @@ antlrcpp::Any SQLVisitor::visitSelect(
             throw std::runtime_error(err_msg.str());
         }
     }
+    currentFrame = res;
+    if(ctx->distinctExpr()) {
+        res = utils.valueOrError(visit(ctx->distinctExpr()));
+    }
     return res;
 }
 
@@ -572,6 +577,33 @@ antlrcpp::Any SQLVisitor::visitTableExpr(
         currentFrame = utils.valueOrError(visit(ctx->joinExpr(i)));
     }
     return currentFrame;
+}
+
+//distinctExpr
+antlrcpp::Any SQLVisitor::visitDistinctExpr(
+    SQLGrammarParser::DistinctExprContext *ctx
+)
+{
+    mlir::Location loc = utils.getLoc(ctx->start);
+    mlir::Value starLiteral = createStringConstant("*");
+    std::vector<mlir::Value> cols{starLiteral};
+    std::vector<mlir::Value> aggs;
+    std::vector<mlir::Attribute> functions;
+    mlir::Type vt = utils.unknownType;
+    std::vector<mlir::Type> colTypes{vt};
+    mlir::Type resType = mlir::daphne::FrameType::get(
+        builder.getContext(), colTypes
+    );
+    return static_cast<mlir::Value>(
+        builder.create<mlir::daphne::GroupOp>(
+            loc,
+            resType,
+            currentFrame,
+            cols,
+            aggs,
+            builder.getArrayAttr(functions)
+        )
+    );
 }
 
 //fromExpr
