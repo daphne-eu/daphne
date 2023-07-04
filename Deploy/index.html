@@ -1,0 +1,1304 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../development/BuildingDaphne/">
+      
+      
+        <link rel="next" href="../ReleaseScripts/">
+      
+      <link rel="icon" href="../assets/logo_small.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.18">
+    
+    
+      
+        <title>Deploy - DAPHNE</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#deploying" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="DAPHNE" class="md-header__button md-logo" aria-label="DAPHNE" data-md-component="logo">
+      
+  <img src="../assets/logo_small.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DAPHNE
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Deploy
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/daphne-eu/daphne" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daphne-eu/daphne
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        Home
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../Quickstart/" class="md-tabs__link">
+        Users
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../development/Contributing/" class="md-tabs__link md-tabs__link--active">
+        Developers
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="DAPHNE" class="md-nav__button md-logo" aria-label="DAPHNE" data-md-component="logo">
+      
+  <img src="../assets/logo_small.png" alt="logo">
+
+    </a>
+    DAPHNE
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/daphne-eu/daphne" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daphne-eu/daphne
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          Home
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_1">
+          <span class="md-nav__icon md-icon"></span>
+          Home
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../GettingStarted/" class="md-nav__link">
+        GettingStarted
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          Users
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Users
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Quickstart/" class="md-nav__link">
+        Quickstart
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../RunningDaphneLocally/" class="md-nav__link">
+        RunningDaphneLocally
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+          DaphneDSL
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_4">
+          <span class="md-nav__icon md-icon"></span>
+          DaphneDSL
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DaphneDSL/LanguageRef/" class="md-nav__link">
+        LanguageRef
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DaphneDSL/Builtins/" class="md-nav__link">
+        Builtins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DaphneDSL/Imports/" class="md-nav__link">
+        Imports
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+          DaphneLib
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_5">
+          <span class="md-nav__icon md-icon"></span>
+          DaphneLib
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DaphneLib/Overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DaphneLib/APIRef/" class="md-nav__link">
+        APIRef
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FileMetaDataFormat/" class="md-nav__link">
+        FileMetaDataFormat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../DistributedRuntime/" class="md-nav__link">
+        DistributedRuntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../SchedulingOptions/" class="md-nav__link">
+        SchedulingOptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_9">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorial/sqlTutorial/" class="md-nav__link">
+        sqlTutorial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../FPGAconfiguration/" class="md-nav__link">
+        FPGAconfiguration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../MPI-Usage/" class="md-nav__link">
+        MPI Usage
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Developers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Developers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/Contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/BuildingDaphne/" class="md-nav__link">
+        BuildingDaphne
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Deploy
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Deploy
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    Background
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-without-slurm-support" class="md-nav__link">
+    Deploying without Slurm support
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-with-slurm-support" class="md-nav__link">
+    Deploying with Slurm support
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying with Slurm support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-deploy-distributed-on-slurmsh-for-daphne-packaging-distributed-deployment-and-management-using-slurm" class="md-nav__link">
+    How to use deploy-distributed-on-slurm.sh for DAPHNE Packaging, Distributed Deployment, and Management using Slurm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#short-examples" class="md-nav__link">
+    Short Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-usage-example" class="md-nav__link">
+    Scenario Usage Example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ReleaseScripts/" class="md-nav__link">
+        ReleaseScripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../BinaryFormat/" class="md-nav__link">
+        BinaryFormat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/Logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ExtendingDistributedRuntime/" class="md-nav__link">
+        ExtendingDistributedRuntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ExtendingSchedulingKnobs/" class="md-nav__link">
+        ExtendingSchedulingKnobs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/HandlingPRs/" class="md-nav__link">
+        HandlingPRs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/ImplementBuiltinKernel/" class="md-nav__link">
+        ImplementBuiltinKernel
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../development/WriteDocs/" class="md-nav__link">
+        WriteDocs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    Overview
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    Background
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-without-slurm-support" class="md-nav__link">
+    Deploying without Slurm support
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deploying-with-slurm-support" class="md-nav__link">
+    Deploying with Slurm support
+  </a>
+  
+    <nav class="md-nav" aria-label="Deploying with Slurm support">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-to-use-deploy-distributed-on-slurmsh-for-daphne-packaging-distributed-deployment-and-management-using-slurm" class="md-nav__link">
+    How to use deploy-distributed-on-slurm.sh for DAPHNE Packaging, Distributed Deployment, and Management using Slurm
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#short-examples" class="md-nav__link">
+    Short Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-usage-example" class="md-nav__link">
+    Scenario Usage Example
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="deploying">Deploying</h1>
+<p>DAPHNE Packaging, Distributed Deployment, and Management</p>
+<h2 id="overview">Overview</h2>
+<p>This file explains the deployment of the <strong>Daphne system</strong>, on HPC with SLURM or manually through SSH, and highlights the excerpts from descriptions of functionalities in <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/">deploy/</a> directory (mostly <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/deploy-distributed-on-slurm.sh">deploy-distributed-on-slurm.sh</a>):</p>
+<ul>
+<li>compilation of the Singularity image,</li>
+<li>compilation of Daphne (and the Daphne DistributedWorker) within the Singularity image,</li>
+<li>packaging compiled Daphne,</li>
+<li>packaging compiled Daphne with user payload as a payload package,</li>
+<li>uploading the payload package to an HPC platform,</li>
+<li>starting and managing DAPHNE workers on HPC platforms using SLURM,</li>
+<li>executing DAPHNE on HPC using SLURM,</li>
+<li>collection of logs from daphne execution, and</li>
+<li>cleanup of worker environments and payload deployment.</li>
+</ul>
+<h2 id="background">Background</h2>
+<p>Daphne's distributed system consists of a single coordinator and multiple DistributedWorkers (you can read more about Distributed DAPHNE <a href="../DistributedRuntime/#Background">here</a>).  For now, in order to execute Daphne in a distributed fashion, we need to deploy DistributedWorkers manually. Coordinator gets the worker's addresses
+through an environmental variable.</p>
+<p><code>deployDistributed.sh</code> manually connects to machines with SSH and starts up DistributedWorker processes. On the other hand the <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/deploy-distributed-on-slurm.sh">deploy-distributed-on-slurm.sh</a> packages and starts Daphne on a target HPC platform, and is tailored to the communication required with Slurm and the target HPC platform.</p>
+<h2 id="deploying-without-slurm-support">Deploying without Slurm support</h2>
+<p><strong><code>deployDistributed.sh</code></strong> can be used to manually connect to a list of machines and remotely start up workers, get status of running workers or terminate distributed worker processes. This script depends only on an SSH client/server and does not require any use of a resource management tool (e.g. SLURM). With this script you can:</p>
+<ul>
+<li>build and deploy DistributedWorkers to remote machines</li>
+<li>start workers</li>
+<li>check status of running workers</li>
+<li>kill workers</li>
+</ul>
+<p>Workers' own IPs and ports to listen to, can be specified inside the script, or with <code>--peers [IP[:PORT]],[IP[:PORT]],...</code>. Default port for all workers is 50000, but this can also be specified inside the script or with <code>-p,--port PORT</code>. If running on same machine (e.g. localhost), different ports must be specified.</p>
+<p>With <code>--deploy</code> the script builds <code>DistributedWorker</code> executable (<code>./build.sh --target DistributedWorker</code>), compresses <code>build</code>, <code>lib</code> and <code>bin</code> folders and uses <code>scp</code> and <code>ssh</code> to send and decompress at remote machines, inside the directory specified by <code>--pathToBuild</code> (default <code>~/DaphneDistributedWorker/</code>). If running workers on localhost, <code>PATH_TO_BUILD</code> can be set <code>/path/to/daphne</code> and provided <code>DistributedWorker</code> is built, <code>--deploy</code> is not nessecary.</p>
+<p>Ssh username must be specified inside the script. For now the script assumes all remote machines can be accessed with the same <code>username</code>, <code>id_rsa</code> key and ssh port (default 22).</p>
+<p>Usage example:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># deploy distributed</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>$<span class="w"> </span>./deployDistributed.sh<span class="w"> </span>--help
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>$<span class="w"> </span>./deployDistributed.sh<span class="w"> </span>--deploy<span class="w"> </span>--pathToBuild<span class="w"> </span>/path/to/dir<span class="w"> </span>--peers<span class="w"> </span>localhost:5000,localhost:5001
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>$<span class="w"> </span>./deployDistributed.sh<span class="w"> </span>-r<span class="w"> </span><span class="c1"># (Uses default peers and path/to/build/ to start workers)</span>
+</code></pre></div>
+<h2 id="deploying-with-slurm-support">Deploying with Slurm support</h2>
+<p>Building the Daphne system (to be later deployed on distributed nodes) can be done with a Singularity container. The Singularity container can be built on the utilized HPC. <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/deployDistributed.sh">deployDistributed.sh</a> sends executables on each node, assuming there are different storages for each node. This might cause unnecessary overwrites if the workers use same mounted user storage (e.g. HPC environments with distributed storages). Instead <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/deploy-distributed-on-slurm.sh">deploy-distributed-on-slurm.sh</a> should be used for such cases. The latter also automatically generates the environmental variable <code>PEERS</code> from Slurm.</p>
+<h3 id="how-to-use-deploy-distributed-on-slurmsh-for-daphne-packaging-distributed-deployment-and-management-using-slurm">How to use <code>deploy-distributed-on-slurm.sh</code> for DAPHNE Packaging, Distributed Deployment, and Management using Slurm</h3>
+<p>This explains how to set up the Distributed Workers on a HPC platform, and it also briefly comments on what to do afterwards (how to run, manage, stop, and clean it).
+Commands, with their parameters and arguments, are hence described below for deployment with <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/deploy-distributed-on-slurm.sh">deploy-distributed-on-slurm.sh</a>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Usage:<span class="w"> </span>deploy-distributed-on-slurm.sh<span class="w"> </span>&lt;options&gt;<span class="w"> </span>&lt;command&gt;
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Start<span class="w"> </span>the<span class="w"> </span>DAPHNE<span class="w"> </span>distributed<span class="w"> </span>deployment<span class="w"> </span>on<span class="w"> </span>remote<span class="w"> </span>machines<span class="w"> </span>using<span class="w"> </span>Slurm.
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>These<span class="w"> </span>are<span class="w"> </span>the<span class="w"> </span>options<span class="w"> </span><span class="o">(</span>short<span class="w"> </span>and<span class="w"> </span>long<span class="w"> </span>formats<span class="w"> </span>available<span class="o">)</span>:
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span>-h,<span class="w"> </span>--help<span class="w">              </span>Print<span class="w"> </span>this<span class="w"> </span><span class="nb">help</span><span class="w"> </span>message<span class="w"> </span>and<span class="w"> </span>exit.
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span>-i<span class="w"> </span>SSH_IDENTITY_FILE<span class="w">    </span>Specify<span class="w"> </span>OpenSSH<span class="w"> </span>identity<span class="w"> </span>file<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>private<span class="w"> </span>key<span class="w"> </span><span class="k">in</span><span class="w"> </span>~/.ssh/id_rsa.pub<span class="o">)</span>.
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span>-u,<span class="w"> </span>--user<span class="w"> </span>SSH_USERNAME<span class="w"> </span>Specify<span class="w"> </span>OpenSSH<span class="w"> </span>username<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="nv">$USER</span><span class="o">)</span>.
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span>-l,<span class="w"> </span>--login<span class="w"> </span>SSH_LOGIN_NODE_HOSTNAME<span class="w">     </span>Specify<span class="w"> </span>OpenSSH<span class="w"> </span>login<span class="w"> </span>name<span class="w"> </span>hostname<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>localhost<span class="o">)</span>.
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span>-d,<span class="w"> </span>--pathToBuild<span class="w">       </span>A<span class="w"> </span>path<span class="w"> </span>to<span class="w"> </span>deploy<span class="w"> </span>or<span class="w"> </span>where<span class="w"> </span>the<span class="w"> </span>build<span class="w"> </span>is<span class="w"> </span>already<span class="w"> </span>deployed<span class="w"> </span><span class="o">(</span>default<span class="w"> </span>~/DaphneDistributedWorker<span class="w"> </span>can<span class="w"> </span>be<span class="w"> </span>specified<span class="w"> </span><span class="k">in</span><span class="w"> </span>the<span class="w"> </span>script<span class="o">)</span>.
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span>-n,<span class="w"> </span>--numcores<span class="w">          </span>Specify<span class="w"> </span>number<span class="w"> </span>of<span class="w"> </span>workers<span class="w"> </span><span class="o">(</span>cores<span class="o">)</span><span class="w"> </span>to<span class="w"> </span>use<span class="w"> </span>to<span class="w"> </span>deploy<span class="w"> </span>DAPHNE<span class="w"> </span>workers<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="m">128</span><span class="o">)</span>.
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">  </span>-p,<span class="w"> </span>--port<span class="w">              </span>Specify<span class="w"> </span>DAPHNE<span class="w"> </span>deployed<span class="w"> </span>port<span class="w"> </span>range<span class="w"> </span>begin<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span><span class="m">50000</span><span class="o">)</span>.
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">  </span>--args<span class="w"> </span>ARGS_CS<span class="w">          </span>Specify<span class="w"> </span>arguments<span class="w"> </span>of<span class="w"> </span>a<span class="w"> </span>DaphneDSL<span class="w"> </span>SCRIPT<span class="w"> </span><span class="k">in</span><span class="w"> </span>a<span class="w"> </span>comma-separated<span class="w"> </span>format.
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">  </span>-S,<span class="w"> </span>--ssh-arg<span class="o">=</span>S<span class="w">         </span>Specify<span class="w"> </span>additional<span class="w"> </span>arguments<span class="w"> </span>S<span class="w"> </span><span class="k">for</span><span class="w"> </span>ssh<span class="w"> </span>client<span class="w"> </span><span class="o">(</span>default<span class="w"> </span>command:<span class="w"> </span><span class="nv">$SSH_COMMAND</span><span class="o">)</span>.
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">  </span>-C,<span class="w"> </span>--scp-arg<span class="o">=</span>C<span class="w">         </span>Specify<span class="w"> </span>additional<span class="w"> </span>arguments<span class="w"> </span>C<span class="w"> </span><span class="k">for</span><span class="w"> </span>scp<span class="w"> </span>client<span class="w"> </span><span class="o">(</span>default<span class="w"> </span>command:<span class="w"> </span><span class="nv">$SCP_COMMAND</span><span class="o">)</span>.
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">  </span>-R,<span class="w"> </span>--srun-arg<span class="o">=</span>R<span class="w">        </span>Specify<span class="w"> </span>additional<span class="w"> </span>arguments<span class="w"> </span>R<span class="w"> </span><span class="k">for</span><span class="w"> </span>srun<span class="w"> </span>client.
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">  </span>-G,<span class="w"> </span>--singularity-arg<span class="o">=</span>G<span class="w"> </span>Specify<span class="w"> </span>additional<span class="w"> </span>arguments<span class="w"> </span>G<span class="w"> </span><span class="k">for</span><span class="w"> </span>singularity<span class="w"> </span>client.
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>These<span class="w"> </span>are<span class="w"> </span>the<span class="w"> </span>commands<span class="w"> </span>that<span class="w"> </span>can<span class="w"> </span>be<span class="w"> </span>executed:
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">  </span>singularity<span class="w">             </span>Compile<span class="w"> </span>the<span class="w"> </span>Singularity<span class="w"> </span>SIF<span class="w"> </span>image<span class="w"> </span><span class="k">for</span><span class="w"> </span>DAPHNE<span class="w"> </span><span class="o">(</span>and<span class="w"> </span>transfer<span class="w"> </span>it<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>target<span class="w"> </span>platform<span class="o">)</span>.
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">  </span>build<span class="w">                   </span>Compile<span class="w"> </span>DAPHNE<span class="w"> </span>codes<span class="w"> </span><span class="o">(</span>daphne,<span class="w"> </span>DistributedWorker<span class="o">)</span><span class="w"> </span>using<span class="w"> </span>the<span class="w"> </span>Singularity<span class="w"> </span>image<span class="w"> </span><span class="k">for</span><span class="w"> </span>DAPHNE.
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">                          </span>It<span class="w"> </span>should<span class="w"> </span>only<span class="w"> </span>be<span class="w"> </span>invoked<span class="w"> </span>from<span class="w"> </span>the<span class="w"> </span>code<span class="w"> </span>base<span class="w"> </span>root<span class="w"> </span>directory.
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">                          </span>It<span class="w"> </span>could<span class="w"> </span>also<span class="w"> </span>be<span class="w"> </span>invoked<span class="w"> </span>on<span class="w"> </span>a<span class="w"> </span>target<span class="w"> </span>platform<span class="w"> </span>after<span class="w"> </span>a<span class="w"> </span>transfer.
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">  </span>package<span class="w">                 </span>Create<span class="w"> </span>the<span class="w"> </span>package<span class="w"> </span>image<span class="w"> </span>with<span class="w"> </span>*.daphne<span class="w"> </span>scripts<span class="w"> </span>and<span class="w"> </span>a<span class="w"> </span>compressed<span class="w"> </span>build/<span class="w"> </span>directory.
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">  </span>transfer<span class="w">                </span>Transfers<span class="w"> </span><span class="o">(</span>uploads<span class="o">)</span><span class="w"> </span>a<span class="w"> </span>package<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>target<span class="w"> </span>platform.
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">  </span>start<span class="w">                   </span>Run<span class="w"> </span>workers<span class="w"> </span>on<span class="w"> </span>remote<span class="w"> </span>machines<span class="w"> </span>through<span class="w"> </span>login<span class="w"> </span>node<span class="w"> </span><span class="o">(</span>deploys<span class="w"> </span>this<span class="w"> </span>script<span class="w"> </span>and<span class="w"> </span>runs<span class="w"> </span>workers<span class="o">)</span>.
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">  </span>workers<span class="w">                 </span>Run<span class="w"> </span>workers<span class="w"> </span>on<span class="w"> </span>current<span class="w"> </span>login<span class="w"> </span>node<span class="w"> </span>through<span class="w"> </span>Slurm.
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">  </span>status<span class="w">                  </span>Get<span class="w"> </span>distributed<span class="w"> </span>workers<span class="err">&#39;</span><span class="w"> </span>status.
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">  </span><span class="nb">wait</span><span class="w">                    </span>Waits<span class="w"> </span><span class="k">until</span><span class="w"> </span>all<span class="w"> </span>workers<span class="w"> </span>are<span class="w"> </span>up.
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">  </span>stop<span class="w">                    </span>Stops<span class="w"> </span>all<span class="w"> </span>distributed<span class="w"> </span>workers.
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">  </span>run<span class="w"> </span><span class="o">[</span>SCRIPT<span class="w"> </span><span class="o">[</span>ARGs<span class="o">]]</span><span class="w">     </span>Run<span class="w"> </span>one<span class="w"> </span>request<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>deployed<span class="w"> </span>platform<span class="w"> </span>by<span class="w"> </span>processing<span class="w"> </span>one<span class="w"> </span>DaphneDSL<span class="w"> </span>SCRIPT<span class="w"> </span>file<span class="w"> </span><span class="o">(</span>default:<span class="w"> </span>/dev/stdin<span class="o">)</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">                          </span>using<span class="w"> </span>optional<span class="w"> </span>arguments<span class="w"> </span><span class="o">(</span>ARGs<span class="w"> </span><span class="k">in</span><span class="w"> </span>script<span class="w"> </span>format<span class="o">)</span>.
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">  </span>clean<span class="w">                   </span>Cleans<span class="w"> </span><span class="o">(</span>deletes<span class="o">)</span><span class="w"> </span>the<span class="w"> </span>package<span class="w"> </span>on<span class="w"> </span>the<span class="w"> </span>target<span class="w"> </span>platform.
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">  </span>deploy<span class="w">                  </span>Deploys<span class="w"> </span>everything<span class="w"> </span><span class="k">in</span><span class="w"> </span>one<span class="w"> </span>sweep:<span class="w"> </span><span class="nv">singularity</span><span class="o">=</span>&gt;build<span class="o">=</span>&gt;package<span class="o">=</span>&gt;transfer<span class="o">=</span>&gt;start<span class="o">=</span>&gt;wait<span class="o">=</span>&gt;run<span class="o">=</span>&gt;clean.
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>The<span class="w"> </span>default<span class="w"> </span>connection<span class="w"> </span>to<span class="w"> </span>the<span class="w"> </span>target<span class="w"> </span>platform<span class="w"> </span><span class="o">(</span>HPC<span class="o">)</span><span class="w"> </span>login<span class="w"> </span>node<span class="w"> </span>is<span class="w"> </span>through<span class="w"> </span>OpenSSH,<span class="w"> </span>configured<span class="w"> </span>by<span class="w"> </span>default<span class="w"> </span><span class="k">in</span><span class="w"> </span>~/.ssh<span class="w"> </span><span class="o">(</span>see:<span class="w"> </span>man<span class="w"> </span>ssh_config<span class="o">)</span>.
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>The<span class="w"> </span>default<span class="w"> </span>ports<span class="w"> </span><span class="k">for</span><span class="w"> </span>worker<span class="w"> </span>peers<span class="w"> </span>begin<span class="w"> </span>at<span class="w"> </span><span class="m">50000</span><span class="w"> </span><span class="o">(</span>PORTRANGE_BEGIN<span class="o">)</span><span class="w"> </span>and<span class="w"> </span>the<span class="w"> </span>list<span class="w"> </span>of<span class="w"> </span>PEERS<span class="w"> </span>is<span class="w"> </span>generated<span class="w"> </span>as:
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="nv">PEERS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">(</span><span class="w"> </span>WORKER1_IP:PORTRANGE_BEGIN,<span class="w"> </span>WORKER1_IP:PORTRANGE_BEGIN+1,<span class="w"> </span>...,<span class="w"> </span>WORKER2_IP:PORTRANGE_BEGIN,<span class="w"> </span>WORKER2_IP:PORTRANGE_BEGIN+1,<span class="w"> </span>...<span class="w"> </span><span class="o">)</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>Logs<span class="w"> </span>can<span class="w"> </span>be<span class="w"> </span>found<span class="w"> </span>at<span class="w"> </span><span class="o">[</span>pathToBuild<span class="o">]</span>/logs.
+</code></pre></div>
+<h3 id="short-examples">Short Examples</h3>
+<p>The following list presents few examples about how to use the <a href="https://github.com/daphne-eu/daphne/tree/main/deploy/deploy-distributed-on-slurm.sh">deploy-distributed-on-slurm.sh</a> command.</p>
+<p>These comprise more hands-on documentation about deployment, including tutorial-like explanation examples about how to package, distributively deploy, manage, and execute workloads using DAPHNE.</p>
+<ol>
+<li>
+<p>Builds the Singularity image and uses it to compile the build directory codes, then packages it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>singularity<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./deploy-distributed-on-slurm.sh<span class="w"> </span>build<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./deploy-distributed-on-slurm.sh<span class="w"> </span>package
+</code></pre></div>
+</li>
+<li>
+<p>Transfers a package to the target platform through OpenSSH, using login node HPC, user hpc, and identify key hpc.pub.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>HPC<span class="w"> </span>--user<span class="w"> </span>hpc<span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>transfer
+</code></pre></div>
+</li>
+<li>
+<p>Using login node HPC, accesses the target platform and starts workers on remote machines.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>-l<span class="w"> </span>HPC<span class="w"> </span>start
+</code></pre></div>
+</li>
+<li>
+<p>Runs one request (script called example-time.daphne) on the deployment using 1024 cores, login node HPC, and default OpenSSH configuration.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>-l<span class="w"> </span>HPC<span class="w"> </span>-n<span class="w"> </span><span class="m">1024</span><span class="w"> </span>run<span class="w"> </span>example-time.daphne
+</code></pre></div>
+</li>
+<li>
+<p>Executes one request (DaphneDSL script input from standard input) at a running deployed platform, using default singularity/srun configurations.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>run
+</code></pre></div>
+</li>
+<li>
+<p>Deploys once at the target platform through OpenSSH using default login node (localhost), then cleans.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>deploy<span class="w"> </span>-n<span class="w"> </span><span class="m">10</span>
+</code></pre></div>
+</li>
+<li>
+<p>Starts workers at a running deployed platform using custom srun arguments (2 hours dual-core with 10G memory).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>workers<span class="w"> </span>-R<span class="o">=</span><span class="s2">&quot;-t 120 --mem-per-cpu=10G --cpu-bind=cores --cpus-per-task=2&quot;</span>
+</code></pre></div>
+</li>
+<li>
+<p>Executes a request with custom srun arguments (30 minutes single-core).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>run<span class="w"> </span>-R<span class="o">=</span><span class="s2">&quot;--time=30 --cpu-bind=cores --nodes=1 --ntasks-per-node=1 --cpus-per-task=1&quot;</span>
+</code></pre></div>
+</li>
+<li>
+<p>Example request job from a pipe.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>cat<span class="w"> </span>../scripts/examples/hello-world.daph<span class="w"> </span><span class="p">|</span><span class="w"> </span>./deploy-distributed-on-slurm.sh<span class="w"> </span>run
+</code></pre></div>
+</li>
+</ol>
+<h3 id="scenario-usage-example">Scenario Usage Example</h3>
+<p>Here is a scenario usage as a longer example demo.</p>
+<ol>
+<li>
+<p>Fetch the code from the latest GitHub code repository.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">function</span><span class="w"> </span>compile<span class="o">()</span><span class="w"> </span><span class="o">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span>git<span class="w"> </span>clone<span class="w"> </span>--recursive<span class="w"> </span>git@github.com:daphne-eu/daphne.git<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>tee<span class="w"> </span>daphne-<span class="k">$(</span>date<span class="w"> </span>+%F-%T<span class="k">)</span>.log
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nb">cd</span><span class="w"> </span>daphne/deploy
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">  </span>./deploy-distributed-on-slurm.sh<span class="w"> </span>singularity<span class="w"> </span><span class="c1"># creates the Singularity container image</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span>./deploy-distributed-on-slurm.sh<span class="w"> </span>build<span class="w">   </span><span class="c1"># Builds the daphne codes using the container</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="o">}</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>compile
+</code></pre></div>
+</li>
+<li>
+<p>Package the built targets (binaries) to packet file <code>daphne-package.tgz</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>package
+</code></pre></div>
+</li>
+<li>
+<p>Transfer the packet file <code>daphne-package.tgz</code> to <code>HPC</code> (Slurm) with OpenSSH key <code>~/.ssh/hpc.pub</code> and unpack it.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>HPC<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>transfer<span class="w"> </span>
+</code></pre></div>
+<p>E.g., for EuroHPC Vega, use the instance, if your username matches the one at Vega and the key is <code>~/.ssh/hpc.pub</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>login.vega.izum.si<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>transfer
+</code></pre></div>
+</li>
+<li>
+<p>Start the workers from the local computer by logging into the HPC login node:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>login.vega.izum.si<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>start
+</code></pre></div>
+</li>
+<li>
+<p>Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from the stream.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>cat<span class="w"> </span>../scripts/examples/hello-world.daph<span class="w"> </span><span class="p">|</span><span class="w"> </span>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>login.vega.izum.si<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>run<span class="w"> </span>
+</code></pre></div>
+</li>
+<li>
+<p>Starting a main target on the HPC (Slurm) and connecting it with the started workers, to execute payload from a file.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>login.vega.izum.si<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>run<span class="w"> </span>example-time.daphne
+</code></pre></div>
+</li>
+<li>
+<p>Stopping all workers on the HPC (Slurm).</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>login.vega.izum.si<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>stop
+</code></pre></div>
+</li>
+<li>
+<p>Cleaning the uploaded targets from the HPC login node.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>./deploy-distributed-on-slurm.sh<span class="w"> </span>--login<span class="w"> </span>login.vega.izum.si<span class="w"> </span>--user<span class="w"> </span><span class="nv">$USER</span><span class="w"> </span>-i<span class="w"> </span>~/.ssh/hpc.pub<span class="w"> </span>clean
+</code></pre></div>
+</li>
+</ol>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+    
+  </body>
+</html>

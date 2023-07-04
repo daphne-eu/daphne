@@ -1,0 +1,2336 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../LanguageRef/">
+      
+      
+        <link rel="next" href="../Imports/">
+      
+      <link rel="icon" href="../../assets/logo_small.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.18">
+    
+    
+      
+        <title>Builtins - DAPHNE</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#built-in-functions" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="DAPHNE" class="md-header__button md-logo" aria-label="DAPHNE" data-md-component="logo">
+      
+  <img src="../../assets/logo_small.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DAPHNE
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Builtins
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/daphne-eu/daphne" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daphne-eu/daphne
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        Home
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../Quickstart/" class="md-tabs__link md-tabs__link--active">
+        Users
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../development/Contributing/" class="md-tabs__link">
+        Developers
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="DAPHNE" class="md-nav__button md-logo" aria-label="DAPHNE" data-md-component="logo">
+      
+  <img src="../../assets/logo_small.png" alt="logo">
+
+    </a>
+    DAPHNE
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/daphne-eu/daphne" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daphne-eu/daphne
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          Home
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_1">
+          <span class="md-nav__icon md-icon"></span>
+          Home
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../GettingStarted/" class="md-nav__link">
+        GettingStarted
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          Users
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Users
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Quickstart/" class="md-nav__link">
+        Quickstart
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../RunningDaphneLocally/" class="md-nav__link">
+        RunningDaphneLocally
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+          DaphneDSL
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_2_4">
+          <span class="md-nav__icon md-icon"></span>
+          DaphneDSL
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../LanguageRef/" class="md-nav__link">
+        LanguageRef
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Builtins
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Builtins
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#list-of-categories" class="md-nav__link">
+    List of categories
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-generation" class="md-nav__link">
+    Data generation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matrixframe-dimensions" class="md-nav__link">
+    Matrix/frame dimensions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elementwise-unary" class="md-nav__link">
+    Elementwise unary
+  </a>
+  
+    <nav class="md-nav" aria-label="Elementwise unary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arithmeticgeneral-math" class="md-nav__link">
+    Arithmetic/general math
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rounding" class="md-nav__link">
+    Rounding
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trigonometric" class="md-nav__link">
+    Trigonometric
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elementwise-binary" class="md-nav__link">
+    Elementwise binary
+  </a>
+  
+    <nav class="md-nav" aria-label="Elementwise binary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minmax" class="md-nav__link">
+    Min/max
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logical" class="md-nav__link">
+    Logical
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strings" class="md-nav__link">
+    Strings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    Comparison
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outer-binary-generalized-outer-product" class="md-nav__link">
+    Outer binary (generalized outer product)
+  </a>
+  
+    <nav class="md-nav" aria-label="Outer binary (generalized outer product)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arithmetic" class="md-nav__link">
+    Arithmetic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minmax_1" class="md-nav__link">
+    Min/max
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logical_1" class="md-nav__link">
+    Logical
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strings_1" class="md-nav__link">
+    Strings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison_1" class="md-nav__link">
+    Comparison
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aggregation-and-statistical" class="md-nav__link">
+    Aggregation and statistical
+  </a>
+  
+    <nav class="md-nav" aria-label="Aggregation and statistical">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fullrowcolumn-aggregation" class="md-nav__link">
+    Full/row/column aggregation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cumulative-aggregation" class="md-nav__link">
+    Cumulative aggregation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reorganization" class="md-nav__link">
+    Reorganization
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matrix-decomposition-co" class="md-nav__link">
+    Matrix decomposition &amp; co
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deep-neural-network" class="md-nav__link">
+    Deep neural network
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-matrix-operations" class="md-nav__link">
+    Other matrix operations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extended-relational-algebra" class="md-nav__link">
+    Extended relational algebra
+  </a>
+  
+    <nav class="md-nav" aria-label="Extended relational algebra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entire-sql-query" class="md-nav__link">
+    Entire SQL query
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-operations" class="md-nav__link">
+    Set Operations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cartesian-product-and-joins" class="md-nav__link">
+    Cartesian product and joins
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame-label-manipulation" class="md-nav__link">
+    Frame label manipulation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conversions-casts-and-copying" class="md-nav__link">
+    Conversions, casts and copying
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inputoutput" class="md-nav__link">
+    Input/output
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-preprocessing" class="md-nav__link">
+    Data preprocessing
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurements" class="md-nav__link">
+    Measurements
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Imports/" class="md-nav__link">
+        Imports
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+          DaphneLib
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_5">
+          <span class="md-nav__icon md-icon"></span>
+          DaphneLib
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneLib/Overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneLib/APIRef/" class="md-nav__link">
+        APIRef
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../FileMetaDataFormat/" class="md-nav__link">
+        FileMetaDataFormat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DistributedRuntime/" class="md-nav__link">
+        DistributedRuntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SchedulingOptions/" class="md-nav__link">
+        SchedulingOptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_9">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/sqlTutorial/" class="md-nav__link">
+        sqlTutorial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../FPGAconfiguration/" class="md-nav__link">
+        FPGAconfiguration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPI-Usage/" class="md-nav__link">
+        MPI Usage
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Developers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Developers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/Contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/BuildingDaphne/" class="md-nav__link">
+        BuildingDaphne
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Deploy/" class="md-nav__link">
+        Deploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ReleaseScripts/" class="md-nav__link">
+        ReleaseScripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../BinaryFormat/" class="md-nav__link">
+        BinaryFormat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/Logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/ExtendingDistributedRuntime/" class="md-nav__link">
+        ExtendingDistributedRuntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/ExtendingSchedulingKnobs/" class="md-nav__link">
+        ExtendingSchedulingKnobs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/HandlingPRs/" class="md-nav__link">
+        HandlingPRs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/ImplementBuiltinKernel/" class="md-nav__link">
+        ImplementBuiltinKernel
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../development/WriteDocs/" class="md-nav__link">
+        WriteDocs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#list-of-categories" class="md-nav__link">
+    List of categories
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-generation" class="md-nav__link">
+    Data generation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matrixframe-dimensions" class="md-nav__link">
+    Matrix/frame dimensions
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elementwise-unary" class="md-nav__link">
+    Elementwise unary
+  </a>
+  
+    <nav class="md-nav" aria-label="Elementwise unary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arithmeticgeneral-math" class="md-nav__link">
+    Arithmetic/general math
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rounding" class="md-nav__link">
+    Rounding
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trigonometric" class="md-nav__link">
+    Trigonometric
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#elementwise-binary" class="md-nav__link">
+    Elementwise binary
+  </a>
+  
+    <nav class="md-nav" aria-label="Elementwise binary">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#minmax" class="md-nav__link">
+    Min/max
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logical" class="md-nav__link">
+    Logical
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strings" class="md-nav__link">
+    Strings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison" class="md-nav__link">
+    Comparison
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#outer-binary-generalized-outer-product" class="md-nav__link">
+    Outer binary (generalized outer product)
+  </a>
+  
+    <nav class="md-nav" aria-label="Outer binary (generalized outer product)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#arithmetic" class="md-nav__link">
+    Arithmetic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#minmax_1" class="md-nav__link">
+    Min/max
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#logical_1" class="md-nav__link">
+    Logical
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#strings_1" class="md-nav__link">
+    Strings
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#comparison_1" class="md-nav__link">
+    Comparison
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#aggregation-and-statistical" class="md-nav__link">
+    Aggregation and statistical
+  </a>
+  
+    <nav class="md-nav" aria-label="Aggregation and statistical">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fullrowcolumn-aggregation" class="md-nav__link">
+    Full/row/column aggregation
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cumulative-aggregation" class="md-nav__link">
+    Cumulative aggregation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reorganization" class="md-nav__link">
+    Reorganization
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#matrix-decomposition-co" class="md-nav__link">
+    Matrix decomposition &amp; co
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deep-neural-network" class="md-nav__link">
+    Deep neural network
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#other-matrix-operations" class="md-nav__link">
+    Other matrix operations
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#extended-relational-algebra" class="md-nav__link">
+    Extended relational algebra
+  </a>
+  
+    <nav class="md-nav" aria-label="Extended relational algebra">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entire-sql-query" class="md-nav__link">
+    Entire SQL query
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#set-operations" class="md-nav__link">
+    Set Operations
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cartesian-product-and-joins" class="md-nav__link">
+    Cartesian product and joins
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#frame-label-manipulation" class="md-nav__link">
+    Frame label manipulation
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conversions-casts-and-copying" class="md-nav__link">
+    Conversions, casts and copying
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#inputoutput" class="md-nav__link">
+    Input/output
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-preprocessing" class="md-nav__link">
+    Data preprocessing
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#measurements" class="md-nav__link">
+    Measurements
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="built-in-functions">Built-in Functions</h1>
+<p>DaphneDSL offers numerous built-in functions, which can be used in every DaphneDSL script without requiring any imports.
+The general syntax for calling a built-in function is <code>func(param1, param2, ...)</code> (see the <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL Language Reference</a>).</p>
+<p>This document provides an overview of the DaphneDSL built-in functions.
+Note that we are still extending this set of built-in functions.
+Furthermore, <strong>we also plan to create a library of higher-level ML primitives</strong> allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.
+Those library functions will internally be implemented using the built-in functions described in this document.</p>
+<p>We use the following notation (deviating from the DaphneDSL function syntax):</p>
+<ul>
+<li>square brackets <code>[]</code> mean that a parameter is optional</li>
+<li><code>...</code> stands for an arbitrary repetition of the previous parameter (including zero).</li>
+<li><code>/</code> means alternative options, e.g., <code>matrix/frame</code> means the parameter could be a matrix or a frame</li>
+</ul>
+<h2 id="list-of-categories">List of categories</h2>
+<p>DaphneDSL's built-in functions can be categorized as follows:</p>
+<ul>
+<li>Data generation</li>
+<li>Matrix/frame dimensions</li>
+<li>Elementwise unary</li>
+<li>Elementwise binary</li>
+<li>Outer binary (generalized outer product)</li>
+<li>Aggregation and statistical</li>
+<li>Reorganization</li>
+<li>Matrix decomposition &amp; co</li>
+<li>Deep neural network</li>
+<li>Other matrix operations</li>
+<li>Extended relational algebra</li>
+<li>Conversions, casts and copying</li>
+<li>Input/output</li>
+<li>Data preprocessing</li>
+<li>Measurements</li>
+</ul>
+<h2 id="data-generation">Data generation</h2>
+<ul>
+<li>
+<p><strong><code>fill</code></strong><code>(value:scalar, numRows:size, numCols:size)</code></p>
+<p>Creates a <em>(<code>numRows</code> x <code>numCols</code>)</em> matrix and sets all elements to <code>value</code>.</p>
+</li>
+<li>
+<p><strong><code>createFrame</code></strong><code>(column:matrix, ...[, labels:str, ...])</code></p>
+<p>Creates a frame from an arbitrary number of column matrices.
+Optionally, a label can be specified for each column (the number of provided columns and labels must be equal).</p>
+</li>
+<li>
+<p><strong><code>diagMatrix</code></strong><code>(arg:matrix)</code></p>
+<p>Creates an <em>(n x n)</em> diagonal matrix by placing the elements of the given <em>(n x 1)</em> column-matrix <code>arg</code> on the diagonal of an otherwise empty (zero) square matrix.</p>
+</li>
+<li>
+<p><strong><code>rand</code></strong><code>(numRows:size, numCols:size, min:scalar, max:scalar, sparsity:double, seed:si64)</code></p>
+<p>Generates a <em>(<code>numRows</code> x <code>numCols</code>)</em> matrix of random values.
+The values are drawn uniformly from the range <em>[<code>min</code>, <code>max</code>]</em> (both inclusive).
+The <code>sparsity</code> can be chosen between <code>0.0</code> (all zeros) and <code>1.0</code> (all non-zeros).
+The <code>seed</code> can be set to <code>-1</code> (randomly chooses a seed), or be provided explicitly to enable reproducible random values.</p>
+</li>
+<li>
+<p><strong><code>sample</code></strong><code>(range:scalar, size:size, withReplacement:bool, seed:si64)</code></p>
+<p>Generates a <em>(<code>size</code> x 1)</em> column-matrix of values drawn from the range <em>[0, <code>range</code> - 1]</em>.
+The parameter <code>withReplacement</code> determines if a value can be drawn multiple times (<code>true</code>) or not (<code>false</code>).
+The <code>seed</code> can be set to <code>-1</code> (randomly chooses a seed), or be provided explicitly to enable reproducible random values.</p>
+</li>
+<li>
+<p><strong><code>seq</code></strong><code>(from:scalar, to:scalar, inc:scalar)</code></p>
+<p>Generates a column matrix containing an arithmetic sequence of values starting at <code>from</code>, going through <code>to</code>, in increments of <code>inc</code>.
+Note that <code>from</code> may be greater than <code>to</code>, and <code>inc</code> may be negative.</p>
+</li>
+</ul>
+<h2 id="matrixframe-dimensions">Matrix/frame dimensions</h2>
+<p>The following built-in functions allow to find out the shape/dimensions of matrices and frames.</p>
+<ul>
+<li>
+<p><strong><code>nrow</code></strong><code>(arg:matrix/frame)</code></p>
+<p>Returns the number of rows in <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>ncol</code></strong><code>(arg:matrix/frame)</code></p>
+<p>Returns the number of columns in <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>ncell</code></strong><code>(arg:matrix/frame)</code></p>
+<p>Returns the number of cells in <code>arg</code>.
+This is the product of the number of rows and the number of columns.</p>
+</li>
+</ul>
+<h2 id="elementwise-unary">Elementwise unary</h2>
+<p>The following built-in functions all follow the same scheme:</p>
+<ul>
+<li>
+<p><strong><em><code>unaryFunc</code></em></strong><code>(arg:scalar/matrix)</code></p>
+<p>Applies the respective unary function (see table below) to the given scalar <code>arg</code> or to each element of the given matrix <code>arg</code>.</p>
+</li>
+</ul>
+<h3 id="arithmeticgeneral-math">Arithmetic/general math</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>abs</code></strong></td>
+<td>absolute value</td>
+</tr>
+<tr>
+<td><strong><code>sign</code></strong></td>
+<td>signum (<code>1</code> for positive, <code>0</code> for zero, <code>-1</code> for negative)</td>
+</tr>
+<tr>
+<td><strong><code>exp</code></strong></td>
+<td>exponentiation (<em>e</em> to the power of <code>arg</code>)</td>
+</tr>
+<tr>
+<td><strong><code>ln</code></strong></td>
+<td>natural logarithm (logarithm of <code>arg</code> to the base of <em>e</em>)</td>
+</tr>
+<tr>
+<td><strong><code>sqrt</code></strong></td>
+<td>square root</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rounding">Rounding</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>round</code></strong></td>
+<td>round to nearest</td>
+</tr>
+<tr>
+<td><strong><code>floor</code></strong></td>
+<td>round down</td>
+</tr>
+<tr>
+<td><strong><code>ceil</code></strong></td>
+<td>round up</td>
+</tr>
+</tbody>
+</table>
+<h3 id="trigonometric">Trigonometric</h3>
+<p>The typical trigonometric functions:
+<strong><code>sin</code></strong>, <strong><code>cos</code></strong>, <strong><code>tan</code></strong>, <strong><code>sinh</code></strong>, <strong><code>cosh</code></strong>, <strong><code>tanh</code></strong>, <strong><code>asin</code></strong>, <strong><code>acos</code></strong>, <strong><code>atan</code></strong></p>
+<h2 id="elementwise-binary">Elementwise binary</h2>
+<p>DaphneDSL supports various elementwise binary operations.
+Some of those can be used through <em>operators in infix notation</em>, e.g., <code>+</code>; and some through <em>built-in functions</em>.
+Some operations even support both, e.g., <code>pow(a, b)</code> and <code>a^b</code> have the same semantics.</p>
+<p>The built-in functions all follow the same scheme:</p>
+<ul>
+<li>
+<p><strong><em><code>binaryFunc</code></em></strong><code>(lhs:scalar/matrix, rhs:scalar/matrix)</code></p>
+<p>Applies the respective binary function (see table below) to the corresponding pairs of a value in the left-hand-side argument <code>lhs</code> and the right-hand-side argument <code>rhs</code>.
+Regarding the combinations of scalars and matrices, the same broadcasting semantics apply as for binary operations like <code>+</code>, <code>*</code>, etc. (see the <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL Language Reference</a>).</p>
+</li>
+</ul>
+<p>Note that DaphneDSL support various other elementwise binary functions via operators in infix notation (see <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL</a>), e.g., <code>^</code>, <code>%</code>, <code>*</code>, <code>/</code>, <code>+</code>, <code>-</code>, <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&amp;&amp;</code>, <code>||</code>.</p>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>operator</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><strong><code>+</code></strong></td>
+<td>addition</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>-</code></strong></td>
+<td>subtraction</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>*</code></strong></td>
+<td>multiplication</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>/</code></strong></td>
+<td>division</td>
+</tr>
+<tr>
+<td><strong><code>pow</code></strong></td>
+<td><strong><code>^</code></strong></td>
+<td>exponentiation (<code>lhs</code> to the power of <code>rhs</code>)</td>
+</tr>
+<tr>
+<td><strong><code>log</code></strong></td>
+<td></td>
+<td>logarithm (logarithm of <code>lhs</code> to the base of <code>rhs</code>)</td>
+</tr>
+<tr>
+<td><strong><code>mod</code></strong></td>
+<td><strong><code>%</code></strong></td>
+<td>modulo</td>
+</tr>
+</tbody>
+</table>
+<h3 id="minmax">Min/max</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>operator</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>min</code></strong></td>
+<td></td>
+<td>minimum</td>
+</tr>
+<tr>
+<td><strong><code>max</code></strong></td>
+<td></td>
+<td>maximum</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logical">Logical</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>operator</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><strong><code>&amp;&amp;</code></strong></td>
+<td>logical conjunction</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>||</code></strong></td>
+<td>logical disjunction</td>
+</tr>
+</tbody>
+</table>
+<h3 id="strings">Strings</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>operator</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>concat</code></strong></td>
+<td><strong><code>+</code></strong></td>
+<td>string concatenation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="comparison">Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>operator</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td></td>
+<td><strong><code>==</code></strong></td>
+<td>equal</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>!=</code></strong></td>
+<td>not equal</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>&lt;</code></strong></td>
+<td>less than</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>&lt;=</code></strong></td>
+<td>less or equal</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>&gt;</code></strong></td>
+<td>greater than</td>
+</tr>
+<tr>
+<td></td>
+<td><strong><code>&gt;=</code></strong></td>
+<td>greater or equal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="outer-binary-generalized-outer-product">Outer binary (generalized outer product)</h2>
+<p>The following built-in functions all follow the same scheme:</p>
+<ul>
+<li><strong><em><code>outerBinaryFunc</code></em></strong><code>(lhs:matrix, rhs:matrix)</code></li>
+</ul>
+<p>The argument <code>lhs</code> is expected to be a column <em>(m x 1)</em> matrix, and the argument <code>rhs</code> is expected to be a row <em>(1 x n)</em> matrix.
+  The result is a <em>(m x n)</em> matrix, whereby the element at position <em>(i, j)</em> is calculated by applying the respective binary function (see the table below) to the <em>i</em>-th element in <code>lhs</code> and the <em>j</em>-th element in <code>rhs</code>.
+  Schematically, this looks as follows (where <code>∘</code> is some binary operation):
+  <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>       |    b0    b1 ...    bn rhs
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    ---+----------------------
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>lhs a0 | a0∘b0 a0∘b1 ... a0∘bn res
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    a1 | a1∘b0 a1∘b1 ... a1∘bn
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    .. | ..... .....     .....
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    am | am∘b0 am∘b1 ... am∘bn
+</code></pre></div></p>
+<h3 id="arithmetic">Arithmetic</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>outerAdd</code></strong></td>
+<td>addition</td>
+</tr>
+<tr>
+<td><strong><code>outerSub</code></strong></td>
+<td>subtraction</td>
+</tr>
+<tr>
+<td><strong><code>outerMul</code></strong></td>
+<td>multiplication (the well-known <em>outer product</em>)</td>
+</tr>
+<tr>
+<td><strong><code>outerDiv</code></strong></td>
+<td>division</td>
+</tr>
+<tr>
+<td><strong><code>outerPow</code></strong></td>
+<td>exponentiation (<code>lhs</code> to the power of <code>rhs</code>)</td>
+</tr>
+<tr>
+<td><strong><code>outerLog</code></strong></td>
+<td>logarithm (logarithm of <code>lhs</code> to the base of <code>rhs</code>)</td>
+</tr>
+<tr>
+<td><strong><code>outerMod</code></strong></td>
+<td>modulo</td>
+</tr>
+</tbody>
+</table>
+<h3 id="minmax_1">Min/max</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>outerMin</code></strong></td>
+<td>minimum</td>
+</tr>
+<tr>
+<td><strong><code>outerMax</code></strong></td>
+<td>maximum</td>
+</tr>
+</tbody>
+</table>
+<h3 id="logical_1">Logical</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>outerAnd</code></strong></td>
+<td>logical conjunction</td>
+</tr>
+<tr>
+<td><strong><code>outerOr</code></strong></td>
+<td>logical disjunction</td>
+</tr>
+<tr>
+<td><strong><code>outerXor</code></strong></td>
+<td>logical exclusive disjunction</td>
+</tr>
+</tbody>
+</table>
+<h3 id="strings_1">Strings</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>outerConcat</code></strong></td>
+<td>string concatenation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="comparison_1">Comparison</h3>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong><code>outerEq</code></strong></td>
+<td>equal</td>
+</tr>
+<tr>
+<td><strong><code>outerNeq</code></strong></td>
+<td>not equal</td>
+</tr>
+<tr>
+<td><strong><code>outerLt</code></strong></td>
+<td>less than</td>
+</tr>
+<tr>
+<td><strong><code>outerLe</code></strong></td>
+<td>less or equal</td>
+</tr>
+<tr>
+<td><strong><code>outerGt</code></strong></td>
+<td>greater than</td>
+</tr>
+<tr>
+<td><strong><code>outerGe</code></strong></td>
+<td>greater or equal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="aggregation-and-statistical">Aggregation and statistical</h2>
+<h3 id="fullrowcolumn-aggregation">Full/row/column aggregation</h3>
+<p>The following built-in functions all follow the same scheme:</p>
+<ul>
+<li>
+<p><strong><code>agg</code></strong><code>(arg:matrix)</code></p>
+<p>Full aggregation over all elements of the matrix <code>arg</code> using aggregation function <code>agg</code> (see table below).
+Returns a scalar.</p>
+</li>
+<li>
+<p><strong><code>agg</code></strong><code>(arg:matrix, axis:si64)</code></p>
+<p>Row or column aggregation over a <em>(n x m)</em> matrix <code>arg</code> using aggregation function <code>agg</code> (see table below).
+- <code>axis</code> == 0: calculate one aggregate per row; the result is a <em>(n x 1)</em> (column) matrix
+- <code>axis</code> == 1: calculate one aggregate per column; the result is a <em>(1 x m)</em> (row) matrix</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sum</code></td>
+<td>summation</td>
+</tr>
+<tr>
+<td><code>aggMin</code></td>
+<td>minimum</td>
+</tr>
+<tr>
+<td><code>aggMax</code></td>
+<td>maximum</td>
+</tr>
+<tr>
+<td><code>mean</code></td>
+<td>arithmetic mean</td>
+</tr>
+<tr>
+<td><code>var</code></td>
+<td>variance</td>
+</tr>
+<tr>
+<td><code>stddev</code></td>
+<td>standard deviation</td>
+</tr>
+<tr>
+<td><code>idxMin</code></td>
+<td>argmin (the index of the minimum value, only for row/column-wise aggregation)</td>
+</tr>
+<tr>
+<td><code>idxMax</code></td>
+<td>argmax (the index of the maximum value, only for row/column-wise aggregation)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="cumulative-aggregation">Cumulative aggregation</h3>
+<p>The following built-in functions all follow the same scheme:</p>
+<ul>
+<li><strong><code>cumAgg</code></strong><code>(arg:matrix)</code></li>
+</ul>
+<p>Cumulative aggregation over each column of the matrix <code>arg</code>.
+  Returns a matrix of the same shape as <code>arg</code>.</p>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>cumSum</code></td>
+<td>cumulative sum</td>
+</tr>
+<tr>
+<td><code>cumProd</code></td>
+<td>cumulative product</td>
+</tr>
+<tr>
+<td><code>cumMin</code></td>
+<td>cumulative minimum</td>
+</tr>
+<tr>
+<td><code>cumMax</code></td>
+<td>cumulative maximum</td>
+</tr>
+</tbody>
+</table>
+<h2 id="reorganization">Reorganization</h2>
+<ul>
+<li>
+<p><strong><code>reshape</code></strong><code>(arg:matrix, numRows:size, numCols:size)</code></p>
+<p>Changes the shape of <code>arg</code> to <em>(<code>numRows</code> x <code>numCols</code>)</em>.
+Note that the number of cells must be retained, i.e., the product of <code>numRows</code> and <code>numCols</code> must be equal to the product of the number of rows in <code>arg</code> and the number of columns in <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>transpose/t</code></strong><code>(arg:matrix)</code></p>
+<p>Transposes the given matrix <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>cbind</code></strong><code>(lhs:matrix/frame, rhs:matrix/frame)</code></p>
+<p>Concatenates two matrices or two frames horizontally.
+The two inputs must have the same number of rows.</p>
+</li>
+<li>
+<p><strong><code>rbind</code></strong><code>(lhs:matrix/frame, rhs:matrix/frame)</code></p>
+<p>Concatenates two matrices or two frames vertically.
+The two inputs must have the same number of columns.</p>
+</li>
+<li>
+<p><strong><code>reverse</code></strong><code>(arg:matrix)</code></p>
+<p>Reverses the rows in the given matrix <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>order</code></strong><code>(arg:matrix/frame, colIdxs:size, ..., ascs:bool, ..., returnIndexes:bool)</code></p>
+<p>Sorts the given matrix or frame by an arbitrary number of columns.
+The columns are specified in terms of their indexes (counting starts at zero).
+Each column can be sorted either in ascending (<code>true</code>) or descending (<code>false</code>) order (as determined by parameter <code>ascs</code>).
+The provided number of columns and sort orders must match.
+The parameter <code>returnIndexes</code> determines whether to return the sorted data (<code>false</code>) or a column-matrix of positions representing the permutation applied by the sorting (<code>true</code>).</p>
+</li>
+</ul>
+<h2 id="matrix-decomposition-co">Matrix decomposition &amp; co</h2>
+<p>We plan to support various matrix decompositions like <strong><code>eigen</code></strong>, <strong><code>lu</code></strong>, <strong><code>qr</code></strong>, and <strong><code>svd</code></strong>.</p>
+<h2 id="deep-neural-network">Deep neural network</h2>
+<p>Note that most of these operations only have a CUDNN-based kernel for GPU execution at the moment.</p>
+<ul>
+<li>
+<p><strong><code>affine</code></strong><code>(inputData:matrix, weightData:matrix, biasData:matrix)</code></p>
+</li>
+<li>
+<p><strong><code>avg_pool2d</code></strong><code>(inputData:matrix, numImages:size, numChannels:size, imgHeight:size, imgWidth:size, poolHeight:size, poolWidth:size, strideHeight:size, strideWidth:size, paddingHeight:size, paddingWidth:size)</code></p>
+<p>Performs average pooling operation.</p>
+</li>
+<li>
+<p><strong><code>max_pool2d</code></strong><code>(inputData:matrix, numImages:size, numChannels:size, imgHeight:size, imgWidth:size, poolHeight:size, poolWidth:size, strideHeight:size, strideWidth:size, paddingHeight:size, paddingWidth:size)</code></p>
+<p>Performs max pooling operation.</p>
+</li>
+<li>
+<p><strong><code>batch_norm2d</code></strong><code>(inputData:matrix, gamma, beta, emaMean, emaVar, eps)</code></p>
+<p>Performs batch normalization operation.</p>
+</li>
+<li>
+<p><strong><code>biasAdd</code></strong><code>(input:matrix, bias:matrix)</code></p>
+<p>Adds the <em>(1 x <code>numChannels</code>)</em> row-matrix <code>bias</code> to the <code>input</code> with the given number of channels.</p>
+</li>
+<li>
+<p><strong><code>conv2d</code></strong><code>(input:matrix, filter:matrix, numImages:size, numChannels:size, imgHeight:size, imgWidth:size, filterHeight:size, filterWidth:size, strideHeight:size, strideWidth:size, paddingHeight:size, paddingWidth:size)</code></p>
+<p>2D convolution.</p>
+</li>
+<li>
+<p><strong><code>relu</code></strong><code>(inputData:matrix)</code></p>
+</li>
+<li>
+<p><strong><code>softmax</code></strong><code>(inputData:matrix)</code></p>
+</li>
+</ul>
+<h2 id="other-matrix-operations">Other matrix operations</h2>
+<ul>
+<li>
+<p><strong><code>diagVector</code></strong><code>(arg:matrix)</code></p>
+<p>Extracts the diagonal of the given <em>(n x n)</em> matrix <code>arg</code> as a <em>(n x 1)</em> column-matrix.</p>
+</li>
+<li>
+<p><strong><code>lowerTri</code></strong><code>(arg:matrix, diag:bool, values:bool)</code></p>
+<p>Extracts the lower triangle of the given square matrix <code>arg</code> by setting all elements in the upper triangle to zero.
+If <code>diag</code> is <code>true</code>, the elements on the diagonal are retained; otherwise, they are set to zero, too.
+If <code>values</code> is <code>true</code>, the non-zero elements in the lower triangle are retained; otherwise, they are set to one.</p>
+</li>
+<li>
+<p><strong><code>upperTri</code></strong><code>(arg:matrix, diag:bool, values:bool)</code></p>
+<p>Extracts the upper triangle of the given square matrix <code>arg</code> by setting all elements in the lower triangle to zero.
+If <code>diag</code> is <code>true</code>, the elements on the diagonal are retained; otherwise, they are set to zero, too.
+If <code>values</code> is <code>true</code>, the non-zero elements in the upper triangle are retained; otherwise, they are set to one.</p>
+</li>
+<li>
+<p><strong><code>solve</code></strong><code>(A:matrix, b:matrix)</code></p>
+<p>Solves the system of linear equations given by the <em>(n x n)</em> matrix <code>A</code> and the <em>(n x 1)</em> column-matrix <code>b</code> and returns the result as a <em>(n x 1)</em> column-matrix.</p>
+</li>
+<li>
+<p><strong><code>replace</code></strong><code>(arg:matrix, pattern:scalar, replacement:scalar)</code></p>
+<p>Replaces all occurrences of the element <code>pattern</code> in the matrix <code>arg</code> by the element <code>replacement</code>.</p>
+</li>
+<li>
+<p><strong><code>ctable</code></strong><code>(ys:matrix, xs:matrix[, weight:scalar][, numRows:int, numCols:int])</code></p>
+<p>Returns the contingency table of two <em>(n x 1)</em> column-matrices <code>ys</code> and <code>xs</code>.
+The resulting matrix <code>res</code> consists of <code>max(ys) + 1</code> rows and <code>max(xs) + 1</code> columns.
+More precisely, <em><code>res[x, y]</code>= |{ k | <code>ys[k, 0]</code> = y and <code>xs[k, 0]</code> = x, 0 ≤ k ≤ n-1 }| * <code>weight</code></em>.</p>
+<p>In other words, starting with an all-zero result matrix, <code>ys</code> and <code>xs</code> can be thought of as lists of <code>y</code>/<code>x</code>-coordinates which indicate the result matrix's cells whose value shall be increased by <code>weight</code>.
+Note that <code>ys</code> and <code>xs</code> must not contain negative numbers.</p>
+<p>The scalar weight is an optional argument and defaults to 1.0.
+The weight also determines the value type of the result.</p>
+<p>Moreover, optionally, the result shape in terms of the number of rows and columns can be specified.
+If omited, it defaults to the smallest numbers required to accommodate all given <code>y</code>/<code>x</code>-coordinates, as expressed above.
+If specified, the result can be either cropped or padded with zeros to the desired shape.
+If a value less than zero is provided as the number of rows/columns, the respective dimension will also be determined from the input data.</p>
+<p>This built-in function can be called with 2, 3, 4, or 5 arguments, depending on which optional arguments are given.</p>
+</li>
+<li>
+<p><strong><code>syrk</code></strong><code>(A:martix)</code></p>
+<p>Calculates <code>t(A) @ A</code> by symmetric rank-k update operations.</p>
+</li>
+<li>
+<p><strong><code>gemv</code></strong><code>(A:matrix, x:matrix)</code></p>
+<p>Calcuates <code>t(A) @ x</code> for the given <em>(n x m)</em> matrix <code>A</code> and <em>(n x 1)</em> column-matrix <code>x</code>.</p>
+</li>
+</ul>
+<h2 id="extended-relational-algebra">Extended relational algebra</h2>
+<p>DaphneDSL supports relational algebra on frames in two ways:
+On the one hand, entire SQL queries can be executed over previously registered <em>views</em>.
+This aspect is described in detail in a <a href="/daphne/tutorial/sqlTutorial">separate tutorial</a>.
+On the other hand, built-in functions for individual operations of extended relational algebra can be used on frames in DaphneDSL.</p>
+<h3 id="entire-sql-query">Entire SQL query</h3>
+<ul>
+<li>
+<p><strong><code>registerView</code></strong><code>(viewName:str, arg:frame)</code></p>
+<p>Registers the frame <code>arg</code> to be accessible to SQL queries by the name <code>viewName</code>.</p>
+</li>
+<li>
+<p><strong><code>sql</code></strong><code>(query:str)</code></p>
+<p>Executes the SQL query <code>query</code> on the frames previously registered with <code>registerView()</code> and returns the result as a frame.</p>
+</li>
+</ul>
+<h3 id="set-operations">Set Operations</h3>
+<p>We will support set operations such as <strong><code>intersect</code></strong>, <strong><code>merge</code></strong>, and <strong><code>except</code></strong>.</p>
+<h3 id="cartesian-product-and-joins">Cartesian product and joins</h3>
+<ul>
+<li>
+<p><strong><code>cartesian</code></strong><code>(lhs:frame, rhs:frame)</code></p>
+<p>Calculates the cartesian (cross) product of the two input frames.</p>
+</li>
+<li>
+<p><strong><code>innerJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)</code></p>
+<p>Performs an inner join of the two input frames on <code>lhs</code>.<code>lhsOn</code> == <code>rhs</code>.<code>rhsOn</code>.</p>
+</li>
+<li>
+<p><strong><code>semiJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str)</code></p>
+<p>Performs a semi join of the two input frames on <code>lhs</code>.<code>lhsOn</code> == <code>rhs</code>.<code>rhsOn</code>.
+Returns only the columns belonging to <code>lhs</code>.</p>
+</li>
+<li>
+<p><strong><code>groupJoin</code></strong><code>(lhs:frame, rhs:frame, lhsOn:str, rhsOn:str, rhsAgg:str)</code></p>
+<p>Group-join of <code>lhs</code> and <code>rhs</code> on <code>lhs.lhsOn == rhs.rhsOn</code> with summation of <code>rhs.rhsAgg</code>.</p>
+</li>
+</ul>
+<p>We will support more variants of joins, including (left/right) outer joins, theta joins, anti-joins, etc.</p>
+<h3 id="frame-label-manipulation">Frame label manipulation</h3>
+<ul>
+<li>
+<p><strong><code>setColLabels</code></strong><code>(arg:frame, labels:str, ...)</code></p>
+<p>Sets the column labels of the given frame <code>arg</code> to the given <code>labels</code>.
+There must be as many <code>labels</code> as columns in <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>setColLabelsPrefix</code></strong><code>(arg:frame, predfix:str, ...)</code></p>
+<p>Prepends the given <code>prefix</code> to the labels of all columns in <code>arg</code>.</p>
+</li>
+</ul>
+<h2 id="conversions-casts-and-copying">Conversions, casts and copying</h2>
+<p>Note that DaphneDSL offers casts in form of the <code>as.()</code>-expression.
+See the <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL Language Reference</a> for details.</p>
+<ul>
+<li>
+<p><strong><code>copy</code></strong><code>(arg:matrix/frame)</code></p>
+<p>Creates a copy of <code>arg</code>.</p>
+</li>
+<li>
+<p><strong><code>quantize</code></strong><code>(arg:matrix&lt;f32&gt;, min:f32, max:f32)</code></p>
+<p>Performs a <code>min</code>/<code>max</code> quantization of the values in <code>arg</code>.
+The result matrix is of value type <code>ui8</code>.</p>
+</li>
+</ul>
+<h2 id="inputoutput">Input/output</h2>
+<p>DAPHNE supports local file I/O for various file formats.
+The format is determined by the specified file name extension.
+Currently, the following formats are supported:</p>
+<ul>
+<li>".csv": comma-separated values</li>
+<li>".mtx": matrix market</li>
+<li>".parquet": Apache Parquet format</li>
+<li>".dbdf": <a href="/daphne/BinaryFormat">DAPHNE's binary data format</a></li>
+</ul>
+<p>For both reading and writing, file names can be specified as absolute or relative paths.</p>
+<p>For most formats, DAPHNE requires additional information on the data and value types as well as dimensions, <em>when reading files</em>.
+These must be provided in a separate <a href="/daphne/FileMetaDataFormat"><code>.meta</code>-file</a>.</p>
+<ul>
+<li>
+<p><strong><code>print</code></strong><code>(arg:scalar/matrix/frame[, newline:bool[, toStderr:bool]])</code></p>
+<p>Prints the given scalar, matrix, or frame <code>arg</code> to <code>stdout</code>.
+The parameter <code>newline</code> is optional; <code>true</code> (the default) means a new line is started after <code>arg</code>, <code>false</code> means no new line is started.
+The parameter <code>toStderr</code> is optional; <code>true</code> means the text is printed to <code>stderr</code>, <code>false</code> (the default) means it is printed to <code>stdout</code>.</p>
+</li>
+<li>
+<p><strong><code>readFrame</code></strong><code>(filename:str)</code></p>
+<p>Reads the file <code>filename</code> into a frame.
+Assumes that a <code>.meta</code>-file is present for the specified <code>filename</code>.</p>
+</li>
+<li>
+<p><strong><code>readMatrix</code></strong><code>(filename:str)</code></p>
+<p>Reads the file <code>filename</code> into a matrix.
+Assumes that a <code>.meta</code>-file is present for the specified <code>filename</code>.</p>
+</li>
+<li>
+<p><strong><code>write/writeFrame/writeMatrix</code></strong><code>(arg:matrix/frame, filename:str)</code></p>
+<p>Writes the given matrix or frame <code>arg</code> into the specified file <code>filename</code>.
+Note that the type of <code>arg</code> determines how to store the data; thus, it suffices to call <code>write()</code> (but <code>writeFrame()</code> and <code>writeMatrix()</code> can be used synonymously for consistency with reading).
+At the same time, this creates a <code>.meta</code>-file for the written file, so that it can be read again using <code>readMatrix()</code>/<code>readFrame()</code>.</p>
+</li>
+</ul>
+<h2 id="data-preprocessing">Data preprocessing</h2>
+<ul>
+<li>
+<p><strong><code>oneHot</code></strong><code>(arg:matrix, info:matrix&lt;si64&gt;)</code></p>
+<p>Applies one-hot-encoding to the given <em>(n x m)</em> matrix <code>arg</code>.
+The <em>(1 x m)</em> row-matrix <code>info</code> specifies the details (in the following, <em>d[j]</em> is short for <code>info[0, j]</code>):</p>
+<ul>
+<li>If <em>d[j]</em> == -1, then the <em>j</em>-th column of <code>arg</code> will remain as it is.</li>
+<li>
+<p>If <em>d[j]</em> &gt;= 0, then the <em>j</em>-th column of <code>arg</code> will be encoded.</p>
+<p>More precisely, the <em>j</em>-th column of <code>arg</code> must contain only integral values in the range <em>[0, d[j] - 1]</em>, and will be replaced by <em>d[j]</em> columns containing only zeros and ones.
+For each row <em>i</em> in <code>arg</code>, the value in the <code>as.scalar(arg[i, j])</code>-th of those columns is set to 1, while all others are set to 0.</p>
+</li>
+</ul>
+</li>
+</ul>
+<h2 id="measurements">Measurements</h2>
+<ul>
+<li>
+<p><strong><code>now</code></strong><code>()</code></p>
+<p>Returns the current time since the epoch in nano seconds.</p>
+</li>
+</ul>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1234 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../HandlingPRs/">
+      
+      
+        <link rel="next" href="../WriteDocs/">
+      
+      <link rel="icon" href="../../assets/logo_small.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.18">
+    
+    
+      
+        <title>ImplementBuiltinKernel - DAPHNE</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#implementing-a-built-in-kernel-for-a-daphneir-operation" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="DAPHNE" class="md-header__button md-logo" aria-label="DAPHNE" data-md-component="logo">
+      
+  <img src="../../assets/logo_small.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DAPHNE
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              ImplementBuiltinKernel
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="custom" data-md-color-accent="custom"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3 3.19.09m3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95 2.06.05m-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="pink" data-md-color-accent="pink"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5c-.84 0-1.65.15-2.39.42L12 2M3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29L3.34 7m.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14L3.36 17M20.65 7l-1.77 3.79a7.023 7.023 0 0 0-2.38-4.15l4.15.36m-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29L20.64 17M12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44L12 22Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/daphne-eu/daphne" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daphne-eu/daphne
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        Home
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../Quickstart/" class="md-tabs__link">
+        Users
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+    
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../Contributing/" class="md-tabs__link md-tabs__link--active">
+        Developers
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="DAPHNE" class="md-nav__button md-logo" aria-label="DAPHNE" data-md-component="logo">
+      
+  <img src="../../assets/logo_small.png" alt="logo">
+
+    </a>
+    DAPHNE
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/daphne-eu/daphne" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    daphne-eu/daphne
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_1" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_1" id="__nav_1_label" tabindex="0">
+          Home
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_1">
+          <span class="md-nav__icon md-icon"></span>
+          Home
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../GettingStarted/" class="md-nav__link">
+        GettingStarted
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          Users
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          Users
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Quickstart/" class="md-nav__link">
+        Quickstart
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../RunningDaphneLocally/" class="md-nav__link">
+        RunningDaphneLocally
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Config/" class="md-nav__link">
+        Configuration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_4" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_4" id="__nav_2_4_label" tabindex="0">
+          DaphneDSL
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_4">
+          <span class="md-nav__icon md-icon"></span>
+          DaphneDSL
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneDSL/LanguageRef/" class="md-nav__link">
+        LanguageRef
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneDSL/Builtins/" class="md-nav__link">
+        Builtins
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneDSL/Imports/" class="md-nav__link">
+        Imports
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_5" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_5" id="__nav_2_5_label" tabindex="0">
+          DaphneLib
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_5_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_5">
+          <span class="md-nav__icon md-icon"></span>
+          DaphneLib
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneLib/Overview/" class="md-nav__link">
+        Overview
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DaphneLib/APIRef/" class="md-nav__link">
+        APIRef
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../FileMetaDataFormat/" class="md-nav__link">
+        FileMetaDataFormat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../DistributedRuntime/" class="md-nav__link">
+        DistributedRuntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../SchedulingOptions/" class="md-nav__link">
+        SchedulingOptions
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2_9" >
+      
+      
+      
+        <label class="md-nav__link" for="__nav_2_9" id="__nav_2_9_label" tabindex="0">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_2_9_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2_9">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorial/sqlTutorial/" class="md-nav__link">
+        sqlTutorial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../FPGAconfiguration/" class="md-nav__link">
+        FPGAconfiguration
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../MPI-Usage/" class="md-nav__link">
+        MPI Usage
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+      
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Developers
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Developers
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Contributing/" class="md-nav__link">
+        Contributing
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../BuildingDaphne/" class="md-nav__link">
+        BuildingDaphne
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Deploy/" class="md-nav__link">
+        Deploy
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ReleaseScripts/" class="md-nav__link">
+        ReleaseScripts
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../BinaryFormat/" class="md-nav__link">
+        BinaryFormat
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../Logging/" class="md-nav__link">
+        Logging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ExtendingDistributedRuntime/" class="md-nav__link">
+        ExtendingDistributedRuntime
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ExtendingSchedulingKnobs/" class="md-nav__link">
+        ExtendingSchedulingKnobs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../HandlingPRs/" class="md-nav__link">
+        HandlingPRs
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          ImplementBuiltinKernel
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        ImplementBuiltinKernel
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    Background
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope" class="md-nav__link">
+    Scope
+  </a>
+  
+    <nav class="md-nav" aria-label="Scope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#guidelines" class="md-nav__link">
+    Guidelines
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-examples" class="md-nav__link">
+    Concrete Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-cases" class="md-nav__link">
+    Test Cases
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../WriteDocs/" class="md-nav__link">
+        WriteDocs
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#background" class="md-nav__link">
+    Background
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scope" class="md-nav__link">
+    Scope
+  </a>
+  
+    <nav class="md-nav" aria-label="Scope">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#guidelines" class="md-nav__link">
+    Guidelines
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concrete-examples" class="md-nav__link">
+    Concrete Examples
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-cases" class="md-nav__link">
+    Test Cases
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="implementing-a-built-in-kernel-for-a-daphneir-operation">Implementing a Built-in Kernel for a DaphneIR Operation</h1>
+<h2 id="background">Background</h2>
+<p>(Almost) every DaphneIR operation will be backed by a kernel (= physical operator) at run-time.
+Extensibility w.r.t. kernels is one on the core goals of the DAPHNE system.
+It shall be easy for a user to add a custom kernel.
+However, the system will offer a full set of built-in kernels so that all DaphneIR operations can be used out-of-the-box.</p>
+<h2 id="scope">Scope</h2>
+<p>This document focuses on:</p>
+<ul>
+<li>default built-in kernels (not custom/external kernels)</li>
+<li>implementations for CPU (not HW accelerators)</li>
+<li>local execution (not distributed)</li>
+<li>pre-compiled kernels (not on-the-fly code generation and operator fusion)</li>
+</ul>
+<p>We will extend the system to those more advanced aspects step by step.</p>
+<h3 id="guidelines">Guidelines</h3>
+<p>The following are some guidelines and best practices (rather than strict rules) for implementing built-in kernels.
+As we proceed, we might adapt these guidelines step by step.
+The goal is to clarify how to implement a built-in kernel and what the thoughts behind it are.
+This is meant as a proposal, <em>comments/suggestions are always welcome</em>.</p>
+<p><strong>Integration into the directory tree:</strong></p>
+<p>The implementations of built-in kernels shall reside in <code>src/runtime/local/kernels</code>.
+By default, one C++ header-file should be used for all specializations of a kernel.
+Depending on the amount of code, the separation into multiple header files is also possible.
+At least, we should rather not mix kernels of different DaphneIR operations in one header file.</p>
+<p><strong>Interfaces:</strong></p>
+<p>Technically, a kernel is a C++ function taking one or more data objects (matrices, frames) and/or scalars as input and returning one or more data objects and/or scalars as output.
+As a central idea, (almost) all DaphneIR operations should be able to process (almost) all kinds of Daphne data structures, whereby these could have any Daphne value type.
+For example, elementwise binary operations (<code>+</code>, <code>*</code>, ...) should be applicable to <code>DenseMatrix</code> of <code>double</code>, <code>uint32_t</code>, etc. as well as to <code>CSRMatrix</code> of <code>double</code>, <code>uint32_t</code>, etc. and so on.
+This type flexibility motivates the use of C++ template metaprogramming.</p>
+<p>Thus, a kernel is a template function with:</p>
+<ul>
+<li><em>template parameters</em></li>
+<li>one for the type of each input/output data object (and scalar, if necessary)</li>
+<li><em>inputs</em></li>
+<li>of type <code>const DT *</code> for data objects (whereby <code>DT</code> is a particular C++ type such as <code>DenseMatrix&lt;double&gt;</code>)</li>
+<li>of type <code>VT</code> for scalars of some value type <code>VT</code></li>
+<li><em>outputs</em></li>
+<li>as a return value, in case of a single scalar</li>
+<li>as a parameter of type <code>DT *&amp;</code> in case of data objects (all output parameters <em>before</em> all input parameters)</li>
+</ul>
+<p>The reason for passing output data objects as parameters is that this mechanism could be used for efficient update-in-place operations.</p>
+<p>The declaration of a kernel function could look as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">DTRes</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DTArg</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">VT</span><span class="o">&gt;</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kt">void</span><span class="w"> </span><span class="n">someOp</span><span class="p">(</span><span class="n">DTRes</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">DTArg</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="w"> </span><span class="n">otherArg</span><span class="p">);</span>
+</code></pre></div>
+<p>For most DaphneIR operations, it will not be possible to define the template as a fully generic algorithm.
+For example, the algorithms for processing different <em>data type</em> implementations (like <code>DenseMatrix</code> and <code>CSRMatrix</code>) will usually differ significantly.
+Thus, we will usually want to specialize the template.
+At the same time, it will be possible to implement algorithms generically w.r.t. the <em>value type</em>.
+Thus, we will usually not need to specialize for that.
+Hence, we will often use partial template specialization.
+Unfortunately, this is not possible for functions in C++.
+Therefore, we use a very typical workaround:
+In addition to the kernel template function, we declare a template struct/class with the same template parameters as the kernel function.
+By convention, let us call this struct like the kernel function, but starting with upper case letter.
+This struct/class has a single static member function with the same results and parameters as the kernel function.
+By convention, let us always call this function <code>apply</code>.
+Then, the kernel function always forwards the processing to the <code>apply</code>-function of the correct template instantiation of the kernel struct.
+Instead of partially specializing the kernel function, we partially specialize the kernel struct and implement the respective algorithm in that specialization's <code>apply</code>-function.
+Finally, callers will call an instantiation of the kernel template function.
+C++ templates offer many ways to express such (partial) specializations, some examples are given below:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Kernel struct to enable partial template specialization.</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">DTRes</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DTArg</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">VT</span><span class="o">&gt;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SomeOp</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">DTRes</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">DTArg</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="p">};</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1">// Kernel function to be called from outside.</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">DTRes</span><span class="p">,</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">DTArg</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">VT</span><span class="o">&gt;</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="kt">void</span><span class="w"> </span><span class="n">someOp</span><span class="p">(</span><span class="n">DTRes</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">DTArg</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="n">SomeOp</span><span class="o">&lt;</span><span class="n">DTRes</span><span class="p">,</span><span class="w"> </span><span class="n">DTArg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="o">&gt;::</span><span class="n">apply</span><span class="p">(</span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">otherArg</span><span class="p">);</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="p">}</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="c1">// (Partial) specializations of the kernel struct (some examples).</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="c1">// E.g. for DenseMatrix of any value type.</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">VT</span><span class="o">&gt;</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SomeOp</span><span class="o">&lt;</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">        </span><span class="c1">// do something</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="p">};</span>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="c1">// E.g. for DenseMatrix and CSRMatrix of the same value type.</span>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">VT</span><span class="o">&gt;</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SomeOp</span><span class="o">&lt;</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">CSRMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">CSRMatrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">        </span><span class="c1">// do something</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="p">};</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="c1">// E.g. for DenseMatrix of independent value types.</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">VTRes</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">VTArg</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">VTOtherArg</span><span class="o">&gt;</span>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SomeOp</span><span class="o">&lt;</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VTRes</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VTArg</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">VTOtherArg</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VTRes</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="n">VTArg</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VTOtherArg</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a><span class="w">        </span><span class="c1">// do something</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a><span class="p">};</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a><span class="c1">// E.g. for super-class Matrix of the same value type.</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">VT</span><span class="o">&gt;</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SomeOp</span><span class="o">&lt;</span><span class="n">Matrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">Matrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">Matrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Matrix</span><span class="o">&lt;</span><span class="n">VT</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="n">VT</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a><span class="w">        </span><span class="c1">// do something</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a><span class="p">};</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a><span class="c1">// E.g. for DenseMatrix&lt;double&gt;, CSRMatrix&lt;float&gt;, and double (full specialization).</span>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a><span class="k">template</span><span class="o">&lt;&gt;</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a><span class="k">struct</span><span class="w"> </span><span class="nc">SomeOp</span><span class="o">&lt;</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">CSRMatrix</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a><span class="w">    </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">apply</span><span class="p">(</span><span class="n">DenseMatrix</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*&amp;</span><span class="w"> </span><span class="n">res</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">CSRMatrix</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">arg</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">otherArg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a><span class="w">        </span><span class="c1">// do something</span>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a><span class="w">    </span><span class="p">}</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a><span class="p">};</span>
+</code></pre></div>
+<p><strong>Implementation of the <code>apply</code>-functions:</strong></p>
+<p>As stated above, the <code>apply</code>-function contain the actual implementation of the kernel.
+Of course, that depends on what the kernel is supposed to do, but there some recurring actions.</p>
+<ul>
+<li><em>Obtaining an output data object</em></li>
+</ul>
+<p>Data objects like matrices and frames cannot be obtained using the <code>new</code>-operator, but must be obtained from the <code>DataObjectFactory</code>, e.g., as follows:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">auto</span><span class="w"> </span><span class="n">res</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DataObjectFactory</span><span class="o">::</span><span class="n">create</span><span class="o">&lt;</span><span class="n">CSRMatrix</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">4</span><span class="p">,</span><span class="w"> </span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
+</code></pre></div>
+<p>Internally, this <code>create</code>-function calls a private constructor of the specified data type implementation; so please have a look at these.
+- <em>Accessing the input and output data objects</em></p>
+<p>For efficiency reasons, accessing the data in way specific to the data type implementation is preferred to generic access method of the super-classes.
+  That is, if possible, rather use <code>getValues()</code> (for <code>DenseMatrix</code>) or <code>getValues()</code>/<code>colColIdxs()</code>/<code>getRowOffsets()</code> (for <code>CSRMatrix</code>) rather than <code>get()</code>/<code>set()</code>/<code>append()</code> from the super-class <code>Matrix</code>.
+  The reason is that these generic access methods can incur a lot of unnecessary effort, depending on the data type implementation.
+  However, in the end it is always a trade-off between performance and code complexity.
+  For kernels that are rarely used or typically used on small data objects, a simple but inefficient implementation might be okay.
+  Nevertheless, since the DAPHNE system should be able to handle unexpected scripts efficiently, we should not get too much used to sacrificing efficiency.</p>
+<h3 id="concrete-examples">Concrete Examples</h3>
+<p>For concrete examples, please have a look at existing kernel implementations in <a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels">src/runtime/local/kernels</a>.
+For instance, the following kernels represent some interesting cases:</p>
+<ul>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels/EwBinarySca.h">ewBinarySca</a> works only on scalars.</li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels/EwBinaryMat.h">ewBinaryMat</a> works only on matrices.</li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels/EwBinaryObjSca.h">ewBinaryObjSca</a> combines matrix/frame and scalar inputs.</li>
+<li><a href="https://github.com/daphne-eu/daphne/tree/main/src/runtime/local/kernels/MatMul.h">matMul</a> delegates to an external library (OpenBLAS).</li>
+</ul>
+<h3 id="test-cases">Test Cases</h3>
+<p>Implementing test cases for each kernel is important to reduce the likelihood of bugs, now and after changes to the code base.
+Please have a look at test cases for existing kernel implementations in <a href="https://github.com/daphne-eu/daphne/tree/main/test/runtime/local/kernels">test/runtime/local/kernels</a> (surely, these could still be improved).</p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.copy", "navigation.tabs", "navigation.tabs.sticky"], "search": "../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+    
+  </body>
+</html>
