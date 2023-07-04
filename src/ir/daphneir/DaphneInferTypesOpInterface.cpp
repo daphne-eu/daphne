@@ -188,7 +188,17 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
 
     for(Value t : getKeyCol()){
         //Key Types getting adopted for the new Frame
-        newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
+        std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
+            t, "the specified label must be a constant of string type"
+        );
+        if(labelStr == "*") {
+            auto allTypes = arg.getColumnTypes();
+            for (Type type: allTypes) {
+                newColumnTypes.push_back(type);
+            }
+        } else {
+            newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
+        }
     }
 
     // Values get collected in a easier to use Datastructure
