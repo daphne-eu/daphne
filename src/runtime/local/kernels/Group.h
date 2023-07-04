@@ -125,14 +125,44 @@ template <> struct Group<Frame> {
         if (arg == nullptr || (keyCols == nullptr && numKeyCols != 0) || (aggCols == nullptr && numAggCols != 0) || (aggFuncs == nullptr && numAggFuncs != 0))   {
             throw std::runtime_error("group-kernel called with invalid arguments");
         }
-        
+
+        // check if labels contain *
+        std::vector<std::string> starLabels;
+        const std::string * argLabels = arg->getLabels();
+        const size_t numColsArg = arg->getNumCols();
+        std::vector<std::string> aggColsVec;
+        for (size_t m = 0; m < numAggCols; m++) {
+            aggColsVec.push_back(aggCols[m]);
+        }
+        for (size_t i = 0; i < numKeyCols; i++) {
+            if (strcmp(keyCols[i], "*") == 0) {
+                for (size_t m = 0; m < numColsArg; m++) {
+                    // check that we do not include columns in the result that are used for aggregations and would lead to duplicates
+                    if(std::find(aggColsVec.begin(), aggColsVec.end(), argLabels[m]) == aggColsVec.end()) {
+                        starLabels.push_back(argLabels[m]);
+                    }
+                }
+                // we assume that other key columns are included in the * operator, otherwise they would not be in the argument frame and throw a error later on 
+                numColsRes = starLabels.size() + numAggCols;
+            } 
+        }
+
+
         // convert labels to indices
         auto idxs = std::shared_ptr<size_t[]>(new size_t[numColsRes]);
-        bool * ascending = new bool[numKeyCols];
-        for (size_t i = 0; i < numKeyCols; i++) {
-            idxs[i] = arg->getColumnIdx(keyCols[i]);
-            ascending[i] = true;
-        }   
+        numKeyCols = starLabels.size()? starLabels.size() : numKeyCols;
+        bool * ascending = new bool[starLabels.size()];
+        if (starLabels.size()) {
+            for (size_t i = 0; i < numKeyCols; i++) {
+                idxs[i] = arg->getColumnIdx(starLabels[i]);
+                ascending[i] = true;
+            } 
+        } else {
+            for (size_t i = 0; i < numKeyCols; i++) {
+                idxs[i] = arg->getColumnIdx(keyCols[i]);
+                ascending[i] = true;
+            }   
+        }
         for (size_t i = numKeyCols; i < numColsRes; i++) {
             idxs[i] = arg->getColumnIdx(aggCols[i-numKeyCols]);
         }
@@ -166,10 +196,16 @@ template <> struct Group<Frame> {
         // create the result frame
         std::string * labels = new std::string[numColsRes];
         ValueTypeCode * schema = new ValueTypeCode[numColsRes];
-
-        for (size_t i = 0; i < numKeyCols; i++) {
-            labels[i] = keyCols[i];
-            schema[i] = ordered->getColumnType(idxs[i]);
+        if (starLabels.size()) {
+            for (size_t i = 0; i < numKeyCols; i++) {
+                labels[i] = starLabels[i];
+                schema[i] = ordered->getColumnType(idxs[i]);
+            } 
+        } else {
+            for (size_t i = 0; i < numKeyCols; i++) {
+                labels[i] = keyCols[i];
+                schema[i] = ordered->getColumnType(idxs[i]);
+            }
         }
         using mlir::daphne::GroupEnum;
         for (size_t i = numKeyCols; i < numColsRes; i++) {

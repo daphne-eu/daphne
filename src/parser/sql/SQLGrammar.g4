@@ -98,6 +98,7 @@ tableReference:
 
 selectIdent:
      (frame=IDENTIFIER '.')? var=IDENTIFIER  #stringIdent
+    | var='*' #starIdent
     ;
 
 literal:

@@ -875,8 +875,9 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     SQLGrammarParser::IdentifierExprContext * ctx)
 {
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
-        && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
-        && grouped[ctx->selectIdent()->getText()] == 0) //AND the label is not in group expr
+        && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggregation
+        && grouped[ctx->selectIdent()->getText()] == 0 //AND the label is not in group expr
+        && grouped["*"] == 0) //AND there is no * in group expr
     {
         std::stringstream err_msg;
         err_msg << "Error during a generalExpr. \""
@@ -1239,6 +1240,15 @@ antlrcpp::Any SQLVisitor::visitStringIdent(
         getSTR = columnSTR;
     }
     return createStringConstant(getSTR);
+}
+
+//starIdent //rowReference
+
+antlrcpp::Any SQLVisitor::visitStarIdent(
+    SQLGrammarParser::StarIdentContext * ctx
+)
+{
+    return createStringConstant(ctx->var->getText());
 }
 
 //literal

@@ -231,6 +231,9 @@ public:
 //selectIdent
     antlrcpp::Any visitStringIdent(SQLGrammarParser::StringIdentContext * ctx) override;
 
+//starIdent
+    antlrcpp::Any visitStarIdent(SQLGrammarParser::StarIdentContext * ctx) override;
+
 //literal
     antlrcpp::Any visitLiteral(SQLGrammarParser::LiteralContext * ctx) override;
 };
