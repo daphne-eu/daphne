@@ -1242,15 +1242,6 @@ antlrcpp::Any SQLVisitor::visitStringIdent(
     return createStringConstant(getSTR);
 }
 
-//starIdent //rowReference
-
-antlrcpp::Any SQLVisitor::visitStarIdent(
-    SQLGrammarParser::StarIdentContext * ctx
-)
-{
-    return createStringConstant(ctx->var->getText());
-}
-
 //literal
 antlrcpp::Any SQLVisitor::visitLiteral(
     SQLGrammarParser::LiteralContext * ctx
