@@ -404,6 +404,7 @@ openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
 papiVersion=7.0.1
+hwlocVersion=2.9.3
 
 #******************************************************************************
 # #6 Set some prefixes, paths and dirs
@@ -624,6 +625,29 @@ if [ $WITH_DEPS -gt 0 ]; then
         daphne_msg "No need to build PAPI again."
     fi
 
+    #------------------------------------------------------------------------------
+    # hwloc
+    #------------------------------------------------------------------------------
+    hwlocDirName="hwloc-$hwlocVersion"
+    hwlocTarName="${hwlocDirName}.tar.gz"
+    hwlocInstDirName=$installPrefix
+    if ! is_dependency_downloaded "hwloc_v${hwlocVersion}"; then
+        daphne_msg "Get hwloc version ${hwlocVersion}"
+        wget "https://download.open-mpi.org/release/hwloc/v2.9/${hwlocTarName}" \
+            -qO "${cacheDir}/${hwlocTarName}"
+        tar -xf "$cacheDir/$hwlocTarName" -C "$sourcePrefix"
+        dependency_download_success "hwloc_v${hwlocVersion}"
+    fi
+    if ! is_dependency_installed "hwloc_v${hwlocVersion}"; then
+        cd "$sourcePrefix/$hwlocDirName/"
+        ./configure --prefix="$hwlocInstDirName"
+        make -j"$(nproc)" DYNAMIC_ARCH=1 TARGET="$PAPI_OBLAS_ARCH"
+        make install
+        cd - > /dev/null
+        dependency_install_success "hwloc_v${hwlocVersion}"
+    else
+        daphne_msg "No need to build hwloc again."
+    fi
 
     #------------------------------------------------------------------------------
     # #8.1 Antlr4 (parser)
