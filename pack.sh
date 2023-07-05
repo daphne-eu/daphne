@@ -141,7 +141,7 @@ if [[ $? == 0 ]];then
   mkdir -p "$PACK_ROOT"/{api,bin}
   cp -a "$projectRoot"/src/api/python "$PACK_ROOT"/api/
   cp -a "$projectRoot"/bin/{daphne,DistributedWorker} "$PACK_ROOT"/bin/
-  cp -a "$projectRoot"/run-daphne.sh "$PACK_ROOT"/
+  cp -a "$projectRoot"/run-*.sh "$PACK_ROOT"/
   # this assumes that the pack script is run from an environment that has third party deps in /usr/local
   # e.g. the daphne-dev docker container
   cp -a /usr/local/lib/lib*.so* "$PACK_ROOT/lib"
