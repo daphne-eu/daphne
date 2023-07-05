@@ -20,11 +20,18 @@ using namespace mlir;
 
 namespace
 {
+    void replaceIfCastOp(PatternRewriter &rewriter, mlir::daphne::CastOp &resultCast, mlir::Type resType, mlir::Operation *& op) {
+        if(llvm::dyn_cast<mlir::daphne::CastOp>(op)) {
+            resultCast = rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(op, resType, op->getOperand(0));
+        } else {
+            resultCast = rewriter.create<mlir::daphne::CastOp>(op->getLoc(), resType, op->getResult(0));
+        }
+    }
+
     template <class DaphneCmp, class ColumnCmp>
     mlir::LogicalResult compareOp(PatternRewriter &rewriter, Operation *op) {
         DaphneCmp cmpOp = llvm::dyn_cast<DaphneCmp>(op);
-        mlir::Value cmpInout = op->getOperand(0);
-        auto prevOp = cmpInout.getDefiningOp();
+        auto prevOp = op->getOperand(0).getDefiningOp();
 
         if(!cmpOp){
             return failure();
@@ -39,11 +46,8 @@ namespace
         );
 
         mlir::daphne::CastOp cast;
-        if(llvm::dyn_cast<mlir::daphne::CastOp>(prevOp)) {
-            cast = rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(prevOp, resType, prevOp->getOperand(0));
-        } else {
-            cast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), resType, prevOp->getResult(0));
-        }
+        replaceIfCastOp(rewriter, cast, resType, prevOp);
+
         auto columnGe = rewriter.create<ColumnCmp>(prevOp->getLoc(), cast, cmpOp->getOperand(1));
         auto finalCast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), resTypeCast, columnGe->getResult(0));
         auto numRows = rewriter.create<mlir::daphne::NumRowsOp>(prevOp->getLoc(), rewriter.getIndexType(), cast->getOperand(0));
@@ -51,6 +55,77 @@ namespace
         auto uses = cmpOp->getUses();
         for (auto x = uses.begin(); x != uses.end(); x++) {
             x->getOwner()->replaceUsesOfWith(cmpOp, res);
+        }
+        return success();
+    }
+
+    template <class DaphneBinaryOp, class ColumnBinaryOp>
+    mlir::LogicalResult binaryOp(PatternRewriter &rewriter, Operation *op) {
+        DaphneBinaryOp binaryOp = llvm::dyn_cast<DaphneBinaryOp>(op);
+        auto prevOpLhs = op->getOperand(0).getDefiningOp();
+
+        auto prevOpRhs = op->getOperand(1).getDefiningOp();
+
+        if(!binaryOp){
+            return failure();
+        }
+
+        mlir::Type vt = mlir::daphne::UnknownType::get(rewriter.getContext());
+        mlir::Type resType = mlir::daphne::ColumnType::get(
+            rewriter.getContext(), vt
+        );
+        mlir::Type resTypeCast = mlir::daphne::MatrixType::get(
+            rewriter.getContext(), vt
+        );
+
+        mlir::daphne::CastOp castLhs;
+        replaceIfCastOp(rewriter, castLhs, resType, prevOpLhs);
+        mlir::daphne::CastOp castRhs;
+        replaceIfCastOp(rewriter, castRhs, resType, prevOpRhs);
+
+        auto colBinaryOp = rewriter.create<ColumnBinaryOp>(binaryOp->getLoc(), resType, castLhs, castRhs);
+        auto res = rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(binaryOp, resTypeCast, colBinaryOp->getResult(0));
+        auto uses = binaryOp->getUses();
+        for (auto x = uses.begin(); x != uses.end(); x++) {
+            x->getOwner()->replaceUsesOfWith(binaryOp, res);
+        }
+        return success();
+    }
+
+    template <class DaphneAgg, class ColumnAgg>
+    mlir::LogicalResult allAggOp(PatternRewriter &rewriter, Operation *op) {
+        DaphneAgg aggOp = llvm::dyn_cast<DaphneAgg>(op);
+        auto prevOp = op->getOperand(0).getDefiningOp();
+
+        if(!aggOp){
+            return failure();
+        }
+
+        mlir::Type vt = mlir::daphne::UnknownType::get(rewriter.getContext());
+        mlir::Type resType = mlir::daphne::ColumnType::get(
+            rewriter.getContext(), vt
+        );
+        mlir::Type resTypeCast = mlir::daphne::MatrixType::get(
+            rewriter.getContext(), vt
+        );
+
+        mlir::daphne::CastOp cast;
+        replaceIfCastOp(rewriter, cast, resType, prevOp);
+
+        mlir::Type input = cast->getResult(0).getType().dyn_cast<mlir::daphne::ColumnType>().getColumnType();
+        auto columnAgg = rewriter.replaceOpWithNewOp<ColumnAgg>(aggOp, input, cast->getResult(0));
+        auto uses = aggOp->getUses();
+        for (auto x = uses.begin(); x != uses.end(); x++) {
+            x->getOwner()->replaceUsesOfWith(aggOp, columnAgg);
+            mlir::daphne::CastOp removeCast = dyn_cast<mlir::daphne::CastOp>(x->getOwner());
+            if(!removeCast) {
+                return failure();
+            }
+            auto res = rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(removeCast, resTypeCast, columnAgg->getResult(0));
+            auto castUses = removeCast->getUses();
+            for (auto y = castUses.begin(); y != castUses.end(); y++) {
+                y->getOwner()->replaceUsesOfWith(removeCast, res);
+            }
         }
         return success();
     }
@@ -109,7 +184,7 @@ namespace
                 return compareOp<mlir::daphne::EwEqOp, mlir::daphne::ColumnEqOp>(rewriter, op);
             }else if(llvm::dyn_cast<mlir::daphne::EwNeqOp>(op)) {
                 return compareOp<mlir::daphne::EwNeqOp, mlir::daphne::ColumnNeqOp>(rewriter, op);
-            } else if(llvm::dyn_cast<mlir::daphne::FilterRowOp>(op)) {
+            }else if(llvm::dyn_cast<mlir::daphne::FilterRowOp>(op)) {
                 mlir::daphne::FilterRowOp filterOp = llvm::dyn_cast<mlir::daphne::FilterRowOp>(op);
                 if(!filterOp){
                     return failure();
@@ -217,6 +292,12 @@ namespace
                 }
 
                 return success();
+            }else if(llvm::dyn_cast<mlir::daphne::EwMulOp>(op)) {
+                return binaryOp<mlir::daphne::EwMulOp, mlir::daphne::ColumnMulOp>(rewriter, op);
+            }else if(llvm::dyn_cast<mlir::daphne::EwAndOp>(op)) {
+                return binaryOp<mlir::daphne::EwAndOp, mlir::daphne::ColumnAndOp>(rewriter, op);
+            }else if(llvm::dyn_cast<mlir::daphne::AllAggSumOp>(op)) {
+                return allAggOp<mlir::daphne::AllAggSumOp, mlir::daphne::ColumnAggSumOp>(rewriter, op);
             }
         }
     };
@@ -235,7 +316,8 @@ void RewriteColumnarOpPass::runOnOperation() {
     ConversionTarget target(getContext());
     target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
-    target.addIllegalOp<mlir::daphne::EwGeOp, mlir::daphne::EwGtOp, mlir::daphne::EwLeOp, mlir::daphne::EwLtOp, mlir::daphne::EwEqOp, mlir::daphne::EwNeqOp, mlir::daphne::FilterRowOp>();
+    target.addIllegalOp<mlir::daphne::EwGeOp, mlir::daphne::EwGtOp, mlir::daphne::EwLeOp, mlir::daphne::EwLtOp, mlir::daphne::EwEqOp, mlir::daphne::EwNeqOp, mlir::daphne::FilterRowOp,
+                        mlir::daphne::EwMulOp, mlir::daphne::EwAndOp, mlir::daphne::AllAggSumOp>();
 
     patterns.add<ColumnarOpReplacement>(&getContext());
 

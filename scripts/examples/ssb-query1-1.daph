@@ -1,0 +1,22 @@
+# SSB Query 1.1
+
+lineorder = createFrame(
+    [  1,  1,  2,  2,  4,  5,  3,  2,  0,  1],
+    [  1,  1,  1,  1,  1,  1,  1,  1,  1,  1],
+    [  0,  1,  1,  0,  2,  2,  3,  3,  1,  0],
+    [  25,  30,  5,  6,  20,  1,  2,  3,  40,  100],
+    "lo_discount", "lo_extendedprice", "lo_orderdate", "lo_quantity");
+
+date = createFrame(
+    [  0,  1,  2,  3],
+    [  1993,  1994,  1993,  1993],
+    "d_datekey", "d_year");
+
+registerView("lineorder", lineorder);
+
+registerView("date", date);
+
+res = sql("select sum(lineorder.lo_discount*lineorder.lo_extendedprice) from lineorder JOIN date on lineorder.lo_orderdate = date.d_datekey
+where date.d_year = 1993  and lineorder.lo_discount >= 1 and lineorder.lo_discount <= 3 and lineorder.lo_quantity < 25;");
+
+print(res);
