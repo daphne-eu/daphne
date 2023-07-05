@@ -42,5 +42,6 @@ enum SelfSchedulingScheme {
     MSTATIC,
     MFSC,
     PSS,
+    AUTO,
     INVALID=-1 /* only for JSON enum conversion */
 };
