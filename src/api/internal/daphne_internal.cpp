@@ -47,7 +47,7 @@
 #include <csetjmp>
 
 // global logger handle for this executable
-[[maybe_unused]] std::unique_ptr<DaphneLogger> logger;
+static std::unique_ptr<DaphneLogger> logger;
 
 using namespace std;
 using namespace mlir;
@@ -473,8 +473,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
-    logger = std::make_unique<DaphneLogger>(user_config);
+
+    if(not logger)
+        logger = std::make_unique<DaphneLogger>(user_config);
 
     // ************************************************************************
     // Parse, compile and execute DaphneDSL script
