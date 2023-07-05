@@ -42,6 +42,7 @@
 #include "mlir/Support/LogicalResult.h"
 #include "mlir/Target/LLVMIR/Dialect/LLVMIR/LLVMToLLVMIRTranslation.h"
 #include "mlir/Dialect/Affine/Passes.h"
+#include "mlir/Dialect/Bufferization/Transforms/Passes.h"
 
 #include <filesystem>
 #include <memory>
@@ -136,23 +137,22 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
 #endif
 
         if (userConfig_.codegen) {
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR beofre DM opt"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR beofre DM opt"));
             pm.addPass(mlir::daphne::createDenseMatrixTransformPass());
 
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR beofre LowerDenseMatrixPass"));
+            // pm.addPass(mlir::daphne::createPrintIRPass(
+            //     "IR beofre LowerDenseMatrixPass"));
+
             pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after LowerDenseMatrixPass"));
 
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR before MapOpLoweringPass"));
-            pm.addPass(mlir::daphne::createMapOpLoweringPass());
-            if (userConfig_.explain_codegen)
-                pm.addPass(mlir::daphne::createPrintIRPass(
-                    "IR after MapOpLoweringPass"));
+             pm.addPass(mlir::daphne::createMapOpLoweringPass());
+             if (userConfig_.explain_codegen)
+                 pm.addPass(mlir::daphne::createPrintIRPass(
+                     "IR after MapOpLoweringPass"));
 
             pm.addPass(mlir::createInlinerPass());
             if (userConfig_.explain_codegen)
@@ -163,12 +163,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             if (userConfig_.explain_codegen)
                 pm.addPass(
                     mlir::daphne::createPrintIRPass("IR after LowerScalarOpsPass"));
-            // pm.addPass(mlir::createConvertFuncToLLVMPass());
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR before EwOpLoweringPass"));
+
             pm.addPass(mlir::daphne::createEwOpLoweringPass());
-            // pm.addPass(mlir::daphne::createPrintIRPass(
-            //     "IR after EwOpLoweringPass"));
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after EwOpLoweringPass"));
@@ -180,13 +176,20 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after canonicalize"));
             // TODO(phil): check with fusion1.daphne testcase
-            //pm.addPass(mlir::createCSEPass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after canonicalize"));
+            // pm.addPass(mlir::createCSEPass());
+
+            if (userConfig_.explain_codegen)
+                pm.addPass(mlir::daphne::createPrintIRPass(
+                    "IR after canonicalize"));
+
+            // pm.addNestedPass<mlir::func::FuncOp>(mlir::bufferization::createBufferDeallocationPass());
+
             pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
             pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineScalarReplacementPass());
-            pm.addPass(mlir::daphne::createPrintIRPass(
-                "IR after affine passes"));
+
+            if (userConfig_.explain_codegen)
+                pm.addPass(mlir::daphne::createPrintIRPass(
+                    "IR after affine passes"));
             pm.addPass(mlir::createLowerAffinePass());
         }
 
@@ -242,10 +245,8 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         pm.addPass(mlir::daphne::createLowerToLLVMPass(userConfig_));
         if(userConfig_.explain_llvm)
             pm.addPass(mlir::daphne::createPrintIRPass("IR after llvm lowering"));
+        pm.addPass(mlir::createCSEPass());
         pm.addPass(mlir::createReconcileUnrealizedCastsPass());
-
-        if (userConfig_._inline) {
-        }
 
         if (failed(pm.run(module))) {
             module->dump();

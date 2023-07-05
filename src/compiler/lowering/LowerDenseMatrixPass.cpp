@@ -198,7 +198,8 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             op->getLoc(), memRefType, adaptor.getArg());
 
         Value sum = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+            loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
+            // loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
 
         SmallVector<Value, 4> loopIvs;
         // SmallVector<scf::ForOp, 2> forOps;
@@ -218,7 +219,8 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
         Value sum_iter = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+            loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
+            // loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
         // inner loop
         // auto innerUpperBound =
         //     rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
@@ -234,9 +236,11 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         // load value from memref
         auto elementLoad =
             rewriter.create<memref::LoadOp>(loc, memRef, loopIvs);
+        //auto castToF64 = rewriter.create<mlir::LLVM::FPExtOp>(loc, Float64Type::get(op->getContext()), elementLoad);
         // sum loop iter arg and memref value
         mlir::Value inner_sum = rewriter.create<mlir::arith::AddFOp>(
             loc, innerLoop.getRegionIterArgs()[0], elementLoad);
+            //loc, innerLoop.getRegionIterArgs()[0], castToF64);
         // yield inner loop result
         rewriter.setInsertionPointToEnd(innerLoop.getBody());
         // rewriter.create<scf::YieldOp>(loc, inner_sum);

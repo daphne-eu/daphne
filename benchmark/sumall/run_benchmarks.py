@@ -18,16 +18,16 @@ tests = [
     "f32_1gb.daphne",
     "f32_5gb.daphne",
     "f32_10gb.daphne",
-    "f64_10x10.daphne",
-    "f64_1kb.daphne",
-    "f64_10kb.daphne",
-    "f64_100kb.daphne",
-    "f64_1mb.daphne",
-    "f64_10mb.daphne",
-    "f64_100mb.daphne",
-    "f64_1gb.daphne",
-    "f64_5gb.daphne",
-    "f64_10gb.daphne",
+    #  "f64_10x10.daphne",
+    #  "f64_1kb.daphne",
+    #  "f64_10kb.daphne",
+    #  "f64_100kb.daphne",
+    #  "f64_1mb.daphne",
+    #  "f64_10mb.daphne",
+    #  "f64_100mb.daphne",
+    #  "f64_1gb.daphne",
+    #  "f64_5gb.daphne",
+    #  "f64_10gb.daphne",
 ]
 
 precompiled_results = []
@@ -40,34 +40,39 @@ def run_benchmark(file: str):
 
     ROUNDS = 3
 
-    #  for i in range(ROUNDS):
-    #      # precompiled
-    #      popen = subprocess.Popen(
-    #          ("../bin/daphne " + file).split(), stdout=subprocess.PIPE
-    #      )
-    #      popen.wait()
-    #      output = str(popen.stdout.read())
-    #      time_spent_precompiled += float(re.findall(r"\d+", output)[0]) / 1e6
+    for i in range(ROUNDS):
+        # precompiled
+        popen = subprocess.Popen(
+            ("daphne " + file).split(), stdout=subprocess.PIPE
+        )
+        popen.wait()
+        result = str(popen.stdout.readline())
+        output = str(popen.stdout.readline())
+        #  print(output)
+        time_spent_precompiled += float(re.findall(r"\d+", output)[0]) / 1e6
+        #  print(time_spent_precompiled)
 
     precompiled_results.append(round(time_spent_precompiled / ROUNDS, 3))
-    #  print(
-    #      f"Total time spent precompiled: {time_spent_precompiled:.3}, average:"
-    #      f"{(time_spent_precompiled/ROUNDS):.3}"
-    #  )
+    print(
+        f"Total time spent precompiled: {time_spent_precompiled:.3}, average:"
+        f"{(time_spent_precompiled/ROUNDS):.3}"
+    )
 
     for i in range(ROUNDS):
         # codegen
         popen = subprocess.Popen(
-            ("../bin/daphne --codegen " + file).split(), stdout=subprocess.PIPE
+            ("daphne --codegen " + file).split(), stdout=subprocess.PIPE
         )
         popen.wait()
-        output = str(popen.stdout.read())
+
+        result = str(popen.stdout.readline())
+        output = str(popen.stdout.readline())
         time_spent_codegen += float(re.findall(r"\d+", output)[0]) / 1e6
 
     codegen_results.append(round(time_spent_codegen / ROUNDS, 3))
-    #
-    #  print(f"Total time spent codegen: {time_spent_codegen}, average:"
-    #        f"{time_spent_codegen/ROUNDS}")
+
+    print(f"Total time spent codegen: {time_spent_codegen}, average:"
+          f"{time_spent_codegen/ROUNDS}")
 
 
 if __name__ == "__main__":

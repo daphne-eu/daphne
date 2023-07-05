@@ -1,7 +1,8 @@
-X = fill(1.0, 5000, 2500);
+X = fill(1.0, 10000, 2500);
 
 start_fill = now();
-sum(X);
+a = sum(X);
 end_fill = now();
 
+print(a);
 print(end_fill - start_fill);
