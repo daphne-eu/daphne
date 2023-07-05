@@ -73,7 +73,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#quickstart" class="md-skip">
+        <a href="#quickstarting-daphne" class="md-skip">
           Skip to content
         </a>
       
@@ -429,22 +429,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#explanation" class="md-nav__link">
-    Explanation
+  <a href="#download-a-binary-release" class="md-nav__link">
+    Download a Binary Release
   </a>
   
-    <nav class="md-nav" aria-label="Explanation">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-daphne" class="md-nav__link">
+    Run DAPHNE
+  </a>
+  
+    <nav class="md-nav" aria-label="Run DAPHNE">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-next" class="md-nav__link">
-    What Next?
+  <a href="#running-a-daphnedsl-script" class="md-nav__link">
+    Running a DaphneDSL Script
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-a-python-script-using-daphnelib" class="md-nav__link">
+    Running a Python Script Using DaphneLib
   </a>
   
 </li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-details" class="md-nav__link">
+    More Details
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-next" class="md-nav__link">
+    What Next?
+  </a>
   
 </li>
       
@@ -963,22 +991,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#explanation" class="md-nav__link">
-    Explanation
+  <a href="#download-a-binary-release" class="md-nav__link">
+    Download a Binary Release
   </a>
   
-    <nav class="md-nav" aria-label="Explanation">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-daphne" class="md-nav__link">
+    Run DAPHNE
+  </a>
+  
+    <nav class="md-nav" aria-label="Run DAPHNE">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#what-next" class="md-nav__link">
-    What Next?
+  <a href="#running-a-daphnedsl-script" class="md-nav__link">
+    Running a DaphneDSL Script
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#running-a-python-script-using-daphnelib" class="md-nav__link">
+    Running a Python Script Using DaphneLib
   </a>
   
 </li>
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#more-details" class="md-nav__link">
+    More Details
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-next" class="md-nav__link">
+    What Next?
+  </a>
   
 </li>
       
@@ -1000,42 +1056,48 @@
   
 
 
-<h1 id="quickstart">Quickstart</h1>
-<p>These reduced instructions should get you started by firing up a hello world script from the latest binary release.</p>
-<p><strong>The recipe is as follows:</strong></p>
-<ol>
-<li>Download and extract <code>daphne-&lt;version&gt;-bin.tgz</code> from the <a href="https://github.com/daphne-eu/daphne/releases">release page</a>.
-Optionally choose the <code>daphne-cuda-&lt;version&gt;-bin.tgz</code> archive if you want to run DAPHNE with CUDA support (Nvidia Pascal
-hardware or newer and an installed CUDA SDK are required)</li>
-<li>
+<h1 id="quickstarting-daphne">Quickstarting DAPHNE</h1>
+<p>These reduced instructions should get you started by firing up a hello world script from the latest binary release. </p>
+<h2 id="download-a-binary-release">Download a Binary Release</h2>
+<p>Download and extract <code>daphne-&lt;version&gt;-bin.tgz</code> from the <a href="https://github.com/daphne-eu/daphne/releases">release page</a>.
+Optionally choose the <code>daphne-cuda-&lt;version&gt;-bin.tgz</code> archive if you want to run DAPHNE with CUDA support (Nvidia Pascal 
+hardware or newer and an installed CUDA SDK are required).</p>
+<h2 id="run-daphne">Run DAPHNE</h2>
+<p>DAPHNE offers two ways to define integrated data analysis pipelines:</p>
+<ul>
+<li><a href="/daphne/DaphneDSLLanguageRef">DaphneDSL</a> (DAPHNE's domain-specific language)</li>
+<li><a href="/daphne/DaphneLib">DaphneLib</a> (DAPHNE's Python API)</li>
+</ul>
+<p>For both ways, we provide lightweight run-scripts that set up the required environment (so your system's shared library loader finds the required <code>.so</code> files) and pass the provided parameters to the <code>daphne</code>/<code>python3</code> executable. </p>
+<h3 id="running-a-daphnedsl-script">Running a DaphneDSL Script</h3>
 <p>In a bash (or compatible) shell, from the extracted DAPHNE directory, execute this command</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>./run-daphne.sh<span class="w"> </span>scripts/examples/hello-world.daph
 </code></pre></div>
-<p>Optionally you can activate CUDA ops by including --cuda:</p>
+<p>Optionally you can activate CUDA ops by including <code>--cuda</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>./run-daphne.sh<span class="w"> </span>--cuda<span class="w"> </span>scripts/examples/hello-world.daph
 </code></pre></div>
-<p>Earning extra points: To see one level of intermediate representation that the DAPHNE compiler generates in its wealth of optimization passes run with the explain flag</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./run-daphne.sh<span class="w"> </span>--explain<span class="o">=</span>kernels<span class="w"> </span>scripts/examples/hello-world.daph
+<h3 id="running-a-python-script-using-daphnelib">Running a Python Script Using DaphneLib</h3>
+<p>In a bash (or compatible) shell, from the extracted DAPHNE directory, execute this command</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>./run-python.sh<span class="w"> </span>scripts/examples/daphnelib/shift-and-scale.py
 </code></pre></div>
-</li>
-</ol>
-<h2 id="explanation">Explanation</h2>
-<p>The <code>run-daphne.sh</code> script sets up the required environment (so your system's shared library loader finds the required
-.so files) and passes the provided parameters to the daphne executable.</p>
-<p>Interesting things to look at:</p>
+<h2 id="more-details">More Details</h2>
+<p>If you are interested in the details, you could have a look at</p>
 <ul>
-<li>file <code>run-daphne.sh</code></li>
-<li>file <code>UserConfig.json</code></li>
-<li>file <code>scripts/examples/hello-world.daph</code></li>
-<li>output of <code>run-daphne.sh --help</code></li>
+<li>the run-scripts: <code>run-daphne.sh</code> and <code>run-python.sh</code></li>
+<li>the example DaphneDSL and DaphneLib scripts:<ul>
+<li><code>scripts/examples/hello-world.daph</code></li>
+<li><code>scripts/examples/daphnelib/shift-and-scale.py</code></li>
 </ul>
-<h3 id="what-next">What Next?</h3>
+</li>
+<li>the DAPHNE user configuration: <code>UserConfig.json</code></li>
+<li>the DAPHNE help: <code>run-daphne.sh --help</code></li>
+</ul>
+<h2 id="what-next">What Next?</h2>
 <p>You might want to have a look at</p>
 <ul>
 <li>a more elaborate <a href="/daphne/GettingStarted">getting started guide</a></li>
 <li>the <a href="https://github.com/daphne-eu/daphne/tree/main/doc">documentation</a></li>
-<li>the <a href="https://github.com/daphne-eu/daphne/tree/main/CONTRIBUTING.md">contribution guidelines</a></li>
-<li>the <a href="https://github.com/daphne-eu/daphne/issues">open issues</a></li>
+<li>DaphneDSL and DaphneLib example scripts in <code>scripts/algorithms/</code> and <code>scripts/examples/</code></li>
 </ul>
 
 
