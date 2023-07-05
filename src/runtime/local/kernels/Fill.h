@@ -51,8 +51,6 @@ void fill(DTRes *& res, VTArg arg, size_t numRows, size_t numCols, DCTX(ctx)) {
 template<typename VT>
 struct Fill<DenseMatrix<VT>, VT> {
     static void apply(DenseMatrix<VT> *& res, VT arg, size_t numRows, size_t numCols, DCTX(ctx)) {
-        assert(numRows > 0 && "numRows must be > 0");
-        assert(numCols > 0 && "numCols must be > 0");
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, arg == 0);
