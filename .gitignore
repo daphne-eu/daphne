@@ -23,6 +23,7 @@ __pycache__/
 
 # Jetbrains IDE
 .idea/
+.clion.source.upload.marker
 
 tmpdaphne.daphne
 
