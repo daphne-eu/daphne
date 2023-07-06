@@ -359,7 +359,8 @@ def Daphne_ColumnAggVarOp    : Daphne_ColumnAggOp<"columnVar", NumScalar, [Value
 def Daphne_ColumnAggStddevOp : Daphne_ColumnAggOp<"columnStddev", NumScalar, [ValueTypeFromArgsFP]>;
 
 def Daphne_ColumnJoinOp : Daphne_Op<"columnJoin", [
-//    DataTypeClm, ValueTypeFromFirstArg,
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {
     let arguments = (ins ColumnOrU:$lhs, ColumnOrU:$rhs);
     let results = (outs ColumnOrU:$resLhs, ColumnOrU:$resRhs);

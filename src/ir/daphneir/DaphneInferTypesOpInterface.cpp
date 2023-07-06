@@ -255,6 +255,16 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
     return {daphne::FrameType::get(ctx, newColumnTypes)};
 }
 
+std::vector<Type> daphne::ColumnJoinOp::inferTypes() {
+    MLIRContext * ctx = getContext();
+    Builder builder(ctx);
+    return {
+        daphne::ColumnType::get(ctx, builder.getIndexType()),
+        daphne::ColumnType::get(ctx, builder.getIndexType())
+    };
+}
+
+
 std::vector<Type> daphne::ExtractOp::inferTypes() {
     throw std::runtime_error("type inference not implemented for ExtractOp"); // TODO
 }

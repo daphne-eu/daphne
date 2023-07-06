@@ -190,6 +190,12 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     return {{numRows, numCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::ColumnJoinOp::inferShape() {
+    // We don't know the exact numbers of rows here, but we know the numbers of
+    // columns.
+    return {{-1, 1}, {-1, 1}};
+}
+
 std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
     auto shapeLhs = getShape(getLhs());
     auto shapeRhs = getShape(getRhs());
