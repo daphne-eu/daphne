@@ -17,6 +17,8 @@
 #include <compiler/utils/CompilerUtils.h>
 #include <ir/daphneir/Daphne.h>
 
+#include <spdlog/spdlog.h>
+
 #include <string>
 #include <vector>
 #include <stdexcept>
@@ -324,7 +326,18 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
 
 void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
     // Try to infer the types of all results of this operation.
-    std::vector<Type> types = daphne::tryInferType(op);
+    std::vector<Type> types;
+    try {
+        types = daphne::tryInferType(op);
+    }
+    catch (std::runtime_error& re) {
+        spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+        throw;
+    }
+    catch (...) {
+        spdlog::error("Caught an unspecified exception in {}:{}",__FILE__, __LINE__);
+        throw;
+    }
     const size_t numRes = op->getNumResults();
     if(types.size() != numRes)
         throw std::runtime_error(
