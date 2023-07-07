@@ -102,7 +102,11 @@ void MTWrapper<CSRMatrix<VT>>::executeCpuQueues(std::vector<std::function<void(C
             }
         }
     } else {
-        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, false);
+        bool expertChunk=false;
+        if(method==AUTO)
+            expertChunk = true;
+
+        LoadPartitioning lp(method, len, chunkParam, this->_numThreads, expertChunk);
         if (ctx->getUserConfig().pinWorkers) {
             while (lp.hasNextChunk()) {
                 endChunk += lp.getNextChunk();
