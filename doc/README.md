@@ -1,7 +1,5 @@
 # Overview
 
-![DAPHNE Logo](assets/logo_medium.png)
-
 - [Quickstart](/doc/Quickstart.md)
 - [Getting Started](/doc/GettingStarted.md)
 
