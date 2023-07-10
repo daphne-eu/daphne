@@ -516,14 +516,17 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     }
     catch(std::runtime_error & re) {
         spdlog::error("Pass std::runtime_error: {}", re.what());
+        cerr << "Pass error: " << re.what() << endl;
         return StatusCode::PASS_ERROR;
     }
     catch(std::exception & e) {
         spdlog::error("Pass std::exception: {}", e.what());
+        cerr << "Pass error: " << e.what() << endl;
         return StatusCode::PASS_ERROR;
     }
     catch(...) {
-        spdlog::error("Pass error caught by ellipsis(...) {}");
+        spdlog::error("Pass error caught by ellipsis(...)");
+        cerr << "Pass error: (no message)" << endl;
         return StatusCode::PASS_ERROR;
     }
 
