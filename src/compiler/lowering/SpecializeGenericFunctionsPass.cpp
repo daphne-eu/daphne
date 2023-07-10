@@ -105,9 +105,11 @@ namespace {
      * @brief Get argument types for the specialized version of a template function.
      * @param functionType The types of the template function.
      * @param callTypes The types used in the call to the specialized version.
+     * @param funcName The name of the function to call
+     * @param callLoc The location of the call
      * @return The argument types to use for the specialized version
      */
-    std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType, TypeRange callTypes) {
+    std::vector<Type> getSpecializedFuncArgTypes(FunctionType functionType, TypeRange callTypes, const std::string & funcName, mlir::Location callLoc) {
         auto unknownTy = daphne::UnknownType::get(functionType.getContext());
         std::vector<mlir::Type> specializedTypes;
         for(auto it : llvm::enumerate(llvm::zip(functionType.getInputs(), callTypes))) {
@@ -125,9 +127,12 @@ namespace {
                 if(!isMatchingUnknownMatrix && !isMatchingUnknownPropertiesMatrix && funcInTy != unknownTy) {
                     std::string s;
                     llvm::raw_string_ostream stream(s);
-                    stream << "Call to function template with mismatching types for argument " << index
-                           << ": Expected type `" << funcInTy << "`, got `" << specializedTy << "`";
-                    throw std::runtime_error(stream.str());
+                    // TODO funcName has cryptic suffix from overloading/specialization, not fully suitable for users.
+                    // TODO This can happen even for typed functions which are no "templates", which is confusing for a user.
+                    // TODO The index seems to be off by 1 (too large)...
+                    stream << "call to function template `" << funcName << "` with invalid types for argument " << index
+                           << ": expected `" << funcInTy << "`, got `" << specializedTy << "`";
+                    CompilerUtils::throwError(callLoc, stream.str());
                 }
             }
             // Note that specializedTy may explicitly contain property information (e.g., shape).
@@ -288,15 +293,16 @@ namespace {
          * @param operandTypes Operand types of the call operation
          * @param operands Operands of the call operation or an empty list if the operands are not available
          * @param calledFunction The function called by the call operation
+         * @param callLoc The location of the call for which a function specialization shall be created or reused
          * @return A `FuncOp`for the specialization
          */
-        func::FuncOp createOrReuseSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp calledFunction) {
+        func::FuncOp createOrReuseSpecialization(TypeRange operandTypes, ValueRange operands, func::FuncOp calledFunction, mlir::Location callLoc) {
             // check for existing specialization that matches
             func::FuncOp specializedFunc = tryReuseExistingSpecialization(operandTypes, operands, calledFunction);
             if(!specializedFunc) {
                 // Create specialized function
                 auto specializedTypes =
-                    getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes);
+                    getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes, calledFunction.getSymName().str(), callLoc);
                 specializedFunc = createSpecializedFunction(calledFunction, specializedTypes, operands);
             }
             if(logger->should_log(spdlog::level::debug)) {
@@ -328,7 +334,7 @@ namespace {
                         }
                 );
                 if(isFunctionTemplate(calledFunction) || hasConstantInput) {
-                    func::FuncOp specializedFunc = createOrReuseSpecialization(callOp.getOperandTypes(), callOp.getOperands(), calledFunction);
+                    func::FuncOp specializedFunc = createOrReuseSpecialization(callOp.getOperandTypes(), callOp.getOperands(), calledFunction, callOp.getLoc());
                     callOp.setCalleeAttr(specializedFunc.getSymNameAttr());
                     if(fixResultTypes(callOp->getResults(), specializedFunc.getFunctionType())) {
                         inferTypesInFunction(function);
@@ -349,7 +355,7 @@ namespace {
                      // Get the element type of the matrix the function should be mapped on
                     mlir::Type opTy = mapOp.getArg().getType();
                     auto inpMatrixTy = opTy.dyn_cast<daphne::MatrixType>();
-                    func::FuncOp specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction);
+                    func::FuncOp specializedFunc = createOrReuseSpecialization(inpMatrixTy.getElementType(), {}, calledFunction, mapOp.getLoc());
                     mapOp.setFuncAttr(specializedFunc.getSymNameAttr());
  
                     // We only allow functions that return exactly one result for mapOp

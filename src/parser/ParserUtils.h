@@ -209,6 +209,7 @@ public:
      * @param start Start token of this rule (usually you want to use `ctx->start`)
      * @return mlir location representing the position of the token in the file
      */
+    // TODO return FileLineColLoc per type
     mlir::Location getLoc(antlr4::Token *start) {
         return mlir::FileLineColLoc::get(builder.getStringAttr(start->getTokenSource()->getSourceName()),
             start->getLine(),
