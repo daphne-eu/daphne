@@ -134,7 +134,7 @@ The typical trigonometric functions:
 ## Elementwise binary
 
 DaphneDSL supports various elementwise binary operations.
-Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*.
+Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*, e.g., `log()`.
 Some operations even support both, e.g., `pow(a, b)` and `a^b` have the same semantics.
 
 The built-in functions all follow the same scheme:

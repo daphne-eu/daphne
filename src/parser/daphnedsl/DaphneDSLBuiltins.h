@@ -51,13 +51,13 @@ class DaphneDSLBuiltins {
     // Checking number of arguments
     // ************************************************************************
     
-    static void checkNumArgsExact(const std::string & func, size_t numArgs, size_t numArgsExact);
+    static void checkNumArgsExact(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsExact);
     
-    static void checkNumArgsBetween(const std::string & func, size_t numArgs, size_t numArgsMin, size_t numArgsMax);
+    static void checkNumArgsBetween(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsMin, size_t numArgsMax);
     
-    static void checkNumArgsMin(const std::string & func, size_t numArgs, size_t numArgsMin);
+    static void checkNumArgsMin(mlir::Location loc, const std::string & func, size_t numArgs, size_t numArgsMin);
     
-    static void checkNumArgsEven(const std::string & func, size_t numArgs);
+    static void checkNumArgsEven(mlir::Location loc, const std::string & func, size_t numArgs);
     
     // ************************************************************************
     // Creating similar DaphneIR operations
