@@ -168,7 +168,6 @@ namespace
             for (auto columnName : it->second) {
                 if (std::find(usedColumnNames.begin(), usedColumnNames.end(), columnName) != usedColumnNames.end()) {
                     columnNames.insert(columnName);
-                    std::cout <<"name " << columnName << std::endl;
                 }
             }
 
@@ -205,6 +204,28 @@ namespace
         return success();
     }
 
+    bool checkBitmapOutputOp(Operation *op) {
+        if(dyn_cast<mlir::daphne::EwEqOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwNeqOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwGtOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwGeOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwLtOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwLeOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwAndOp>(op)) {
+            return true;
+        } else if(dyn_cast<mlir::daphne::EwOrOp>(op)) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     void dfsSuccessors(
         Operation *op,
         Operation *parent,
@@ -213,6 +234,12 @@ namespace
         std::set<std::string> &distinctColumnNames
     ) {
         if(visited.find(op) != visited.end()) {
+            return;
+        }
+
+        // We don't want to visit the successors of bitmap output ops to make sure,
+        // that the following names are added to the correct datapath
+        if(checkBitmapOutputOp(op)) {
             return;
         }
 
@@ -280,13 +307,6 @@ namespace
                     }
                 }
 
-                for (auto it = columnNamesPerSuccessor.begin(); it != columnNamesPerSuccessor.end(); it++) {
-                     llvm::outs() << "Successor: " << it->first->getName() << "\n";
-                    for (auto columnName : it->second) {
-                        std::cout << columnName << std::endl;
-                    }
-                }
-
                 mlir::Type vt = mlir::daphne::UnknownType::get(rewriter.getContext());
                 mlir::Type resType = mlir::daphne::ColumnType::get(
                     rewriter.getContext(), vt
@@ -335,11 +355,7 @@ namespace
                 auto rhs_col_label_op = joinOp.getOperand(3).getDefiningOp();
                 auto lhs_col_label = joinOp.getOperand(2).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str();
                 auto rhs_col_label = joinOp.getOperand(3).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str();
-                std::cout << lhs_col_label << std::endl;
-                std::cout << rhs_col_label << std::endl;
-                /**for (auto label : *y) {
-                    std::cout << label << std::endl;
-                } **/
+
                 std::map<Operation*, std::set<std::string>> columnNamesPerSuccessor;
                 std::set<std::string> distinctColumnNames;
                 std::set<Operation*> visited;
@@ -350,13 +366,6 @@ namespace
                     for (Operation *userOp : result.getUsers()) {
                         columnNamesPerSuccessor.insert({userOp ,std::set<std::string>() });
                         dfsSuccessors(userOp, userOp, visited, columnNamesPerSuccessor, distinctColumnNames);
-                    }
-                }
-
-                for (auto it = columnNamesPerSuccessor.begin(); it != columnNamesPerSuccessor.end(); it++) {
-                     llvm::outs() << "Successor: " << it->first->getName() << "\n";
-                    for (auto columnName : it->second) {
-                        std::cout << columnName << std::endl;
                     }
                 }
 
