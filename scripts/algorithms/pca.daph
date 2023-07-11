@@ -77,7 +77,7 @@ decreasing_Idx = order(evalues, 0, false, true);
 # TODO This cast should not be necessary (type promotion in ctable).
 diagmat = ctable(seq(0.0, M - 1, 1.0), as.f64(decreasing_Idx));
 evalues = diagmat @ evalues;
-evectors = evectors @ diagmat;
+evectors = evectors @ t(diagmat);
 eval_dominant = evalues[0:K, 0];
 evec_dominant = evectors[,0:K];
 
