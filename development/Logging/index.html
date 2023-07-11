@@ -1030,11 +1030,11 @@ For the mentioned binaries this has already been taken care of (either somewhere
 via context creation in case of the libs). All setup is handled by the class DaphneLogger (with some extras in ConfigParser).</li>
 <li>
 <p>Log messages can be submitted in two forms:</p>
-<ol>
+<ul>
 <li><code>spdlog::warn("my warning");</code></li>
 <li><code>spdlog::get("default")-&gt;warn("my warning");</code></li>
-</ol>
-<p>The two statements have the same effect. But while <em>iii.</em> is a short form for using the default logger, <em>iv.</em>
+</ul>
+<p>The two statements have the same effect. But while the former is a short form for using the default logger, the latter
 explicitly chooses the logger via the static get() method.</p>
 </li>
 <li>
@@ -1043,9 +1043,9 @@ in the CUDA compiler pass MarkCUDAOpsPass, a logger named "compiler::cuda" is us
 in <code>fallback_loggers</code> (see DaphneLogger.cpp) must exist to prevent crashing when using an unconfigured logger.</p>
 </li>
 <li>To configure log levels, formatting and output options, the DaphneUserConfig and ConfigParser have been extended.
-See an example of this inthe <code>UserConfig.json</code> in the root directory of the DAPHNE code base.</li>
-<li>At the moment, the output options of our logging infrastructure are a bit limited (inital version). A logger currently
-always emmits messages to the console's std-out and optionally to a file if a file name is given in the config.</li>
+See an example of this in the <code>UserConfig.json</code> in the root directory of the DAPHNE code base.</li>
+<li>At the moment, the output options of our logging infrastructure are a bit limited (initial version). A logger currently
+always emits messages to the console's std-out and optionally to a file if a file name is given in the config.</li>
 <li>The format of log messages can be customized. See the examples in <code>UserConfig.json</code> and the
 <a href="https://github.com/gabime/spdlog/">spdlog documentation</a>.</li>
 <li>If a logger is called while running unit tests (run_tests executable), make sure to <code>#include &lt;run_tests.h&gt;</code> and
