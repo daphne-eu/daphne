@@ -30,19 +30,19 @@ singletons work in C++, this has to be done once per binary (e.g., daphne, run_t
 For the mentioned binaries this has already been taken care of (either somewhere near the main program entrypoint or
 via context creation in case of the libs). All setup is handled by the class DaphneLogger (with some extras in ConfigParser).
 1. Log messages can be submitted in two forms:
-    1. ``spdlog::warn("my warning");``
-    1. ``spdlog::get("default")->warn("my warning");``
+    - ``spdlog::warn("my warning");``
+    - ``spdlog::get("default")->warn("my warning");``
 
-    The two statements have the same effect. But while *iii.* is a short form for using the default logger, *iv.*
+    The two statements have the same effect. But while the former is a short form for using the default logger, the latter
     explicitly chooses the logger via the static get() method.
 
 1. We can have several loggers, which can be configured differently. For example, to control how messages are logged
 in the CUDA compiler pass MarkCUDAOpsPass, a logger named "compiler::cuda" is used. For each used logger, an entry
 in ``fallback_loggers`` (see DaphneLogger.cpp) must exist to prevent crashing when using an unconfigured logger.
 1. To configure log levels, formatting and output options, the DaphneUserConfig and ConfigParser have been extended.
-See an example of this inthe ``UserConfig.json`` in the root directory of the DAPHNE code base.
-1. At the moment, the output options of our logging infrastructure are a bit limited (inital version). A logger currently
-always emmits messages to the console's std-out and optionally to a file if a file name is given in the config.
+See an example of this in the ``UserConfig.json`` in the root directory of the DAPHNE code base.
+1. At the moment, the output options of our logging infrastructure are a bit limited (initial version). A logger currently
+always emits messages to the console's std-out and optionally to a file if a file name is given in the config.
 1. The format of log messages can be customized. See the examples in ``UserConfig.json`` and the
 [spdlog documentation](https://github.com/gabime/spdlog/).
 1. If a logger is called while running unit tests (run_tests executable), make sure to ```#include <run_tests.h>``` and
