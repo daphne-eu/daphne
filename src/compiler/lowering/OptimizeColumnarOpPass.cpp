@@ -87,7 +87,6 @@ namespace
                                 auto bitmapCastResult = followBitmapOp->getResult(0);
                                 std::vector<Operation *> toReplace;
                                 for (Operation *followBitmapCastOp : bitmapCastResult.getUsers()) {
-                                    followBitmapCastOp->getName().print(llvm::outs());
                                     if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(followBitmapCastOp)) {
                                         toReplace.push_back(followBitmapCastOp);
                                     }
