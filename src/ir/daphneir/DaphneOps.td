@@ -345,6 +345,14 @@ def Daphne_ColumnProjectOp
     let results = (outs Column:$res);
 }
 
+def Daphne_ColumnProjectionPathOp : Daphne_Op<"columnProjectionPath", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
+    DeclareOpInterfaceMethods<InferShapeOpInterface>
+]> {
+    let arguments = (ins Column:$data, Variadic<Column>:$posLists);
+    let results = (outs Column:$res);
+}
+
 class Daphne_ColumnAggOp<string name, Type scalarType, list<Trait> traits = []>
 : Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg])> {
     let arguments = (ins ColumnOf<[scalarType]>:$arg);
@@ -367,7 +375,7 @@ def Daphne_ColumnJoinOp : Daphne_Op<"columnJoin", [
 }
 
 def Daphne_ColumnBetweenOp : Daphne_Op<"columnBetween", 
-    [ValueTypeFromFirstArg]> {
+    [TypeFromFirstArg]> {
     let arguments = (ins Column:$data, AnyScalar:$lower, AnyScalar:$upper);
     let results = (outs Column:$res);
 }

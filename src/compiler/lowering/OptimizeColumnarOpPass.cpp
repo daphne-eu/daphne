@@ -267,6 +267,38 @@ namespace
         toDelete.push_back(geOp);
     }
 
+//projectionPath (evtl updateProjectionPath extra)
+    void insertProjectionPath(mlir::OpBuilder &builder, Operation *op, std::vector<Operation *> &toDelete) {
+        mlir::Type vt = mlir::daphne::UnknownType::get(builder.getContext());
+        mlir::Type resType = mlir::daphne::ColumnType::get(
+            builder.getContext(), vt
+        );
+        auto projectResult = op->getResult(0);
+        int successors = 0;
+        int deleteCount = 0;
+        for (Operation * projectFollowOp : projectResult.getUsers()) {
+            auto projectFollowOpResult = projectFollowOp->getResult(0);
+            if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(projectFollowOp)) {
+                builder.setInsertionPointAfter(projectFollowOp);
+                std::vector<mlir::Value> posLists{projectFollowOp->getOperand(1), op->getOperand(1)};
+                auto projectionPathOp = builder.create<daphne::ColumnProjectionPathOp>(builder.getUnknownLoc(), resType, op->getOperand(0), posLists);
+            
+                for (Operation *projectTwoFollowOp : projectFollowOpResult.getUsers()) {
+                    projectTwoFollowOp->replaceUsesOfWith(projectFollowOpResult, projectionPathOp->getResult(0));
+                }
+
+                if (projectFollowOp->use_empty()) {
+                    toDelete.push_back(projectFollowOp);
+                    deleteCount++;
+                }
+            }
+            
+            successors++;    
+        }
+        if (successors == deleteCount && successors > 0) {
+            toDelete.push_back(op);
+        }
+    }
 
     struct OptimizeColumnarOpPass : public PassWrapper<OptimizeColumnarOpPass, OperationPass<func::FuncOp>> {
 
@@ -319,6 +351,9 @@ void OptimizeColumnarOpPass::runOnOperation() {
         } else if(llvm::dyn_cast<mlir::daphne::ColumnGeOp>(op)) {
             OpBuilder builder(op);
             insertBetween(builder, op, toDelete);
+        } else if(llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
+            OpBuilder builder(op);
+            insertProjectionPath(builder, op, toDelete);
         }
     });
 

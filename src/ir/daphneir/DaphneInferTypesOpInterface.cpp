@@ -264,6 +264,11 @@ std::vector<Type> daphne::ColumnJoinOp::inferTypes() {
     };
 }
 
+std::vector<Type> daphne::ColumnProjectionPathOp::inferTypes() {
+    Type colType = getData().getType().dyn_cast<daphne::ColumnType>().getColumnType();
+    return {daphne::ColumnType::get(getContext(), colType)};
+}
+
 
 std::vector<Type> daphne::ExtractOp::inferTypes() {
     throw std::runtime_error("type inference not implemented for ExtractOp"); // TODO
