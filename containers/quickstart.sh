@@ -14,7 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+#on some installations docker can only be run with sudo
+USE_SUDO=
+#USE_SUDO=sudo
+
 # user info to set up your user inside the container (to avoid creating files that then belong to the root user)
 USERNAME=$(id -n -u)
 GID=$(id -g)
-docker run --rm -w /daphne -v $PWD:/daphne -e GID=$GID -e USER=$USERNAME -e UID=$UID daphneeu/daphne:latest_BASE $*
+$USE_SUDO docker run --rm -w /daphne -v $PWD:/daphne -e GID=$GID -e USER=$USERNAME -e UID=$UID daphneeu/daphne:latest_X86-64_BASE $*

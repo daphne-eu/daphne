@@ -84,7 +84,14 @@ case "$FEATURE" in
     ;;
 esac
 
-export PACK_ROOT=daphne$FEATURE-$DAPHNE_VERSION-bin
+ARCH=X86-64
+if [ $(arch) == 'armv*'  ] || [ $(arch) == 'aarch64' ]; then
+  echo "Building for ARMv8 architecture"
+  ARCH=ARMV8
+fi
+PACK_ROOT1=daphne$FEATURE-$ARCH-$DAPHNE_VERSION-bin
+#minor cosmetics replacing -- with -
+export PACK_ROOT="${PACK_ROOT1/--/-}"
 
 echo "Directories bin, build and lib will be removed before compiling."
 read -p "Are you sure? [y/n] " -n 1 -r
@@ -98,37 +105,46 @@ fi
 rm -rf bin build lib
 
 # shellcheck disable=SC2086
-source build.sh $FEATURE --target all
+# MPI is an internal feature so we can turn this on here
+source build.sh -nd -ns -nf --installPrefix /usr/local --mpi $FEATURE --target all
 
-# shellcheck disable=SC2154
-if [ -d "$daphneBuildDir"/venv ]; then
-  source "$daphneBuildDir"/venv/bin/activate
-else
-    if ! command -v virtualenv &> /dev/null
-    then
-      echo "you should install virtualenv to create a python environment for testing"
-      echo "e.g., apt install virtualenv";
-      exit
-    else
-      virtualenv "$daphneBuildDir"/venv
-      source "$daphneBuildDir"/venv/bin/activate
-      pip install numpy
-    fi
-fi
+
+# this might be obsolete when running from daphne-dev docker container:
+## shellcheck disable=SC2154
+#if [ -d "$daphneBuildDir"/venv ]; then
+#  source "$daphneBuildDir"/venv/bin/activate
+#else
+#    if ! command -v virtualenv &> /dev/null
+#    then
+#      echo "you should install virtualenv to create a python environment for testing"
+#      echo "e.g., apt install virtualenv";
+#      exit
+#    else
+#      virtualenv "$daphneBuildDir"/venv
+#      source "$daphneBuildDir"/venv/bin/activate
+#      pip install numpy
+#    fi
+#fi
 
 # shellcheck disable=SC2154
 cd "$projectRoot"
 
 # shellcheck disable=SC2086
-source test.sh $FEATURE
+source test.sh --no-build $FEATURE
 
 # shellcheck disable=SC2181
 if [[ $? == 0 ]];then
   cd "$daphneBuildDir"
   mkdir -p "$PACK_ROOT/bin"
   # shellcheck disable=SC2154
-  cp -a "$projectRoot"/{deploy,doc,lib,scripts} "$PACK_ROOT"
-  cp -a "$projectRoot"/bin/{daphne,DistributedWorker} "$PACK_ROOT/bin"
+  cp -a "$projectRoot"/{containers,deploy,doc,lib,scripts} "$PACK_ROOT"
+  mkdir -p "$PACK_ROOT"/{bin,src/api}
+  cp -a "$projectRoot"/src/api/python "$PACK_ROOT"/src/api/
+  cp -a "$projectRoot"/bin/{daphne,DistributedWorker} "$PACK_ROOT"/bin/
+  cp -a "$projectRoot"/run-*.sh "$PACK_ROOT"/
+  # this assumes that the pack script is run from an environment that has third party deps in /usr/local
+  # e.g. the daphne-dev docker container
+  cp -a /usr/local/lib/lib*.so* "$PACK_ROOT/lib"
   cp "$projectRoot"/{CITATION,CONTRIBUTING.md,KEYS.txt,LICENSE.txt,README.md,UserConfig.json} "$PACK_ROOT"
   tar czf "$PACK_ROOT".tgz "$PACK_ROOT"
   cd - > /dev/null

@@ -6,6 +6,9 @@ build_*/
 /lib
 /tmp
 
+# documentation build output
+doc_build/
+
 # dependencies
 thirdparty/*
 !thirdparty/llvm-project/
@@ -16,10 +19,11 @@ thirdparty/*
 
 # Python
 __pycache__/
-/venv*
+/**/*venv*
 
 # Jetbrains IDE
 .idea/
+.clion.source.upload.marker
 
 tmpdaphne.daphne
 

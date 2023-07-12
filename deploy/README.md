@@ -103,7 +103,7 @@ This directory includes a set of **bash scripts** providing support for:
 ## List of Files in this Directory
 
 1. This short [README](README.md) file to explain directory structure and point to more documentation at [Deploy](/doc/Deploy.md).
-2. A [script](build-daphne-singularity-image.sh) that builds the "daphne.sif" singularity image from the [Docker image](../containers/Readme.md) 
+2. A [script](build-daphne-singularity-image.sh) that builds the "daphne.sif" singularity image from the [Docker image](/containers/README.md)
 daphneeu/daphne-dev
 3. [deploy-distributed-on-slurm](deploy-distributed-on-slurm.sh) script allows the user to deploy DAPHNE with SLURM.
 4. [deployDistributed](deployDistributed.sh) script builds and sends DAPHNE to remote machines manually with SSH (no tools like Slurm needed).

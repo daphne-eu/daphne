@@ -64,8 +64,14 @@ namespace
                 std::string sourceName;
                 llvm::raw_string_ostream ss(sourceName);
                 ss << "[sql query @ " << sqlop->getLoc() << ']';
-                mlir::Value result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
-
+                mlir::Value result_op;
+                try {
+                    result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
+                }
+                catch (std::runtime_error& re) {
+                    spdlog::error("Final catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+                    return failure();
+                }
                 rewriter.replaceOp(op, result_op);
                 // TODO Why is this necessary when we have already replaced the op?
                 rewriter.replaceAllUsesWith(op->getResult(0), result_op);

@@ -29,8 +29,8 @@
 # ---------------------------------------------------------------------------------------------
 # X      Matrix  ---      Input feature matrix
 # K      Int     2        Number of reduced dimensions (i.e., columns)
-# Center Boolean true     Indicates whether or not to center the feature matrix
-# Scale  Boolean true     Indicates whether or not to scale the feature matrix
+# center Boolean true     Indicates whether or not to center the feature matrix
+# scale  Boolean true     Indicates whether or not to scale the feature matrix
 
 # RETURN VALUES
 # ---------------------------------------------------------------------------------------------
@@ -55,6 +55,7 @@ if( $center ) {
     X = X - mean(X, 1);
 }
 if( $scale ) {
+    # TODO This does not use the original X before centering anymore. Is that okay?
     scaleFactor = sqrt(sum(X^2.0, 1)/Nm1);
     # Replace entries in the scale factor that are 0 and NaN with 1.
     # To avoid division by 0 or NaN, introducing NaN to the ouput.
@@ -68,18 +69,17 @@ mu = mean(X, 1);
 C = (t(X) @ X) / Nm1 - (t(mu) @ mu) * (as.f64(N)/Nm1);
 
 # compute eigen vectors and values
-# TODO full integration of eigen
 evalues, evectors = eigen(C);
 
 # extract dominant eigenvalues and eigenvectors 
-# TODO sorting of matrices
 # Note: can be emulated by:  cbind(evectors, t(evalues)) + cast, sort frame, + extract
-decreasing_Idx = order(evalues, 1, true, true);
-diagmat = ctable(seq(1.0, N, 1.0), decreasing_Idx);
+decreasing_Idx = order(evalues, 0, false, true);
+# TODO This cast should not be necessary (type promotion in ctable).
+diagmat = ctable(seq(0.0, M - 1, 1.0), as.f64(decreasing_Idx));
 evalues = diagmat @ evalues;
-evectors = evectors @ diagmat;
-eval_dominant = evalues[1:K, 1];
-evec_dominant = evectors[,1:K];
+evectors = evectors @ t(diagmat);
+eval_dominant = evalues[0:K, 0];
+evec_dominant = evectors[,0:K];
 
 # Construct new data set by treating computed dominant eigenvectors as the basis vectors
 Xout = X @ evec_dominant;
@@ -87,4 +87,4 @@ Mout = evec_dominant;
 
 # Write out results
 writeMatrix(Xout, $Xout);
-writeMatrix(Xout, $Mout);
+writeMatrix(Mout, $Mout);

@@ -105,30 +105,16 @@ void DaphneDSLVisitor::handleAssignmentPart(
 
 template<class ExtractAxOp, class SliceAxOp, class NumAxOp>
 mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value arg, antlrcpp::Any ax, bool allowLabel) {
-    mlir::Type argType = arg.getType();
-    mlir::Type resType;
-    if(argType.isa<mlir::daphne::MatrixType>())
-        // Right indexing on a matrix retains the value type.
-        resType = argType;
-    else if(argType.isa<mlir::daphne::FrameType>())
-        // Right indexing on a frame may change the list of column value types
-        // (schema).
-        // TODO The following is invalid when extracting multiple columns, but
-        // we should better handle that during type inference.
-        resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
-    else
-        throw std::runtime_error("right indexing is only allowed on matrices and frames");
-
     if(ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
         mlir::Value axVal = ax.as<mlir::Value>();
         if(CompilerUtils::hasObjType(axVal)) // data object
-            return static_cast<mlir::Value>(
-                    builder.create<ExtractAxOp>(loc, argType, arg, axVal)
+            return utils.retValWithInferedType(
+                    builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal)
             );
         else if(axVal.getType().isa<mlir::daphne::StringType>()) { // string
             if(allowLabel)
-                return static_cast<mlir::Value>(
-                        builder.create<ExtractAxOp>(loc, argType, arg, axVal)
+                return utils.retValWithInferedType(
+                        builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal)
                 );
             else
                 throw std::runtime_error(
@@ -136,9 +122,9 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
                 );
         }
         else // scalar
-            return static_cast<mlir::Value>(
+            return utils.retValWithInferedType(
                     builder.create<SliceAxOp>(
-                            loc, argType, arg,
+                            loc, utils.unknownType, arg,
                             utils.castSizeIf(axVal),
                             utils.castSizeIf(
                                     builder.create<mlir::daphne::EwAddOp>(
@@ -163,9 +149,9 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         if(axUpperExcl == nullptr)
             axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
 
-        return static_cast<mlir::Value>(
+        return utils.retValWithInferedType(
                 builder.create<SliceAxOp>(
-                        loc, argType, arg,
+                        loc, utils.unknownType, arg,
                         utils.castSizeIf(axLowerIncl),
                         utils.castSizeIf(axUpperExcl)
                 )
@@ -267,7 +253,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
     // Remove quotes
     path = path.substr(1, path.size() - 2);
     
-    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top()).parent_path());
+    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top())).parent_path();
     std::filesystem::path importingPath = path;
 
     //Determine the prefix from alias/filename
@@ -797,10 +783,20 @@ bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type par
     auto argMatTy = argTy.dyn_cast<mlir::daphne::MatrixType>();
     auto paramMatTy = paramTy.dyn_cast<mlir::daphne::MatrixType>();
 
-    bool isMatchingUnknownMatrix =
-        argMatTy && paramMatTy && paramMatTy.getElementType() == utils.unknownType;
-
-    return paramTy == argTy || paramTy == utils.unknownType || isMatchingUnknownMatrix;
+    // TODO This is rather a workaround than a thorough solution, since
+    // unknown argument types do not really allow to check compatibility.
+    
+    // Argument type and parameter type are compatible if...
+    return
+        // ...they are the same, OR
+        paramTy == argTy ||
+        // ...at least one of them is unknown, OR
+        argTy == utils.unknownType || paramTy == utils.unknownType ||
+        // ...they are both matrices and at least one of them is of unknown value type.
+        (argMatTy && paramMatTy && (
+            argMatTy.getElementType() == utils.unknownType ||
+            paramMatTy.getElementType() == utils.unknownType
+        ));
 }
 
 std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {

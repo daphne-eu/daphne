@@ -35,8 +35,7 @@ set(LIBS
         MLIRExecutionEngine
         #DaphneIrExecutor
         DataStructures
-        IO
-        ProtoDataConverter
+        IO        
         CallData
         Proto
         DaphneMetaDataParser

@@ -200,3 +200,55 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
+===============================================================================
+DAPHNE depends on various third party software packages. A summary of their
+licenses is listed below. Most of them are downloaded and compiled from source,
+some of them are redistributed with the binary distribution (see lib
+subdirectory). With the introduction of downloadable Docker images, all of
+these software packages, in addition to Ubuntu Linux and/or NVidia CUDA,
+are shipped in binary form.
+
+
+Apache Software Foundation License 2.0
+======================================
+absl-cpp 20211102.0
+Apache Arrow 11.0
+gRPC 1.38.0
+LLVM (with exceptions) 20d454c79bbca7822eee88d188afb7a8747dac58
+
+
+The "BSD 3-clause license"
+==========================
+libantlr4-runtime 4.9.2
+OpenBLAS 0.3.19
+OpenMPI 4.1.5
+Numpy (any version >= Ubuntu 20.04 package)
+Pandas (any version >= Ubuntu 20.04 package)
+
+
+Boost Software License 1.0
+==========================
+Catch2 2.13.8
+
+
+MIT License
+===========
+nlohmannjson 3.10.5
+spdlog 1.11.0
+
+
+Mozilla Public License 2.0
+==========================
+Eigen 3.4.0
+
+
+NVIDIA Deep Learning Container License
+======================================
+CUDA 12.1
+CUDNN 8.9
+
+
+Other based on BSD template
+===========================
+libpapi 7.0.1
+

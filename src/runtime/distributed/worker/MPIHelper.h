@@ -3,14 +3,13 @@
 
 #include <mpi.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/distributed/worker/MPISerializer.h>
 #include <runtime/distributed/worker/WorkerImpl.h>
 #include <unistd.h>
 #include <iostream>
 #include <sstream>
 #include <runtime/local/datastructures/AllocationDescriptorMPI.h>
 #include <runtime/local/datastructures/IAllocationDescriptor.h>
-
+#include <runtime/distributed/worker/WorkerImpl.h>
 
 #include <vector>
 
@@ -23,180 +22,235 @@ enum WorkerStatus{
     LISTENING=0, DETACHED, TERMINATED
 };
 
+class MPIHelper
+{
+public:
+    using StoredInfo = WorkerImpl::StoredInfo;
+    struct Task {
+    private:
+        struct Header {
+            size_t mlir_code_len;
+            size_t num_inputs;
+        } __attribute__((__packed__));
+    public:
+        std::string mlir_code;
+        std::vector<WorkerImpl::StoredInfo> inputs;
 
-class MPIHelper{
+        size_t sizeInBytes() { 
+            size_t len = 0;
+            len += sizeof(Header);
+            len += mlir_code.size();
+            len += sizeof(StoredInfo) * inputs.size();
+            return len;
+        }
+        void serialize(std::vector<char> &buffer){
+            Header h;
+            h.mlir_code_len = mlir_code.size();
+            h.num_inputs = inputs.size();
+            
+            buffer.reserve(this->sizeInBytes());
 
-        public:
-        static int getCommSize(){
-            int worldSize;
-            MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
-            return worldSize;    
-        }
-        
-        static WorkerImpl::StoredInfo constructStoredInfo(std::string input)
-        {
-            WorkerImpl::StoredInfo info;
-            std::stringstream s_stream(input);
-            std::vector<std::string> results;
-            while(s_stream.good()) {
-                std::string substr;
-                getline(s_stream, substr, ','); //get first string delimited by comma
-                results.push_back(substr);
-            }
-            info.identifier=results.at(0);
-            sscanf(results.at(1).c_str() , "%zu", &info.numRows);
-            sscanf(results.at(2).c_str() , "%zu", &info.numCols);
-            return info; 
-        }
-       
-        static distributed::Data getResults(int *rank){
-            size_t resultsLen=0;
-            void * results;
-            distributed::Data matProto;
-            getMessage(rank, OUTPUT, MPI_UNSIGNED_CHAR ,&results, &resultsLen);
-            MPISerializer::deserializeStructure(&matProto, results , resultsLen);
-           // std::cout<<"got results from "<<*rank<<std::endl;     
-            free(results);
-            return matProto;
-        }
-       
-        static WorkerImpl::StoredInfo getDataAcknowledgement(int *rank){
-            char * dataAcknowledgement;
-            size_t len;
-            getMessage(rank, DATAACK, MPI_CHAR, (void **)&dataAcknowledgement, &len);
-            std::string incomeAck = std::string(dataAcknowledgement);
-            WorkerImpl::StoredInfo info=constructStoredInfo(incomeAck);
-            free(dataAcknowledgement);
-            return info;  
-        }
-        static void sendObjectIdentifier(std::string identifier, int rank)
-        {
-            int len = identifier.length();
-            len++;
-            MPI_Send(&len,1, MPI_INT, rank, OBJECTIDENTIFIERSIZE, MPI_COMM_WORLD);
-            char message[len];
-            std::strcpy(message, identifier.c_str());
-            message[len-1]='\0'; 
-            MPI_Send(message,len, MPI_CHAR, rank, OBJECTIDENTIFIER, MPI_COMM_WORLD);
+            auto bufIdx = buffer.begin();
+            std::copy(reinterpret_cast<char*>(&h), reinterpret_cast<char*>(&h) + sizeof(h), bufIdx);
+            bufIdx += sizeof(h);
 
-        }
-        static void sendData(size_t messageLength, void * data){
-            int worldSize=getCommSize();
-            int  message= messageLength;
-            for(int rank=0; rank<worldSize;rank++)
-            {
-                if(rank==COORDINATOR)
-                    continue;          
-                MPI_Send(&message,1, MPI_INT, rank, BROADCAST, MPI_COMM_WORLD);                    
+            std::copy(mlir_code.begin(), mlir_code.end(), bufIdx);
+            bufIdx += mlir_code.size();
+                        
+            for (auto &inp : inputs){
+                size_t strLen = inp.identifier.size();
+                std::copy(reinterpret_cast<char*>(&strLen), reinterpret_cast<char*>(&strLen) + sizeof(strLen), bufIdx);
+                bufIdx += sizeof(strLen);
+                std::copy(inp.identifier.data(), inp.identifier.data() + strLen, bufIdx);
+                bufIdx += strLen;
+                std::copy(reinterpret_cast<char*>(&inp.numRows), reinterpret_cast<char*>(&inp.numRows) + sizeof(inp.numRows), bufIdx);
+                bufIdx += sizeof(inp.numRows);
+                std::copy(reinterpret_cast<char*>(&inp.numCols), reinterpret_cast<char*>(&inp.numCols) + sizeof(inp.numCols), bufIdx);
+                bufIdx += sizeof(inp.numCols);
             }
-            MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
         }
-       
-        static void distributeData(size_t messageLength, void * data, int rank){
-            distributeWithTag(DATA, messageLength, data, rank);
-        }
-       
-        static void distributeTask(size_t messageLength, void * data, int rank){
-            distributeWithTag(MLIR, messageLength, data, rank);
-        }
-       
-        static void displayDataStructure(Structure * inputStruct, std::string dataToDisplay)
-        {
-            DenseMatrix<double> *res= dynamic_cast<DenseMatrix<double>*>(inputStruct);
-            double * allValues = res->getValues();
-                for(size_t r = 0; r < res->getNumRows(); r++){
-                    for(size_t c = 0; c < res->getNumCols(); c++){
-                        dataToDisplay += std::to_string(allValues[c]) + " , " ;
-                    }
-                    dataToDisplay+= "\n";
-                    allValues += res->getRowSkip();
-                }
-                //std::cout<<dataToDisplay<<std::endl;
-        }
-        
-        static void displayData(distributed::Data data, int rank)
-        {
-            std::string dataToDisplay="rank "+ std::to_string(rank) + " got ";
-            if(data.matrix().matrix_case()){
-                const distributed::Matrix& mat = data.matrix();
-                dataToDisplay += "matrix :";
-                auto temp= DataObjectFactory::create<DenseMatrix<double>>(data.mutable_matrix()->num_rows(), data.mutable_matrix()->num_cols(), false);
-                DenseMatrix<double> *res =  dynamic_cast<DenseMatrix<double> *>(temp);
-                ProtoDataConverter<DenseMatrix<double>>::convertFromProto(mat, res);
-                displayDataStructure(res, dataToDisplay);
-                
-            }
-            else
-            {
-                dataToDisplay += " scalar  lf:";
-                dataToDisplay += std::to_string(data.value().f64());
-                //std::cout<<dataToDisplay<<std::endl;
+        void deserialize(const std::vector<char> &buffer){
+            size_t mlir_code_len = (size_t)((const Header*)buffer.data())->mlir_code_len;
+            size_t num_inputs = (size_t)((const Header*)buffer.data())->num_inputs;
 
+            auto bufIdx = buffer.begin();
+            bufIdx += sizeof(Header);
+
+            this->mlir_code.resize(mlir_code_len);
+            std::copy(bufIdx, bufIdx + mlir_code_len, mlir_code.begin());
+            bufIdx += mlir_code_len;
+            
+            this->inputs.resize(num_inputs);
+            
+            for (auto &inp : inputs){
+                size_t strLen;
+                std::copy(bufIdx, bufIdx + sizeof(strLen), reinterpret_cast<char*>(&strLen));
+                bufIdx += sizeof(strLen);
+                inp.identifier.resize(strLen);
+                std::copy(bufIdx, bufIdx + strLen, inp.identifier.data());
+                bufIdx += strLen;
+                std::copy(bufIdx, bufIdx + sizeof(inp.numRows), reinterpret_cast<char*>(&inp.numRows));
+                bufIdx += sizeof(inp.numRows);
+                std::copy(bufIdx, bufIdx + sizeof(inp.numCols), reinterpret_cast<char*>(&inp.numCols));
+                bufIdx += sizeof(inp.numCols);
             }
+        }
+    };
+
+    static int getCommSize()
+    {
+        int worldSize;
+        MPI_Comm_size(MPI_COMM_WORLD, &worldSize);
+        return worldSize;
+    }
+    
+
+    static WorkerImpl::StoredInfo constructStoredInfo(std::string input)
+    {
+        WorkerImpl::StoredInfo info;
+        std::stringstream s_stream(input);
+        std::vector<std::string> results;
+        while (s_stream.good())
+        {
+            std::string substr;
+            getline(s_stream, substr, ','); // get first string delimited by comma
+            results.push_back(substr);
+        }
+        info.identifier = results.at(0);
+        sscanf(results.at(1).c_str(), "%zu", &info.numRows);
+        sscanf(results.at(2).c_str(), "%zu", &info.numCols);
+        return info;
+    }
+
+    static std::vector<char> getResults(int rank)
+    {
+        size_t resultsLen = 0;
+        std::vector<char> buffer;
+        getMessageFrom(rank, OUTPUT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
+        // std::cout<<"got results from "<<*rank<<std::endl;        
+        return buffer;
+    }
+
+    static WorkerImpl::StoredInfo getDataAcknowledgement(int *rank)
+    {
+        std::vector<char> dataAcknowledgement;
+        size_t len;
+        getMessage(rank, DATAACK, MPI_CHAR, dataAcknowledgement, &len);
+        std::string incomeAck = std::string(dataAcknowledgement.data());
+        StoredInfo info = constructStoredInfo(incomeAck);        
+        return info;
+    }
+    static void sendObjectIdentifier(std::string identifier, int rank)
+    {
+        int len = identifier.length();
+        len++;
+        MPI_Send(&len, 1, MPI_INT, rank, OBJECTIDENTIFIERSIZE, MPI_COMM_WORLD);
+        char message[len];
+        std::strcpy(message, identifier.c_str());
+        message[len - 1] = '\0';
+        MPI_Send(message, len, MPI_CHAR, rank, OBJECTIDENTIFIER, MPI_COMM_WORLD);
+    }
+    static void sendData(size_t messageLength, void *data)
+    {
+        int worldSize = getCommSize();
+        int message = messageLength;
+        for (int rank = 0; rank < worldSize; rank++)
+        {
+            if (rank == COORDINATOR)
+                continue;
+            MPI_Send(&message, 1, MPI_INT, rank, BROADCAST, MPI_COMM_WORLD);
+        }
+        MPI_Bcast(data, message, MPI_UNSIGNED_CHAR, COORDINATOR, MPI_COMM_WORLD);
+    }
+
+    static void distributeData(size_t messageLength, void *data, int rank)
+    {
+        distributeWithTag(DATA, messageLength, data, rank);
+    }
+
+    static void distributeTask(size_t messageLength, void *data, int rank)
+    {
+        distributeWithTag(MLIR, messageLength, data, rank);
+    }
+
+    static void displayDataStructure(Structure *inputStruct, std::string dataToDisplay)
+    {
+        DenseMatrix<double> *res = dynamic_cast<DenseMatrix<double> *>(inputStruct);
+        double *allValues = res->getValues();
+        for (size_t r = 0; r < res->getNumRows(); r++)
+        {
+            for (size_t c = 0; c < res->getNumCols(); c++)
+            {
+                dataToDisplay += std::to_string(allValues[c]) + " , ";
+            }
+            dataToDisplay += "\n";
+            allValues += res->getRowSkip();
+        }
+        // std::cout<<dataToDisplay<<std::endl;
+    }
+
+
+    static void getMessage(int *rank, int tag, MPI_Datatype type, std::vector<char> &data, size_t *len)
+    {
+        int size;
+        MPI_Status status;
+        MPI_Probe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
+        MPI_Get_count(&status, type, &size);
+        *rank = status.MPI_SOURCE;
+        if (type == MPI_UNSIGNED_CHAR)
+        {
+            data.reserve(size * sizeof(unsigned char));
+        }
+        else if (type == MPI_CHAR)
+        {
+            data.reserve(size * sizeof(char));
+        }
+        MPI_Recv(data.data(), size, type, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
+        *len = size;
+    }
+
+    static void getMessageFrom(int rank, int tag, MPI_Datatype type, std::vector<char> &data, size_t *len)
+    {
+        int size;
+        MPI_Status status;
+        MPI_Probe(rank, tag, MPI_COMM_WORLD, &status);
+        MPI_Get_count(&status, type, &size);
+        if (type == MPI_UNSIGNED_CHAR)
+        {
+            data.reserve(size * sizeof(unsigned char));
+        }
+        else if (type == MPI_CHAR)
+        {
+            data.reserve(size * sizeof(unsigned char));
         }
 
-        static void getMessage(int * rank, int tag, MPI_Datatype type, void ** data, size_t * len)
-        {
-            int size;
-            MPI_Status status;
-            MPI_Probe(MPI_ANY_SOURCE, tag, MPI_COMM_WORLD, &status);
-            MPI_Get_count(&status, type, &size);
-            *rank=status.MPI_SOURCE;
-            if(type==MPI_UNSIGNED_CHAR)
-            {
-                *data = malloc(size * sizeof(unsigned char)); 
-            }
-            else if(type==MPI_CHAR)
-            {
-                *data = malloc(size * sizeof(char)); 
-            }
-            MPI_Recv(*data, size, type, status.MPI_SOURCE , tag, MPI_COMM_WORLD, &status);
-            *len=size;
-        }
-       
-        static void getMessageFrom(int rank, int tag, MPI_Datatype type, void ** data, size_t * len)
-        {
-            int size;
-            MPI_Status status;
-            MPI_Probe(rank, tag, MPI_COMM_WORLD, &status);
-            MPI_Get_count(&status, type, &size);
-            if(type==MPI_UNSIGNED_CHAR)
-            {
-                *data = malloc(size * sizeof(unsigned char)); 
-            }
-            else if(type==MPI_CHAR)
-            {
-                *data = malloc(size * sizeof(char)); 
-            }
+        MPI_Recv(data.data(), size, type, rank, tag, MPI_COMM_WORLD, &status);
+        *len = size;
+    }
 
-            MPI_Recv(*data,size, type, status.MPI_SOURCE , tag, MPI_COMM_WORLD, &status);
-            *len=size;
-        }
-        
-        static void distributeWithTag (TypesOfMessages tag, size_t messageLength, void * data, int rank)
+    static void distributeWithTag(TypesOfMessages tag, size_t messageLength, void *data, int rank)
+    {
+        if (rank == COORDINATOR)
+            return;
+        int message = messageLength;
+        int sizeTag = -1, dataTag = -1;
+        // std::cout<<"message size is "<< message << " tag "<< tag <<std::endl;
+        switch (tag)
         {
-            if(rank == COORDINATOR)
-                return;
-            int message = messageLength;
-            int sizeTag=-1, dataTag=-1;
-           // std::cout<<"message size is "<< message << " tag "<< tag <<std::endl;
-            switch(tag)
-            {
-                case DATA:
-                    sizeTag = DATASIZE;
-                    dataTag = DATA;
-                break;
-                case MLIR:
-                    sizeTag = MLIRSIZE;
-                    dataTag = MLIR;
-                default:
-                break;
-            }
-           // std::cout<<"message size is "<< message << " tag "<< sizeTag <<std::endl;
-            MPI_Send(&message,1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);                    
-            MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag ,MPI_COMM_WORLD);
+        case DATA:
+            sizeTag = DATASIZE;
+            dataTag = DATA;
+            break;
+        case MLIR:
+            sizeTag = MLIRSIZE;
+            dataTag = MLIR;
+        default:
+            break;
         }
+        // std::cout<<"message size is "<< message << " tag "<< sizeTag <<std::endl;
+        MPI_Send(&message, 1, MPI_INT, rank, sizeTag, MPI_COMM_WORLD);
+        MPI_Send(data, message, MPI_UNSIGNED_CHAR, rank, dataTag, MPI_COMM_WORLD);
+    }
 };
-
 
 #endif

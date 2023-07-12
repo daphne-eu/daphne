@@ -25,7 +25,6 @@
 #include <memory>
 #include <vector>
 #include <utility>
-#include <iostream>
 
 using namespace mlir;
 
@@ -158,9 +157,14 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
      */
     std::function<WalkResult(Operation*)> walkOp = [&](Operation * op) {
         // Type inference.
-        if(returnsUnknownType(op))
-            daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
-
+        try {
+            if (returnsUnknownType(op))
+                daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
+        }
+        catch (std::runtime_error& re) {
+            spdlog::error("Final catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+            signalPassFailure();
+        }
         // Inference of interesting properties.
         bool doShapeInference = cfg.shapeInference && returnsUnknownShape(op);
         bool doSparsityInference = cfg.sparsityInference && returnsUnknownSparsity(op);
@@ -458,7 +462,13 @@ public:
 
     void runOnOperation() override {
         func::FuncOp f = getOperation();
-        f.walk<WalkOrder::PreOrder>(walkOp);
+        try {
+            f.walk<WalkOrder::PreOrder>(walkOp);
+        }
+        catch (std::runtime_error& re) {
+            spdlog::error("Final catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+            return;
+        }
         // infer function return types
         f.setType(FunctionType::get(&getContext(),
             f.getFunctionType().getInputs(),

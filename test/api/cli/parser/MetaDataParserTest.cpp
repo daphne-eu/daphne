@@ -79,7 +79,8 @@ TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER,
     using DT = TestType;
     
     const std::filesystem::path metaDataFile(dirPath + "WriteMatrixMetaData.meta");
-    
+    const std::filesystem::path metaDataFileNoSuffix(dirPath + "WriteMatrixMetaData");
+
     auto m = genGivenVals<DT>(3, {
             0, 0, 1, 0,
             0, 0, 0, 0,
@@ -87,9 +88,9 @@ TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER,
     });
     
     FileMetaData metaData(m->getNumRows(), m->getNumCols(), true, ValueTypeUtils::codeFor<typename DT::VT>);
-    MetaDataParser::writeMetaData(metaDataFile, metaData);
+    MetaDataParser::writeMetaData(metaDataFileNoSuffix, metaData);
     
-    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
+    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFileNoSuffix));
 
     // cleanup
     if(std::filesystem::exists(metaDataFile)) {
@@ -100,15 +101,17 @@ TEMPLATE_PRODUCT_TEST_CASE("Write proper meta data file for Matrix", TAG_PARSER,
 TEST_CASE("Write proper meta data file for Frame", TAG_PARSER)
 {
     const std::filesystem::path metaDataFile(dirPath + "WriteFrameMetaData.meta");
-    
+    // the writeMataData method adds the .meta suffix so we need one version here without it
+    const std::filesystem::path metaDataFileNoSuffix(dirPath + "WriteFrameMetaData");
+
     std::vector<ValueTypeCode> schema = {ValueTypeCode::SI64, ValueTypeCode::F64};
     std::vector<std::string> labels = {"foo", "bar"};
     auto f = DataObjectFactory::create<Frame>(4, 2, schema.data(), labels.data(), false);
     FileMetaData metaData(f->getNumRows(), f->getNumCols(), false, schema, labels, -1);
     
-    MetaDataParser::writeMetaData(metaDataFile, metaData);
+    MetaDataParser::writeMetaData(metaDataFileNoSuffix, metaData);
     
-    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFile));
+    REQUIRE_NOTHROW(MetaDataParser::readMetaData(metaDataFileNoSuffix));
 
     // cleanup
     if(std::filesystem::exists(metaDataFile)) {

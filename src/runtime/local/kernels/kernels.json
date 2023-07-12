@@ -3,10 +3,14 @@
         "kernelTemplate": {
             "header": "AggAll.h",
             "opName": "aggAll",
-            "returnType": "typename DT::VT",
+            "returnType": "VTRes",
             "templateParams": [
                 {
-                    "name": "DT",
+                    "name": "VTRes",
+                    "isDataType": false
+                },
+                {
+                    "name": "DTArg",
                     "isDataType": true
                 }
             ],
@@ -16,17 +20,21 @@
                     "name": "opCode"
                 },
                 {
-                    "type": "const DT *",
+                    "type": "const DTArg *",
                     "name": "arg"
                 }
             ]
         },
         "instantiations": [
-            [["DenseMatrix", "float"]],
-            [["DenseMatrix", "double"]],
-            [["DenseMatrix", "int64_t"]],
-            [["CSRMatrix", "double"]],
-            [["CSRMatrix", "int64_t"]]
+            ["float", ["DenseMatrix", "float"]],
+            ["double", ["DenseMatrix", "double"]],
+            ["int64_t", ["DenseMatrix", "int64_t"]],
+            ["double", ["DenseMatrix", "int64_t"]],
+            ["float", ["DenseMatrix", "int64_t"]],
+            ["double", ["CSRMatrix", "double"]],
+            ["int64_t", ["CSRMatrix", "int64_t"]],
+            ["double", ["CSRMatrix", "int64_t"]],
+            ["float", ["CSRMatrix", "int64_t"]]
         ],
         "opCodes": ["SUM", "MIN", "MAX", "MEAN"]
     },
@@ -76,12 +84,53 @@
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
-                    [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+                    [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],
+                    [["DenseMatrix", "double"], ["CSRMatrix", "int64_t"]],
+                    [["DenseMatrix", "float"], ["CSRMatrix", "int64_t"]]
                 ],
                 "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
             }
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "AggCum.h",
+            "opName": "aggCum",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": ["SUM", "PROD", "MIN", "MAX"]
     },
     {
         "kernelTemplate": {
@@ -117,11 +166,15 @@
             [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]],
             [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
 
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
-            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]]
+            [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],
+            [["DenseMatrix", "float"], ["CSRMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["CSRMatrix", "int64_t"]]
         ],
         "opCodes": ["SUM", "MIN", "MAX", "MEAN", "IDXMIN", "IDXMAX"]
     },
@@ -397,40 +450,115 @@
         },
         "instantiations": [
             ["double", "double"],
+            ["double", "float"],
             ["double", "int64_t"],
+            ["double", "int32_t"],
+            ["double", "int8_t"],
+            ["double", "uint64_t"],
+            ["double", "uint32_t"],
+            ["double", "uint8_t"],
             ["double", "size_t"],
             ["double", "bool"],
-            ["float", "float"],
             ["float", "double"],
-            ["float", "size_t"],
-            ["float", "uint32_t"],
+            ["float", "float"],
             ["float", "int64_t"],
+            ["float", "int32_t"],
+            ["float", "int8_t"],
+            ["float", "uint64_t"],
+            ["float", "uint32_t"],
+            ["float", "uint8_t"],
+            ["float", "size_t"],
+            ["float", "bool"],
             ["int64_t", "double"],
             ["int64_t", "float"],
             ["int64_t", "int64_t"],
-            ["int64_t", "size_t"],
+            ["int64_t", "int32_t"],
+            ["int64_t", "int8_t"],
+            ["int64_t", "uint64_t"],
             ["int64_t", "uint32_t"],
+            ["int64_t", "uint8_t"],
+            ["int64_t", "size_t"],
             ["int64_t", "bool"],
+            ["int32_t", "double"],
+            ["int32_t", "float"],
+            ["int32_t", "int64_t"],
+            ["int32_t", "int32_t"],
+            ["int32_t", "int8_t"],
+            ["int32_t", "uint64_t"],
+            ["int32_t", "uint32_t"],
+            ["int32_t", "uint8_t"],
+            ["int32_t", "size_t"],
+            ["int32_t", "bool"],
+            ["int8_t", "double"],
+            ["int8_t", "float"],
+            ["int8_t", "int64_t"],
+            ["int8_t", "int32_t"],
+            ["int8_t", "int8_t"],
+            ["int8_t", "uint64_t"],
+            ["int8_t", "uint32_t"],
+            ["int8_t", "uint8_t"],
+            ["int8_t", "size_t"],
+            ["int8_t", "bool"],
+            ["uint64_t", "double"],
+            ["uint64_t", "float"],
+            ["uint64_t", "int64_t"],
+            ["uint64_t", "int32_t"],
+            ["uint64_t", "int8_t"],
+            ["uint64_t", "uint64_t"],
+            ["uint64_t", "uint32_t"],
+            ["uint64_t", "uint8_t"],
+            ["uint64_t", "size_t"],
+            ["uint64_t", "bool"],
+            ["uint32_t", "double"],
+            ["uint32_t", "float"],
+            ["uint32_t", "int64_t"],
+            ["uint32_t", "int32_t"],
+            ["uint32_t", "int8_t"],
+            ["uint32_t", "uint64_t"],
+            ["uint32_t", "uint32_t"],
+            ["uint32_t", "uint8_t"],
+            ["uint32_t", "size_t"],
+            ["uint32_t", "bool"],
+            ["uint8_t", "double"],
+            ["uint8_t", "float"],
+            ["uint8_t", "int64_t"],
+            ["uint8_t", "int32_t"],
+            ["uint8_t", "int8_t"],
+            ["uint8_t", "uint64_t"],
+            ["uint8_t", "uint32_t"],
+            ["uint8_t", "uint8_t"],
+            ["uint8_t", "size_t"],
+            ["uint8_t", "bool"],
             ["size_t", "double"],
+            ["size_t", "float"],
             ["size_t", "int64_t"],
-            ["size_t", "uint32_t"],
+            ["size_t", "int32_t"],
+            ["size_t", "int8_t"],
             ["size_t", "uint64_t"],
+            ["size_t", "uint32_t"],
+            ["size_t", "uint8_t"],
             ["size_t", "size_t"],
             ["size_t", "bool"],
             ["bool", "double"],
+            ["bool", "float"],
             ["bool", "int64_t"],
+            ["bool", "int32_t"],
+            ["bool", "int8_t"],
             ["bool", "uint64_t"],
+            ["bool", "uint32_t"],
+            ["bool", "uint8_t"],
             ["bool", "size_t"],
-            ["uint32_t", "uint8_t"],
-            ["uint32_t", "int64_t"],
-            ["uint64_t", "double"],
-            ["uint64_t", "int64_t"],
-            ["uint32_t", "size_t"],
-            ["uint32_t", "float"],
-            ["uint8_t", "int64_t"],
             ["bool", "bool"],
             ["const char *", "double"],
-            ["const char *", "int64_t"]
+            ["const char *", "float"],
+            ["const char *", "int64_t"],
+            ["const char *", "int32_t"],
+            ["const char *", "int8_t"],
+            ["const char *", "uint64_t"],
+            ["const char *", "uint32_t"],
+            ["const char *", "uint8_t"],
+            ["const char *", "size_t"],
+            ["const char *", "bool"]
         ]
     },
     {
@@ -946,6 +1074,56 @@
             ["size_t", "size_t", "size_t"]
         ],
         "opCodes": ["ADD", "SUB", "MUL", "DIV", "POW", "LOG", "MOD", "EQ", "NEQ", "LT", "LE", "GT", "GE", "MIN", "MAX", "AND", "OR"]
+    },
+    {
+        "kernelTemplate": {
+            "header": "OuterBinary.h",
+            "opName": "outerBinary",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "rhs"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
+        ],
+        "opCodes": [
+            "ADD", "SUB", "MUL", "DIV", "POW", "MOD", "LOG",
+            "MIN", "MAX",
+            "AND", "OR",
+            "EQ", "NEQ", "LT", "LE", "GT", "GE"
+        ]
     },
     {
         "kernelTemplate": {
@@ -1702,6 +1880,13 @@
                 "instantiations": [
                     [["DenseMatrix", "float"], ["DenseMatrix", "float"], ["DenseMatrix", "float"]],
                     [["DenseMatrix", "double"], ["DenseMatrix", "double"], ["DenseMatrix", "double"]]
+                ]
+            },
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"]],
+                    [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]]
                 ]
             },
              {

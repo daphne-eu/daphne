@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include <runtime/local/io/DaphneSerializer.h>
 #include "DenseMatrix.h"
 
 #include <spdlog/spdlog.h>
@@ -58,12 +59,12 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
         lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
     assert(src && "src must not be null");
-    assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+    assert(((rowLowerIncl < src->numRows) || rowLowerIncl == 0) && "rowLowerIncl is out of bounds");
     assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-    assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
-    assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+    assert((rowLowerIncl <= rowUpperExcl) && "rowLowerIncl must be lower or equal than rowUpperExcl");
+    assert(((colLowerIncl < src->numCols) || colLowerIncl == 0) && "colLowerIncl is out of bounds");
     assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
-    assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
+    assert((colLowerIncl <= colUpperExcl) && "colLowerIncl must be lower or equal than colUpperExcl");
     
     this->row_offset = rowLowerIncl;
     this->col_offset = colLowerIncl;
@@ -217,6 +218,16 @@ void DenseMatrix<ValueType>::alloc_shared_values(std::shared_ptr<ValueType[]> sr
     else
 //        values = std::shared_ptr<ValueType[]>(new ValueType[numRows*numCols]);
         values = std::shared_ptr<ValueType[]>(new ValueType[numRows * getRowSkip()]);
+}
+
+template<typename ValueType>
+size_t DenseMatrix<ValueType>::serialize(std::vector<char> &buf) const {
+    return DaphneSerializer<DenseMatrix<ValueType>>::serialize(this, buf);
+}
+
+template<>
+size_t DenseMatrix<bool>::serialize(std::vector<char> &buf) const{
+    throw std::runtime_error("DenseMatrix<bool> serialization not implemented");
 }
 
 // ----------------------------------------------------------------------------
