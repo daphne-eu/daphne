@@ -86,8 +86,12 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             if(userConfig_.explain_property_inference)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 
-            if(userConfig_.use_columnar)
+            if(userConfig_.use_columnar) {
                 pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+                pm.addPass(mlir::createCanonicalizerPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
+            }
             if(userConfig_.explain_columnar)    
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
 

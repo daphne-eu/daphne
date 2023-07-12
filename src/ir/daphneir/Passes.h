@@ -48,6 +48,7 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createProfilingPass();
     std::unique_ptr<Pass> createLowerToLLVMPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createManageObjRefsPass();
+    std::unique_ptr<Pass> createOptimizeColumnarOpPass();
     std::unique_ptr<Pass> createPhyOperatorSelectionPass();
     std::unique_ptr<Pass> createPrintIRPass(std::string message = "");
     std::unique_ptr<Pass> createRewriteColumnarOpPass();
