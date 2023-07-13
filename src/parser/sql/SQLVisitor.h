@@ -98,7 +98,7 @@ class SQLVisitor : public SQLGrammarVisitor {
     /**
      * @brief returns the frame only containing a column with given name as string.
      */
-    mlir::Value extractFrameFromFrame(mlir::Value frame,std::string columnName);
+    mlir::Value extractFrameFromFrame(mlir::Value frame, mlir::Value columnName);
 
 
 //Data Structures and access functions
@@ -220,7 +220,7 @@ public:
 //generalExpr
     antlrcpp::Any visitLiteralExpr(SQLGrammarParser::LiteralExprContext * ctx) override;
 
-    antlrcpp::Any visitStarExpr(SQLGrammarParser::StarExprContext * ctx) override;
+    antlrcpp::Any visitStarIdent(SQLGrammarParser::StarIdentContext * ctx) override;
 
     antlrcpp::Any visitIdentifierExpr(SQLGrammarParser::IdentifierExprContext * ctx) override;
 

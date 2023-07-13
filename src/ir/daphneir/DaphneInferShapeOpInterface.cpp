@@ -402,6 +402,35 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     return {{srcNumRows, resNumCols}};
 }
 
+std::vector<std::pair<ssize_t, ssize_t>> daphne::ExtractColOp::inferShape() {
+    auto ft = getSource().getType().dyn_cast<daphne::FrameType>();
+    auto srcNumRows = ft.getNumRows();
+    auto st = getSelectedCols().getType().dyn_cast<daphne::StringType>();
+    std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
+    std::string delimiter = ".";
+    const std::string frameName = label.substr(0, label.find(delimiter));
+    const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
+    if(ft && st && colLabel.compare("*") == 0) {
+        std::vector<std::string> labels = *ft.getLabels();
+        ssize_t numCols = 0;
+        for (int i = 0; i < labels.size(); i++) {
+            std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+            if (labelFrameName.compare(frameName) == 0) {
+                numCols++;
+            }
+        }
+        return {{srcNumRows, numCols}};
+    }
+    else if(ft && st) {
+        return {{srcNumRows, 1}};
+    }
+    else
+        throw std::runtime_error(
+                "currently, ExtractColOp can only infer its shape for frame "
+                "inputs and a single column name"
+        );
+}
+
 // ****************************************************************************
 // Shape inference trait implementations
 // ****************************************************************************

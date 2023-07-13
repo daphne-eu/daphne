@@ -394,10 +394,8 @@ std::string SQLVisitor::getEnumLabelExt(const std::string &func){
 
 mlir::Value SQLVisitor::extractFrameFromFrame(
     mlir::Value frame,
-    std::string columnName
+    mlir::Value columnName
 ) {
-    mlir::Value colname = createStringConstant(columnName);
-
     mlir::Location loc = builder.getUnknownLoc();
 
     mlir::Type vt = utils.unknownType;
@@ -410,7 +408,7 @@ mlir::Value SQLVisitor::extractFrameFromFrame(
             loc,
             resTypeCol,
             currentFrame,
-            colname
+            columnName
         )
     ));
 }
@@ -896,7 +894,8 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
 {
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
         && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
-        && grouped[ctx->selectIdent()->getText()] == 0) //AND the label is not in group expr
+        && grouped[ctx->selectIdent()->getText()] == 0 //AND the label is not in group expr
+        && grouped["*"] == 0) //AND there is no * in group expr
     {
         std::stringstream err_msg;
         err_msg << "Error during a generalExpr. \""
@@ -908,13 +907,21 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         return nullptr;
     }
+    
+    auto label = ctx->selectIdent()->getText();
+    if(label.compare("*") == 0){                                        //SELECT *
+        return utils.valueOrError(visit(ctx->selectIdent()));
+    } else if(label.compare(label.length() - 2, 2, ".*") == 0){      //SELECT frame.*
+        mlir::Value colname = utils.valueOrError(visit(ctx->selectIdent()));
+        return extractFrameFromFrame(currentFrame, colname);
+    }
 
     mlir::Value colname = utils.valueOrError(visit(ctx->selectIdent()));
     return extractMatrixFromFrame(currentFrame, colname);
 }
 
-antlrcpp::Any SQLVisitor::visitStarExpr(
-    SQLGrammarParser::StarExprContext * ctx
+antlrcpp::Any SQLVisitor::visitStarIdent(
+    SQLGrammarParser::StarIdentContext * ctx
 )
 {
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
@@ -925,10 +932,13 @@ antlrcpp::Any SQLVisitor::visitStarExpr(
         std::string columnName = groundGroupColumns.begin()->c_str();
         groundGroupColumns.erase(groundGroupColumns.begin());
 
-        mlir::Value resultFrame = extractFrameFromFrame(currentFrame, columnName);
+        mlir::Value colname = createStringConstant(columnName);
+
+        mlir::Value resultFrame = extractFrameFromFrame(currentFrame, colname);
         std::set<std::string>::iterator itr;
         for (itr = groundGroupColumns.begin(); itr != groundGroupColumns.end(); itr++ ) {
-            mlir::Value addFrame = extractFrameFromFrame(currentFrame, itr->c_str());
+            mlir::Value groupColname = createStringConstant(itr->c_str());
+            mlir::Value addFrame = extractFrameFromFrame(currentFrame, groupColname);
 
             std::vector<mlir::Type> colTypes;
             for(mlir::Type t : resultFrame.getType().dyn_cast<mlir::daphne::FrameType>().getColumnTypes())

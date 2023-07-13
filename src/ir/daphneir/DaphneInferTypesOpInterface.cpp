@@ -110,7 +110,23 @@ std::vector<Type> daphne::CastOp::inferTypes() {
 std::vector<Type> daphne::ExtractColOp::inferTypes() {
     auto ft = getSource().getType().dyn_cast<daphne::FrameType>();
     auto st = getSelectedCols().getType().dyn_cast<daphne::StringType>();
-    if(ft && st) {
+    std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
+    std::string delimiter = ".";
+    const std::string frameName = label.substr(0, label.find(delimiter));
+    const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
+    if(ft && st && colLabel.compare("*") == 0) {
+        std::vector<std::string> labels = *ft.getLabels();
+        std::vector<mlir::Type> colTypes = ft.getColumnTypes();
+        std::vector<mlir::Type> resultColTypes;
+        for (int i = 0; i < labels.size(); i++) {
+            std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+            if (labelFrameName.compare(frameName) == 0) {
+                resultColTypes.push_back(colTypes[i]);
+            }
+        }
+        return {daphne::FrameType::get(getContext(), resultColTypes)};
+    }
+    else if(ft && st) {
         Type vt = getFrameColumnTypeByLabel(ft, getSelectedCols());
         return {daphne::FrameType::get(getContext(), {vt})};
     }
