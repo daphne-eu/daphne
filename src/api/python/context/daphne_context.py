@@ -30,6 +30,7 @@ from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
+from api.python.operator.nodes.do_while_loop import DoWhileLoop
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -189,6 +190,19 @@ class DaphneContext(object):
         node = WhileLoop(self, cond, callback, input_nodes)
         return node.get_output()
     
+    def do_while_loop(self, input_nodes: List['Matrix'], cond: Callable, callback: Callable) -> Tuple['Matrix']:
+        """
+        Generates a do-while-loop block for lazy evaluation.
+        The generated block/operation cannot be directly computed
+        but any of the outputs can.
+        :param input_nodes: matrices for manipulation
+        :param cond: the condition (n arguments, 1 return value)
+        :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
+        :return: manipulated matrices (length n)
+        """
+        node = DoWhileLoop(self, cond, callback, input_nodes)
+        return node.get_output()
+
     def logical_and(self, left_operand: 'Scalar', right_operand: 'Scalar'):
         """
         Logical AND operation for lazy evaluation. 
