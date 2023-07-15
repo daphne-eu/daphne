@@ -41,6 +41,7 @@ class ForLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', callback: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
                  named_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'ForLoop':
+        self.nested_level = 0  # default value
         _named_input_nodes = copy(named_input_nodes)
         _unnamed_input_nodes = copy(unnamed_input_nodes)
 
@@ -51,12 +52,7 @@ class ForLoop(OperationNode):
         self.iter_num = Scalar(self, "0", assign=True)
         _named_input_nodes.update({"iter": self.iter_num})
 
-        self._callback = callback(*unnamed_input_nodes, _named_input_nodes['iter'])
-        if (not isinstance(self._callback, tuple)):
-            self._callback = (self._callback, )
-
-        if len(self._callback) != len(unnamed_input_nodes):
-            raise ValueError(f"{callback} and does not have the same number return values as input nodes")
+        self.callback = lambda: callback(*unnamed_input_nodes, _named_input_nodes['iter'])
 
         outer_vars = analyzer.get_outer_scope_variables(callback)
         for node in outer_vars.values():
@@ -78,14 +74,11 @@ class ForLoop(OperationNode):
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        # var_name is reserved for the operation but never used
-
-        parent_level = 1  # default
-        if self._script:
-            parent_level = self._script._nested_level
-
-        script = NestedDaphneDSLScript(self.daphne_context, parent_level+1)
-        names = script.build_code(self._callback)
+        callback_outputs = self.callback()
+        if (not isinstance(callback_outputs, tuple)):
+            callback_outputs = (callback_outputs, )
+        script = NestedDaphneDSLScript(self.daphne_context, self.nested_level + 1)
+        names = script.build_code(callback_outputs)
 
         step = str()
         if named_input_vars['step'] != "None":

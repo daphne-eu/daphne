@@ -51,6 +51,11 @@ class NestedDaphneDSLScript(DaphneDSLScript):
 
     def execute(self):
         raise TypeError("NestedDaphneDSLScript can not be executed!")
+    
+    def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
+        if isinstance(dag_node, OperationNode) and dag_node._source_node is not None:
+            dag_node._source_node.nested_level += 1
+        return super()._dfs_dag_nodes(dag_node)
 
     def _next_unique_var(self)->str:
         var_id = self._variable_counter
