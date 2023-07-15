@@ -121,3 +121,72 @@ In the following, we describe only the latter.
 **Input/output:**
 
 - **`print`**`()`
+
+
+## Building Complex Control Structures
+Complex control structures like `if-then-else`, `for-loops`, `while-loops` and `do-while-loops` can be built using DAPHNE context methods. These can be used to manipulate matrices only (DAPHNE matrix) and are lazy evaluated. Futhermore, user-defined functions can created to build more complex code snippets which can then be again lazy evaluated. The user-defined functions can manipulate all DAPHNE data objects (matrix/frame/scalar).
+
+The following references assume that the required DAPHNE context object is initialized as:
+```python
+dctx = DaphneContext()
+```
+
+### **if-then-else**
+**`dctx.cond(input_nodes, pred, true_fn, false_fn)`**
+
+* input_nodes: List['Matrix']
+* pred: Callable  *(0 arguments, 1 return value)*
+* true_fn: Callable  *(n arguments, n return values, n=[1, ...])*
+* false_fn: Callable  *(n arguments, n return values, n=[1, ...])*
+* returns: Tuple['Matrix']  *(length n)*
+
+### **for-loops**
+**`dctx.for_loop(input_nodes, callback, start, end, step)`**
+
+* input_nodes: List['Matrix']
+* callback: Callable  *(n+1 arguments, n return values, n=[1, ...])*
+* start: int
+* end: int
+* step: Union[int, None]
+* returns: Tuple['Matrix']  *(length n)*
+
+\* *callback* expects as last argument the interation variable and this is suppose to be used as a scalar.
+
+### **while-loops**
+**`dctx.while_loop(input_nodes, cond, callback)`**
+
+* input_nodes: List['Matrix']
+* cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
+* callback: Callable  *(n arguments, n return values)*
+* returns: Tuple['Matrix']  *(length n)*
+
+### **do-while-loops**
+**`dctx.d0_while_loop(input_nodes, cond, callback)`**
+
+* input_nodes: List['Matrix']
+* cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
+* callback: Callable  *(n arguments, n return values)*
+* returns: Tuple['Matrix']  *(length n)*
+
+### **user-defined functions**
+**`@dctx.function`** <-> **`dctx.function(callback)`**
+
+* callback: Callable
+* returns: Tuple['OperationNode']  *(length equals the return values of callback)*
+
+\* if the decorator is used the *callback* is defined right below it like regular Python method
+
+### logical operators
+Logical *and* (`&&`) and *or* (`||`) operators can be used for the conditions for `while-loops` and `do-while-loops` as well as for the predicates for `if-then-else` statements.
+
+**`dctx.logical_and(left_operand, right_operand)`**
+
+* left_operand: 'Scalar'
+* right_operand: 'Scalar'
+* returns: 'Scalar'
+
+**`dctx.logical_or(left_operand, right_operand)`**
+
+* left_operand: 'Scalar'
+* right_operand: 'Scalar'
+* returns: 'Scalar'
