@@ -39,26 +39,17 @@ if TYPE_CHECKING:
 class WhileLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', cond: Callable, callback: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'WhileLoop':
+        self.nested_level = 0  # default value
         _named_input_nodes = dict()
         _unnamed_input_nodes = copy(unnamed_input_nodes)
 
         if analyzer.get_number_argument(cond) != analyzer.get_number_argument(callback):
-            raise ValueError(f"{cond} and {callback} do not have the same number of arguents")
+            raise ValueError(f"{cond} and {callback} do not have the same number of arguments")
         elif analyzer.get_number_argument(callback) != len(unnamed_input_nodes):
             raise ValueError(f"{callback} does not have the same number of arguments as input nodes")
 
-        self._callback = callback(*unnamed_input_nodes)
-        if (not isinstance(self._callback, tuple)):
-            self._callback = (self._callback, )
-
-        self._cond = cond(*unnamed_input_nodes)
-        if (not isinstance(self._cond, tuple)):
-            self._cond = (self._cond, )
-
-        if len(self._callback) != len(unnamed_input_nodes):
-            raise ValueError(f"{callback} and does not have the same number return values as input nodes")
-        elif len(self._cond) != 1:
-            raise ValueError(f"{cond} do not have the 1 return value, but that is required")
+        self.callback = lambda: callback(*unnamed_input_nodes)
+        self.cond = lambda: cond(*unnamed_input_nodes)
 
         outer_vars_cond = analyzer.get_outer_scope_variables(cond)
         for node in outer_vars_cond.values():
@@ -85,17 +76,17 @@ class WhileLoop(OperationNode):
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        # var_name is reserved for the operation but never used
-
-        parent_level = 1  # default
-        if self._script:
-            parent_level = self._script._nested_level
-
-        callback_script = NestedDaphneDSLScript(self.daphne_context, parent_level+1)
-        callback_names = callback_script.build_code(self._callback)
+        callback_outputs = self.callback()
+        if (not isinstance(callback_outputs, tuple)):
+            callback_outputs = (callback_outputs, )
+        callback_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level)
+        callback_names = callback_script.build_code(callback_outputs)
         
-        cond_script = NestedDaphneDSLScript(self.daphne_context, parent_level + 1, 'C')
-        cond_name = cond_script.build_code(self._cond)[0]
+        cond_outputs = self.cond()
+        if (not isinstance(cond_outputs, tuple)):
+            cond_outputs = (cond_outputs, )
+        cond_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level + 1, 'C')
+        cond_name = cond_script.build_code(cond_outputs)[0]
 
         callback_body = callback_script.daphnedsl_script
         for i, name in enumerate(callback_names):

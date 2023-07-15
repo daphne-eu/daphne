@@ -45,7 +45,6 @@ class DaphneDSLScript:
         self.inputs = {}
         self.out_var_name = []
         self._variable_counter = 0
-        self._nested_level = 0
     
     def build_code(self, dag_root: DAGNode, type="shared memory"):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
@@ -152,12 +151,12 @@ class DaphneDSLScript:
         dag_node._daphnedsl_name = ""
         for n in dag_node.unnamed_input_nodes:
             self._dfs_clear_dag_nodes(n)
+        if dag_node._source_node is not None:
+            self._dfs_clear_dag_nodes(dag_node._source_node)
         if not dag_node.named_input_nodes:
             return
         for name,n in dag_node._named_input_nodes.items():
             self._dfs_clear_dag_nodes(n)
-        if dag_node._source_node is not None:
-            self._dfs_clear_dag_nodes(dag_node._source_node)
 
     def _next_unique_var(self)->str:
         var_id = self._variable_counter

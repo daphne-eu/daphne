@@ -39,6 +39,7 @@ if TYPE_CHECKING:
 class Cond(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', pred: Callable, true_fn: Callable, false_fn: Callable, 
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'Cond':
+        self.nested_level = 0  # default value
         _named_input_nodes = dict()
         _unnamed_input_nodes = copy(unnamed_input_nodes)
 
@@ -51,18 +52,8 @@ class Cond(OperationNode):
         elif isinstance(pred(), tuple):
             raise ValueError(f"{pred} has more then 1 return values")
         
-        self._true_fn = true_fn(*unnamed_input_nodes)
-        if (not isinstance(self._true_fn, tuple)):
-            self._true_fn = (self._true_fn, )
-
-        self._false_fn = false_fn(*unnamed_input_nodes)
-        if (not isinstance(self._false_fn, tuple)):
-            self._false_fn = (self._false_fn, )
-
-        if len(self._true_fn) != len(self._false_fn):
-            raise ValueError(f"{true_fn} and {false_fn} do not have the same number return values")
-        elif len(self._true_fn) != len(unnamed_input_nodes):
-            raise ValueError(f"{true_fn} and {false_fn} do not have the same number return values as input nodes")
+        self.true_fn = lambda: true_fn(*unnamed_input_nodes)
+        self.false_fn = lambda: false_fn(*unnamed_input_nodes)
 
         outer_vars_true = analyzer.get_outer_scope_variables(true_fn)
         outer_vars_false = analyzer.get_outer_scope_variables(false_fn)
@@ -92,17 +83,17 @@ class Cond(OperationNode):
         
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
-        # var_name is reserved for the operation but never used
+        true_fn_outputs = self.true_fn()
+        if (not isinstance(true_fn_outputs, tuple)):
+            true_fn_outputs = (true_fn_outputs, )
+        true_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level + 1)
+        true_names = true_script.build_code(true_fn_outputs)
 
-        parent_level = 1  # default
-        if self._script:
-            parent_level = self._script._nested_level
-
-        true_script = NestedDaphneDSLScript(self.daphne_context, parent_level+1)
-        true_names = true_script.build_code(self._true_fn)
-
-        false_script = NestedDaphneDSLScript(self.daphne_context, parent_level+1)
-        false_names = false_script.build_code(self._false_fn)
+        false_fn_outputs = self.false_fn()
+        if (not isinstance(false_fn_outputs, tuple)):
+            false_fn_outputs = (false_fn_outputs, )
+        false_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level + 1)
+        false_names = false_script.build_code(false_fn_outputs)
 
         true_body = true_script.daphnedsl_script
         for i, name in enumerate(true_names):

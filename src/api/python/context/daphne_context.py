@@ -186,7 +186,7 @@ class DaphneContext(object):
         :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
         :return: manipulated matrices (length n)
         """
-        node =  WhileLoop(self, cond, callback, input_nodes)
+        node = WhileLoop(self, cond, callback, input_nodes)
         return node.get_output()
     
     def logical_and(self, left_operand: 'Scalar', right_operand: 'Scalar'):
@@ -216,5 +216,10 @@ class DaphneContext(object):
         :return: output nodes (matrices, scalars or frames)
         """
         def dctx_function(*args):
-            return callback(*args)
+            output = callback(*args)
+            # make the ouput representation compatible with all functions for for complex control flow
+            if (not isinstance(output, tuple)):
+                output = (output, )
+            return output
+        
         return dctx_function
