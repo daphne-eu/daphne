@@ -168,21 +168,3 @@ add_dependencies(theta_join_test daphne DistributedWorker)
 target_link_libraries(theta_join_test PRIVATE ${LIBS})
 target_compile_options(theta_join_test PUBLIC -g -O0)
 
-# TSL Tests
-add_executable(TSL_test run_tests.cpp runtime/local/kernels/TSL/TSLTest.cpp)
-set_target_properties(TSL_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
-
-# include_dir, binary_dir
-# add_subdirectory( ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL ${PROJECT_SOURCE_DIR}/build/_deps/simdoperators-src/src)
-
-add_dependencies(TSL_test daphne DistributedWorker)
-
-# find_package(tvl REQUIRED)
-
-target_link_libraries(TSL_test PUBLIC ${LIBS} tsl SIMDOperators)
-# target_link_libraries(TSL_test tvl)
-target_include_directories(TSL_test PUBLIC ${PROJECT_SOURCE_DIR}/thirdparty/installed/include/TSL/include)
-# target_compile_options(TSL_test PUBLIC -g -O0 -mavx512f -mavx -msse -msse4.1 -mavx2 -mavx512dq -mavx512cd -mavx512bw -msse4.2 -msse2 -mavx512vl -mbmi2 -mavx512vbmi2 -mssse3 -Wno-ignored-attributes -Wno-deprecated-declarations -flax-vector-conversions)
-target_compile_options(TSL_test PUBLIC -g -O0 )
-set_property(TARGET TSL_test PROPERTY CXX_STANDARD 20)
-
