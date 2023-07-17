@@ -50,13 +50,7 @@ loc(fused["scripts/algorithms/components.daph":40:17, "scripts/algorithms/compon
 ```bash
 bin/daphne scripts/algorithms/gnmf.daph rank=2 n=100 e=500 W=\"outW.csv\" H=\"outH.csv\"
 ```
-*Does not work with vectorized execution (`--vec`) at the moment.*
-<!-- error with --vec:
-terminate called after throwing an instance of 'std::runtime_error'
-terminate called recursively
-  what():  colIdx is out of bounds
-Aborted (core dumped)
--->
+*Does not work with vectorized execution (`--vec`) at the moment (executes, but with different results).*
 
 ### Linear Regression using the Direct Solve method
 
@@ -77,14 +71,20 @@ bin/daphne scripts/algorithms/lmDS.daph XY=\"data/wine.csv\" icpt=0 reg=0.000000
 ```bash
 bin/daphne scripts/algorithms/multiLogReg.daph XY=\"data/wine.csv\" B=\"output.csv\"
 ```
-<!-- successful with --vec -->
+*Does not work with vectorized execution (`--vec`) at the moment*
+<!-- error with --vec:
+daphne: /daphne/src/runtime/local/datastructures/DenseMatrix.cpp:62: DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType>*, size_t, size_t, size_t, size_t) [with ValueType = double; size_t = long unsigned int]: Assertion `((rowLowerIncl < src->numRows) || rowLowerIncl == 0) && "rowLowerIncl is out of bounds"' failed.
+daphne: /daphne/src/runtime/local/datastructures/DenseMatrix.cpp:63: DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType>*, size_t, size_t, size_t, size_t) [with ValueType = double; size_t = long unsigned int]: Assertion `(rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds"' failed.
+double free or corruption (out)
+Segmentation fault (core dumped)
+-->
 
-### ~Principal Component Analysis (PCA)~
+### Principal Component Analysis (PCA)
 
 ```bash
-bin/daphne scripts/algorithms/pca.daph X=\"data/wine.csv\" K=2 center=true scale=false
+bin/daphne scripts/algorithms/pca.daph X=\"data/wine.csv\" K=2 center=true scale=false Xout=\"outX.csv\" Mout=\"outM.csv\"
 ```
-*Does not work yet, because we still lack a kernel for `eigen()`.*
+<!-- successful with --vec -->
 
 <!--
 bin/daphne test/api/cli/algorithms/kmeans.daphne r=1000 f=10 c=5 i=3

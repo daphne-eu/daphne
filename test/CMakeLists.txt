@@ -71,6 +71,7 @@ set(TEST_SOURCES
 
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
+        runtime/local/kernels/AggCumTest.cpp
         runtime/local/kernels/AggRowTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
@@ -102,6 +103,7 @@ set(TEST_SOURCES
         runtime/local/kernels/MapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/OrderTest.cpp
+        runtime/local/kernels/OuterBinaryTest.cpp
         runtime/local/kernels/QuantizeTest.cpp
         runtime/local/kernels/RandMatrixTest.cpp
         runtime/local/kernels/ReadTest.cpp

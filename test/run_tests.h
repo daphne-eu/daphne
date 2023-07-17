@@ -16,6 +16,8 @@
 
 #pragma once
 
+#include <runtime/local/context/DaphneContext.h>
+
 static DaphneUserConfig user_config{};
 
 static std::unique_ptr<DaphneLogger> logger;

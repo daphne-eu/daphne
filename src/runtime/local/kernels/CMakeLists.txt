@@ -80,16 +80,23 @@ add_custom_command(
 
 list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
 
-# The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
-add_library(AllKernels SHARED
+set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
+set(HEADERS_cpp_kernels
+    ${PREFIX}/MatMul.h
+)
+set(SOURCES_cpp_kernels
+        ${PREFIX}/MatMul.cpp
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp
-        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_dense.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/MTWrapper_sparse.cpp
-        ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
+        ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/Tasks.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerCPU.h
         )
+# The library of pre-compiled kernels. Will be linked into the JIT-compiled user program.
+add_library(AllKernels SHARED ${SOURCES_cpp_kernels} ${HEADERS_cpp_kernels})
 set_target_properties(AllKernels PROPERTIES LIBRARY_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 
 if(USE_CUDA AND CMAKE_CUDA_COMPILER)

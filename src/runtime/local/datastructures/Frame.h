@@ -14,8 +14,7 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_DATASTRUCTURES_FRAME_H
-#define SRC_RUNTIME_LOCAL_DATASTRUCTURES_FRAME_H
+#pragma once
 
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -213,12 +212,11 @@ class Frame : public Structure {
      * to not depend on a template parameter for the value type). Furthermore,
      * these matrices must not be views on a single column of a larger matrix.
      */
-    Frame(const std::vector<Structure *> colMats, const std::string * labels) :
+    Frame(const std::vector<Structure *>& colMats, const std::string * labels) :
             Structure(colMats.empty() ? 0 : colMats[0]->getNumRows(), colMats.size())
     {
         const size_t numCols = colMats.size();
         assert(numCols && "you must provide at least one column matrix");
-//        const size_t numRows = colMats[0]->getNumRows();
         schema = new ValueTypeCode[numCols];
         this->labels = new std::string[numCols];
         columns = new std::shared_ptr<ColByteType>[numCols];
@@ -234,8 +232,7 @@ class Frame : public Structure {
             );
             this->labels[c] = labels ? labels[c] : getDefaultLabel(c);
             // For all value types.
-            bool found = false;
-            found = found || tryValueType<int8_t> (colMat, schema + c, columns + c);
+            bool found = tryValueType<int8_t>(colMat, schema + c, columns + c);
             found = found || tryValueType<int32_t>(colMat, schema + c, columns + c);
             found = found || tryValueType<int64_t>(colMat, schema + c, columns + c);
             found = found || tryValueType<uint8_t> (colMat, schema + c, columns + c);
@@ -267,9 +264,9 @@ class Frame : public Structure {
         
         // Only check conditions, if input Frame has not zero rows and the expected output has not zero rows.
         if(!(rowLowerIncl == rowUpperExcl && rowLowerIncl == 0 && src->numRows == 0)) {
-            assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+            assert(((rowLowerIncl < src->numRows) || rowLowerIncl == 0) && "rowLowerIncl is out of bounds");
             assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-            assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
+            assert((rowLowerIncl <= rowUpperExcl) && "rowLowerIncl must be lower or equal than rowUpperExcl");
         }
         for(size_t i = 0; i < numCols; i++)
             assert((colIdxs[i] < src->numCols) && "some colIdx is out of bounds");
@@ -288,7 +285,7 @@ class Frame : public Structure {
         initDeduplicatedLabels2Idxs();
     }
     
-    ~Frame() {
+    ~Frame() override {
         delete[] schema;
         delete[] labels;
         delete[] columns;
@@ -302,7 +299,7 @@ public:
      * @param pos The position of the column in the frame (starting at zero).
      * @return The default label for the pos-th column.
      */
-    static const std::string getDefaultLabel(size_t pos) {
+    static std::string getDefaultLabel(size_t pos) {
         return "col_" + std::to_string(pos);
     }
     
@@ -416,5 +413,3 @@ public:
 };
 
 std::ostream & operator<<(std::ostream & os, const Frame & obj);
-
-#endif //SRC_RUNTIME_LOCAL_DATASTRUCTURES_FRAME_H

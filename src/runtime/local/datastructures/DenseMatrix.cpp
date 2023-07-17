@@ -59,12 +59,12 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
         lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
     assert(src && "src must not be null");
-    assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+    assert(((rowLowerIncl < src->numRows) || rowLowerIncl == 0) && "rowLowerIncl is out of bounds");
     assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-    assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
-    assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+    assert((rowLowerIncl <= rowUpperExcl) && "rowLowerIncl must be lower or equal than rowUpperExcl");
+    assert(((colLowerIncl < src->numCols) || colLowerIncl == 0) && "colLowerIncl is out of bounds");
     assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
-    assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
+    assert((colLowerIncl <= colUpperExcl) && "colLowerIncl must be lower or equal than colUpperExcl");
     
     this->row_offset = rowLowerIncl;
     this->col_offset = colLowerIncl;

@@ -17,9 +17,14 @@
 echo "Use this as an example to start DAPHNE docker containers. Copy and customize for the various flavors."
 echo "Add sudo to docker invocation if needed in your setup"
 
+ARCH=X86-64
 DOCKER_IMAGE=daphneeu/daphne-dev
-DOCKER_TAG=latest_BASE
-#DOCKER_TAG=latest_CUDA
+DOCKER_TAG=latest_${ARCH}_BASE
+#DOCKER_TAG=latest_${ARCH}_CUDA
+
+#on some installations docker can only be run with sudo
+USE_SUDO=
+#USE_SUDO=sudo
 
 # run this script from the base path of your DAPHNE source tree
 DAPHNE_ROOT=$PWD
@@ -56,7 +61,7 @@ fi
 #    "$DOCKER_IMAGE:$DOCKER_TAG" $@
 
 # for interactive use:
-docker run $DEBUG_FLAGS $DEVICE_FLAGS -it --rm --hostname daphne-container -w $DAPHNE_ROOT_CONTAINER \
+$USE_SUDO docker run $DEBUG_FLAGS $DEVICE_FLAGS -it --rm --hostname daphne-container -w $DAPHNE_ROOT_CONTAINER \
     -v "$DAPHNE_ROOT:$DAPHNE_ROOT_CONTAINER" -e GID=$GID -e TERM=screen-256color -e PATH -e LD_LIBRARY_PATH \
     -e USER=$USERNAME -e UID=$UID \
     "$DOCKER_IMAGE:$DOCKER_TAG" $command

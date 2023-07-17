@@ -16,11 +16,11 @@
 
 m1 = seq(0, 10, 1);
 m2 = rand(11, 1, 0, 100, 1, -1);
-f = frame(m1, m2, "a", "b");
+f = createFrame(m1, m2, "a", "b");
 
 m3 = seq(0, 7, 3);
 m4 = rand(3, 1, 100, 200, 1, -1);
-h = frame(m3, m4, "d", "c");
+h = createFrame(m3, m4, "d", "c");
 
 
 print(f);

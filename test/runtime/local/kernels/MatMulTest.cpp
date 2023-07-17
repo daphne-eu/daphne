@@ -14,6 +14,9 @@
  * limitations under the License.
  */
 
+#include "run_tests.h"
+
+#include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -26,14 +29,16 @@
 #include <vector>
 
 template<class DT>
-void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp, bool transa = false, bool transb = false) {
+void checkMatMul(const DT * lhs, const DT * rhs, const DT * exp, DCTX(dctx), bool transa = false, bool transb = false) {
     DT * res = nullptr;
-    matMul<DT, DT, DT>(res, lhs, rhs, transa, transb, nullptr);
+    matMul<DT, DT, DT>(res, lhs, rhs, transa, transb, dctx);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double, int32_t, int64_t)) {
+    auto dctx = setupContextAndLogger();
+
     using DT = TestType;
     
     auto m0 = genGivenVals<DT>(3, {
@@ -114,23 +119,24 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul", TAG_KERNELS, (DenseMatrix), (float, double)
     });
 
 
-    checkMatMul(m0, m0, m0);
-    checkMatMul(m1, m1, m2);
-    checkMatMul(m3, m4, m5);
-    checkMatMul(m0, v0, v0);
-    checkMatMul(m1, v0, v0);
-    checkMatMul(m2, v0, v0);
-    checkMatMul(m0, v1, v0);
-    checkMatMul(m1, v1, v3);
-    checkMatMul(m1, v2, v4);
-    checkMatMul(m6, v7, v8);
-    checkMatMul(v5, v2, v6);
+    checkMatMul(m0, m0, m0, dctx.get());
+    checkMatMul(m1, m1, m2, dctx.get());
+    checkMatMul(m3, m4, m5, dctx.get());
+    checkMatMul(m0, v0, v0, dctx.get());
+    checkMatMul(m1, v0, v0, dctx.get());
+    checkMatMul(m2, v0, v0, dctx.get());
+    checkMatMul(m0, v1, v0, dctx.get());
+    checkMatMul(m1, v1, v3, dctx.get());
+    checkMatMul(m1, v2, v4, dctx.get());
+    checkMatMul(m6, v7, v8, dctx.get());
+    checkMatMul(v5, v2, v6, dctx.get());
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, m6, v0, v1, v2, v3, v4, v5, v6, v7, v8);
 }
 
-TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DenseMatrix), (float, double)) {
+TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DenseMatrix), (float, double, int32_t, int64_t)) {
     using DT = TestType;
+    auto dctx = setupContextAndLogger();
 
     auto m0 = genGivenVals<DT>(3, {
         1, 2, 3,
@@ -200,12 +206,12 @@ TEMPLATE_PRODUCT_TEST_CASE("MatMul Transposed", TAG_KERNELS, (DenseMatrix), (flo
         0
     });
 
-    checkMatMul(m0, m0, m1, true, true);
-    checkMatMul(m2, m3, m4, true, true);
-    checkMatMul(m0, v1, v2, true);
-    checkMatMul(m3, v3, v4, true);
-    checkMatMul(m2, v5, v6, true);
-    checkMatMul(m3, m3, m5, false, true);
+    checkMatMul(m0, m0, m1,  dctx.get(), true, true);
+    checkMatMul(m2, m3, m4,  dctx.get(), true, true);
+    checkMatMul(m0, v1, v2,  dctx.get(), true);
+    checkMatMul(m3, v3, v4,  dctx.get(), true);
+    checkMatMul(m2, v5, v6,  dctx.get(), true);
+    checkMatMul(m3, m3, m5,  dctx.get(), false, true);
 
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2, v3, v4, v5, v6);

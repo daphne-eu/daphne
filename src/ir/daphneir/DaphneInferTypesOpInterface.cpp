@@ -15,7 +15,10 @@
  */
 
 #include <compiler/utils/CompilerUtils.h>
+#include <compiler/utils/TypePrinting.h>
 #include <ir/daphneir/Daphne.h>
+
+#include <spdlog/spdlog.h>
 
 #include <string>
 #include <vector>
@@ -148,17 +151,56 @@ std::vector<Type> daphne::CastOp::inferTypes() {
 }
 
 std::vector<Type> daphne::ExtractColOp::inferTypes() {
-    auto ft = getSource().getType().dyn_cast<daphne::FrameType>();
-    auto st = getSelectedCols().getType().dyn_cast<daphne::StringType>();
-    if(ft && st) {
-        Type vt = getFrameColumnTypeByLabel(ft, getSelectedCols());
-        return {daphne::FrameType::get(getContext(), {vt})};
+    Type u = daphne::UnknownType::get(getContext());
+    Type srcTy = getSource().getType();
+    Type selTy = getSelectedCols().getType();
+    Type resTy;
+
+    if(auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>())
+        // Extracting columns from a matrix retains the value type.
+        resTy = srcMatTy.withSameElementType();
+    else if(auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+        // Extracting columns from a frame may change the list of column value types (schema).
+        std::vector<Type> resColTys;
+
+        if(auto selStrTy = selTy.dyn_cast<daphne::StringType>())
+            // Extracting a single column by its string label.
+            resColTys = {getFrameColumnTypeByLabel(srcFrmTy, getSelectedCols())};
+        else if(auto selMatTy = selTy.dyn_cast<daphne::MatrixType>()) {
+            // Extracting columns by their positions (given as a column matrix).
+
+            // We don't know the result column types, but if the shape of selectedCols
+            // is known, we at least know the number of columns in the result
+            // and set them all to unknown type.
+            const ssize_t numColsSel = selMatTy.getNumCols();
+            const ssize_t numRowsSel = selMatTy.getNumRows();
+            if(numColsSel != -1 && numColsSel != 1)
+                throw std::runtime_error(
+                        "ExtractColOp type inference: selectedCols must have "
+                        "exactly 1 column, but found " + std::to_string(numColsSel)
+                );
+            if(numRowsSel != -1)
+                for(ssize_t i = 0; i < numRowsSel; i++)
+                    resColTys.push_back(u);
+            
+            // TODO Use the concrete column positions whenever they are known, e.g.,
+            // if selectedCols is defined by a MatrixConstantOp (matrix literal),
+            // FillOp (with known scalar value), SeqOp, ...
+
+            // TODO If all columns of the input frame have the same type, we know
+            // the output frame's column types if we know the shape of selectedCols.
+        }
+        else
+            throw std::runtime_error(
+                    "ExtractColOp type inference: selectedCols must be a string or a matrix"
+            );
+        
+        resTy = daphne::FrameType::get(getContext(), resColTys);
     }
     else
-        throw std::runtime_error(
-                "currently, ExtractColOp can only infer its type for frame "
-                "inputs and a single column name"
-        );
+        resTy = u;
+
+    return {resTy};
 }
 
 std::vector<Type> daphne::FilterColOp::inferTypes() {
@@ -290,7 +332,59 @@ std::vector<Type> daphne::OrderOp::inferTypes() {
 }
 
 std::vector<Type> daphne::SliceColOp::inferTypes() {
-    throw std::runtime_error("type inference not implemented for SliceColOp"); // TODO
+    Type u = daphne::UnknownType::get(getContext());
+    Type srcTy = getSource().getType();
+    Type resTy;
+
+    if(auto srcMatTy = srcTy.dyn_cast<daphne::MatrixType>())
+        // Slicing columns from a matrix retains the value type.
+        resTy = srcMatTy.withSameElementType();
+    else if(auto srcFrmTy = srcTy.dyn_cast<daphne::FrameType>()) {
+        // Extracting columns from a frame may change the list of column value types (schema).
+        auto loIn = CompilerUtils::isConstant<int64_t>(getLowerIncl());
+        auto upEx = CompilerUtils::isConstant<int64_t>(getUpperExcl());
+        if(loIn.first && upEx.first) {
+            // Both the lower and upper bound are known.
+            ssize_t loInPos = loIn.second;
+            ssize_t upExPos = upEx.second;
+            std::vector<Type> srcColTys = srcFrmTy.getColumnTypes();
+            std::vector<Type> resColTys;
+            const ssize_t srcNumCols = srcColTys.size();
+
+            // TODO Don't duplicate these checks from shape inference.
+            if(loInPos < 0 || loInPos >= srcNumCols)
+                throw std::runtime_error(
+                    "SliceColOp type inference: lowerIncl must be in [0, numCols), "
+                    "but is " + std::to_string(loInPos) +
+                    " with " + std::to_string(srcNumCols) + " cols"
+                );
+            if(upExPos < 0 || upExPos > srcNumCols)
+                throw std::runtime_error(
+                    "SliceColOp type inference: upperExcl must be in [0, numCols], "
+                    "but is " + std::to_string(upExPos) +
+                    " with " + std::to_string(srcNumCols) + " cols"
+                );
+            if(loInPos > upExPos)
+                throw std::runtime_error(
+                    "SliceColOp type inference: lowerIncl must not be greater than upperExcl"
+                    " (found " + std::to_string(loInPos) + " and " + std::to_string(upExPos) + ")"
+                );
+
+            for(ssize_t pos = loInPos; pos < upExPos; pos++)
+                resColTys.push_back(srcColTys[pos]);
+                
+            resTy = daphne::FrameType::get(getContext(), resColTys);
+        }
+        else
+            // TODO The number of column types may not match the actual number of columns
+            // in this case; actually, we should leave the column types blank, but this
+            // cannot be represented at the moment.
+            resTy = daphne::FrameType::get(getContext(), {u});
+    }
+    else
+        resTy = u;
+
+    return {resTy};
 }
 
 std::vector<Type> daphne::CondOp::inferTypes() {
@@ -379,7 +473,18 @@ std::vector<Type> daphne::tryInferType(Operation* op) {
 
 void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
     // Try to infer the types of all results of this operation.
-    std::vector<Type> types = daphne::tryInferType(op);
+    std::vector<Type> types;
+    try {
+        types = daphne::tryInferType(op);
+    }
+    catch (std::runtime_error& re) {
+        spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+        throw;
+    }
+    catch (...) {
+        spdlog::error("Caught an unspecified exception in {}:{}",__FILE__, __LINE__);
+        throw;
+    }
     const size_t numRes = op->getNumResults();
     if(types.size() != numRes)
         throw std::runtime_error(
