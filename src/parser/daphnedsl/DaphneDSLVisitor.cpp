@@ -508,7 +508,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     // Rewire the results of the if-operation to their variable names.
     size_t i = 0;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++)
-        symbolTable.put(*it, ifOp.getResults()[i++]);
+        symbolTable.put(*it, ScopedSymbolTable::SymbolInfo(ifOp.getResults()[i++], false));
 
     return nullptr;
 }
@@ -613,7 +613,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         });
 
         // Rewire the results of the WhileOp to their variable names.
-        symbolTable.put(it->first, whileOp.getResults()[i++]);
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(whileOp.getResults()[i++], false));
     }
 
     return nullptr;
@@ -724,7 +724,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         });
 
         // Rewire the results of the ForOp to their variable names.
-        symbolTable.put(it->first, forOp.getResults()[i]);
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(forOp.getResults()[i], false));
 
         i++;
     }

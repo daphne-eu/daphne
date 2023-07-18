@@ -1,0 +1,9 @@
+// var defined at depth 0, update at depth 4, while-block-if-block
+
+k = 1;
+while(k < 3) {
+    if(true) {
+        k = k + 1;
+    }
+}
+print(k);
