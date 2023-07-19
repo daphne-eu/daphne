@@ -653,7 +653,7 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [
 
     let builders = [
         OpBuilder<(ins "Value":$input), [{
-            auto ty = input.getType().cast<MatrixType>();
+            auto ty = input.getType();
             build($_builder, $_state, ty, input);
         }]>,
     ];
