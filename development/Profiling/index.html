@@ -9,6 +9,10 @@
       
       
       
+        <link rel="prev" href="../ImplementBuiltinKernel/">
+      
+      
+        <link rel="next" href="../WriteDocs/">
       
       <link rel="icon" href="../../assets/logo_small.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.19">
@@ -227,13 +231,15 @@
         
   
   
+    
+  
 
 
   
   
   
     <li class="md-tabs__item">
-      <a href="../Contributing/" class="md-tabs__link">
+      <a href="../Contributing/" class="md-tabs__link md-tabs__link--active">
         Developers
       </a>
     </li>
@@ -679,6 +685,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Profiling/" class="md-nav__link">
+        Profiling
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -691,14 +711,16 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
       
       
-      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
       
       
       
@@ -707,7 +729,7 @@
           <span class="md-nav__icon md-icon"></span>
         </label>
       
-      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
         <label class="md-nav__title" for="__nav_3">
           <span class="md-nav__icon md-icon"></span>
           Developers
@@ -858,6 +880,61 @@
               
   
   
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Profiling
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Profiling
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#known-issues-todo" class="md-nav__link">
+    Known Issues / TODO
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
   
     <li class="md-nav__item">
       <a href="../WriteDocs/" class="md-nav__link">
@@ -902,7 +979,7 @@
       
         <li class="md-nav__item">
   <a href="#known-issues-todo" class="md-nav__link">
-    Known Issues / TODO:
+    Known Issues / TODO
   </a>
   
 </li>
@@ -926,22 +1003,22 @@
 
 
 <h1 id="profiling-in-daphne">Profiling in DAPHNE</h1>
-<p>For a general overview of the profiling support in DAPHNE see the <a href="../../Profiling/">user
+<p>For a general overview of the profiling support in DAPHNE see the <a href="/daphne/Profiling">user
 profiling documentation</a>.</p>
 <p>Profiling is implemented via an instrumentation pass that injects calls to the
 <code>StartProfiling</code> and <code>StopProfiling</code> kernels at the start and end of
 each block. In turn, the kernels call the PAPI-HL API start and stop functions.</p>
-<h3 id="known-issues-todo">Known Issues / TODO:</h3>
+<h2 id="known-issues-todo">Known Issues / TODO</h2>
 <ul>
 <li>For scripts with multiple blocks (e.g. UDFs), the compiler will generate
-  profiling passes for each block seperately instead of a single script-wide
+  profiling passes for each block separately instead of a single script-wide
   profiling pass.</li>
 <li>The profiling kernels should be exposed at the DSL / IR level, so that users
   can instrument / profile specific parts of their script. This will also need
   compiler cooperation, to make sure that the profiled bock is not rearranged /
   fused with other operations.</li>
 <li>To aid with the development and regression tracking of the runtime, the
-  profiling kernels could also be extended to suport profiling specific
+  profiling kernels could also be extended to support profiling specific
   kernels or parts of kernels.</li>
 </ul>
 

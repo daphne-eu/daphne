@@ -577,6 +577,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#arithmetic" class="md-nav__link">
+    Arithmetic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#minmax" class="md-nav__link">
     Min/max
   </a>
@@ -618,7 +625,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#arithmetic" class="md-nav__link">
+  <a href="#arithmetic_1" class="md-nav__link">
     Arithmetic
   </a>
   
@@ -991,6 +998,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Profiling/" class="md-nav__link">
+        Profiling
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -1172,6 +1193,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../development/Profiling/" class="md-nav__link">
+        Profiling
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../development/WriteDocs/" class="md-nav__link">
         WriteDocs
       </a>
@@ -1276,6 +1311,13 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#arithmetic" class="md-nav__link">
+    Arithmetic
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#minmax" class="md-nav__link">
     Min/max
   </a>
@@ -1317,7 +1359,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#arithmetic" class="md-nav__link">
+  <a href="#arithmetic_1" class="md-nav__link">
     Arithmetic
   </a>
   
@@ -1658,7 +1700,7 @@ Some operations even support both, e.g., <code>pow(a, b)</code> and <code>a^b</c
 Regarding the combinations of scalars and matrices, the same broadcasting semantics apply as for binary operations like <code>+</code>, <code>*</code>, etc. (see the <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL Language Reference</a>).</p>
 </li>
 </ul>
-<p>Note that DaphneDSL support various other elementwise binary functions via operators in infix notation (see <a href="/daphne/DaphneDSL/LanguageRef">DaphneDSL</a>), e.g., <code>^</code>, <code>%</code>, <code>*</code>, <code>/</code>, <code>+</code>, <code>-</code>, <code>==</code>, <code>!=</code>, <code>&lt;</code>, <code>&lt;=</code>, <code>&gt;</code>, <code>&gt;=</code>, <code>&amp;&amp;</code>, <code>||</code>.</p>
+<h3 id="arithmetic">Arithmetic</h3>
 <table>
 <thead>
 <tr>
@@ -1823,7 +1865,7 @@ Regarding the combinations of scalars and matrices, the same broadcasting semant
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    .. | ..... .....     .....
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    am | am∘b0 am∘b1 ... am∘bn
 </code></pre></div></p>
-<h3 id="arithmetic">Arithmetic</h3>
+<h3 id="arithmetic_1">Arithmetic</h3>
 <table>
 <thead>
 <tr>
@@ -2015,10 +2057,12 @@ Returns a scalar.</p>
 <h3 id="cumulative-aggregation">Cumulative aggregation</h3>
 <p>The following built-in functions all follow the same scheme:</p>
 <ul>
-<li><strong><code>cumAgg</code></strong><code>(arg:matrix)</code></li>
-</ul>
+<li>
+<p><strong><code>cumAgg</code></strong><code>(arg:matrix)</code></p>
 <p>Cumulative aggregation over each column of the matrix <code>arg</code>.
-  Returns a matrix of the same shape as <code>arg</code>.</p>
+Returns a matrix of the same shape as <code>arg</code>.</p>
+</li>
+</ul>
 <table>
 <thead>
 <tr>
@@ -2144,7 +2188,7 @@ If <code>values</code> is <code>true</code>, the non-zero elements in the upper 
 <p><strong><code>ctable</code></strong><code>(ys:matrix, xs:matrix[, weight:scalar][, numRows:int, numCols:int])</code></p>
 <p>Returns the contingency table of two <em>(n x 1)</em> column-matrices <code>ys</code> and <code>xs</code>.
 The resulting matrix <code>res</code> consists of <code>max(ys) + 1</code> rows and <code>max(xs) + 1</code> columns.
-More precisely, <em><code>res[x, y]</code>= |{ k | <code>ys[k, 0]</code> = y and <code>xs[k, 0]</code> = x, 0 ≤ k ≤ n-1 }| * <code>weight</code></em>.</p>
+More precisely, <em><code>res[x, y]</code> = |{ k | <code>ys[k, 0]</code> = y and <code>xs[k, 0]</code> = x, 0 ≤ k ≤ n-1 }| * <code>weight</code></em>.</p>
 <p>In other words, starting with an all-zero result matrix, <code>ys</code> and <code>xs</code> can be thought of as lists of <code>y</code>/<code>x</code>-coordinates which indicate the result matrix's cells whose value shall be increased by <code>weight</code>.
 Note that <code>ys</code> and <code>xs</code> must not contain negative numbers.</p>
 <p>The scalar weight is an optional argument and defaults to 1.0.
