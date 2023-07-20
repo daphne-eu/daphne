@@ -946,7 +946,7 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
         && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggregation
         && grouped[ctx->selectIdent()->getText()] == 0 //AND the label is not in group expr
-        && ctx->selectIdent()->getText().compare("*") != 0 //AND the label is not *
+        && ctx->selectIdent()->getText()[ctx->selectIdent()->getText().length() - 1] != '*' //AND the label does not end in * (* or f.*)
         && grouped["*"] == 0) //AND there is no * in group expr
     {
         std::stringstream err_msg;
