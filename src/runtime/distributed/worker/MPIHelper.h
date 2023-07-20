@@ -122,11 +122,11 @@ public:
         return info;
     }
 
-    static std::vector<char> getResults(int *rank)
+    static std::vector<char> getResults(int rank)
     {
         size_t resultsLen = 0;
         std::vector<char> buffer;
-        getMessage(rank, OUTPUT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
+        getMessageFrom(rank, OUTPUT, MPI_UNSIGNED_CHAR, buffer, &resultsLen);
         // std::cout<<"got results from "<<*rank<<std::endl;        
         return buffer;
     }
@@ -209,7 +209,7 @@ public:
         *len = size;
     }
 
-    static void getMessageFrom(int rank, int tag, MPI_Datatype type, void **data, size_t *len)
+    static void getMessageFrom(int rank, int tag, MPI_Datatype type, std::vector<char> &data, size_t *len)
     {
         int size;
         MPI_Status status;
@@ -217,14 +217,14 @@ public:
         MPI_Get_count(&status, type, &size);
         if (type == MPI_UNSIGNED_CHAR)
         {
-            *data = malloc(size * sizeof(unsigned char));
+            data.reserve(size * sizeof(unsigned char));
         }
         else if (type == MPI_CHAR)
         {
-            *data = malloc(size * sizeof(char));
+            data.reserve(size * sizeof(unsigned char));
         }
 
-        MPI_Recv(*data, size, type, status.MPI_SOURCE, tag, MPI_COMM_WORLD, &status);
+        MPI_Recv(data.data(), size, type, rank, tag, MPI_COMM_WORLD, &status);
         *len = size;
     }
 

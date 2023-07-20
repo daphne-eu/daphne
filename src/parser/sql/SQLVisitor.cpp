@@ -18,6 +18,7 @@
 #include <ir/daphneir/Daphne.h>
 #include <parser/sql/SQLVisitor.h>
 #include "antlr4-runtime.h"
+#include "mlir/IR/Attributes.h"
 #include "mlir/IR/OpDefinition.h"
 
 #include <stdexcept>
@@ -52,6 +53,14 @@ void setBit(int64_t& flag, int64_t position, int64_t val){
  */
 void toggleBit(int64_t& flag, int64_t position){
     setBit(flag, position, !isBitSet(flag, position));
+}
+
+/**
+ * @brief Creates a lower cast version of a string
+ */
+std::string toLower(std::string str){
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
 }
 
 // ****************************************************************************
@@ -525,6 +534,10 @@ antlrcpp::Any SQLVisitor::visitSelect(
             throw std::runtime_error(err_msg.str());
         }
     }
+    currentFrame = res;
+    if(ctx->distinctExpr()) {
+        res = utils.valueOrError(visit(ctx->distinctExpr()));
+    }
     return res;
 }
 
@@ -590,6 +603,44 @@ antlrcpp::Any SQLVisitor::visitTableExpr(
         currentFrame = utils.valueOrError(visit(ctx->joinExpr(i)));
     }
     return currentFrame;
+}
+
+//distinctExpr
+antlrcpp::Any SQLVisitor::visitDistinctExpr(
+    SQLGrammarParser::DistinctExprContext *ctx
+)
+{
+    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)    //If group is active
+     && columnName.size())                                         //AND there is an aggregation
+    {
+        throw std::runtime_error("DISTINCT with GROUP BY and Aggregation is not supported");
+    }else if(isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
+     || columnName.size())                                            //OR there is an aggregation  
+    {
+        // due to earlier grouping/aggregation the result is already distinct
+        return currentFrame;
+    }else {
+        mlir::Location loc = utils.getLoc(ctx->start);
+        mlir::Value starLiteral = createStringConstant("*");
+        std::vector<mlir::Value> cols{starLiteral};
+        std::vector<mlir::Value> aggs;
+        std::vector<mlir::Attribute> functions;
+        mlir::Type vt = utils.unknownType;
+        std::vector<mlir::Type> colTypes{vt};
+        mlir::Type resType = mlir::daphne::FrameType::get(
+            builder.getContext(), colTypes
+        );
+        return static_cast<mlir::Value>(
+            builder.create<mlir::daphne::GroupOp>(
+                loc,
+                resType,
+                currentFrame,
+                cols,
+                aggs,
+                builder.getArrayAttr(functions)
+            )
+        );
+    }   
 }
 
 //fromExpr
@@ -893,8 +944,9 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     SQLGrammarParser::IdentifierExprContext * ctx)
 {
     if(     isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
-        && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggreagtion
+        && !isBitSet(sqlFlag, (int64_t)SQLBit::agg) //AND there isn't an aggregation
         && grouped[ctx->selectIdent()->getText()] == 0 //AND the label is not in group expr
+        && ctx->selectIdent()->getText().compare("*") != 0 //AND the label is not *
         && grouped["*"] == 0) //AND there is no * in group expr
     {
         std::stringstream err_msg;
@@ -996,7 +1048,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
 
         mlir::Type resTypeCol = col.getType().dyn_cast<mlir::daphne::MatrixType>().getElementType();
 
-        const std::string &func = ctx->func->getText();
+        std::string func = toLower(ctx->func->getText());
 
         mlir::Value result; 
         if(func == "count"){
@@ -1044,7 +1096,7 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
             );
         }
 
-        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
+        std::string newColumnNameAppended = getEnumLabelExt(func) + "(" + newColumnName + ")";
 
         return utils.castIf(utils.matrixOf(result), result);
 
@@ -1060,7 +1112,8 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
     //create Column pre Group for in group Aggregation
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
         columnName.push_back(createStringConstant(newColumnName));
-        functionName.push_back(getGroupEnum(ctx->func->getText()));
+        const std::string &func = toLower(ctx->func->getText());
+        functionName.push_back(getGroupEnum(func));
 
         setBit(sqlFlag, (int64_t)SQLBit::agg, 1);
         setBit(sqlFlag, (int64_t)SQLBit::codegen, 1);
@@ -1075,7 +1128,8 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
         std::string newColumnName = "group_" + std::to_string(groupCounterCodegen) + "_" + ctx->var->getText();
         // Increment groupCounter
         groupCounterCodegen++;
-        std::string newColumnNameAppended = getEnumLabelExt(ctx->func->getText()) + "(" + newColumnName + ")";
+        const std::string &func = toLower(ctx->func->getText());
+        std::string newColumnNameAppended = getEnumLabelExt(func) + "(" + newColumnName + ")";
         mlir::Value colname = utils.valueOrError(createStringConstant(newColumnNameAppended));
         return extractMatrixFromFrame(currentFrame, colname); //returns Matrix
     }

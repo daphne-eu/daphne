@@ -313,6 +313,71 @@ def Daphne_EwGtOp  : Daphne_EwCmpOp<"ewGt" , AnyScalar>;
 def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 
 // ****************************************************************************
+// Outer binary (generalized outer product)
+// ****************************************************************************
+
+class Daphne_OuterBinaryOp<string name, Type scalarType, list<Trait> traits = []>
+: Daphne_Op<name, !listconcat(traits, [
+    DataTypeMat,
+    NumRowsFromIthArg<0>, NumColsFromIthArg<1>,
+    CastArgsToResType
+])> {
+    let arguments = (ins MatrixOf<[scalarType]>:$lhs, MatrixOf<[scalarType]>:$rhs);
+    let results = (outs MatrixOf<[scalarType]>:$res);
+}
+
+// ----------------------------------------------------------------------------
+// Arithmetic
+// ----------------------------------------------------------------------------
+
+def Daphne_OuterAddOp : Daphne_OuterBinaryOp<"outerAdd", NumScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterSubOp : Daphne_OuterBinaryOp<"outerSub", NumScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterMulOp : Daphne_OuterBinaryOp<"outerMul", NumScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterDivOp : Daphne_OuterBinaryOp<"outerDiv", NumScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterPowOp : Daphne_OuterBinaryOp<"outerPow", NumScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterModOp : Daphne_OuterBinaryOp<"outerMod", NumScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterLogOp : Daphne_OuterBinaryOp<"outerLog", NumScalar, [ValueTypeFromArgsFP]>;
+
+// ----------------------------------------------------------------------------
+// Min/max
+// ----------------------------------------------------------------------------
+
+def Daphne_OuterMinOp : Daphne_OuterBinaryOp<"outerMin", AnyScalar, [ValueTypeFromArgs]>;
+def Daphne_OuterMaxOp : Daphne_OuterBinaryOp<"outerMax", AnyScalar, [ValueTypeFromArgs]>;
+
+// ----------------------------------------------------------------------------
+// Logical
+// ----------------------------------------------------------------------------
+
+def Daphne_OuterAndOp : Daphne_OuterBinaryOp<"outerAnd", NumScalar, [ValueTypeFromArgsInt]>;
+def Daphne_OuterOrOp  : Daphne_OuterBinaryOp<"outerOr" , NumScalar, [ValueTypeFromArgsInt]>;
+def Daphne_OuterXorOp : Daphne_OuterBinaryOp<"outerXor", NumScalar, [ValueTypeFromArgsInt]>;
+
+// ----------------------------------------------------------------------------
+// Strings
+// ----------------------------------------------------------------------------
+
+def Daphne_OuterConcatOp : Daphne_OuterBinaryOp<"outerConcat", StrScalar>;
+
+// ----------------------------------------------------------------------------
+// Comparisons
+// ----------------------------------------------------------------------------
+
+class Daphne_OuterCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
+: Daphne_OuterBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs])> {
+    // TODO: We do not enforce (matrix of) boolean output any more, but should
+    // think about that again.
+    //let results = (outs AnyTypeOf<[MatrixOf<[BoolScalar]>, BoolScalar, Unknown]>:$res);
+}
+
+def Daphne_OuterEqOp  : Daphne_OuterCmpOp<"outerEq" , AnyScalar>;
+def Daphne_OuterNeqOp : Daphne_OuterCmpOp<"outerNeq", AnyScalar>;
+def Daphne_OuterLtOp  : Daphne_OuterCmpOp<"outerLt" , AnyScalar>;
+def Daphne_OuterLeOp  : Daphne_OuterCmpOp<"outerLe" , AnyScalar>;
+def Daphne_OuterGtOp  : Daphne_OuterCmpOp<"outerGt" , AnyScalar>;
+def Daphne_OuterGeOp  : Daphne_OuterCmpOp<"outerGe" , AnyScalar>;
+
+// ****************************************************************************
 // Elementwise ternary
 // ****************************************************************************
 

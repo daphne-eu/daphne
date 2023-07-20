@@ -105,5 +105,6 @@ MAKE_TEST_CASE("reuseString", 2)
 
 MAKE_TEST_CASE("select_asterisk", 5)
 
+MAKE_TEST_CASE("distinct", 4)
 
 // TODO Use the scripts testing failure cases.

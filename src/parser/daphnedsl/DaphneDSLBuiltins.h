@@ -66,11 +66,11 @@ class DaphneDSLBuiltins {
     template<class NumOp>
     mlir::Value createNumOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
     
-    template<class EwUnaryOp>
-    mlir::Value createEwUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
+    template<class UnaryOp>
+    mlir::Value createUnaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
     
-    template<class EwBinaryOp>
-    mlir::Value createEwBinaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
+    template<class BinaryOp>
+    mlir::Value createBinaryOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);
     
     template<class RowAggOp, class ColAggOp>
     mlir::Value createRowOrColAggOp(mlir::Location loc, const std::string & func, const std::vector<mlir::Value> & args);

@@ -33,7 +33,7 @@ query:
     select ';'?;
 
 select:
-    SQL_SELECT selectExpr (',' selectExpr)*
+    SQL_SELECT distinctExpr? selectExpr (',' selectExpr)*
     SQL_FROM tableExpr
     whereClause?
     groupByClause?
@@ -51,6 +51,9 @@ selectExpr:
 
 tableExpr:
     fromExpr joinExpr*;
+
+distinctExpr:
+    SQL_DISTINCT;
 
 fromExpr:
     var=tableReference #tableIdentifierExpr

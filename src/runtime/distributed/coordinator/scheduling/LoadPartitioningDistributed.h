@@ -30,25 +30,25 @@
 using mlir::daphne::VectorCombine;
 
 
-enum class DistributionSchema{ 
+enum class DistributionSchema{
     DISTRIBUTE = 1,
     BROADCAST = 2
 };
 
-template<class DT, class ALLOCATOR> 
+template<class DT, class ALLOCATOR>
 class LoadPartitioningDistributed {
 private:
     DistributionSchema distrschema;
     DT *mat;
-    std::vector<std::string> workerList; 
+    std::vector<std::string> workerList;
     size_t taskIndex = 0;
     size_t totalTasks;
     DaphneContext *dctx;
-    
+
 public:
 
-    LoadPartitioningDistributed(DistributionSchema schema, DT *&mat, DCTX(dctx)) : 
-        distrschema(schema), 
+    LoadPartitioningDistributed(DistributionSchema schema, DT *&mat, DCTX(dctx)) :
+        distrschema(schema),
         mat(mat),
         dctx(dctx)
     {
@@ -56,18 +56,18 @@ public:
         workerList = ctx->getWorkers();
         totalTasks = workerList.size();
     };
-    
+
     bool HasNextChunk(){
         return taskIndex < totalTasks;
     };
-    
+
     // Each allocation descriptor might use a different constructor.
     // Here we provide the different implementations.
     // Another solution would be to make sure that every constructor is similar so this would not be needed.
-    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext* ctx, const std::string &addr, const DistributedData &data) {        
-        if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorMPI>)    
+    static ALLOCATOR CreateAllocatorDescriptor(DaphneContext* ctx, const std::string &addr, const DistributedData &data) {
+        if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorMPI>)
             return AllocationDescriptorMPI(std::stoi(addr), ctx, data);
-        else if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorGRPC>)    
+        else if constexpr (std::is_same_v<ALLOCATOR, AllocationDescriptorGRPC>)
             return AllocationDescriptorGRPC(ctx, addr, data);
         else
             throw std::runtime_error("Unknown allocation type");
@@ -76,10 +76,10 @@ public:
     // Set ranges
     Range CreateRange() {
         switch (distrschema) {
-            case DistributionSchema::DISTRIBUTE: {                 
-                // Todo support for different distribution schemas   
+            case DistributionSchema::DISTRIBUTE: {
+                // Todo support for different distribution schemas
                 auto k = mat->getNumRows() / workerList.size();
-                auto m = mat->getNumRows() % workerList.size();            
+                auto m = mat->getNumRows() % workerList.size();
                 return Range(
                     (taskIndex * k) + std::min(taskIndex, m),
                     0,
@@ -104,10 +104,10 @@ public:
     // Update current distributed index object based on distribution schema
     DistributedIndex GetDistributedIndex() {
         switch (distrschema) {
-            case DistributionSchema::DISTRIBUTE: 
+            case DistributionSchema::DISTRIBUTE:
                 // Todo support for different distribution schemas
                 return DistributedIndex(taskIndex, 0);
-            case DistributionSchema::BROADCAST: 
+            case DistributionSchema::BROADCAST:
                 return DistributedIndex(0, 0);
             default:
                 throw std::runtime_error("Unknown distribution scheme");
@@ -117,22 +117,25 @@ public:
     DataPlacement * GetNextChunk(){
 
         auto workerAddr = workerList.at(taskIndex);
-        
+
         auto range = CreateRange();
-        
+
         DataPlacement *dp;
-        if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) { 
+        if ((dp = mat->getMetaDataObject()->getDataPlacementByLocation(workerAddr))) {
             auto data = dynamic_cast<ALLOCATOR&>(*(dp->allocation)).getDistributedData();
 
-            // Check if existing placement matches the same ranges we currently need 
-            auto existingRange = dp->range.get();
-            if (*existingRange == range)
-                data.isPlacedAtWorker = true;
-            else {
-                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);     
-                data.isPlacedAtWorker = false;
-            }
-            // TODO Currently we do not support distributing/splitting 
+            // Check if existing placement matches the same ranges we currently need
+            if (data.isPlacedAtWorker) {
+                auto existingRange = dp->range.get();
+                if (*existingRange == range)
+                    data.isPlacedAtWorker = true;
+                else {
+                    mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
+                    data.isPlacedAtWorker = false;
+                }
+            } else
+                mat->getMetaDataObject()->updateRangeDataPlacementByID(dp->dp_id, &range);
+            // TODO Currently we do not support distributing/splitting
             // by columns. When we do, this should be changed (e.g. Index(0, taskIndex))
             // This can be decided based on DistributionSchema
             data.ix = GetDistributedIndex();
@@ -140,11 +143,11 @@ public:
         }
         else { // Else, create new object metadata entry
             DistributedData data;
-            // TODO Currently we do not support distributing/splitting 
+            // TODO Currently we do not support distributing/splitting
             // by columns. When we do, this should be changed (e.g. Index(0, taskIndex))
             data.ix = GetDistributedIndex();
             auto allocationDescriptor = CreateAllocatorDescriptor(dctx, workerAddr, data);
-            dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);                    
+            dp = mat->getMetaDataObject()->addDataPlacement(&allocationDescriptor, &range);
         }
         taskIndex++;
         return dp;

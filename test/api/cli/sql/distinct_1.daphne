@@ -1,0 +1,12 @@
+# DISTINCT over one column.
+
+f = createFrame(
+    [  0,  1,  2,  2,  3,  3,  6,  3,  8,  2],
+    [  1,  2,  3,  3,  3,  4,  5,  4,  1,  1],
+    "a", "b");
+
+registerView("f", f);
+
+res = sql("SELECT DISTINCT f.a FROM f;");
+
+print(res);

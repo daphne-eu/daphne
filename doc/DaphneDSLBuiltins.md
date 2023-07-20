@@ -42,6 +42,7 @@ DaphneDSL's built-in functions can be categorized as follows:
 - Matrix/frame dimensions
 - Elementwise unary
 - Elementwise binary
+- Outer binary (generalized outer product)
 - Aggregation and statistical
 - Reorganization
 - Matrix decomposition & co
@@ -136,35 +137,121 @@ The typical trigonometric functions:
 
 ## Elementwise binary
 
-The following built-in functions all follow the same scheme:
+DaphneDSL supports various elementwise binary operations.
+Some of those can be used through *operators in infix notation*, e.g., `+`; and some through *built-in functions*.
+Some operations even support both, e.g., `pow(a, b)` and `a^b` have the same semantics.
+
+The built-in functions all follow the same scheme:
 
 - ***`binaryFunc`***`(lhs:scalar/matrix, rhs:scalar/matrix)`
   
   Applies the respective binary function (see table below) to the corresponding pairs of a value in the left-hand-side argument `lhs` and the right-hand-side argument `rhs`.
   Regarding the combinations of scalars and matrices, the same broadcasting semantics apply as for binary operations like `+`, `*`, etc. (see the [DaphneDSL Language Reference](/doc/DaphneDSLLanguageRef.md)).
   
-Note that DaphneDSL support various other elementwise binary functions via operators in infix notation (see [DaphneDSL]()), e.g., `^`, `%`, `*`, `/`, `+`, `-`, `==`, `!=`, `<`, `<=`, `>`, `>=`, `&&`, `||`.
+### Arithmetic
 
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| | **`+`** | addition |
+| | **`-`** | subtraction |
+| | **`*`** | multiplication |
+| | **`/`** | division |
+| **`pow`** | **`^`** | exponentiation (`lhs` to the power of `rhs`) |
+| **`log`** | | logarithm (logarithm of `lhs` to the base of `rhs`) |
+| **`mod`** | **`%`** | modulo |
+
+### Min/max
+
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| **`min`** | | minimum |
+| **`max`** | | maximum |
+
+### Logical
+
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| | **`&&`** | logical conjunction |
+| | **`\|\|`** | logical disjunction |
+
+### Strings
+
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| **`concat`** | **`+`** | string concatenation |
+
+### Comparison
+
+| function | operator | meaning |
+| ----- | ----- | ----- |
+| | **`==`** | equal |
+| | **`!=`** | not equal |
+| | **`<`** | less than |
+| | **`<=`** | less or equal |
+| | **`>`** | greater than |
+| | **`>=`** | greater or equal |
+
+## Outer binary (generalized outer product)
+
+The following built-in functions all follow the same scheme:
+
+- ***`outerBinaryFunc`***`(lhs:matrix, rhs:matrix)`
+  
+  The argument `lhs` is expected to be a column *(m x 1)* matrix, and the argument `rhs` is expected to be a row *(1 x n)* matrix.
+  The result is a *(m x n)* matrix, whereby the element at position *(i, j)* is calculated by applying the respective binary function (see the table below) to the *i*-th element in `lhs` and the *j*-th element in `rhs`.
+  Schematically, this looks as follows (where `∘` is some binary operation):
+  ```
+         |    b0    b1 ...    bn rhs
+      ---+----------------------
+  lhs a0 | a0∘b0 a0∘b1 ... a0∘bn res
+      a1 | a1∘b0 a1∘b1 ... a1∘bn
+      .. | ..... .....     .....
+      am | am∘b0 am∘b1 ... am∘bn
+  ```
+  
 ### Arithmetic
 
 | function | meaning |
 | ----- | ----- |
-| **`pow`** | exponentiation (`lhs` to the power of `rhs`) |
-| **`log`** | logarithm (logarithm of `lhs` to the base of `rhs`) |
-| **`mod`** | modulo |
+| **`outerAdd`** | addition |
+| **`outerSub`** | subtraction |
+| **`outerMul`** | multiplication (the well-known *outer product*) |
+| **`outerDiv`** | division |
+| **`outerPow`** | exponentiation (`lhs` to the power of `rhs`) |
+| **`outerLog`** | logarithm (logarithm of `lhs` to the base of `rhs`) |
+| **`outerMod`** | modulo |
 
 ### Min/max
 
 | function | meaning |
 | ----- | ----- |
-| **`min`** | minimum |
-| **`max`** | maximum |
+| **`outerMin`** | minimum |
+| **`outerMax`** | maximum |
+
+### Logical
+
+| function | meaning |
+| ----- | ----- |
+| **`outerAnd`** | logical conjunction |
+| **`outerOr`** | logical disjunction |
+| **`outerXor`** | logical exclusive disjunction |
 
 ### Strings
 
 | function | meaning |
 | ----- | ----- |
-| **`concat`** | string concatenation |
+| **`outerConcat`** | string concatenation |
+
+### Comparison
+
+| function | meaning |
+| ----- | ----- |
+| **`outerEq`** | equal |
+| **`outerNeq`** | not equal |
+| **`outerLt`** | less than |
+| **`outerLe`** | less or equal |
+| **`outerGt`** | greater than |
+| **`outerGe`** | greater or equal |
 
 ## Aggregation and statistical
 
@@ -196,7 +283,19 @@ The following built-in functions all follow the same scheme:
 
 ### Cumulative aggregation
 
-Cumulative aggregation is not supported yet, but we plan to offer at least **`cumSum`**, **`cumProd`**, **`cumMin`**, and **`cumMax`**.
+The following built-in functions all follow the same scheme:
+
+- **`cumAgg`**`(arg:matrix)`
+  
+  Cumulative aggregation over each column of the matrix `arg`.
+  Returns a matrix of the same shape as `arg`.
+
+| function | meaning |
+| ----- | ------ |
+| `cumSum` | cumulative sum |
+| `cumProd` | cumulative product |
+| `cumMin` | cumulative minimum |
+| `cumMax` | cumulative maximum |
 
 ## Reorganization
 

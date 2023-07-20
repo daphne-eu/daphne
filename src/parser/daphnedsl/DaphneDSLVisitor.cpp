@@ -116,6 +116,8 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         // TODO The following is invalid when extracting multiple columns, but
         // we should better handle that during type inference.
         resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
+    else if(argType.isa<mlir::daphne::UnknownType>())
+        resType = utils.unknownType;
     else
         throw std::runtime_error("right indexing is only allowed on matrices and frames");
 
@@ -267,7 +269,7 @@ antlrcpp::Any DaphneDSLVisitor::visitImportStatement(DaphneDSLGrammarParser::Imp
     // Remove quotes
     path = path.substr(1, path.size() - 2);
     
-    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top()).parent_path());
+    std::filesystem::path importerDirPath = std::filesystem::absolute(std::filesystem::path(scriptPaths.top())).parent_path();
     std::filesystem::path importingPath = path;
 
     //Determine the prefix from alias/filename
@@ -797,10 +799,20 @@ bool DaphneDSLVisitor::argAndUDFParamCompatible(mlir::Type argTy, mlir::Type par
     auto argMatTy = argTy.dyn_cast<mlir::daphne::MatrixType>();
     auto paramMatTy = paramTy.dyn_cast<mlir::daphne::MatrixType>();
 
-    bool isMatchingUnknownMatrix =
-        argMatTy && paramMatTy && paramMatTy.getElementType() == utils.unknownType;
-
-    return paramTy == argTy || paramTy == utils.unknownType || isMatchingUnknownMatrix;
+    // TODO This is rather a workaround than a thorough solution, since
+    // unknown argument types do not really allow to check compatibility.
+    
+    // Argument type and parameter type are compatible if...
+    return
+        // ...they are the same, OR
+        paramTy == argTy ||
+        // ...at least one of them is unknown, OR
+        argTy == utils.unknownType || paramTy == utils.unknownType ||
+        // ...they are both matrices and at least one of them is of unknown value type.
+        (argMatTy && paramMatTy && (
+            argMatTy.getElementType() == utils.unknownType ||
+            paramMatTy.getElementType() == utils.unknownType
+        ));
 }
 
 std::optional<mlir::func::FuncOp> DaphneDSLVisitor::findMatchingUDF(const std::string &functionName, const std::vector<mlir::Value> &args) const {
