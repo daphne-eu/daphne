@@ -972,8 +972,8 @@ antlrcpp::Any SQLVisitor::visitIdentifierExpr(
     return extractMatrixFromFrame(currentFrame, colname);
 }
 
-antlrcpp::Any SQLVisitor::visitStarIdent(
-    SQLGrammarParser::StarIdentContext * ctx
+antlrcpp::Any SQLVisitor::visitStarExpr(
+    SQLGrammarParser::StarExprContext * ctx
 )
 {
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){
