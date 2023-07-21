@@ -84,6 +84,7 @@ MAKE_SUCCESS_TEST_CASE("join", 1);
 MAKE_SUCCESS_TEST_CASE("group", 3);
 MAKE_PASS_FAILURE_TEST_CASE("group", 1);
 
+MAKE_TEST_CASE("group", 4)
 
 
 MAKE_TEST_CASE("thetaJoin_equal", 4)

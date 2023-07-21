@@ -207,12 +207,24 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
         std::string labelStr = CompilerUtils::constantOrThrow<std::string>(
             t, "the specified label must be a constant of string type"
         );
+        std::string delimiter = ".";
+        const std::string frameName = labelStr.substr(0, labelStr.find(delimiter));
+        const std::string colLabel = labelStr.substr(labelStr.find(delimiter) + delimiter.length(), labelStr.length());
         if(labelStr == "*") {
             auto allTypes = arg.getColumnTypes();
             for (Type type: allTypes) {
                 newColumnTypes.push_back(type);
             }
-        } else {
+        } else if(colLabel.compare("*") == 0) {
+            std::vector<std::string> labels = *arg.getLabels();
+            std::vector<mlir::Type> colTypes = arg.getColumnTypes();
+            for (int i = 0; i < labels.size(); i++) {
+                std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
+                if (labelFrameName.compare(frameName) == 0) {
+                    newColumnTypes.push_back(colTypes[i]);
+                }
+            }
+    }else {
             newColumnTypes.push_back(getFrameColumnTypeByLabel(arg, t));
         }
     }

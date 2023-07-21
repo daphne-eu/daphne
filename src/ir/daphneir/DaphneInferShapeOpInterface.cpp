@@ -184,7 +184,35 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupJoinOp::inferShape() {
 std::vector<std::pair<ssize_t, ssize_t>> daphne::GroupOp::inferShape() {
     // We don't know the exact number of groups here.
     const size_t numRows = -1;
-    const size_t numCols = getKeyCol().size() + getAggCol().size();
+
+    std::vector<std::string> newLabels;
+
+    for(Value t: getKeyCol()){ //Adopting keyCol Labels
+        std::string keyLabel = CompilerUtils::constantOrThrow<std::string>(t);
+        std::string delimiter = ".";
+        const std::string frameName = keyLabel.substr(0, keyLabel.find(delimiter));
+        const std::string colLabel = keyLabel.substr(keyLabel.find(delimiter) + delimiter.length(), keyLabel.length());
+        
+        if(keyLabel == "*") {
+            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+            for (std::string frameLabel : *arg.getLabels()) {
+                newLabels.push_back(frameLabel);
+            }
+        } else if(colLabel.compare("*") == 0) {
+            daphne::FrameType arg = getFrame().getType().dyn_cast<daphne::FrameType>();
+            std::vector<std::string> labels = *arg.getLabels();
+            for (std::string label : labels) {
+                std::string labelFrameName = label.substr(0, label.find(delimiter));
+                if (labelFrameName.compare(frameName) == 0) {
+                    newLabels.push_back(label);
+                }
+            }
+        } else {
+            newLabels.push_back(keyLabel);
+        }
+    }
+    
+    const size_t numCols = newLabels.size() + getAggCol().size();
     return {{numRows, numCols}};
 }
 
