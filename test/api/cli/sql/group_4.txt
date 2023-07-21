@@ -1,4 +1,4 @@
-Frame(10x4, [f.a:int64_t, f.b:int64_t, g.a:int64_t, g.b:int64_t])
+Frame(10x2, [f.a:int64_t, f.b:int64_t])
 0 5
 1 4
 2 3
