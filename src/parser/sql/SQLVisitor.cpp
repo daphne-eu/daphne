@@ -1040,6 +1040,10 @@ antlrcpp::Any SQLVisitor::visitGroupAggExpr(
 
     groundGroupColumns.insert(ctx->var->getText());
 
+    if(ctx->var->getText()[ctx->var->getText().length() - 1] == '*'){
+        throw std::runtime_error("Using the asterisk in aggregations is not allowed");
+    }
+
     // Run aggreagation for whole column
     if(!isBitSet(sqlFlag, (int64_t)SQLBit::group) && isBitSet(sqlFlag, (int64_t)SQLBit::codegen)){  
         mlir::Location loc = utils.getLoc(ctx->start);
