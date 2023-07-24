@@ -20,6 +20,7 @@
 #include <runtime/local/kernels/MatMul.h>
 #include <runtime/local/kernels/Transpose.h>
 #include <runtime/local/kernels/Syrk.h>
+#include "run_tests.h"
 
 #include <tags.h>
 
@@ -28,11 +29,11 @@
 #include <vector>
 
 template<class DT>
-void checkSyrk(const DT * arg) {
+void checkSyrk(const DT * arg, DCTX(dctx)) {
     DT * resExp = nullptr;
     DT * argT = nullptr;
-    transpose(argT, arg, nullptr);
-    matMul(resExp, argT, arg, false, false, nullptr);
+    transpose(argT, arg, dctx);
+    matMul(resExp, argT, arg, false, false, dctx);
 
     DT * resAct = nullptr;
     syrk(resAct, arg, nullptr);
@@ -43,7 +44,8 @@ void checkSyrk(const DT * arg) {
 
 TEMPLATE_PRODUCT_TEST_CASE("Syrk", TAG_KERNELS, (DenseMatrix), (float, double)) {
     using DT = TestType;
-    
+    auto dctx = setupContextAndLogger();
+
     auto m0 = genGivenVals<DT>(3, {
         0, 0, 0,
         0, 0, 0,
@@ -89,15 +91,15 @@ TEMPLATE_PRODUCT_TEST_CASE("Syrk", TAG_KERNELS, (DenseMatrix), (float, double)) 
         3
     });
 
-    checkSyrk(m0);
-    checkSyrk(m1);
-    checkSyrk(m2);
-    checkSyrk(m3);
-    checkSyrk(m4);
-    checkSyrk(m5);
-    checkSyrk(v0);
-    checkSyrk(v1);
-    checkSyrk(v2);
+    checkSyrk(m0, dctx.get());
+    checkSyrk(m1, dctx.get());
+    checkSyrk(m2, dctx.get());
+    checkSyrk(m3, dctx.get());
+    checkSyrk(m4, dctx.get());
+    checkSyrk(m5, dctx.get());
+    checkSyrk(v0, dctx.get());
+    checkSyrk(v1, dctx.get());
+    checkSyrk(v2, dctx.get());
 
     DataObjectFactory::destroy(m0, m1, m2, m3, m4, m5, v0, v1, v2);
 }

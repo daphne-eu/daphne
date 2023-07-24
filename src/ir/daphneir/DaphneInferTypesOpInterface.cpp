@@ -423,11 +423,11 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         types = daphne::tryInferType(op);
     }
     catch (std::runtime_error& re) {
-        spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+        spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
         throw;
     }
     catch (...) {
-        spdlog::error("Caught an unspecified exception in {}:{}",__FILE__, __LINE__);
+        spdlog::error("Unknown exception in {}:{}",__FILE__, __LINE__);
         throw;
     }
     const size_t numRes = op->getNumResults();
@@ -438,7 +438,7 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
                 std::to_string(types.size()) + " types, but the op has " +
                 std::to_string(numRes) + " results"
         );
-    // Set the infered types on all results of this operation.
+    // Set the inferred types on all results of this operation.
     for(size_t i = 0; i < numRes; i++) {
         if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed)
             // TODO As soon as the run-time can handle unknown
