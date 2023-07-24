@@ -69,7 +69,7 @@ namespace
                     result_op = parser.parseStreamFrame(rewriter, sql_query, sourceName);
                 }
                 catch (std::runtime_error& re) {
-                    spdlog::error("Final catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+                    spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
                     return failure();
                 }
                 rewriter.replaceOp(op, result_op);

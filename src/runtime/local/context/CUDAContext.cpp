@@ -19,7 +19,7 @@
 size_t CUDAContext::alloc_count = 0;
 
 void CUDAContext::destroy() {
-    spdlog::get("runtime::cuda")->debug("Destroying CUDA context...");
+    logger->debug("Destroying CUDA context...");
     CHECK_CUBLAS(cublasDestroy(cublas_handle));
     CHECK_CUSPARSE(cusparseDestroy(cusparse_handle));
     CHECK_CUDNN(cudnnDestroy(cudnn_handle));
@@ -48,8 +48,8 @@ void CUDAContext::init() {
     float mem_usage = 0.9f;
     mem_budget = total * mem_usage;
 
-    spdlog::get("runtime::cuda")->info("Using CUDA device {}: {}\n\tAvailable mem: {} Total mem: {} using {}% -> {}", device_id,
-                  device_properties.name, available, total, mem_usage * 100, mem_budget);
+    logger->info("Using CUDA device {}: {}\n\tAvailable mem: {} Total mem: {} using {}% -> {}", device_id,
+            device_properties.name, available, total, mem_usage * 100, mem_budget);
 
     CHECK_CUBLAS(cublasCreate(&cublas_handle));
     CHECK_CUSPARSE(cusparseCreate(&cusparse_handle));
@@ -94,12 +94,12 @@ cudaDataType CUDAContext::getCUSparseDataType<double>() const {
 
 void* CUDAContext::getCUDNNWorkspace(size_t size) {
     if (size > cudnn_workspace_size) {
-        spdlog::get("runtime::cuda")->debug("Allocating cuDNN workspace of size {} bytes", size);
+        logger->debug("Allocating cuDNN workspace of size {} bytes", size);
         CHECK_CUDART(cudaMalloc(&cudnn_workspace, size));
         cudnn_workspace_size = size;
     }
     else {
-        spdlog::get("runtime::cuda")->debug("Not allocating cuDNN conv workspace of size {} bytes", size);
+        logger->debug("Not allocating cuDNN conv workspace of size {} bytes", size);
     }
 
     return cudnn_workspace;
@@ -107,21 +107,24 @@ void* CUDAContext::getCUDNNWorkspace(size_t size) {
 
 std::unique_ptr<IContext> CUDAContext::createCudaContext(int device_id) {
 
+    auto ctx = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
+    ctx->logger = spdlog::get("runtime::cuda");
+
     int device_count = -1;
     CHECK_CUDART(cudaGetDeviceCount(&device_count));
 
     if(device_count < 1) {
-        spdlog::get("runtime::cuda")->warn("Not creating requested CUDA context. No cuda devices available.");
+        ctx->logger->warn("Not creating requested CUDA context. No cuda devices available.");
         return nullptr;
     }
 
     if(device_id >= device_count) {
-        spdlog::get("runtime::cuda")->warn("Requested device ID {} >= device count {}", device_id, device_count);
+        ctx->logger->warn("Requested device ID {} >= device count {}", device_id, device_count);
         return nullptr;
     }
 
-    auto ctx = std::unique_ptr<CUDAContext>(new CUDAContext(device_id));
     ctx->init();
+//    return reinterpret_cast<std::unique_ptr<IContext> &&>(ctx);
     return ctx;
 }
 
@@ -141,4 +144,3 @@ void CUDAContext::free(size_t id) {
     CHECK_CUDART(cudaFree(allocations.at(id).get()));
     allocations.erase(id);
 }
-

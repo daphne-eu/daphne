@@ -22,7 +22,7 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <vector>
 
-class DaphneUserConfig;
+struct DaphneUserConfig;
 
 class DaphneLogger {
     const static std::vector<LogConfig> fallback_loggers;

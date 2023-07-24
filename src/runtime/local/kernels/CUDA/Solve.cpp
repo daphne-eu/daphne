@@ -99,7 +99,6 @@ namespace CUDA {
         int *d_info{}; /* error info */
         int lwork = 0;     /* size of workspace */
         VT *d_work{}; /* device workspace for getrf */
-//    CudaUniquePtr<VT> d_A(new VT, &cuda_deleter<VT>);
         VT *d_A{};
         CHECK_CUBLAS(cublasSetStream(ctx->getCublasHandle(), ctx->getCuSolverStream()));
         CHECK_CUDART(cudaMallocAsync(reinterpret_cast<void **>(&d_A), lhs->getBufferSize(), ctx->getCuSolverStream()));
@@ -109,10 +108,8 @@ namespace CUDA {
         launch_cublas_geam<VT>(*ctx, nr1, nc1, &blend_alpha, &blend_beta, lhs->getValues(&alloc_desc), d_A);
         CHECK_CUBLAS(cublasSetStream(ctx->getCublasHandle(), nullptr));
         auto &m = nc1;
-//    auto d_A = const_cast<VT*>(lhs->getValues(&alloc_desc));
-        CHECK_CUDART(
-                cudaMemcpyAsync(res->getValues(&alloc_desc), rhs->getValues(&alloc_desc), rhs->getBufferSize(), cudaMemcpyDeviceToDevice,
-                                ctx->getCuSolverStream()));
+        CHECK_CUDART(cudaMemcpyAsync(res->getValues(&alloc_desc), rhs->getValues(&alloc_desc), rhs->getBufferSize(),
+                cudaMemcpyDeviceToDevice, ctx->getCuSolverStream()));
         auto d_B = res->getValues(&alloc_desc);
         auto lda = m;
         auto ldb = m;
@@ -121,9 +118,9 @@ namespace CUDA {
 
         //ToDo: templatize
         CHECK_CUSOLVER(cusolverDnXgetrf_bufferSize(ctx->getCUSOLVERHandle(), m, m, d_A, lda, &lwork));
-#ifndef NDEBUG
-        std::cerr << " allocating " << sizeof(VT) * lwork << " bytes for CUSOLVER workspace" << std::endl;
-#endif
+
+        ctx->logger->debug("allocating {} bytes for cuSolver workspace", sizeof(VT) * lwork);
+
         CHECK_CUDART(cudaMallocAsync((void **) &d_work, sizeof(VT) * lwork, ctx->getCuSolverStream()));
 
         CHECK_CUSOLVER(cusolverDnXgetrf(ctx->getCUSOLVERHandle(), m, m, d_A, lda, d_work, d_Ipiv, d_info));
@@ -141,13 +138,13 @@ namespace CUDA {
                 throw std::runtime_error("cuSolve: A factor Ui is exactly singular, so the solution could not be computed");
             else if(info < 0)
                 throw std::runtime_error(std::string(std::string("cuSolve: The ") + std::to_string(info) +
-                                                     std::string("-th value had an illegal value.")).c_str());
+                        std::string("-th value had an illegal value.")).c_str());
         }
         else if(info > 0)
             throw std::runtime_error("cuSolve: A factor Ui is exactly singular, so the solution could not be computed");
         else if(info < 0)
             throw std::runtime_error(std::string(std::string("cuSolve: The ") + std::to_string(info) +
-                                        std::string("-th value had an illegal value.")).c_str());
+                    std::string("-th value had an illegal value.")).c_str());
         cudaFreeAsync(d_A, ctx->getCuSolverStream());
     }
 

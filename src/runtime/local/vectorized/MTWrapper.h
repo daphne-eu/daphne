@@ -133,7 +133,7 @@ protected:
 
         int i = 0;
         for( auto& w : cpp_workers ) {
-            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, verbose, 0, batchSize,
+            w = std::make_unique<WorkerCPU>(qvector, topologyPhysicalIds, topologyUniqueThreads, _ctx, verbose, 0, batchSize,
                     i, numQueues, queueMode, this->_stealLogic, pinWorkers);
             i++;
         }
@@ -142,7 +142,7 @@ protected:
     void initCUDAWorkers(TaskQueue* q, uint32_t batchSize, bool verbose = false) {
         cuda_workers.resize(_numCUDAThreads);
         for (auto& w : cuda_workers)
-            w = std::make_unique<WorkerGPU>(q, verbose, 1, batchSize);
+            w = std::make_unique<WorkerGPU>(q, _ctx, verbose, 1, batchSize);
     }
 
     void cudaPrefetchInputs(Structure** inputs, uint32_t numInputs, size_t mem_required,
@@ -151,9 +151,7 @@ protected:
         auto ctx = CUDAContext::get(_ctx, deviceID);
         AllocationDescriptorCUDA alloc_desc(_ctx, deviceID);
         auto buffer_usage = static_cast<float>(mem_required) / static_cast<float>(ctx->getMemBudget());
-#ifndef NDEBUG
-        std::cout << "\nVect pipe total in/out buffer usage: " << buffer_usage << std::endl;
-#endif
+        ctx->logger->debug("Vect pipe total in/out buffer usage: {}", buffer_usage);
         if(buffer_usage < 1.0) {
             for (auto i = 0u; i < numInputs; ++i) {
                 if(splits[i] == mlir::daphne::VectorSplit::ROWS) {
@@ -191,10 +189,10 @@ public:
     explicit MTWrapperBase(uint32_t numFunctions, DCTX(ctx)) : _ctx(ctx) {
         // ToDo: this is a workaround until getTopology() is properly fixed via hwloc library calls (see issue [DAPHNE-#554])
 #ifdef __x86_64__
-        spdlog::debug("Querying x86-64 cpu topology");
+        _ctx->logger->debug("Querying x86-64 cpu topology");
         get_topology(topologyPhysicalIds, topologyUniqueThreads, topologyResponsibleThreads);
 #else
-        spdlog::debug("Querying arm cpu topology");
+        _ctx->logger->debug("Querying arm cpu topology");
         _numCPPThreads = std::thread::hardware_concurrency();
         for (auto i = 0; i < static_cast<int>(_numCPPThreads); i++) {
             topologyPhysicalIds.push_back(i);
@@ -235,6 +233,7 @@ public:
             _numQueues = _numCPPThreads;
         }
 
+        // ToDo: use logger
         if( _ctx->config.debugMultiThreading ) {
             std::cout << "topologyPhysicalIds:" << std::endl;
             for(const auto & topologyEntry: topologyPhysicalIds) {
@@ -252,7 +251,7 @@ public:
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
 
-        spdlog::debug("spawning {} CPU and {} CUDA worker threads", this->_numCPPThreads, this->_numCUDAThreads);
+        _ctx->logger->debug("spawning {} CPU and {} CUDA worker threads", this->_numCPPThreads, this->_numCUDAThreads);
     }
 
     virtual ~MTWrapperBase() = default;
