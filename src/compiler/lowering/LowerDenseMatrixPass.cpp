@@ -198,8 +198,8 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
             op->getLoc(), memRefType, adaptor.getArg());
 
         Value sum = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
-            // loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+            // loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
+            loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
 
         SmallVector<Value, 4> loopIvs;
         // SmallVector<scf::ForOp, 2> forOps;
@@ -219,8 +219,8 @@ class SumAllOpLowering : public OpConversionPattern<daphne::AllAggSumOp> {
         // outer loop body
         rewriter.setInsertionPointToStart(outerLoop.getBody());
         Value sum_iter = rewriter.create<mlir::arith::ConstantOp>(
-            loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
-            // loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
+            // loc, rewriter.getF32Type(), rewriter.getF32FloatAttr(0));
+            loc, rewriter.getF64Type(), rewriter.getF64FloatAttr(0));
         // inner loop
         // auto innerUpperBound =
         //     rewriter.create<ConstantIndexOp>(loc, memRefShape[1]);
@@ -288,10 +288,29 @@ void LowerDenseMatrixPass::runOnOperation() {
     target.addLegalOp<mlir::daphne::GetMemRefDenseMatrix>();
     target.addLegalOp<mlir::daphne::GetDenseMatrixFromMemRef>();
     target.addLegalOp<mlir::daphne::PrintMemRef>();
+
     target.addIllegalOp<mlir::daphne::AllAggSumOp>();
     target.addIllegalOp<mlir::daphne::MatMulOp>();
 
+    // target.addDynamicallyLegalOp<mlir::daphne::MatMulOp>(
+    //     [&](mlir::daphne::MatMulOp op) {
+    //         mlir::daphne::MatrixType lhs =
+    //             op->getOperandTypes()[0]
+    //                 .template dyn_cast<mlir::daphne::MatrixType>();
+    //         mlir::daphne::MatrixType rhs =
+    //             op->getOperandTypes()[1]
+    //                 .template dyn_cast<mlir::daphne::MatrixType>();
+    //
+    //         if (lhs.getNumRows() != rhs.getNumRows() ||
+    //             lhs.getNumCols() != rhs.getNumCols() ||
+    //             lhs.getNumRows() == -1 || lhs.getNumCols() == -1)
+    //             return true;
+    //
+    //         return false;
+    //     });
+
     patterns.insert<MatMulOpLowering, SumAllOpLowering>(&getContext());
+    // patterns.insert<SumAllOpLowering>(&getContext());
     auto module = getOperation();
     if (failed(applyPartialConversion(module, target, std::move(patterns)))) {
         signalPassFailure();

@@ -208,6 +208,11 @@ main(int argc, char** argv)
             "fusion", cat(daphneOptions),
             desc("Enables affine loop fusion.")
     );
+    opt<bool> hybrid(
+        "mlir", cat(schedulingOptions), "hybrid",
+        cat(schedulingOptions),
+        desc("Hybrid compilation"));
+
     opt<bool> useScalarToMLIRLowering(
         "mlir", cat(schedulingOptions), "scalar-lowering",
         cat(schedulingOptions),
@@ -376,6 +381,7 @@ main(int argc, char** argv)
     user_config._inline = _inline;
     user_config.lower_scalar = useScalarToMLIRLowering;
     user_config.fusion = fusion;
+    user_config.hybrid = hybrid;
 
     // add this after the cli args loop to work around args order
     if(!user_config.libdir.empty() && user_config.use_cuda)

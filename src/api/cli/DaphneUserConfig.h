@@ -46,6 +46,7 @@ struct DaphneUserConfig {
     bool _inline = false;
     bool fusion = false;
     bool lower_scalar = false;
+    bool hybrid = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;

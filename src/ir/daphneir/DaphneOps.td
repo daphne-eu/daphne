@@ -208,7 +208,8 @@ def Daphne_MatMulOp : Daphne_Op<"matMul", [
 class Daphne_EwUnaryOp<string name, Type scalarType, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
     DataTypeFromFirstArg,
     ShapeFromArg,
-    CastArgsToResType
+    CastArgsToResType,
+    NoMemoryEffect
 ])> {
     let arguments = (ins AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$arg);
     let results = (outs AnyTypeOf<[MatrixOf<[scalarType]>, scalarType, Unknown]>:$res);

@@ -139,25 +139,34 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
         if (userConfig_.codegen) {
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR beofre DM opt"));
-            pm.addPass(mlir::daphne::createDenseMatrixTransformPass());
 
+            pm.addPass(mlir::daphne::createDenseMatrixTransformPass());
             // pm.addPass(mlir::daphne::createPrintIRPass(
             //     "IR beofre LowerDenseMatrixPass"));
 
-            pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
+
+            if (!userConfig_.hybrid) {
+                pm.addPass(mlir::daphne::createLowerDenseMatrixPass());
+                std::cout << "lowered matmul" << std::endl;
+            }
+
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after LowerDenseMatrixPass"));
 
-             pm.addPass(mlir::daphne::createMapOpLoweringPass());
+            if (userConfig_.hybrid) {
+                pm.addPass(mlir::daphne::createMapOpLoweringPass());
+                std::cout << "lowered map" << std::endl;
+            }
+
              if (userConfig_.explain_codegen)
                  pm.addPass(mlir::daphne::createPrintIRPass(
                      "IR after MapOpLoweringPass"));
 
             pm.addPass(mlir::createInlinerPass());
-            if (userConfig_.explain_codegen)
-                pm.addPass(mlir::daphne::createPrintIRPass(
-                    "IR after inlining"));
+            // if (userConfig_.explain_codegen)
+            //     pm.addPass(mlir::daphne::createPrintIRPass(
+            //         "IR after inlining"));
 
             pm.addPass(mlir::daphne::createLowerScalarOpsPass());
             if (userConfig_.explain_codegen)
@@ -168,9 +177,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
                     "IR after EwOpLoweringPass"));
-            if (userConfig_.explain_codegen)
-                pm.addPass(mlir::daphne::createPrintIRPass(
-                    "IR before canonicalize"));
+            // if (userConfig_.explain_codegen)
+            //     pm.addPass(mlir::daphne::createPrintIRPass(
+            //         "IR before canonicalize"));
             pm.addPass(mlir::createCanonicalizerPass());
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
@@ -178,14 +187,11 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             // TODO(phil): check with fusion1.daphne testcase
             // pm.addPass(mlir::createCSEPass());
 
-            if (userConfig_.explain_codegen)
-                pm.addPass(mlir::daphne::createPrintIRPass(
-                    "IR after canonicalize"));
-
             // pm.addNestedPass<mlir::func::FuncOp>(mlir::bufferization::createBufferDeallocationPass());
 
             pm.addNestedPass<mlir::func::FuncOp>(mlir::createLoopFusionPass());
             pm.addNestedPass<mlir::func::FuncOp>(mlir::createAffineScalarReplacementPass());
+            // mlir::createAffineLoopInvariantCodeMotionPass();
 
             if (userConfig_.explain_codegen)
                 pm.addPass(mlir::daphne::createPrintIRPass(
