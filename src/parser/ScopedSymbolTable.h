@@ -135,6 +135,27 @@ public:
             return it->second;
         return get(sym);
     }
+
+    // TODO add const in the other methods
+    std::string getSymbol(mlir::Value val) const {
+        for(int i = scopes.size() - 1; i >= 0; i--) {
+            for(auto it = scopes[i].begin(); it != scopes[i].end(); it++) {
+                if(it->second.value == val)
+                    return it->first;
+            }
+        }
+        throw std::runtime_error("no symbol found for the given value");
+    }
+
+    std::string getSymbol(mlir::Value val, const SymbolTable & tab) const {
+        for(auto it = tab.begin(); it != tab.end(); it++) {
+            if(it->second.value == val)
+                return it->first;
+        }
+        // TODO how to handle this
+        //return getSymbol(val);
+        throw std::runtime_error("no symbol found for the given value");
+    }
     
     /**
      * @brief Associates the given symbol information (including an SSA value)

@@ -47,8 +47,8 @@ const std::string dirPath = "test/api/cli/functions/";
     }
 
 MAKE_TEST_CASE("basic", 3)
-MAKE_TEST_CASE("typed", 3)
+MAKE_TEST_CASE("typed", 5)
 MAKE_TEST_CASE("untyped", 4)
 MAKE_TEST_CASE("mixtyped", 2)
 MAKE_TEST_CASE("early_return", 3)
-MAKE_INVALID_TEST_CASE("invalid_parser", 7, StatusCode::PARSER_ERROR)
+MAKE_INVALID_TEST_CASE("invalid_parser", 11, StatusCode::PARSER_ERROR)
