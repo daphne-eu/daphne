@@ -38,9 +38,11 @@ public:
     };
     
     const static std::string DISTRIBUTED_FUNCTION_NAME;
-   
-    WorkerImpl();
-    ~WorkerImpl();
+
+    DaphneUserConfig& cfg;
+
+    WorkerImpl(DaphneUserConfig& _cfg);
+    ~WorkerImpl() = default;
     
     virtual void Wait() { };
    
@@ -69,7 +71,8 @@ public:
      * @param mlirCode mlir code fragment
      * @return WorkerImpl::Status contains if everything went fine, with an optional error message
      */
-    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs, const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode) ;
+    WorkerImpl::Status Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
+            const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode);
 
     /**
      * @brief Returns a matrix stored in worker's memory
