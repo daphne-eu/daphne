@@ -20,16 +20,20 @@
 #include "WorkerImpl.h"
 #include "WorkerImplGRPC.h"
 
+
 int main(int argc, char *argv[])
 {
+    DaphneUserConfig user_config{};
+    auto logger = std::make_unique<DaphneLogger>(user_config);
+
     if (argc != 2) {
-        std::cout << "Usage: " << argv[0] << " <Address:Port>" << std::endl;
-        exit(1);
+         std::cout << "Usage: " << argv[0] << " <Address:Port>" << std::endl;
+         exit(1);
     }
     auto addr = argv[1];
 
     // TODO choose specific implementation based on arguments or config file
-    WorkerImpl *service = new WorkerImplGRPC(addr);
+    WorkerImpl *service = new WorkerImplGRPC(addr, user_config);
     
     std::cout << "Started Distributed Worker on `" << addr << "`\n";
     service->Wait();

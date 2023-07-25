@@ -85,7 +85,7 @@ void handle_sig_abort(int signal) {
     longjmp(return_from_handler, gSignalStatus);
 }
 
-int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id){
+int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id, DaphneUserConfig& user_config){
     using clock = std::chrono::high_resolution_clock;
     clock::time_point tpBeg = clock::now();
 
@@ -340,9 +340,6 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     // Process parsed arguments
     // ************************************************************************
 
-    // Initialize user configuration.
-    DaphneUserConfig user_config{};
-
     try {
         if (configFile != configFileInitValue && ConfigParser::fileExists(configFile)) {
             ConfigParser::readUserConfig(configFile, user_config);
@@ -577,7 +574,11 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
 int mainInternal(int argc, const char** argv, DaphneLibResult* daphneLibRes){
     int id=-1; // this  -1 would not change if the user did not select mpi backend during execution
-    int res=startDAPHNE(argc, argv, daphneLibRes, &id);
+
+    // Initialize user configuration.
+    DaphneUserConfig user_config{};
+
+    int res=startDAPHNE(argc, argv, daphneLibRes, &id, user_config);
 
 #ifdef USE_MPI    
     if(id==COORDINATOR)
@@ -591,7 +592,7 @@ int mainInternal(int argc, const char** argv, DaphneLibResult* daphneLibRes){
        MPI_Finalize();
     }   
     else if(id>-1){
-        MPIWorker worker;
+        MPIWorker worker(user_config);
         worker.joinComputingTeam();
         res=StatusCode::SUCCESS;
         MPI_Finalize();

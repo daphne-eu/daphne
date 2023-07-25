@@ -24,7 +24,7 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_builder.h>
 
-WorkerImplGRPC::WorkerImplGRPC(std::string addr)
+WorkerImplGRPC::WorkerImplGRPC(const std::string& addr, DaphneUserConfig& _cfg) : WorkerImpl(_cfg)
 {
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     cq_ = builder.AddCompletionQueue();
@@ -79,10 +79,8 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
     return ::grpc::Status::OK;
 }
 
-grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context,
-                         const ::distributed::Task *request,
-                         ::distributed::ComputeResult *response)
-{
+grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context, const ::distributed::Task *request,
+        ::distributed::ComputeResult *response) {
     std::vector<StoredInfo> inputs;
     inputs.reserve(request->inputs().size());
 

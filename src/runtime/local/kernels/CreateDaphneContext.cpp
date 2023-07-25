@@ -18,7 +18,7 @@
 
 void createDaphneContext(DaphneContext *& res, uint64_t configPtr) {
     auto config = reinterpret_cast<DaphneUserConfig *>(configPtr);
-    if(config->log_ptr)
+    if(config->log_ptr != nullptr)
         config->log_ptr->registerLoggers();
     res = new DaphneContext(*config);
 }
