@@ -202,7 +202,3 @@ def test_invalid_cond_inputs():
         dctx.do_while_loop([X], cond, do_while_body)
     
     assert str(raised_error.value) == f"{cond} and {do_while_body} do not have the same number of arguments"
-
-if __name__ == "__main__":
-    test_simple()
-    #test_simple_outer_scope_var()

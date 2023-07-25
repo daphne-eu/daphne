@@ -13,7 +13,6 @@ from api.python.context.daphne_context import DaphneContext
 
 dctx = DaphneContext()
 
-@pytest.mark.skip(reason="DaphneDSL has problems with nesting")
 @pytest.mark.parametrize("num", [3.8, 10.0])
 def test_nested_for_loop_in_cond(num):
     X = dctx.fill(num, 5, 5)
@@ -40,7 +39,6 @@ def test_nested_for_loop_in_cond(num):
     
     assert np.array_equal(np_X, daphne_output)
 
-@pytest.mark.skip(reason="DaphneDSL has problems with nesting")
 def test_nested_cond_in_forloop():
     X = dctx.fill(3.8, 5, 5)
 
@@ -69,7 +67,6 @@ def test_nested_cond_in_forloop():
     
     assert np.array_equal(np_X, daphne_output)
 
-@pytest.mark.skip(reason="DaphneDSL has problems with nesting")
 def test_nested_for_loop_in_for_loop():
     X = dctx.fill(3.8, 5, 5)
 
@@ -85,14 +82,7 @@ def test_nested_for_loop_in_for_loop():
 
     np_X = np.array([3.8 for i in range(25)]).reshape((5,5))
     for i in range(1, 11):
-        if np_X.sum() < 10:
-            np_X = np_X - 1
-        else:
-            np_X = np_X + 1
+        for j in range(1, 6):
+            np_X += 1
     
     assert np.array_equal(np_X, daphne_output)
-
-if __name__ == "__main__":
-    #test_nested_for_loop_in_cond(3.8)
-    test_nested_cond_in_forloop()
-    #test_nested_for_loop_in_for_loop()

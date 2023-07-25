@@ -25,7 +25,7 @@ __all__ = ["DaphneContext"]
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
-from api.python.operator.nodes.matrix import Scalar
+from api.python.operator.nodes.scalar import Scalar
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.cond import Cond
