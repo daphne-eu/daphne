@@ -1,3 +1,6 @@
+# -------------------------------------------------------------------------
+# Imports
+# -------------------------------------------------------------------------
 from antlr4 import *
 from DmlLexer import DmlLexer
 from DmlParser import DmlParser
@@ -5,30 +8,51 @@ from DmlVisitor import DmlVisitor
 import argparse
 import os
 
-# Context is needed for the following cases:
-# 1) Automatic initialization of variables that are only initialized inside an if-else-statement
-# 2) Get data type of each variable in order to translate functions correctly from dml to daphneDSL
-# 3) Remember functions that are imported or are defined later in the script (otherwise we would try to import them)
-# 4) Save return types of function in order to implement dml's stop() function by calling return prematurely
+# -------------------------------------------------------------------------
+# Global variables
+# -------------------------------------------------------------------------
+
+# TODO: Get parameter types of imported functions dynamically
+# Global variable storing the data types of the function parameters (only needed for imported functions)
+param_types = {	
+        	"lm": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["reg", "f64", "0.0"], ["tol", "f64", "0.0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
+        	"lmCG": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["reg", "f64", "0.0"], ["tol", "f64", "0.0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
+        	"lmDS": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["reg", "f64", "0.0"], ["tol", "f64", "0.0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
+        	"dist": [["X", "matrix<f64>", None]],
+        	"components": [["G", "matrix<f64>", None], ["maxi", "si64", "0"], ["verbose", "bool", "true"]]    
+        }
 class Context:
     def __init__(self):
-        self.if_assigns = set()
-        self.else_assigns = set()
-        self.already_assigned = set()
-        self.in_ifBody = False
-        self.in_elseBody = False
-        self.data_types = dict()
-        self.return_types = {}
-        self.current_function = ""
-        self.function_names = []
-        self.imports = ""
+        self.if_assigns = set()			# Stores variables assigned inside if-block
+        self.else_assigns = set()		# Stores variables assigned inside else-block
+        self.already_assigned = set()		# Stores variables that have been already been assigned
+        self.in_ifBody = False			# Flag needed for special handling of variables that are initialized inside if-else-block
+        self.in_elseBody = False		# Flag needed for special handling of variables that are initialized inside if-else-block
+        self.data_types = dict()		# Stores each variables current data type
+        self.current_function = ""		# Specifies the current function (a script can contain multiple functions)
+        self.function_names = []		# Stores the names of all the functions that are defined inside this script
+        self.imports = ""			# String containing the import statements for builtin dml scripts that are not explicitly imported
+        self.call_graph = {}			# Creates a graph from the function calls: is needed to correctly reorder functions inside the file
         
+        # TODO: Get return types of imported functions dynamically
+        # Stores the return types of each imported function (internally defined functions are added during the translation)
+        self.return_types = {		
+        	"lm": ["matrix<f64>"],		
+        	"lmCG": ["matrix<f64>"],
+        	"lmDS": ["matrix<f64>"],
+        	"dist": ["matrix<f64>"],
+        	"components": ["matrix<f64>"]
+        }
+
+# -------------------------------------------------------------------------
+# Visitor class
+# -------------------------------------------------------------------------
 class Translator(DmlVisitor):
     def __init__(self):
         self.context = Context()
-        
-        # Mapping functions from dml to their respective counterparts in daphneDSL
-        self.FUNCTIONS_MAP = {
+
+        # Mapping functions from dml to their respective alternatives in daphneDSL
+        self.FUNCTIONS_MAP = {			
             "matrix": self.matrix_function,
             "ncol": self.ncol_function,
             "nrow": self.nrow_function,
@@ -68,50 +92,15 @@ class Translator(DmlVisitor):
             "table": self.table_function,
             "time": self.time_function
         }
-        
-        # TODO Get return types dynamically from code of imported file
-        # Return types for builtin dml functions
-        self.RETURN_TYPES = {
-        	"lm": ["matrix<f64>"],
-        	"lmCG": ["matrix<f64>"],
-        	"lmDS": ["matrix<f64>"],
-        	"dist": ["matrix<f64>"],
-        	"components": ["matrix<f64>"]
-        }
 
-    def getValueType(self, dtype):
-        value_type = dtype.split("<")
-        if len(value_type) == 1:
-            return ""
-        value_type = value_type[1].split(">")[0]
-        
-        return value_type
-    
-    # Orders function arguments correctly and extracts values/expressions
-    def reorder_args(self, args, correct_order):
-        named_args = {k: [v, expr] for k, v, expr in args if k is not None}
-        unnamed_args = [[v, expr] for k, v, expr in args if k is None]
-        
-        ordered_values = []
-        ordered_exprs = []
-        
-        for order in correct_order:
-            if order in named_args:
-                v, expr = named_args[order]
-                ordered_values.append(v)
-                ordered_exprs.append(expr)
-            elif unnamed_args:
-                v, expr = unnamed_args.pop(0)
-                ordered_values.append(v)
-                ordered_exprs.append(expr)
-                
-        return ordered_values, ordered_exprs
-        
+    # -------------------------------------------------------------------------
+    # Mappings of native dml functions to daphneDSL functions
+    # -------------------------------------------------------------------------
+ 
     def matrix_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None, "rows", "cols"])
-  	
-    	dtype = self.inferType(args[0], exprs[0])
-    	
+
+    	dtype = self.inferType(args[0], exprs[0])    	
     	if dtype in {"si64", "f64", "bool", "str"}:
     		function_call = f"fill(as.f64({args[0]}), {args[1]}, {args[2]})"
     		dtype = "matrix<" + dtype + ">"
@@ -124,18 +113,21 @@ class Translator(DmlVisitor):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"as.si64(ncol({args[0]}))"
         dtype = "si64"
+        
         return function_call, dtype
 
     def nrow_function(self, arguments):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"as.si64(nrow({args[0]}))"
         dtype = "si64"
+        
         return function_call, dtype
 
     def t_function(self, arguments):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"t({args[0]})"
         dtype = self.inferType(args[0], exprs[0])
+        
         return function_call, dtype
         
     def sum_function(self, arguments):
@@ -143,97 +135,99 @@ class Translator(DmlVisitor):
         function_call = f"sum({args[0]})"
         dtype = self.inferType(args[0], exprs[0])
         dtype = self.getValueType(dtype)
+        
         return function_call, dtype
 
     def ifelse_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None, None, None])
     	function_call = f"{args[0]} ? {args[1]} : {args[2]}"
     	dtype = self.inferType(args[1], exprs[1])
+    	
     	return function_call, dtype
 
-    # Handles toString() as well
+    # Handles toString() as well by splitting combined print() into seperate print() statements
     def print_function(self, arguments):
-    	args, exprs = self.reorder_args(arguments, [None])
-    	function_call = f"{args[0]}"
-    	
-    	# Split combined print statement into seperate statements and handle toString()
-    	def split_print(print_str):
-    		split_str = print_str.split('+')
-    		
-    		transformed_strs = []
-    		for part in split_str:
-    			stripped_part = part.strip()
-    			if stripped_part.startswith('toString(') and stripped_part.endswith(')'):
-    				var_name = stripped_part[len('toString('):-1]
-    				transformed_strs.append(f'print({var_name});')
-    			else:
-    				transformed_strs.append(f'print({stripped_part});')
-    		
-    		# Combine all prints
-    		all_prints = ' '.join(transformed_strs)
-    		return all_prints.rstrip(';')
-    	
-    	return split_print(function_call), None
+        args, exprs = self.reorder_args(arguments, [None])
+        function_call = f"{args[0]}"
+        
+        split_str = function_call.split('+')
+        transformed_strs = []
+        for part in split_str:
+            stripped_part = part.strip()
+            if stripped_part.startswith('toString(') and stripped_part.endswith(')'):
+                var_name = stripped_part[len('toString('):-1]
+                transformed_strs.append(f'print({var_name});')
+            else:
+                transformed_strs.append(f'print({stripped_part});')
+        all_prints = ' '.join(transformed_strs)
+        
+        return all_prints.rstrip(';'), None
+
 
     # Prints message and then calls "return" with default values
     def stop_function(self, arguments): 
     	args, exprs = self.reorder_args(arguments, [None])
     	return_string = ", ".join(self.default_value(arg) for arg in self.context.return_types[self.context.current_function])
     	function_call = f"print({args[0]});\nreturn {return_string}"
+    	
     	return function_call, None
 
     def colMaxs_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"aggMax({args[0]}, 1)"
-    	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def rowMaxs_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"aggMax({args[0]}, 0)"
-    	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def colMins_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"aggMin({args[0]}, 1)"
-    	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def rowMins_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"aggMin({args[0]}, 0)"
-    	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def colSums_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"sum({args[0]}, 1)" 
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def rowSums_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"sum({args[0]}, 0)" 
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
                 
-    # Is handled in print()
+    # toString() is handled in print_function
     def toString_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"toString({args[0]})"
     	dtype = "str"
+    	
     	return function_call, dtype
 
     def replace_function(self, arguments):
         args, exprs = self.reorder_args(arguments, ["target", "pattern", "replacement"])
-            
-        #args[2] = args[2].strip()
-        if args[2].strip() == "0 / 0":
-        	args[2] = "nan"
-        	
+        args[1] = "nan" if args[1] == "0 / 0" else args[1]
         function_call = f"replace({args[0]}, {args[1]}, {args[2]})"
         dtype = self.inferType(args[0], exprs[0])
+        
         return function_call, dtype
        
     def min_function(self, arguments):
@@ -286,17 +280,16 @@ class Translator(DmlVisitor):
     			
     	return function_call, dtype
         
-    # TODO: Handle offset
     def seq_function(self, arguments):
     	function_call = ""
     	dtype = ""
     	if len(arguments) == 2:
     		args, exprs = self.reorder_args(arguments, [None, None])
-    		function_call = f"seq({args[0]}, {args[1]}, 1.0)"
+    		function_call = f"seq(as.f64({args[0]}), {args[1]}, 1)"
     		dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
     	elif len(arguments) == 3:
     		args, exprs = self.reorder_args(arguments, [None, None, None])
-    		function_call = f"seq({args[0]}, {args[1]}, {args[2]})"
+    		function_call = f"seq(as.f64({args[0]}), {args[1]}, {args[2]})"
     		dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
     		
     	return function_call, dtype
@@ -306,9 +299,12 @@ class Translator(DmlVisitor):
     	args, exprs = self.reorder_args(arguments, [None, None])
     	function_call = f"diagMatrix({args[0]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def outer_function(self, arguments):
+    	args, exprs = self.reorder_args(arguments, [None, None, None])
+    	
     	dml_to_daph = {
     		"*": "outerMul",
     		"-": "outerSub",
@@ -319,16 +315,23 @@ class Translator(DmlVisitor):
     		"min": "outerMin",
     		"max": "outerMax"
     	}
-    	
-    	args, exprs = self.reorder_args(arguments, [None, None, None])
-    	
     	op = args[2].replace('"', '')
-    	
     	function_name = dml_to_daph.get(op)
+    	
     	if function_name is None:
     		raise ValueError(f"Unkown operation {op} for outer()!")
     	
-    	function_call = f"{function_name}({args[0]}, {args[1]})"
+    	# outerAdd(diagMatrix(X), t(diagMatrix(X))) would fail due to wrong shapes, therefore reshape and transformation needed
+    	function_call = ""
+    	if args[0].startswith("diagMatrix(") or args[0].startswith("t(diagMatrix("):
+    		arg1 = f"reshape({args[0]}, ncol({args[0]})*nrow({args[0]}), 1)"
+    		arg1 += f"[[sum({arg1} != 0, 0) > 0, ]]"
+    		arg2 = f"reshape({args[1]}, 1, ncol({args[1]})*nrow({args[1]}))"
+    		arg2 += f"[[, t(sum({arg2} != 0, 1)) > 0]]"
+    		function_call = f"{function_name}({arg1}, {arg2})"
+    	else:
+    		function_call = f"{function_name}({args[0]}, {args[1]})"
+
     	dtype = self.inferType(args[0], exprs[0])
     	
     	return function_call, dtype 
@@ -337,12 +340,13 @@ class Translator(DmlVisitor):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"sqrt({args[0]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype 
 
     def removeEmpty_function(self, arguments):
-    	function_call = ""
     	args, exprs = self.reorder_args(arguments, ["target", "margin", "select"])
     	
+    	function_call = ""
     	args[1] = args[1].replace('"', '')
     	if args[1] == "cols":
     		function_call = f"{args[0]}[[, {args[2]}]]"
@@ -350,21 +354,21 @@ class Translator(DmlVisitor):
     		function_call = f"{args[0]}[[{args[2]}, ]]"
     		
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype 
 
-    # TODO: handle case of 2 arguments
+    # TODO: Handle 2 arguments
     def mean_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"mean({args[0]})"
     	dtype = "f64"
+    	
     	return function_call, dtype 
 
     def log_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
-    	function_call = f"ln({args[0]})"
-    	
+    	function_call = f"log({args[0]}, 2)"
     	dtype = self.inferType(args[0], exprs[0])
-    	# TODO:maby convert si64 to f64
     	
     	return function_call, dtype 
 
@@ -372,6 +376,7 @@ class Translator(DmlVisitor):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"as.si64({args[0]})"
     	dtype = "si64"
+    	
     	return function_call, dtype 
 
     def asScalar_function(self, arguments):
@@ -379,7 +384,17 @@ class Translator(DmlVisitor):
     	function_call = f"as.scalar({args[0]})"
     	
     	dtype = self.inferType(args[0], exprs[0])
-    	dtype = self.getValueType(dtype)
+    	if self.isMatrix(dtype):
+    		dtype = self.getValueType(dtype)
+    		
+    	if dtype == "si64":
+    		function_call = f"as.scalar(as.si64({args[0]}))"
+    	elif dtype == "f64":
+    		function_call = f"as.scalar(as.f64({args[0]}))"
+    	elif dtype == "bool":
+    		function_call = f"as.scalar(as.bool({args[0]}))"
+    	elif dtype == "str":
+    		function_call = f"as.scalar(as.str({args[0]}))"
     	
     	return function_call, dtype 
         
@@ -387,69 +402,84 @@ class Translator(DmlVisitor):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"as.f64({args[0]})"
     	dtype = "f64"
+    	
     	return function_call, dtype 
 
     def asMatrix_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"as.matrix({args[0]})"
     	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	
     	return function_call, dtype
 
     def cbind_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None, None])
     	function_call = f"cbind({args[0]}, {args[1]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def rbind_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None, None])
     	function_call = f"rbind({args[0]}, {args[1]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def solve_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None, None])
     	function_call = f"solve({args[0]}, {args[1]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def abs_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"abs({args[0]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype 
 
     def exp_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"exp({args[0]})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype 
 
     def colIndexMin_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"idxMin({args[0]}, 1)"
     	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	
     	return function_call, dtype
 
     def rowIndexMin_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"idxMin({args[0]}, 0)"
     	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	
     	return function_call, dtype
 
-    # TODO: handle multiple named arguments
+    # TODO: Handle multiple named arguments
     def table_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None]*len(arguments))
     	args_str = ", ".join(args)
     	function_call = f"ctable({args_str})"
     	dtype = self.inferType(args[0], exprs[0])
+    	
     	return function_call, dtype
 
     def time_function(self, arguments_order, arguments_expr, arguments):
     	function_call = f"now()"
     	dtype = "f64"
+    	
     	return function_call, dtype
-               
+
+    # -------------------------------------------------------------------------
+    # Helper functions
+    # -------------------------------------------------------------------------
+    
     # Function for indenting the code
     def indent(self, code, level):
     	indentation = "\t" * level
@@ -488,6 +518,16 @@ class Translator(DmlVisitor):
     	else:
     		raise ValueError(f"Unknown data type: {dtype}")
         
+    # Retrieves data type of expression with 2 parts (i.e. data type of a + b)
+    def getDataType(self, ctx):
+    	dtype_left = self.inferType(self.visitExpression(ctx.expression(0)), ctx.expression(0))
+    	dtype_right = self.inferType(self.visitExpression(ctx.expression(1)), ctx.expression(1))
+    	
+    	if self.isMatrix(dtype_left):
+    		return dtype_left
+    	else:
+    		return dtype_right
+    	
     # Determines the data type of a given variable
     def inferType(self, source, ctx):
     	source_type = self.context.data_types.get(source)
@@ -503,38 +543,23 @@ class Translator(DmlVisitor):
         	elif isinstance(ctx, DmlParser.ConstTrueExpressionContext) or isinstance(ctx, DmlParser.ConstFalseExpressionContext):
         		return "bool"
         	elif isinstance(ctx, DmlParser.BuiltinFunctionExpressionContext):
-        		return self.visitBuiltinFunctionExpression(ctx, type=True)
+        		return self.visitBuiltinFunctionExpression(ctx, True)
         	elif isinstance(ctx, DmlParser.AddSubExpressionContext):
-        		dtype_left = self.inferType(self.visitExpression(ctx.expression(0)), ctx.expression(0))
-        		dtype_right = self.inferType(self.visitExpression(ctx.expression(1)), ctx.expression(1))
-        		if self.isMatrix(dtype_left):
-        			return dtype_left
-        		else:
-        			return dtype_right
+        		return self.getDataType(ctx)
         	elif isinstance(ctx, DmlParser.MultDivExpressionContext):
-        		dtype_left = self.inferType(self.visitExpression(ctx.expression(0)), ctx.expression(0))
-        		dtype_right = self.inferType(self.visitExpression(ctx.expression(1)), ctx.expression(1))
-        		if self.isMatrix(dtype_left):
-        			return dtype_left
-        		else:
-        			return dtype_right
+        		return self.getDataType(ctx)
         	elif isinstance(ctx, DmlParser.AtomicExpressionContext):
         		return self.inferType(self.visitExpression(ctx.expression()), ctx.expression())
         	elif isinstance(ctx, DmlParser.MatrixMulExpressionContext):
         		return self.inferType(self.visitExpression(ctx.expression(0)), ctx.expression(0))
-        	elif isinstance(ctx, DmlParser.RelationalExpressionContext):	#TODO check
-        		return self.visitRelationalExpression(ctx, type=True)
+        	elif isinstance(ctx, DmlParser.RelationalExpressionContext):
+        		return self.visitRelationalExpression(ctx, True)
         	elif isinstance(ctx, DmlParser.UnaryExpressionContext):
-        		return self.inferType(self.visitExpression(ctx.expression()), ctx.expression())	# TODO check
+        		return self.inferType(self.visitExpression(ctx.expression()), ctx.expression())
         	elif isinstance(ctx, DmlParser.BooleanAndExpressionContext):
         		return "bool"
         	elif isinstance(ctx, DmlParser.PowerExpressionContext):
-        		dtype_left = self.inferType(self.visitExpression(ctx.expression(0)), ctx.expression(0))
-        		dtype_right = self.inferType(self.visitExpression(ctx.expression(1)), ctx.expression(1))
-        		if self.isMatrix(dtype_left):
-        			return dtype_left
-        		else:
-        			return dtype_right
+        		return self.getDataType(ctx)
         	elif isinstance(ctx, DmlParser.BooleanNotExpressionContext):
         		return "bool"
         	elif isinstance(ctx, DmlParser.ModIntDivExpressionContext):
@@ -542,23 +567,47 @@ class Translator(DmlVisitor):
         	elif isinstance(ctx, DmlParser.BooleanOrExpressionContext):
         		return "bool"
         	elif "[" in source and "]" in source:
-        		# TODO: Allow direct initialization of matrices (i.e. matrix = [1,2,3,4])
-                # TODO: Allow slice operation
-                # TODO: Allow nested function calls as indexes
-        		
-        		# Get the name of the variable (i.e. 'ext' from 'ext[i,0]')
-        		name, idx = source.split("[")
-        		dtype = self.context.data_types.get(name)
-        		if ":" in idx:
-        			return dtype
-        		else:
-        			dtype = self.getValueType(dtype)
-        			return dtype
+        		return self.visitDataIdentifier(ctx, True)
         	elif source == "nan" or source == "inf":
         		return "f64"
 
-        	raise ValueError(f"Unkown data type of {source}")  
-      
+        	raise ValueError(f"Data type of {source} unkown!")  
+
+    # Extracts value type from data type (i.e. f64 from matrix<f64>)
+    def getValueType(self, dtype):
+        value_type = dtype.split("<", 1)
+        
+        if len(value_type) == 1:
+            raise ValueError(f"Expected matrix but got {dtype}")
+
+        value_type = value_type[1].rsplit(">", 1)[0]
+        if "<" in value_type:
+        	return self.getValueType(value_type)
+        else:
+        	return value_type
+        
+        return value_type
+    
+    # Order function arguments correctly and extract values / expressions
+    def reorder_args(self, args, correct_order):
+        named_args = {k: [v, expr] for k, v, expr in args if k is not None}
+        unnamed_args = [[v, expr] for k, v, expr in args if k is None]
+        
+        ordered_values = []
+        ordered_exprs = []
+        
+        for order in correct_order:
+            if order in named_args:
+                v, expr = named_args[order]
+                ordered_values.append(v)
+                ordered_exprs.append(expr)
+            elif unnamed_args:
+                v, expr = unnamed_args.pop(0)
+                ordered_values.append(v)
+                ordered_exprs.append(expr)
+                
+        return ordered_values, ordered_exprs                
+    
     def retrieve_function_parameters(self, ctx):
     	target = None
     	if ctx:
@@ -577,16 +626,16 @@ class Translator(DmlVisitor):
 
     # Handle implicit import of builtin dml scripts 
     def handleImplicitImport(self, script_name):
-    	# Get the file path and namespace 
+    	# Get path to builtin dml script
+    	file_path_dml = "../thirdparty/systemds/scripts/builtin/" + script_name + ".dml"
+    	file_path_daph = "translated_files/" + script_name + ".daph"
     	
-    	file_name = script_name + ".dml"
-    	file_path = "../thirdparty/systemds/scripts/builtin/" + file_name
-    	
+    	# Translate the script
     	try:
-    		with open(file_path, "r") as f:
+    		with open(file_path_dml, "r") as f:
     			dml_code = f.read()
     			
-    		# Run the translator recursively on the imported file
+    		# Create parse tree
     		lexer = DmlLexer(InputStream(dml_code))
     		tokens = CommonTokenStream(lexer)
     		parser = DmlParser(tokens)
@@ -595,28 +644,23 @@ class Translator(DmlVisitor):
     		# Traverse parse tree and translate it to daphneDSL
     		translator = Translator()
     		daph_code = translator.visitProgramroot(tree)
-    		
-    		# Write the translated code to a new file and change from .dml to .daph
-    		file_path = os.path.basename(file_path)
-    		file_path = os.path.splitext(file_path)[0]
-    		file_path = file_path + ".daph"
-    		
-    		with open(file_path, "w") as f:
+
+    		# Write the translated code to a new file		
+    		with open(file_path_daph, "w") as f:
     			f.write(daph_code)
 
     	except FileNotFoundError:
     		raise ValueError(f"Unknown function: {script_name}")
     		
     	# Translate the import statement
-    	translated_import = f'import "{file_path}";\n';
-    
-        # TODO: Retrieve return data type of function automatically from file-string
-    	return translated_import, "matrix<f64>"		
+    	translated_import = f'import "{script_name}.daph";\n';
+    	
+    	return translated_import, self.context.return_types[script_name]	
 
     def create_function_call(self, function_name, arguments):
     	function_call = ""
     	dtype = ""
-    	
+   
     	arg_list = [arg[1] for arg in arguments]
     	arg_str = ", ".join(arg_list)
 	
@@ -624,16 +668,57 @@ class Translator(DmlVisitor):
     	if function_name in self.FUNCTIONS_MAP:
     		function_call, dtype = self.FUNCTIONS_MAP[function_name](arguments)
     	elif function_name in self.context.function_names:
+    		i = 0
+    		converted_arg_list = []
+    		for arg in arg_list:
+    			param_type = param_types[function_name][i]
+    			if param_type == "si64":
+    				converted_arg_list.append("as.si64(" + arg + ")")
+    			elif param_type == "f64":
+    				converted_arg_list.append("as.f64(" + arg + ")")
+    			elif param_type == "bool":
+    				converted_arg_list.append("as.bool(" + arg + ")")
+    			elif param_type == "str":
+    				converted_arg_list.append("as.str(" + arg + ")")
+    			elif param_type == "matrix<f64>":
+    				converted_arg_list.append("as.matrix<f64>(" + arg + ")")
+    			elif param_type == "matrix<si64>":
+    				converted_arg_list.append("as.matrix<si64>(" + arg + ")")
+    			elif param_type == "matrix<bool>":
+    				converted_arg_list.append("as.matrix<bool>(" + arg + ")")
+    			elif param_type == "matrix<str>":
+    				converted_arg_list.append("as.matrix<str>(" + arg + ")")
+    			else:
+    				converted_arg_list.append(arg)
+    			i += 1
+    		
+    		arg_str = ", ".join(converted_arg_list)
     		function_call = f"{function_name}({arg_str})"
     		dtype = self.context.return_types[function_name]
+    		self.context.call_graph[self.context.current_function].add(function_name)
     	else: 
+    		# Add default values for missing parameters in function call
+    		if len(arguments) != len(param_types[function_name]):
+    			arg_names = [arg[0] for arg in arguments]
+    			for param in param_types[function_name]:
+    				param_name, _, default_value = param
+    				if param_name not in arg_names:
+    					arguments.append([param_name, default_value, None])
+
+    		arg_list = [f"{arg[0]}={arg[1]}" if arg[1] is not None else arg[0] for arg in arguments]
+    		arg_str = ", ".join(arg_list)
+    		
     		import_str, dtype = self.handleImplicitImport(function_name)
     		self.context.imports += import_str
-    		function_call = f"{function_name}.m_{function_name}({arg_str})"	# Assumes that function name is "m_" + script name
+    		function_call = f"{function_name}.m_{function_name}({arg_str})"
+    	
+    	# Return types of non-native functions are stored in lists (because they can possibly return multiple values)
+        # If there is only a single value, extract it (it is then handled in visitFunctionCallAssignmentStatement)
+    	if isinstance(dtype, list) and len(dtype) == 1:
+        	dtype = dtype[0]
     		
     	return function_call, dtype
 
-    # TODO: handle multiple targets (and retrieve their respective data types)
     def handle_assignment(self, target, function_call, dtype):
         assignment = f"{function_call};"
         if target is not None:
@@ -643,10 +728,17 @@ class Translator(DmlVisitor):
                 self.context.if_assigns.add(target)
             elif self.context.in_elseBody:
                 self.context.else_assigns.add(target)
+                
             self.context.data_types[target] = dtype
             assignment = f"{target} = {function_call};"
+            
         return assignment
 
+    # -------------------------------------------------------------------------
+    # Visitor functions
+    # -------------------------------------------------------------------------
+
+    # Translate function call with one return value
     def visitFunctionCallAssignmentStatement(self, ctx: DmlParser.FunctionCallAssignmentStatementContext):
         target, function_name, arguments = self.retrieve_function_parameters(ctx)
         function_call, dtype = self.create_function_call(function_name, arguments)
@@ -656,23 +748,18 @@ class Translator(DmlVisitor):
 
     # Translate function call with multiple return values
     def visitFunctionCallMultiAssignmentStatement(self, ctx: DmlParser.FunctionCallMultiAssignmentStatementContext):
-        # Retrieve the targets of the function
         targets = [self.visitDataIdentifier(di) for di in ctx.dataIdentifier() if di is not None]
-
-        # Retrieve function parameters
         _, function_name, arguments = self.retrieve_function_parameters(ctx)
+        function_call, dtypes = self.create_function_call(function_name, arguments)
 
-        # Create the function call
-        function_call, dtype = self.create_function_call(function_name, arguments)
-
-        # Handle assignments (to add targets to list of initialized variables)
+        # Handle assignments (setting data types, adding variables to list of initialized variables)
         i = 0
         for target in targets:
-            self.handle_assignment(target, function_call, dtype)
-            self.context.data_types[target] = dtype[i]
+            _ = self.handle_assignment(target, function_call, dtypes[i])
+            self.context.data_types[target] = dtypes[i]
             i += 1
 
-        # Format multiple assignments
+        # Format assignments
         targets_str = ', '.join(targets)
         multi_assignment = f"{targets_str} = {function_call};"
             
@@ -683,37 +770,63 @@ class Translator(DmlVisitor):
         target, function_name, arguments = self.retrieve_function_parameters(ctx)
         function_call, dtype = self.create_function_call(function_name, arguments)
 
-        if type:
-        	return dtype
-        return function_call
+        return dtype if type else function_call
         
-    # TODO Only takes Imports and Function-definitions as entrypoints: allow other types as well
+    # TODO Allow more constructs as entry points of the translation (currently only imports and functions)
     # Starting point of the translation
     def visitProgramroot(self, ctx: DmlParser.ProgramrootContext):
-    	# Get the names of 1) all the functions inside the file and 2) of all imported functions
+    	# Get the names of 1) all the functions defined inside the file and 2) of all imported functions
     	for child in ctx.children:
     		if isinstance(child, DmlParser.InternalFunctionDefExpressionContext):
     			function_name = child.ID().getText()
     			self.context.function_names.append(function_name)
+    			
     			self.context.return_types[function_name] = []
-    			
-    			output_params = []
     			for param in child.typedArgNoAssign():
-    				self.context.return_types[function_name].append(self.visitTypedArgNoAssign(param, 0))
-    		elif isinstance(child, DmlParser.ImportStatementContext):
-    			function_name = ctx.filePath.text[1:-1]
-    			self.context.function_names.append(function_name)
-    			self.context.return_types[function_name] = self.context.RETURN_TYPES[function_name]	# TODO: get return data types dynamically
+    				self.context.return_types[function_name].append(self.visitTypedArgNoAssign(param, True))
     			
-    	translated_code = ""
+    			param_types[function_name] = []
+    			for param in child.typedArgAssign():
+    				param_types[function_name].append(self.visitTypedArgAssign(param, True))
+    			
+    		elif isinstance(child, DmlParser.ImportStatementContext):
+    			function_name = child.filePath.text[1:-1]
+    			self.context.function_names.append(function_name)
+    	
+    	# Init graph for modelling function calls
+    	self.context.call_graph = {function: set() for function in self.context.function_names}
+
+    	# Translate the script
+    	translated_functions = {}
+    	translated_imports = []
     	for child in ctx.children:
     		if isinstance(child, DmlParser.InternalFunctionDefExpressionContext):
     			self.context.current_function = child.ID().getText()
-    			translated_code += self.visitInternalFunctionDefExpression(child)
+    			translated_functions[self.context.current_function] = self.visitInternalFunctionDefExpression(child)
     		elif isinstance(child, DmlParser.ImportStatementContext):
-    			translated_code += self.visitImportStatement(child)
+    			translated_imports.append(self.visitImportStatement(child))
     			
-    	return self.context.imports + translated_code
+    	# Apply topological sort manually
+    	visited = set()
+    	stack = []
+    	for node in self.context.call_graph:
+    		if node not in visited:
+    			self.topological_sort(node, visited, stack, self.context.call_graph)
+    	
+    	ordered_functions = reversed([translated_functions[function_name] for function_name in stack if function_name in translated_functions])
+    	
+    	translated_code = self.context.imports			# implicit imports
+    	translated_code += "".join(translated_imports)		# explicit imports
+    	translated_code += "".join(ordered_functions)
+    	
+    	return translated_code
+    	
+    def topological_sort(self, node, visited, stack, graph):
+    	visited.add(node)
+    	for neighbour in graph[node]:
+    		if neighbour not in visited:
+    			self.topological_sort(neighbour, visited, stack, graph)
+    	stack.insert(0, node)
 
     # Identify exact Statement-Type and call responsible function
     def visitStatement(self, ctx: DmlParser.StatementContext):
@@ -737,7 +850,6 @@ class Translator(DmlVisitor):
         	return self.visitAccumulatorAssignmentStatement(ctx)
         else:
         	raise ValueError(f"Unkown statement {ctx}")
-        	return "UNKOWN_STATEMENT"
         
     # Identify exact Expression-Type and call responsible function
     def visitExpression(self, ctx: DmlParser.ExpressionContext):
@@ -781,7 +893,6 @@ class Translator(DmlVisitor):
         	return self.visitParameterizedExpression(ctx)
         else:
         	raise ValueError(f"Unkown expression {ctx}")
-        	return "UNKOWN_EXPRESSION"
 
     # Defining a function
     def visitInternalFunctionDefExpression(self, ctx: DmlParser.InternalFunctionDefExpressionContext):
@@ -796,13 +907,36 @@ class Translator(DmlVisitor):
         # Get data / value types of return values
         output_params = []
         for param in ctx.typedArgNoAssign():
-            output_params.append(self.visitTypedArgNoAssign(param, 0))
+            output_params.append(self.visitTypedArgNoAssign(param, True))
         output_params_string = ', '.join(output_params)
 
         # Get variable names of return values
         output_names = []
+        i = 0
         for param in ctx.typedArgNoAssign():
-            output_names.append(self.visitTypedArgNoAssign(param, 1))
+            return_value = self.visitTypedArgNoAssign(param, False)
+            return_type = self.context.return_types[self.context.current_function][i]
+            
+            if return_type == "si64":
+            	output_names.append("as.si64(" + return_value + ")")
+            elif return_type == "f64":
+            	output_names.append("as.f64(" + return_value + ")")
+            elif return_type == "bool":
+            	output_names.append("as.bool(" + return_value + ")")
+            elif return_type == "str":
+            	output_names.append("as.str(" + return_value + ")")
+            elif return_type == "matrix<si64>":
+            	output_names.append("as.matrix<si64>(" + return_value + ")")
+            elif return_type == "matrix<f64>":
+            	output_names.append("as.matrix<f64>(" + return_value + ")")
+            elif return_type == "matrix<bool>":
+            	output_names.append("as.matrix<bool>(" + return_value + ")")
+            elif return_type == "matrix<str>":
+            	output_names.append("as.matrix<str>(" + return_value + ")")
+            else:
+            	output_names.append(return_value)
+            	
+            i += 1
         output_names_string = ', '.join(output_names)
         
         # Get function body
@@ -818,12 +952,14 @@ class Translator(DmlVisitor):
         translated_function += "\n\treturn " + f"{output_names_string};" + "\n}\n\n"
         
         return translated_function
-
         
     # Retrieve input parameters
-    def visitTypedArgAssign(self, ctx: DmlParser.TypedArgAssignContext):
+    def visitTypedArgAssign(self, ctx: DmlParser.TypedArgAssignContext, types=False):
         param_type = self.visitMl_type(ctx.ml_type())
         param_name = ctx.ID().getText()
+        
+        if types:
+        	return param_type
         
         # Return the parameter (optionally with initial value)
         if ctx.paramVal is not None:
@@ -846,10 +982,7 @@ class Translator(DmlVisitor):
     	param_name = ctx.ID().getText()
     	
     	# Return either type or name (depending on specified parameter "types")
-    	if types == 0:
-    		translated_param = f"{param_type}"
-    	else:
-    		translated_param = f"{param_name}"
+    	translated_param = f"{param_type}" if types else f"{param_name}"
     		
     	return translated_param
     	
@@ -876,56 +1009,94 @@ class Translator(DmlVisitor):
         	dtype = "bool"
         elif dtype == "double":
         	dtype = "f64"
+        	
         return dtype
     
     # Get name of target via visitDataIdentifier
     def visitDataIdExpression(self, ctx: DmlParser.DataIdExpressionContext):
     	data_identifier = self.visitDataIdentifier(ctx.dataIdentifier())
+    	
     	return data_identifier
-    
-    # TODO Allow slice operation
-    # TODO Allow nested function calls as indexes
-    # Get name of target
-    def visitDataIdentifier(self, ctx: DmlParser.DataIdentifierContext):
-    	identifier = ctx.getText()
-    	
-    	# Check if identifier contains indexing
-    	if '[' in identifier and ']' in identifier:
-    		# Split the string into three parts: matrix name, indices, rest
-    		matrix_name, indices = identifier.split('[')
-    		indices, rest = indices.split(']')
-    		
-    		# Split the indices into row and column and decrement the indices
-    		idx = indices.split(',')
-    		if len(idx) == 1:
-    			index = idx[0]
-    			try:
-	    			index = str(int(index.strip()) - 1)
-	    		except ValueError:
-	    			if index != "" and index != " ":
-	    				index = index + " - 1"
-	    				
-	    		# Construct the identifier
-	    		identifier = f'{matrix_name}[{index}]{rest}'
-    		else:
-    			row_index, col_index = idx
-    			
-    			# Decrement the indices (i.e. "matrix[a,1]" mapped to "matrix[a-1,0]")
-	    		try:
-	    			row_index = str(int(row_index.strip()) - 1)
-	    		except ValueError:
-	    			if row_index != "" and row_index != " ":
-	    				row_index = row_index + " - 1"
-	    		try:
-	    			col_index = str(int(col_index.strip()) - 1)
-	    		except ValueError:
-	    			if col_index != "" and col_index != " ":
-	    				col_index = col_index + " - 1"
-    		
-	    		# Construct the identifier
-	    		identifier = f'{matrix_name}[{row_index}, {col_index}]{rest}'
-    	
-    	return identifier     
+
+    def visitDataIdentifier(self, ctx: DmlParser.DataIdentifierContext, type=False):
+        identifier = ctx.getText()
+        
+        matrix_name = ""
+        is_slice = False
+        # Check if identifier contains indexing / slicing
+        if '[' in identifier and ']' in identifier:
+            # Find the first and last bracket
+            first_bracket = identifier.index('[')
+            last_bracket = identifier.rindex(']')
+            
+            # Split the string into matrix name, indices, rest
+            matrix_name = identifier[:first_bracket]
+            indices = identifier[first_bracket + 1:last_bracket]
+            rest = identifier[last_bracket + 1:]
+
+            # Split the indices based on the last comma
+            last_comma = indices.rindex(',') if ',' in indices else -1
+            if last_comma == -1:
+                index = indices
+                try:
+                    index = str(int(index.strip()) - 1)
+                except ValueError:
+                    if index != "" and index != " ":
+                        index = index + " - 1"
+                        
+                # Construct the identifier
+                identifier = f'{matrix_name}[{index}]{rest}'
+            else:
+                row_index = indices[:last_comma].strip()
+                col_index = indices[last_comma + 1:].strip()
+                
+                # Handle slicing operation in row index
+                if ':' in row_index:
+                    is_slice = True
+                    start, end = row_index.split(':')
+                    if start:  # start is not empty
+                        start = str(int(start) - 1) if start.isdigit() else start + " - 1"
+                    else:
+                        start = '0'
+                    row_index = f'{start}:{end}'
+
+                else:
+                    try:
+                        row_index = str(int(row_index.strip()) - 1)
+                    except ValueError:
+                        if row_index != "" and row_index != " ":
+                            row_index = row_index + " - 1"
+
+                # Handle slicing operation in column index
+                if ':' in col_index:
+                    is_slice = True 
+                    start, end = col_index.split(':')
+                    if start:  # start is not empty
+                        start = str(int(start) - 1) if start.isdigit() else start + " - 1"
+                    else:
+                        start = '0'
+                    col_index = f'{start}:{end}'
+
+                else:
+                    try:
+                        col_index = str(int(col_index.strip()) - 1)
+                    except ValueError:
+                        if col_index != "" and col_index != " ":
+                            col_index = col_index + " - 1"
+                
+                # Construct the identifier
+                identifier = f'{matrix_name}[{row_index}, {col_index}]{rest}'
+
+        # Return the datatype instead of the string if type is true
+        if type:
+            # Distinguish between slicing and indexing (i.e. matrix[1:5, 2:4] or matrix[0,1])
+            if is_slice:
+            	return self.context.data_types.get(matrix_name)			# i.e. matrix<f64>
+            else:
+            	return self.getValueType(self.context.data_types.get(matrix_name))	# i.e. f64
+        else:
+            return identifier
+
     
     # Simply visit the sub-expression and return its translation in parenthesis
     def visitAtomicExpression(self, ctx: DmlParser.AtomicExpressionContext):
@@ -972,28 +1143,34 @@ class Translator(DmlVisitor):
     	# Visit the left and right expressions
     	left = self.visitExpression(ctx.expression(0))
     	right = self.visitExpression(ctx.expression(1))
-    	
+
+    	# Get the operator 
+    	op = ctx.op.text
+
+    	# Construct the expression
+    	translated_expression = f"{left} {op} {right}"
+
     	left_dtype = self.inferType(left, ctx.expression(0))
     	right_dtype = self.inferType(right, ctx.expression(1))
 
-    	dtype = "bool"
+    	dtype = left_dtype
     	if self.isMatrix(left_dtype) and not self.isMatrix(right_dtype):
     		dtype = left_dtype
     	elif not self.isMatrix(left_dtype) and self.isMatrix(right_dtype):
+    		# i.e. 0 < matrix is not allowed => translate to matrix > 0
+    		if op == ">":
+    			op = "<"
+    		elif op == "<":
+    			op = ">"
+    		elif op == ">=":
+    			op = "<="
+    		elif op == "<=":
+    			op = ">="
+    			
+    		translated_expression = f"{right} {op} {left}"
     		dtype = right_dtype
-    	elif self.isMatrix(left_dtype) and self.isMatrix(right_dtype):
-    		dtype = left_dtype
     	
-    	# Get the operator 
-    	op = ctx.op.text
-    	
-    	# Construct the expression
-    	translated_expression = f"{left} {op} {right}"
-    	
-    	if type == True:
-    		return dtype
-    	
-    	return translated_expression
+    	return dtype if type else translated_expression
     	
     # i.e. translate "-x" to "0.0-x"
     def visitUnaryExpression(self, ctx: DmlParser.UnaryExpressionContext):
@@ -1135,7 +1312,7 @@ class Translator(DmlVisitor):
     	if source == "NaN" or source == "Inf":
     		source = source.lower()
     		
-    	# Add target variable to global lists (needed for initialization of variables before if-else)
+    	# Add target variable to fitting list (needed for initialization of variables before if-else)
     	if not self.context.in_ifBody and not self.context.in_elseBody:
     		self.context.already_assigned.add(target)
     	elif self.context.in_ifBody:
@@ -1143,22 +1320,13 @@ class Translator(DmlVisitor):
     	elif self.context.in_elseBody:
     		self.context.else_assigns.add(target)
     		
-    	# Specify data type of target in global dict
-    	if "[" in target and "]" in target:
-    		target_name = target.split("[")[0]
-    		dtype = self.context.data_types.get(target_name)
-    		if dtype is not None:
-    			# TODO Add const booleans
-    			if isinstance(ctx.expression(), DmlParser.ConstIntIdExpressionContext):
-    				source += ".0"
-    				return f"{target} = as.matrix({source});"
-    			elif isinstance(ctx.expression(), DmlParser.ConstDoubleIdExpressionContext):
-    				return f"{target} = as.matrix({source});"
-    		
-    	self.context.data_types[target] = self.inferType(source, ctx.expression())
+    	dtype = self.inferType(source, ctx.expression())
     	
-    	#print(f"{target} {source}")
-    	#print(f"{target}: {self.context.data_types[target]}"
+    	if "[" in target and "]" in target:
+    		if dtype == "si64":
+    			return f"{target} = as.matrix({source}.0);"
+    		
+    	self.context.data_types[target] = dtype
 
     	return f"{target} = {source};"
     
@@ -1242,7 +1410,7 @@ class Translator(DmlVisitor):
     	# Initialize variables that are only initialized inside the if-else-block
     	common_assigns = self.context.if_assigns.intersection(self.context.else_assigns)
     	common_assigns -= self.context.already_assigned
-    	common_assigns_str = "\n".join([f"{var} = {self.default_value(self.context.data_types[var])};" for var in common_assigns])
+    	common_assigns_str = "\n".join([f"{var} = {self.default_value(self.context.data_types[var.split('[')[0]])};" for var in common_assigns])
     	
     	# Turn if and else body into string
     	if_body = '\n'.join(if_body_statements)
@@ -1272,7 +1440,7 @@ class Translator(DmlVisitor):
 
         # Get the body of the while loop
         body_statements = [self.visitStatement(stmt) for stmt in ctx.statement()]
-        body = '\n'.join(body_statements)
+        body = "\n".join(body_statements)
 
         # Construct the translated while loop
         translated_while_loop = f"while ({expression})" + " {\n"
@@ -1302,20 +1470,19 @@ class Translator(DmlVisitor):
     		return iterable_pred
     	else:
     		raise ValueError(f"Unkown expression {ctx} for iterable predicate")
-    		return "UNKOWN_PREDICATE"
     		
     # TODO: Change function name to alias (if namespace is specified)
     # Translating import statement
     def visitImportStatement(self, ctx: DmlParser.ImportStatementContext):
     	# Get the file path and namespace
-    	file_path = "../systemds/" + ctx.filePath.text[1:-1]	# Assuming daphne and systemds are in the same directory + translator is in /daphne
+    	file_path = "../thirdparty/systemds/scripts/builtin/" + ctx.filePath.text[1:-1]
     	namespace = ctx.namespace.text if ctx.namespace is not None else None
     	
     	try:
     		with open(file_path, "r") as f:
     			dml_code = f.read()
     			
-    		# Run the translator recursively on the imported file
+    		# Create the parse tree
     		lexer = DmlLexer(InputStream(dml_code))
     		tokens = CommonTokenStream(lexer)
     		parser = DmlParser(tokens)
@@ -1329,10 +1496,11 @@ class Translator(DmlVisitor):
     		file_path = os.path.basename(file_path)
     		file_path = os.path.splitext(file_path)[0]
     		file_path = file_path + ".daph"
+    		
     		with open(file_path, "w") as f:
     			f.write(daph_code)
     	except FileNotFoundError:
-    		print(f"File not found! {file_path}")
+    		raise ValueError(f"File not found! {file_path}")
     		
     	# Translate the import statement
     	translated_import = f"import {file_path}"
@@ -1341,6 +1509,10 @@ class Translator(DmlVisitor):
     	translated_import += ";\n"
     	
     	return translated_import
+
+# -------------------------------------------------------------------------
+# Running the translator
+# -------------------------------------------------------------------------
 
 # Translator from Dml to DaphneDSL
 def translate(dml_code):
@@ -1357,10 +1529,10 @@ def translate(dml_code):
     return daph_code
 
 def get_daphne_filename(dml_filename):
-    # Replace the .dml extension with .daph and store it in the directory of the translator script
     base_name = os.path.basename(dml_filename)
     base_name = base_name.replace('.dml', '.daph')
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'translated_files')
+    
     return os.path.join(output_dir, base_name)
 
 # Reading .dml script and writing .daph script
