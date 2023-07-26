@@ -18,8 +18,9 @@ sourceNode = 1
 test_matrix = np.random.randint(0, 20, size=(50, 50))
 np.fill_diagonal(test_matrix, 0)
 
-test_matrix_file_dml = os.path.abspath('data/test_matrix_dml.csv')
-test_matrix_file_daph = os.path.abspath('data/test_matrix_daph.csv')
+os.makedirs(os.path.abspath("data"), exist_ok=True)
+test_matrix_file_dml = os.path.abspath("data/test_matrix_dml.csv")
+test_matrix_file_daph = os.path.abspath("data/test_matrix_daph.csv")
 
 # Save the matrix to a file
 np.savetxt(test_matrix_file_dml, test_matrix, delimiter=',')
@@ -48,7 +49,7 @@ with open(test_matrix_file_daph + ".meta", 'w') as f:
     json.dump(test_matrix_metadata_daph, f)
 
 # Run the DML script
-dml_output_file = os.path.abspath('output/dml_output.csv')
+dml_output_file = os.path.abspath("output/dml_output.csv")
 dml_command = "cd ../../../thirdparty/systemds/target && spark-submit SystemDS.jar -f {} -args {}".format(dml_file_caller, test_matrix_file_dml)
 subprocess.call(dml_command, shell=True)
 
@@ -60,7 +61,7 @@ translate_command = "python3 {} {}".format(translator_file, dml_file)
 subprocess.call(translate_command, shell=True)
 
 # Run the Daphne script
-daphne_output_file = os.path.abspath('output/daphne_output.csv')
+daphne_output_file = os.path.abspath("output/daphne_output.csv")
 daphne_command = "../../../bin/daphne {} maxi={} sourceNode={} verbose=false".format(daph_file_caller, maxi, sourceNode)
 subprocess.call(daphne_command, shell=True)
 

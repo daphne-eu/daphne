@@ -17,7 +17,7 @@ import os
 param_types = {	
         	"lm": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["reg", "f64", "0.0"], ["tol", "f64", "0.0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
         	"lmCG": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["reg", "f64", "0.0"], ["tol", "f64", "0.0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
-        	"lmDS": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["reg", "f64", "0.0"], ["tol", "f64", "0.0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
+        	"lmDS": [["X", "matrix<f64>", None], ["y", "matrix<f64>", None], ["icpt", "si64", "0"], ["maxi", "si64", "0"], ["verbose", "bool", "true"]],
         	"dist": [["X", "matrix<f64>", None]],
         	"components": [["G", "matrix<f64>", None], ["maxi", "si64", "0"], ["verbose", "bool", "true"]]    
         }
@@ -99,6 +99,11 @@ class Translator(DmlVisitor):
  
     def matrix_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None, "rows", "cols"])
+    	
+    	if args[1] == "0":
+    		args[1] = "1"
+    	if args[2] == "0":
+    		args[2] = "1"
 
     	dtype = self.inferType(args[0], exprs[0])    	
     	if dtype in {"si64", "f64", "bool", "str"}:
@@ -627,8 +632,9 @@ class Translator(DmlVisitor):
     # Handle implicit import of builtin dml scripts 
     def handleImplicitImport(self, script_name):
     	# Get path to builtin dml script
-    	file_path_dml = "../thirdparty/systemds/scripts/builtin/" + script_name + ".dml"
-    	file_path_daph = "translated_files/" + script_name + ".daph"
+    	script_dir = os.path.dirname(os.path.realpath(__file__))
+    	file_path_dml = os.path.join(script_dir, "../thirdparty/systemds/scripts/builtin/", script_name + ".dml")
+    	file_path_daph = os.path.join(script_dir, "translated_files/", script_name + ".daph")
     	
     	# Translate the script
     	try:
@@ -697,15 +703,19 @@ class Translator(DmlVisitor):
     		dtype = self.context.return_types[function_name]
     		self.context.call_graph[self.context.current_function].add(function_name)
     	else: 
-    		# Add default values for missing parameters in function call
+    		# Add default values for missing parameters in function call (and reorder them correctly)
     		if len(arguments) != len(param_types[function_name]):
-    			arg_names = [arg[0] for arg in arguments]
+    			arg_dict = {arg[0]: arg for arg in arguments}
+    			new_arguments = []
     			for param in param_types[function_name]:
     				param_name, _, default_value = param
-    				if param_name not in arg_names:
-    					arguments.append([param_name, default_value, None])
+    				if param_name in arg_dict:
+    					new_arguments.append(arg_dict[param_name])
+    				else:
+    					new_arguments.append([param_name, default_value, None])
+    			arguments = new_arguments
 
-    		arg_list = [f"{arg[0]}={arg[1]}" if arg[1] is not None else arg[0] for arg in arguments]
+    		arg_list = [arg[1] for arg in arguments]
     		arg_str = ", ".join(arg_list)
     		
     		import_str, dtype = self.handleImplicitImport(function_name)
@@ -772,7 +782,7 @@ class Translator(DmlVisitor):
 
         return dtype if type else function_call
         
-    # TODO Allow more constructs as entry points of the translation (currently only imports and functions)
+    # TODO Allow more constructs as entry points of the translation (currently only functions)
     # Starting point of the translation
     def visitProgramroot(self, ctx: DmlParser.ProgramrootContext):
     	# Get the names of 1) all the functions defined inside the file and 2) of all imported functions
@@ -788,10 +798,6 @@ class Translator(DmlVisitor):
     			param_types[function_name] = []
     			for param in child.typedArgAssign():
     				param_types[function_name].append(self.visitTypedArgAssign(param, True))
-    			
-    		elif isinstance(child, DmlParser.ImportStatementContext):
-    			function_name = child.filePath.text[1:-1]
-    			self.context.function_names.append(function_name)
     	
     	# Init graph for modelling function calls
     	self.context.call_graph = {function: set() for function in self.context.function_names}
@@ -803,8 +809,6 @@ class Translator(DmlVisitor):
     		if isinstance(child, DmlParser.InternalFunctionDefExpressionContext):
     			self.context.current_function = child.ID().getText()
     			translated_functions[self.context.current_function] = self.visitInternalFunctionDefExpression(child)
-    		elif isinstance(child, DmlParser.ImportStatementContext):
-    			translated_imports.append(self.visitImportStatement(child))
     			
     	# Apply topological sort manually
     	visited = set()
@@ -1264,7 +1268,12 @@ class Translator(DmlVisitor):
     	
     	# Change from scientific notation to decimal values
     	num = float(const)
-    	num = "{:f}".format(num)
+    	num = "{:.20f}".format(num)
+    	
+    	num = num.rstrip("0")
+    	
+    	if num[-1] == '.':
+    		num += "0"
     	
     	return f"{num}" 
     	
@@ -1470,45 +1479,6 @@ class Translator(DmlVisitor):
     		return iterable_pred
     	else:
     		raise ValueError(f"Unkown expression {ctx} for iterable predicate")
-    		
-    # TODO: Change function name to alias (if namespace is specified)
-    # Translating import statement
-    def visitImportStatement(self, ctx: DmlParser.ImportStatementContext):
-    	# Get the file path and namespace
-    	file_path = "../thirdparty/systemds/scripts/builtin/" + ctx.filePath.text[1:-1]
-    	namespace = ctx.namespace.text if ctx.namespace is not None else None
-    	
-    	try:
-    		with open(file_path, "r") as f:
-    			dml_code = f.read()
-    			
-    		# Create the parse tree
-    		lexer = DmlLexer(InputStream(dml_code))
-    		tokens = CommonTokenStream(lexer)
-    		parser = DmlParser(tokens)
-    		tree = parser.programroot()
-    		
-    		# Traverse parse tree and translate it to daphneDSL
-    		translator = Translator()
-    		daph_code = translator.visitProgramroot(tree)
-    		
-    		# Write the translated code to a new file and change from .dml to .daph
-    		file_path = os.path.basename(file_path)
-    		file_path = os.path.splitext(file_path)[0]
-    		file_path = file_path + ".daph"
-    		
-    		with open(file_path, "w") as f:
-    			f.write(daph_code)
-    	except FileNotFoundError:
-    		raise ValueError(f"File not found! {file_path}")
-    		
-    	# Translate the import statement
-    	translated_import = f"import {file_path}"
-    	if namespace is not None:
-    		translated_import += f' as "{namespace}"'
-    	translated_import += ";\n"
-    	
-    	return translated_import
 
 # -------------------------------------------------------------------------
 # Running the translator
@@ -1532,6 +1502,7 @@ def get_daphne_filename(dml_filename):
     base_name = os.path.basename(dml_filename)
     base_name = base_name.replace('.dml', '.daph')
     output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'translated_files')
+    os.makedirs(output_dir, exist_ok=True)
     
     return os.path.join(output_dir, base_name)
 
