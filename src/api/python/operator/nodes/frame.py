@@ -40,22 +40,30 @@ if TYPE_CHECKING:
 
 class Frame(OperationNode):
     _pd_dataframe: pd.DataFrame
-    __copy: bool
+    _column_names: Optional[List[str]] = None  # Add this line
 
     def __init__(self, daphne_context: "DaphneContext", operation: str,
                  unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
-                 local_data: pd.DataFrame = None, brackets: bool = False, copy: bool = False) -> "Frame":
-        self.__copy = copy
+                 local_data: pd.DataFrame = None, brackets: bool = False, 
+                 column_names: Optional[List[str]] = None) -> "Frame":  # Modify this line
         is_python_local_data = False
         if local_data is not None:
             self._pd_dataframe = local_data
             is_python_local_data = True
         else:
             self._pd_dataframe = None
-        
+
+        self._column_names = column_names  # Add this line
+
+        #print(daphne_context)
+        #print(operation)
+        #print(unnamed_input_nodes)
+        #print(named_input_nodes)
+
         super().__init__(daphne_context, operation, unnamed_input_nodes,
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
+
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
         if self.__copy:
@@ -80,11 +88,11 @@ class Frame(OperationNode):
                 )
         return code_line
 
-    def compute(self) -> Union[pd.DataFrame]:
+    def compute(self, type="shared memory") -> Union[pd.DataFrame]:
         if self._is_pandas():
             return self._pd_dataframe
         else:
-            return super().compute()
+            return super().compute(type)
 
     def _is_pandas(self) -> bool:
         return self._pd_dataframe is not None
@@ -103,6 +111,9 @@ class Frame(OperationNode):
         :param: The other frame to bind to the right hand side
         :return: The OperationNode containing the concatenated frames.
         """
+        print(self.daphne_context)
+        print(self)
+        print(other)
         return Frame(self.daphne_context, "rbind", [self, other])
 
     def cbind(self, other) -> 'Frame':
