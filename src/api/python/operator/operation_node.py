@@ -75,7 +75,48 @@ class OperationNode(DAGNode):
             result = self._script.build_code(self, type)
             self._script.execute()
             self._script.clear(self)
-            if self._output_type == OutputType.FRAME:
+
+            if self._output_type == OutputType.FRAME and type=="shared memory":
+                daphneLibResult = DaphneLib.getResult()
+
+                print("daphneLibResult")
+                print(daphneLibResult)
+                # print(ctypes.cast(daphneLibResult.address))
+                print("")
+
+                data = []
+                
+                # Read the frame's address into a numpy array
+                if daphneLibResult.address is not None:
+
+                    # Read the column labels and dtypes from the Frame's labels and dtypes directly
+                    labels = daphneLibResult.labels
+                    dtypes = [self.get_numpy_dtype(code) for code in daphneLibResult.vtcs]
+
+                    for idx, label in enumerate(labels): 
+                        data.append(np.ctypeslib.as_array(
+                            ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(self.getType(daphneLibResult.vtcs[idx]))),
+                            shape=[daphneLibResult.rows, 1]
+                        ))
+                else:
+                    print("Error: NULL pointer access")
+                    labels = []
+                    dtypes = []
+
+                # Convert the numpy array to a pandas DataFrame
+                df = pd.DataFrame(data)
+                # Set the column labels in the DataFrame
+                df.columns = labels
+
+                # Cast each column to its appropriate dtype
+                for col, dtype in zip(labels, dtypes):
+                    df[col] = df[col].astype(dtype)
+
+                result = df
+                self.clear_tmp()
+
+
+            elif self._output_type == OutputType.FRAME and type=="files":
                 df = pd.read_csv(result)
                 with open(result + ".meta", "r") as f:
                     fmd = json.load(f)

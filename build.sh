@@ -393,7 +393,7 @@ function clean_param_check() {
 #******************************************************************************
 # #5 Versions of third party dependencies
 #******************************************************************************
-antlrVersion=4.9.2
+antlrVersion=4.9.3
 catch2Version=2.13.8
 openBlasVersion=0.3.23
 abslVersion=20211102.0

@@ -60,8 +60,14 @@ class DaphneDSLScript:
                 else:
                     raise RuntimeError(f"unknown way to transfer the data: '{type}'")
             elif dag_root.output_type == OutputType.FRAME:
-                self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                return TMP_PATH + "/" + baseOutVarString + ".csv"
+                if type == "files":
+                    self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
+                    return TMP_PATH + "/" + baseOutVarString + ".csv"
+                elif type == "shared memory":
+                    self.add_code(f'saveDaphneLibResult({baseOutVarString});')
+                    return None
+                else:
+                    raise RuntimeError(f"unknown way to transfer the data: '{type}'")
             elif dag_root.output_type == OutputType.SCALAR:
                 # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
                 self.add_code(f'saveDaphneLibResult(as.matrix({baseOutVarString}));')
@@ -85,6 +91,7 @@ class DaphneDSLScript:
     def execute(self):
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
+        print(self.daphnedsl_script)
         temp_out_file.close()
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'
