@@ -36,3 +36,4 @@ profiler/
 precompiled-dependencies/
 /cmake*/
 /data
+thirdparty/llvm-project
