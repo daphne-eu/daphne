@@ -1,6 +1,7 @@
 # -------------------------------------------------------------------------
 # Imports
 # -------------------------------------------------------------------------
+
 from antlr4 import *
 from DmlLexer import DmlLexer
 from DmlParser import DmlParser
@@ -47,6 +48,7 @@ class Context:
 # -------------------------------------------------------------------------
 # Visitor class
 # -------------------------------------------------------------------------
+
 class Translator(DmlVisitor):
     def __init__(self):
         self.context = Context()
@@ -155,19 +157,18 @@ class Translator(DmlVisitor):
         args, exprs = self.reorder_args(arguments, [None])
         function_call = f"{args[0]}"
         
-        split_str = function_call.split('+')
+        split_str = function_call.split("+")
         transformed_strs = []
         for part in split_str:
             stripped_part = part.strip()
-            if stripped_part.startswith('toString(') and stripped_part.endswith(')'):
-                var_name = stripped_part[len('toString('):-1]
-                transformed_strs.append(f'print({var_name});')
+            if stripped_part.startswith("toString(") and stripped_part.endswith(")"):
+                var_name = stripped_part[len("toString("):-1]
+                transformed_strs.append(f"print({var_name});")
             else:
-                transformed_strs.append(f'print({stripped_part});')
-        all_prints = ' '.join(transformed_strs)
+                transformed_strs.append(f"print({stripped_part});")
+        all_prints = " ".join(transformed_strs)
         
-        return all_prints.rstrip(';'), None
-
+        return all_prints.rstrip(";"), None
 
     # Prints message and then calls "return" with default values
     def stop_function(self, arguments): 
@@ -290,7 +291,7 @@ class Translator(DmlVisitor):
     	dtype = ""
     	if len(arguments) == 2:
     		args, exprs = self.reorder_args(arguments, [None, None])
-    		function_call = f"seq(as.f64({args[0]}), {args[1]}, 1)"
+    		function_call = f"seq(as.f64({args[0]}), {args[1]}, {args[0]} <= {args[1]} ? 1 : -1)"
     		dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
     	elif len(arguments) == 3:
     		args, exprs = self.reorder_args(arguments, [None, None, None])
@@ -770,7 +771,7 @@ class Translator(DmlVisitor):
             i += 1
 
         # Format assignments
-        targets_str = ', '.join(targets)
+        targets_str = ", ".join(targets)
         multi_assignment = f"{targets_str} = {function_call};"
             
         return multi_assignment
@@ -906,13 +907,13 @@ class Translator(DmlVisitor):
         input_params = []
         for param in ctx.typedArgAssign():
             input_params.append(self.visitTypedArgAssign(param))
-        input_params_string = ', '.join(input_params)
+        input_params_string = ", ".join(input_params)
 
         # Get data / value types of return values
         output_params = []
         for param in ctx.typedArgNoAssign():
             output_params.append(self.visitTypedArgNoAssign(param, True))
-        output_params_string = ', '.join(output_params)
+        output_params_string = ", ".join(output_params)
 
         # Get variable names of return values
         output_names = []
@@ -941,13 +942,13 @@ class Translator(DmlVisitor):
             	output_names.append(return_value)
             	
             i += 1
-        output_names_string = ', '.join(output_names)
+        output_names_string = ", ".join(output_names)
         
         # Get function body
         function_body = []
         for statement in ctx.statement():
             function_body.append(self.visitStatement(statement))
-        function_body_string = '\n'.join(function_body)  
+        function_body_string = "\n".join(function_body)  
         indented_function_body = self.indent(function_body_string, 1)
 
         # Construct the function
@@ -1022,24 +1023,25 @@ class Translator(DmlVisitor):
     	
     	return data_identifier
 
+    # Return data identifier or data type
     def visitDataIdentifier(self, ctx: DmlParser.DataIdentifierContext, type=False):
         identifier = ctx.getText()
         
         matrix_name = ""
         is_slice = False
+	
         # Check if identifier contains indexing / slicing
-        if '[' in identifier and ']' in identifier:
+        if "[" in identifier and "]" in identifier:
             # Find the first and last bracket
-            first_bracket = identifier.index('[')
-            last_bracket = identifier.rindex(']')
+            first_bracket = identifier.index("[")
+            last_bracket = identifier.rindex("]")
             
-            # Split the string into matrix name, indices, rest
             matrix_name = identifier[:first_bracket]
             indices = identifier[first_bracket + 1:last_bracket]
             rest = identifier[last_bracket + 1:]
 
             # Split the indices based on the last comma
-            last_comma = indices.rindex(',') if ',' in indices else -1
+            last_comma = indices.rindex(",") if "," in indices else -1
             if last_comma == -1:
                 index = indices
                 try:
@@ -1049,20 +1051,20 @@ class Translator(DmlVisitor):
                         index = index + " - 1"
                         
                 # Construct the identifier
-                identifier = f'{matrix_name}[{index}]{rest}'
+                identifier = f"{matrix_name}[{index}]{rest}"
             else:
                 row_index = indices[:last_comma].strip()
                 col_index = indices[last_comma + 1:].strip()
                 
                 # Handle slicing operation in row index
-                if ':' in row_index:
+                if ":" in row_index:
                     is_slice = True
-                    start, end = row_index.split(':')
-                    if start:  # start is not empty
+                    start, end = row_index.split(":")
+                    if start:
                         start = str(int(start) - 1) if start.isdigit() else start + " - 1"
                     else:
-                        start = '0'
-                    row_index = f'{start}:{end}'
+                        start = "0"
+                    row_index = f"{start}:{end}"
 
                 else:
                     try:
@@ -1072,14 +1074,14 @@ class Translator(DmlVisitor):
                             row_index = row_index + " - 1"
 
                 # Handle slicing operation in column index
-                if ':' in col_index:
+                if ":" in col_index:
                     is_slice = True 
-                    start, end = col_index.split(':')
-                    if start:  # start is not empty
+                    start, end = col_index.split(":")
+                    if start:
                         start = str(int(start) - 1) if start.isdigit() else start + " - 1"
                     else:
-                        start = '0'
-                    col_index = f'{start}:{end}'
+                        start = "0"
+                    col_index = f"{start}:{end}"
 
                 else:
                     try:
@@ -1089,7 +1091,7 @@ class Translator(DmlVisitor):
                             col_index = col_index + " - 1"
                 
                 # Construct the identifier
-                identifier = f'{matrix_name}[{row_index}, {col_index}]{rest}'
+                identifier = f"{matrix_name}[{row_index}, {col_index}]{rest}"
 
         # Return the datatype instead of the string if type is true
         if type:
@@ -1272,7 +1274,7 @@ class Translator(DmlVisitor):
     	
     	num = num.rstrip("0")
     	
-    	if num[-1] == '.':
+    	if num[-1] == ".":
     		num += "0"
     	
     	return f"{num}" 
@@ -1286,11 +1288,11 @@ class Translator(DmlVisitor):
     
     # Boolean constant
     def visitConstFalseExpression(self, ctx: DmlParser.ConstFalseExpressionContext):
-    	return 'false'
+    	return "false"
     
     # Boolean constant
     def visitConstTrueExpression(self, ctx: DmlParser.ConstTrueExpressionContext):
-    	return 'true'
+    	return "true"
     	
     # String constant
     def visitConstStringIdExpression(self, ctx: DmlParser.ConstStringIdExpressionContext):
@@ -1365,11 +1367,11 @@ class Translator(DmlVisitor):
     	
     	# Get the parameters
     	params = [param for param in (self.visitStrictParameterizedExpression(expr) for expr in ctx.strictParameterizedExpression()) if param is not None]
-    	params_string = ', '.join(params)
+    	params_string = ", ".join(params)
     	
     	# Get the body of the for-loop
     	body = [self.visitStatement(stmt) for stmt in ctx.statement()]
-    	body_string = '\n'.join(body)
+    	body_string = "\n".join(body)
     	
     	# Construct the translated for-loop
     	translated_for_loop = f"for({iter_var} in {iterable_pred}{params_string})" + " {\n"
@@ -1388,11 +1390,11 @@ class Translator(DmlVisitor):
     	
     	# Get the parameters
     	params = [param for param in (self.visitStrictParameterizedExpression(expr) for expr in ctx.strictParameterizedExpression()) if param is not None]
-    	params_string = ', '.join(params)
+    	params_string = ", ".join(params)
     	
     	# Get the body of the for-loop
     	body = [self.visitStatement(stmt) for stmt in ctx.statement()]
-    	body_string = '\n'.join(body)
+    	body_string = "\n".join(body)
     	
     	# Construct the translated for-loop
     	translated_for_loop = f"for({iter_var} in {iterable_pred}{params_string})" + " {\n"
@@ -1422,8 +1424,8 @@ class Translator(DmlVisitor):
     	common_assigns_str = "\n".join([f"{var} = {self.default_value(self.context.data_types[var.split('[')[0]])};" for var in common_assigns])
     	
     	# Turn if and else body into string
-    	if_body = '\n'.join(if_body_statements)
-    	else_body = '\n'.join(else_body_statements)
+    	if_body = "\n".join(if_body_statements)
+    	else_body = "\n".join(else_body_statements)
     	
     	# Clear the variable list (otherwise the same variables would be initialized again before the next if-statement)
     	self.context.if_assigns.clear()
@@ -1500,8 +1502,8 @@ def translate(dml_code):
 
 def get_daphne_filename(dml_filename):
     base_name = os.path.basename(dml_filename)
-    base_name = base_name.replace('.dml', '.daph')
-    output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'translated_files')
+    base_name = base_name.replace(".dml", ".daph")
+    output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "translated_files")
     os.makedirs(output_dir, exist_ok=True)
     
     return os.path.join(output_dir, base_name)
@@ -1510,14 +1512,14 @@ def get_daphne_filename(dml_filename):
 if __name__ == "__main__":
     # Get dml file path via command line
     parser = argparse.ArgumentParser(description="Translate Dml file to DaphneDSL.")
-    parser.add_argument('dml_filename', type=str, help='Path to the Dml file to translate')
+    parser.add_argument("dml_filename", type=str, help="Path to the Dml file to translate")
     args = parser.parse_args()
 
-    with open(args.dml_filename, 'r') as f:
+    with open(args.dml_filename, "r") as f:
         dml_code = f.read()
 
     daph_code = translate(dml_code)
 
     daph_filename = get_daphne_filename(args.dml_filename)
-    with open(daph_filename, 'w') as f:
+    with open(daph_filename, "w") as f:
         f.write(daph_code)

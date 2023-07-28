@@ -13,8 +13,8 @@ daph_file_caller = os.path.abspath("lm_.daph")
 
 # Generate data
 icpt = 0
-reg = 0.0000001
-tol = 0.0000001
+reg = 0.0001
+tol = 0.0001
 maxi = 0
 
 n_samples = 13000
@@ -94,7 +94,7 @@ subprocess.call(translate_command, shell=True)
 
 # Run the Daphne script
 daphne_output_file = os.path.abspath("output/daphne_output.csv")
-daphne_command = "../../../bin/daphne {} icpt={} reg={} tol={} maxi={} verbose=false".format(daph_file_caller, icpt, reg, tol, maxi)
+daphne_command = "../../../bin/daphne {} icpt={} reg={} tol={} maxi={} verbose=true".format(daph_file_caller, icpt, reg, tol, maxi)
 subprocess.call(daphne_command, shell=True)
 
 # Load Daphne results
