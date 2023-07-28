@@ -15,7 +15,7 @@
         <link rel="next" href="../ExtendingDistributedRuntime/">
       
       <link rel="icon" href="../../assets/logo_small.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.19">
+      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
     
     
       
@@ -1063,11 +1063,15 @@ via context creation in case of the libs). All setup is handled by the class Dap
 <li><code>spdlog::get("default")-&gt;warn("my warning");</code></li>
 </ul>
 <p>The two statements have the same effect. But while the former is a short form for using the default logger, the latter
-explicitly chooses the logger via the static get() method.</p>
+explicitly chooses the logger via the static <code>get()</code> method. This <code>get()</code> method is to be used with <strong>caution</strong> as 
+it involves acquiring a lock, which is to be avoided <strong>in performance critical sections</strong> of the code. In the initial 
+implementation there is a logger for runtime kernels provided by the context object to work around this limitation.
+See the matrix multiplication kernel in <code>src/runtime/local/kernels/MatMult.cpp</code> for example usage. </p>
 </li>
 <li>
 <p>We can have several loggers, which can be configured differently. For example, to control how messages are logged
-in the CUDA compiler pass MarkCUDAOpsPass, a logger named "compiler::cuda" is used. For each used logger, an entry
+in the CUDA compiler pass <code>MarkCUDAOpsPass</code>, a logger named "compiler::cuda" is used. Additionally, avoiding the use of
+<code>spdlog::get()</code> is demonstrated there. For each used logger, an entry
 in <code>fallback_loggers</code> (see DaphneLogger.cpp) must exist to prevent crashing when using an unconfigured logger.</p>
 </li>
 <li>To configure log levels, formatting and output options, the DaphneUserConfig and ConfigParser have been extended.
