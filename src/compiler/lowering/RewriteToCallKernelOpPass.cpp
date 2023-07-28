@@ -154,9 +154,9 @@ namespace
             if(op->hasAttr("cuda_device")) {
                 callee << "CUDA";
             }
-	        else if(op->hasAttr("fpgaopencl_device")) {
-		        callee << "FPGAOPENCL";
-	        }
+            else if(op->hasAttr("fpgaopencl_device")) {
+                callee << "FPGAOPENCL";
+            }
 
             callee << '_' << op->getName().stripDialect().data();
 

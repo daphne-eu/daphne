@@ -27,8 +27,8 @@ int main(int argc, char *argv[])
     auto logger = std::make_unique<DaphneLogger>(user_config);
 
     if (argc != 2) {
-         std::cout << "Usage: " << argv[0] << " <Address:Port>" << std::endl;
-         exit(1);
+        std::cout << "Usage: " << argv[0] << " <Address:Port>" << std::endl;
+        exit(1);
     }
     auto addr = argv[1];
 
