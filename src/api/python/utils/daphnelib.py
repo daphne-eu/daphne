@@ -20,7 +20,14 @@ PROTOTYPE_PATH = os.path.dirname(os.path.dirname(os.path.dirname(PYTHON_PATH)))
 
 # Python representation of the struct DaphneLibResult.
 class DaphneLibResult(ctypes.Structure):
-    _fields_ = [("address", ctypes.c_void_p), ("rows", ctypes.c_int64), ("cols", ctypes.c_int64), ("vtc", ctypes.c_int64)]
+    _fields_ = [("address", ctypes.c_void_p), 
+                ("rows", ctypes.c_int64), 
+                ("cols", ctypes.c_int64), 
+                ("vtc", ctypes.c_int64),
+                 #Added for frame handling
+                ("vtcs", ctypes.POINTER(ctypes.c_int64)), 
+                ("labels", ctypes.POINTER(ctypes.c_char_p)), 
+                ("columns", ctypes.POINTER(ctypes.c_void_p))]
 
 DaphneLib = ctypes.CDLL(os.path.join(PROTOTYPE_PATH, "lib", "libdaphnelib.so"))
 DaphneLib.getResult.restype = DaphneLibResult
