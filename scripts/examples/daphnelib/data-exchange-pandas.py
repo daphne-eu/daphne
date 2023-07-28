@@ -19,6 +19,7 @@ dc = DaphneContext()
 
 # Create data in pandas.
 df = pd.DataFrame({"a": [1, 2, 3], "b": [1.1, -2.2, 3.3]})
+df
 
 # Transfer data to DaphneLib (lazily evaluated).
 F = dc.from_pandas(df)
