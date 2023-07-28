@@ -81,21 +81,19 @@ class OperationNode(DAGNode):
             if self._output_type == OutputType.FRAME and type=="shared memory":
                 daphneLibResult = DaphneLib.getResult()
 
-                print("daphneLibResult")
-                print(daphneLibResult)
-                # print(ctypes.cast(daphneLibResult.address))
-                print("")
-
                 data = []
                 
                 # Read the frame's address into a numpy array
-                if daphneLibResult.address is not None:
+                if daphneLibResult.columns is not None:
 
                     # Read the column labels and dtypes from the Frame's labels and dtypes directly
-                    labels = daphneLibResult.labels
-                    dtypes = [self.get_numpy_dtype(code) for code in daphneLibResult.vtcs]
+                    labels = [ctypes.cast(daphneLibResult.labels[i], ctypes.c_char_p).value.decode() for i in range(daphneLibResult.cols)]
+                    
+                    VTArray = ctypes.c_int64 * daphneLibResult.cols  # create a new type representing an array of data type codes
+                    vtcs_array = ctypes.cast(daphneLibResult.vtcs, ctypes.POINTER(VTArray)).contents  # cast the pointer to this type and access its contents
+                    dtypes = [self.getNumpyType(vtc) for vtc in vtcs_array]  # Convert the Data Types into Numpy Data Types
 
-                    for idx, label in enumerate(labels): 
+                    for idx in range(daphneLibResult.cols): 
                         data.append(np.ctypeslib.as_array(
                             ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(self.getType(daphneLibResult.vtcs[idx]))),
                             shape=[daphneLibResult.rows, 1]
@@ -106,7 +104,7 @@ class OperationNode(DAGNode):
                     dtypes = []
 
                 # Convert the numpy array to a pandas DataFrame
-                df = pd.DataFrame(data)
+                df = pd.DataFrame(np.concatenate(data, axis=1))
                 # Set the column labels in the DataFrame
                 df.columns = labels
 
@@ -184,5 +182,26 @@ class OperationNode(DAGNode):
             return ctypes.c_uint32
         elif vtc == UI8:
             return ctypes.c_uint8
+        else:
+            raise RuntimeError(f"unknown value type code: {vtc}")
+    
+    #Convert Daphne Data Types into Numpy Data Types
+    def getNumpyType(self, vtc):
+        if vtc == F64:
+            return np.float64
+        elif vtc == F32:
+            return np.float32
+        elif vtc == SI64:
+            return np.int64
+        elif vtc == SI32:
+            return np.int32
+        elif vtc == SI8:
+            return np.int8
+        elif vtc == UI64:
+            return np.uint64
+        elif vtc == UI32:
+            return np.uint32
+        elif vtc == UI8:
+            return np.uint8
         else:
             raise RuntimeError(f"unknown value type code: {vtc}")

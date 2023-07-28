@@ -65,6 +65,7 @@ class DaphneDSLScript:
                     return TMP_PATH + "/" + baseOutVarString + ".csv"
                 elif type == "shared memory":
                     self.add_code(f'saveDaphneLibResult({baseOutVarString});')
+
                     return None
                 else:
                     raise RuntimeError(f"unknown way to transfer the data: '{type}'")
@@ -91,7 +92,6 @@ class DaphneDSLScript:
     def execute(self):
         temp_out_file = open("tmpdaphne.daphne", "w")
         temp_out_file.writelines(self.daphnedsl_script)
-        print(self.daphnedsl_script)
         temp_out_file.close()
         
         #os.environ['OPENBLAS_NUM_THREADS'] = '1'

@@ -107,15 +107,6 @@ class DaphneContext(object):
         """
 
         if shared_memory:
-            # Convert pandas dataframe to numpy matrix
-            
-            """
-            frame_data = df.values
-            address = frame_data.ctypes.data_as(np.ctypeslib.ndpointer(dtype=frame_data.dtype, ndim=1, flags='C_CONTIGUOUS')).value
-            upper = (address & 0xFFFFFFFF00000000) >> 32
-            lower = (address & 0xFFFFFFFF)
-            """
-
             # Create a map between pandas data types and Daphne types
             dtype_map = {np.double: F64, np.float32: F32, np.int32: SI32, np.int64: SI64, np.uint8: UI8, np.uint32: UI32, np.uint64: UI64}
 
@@ -127,7 +118,6 @@ class DaphneContext(object):
                 unsupported_cols = df.columns[np.array(pd.isnull(dtypes))].tolist()
                 print(f"unsupported numpy dtype in columns {unsupported_cols}")
                 return None
-
 
             # Convert dataframe and labels to column arrays and label arrays
             mats = []
@@ -158,16 +148,10 @@ class DaphneContext(object):
                 
                 mats.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
 
-            
             labels = df.columns
             for label in labels: 
                 labelstr = f'"{label}"'
                 mats.append(labelstr)
-                
-            #print(address)
-            #print(upper)
-            #print(lower)
-            print(mats)
 
             # Return the Frame
             return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
@@ -177,8 +161,6 @@ class DaphneContext(object):
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=labels)
-
-
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}

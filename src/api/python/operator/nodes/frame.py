@@ -56,11 +56,6 @@ class Frame(OperationNode):
 
         self._column_names = column_names  # Add this line
 
-        #print(daphne_context)
-        #print(operation)
-        #print(unnamed_input_nodes)
-        #print(named_input_nodes)
-
         super().__init__(daphne_context, operation, unnamed_input_nodes,
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
 
@@ -111,9 +106,6 @@ class Frame(OperationNode):
         :param: The other frame to bind to the right hand side
         :return: The OperationNode containing the concatenated frames.
         """
-        print(self.daphne_context)
-        print(self)
-        print(other)
         return Frame(self.daphne_context, "rbind", [self, other])
 
     def cbind(self, other) -> 'Frame':
