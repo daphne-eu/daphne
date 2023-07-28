@@ -1,0 +1,14 @@
+// overloading typed functions with different number of results, but same arguments
+
+def f(a:si64) -> si64 {
+    return a + 1;
+}
+def f(a:si64) -> si64, si64 {
+    return a + 1, a + 2;
+}
+
+x = f(100);
+print(x);
+y, z, = f(200);
+print(y);
+print(z);

@@ -22,6 +22,7 @@
 
 #include <string>
 #include <vector>
+#include <sstream>
 #include <stdexcept>
 
 namespace mlir::daphne {
@@ -349,10 +350,16 @@ std::vector<Type> daphne::CondOp::inferTypes() {
         Type thenValTy = CompilerUtils::getValueType(thenTy);
         Type elseValTy = CompilerUtils::getValueType(elseTy);
 
-        if(thenValTy != elseValTy)
-            throw std::runtime_error(
-                    "the then/else-values of CondOp must have the same value type"
-            );
+        if(thenValTy != elseValTy) {
+            std::stringstream s;
+            // TODO todo technical for DaphneDSL user
+            // s << "the then/else-values of CondOp must have the same value type ("
+            //     << thenValTy << " vs. " << elseValTy << ')';
+            s << "the then/else-values of CondOp must have the same value type";
+            throw std::runtime_error(CompilerUtils::errorMsg(
+                    getLoc().dyn_cast<mlir::FileLineColLoc>(), s.str()
+            ));
+        }
 
         return {daphne::MatrixType::get(getContext(), thenValTy)};
     }

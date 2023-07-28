@@ -1,0 +1,27 @@
+// functions with typed arguments and typed results (various numbers of results, no overloading)
+
+def f(a:si64) -> si64 {
+    return a + 1;
+}
+
+def g(a:si64) -> si64, matrix<si64> {
+    return a + 1, fill(a, 2, 2);
+}
+
+def h(a:si64) -> si64, matrix<si64>, f32 {
+    return a + 1, fill(a, 2, 2), as.f32(a) / 2;
+}
+
+f0 = f(123);
+print(f0);
+print("");
+
+g0, g1 = g(456);
+print(g0);
+print(g1);
+print("");
+
+h0, h1, h2 = h(789);
+print(h0);
+print(h1);
+print(h2);

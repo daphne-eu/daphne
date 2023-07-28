@@ -261,4 +261,41 @@ public:
             return vt;
     }
 
+    static bool notEqualUnknownAware(mlir::Type t1, mlir::Type t2) {
+        using mlir::daphne::UnknownType;
+        auto matT1 = t1.dyn_cast<mlir::daphne::MatrixType>();
+        auto matT2 = t2.dyn_cast<mlir::daphne::MatrixType>();
+        return (
+            // The types are different...
+            t1 != t2
+            // ...but none of the following "excuses" holds
+            && !(
+                // at least one of the types is unknown
+                t1.isa<UnknownType>() || t2.isa<UnknownType>() ||
+                // both types are matrices and at least one of them
+                // has an unknown value type
+                (matT1 && matT2 && (
+                    matT1.getElementType().isa<UnknownType>() ||
+                    matT2.getElementType().isa<UnknownType>()
+                ))
+            )
+        );
+    }
+
+    // TODO use this in the custom antlr error handler
+    // TODO func to throw exception
+    static std::string errorMsg(mlir::FileLineColLoc loc, const std::string & msg) {
+        std::stringstream s;
+        s << loc.getFilename().str() << ':' << loc.getLine() << ':' << loc.getColumn() << ' ' << msg;
+        return s.str();
+    }
+
+    // TODO support different classes of Location gracefully
+    static void throwError(mlir::Location loc, const std::string & msg) {
+        throw std::runtime_error(errorMsg(
+            loc.dyn_cast<mlir::FileLineColLoc>(),
+            msg
+        ));
+    }
+
 };
