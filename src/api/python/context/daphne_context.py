@@ -160,7 +160,7 @@ class DaphneContext(object):
             # Data transfer via files.
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
-            return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=labels)
+            return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}

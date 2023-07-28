@@ -64,7 +64,9 @@ class Frame(OperationNode):
         if self.__copy:
             return f'{var_name}={unnamed_input_vars[0]};'
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
-        if self._is_pandas():
+        
+        #Save temporary csv file, if the operation is "readFrame"
+        if self._is_pandas() and self.operation == "readFrame":
             self._pd_dataframe.to_csv(TMP_PATH+"/"+var_name+".csv", header=False, index=False)
             with open(TMP_PATH+"/"+var_name+".csv.meta", "w") as f:
                 json.dump(
