@@ -110,7 +110,7 @@ class Translator(DmlVisitor):
     	dtype = self.inferType(args[0], exprs[0])    	
     	if dtype in {"si64", "f64", "bool", "str"}:
     		function_call = f"fill(as.f64({args[0]}), {args[1]}, {args[2]})"
-    		dtype = "matrix<" + dtype + ">"
+    		dtype = "matrix<f64>"
     	else:
     		function_call = f"reshape({args[0]}, {args[1]}, {args[2]})"
     		
@@ -292,11 +292,11 @@ class Translator(DmlVisitor):
     	if len(arguments) == 2:
     		args, exprs = self.reorder_args(arguments, [None, None])
     		function_call = f"seq(as.f64({args[0]}), {args[1]}, {args[0]} <= {args[1]} ? 1 : -1)"
-    		dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    		dtype = "matrix<f64>"
     	elif len(arguments) == 3:
     		args, exprs = self.reorder_args(arguments, [None, None, None])
     		function_call = f"seq(as.f64({args[0]}), {args[1]}, {args[2]})"
-    		dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    		dtype = "matrix<f64>"
     		
     	return function_call, dtype
 
@@ -528,8 +528,21 @@ class Translator(DmlVisitor):
     def getDataType(self, ctx):
     	dtype_left = self.inferType(self.visitExpression(ctx.expression(0)), ctx.expression(0))
     	dtype_right = self.inferType(self.visitExpression(ctx.expression(1)), ctx.expression(1))
-    	
-    	if self.isMatrix(dtype_left):
+
+    	if self.isMatrix(dtype_left) and self.isMatrix(dtype_right):
+    		vtype_left = self.getValueType(dtype_left)
+    		vtype_right = self.getValueType(dtype_right)
+    		
+    		if vtype_left == "f64" or vtype_right == "f64":
+    			return "matrix<f64>"
+    		else:
+    			return vtype_left	
+    	elif not self.isMatrix(dtype_left) and not self.isMatrix(dtype_right):
+    		if dtype_left == "f64" or dtype_right == "f64":
+    			return "f64"
+    		else:
+    			return dtype_left
+    	elif self.isMatrix(dtype_left):
     		return dtype_left
     	else:
     		return dtype_right
@@ -1337,6 +1350,10 @@ class Translator(DmlVisitor):
     		if dtype == "si64":
     			return f"{target} = as.matrix({source}.0);"
     		
+    	dtype_target = self.context.data_types.get(target)
+    	if dtype_target:
+    		return f"{target} = as.{dtype_target}({source});"
+    	
     	self.context.data_types[target] = dtype
 
     	return f"{target} = {source};"
@@ -1503,8 +1520,6 @@ def translate(dml_code):
 def get_daphne_filename(dml_filename):
     base_name = os.path.basename(dml_filename)
     base_name = base_name.replace(".dml", ".daph")
-    output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "translated_files")
-    os.makedirs(output_dir, exist_ok=True)
     
     return os.path.join(output_dir, base_name)
 
@@ -1514,6 +1529,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Translate Dml file to DaphneDSL.")
     parser.add_argument("dml_filename", type=str, help="Path to the Dml file to translate")
     args = parser.parse_args()
+    
+    output_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "translated_files")
+    os.makedirs(output_dir, exist_ok=True)
 
     with open(args.dml_filename, "r") as f:
         dml_code = f.read()
