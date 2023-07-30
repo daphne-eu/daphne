@@ -60,14 +60,8 @@ class DaphneDSLScript:
                 else:
                     raise RuntimeError(f"unknown way to transfer the data: '{type}'")
             elif dag_root.output_type == OutputType.FRAME:
-                if type == "files":
-                    self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
-                    return TMP_PATH + "/" + baseOutVarString + ".csv"
-                elif type == "shared memory":
-                    self.add_code(f'saveDaphneLibResult({baseOutVarString});')
-                    return None
-                else:
-                    raise RuntimeError(f"unknown way to transfer the data: '{type}'")
+                self.add_code(f'writeFrame({baseOutVarString},"{TMP_PATH}/{baseOutVarString}.csv");')
+                return TMP_PATH + "/" + baseOutVarString + ".csv"
             elif dag_root.output_type == OutputType.SCALAR:
                 # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
                 self.add_code(f'saveDaphneLibResult(as.matrix({baseOutVarString}));')

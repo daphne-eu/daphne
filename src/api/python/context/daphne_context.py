@@ -106,6 +106,7 @@ class DaphneContext(object):
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
+<<<<<<< HEAD
 
     def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
@@ -275,6 +276,22 @@ class DaphneContext(object):
             return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
     """
 
+=======
+        
+    def from_pandas(self, df: pd.DataFrame) -> Frame:
+        """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
+        :param df: The pandas DataFrame.
+        :param args: unnamed parameters
+        :param kwargs: named parameters
+        :return: A Frame
+        """
+
+        # Data transfer via files.
+        unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
+        named_params = []
+        return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df)
+    
+>>>>>>> parent of dbd6c738 (CleanUp)
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)

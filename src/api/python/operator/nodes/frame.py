@@ -32,7 +32,7 @@ import pandas as pd
 
 import json
 import os
-from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence, List
+from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -40,25 +40,26 @@ if TYPE_CHECKING:
 
 class Frame(OperationNode):
     _pd_dataframe: pd.DataFrame
-    _column_names: Optional[List[str]] = None  # Add this line
 
     def __init__(self, daphne_context: "DaphneContext", operation: str,
                  unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
-                 local_data: pd.DataFrame = None, brackets: bool = False, 
-                 column_names: Optional[List[str]] = None) -> "Frame":  # Modify this line
+                 local_data: pd.DataFrame = None, brackets: bool = False) -> "Frame":
         is_python_local_data = False
         if local_data is not None:
             self._pd_dataframe = local_data
             is_python_local_data = True
         else:
             self._pd_dataframe = None
+<<<<<<< HEAD
 
         self._column_names = column_names  # Add this line
 
+=======
+        
+>>>>>>> parent of dbd6c738 (CleanUp)
         super().__init__(daphne_context, operation, unnamed_input_nodes,
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
-
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
         code_line = super().code_line(var_name, unnamed_input_vars, named_input_vars).format(file_name=var_name, TMP_PATH = TMP_PATH) 
@@ -83,11 +84,19 @@ class Frame(OperationNode):
                 )
         return code_line
 
+<<<<<<< HEAD
     def compute(self, type="shared memory", isTensor=False, verbose=False) -> Union[pd.DataFrame]:
         if self._is_pandas():
             return self._pd_dataframe
         else:
             return super().compute(type, isTensor, verbose)
+=======
+    def compute(self) -> Union[pd.DataFrame]:
+        if self._is_pandas():
+            return self._pd_dataframe
+        else:
+            return super().compute()
+>>>>>>> parent of dbd6c738 (CleanUp)
 
     def _is_pandas(self) -> bool:
         return self._pd_dataframe is not None

@@ -89,6 +89,7 @@ class OperationNode(DAGNode):
             # Still a hard copy function that creates tmp files to execute
             self._script.execute()
             self._script.clear(self)
+<<<<<<< HEAD
 
             if(verbose):
                 # Print the overall timing
@@ -143,6 +144,9 @@ class OperationNode(DAGNode):
                     print(f"Compute Function Execution time: \n{comp_end_time - comp_start_time} seconds\n")
 
             elif self._output_type == OutputType.FRAME and type=="files":
+=======
+            if self._output_type == OutputType.FRAME:
+>>>>>>> parent of dbd6c738 (CleanUp)
                 df = pd.read_csv(result)
                 with open(result + ".meta", "r") as f:
                     fmd = json.load(f)
