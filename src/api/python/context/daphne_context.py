@@ -30,6 +30,8 @@ from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64,
 import numpy as np
 import pandas as pd
 
+import time
+
 from typing import Sequence, Dict, Union
 
 class DaphneContext(object):
@@ -97,22 +99,24 @@ class DaphneContext(object):
         """
 
         if shared_memory:
-            # Create a map between pandas data types and Daphne types
-            dtype_map = {np.double: F64, np.float32: F32, np.int32: SI32, np.int64: SI64, np.uint8: UI8, np.uint32: UI32, np.uint64: UI64}
-
-            # Convert dtypes to equivalent Daphne types
-            dtypes = df.dtypes.map(dtype_map).tolist()
-
-            # Check if all data types are supported
-            if None in dtypes:
-                unsupported_cols = df.columns[np.array(pd.isnull(dtypes))].tolist()
-                print(f"unsupported numpy dtype in columns {unsupported_cols}")
-                return None
+            # Time the execution for the whole processing
+            start_time = time.time()
 
             # Convert dataframe and labels to column arrays and label arrays
             mats = []
-            for column in df: 
+
+            # Time the execution for all columns
+            frame_start_time = time.time()
+
+            for idx, column in enumerate(df):
+
+                # Time the execution for each column
+                col_start_time = time.time()
+
                 mat = df[column].values
+                #Check if this step was zero copy
+                print(f'\nOriginal df column "{column}" ({idx}) shares memory with new numpy array: \n{np.shares_memory(mat, df[column].values)}\n')
+
                 address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
                 upper = (address & 0xFFFFFFFF00000000) >> 32
                 lower = (address & 0xFFFFFFFF)
@@ -134,14 +138,26 @@ class DaphneContext(object):
                 elif d_type == np.uint64:
                     vtc = UI64
                 else:
-                    print("unsupported numpy dtype")
+                    print(f'Unsupported numpy dtype in column "{column}" ({idx})')
                 
                 mats.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
+
+                # Print out timing
+                col_end_time = time.time()
+                print(f'Execution time for column "{column}" ({idx}): \n{col_end_time - col_start_time} seconds\n')
+            
+            # Print out frame timing
+            frame_end_time = time.time()
+            print(f"Execution time for all columns: \n{frame_end_time - frame_start_time} seconds\n")
 
             labels = df.columns
             for label in labels: 
                 labelstr = f'"{label}"'
                 mats.append(labelstr)
+            
+            # Print the overall timing
+            end_time = time.time()
+            print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             # Return the Frame
             return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
