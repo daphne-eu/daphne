@@ -25,7 +25,7 @@ sizes = [1, 10, 100, 1000, 10000, 100000, 1000000]
 
 # DATAFRAME 
 # Creating a list of dataframes with different sizes
-dataframes = [pd.DataFrame(np.random.randn(size, 3), columns=list('ABC')) for size in sizes]
+dataframes = [pd.DataFrame(np.random.randn(size, 15)) for size in sizes]
 # Looping through the dataframes and testing the from_pandas and compute operation
 print("\n\n###\n### Dataframes Experiments:\n###\n")
 for df in dataframes:
@@ -61,7 +61,7 @@ print("\n###End of Series Experiments.\n")
 
 # SPARSE DATAFRAME
 # Creating a list of sparse dataframes with different sizes
-sparse_dataframes = [pd.SparseDataFrame(np.random.randn(size, 3), columns=list('ABC')) for size in sizes]
+sparse_dataframes = [pd.SparseDataFrame(np.random.randn(size, 15)) for size in sizes]
 # Looping through the sparse dataframes and testing the from_pandas and compute operation
 print("\n\n###\n### Sparse DataFrame Experiments:\n###\n")
 for sdf in sparse_dataframes:
@@ -95,7 +95,7 @@ print("\n###End of MultiIndex Experiments.\n")
 
 # CATEGORICAL DATAFRAME
 # Creating a list of categorical dataframes with different sizes
-categorical_dataframes = [pd.DataFrame(np.random.randn(size, 3), columns=list("ABC")) for size in sizes]
+categorical_dataframes = [pd.DataFrame(np.random.randn(size, 15)) for size in sizes]
 # Looping through the multiindex and testing the from_pandas and compute operation
 print("\n\n###\n### Categorical Dataframe Experiments:\n###\n")
 for cdf in categorical_dataframes:
