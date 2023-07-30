@@ -71,31 +71,36 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
 
-    def compute(self, type="shared memory"):
+    def compute(self, type="shared memory", verbose=False):
         if self._result_var is None:
             
-            # Time the execution for the whole processing
-            start_time = time.time()
+            if(verbose):
+                # Time the execution for the whole processing
+                start_time = time.time()
 
             self._script = DaphneDSLScript(self.daphne_context)
             for definition in self.daphne_context._functions.values():
                 self._script.daphnedsl_script += definition
             result = self._script.build_code(self, type)
-
-            # Time the execution for the execute function
-            exec_start_time = time.time()
+            
+            if(verbose):
+                # Time the execution for the execute function
+                exec_start_time = time.time()
 
             # Still a hard copy function that creates tmp files to execute
             self._script.execute()
             self._script.clear(self)
 
-            # Print the overall timing
-            exec_end_time = time.time()
-            print(f"Execute function Execution time: \n{exec_end_time - exec_start_time} seconds\n")
+            if(verbose):
+                # Print the overall timing
+                exec_end_time = time.time()
+                print(f"Execute function Execution time: \n{exec_end_time - exec_start_time} seconds\n")
 
             if self._output_type == OutputType.FRAME and type=="shared memory":
-                # Time the execution for the compute function
-                comp_start_time = time.time()
+
+                if(verbose):
+                    # Time the execution for the compute function
+                    comp_start_time = time.time()
 
                 daphneLibResult = DaphneLib.getResult()
 
@@ -133,10 +138,10 @@ class OperationNode(DAGNode):
                 result = df
                 self.clear_tmp()
 
-                # Print the compute function timing
-                comp_end_time = time.time()
-                print(f"Compute Function Execution time: \n{comp_end_time - comp_start_time} seconds\n")
-
+                if(verbose):
+                    # Print the compute function timing
+                    comp_end_time = time.time()
+                    print(f"Compute Function Execution time: \n{comp_end_time - comp_start_time} seconds\n")
 
             elif self._output_type == OutputType.FRAME and type=="files":
                 df = pd.read_csv(result)
@@ -145,7 +150,6 @@ class OperationNode(DAGNode):
                     df.columns = [x["label"] for x in fmd["schema"]]
                 result = df
                 self.clear_tmp()
-                print('frame: files')
             elif self._output_type == OutputType.MATRIX and type=="shared memory":
                 daphneLibResult = DaphneLib.getResult()
                 result = np.ctypeslib.as_array(
@@ -153,11 +157,9 @@ class OperationNode(DAGNode):
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )
                 self.clear_tmp()
-                print('matrix: shared mem')
             elif self._output_type == OutputType.MATRIX and type=="files":
                 arr = np.genfromtxt(result, delimiter=',')
                 self.clear_tmp()
-                print('matrix: files')
                 return arr
             elif self._output_type == OutputType.SCALAR:
                 # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
@@ -167,12 +169,11 @@ class OperationNode(DAGNode):
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )[0, 0]
                 self.clear_tmp()
-                print('scalar')
             
-
-            # Print the overall timing
-            end_time = time.time()
-            print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+            if(verbose):
+                # Print the overall timing
+                end_time = time.time()
+                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             if result is None:
                 return
