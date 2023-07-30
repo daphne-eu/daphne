@@ -23,6 +23,8 @@ df = pd.DataFrame({"a": [1, 2, 3], "b": [1.1, -2.2, 3.3]})
 # Transfer data to DaphneLib
 F = dc.from_pandas(df, verbose=True)
 
+#print(F)
+
 print("How DAPHNE sees the data from pandas:")
 F.print().compute(verbose=True)
 
