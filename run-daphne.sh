@@ -15,5 +15,5 @@
 # limitations under the License.
 
 DAPHNE_ROOT=$PWD
-export LD_LIBRARY_PATH=$DAPHNE_ROOT/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=$DAPHNE_ROOT/lib:$DAPHNE_ROOT/thirdparty/installed/lib:$LD_LIBRARY_PATH
 $DAPHNE_ROOT/bin/daphne --config UserConfig.json $@
