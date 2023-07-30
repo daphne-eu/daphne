@@ -98,9 +98,37 @@ class DaphneContext(object):
         :return: A Frame
         """
 
+        # Time the execution for the whole processing
+        start_time = time.time()
+
+        # Time the execution for the Pandas Frame Type Checks
+        typeCheck_start_time = time.time()
+
+        # Check for a Series and convert to DataFrame
+        if isinstance(df, pd.Series):
+            print("Handling of pandas Series is not implemented yet. Converting to a standard DataFrame.")
+            df = df.to_frame()
+
+        # Check for MultiIndex and convert to standard DataFrame
+        elif isinstance(df.index, pd.MultiIndex) or isinstance(df.columns, pd.MultiIndex):
+            print("Handling of pandas MultiIndex DataFrame is not implemented yet. Converting to a standard DataFrame.")
+            df = df.reset_index()
+
+        # Check for sparse DataFrame and convert to standard DataFrame
+        elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
+            print("Handling of pandas Sparse DataFrame is not implemented yet. Converting to a standard DataFrame.")
+            df = df.sparse.to_dense()
+
+        # Check for Categorical data and convert to standard DataFrame
+        elif df.select_dtypes(include=["category"]).shape[1] > 0:
+            print("Handling of pandas Categorical DataFrame is not implemented yet. Converting to a standard DataFrame.")
+            df = df.apply(lambda x: x.astype('object') if x.dtype.name == 'category' else x)
+
+        # Print the Type Check timing
+        typeCheck_end_time = time.time()
+        print(f"Frame Type Check Execution time: \n{typeCheck_end_time - typeCheck_start_time} seconds\n")
+
         if shared_memory:
-            # Time the execution for the whole processing
-            start_time = time.time()
 
             # Convert dataframe and labels to column arrays and label arrays
             mats = []
@@ -166,6 +194,11 @@ class DaphneContext(object):
             # Data transfer via files.
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
+
+            # Print the overall timing
+            end_time = time.time()
+            print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
