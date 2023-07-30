@@ -91,18 +91,19 @@ class DaphneContext(object):
             named_params = []
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
-    def from_pandas(self, df: pd.DataFrame, shared_memory=True) -> Frame:
+    def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
         :param df: The pandas DataFrame.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
+        :param verbose: Whether the execution time and further information should be output to the console.
         :return: A Frame
         """
 
-        # Time the execution for the whole processing
-        start_time = time.time()
-
-        # Time the execution for the Pandas Frame Type Checks
-        typeCheck_start_time = time.time()
+        if(verbose):
+            # Time the execution for the whole processing
+            start_time = time.time()
+            # Time the execution for the Pandas Frame Type Checks
+            typeCheck_start_time = time.time()
 
         # Check for a Series and convert to DataFrame
         if isinstance(df, pd.Series):
@@ -124,26 +125,31 @@ class DaphneContext(object):
             print("Handling of pandas Categorical DataFrame is not implemented yet. Converting to a standard DataFrame.")
             df = df.apply(lambda x: x.astype('object') if x.dtype.name == 'category' else x)
 
-        # Print the Type Check timing
-        typeCheck_end_time = time.time()
-        print(f"Frame Type Check Execution time: \n{typeCheck_end_time - typeCheck_start_time} seconds\n")
+        if(verbose):
+            # Print the Type Check timing
+            typeCheck_end_time = time.time()
+            print(f"Frame Type Check Execution time: \n{typeCheck_end_time - typeCheck_start_time} seconds\n")
 
         if shared_memory:
 
             # Convert dataframe and labels to column arrays and label arrays
             mats = []
 
-            # Time the execution for all columns
-            frame_start_time = time.time()
+            if(verbose):
+                # Time the execution for all columns
+                frame_start_time = time.time()
 
             for idx, column in enumerate(df):
-
-                # Time the execution for each column
-                col_start_time = time.time()
+                
+                if(verbose):
+                    # Time the execution for each column
+                    col_start_time = time.time()
 
                 mat = df[column].values
-                #Check if this step was zero copy
-                print(f'\nOriginal df column "{column}" ({idx}) shares memory with new numpy array: \n{np.shares_memory(mat, df[column].values)}\n')
+
+                if(verbose):
+                    #Check if this step was zero copy
+                    print(f'\nOriginal df column "{column}" ({idx}) shares memory with new numpy array: \n{np.shares_memory(mat, df[column].values)}\n')
 
                 address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
                 upper = (address & 0xFFFFFFFF00000000) >> 32
@@ -170,22 +176,25 @@ class DaphneContext(object):
                 
                 mats.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
 
-                # Print out timing
-                col_end_time = time.time()
-                print(f'Execution time for column "{column}" ({idx}): \n{col_end_time - col_start_time} seconds\n')
+                if(verbose):
+                    # Print out timing
+                    col_end_time = time.time()
+                    print(f'Execution time for column "{column}" ({idx}): \n{col_end_time - col_start_time} seconds\n')
             
-            # Print out frame timing
-            frame_end_time = time.time()
-            print(f"Execution time for all columns: \n{frame_end_time - frame_start_time} seconds\n")
+            if(verbose):
+                # Print out frame timing
+                frame_end_time = time.time()
+                print(f"Execution time for all columns: \n{frame_end_time - frame_start_time} seconds\n")
 
             labels = df.columns
             for label in labels: 
                 labelstr = f'"{label}"'
                 mats.append(labelstr)
             
-            # Print the overall timing
-            end_time = time.time()
-            print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+            if(verbose):
+                # Print the overall timing
+                end_time = time.time()
+                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             # Return the Frame
             return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
@@ -195,11 +204,13 @@ class DaphneContext(object):
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
 
-            # Print the overall timing
-            end_time = time.time()
-            print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+            if(verbose):
+                # Print the overall timing
+                end_time = time.time()
+                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
-            return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)
+            return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
+        
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}

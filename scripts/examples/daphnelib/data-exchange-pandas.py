@@ -19,19 +19,18 @@ dc = DaphneContext()
 
 # Create data in pandas.
 df = pd.DataFrame({"a": [1, 2, 3], "b": [1.1, -2.2, 3.3]})
-df
 
 # Transfer data to DaphneLib
-F = dc.from_pandas(df)
+F = dc.from_pandas(df, verbose=True)
 
 #print(F)
 
 print("How DAPHNE sees the data from pandas:")
-F.print().compute()
+F.print().compute(verbose=True)
 
 # Append F to itself.
 F = F.rbind(F)
 
 # Compute in DAPHNE, transfer result back to Python.
 print("\nResult of appending the frame to itself, back in Python:")
-print(F.compute())
+print(F.compute(verbose=True))
