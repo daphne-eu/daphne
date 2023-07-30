@@ -35,8 +35,10 @@ from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP
 
 import numpy as np
 import pandas as pd
+# import tensorflow as tf
 
 import time
+from itertools import repeat
 
 from typing import Sequence, Dict, Union
 
@@ -62,13 +64,16 @@ class DaphneContext(object):
         unnamed_params = ['\"'+file+'\"']
         return Frame(self, 'readFrame', unnamed_params)
     
-    def from_numpy(self, mat: np.array, shared_memory=True) -> Matrix:
+    def from_numpy(self, mat: np.array, shared_memory=True, verbose=False) -> Matrix:
         """Generates a `DAGNode` representing a matrix with data given by a numpy `array`.
         :param mat: The numpy array.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :return: The data from numpy as a Matrix.
         """
-        
+        if(verbose):
+            # Time the execution for the whole processing
+            start_time = time.time()
+
         if shared_memory:
             # Data transfer via shared memory.
             address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
@@ -94,11 +99,22 @@ class DaphneContext(object):
             else:
                 print("unsupported numpy dtype")
             
+            if(verbose):
+                # Print the overall timing
+                end_time = time.time()
+                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+
             return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], mat.shape[1], vtc], local_data=mat)
         else:
             # Data transfer via a file.
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']
             named_params = []
+
+            if(verbose):
+                # Print the overall timing
+                end_time = time.time()
+                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
     def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False) -> Frame:
@@ -121,9 +137,10 @@ class DaphneContext(object):
             df = df.to_frame()
 
         # Check for MultiIndex and convert to standard DataFrame
-        elif isinstance(df.index, pd.MultiIndex) or isinstance(df.columns, pd.MultiIndex):
-            print("Handling of pandas MultiIndex DataFrame is not implemented yet. Converting to a standard DataFrame.")
-            df = df.reset_index()
+        elif isinstance(df, pd.MultiIndex):
+            print("Handling of pandas MultiIndex DataFrame is not implemented yet. \nConverting to a standard DataFrame is not possible...")
+            print("Proceeding with an empty DataFrame")
+            df = pd.DataFrame({"a": [0], "b": [0.0]})
 
         # Check for sparse DataFrame and convert to standard DataFrame
         elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
@@ -133,7 +150,7 @@ class DaphneContext(object):
         # Check for Categorical data and convert to standard DataFrame
         elif df.select_dtypes(include=["category"]).shape[1] > 0:
             print("Handling of pandas Categorical DataFrame is not implemented yet. Converting to a standard DataFrame.")
-            df = df.apply(lambda x: x.astype('object') if x.dtype.name == 'category' else x)
+            df = df.apply(lambda x: x.cat.codes if x.dtype.name == 'category' else x)
 
         if(verbose):
             # Print the Type Check timing
@@ -156,6 +173,9 @@ class DaphneContext(object):
                     col_start_time = time.time()
 
                 mat = df[column].values
+
+                if mat.dtype == np.int16:
+                    mat = mat.astype(np.int32)
 
                 if(verbose):
                     #Check if this step was zero copy
@@ -220,7 +240,50 @@ class DaphneContext(object):
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
+    """
+    def from_tensor(self, tensor: tf.Tensor, shared_memory=True, verbose=False):
+        if verbose:
+            start_time = time.time()
+
+        if len(tensor.shape) == 2:
+            # 2D tensor, handle as a matrix
+            mat = tensor.numpy()  # Convert to numpy array
+
+            if verbose:
+                end_time = time.time()
+                print(f"Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
+
+            return self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method
         
+        else:
+            # N-dimensional tensor, reshape to 2D and handle as a frame
+
+            # Create a list of indices for all dimensions beyond the first
+            indices = [range(dim) for dim in tensor.shape[1:]]
+
+            # Create the column labels by using itertools.product to iterate over all combinations of indices
+            columns = [f'dim_{"_".join(map(str, idx))}' for idx in product(*indices)]
+
+            # Reshape the tensor into 2D, maintaining the first dimension and flattening all other dimensions
+            reshaped_tensor = tf.reshape(tensor, (tensor.shape[0], -1))
+
+            if verbose:
+                df_start_time = time.time()
+
+            # Convert to pandas DataFrame
+            np_array = reshaped_tensor.numpy()
+            df = pd.DataFrame(np_array, columns=columns)
+
+            if verbose:
+                df_end_time = time.time()
+                print(f"Tensor to Dataframe Execution time: \n{df_end_time - df_start_time} seconds\n")
+
+            if verbose:
+                end_time = time.time()
+                print(f"Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
+
+            return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
+    """
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
