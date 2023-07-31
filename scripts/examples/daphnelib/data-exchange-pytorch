@@ -13,32 +13,32 @@
 # limitations under the License.
 
 from api.python.context.daphne_context import DaphneContext
-import tensorflow as tf
+import torch as torch
 import numpy as np
 
 dc = DaphneContext()
 
 # Example usage for a 3x3 tensor
-tensor2d = tf.constant(np.arange(15).reshape((5, 3)))
+tensor2d = torch.tensor(np.arange(15).reshape((5, 3)))
 
 # Print the tensor
 print("How the 2d Tensor looks in Python:")
 print(tensor2d)
 
-T2D = dc.from_tensorflow(tensor2d, verbose=True)
+T2D = dc.from_pytorch(tensor2d, verbose=True)
 
 print("\nHow DAPHNE sees the 2d tensor from tensorflow:")
 T2D.print().compute(verbose=True)
 
 
 # Example usage for a 3x3x3 tensor
-tensor3d = tf.constant(np.arange(27).reshape((3, 3, 3)))
+tensor3d = torch.tensor(np.arange(27).reshape((3, 3, 3)))
 
 # Print the tensor
 print("How the 3d Tensor looks in Python:")
 
 # Example usage for a 4x3x3x3 tensor
-tensor4d = tf.constant(np.arange(108).reshape((4, 3, 3, 3)))
+tensor4d = torch.tensor(np.arange(108).reshape((4, 3, 3, 3)))
 
 # Print the tensor
 print("How the 4d Tensor looks in Python:")
