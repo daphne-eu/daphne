@@ -14,13 +14,13 @@ daph_file_caller = os.path.abspath("dbscan_.daph")
 # Generate data
 eps = 0.5
 minPts = 5
+np.random.seed(0)
 
 points_cluster_1 = np.random.normal(loc=0, scale=0.2, size=(8, 2))
-
-os.makedirs(os.path.abspath("data"), exist_ok=True)
 points_cluster_2 = np.random.normal(loc=5, scale=0.2, size=(2, 2))
 test_matrix = np.vstack((points_cluster_1, points_cluster_2))
 
+os.makedirs(os.path.abspath("data"), exist_ok=True)
 test_matrix_file_dml = os.path.abspath('data/test_matrix_dml.csv')
 test_matrix_file_daph = os.path.abspath('data/test_matrix_daph.csv')
 

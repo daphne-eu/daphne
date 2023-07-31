@@ -20,13 +20,19 @@ SystemDS has a variety of builtin dml scripts. This translator aims to convert a
 
 ## Running the translator
 
-The translator can be found in `tools/dml2daph.py`. In order to run the script the path to the `.dml` file has to be provided as an argument. Converting "shortestPath.dml" to daphneDSL would look like this:
+The translator can be found in `tools/dml2daph.py`.  In order to run the script the path to the `.dml` file has to be provided as an argument. Converting "shortestPath.dml" to daphneDSL would look like this:
 
 ```cpp
 python3 dml2daph.py ../thirdparty/systemds/scripts/builtin/shortestPath.dml
 ```
 
 The translated script can then be found in `tools/translated_files/shortestPath.daph`.
+
+The Lexer, Parser and Visitor are already provided in `tools/`. In order to newly create them, dml's grammar file `Dml.g4` is needed. The files can then be created using the following command:
+
+```cpp
+antlr4 -Dlanguage=Python3 -visitor Dml.g4
+```
 
 ## Tests
 
@@ -44,6 +50,7 @@ After running the tests the folders `data` and `output` are created. The `data` 
 
 * sigmoid
 * shortestPath
+* dbscan
 * lm
 
 ## Todo

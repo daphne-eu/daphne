@@ -109,8 +109,9 @@ class Translator(DmlVisitor):
 
     	dtype = self.inferType(args[0], exprs[0])    	
     	if dtype in {"si64", "f64", "bool", "str"}:
-    		function_call = f"fill(as.f64({args[0]}), {args[1]}, {args[2]})"
-    		dtype = "matrix<f64>"
+    		dtype = "f64" if dtype == "si64" else dtype
+    		function_call = f"fill(as.{dtype}({args[0]}), {args[1]}, {args[2]})"
+    		dtype = f"matrix<{dtype}>"
     	else:
     		function_call = f"reshape({args[0]}, {args[1]}, {args[2]})"
     		
@@ -456,14 +457,14 @@ class Translator(DmlVisitor):
     def colIndexMin_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"idxMin({args[0]}, 1)"
-    	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	dtype = "s64"
     	
     	return function_call, dtype
 
     def rowIndexMin_function(self, arguments):
     	args, exprs = self.reorder_args(arguments, [None])
     	function_call = f"idxMin({args[0]}, 0)"
-    	dtype = "matrix<" + self.inferType(args[0], exprs[0]) + ">"
+    	dtype = "s64"
     	
     	return function_call, dtype
 
