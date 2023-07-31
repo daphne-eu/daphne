@@ -35,7 +35,8 @@ from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP
 
 import numpy as np
 import pandas as pd
-# import tensorflow as tf
+import tensorflow as tf
+import torch as torch 
 
 import time
 from itertools import repeat
@@ -240,8 +241,8 @@ class DaphneContext(object):
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
-    """
-    def from_tensor(self, tensor: tf.Tensor, shared_memory=True, verbose=False):
+    
+    def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False):
         if verbose:
             start_time = time.time()
 
@@ -251,7 +252,7 @@ class DaphneContext(object):
 
             if verbose:
                 end_time = time.time()
-                print(f"Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
+                print(f"TensorFlow Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
 
             return self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method
         
@@ -276,14 +277,56 @@ class DaphneContext(object):
 
             if verbose:
                 df_end_time = time.time()
-                print(f"Tensor to Dataframe Execution time: \n{df_end_time - df_start_time} seconds\n")
+                print(f"TensorFlow Tensor to Dataframe Execution time: \n{df_end_time - df_start_time} seconds\n")
 
             if verbose:
                 end_time = time.time()
-                print(f"Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
+                print(f"TensorFlow Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
 
             return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
-    """
+    
+    def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False):
+        if verbose:
+            start_time = time.time()
+
+        if tensor.dim() == 2:
+            # 2D tensor, handle as a matrix
+            mat = tensor.numpy()  # Convert to numpy array
+
+            if verbose:
+                end_time = time.time()
+                print(f"PyTorch Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
+
+            return self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method
+        
+        else:
+            # N-dimensional tensor, reshape to 2D and handle as a frame
+
+            # Create a list of indices for all dimensions beyond the first
+            indices = [range(dim) for dim in tensor.size()[1:]]
+
+            # Create the column labels by using itertools.product to iterate over all combinations of indices
+            columns = [f'dim_{"_".join(map(str, idx))}' for idx in product(*indices)]
+
+            # Reshape the tensor into 2D, maintaining the first dimension and flattening all other dimensions
+            reshaped_tensor = torch.reshape(tensor, (tensor.size(0), -1))
+
+            if verbose:
+                df_start_time = time.time()
+
+            # Convert to pandas DataFrame
+            np_array = reshaped_tensor.numpy()
+            df = pd.DataFrame(np_array, columns=columns)
+
+            if verbose:
+                df_end_time = time.time()
+                print(f"PyTorch Tensor to Dataframe Execution time: \n{df_end_time - df_start_time} seconds\n")
+
+            if verbose:
+                end_time = time.time()
+                print(f"PyTorch Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
+
+            return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
