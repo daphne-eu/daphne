@@ -35,8 +35,9 @@ from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
-import torch as torch 
+import csv
+#import tensorflow as tf
+#import torch as torch 
 
 import time
 from itertools import repeat
@@ -157,10 +158,10 @@ class DaphneContext(object):
             # Print the Type Check timing
             typeCheck_end_time = time.time()
             print(f"Frame Type Check Execution time: \n{typeCheck_end_time - typeCheck_start_time} seconds\n")
-
+           
         if shared_memory:
-
-            # Convert dataframe and labels to column arrays and label arrays
+         
+           # Convert dataframe and labels to column arrays and label arrays
             mats = []
 
             if(verbose):
@@ -181,7 +182,6 @@ class DaphneContext(object):
                 if(verbose):
                     #Check if this step was zero copy
                     print(f'\nOriginal df column "{column}" ({idx}) shares memory with new numpy array: \n{np.shares_memory(mat, df[column].values)}\n')
-
                 address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
                 upper = (address & 0xFFFFFFFF00000000) >> 32
                 lower = (address & 0xFFFFFFFF)
@@ -241,7 +241,7 @@ class DaphneContext(object):
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
-    
+    """"
     def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False):
         if verbose:
             start_time = time.time()
@@ -327,7 +327,7 @@ class DaphneContext(object):
                 print(f"PyTorch Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
 
             return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
-
+"""
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}
         return Matrix(self, 'fill', [], named_input_nodes=named_input_nodes)
