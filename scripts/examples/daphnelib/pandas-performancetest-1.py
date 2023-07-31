@@ -17,19 +17,19 @@ import pandas as pd
 import numpy as np
 import csv
 import time
+import io
+import contextlib
 
 dc = DaphneContext()
 
 #Create Lists for the PerfoamnceResults Dataframe 
 type = []
-dataframe_size = []
 transfer_daphne_time = []
 rbind_time = []
 cartesian_time = []
 
 # Creating a list of sizes for the objects
-sizes = [1, 10, 100, 1000, 10000, 100000, 1000000]
-
+sizes = [1, 10, 100, 1000, 10000, 100000]
 
 # DATAFRAME 
 # Creating a list of dataframes with different sizes
@@ -38,30 +38,14 @@ dataframes = [pd.DataFrame(np.random.randn(size, 15)) for size in sizes]
 print("\n\n###\n### Dataframes Experiments:\n###\n")
 for df in dataframes:
     type.append("Dataframe")
-
     print("Dataframe Size:",df.size)
-    dataframe_size.append(df.size)
-
     # Transfer data to DaphneLib
-    start_time = time.time()
-    F = dc.from_pandas(df, verbose=True)
-    end_time = time.time()
-    transfer_daphne_time.append(end_time-start_time)
-
+    F = dc.from_pandas(df)
     # Appending and cartesian calculation
-    r_start_time = time.time()
     F = F.rbind(F)
-    F.compute(verbose=True)
-    r_end_time = time.time()
-    rbind_time.append(r_end_time-r_start_time)
-    
-    c_start_time = time.time()
+    F.compute()
     F = F.cartesian(F)
-    F.compute(verbose=True)
-    c_end_time = time.time()
-    rbind_time.append(c_end_time-c_start_time)
-    print(rbind_time)
-
+    F.compute()
     print(F.compute())
 print("\n###End of Dataframe Experiments.\n")
 
@@ -73,7 +57,7 @@ print("\n\n###\n### Series Experiments:\n###\n")
 for s in series:
     print("Series Size:",s.size)
     # Transfer data to DaphneLib
-    F = dc.from_pandas(s, verbose=True)
+    F = dc.from_pandas(s)
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
@@ -90,7 +74,7 @@ print("\n\n###\n### Sparse DataFrame Experiments:\n###\n")
 for sdf in sparse_dataframes:
     print("Sparse Dataframe Size:",sdf.size)
     # Transfer data to DaphneLib
-    F = dc.from_pandas(sdf, verbose=True)
+    F = dc.from_pandas(sdf)
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
@@ -106,7 +90,7 @@ multiindex_dataframes = [pd.MultiIndex.from_product([list('"AB"'), range(size)])
 print("\n\n###\n### MultiIndex Experiments:\n###\n")
 for midf in multiindex_dataframes:
     # Transfer data to DaphneLib
-    F = dc.from_pandas(midf, verbose=True)
+    F = dc.from_pandas(midf)
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
@@ -131,13 +115,3 @@ for cdf in categorical_dataframes:
     F.compute()
     print(F.compute())
 print("\n###End of Categorical DataFrame Experiments.\n")
-
-#Create PerfoamnceResults Dataframe from Lists and export as CSV
-zipped = list(zip(type, dataframe_size, transfer_daphne_time, rbind_time, cartesian_time))
-PerfoamnceResults = pd.DataFrame(zipped, columns=['Type', 'dataframe_size', 'transfer_daphne_time', 'rbind_time', 'cartesian_time'])
-
-#PerfoamnceResults.to_csv("scripts/examples/daphnelib/results.csv")
-print(PerfoamnceResults)
-#print(type)
-#print(dataframe_size)
-# print(transfer_daphne_time)
