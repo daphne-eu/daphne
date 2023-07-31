@@ -147,7 +147,7 @@ class DaphneContext(object):
         if(verbose):
             # Print the Type Check timing
             typeCheck_end_time = time.time()
-            print(f"Frame Type Check Execution time: \n{typeCheck_end_time - typeCheck_start_time} seconds\n")
+            print(f"Frame Type Check Execution time: \n{(typeCheck_end_time - typeCheck_start_time):.10f} seconds\n")
            
         if shared_memory:
          
@@ -200,12 +200,12 @@ class DaphneContext(object):
                 if(verbose):
                     # Print out timing
                     col_end_time = time.time()
-                    print(f'Execution time for column "{column}" ({idx}): \n{col_end_time - col_start_time} seconds\n')
+                    print(f'Execution time for column "{column}" ({idx}): \n{(col_end_time - col_start_time):.10f} seconds\n')
             
             if(verbose):
                 # Print out frame timing
                 frame_end_time = time.time()
-                print(f"Execution time for all columns: \n{frame_end_time - frame_start_time} seconds\n")
+                print(f"Execution time for all columns: \n{(frame_end_time - frame_start_time):.10f} seconds\n")
 
             labels = df.columns
             for label in labels: 
@@ -215,7 +215,7 @@ class DaphneContext(object):
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
-                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+                print(f"Overall Execution time: \n{(end_time - start_time):.10f} seconds\n")
 
             # Return the Frame
             return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
@@ -228,7 +228,7 @@ class DaphneContext(object):
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
-                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+                print(f"Overall Execution time: \n{(end_time - start_time)::.10f} seconds\n")
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     """"
