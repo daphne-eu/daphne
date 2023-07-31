@@ -93,7 +93,7 @@ class OperationNode(DAGNode):
             if(verbose):
                 # Print the overall timing
                 exec_end_time = time.time()
-                print(f"Execute function Execution time: \n{exec_end_time - exec_start_time} seconds\n")
+                print(f"Execute Function execution time: \n{(exec_end_time - exec_start_time):.10f} seconds\n")
 
             if self._output_type == OutputType.FRAME and type=="shared memory":
 
@@ -140,7 +140,7 @@ class OperationNode(DAGNode):
                 if(verbose):
                     # Print the compute function timing
                     comp_end_time = time.time()
-                    print(f"Compute Function Execution time: \n{comp_end_time - comp_start_time} seconds\n")
+                    print(f"Computing Operation execution time: \n{(comp_end_time - comp_start_time):.10f} seconds\n")
 
             elif self._output_type == OutputType.FRAME and type=="files":
                 df = pd.read_csv(result)
@@ -253,11 +253,7 @@ class OperationNode(DAGNode):
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
-                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
-
-            if result is None:
-                return
-            return result
+                print(f"Overall Compute Function execution time: \n{(end_time - start_time):.10f} seconds\n")
 
             if result is None:
                 return

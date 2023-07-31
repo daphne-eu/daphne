@@ -23,7 +23,6 @@ import contextlib
 dc = DaphneContext()
 
 #Create Lists for the PerfoamnceResults Dataframe 
-type = []
 transfer_daphne_time = []
 rbind_time = []
 cartesian_time = []
@@ -37,7 +36,6 @@ dataframes = [pd.DataFrame(np.random.randn(size, 15)) for size in sizes]
 # Looping through the dataframes and testing the from_pandas and compute operation
 print("\n\n###\n### Dataframes Experiments:\n###\n")
 for df in dataframes:
-    type.append("Dataframe")
     print("Dataframe Size:",df.size)
     # Transfer data to DaphneLib
     F = dc.from_pandas(df)
