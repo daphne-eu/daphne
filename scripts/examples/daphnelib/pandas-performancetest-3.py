@@ -23,7 +23,7 @@ import re
 
 
 # Creating a list of sizes for the objects
-sizes = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 5000000, 1000000, 5000000, 10000000]
+sizes = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 5000000, 1000000]#, 5000000, 10000000]
 
 
 dc = DaphneContext()
@@ -45,9 +45,10 @@ for idx, df in enumerate(dataframes):
         print(f"Test with num rows:\n{df.shape[0]}\n")
         print(f"Test with num cols:\n{df.shape[1]}\n")
         # Transfer data to DaphneLib
-        F = dc.from_pandas(df, verbose=True)
-        # Appending and cartesian calculation
-        print(F.compute())
+        F = dc.from_pandas(df)
+        F = F.rbind(F).compute(verbose=True)
+        #print(F.compute(verbose=True))
+        #F.print().compute(verbose=True)
 
     # Reset to the beginning of the text stream
     text_stream.seek(0)
@@ -63,40 +64,36 @@ for idx, df in enumerate(dataframes):
     num_cols_match = re.search(r'Test with num cols:\n(\d+)', captured_output)
     num_cols = int(num_cols_match.group(1)) if num_cols_match else None
 
-    # Extract type_check_exec_time
-    type_check_exec_time_match = re.search(r'Frame Type Check Execution time:\s+([\d.]+) seconds', captured_output)
-    type_check_exec_time = float(type_check_exec_time_match.group(1)) if type_check_exec_time_match else None
+    # Extract Execution Function Time
+    exec_func_exec_time_match = re.search(r'Execute Function execution time:\s+([\d.]+) seconds', captured_output)
+    exec_func_exec_time = float(exec_func_exec_time_match.group(1)) if exec_func_exec_time_match else None
 
-    # Extract col_exec_times
-    col_exec_times = [float(match.group(1)) for match in re.finditer(r'Execution time for column "\d+" \(\d+\):\s+([\d.]+) seconds', captured_output)]
+    # Extract Computing Operation Time
+    comp_op_time_match = re.search(r'Computing Operation execution time:\s+([\d.]+) seconds', captured_output)
+    comp_op_time = float(comp_op_time_match.group(1)) if comp_op_time_match else None
 
-    # Extract all_cols_exec_time
-    all_cols_exec_time_match = re.search(r'Execution time for all columns:\s+([\d.]+) seconds', captured_output)
-    all_cols_exec_time = float(all_cols_exec_time_match.group(1)) if all_cols_exec_time_match else None
-
-    # Extract overall_exec_time
-    overall_exec_time_match = re.search(r'Overall Execution time:\s+([\d.]+) seconds', captured_output)
-    overall_exec_time = float(overall_exec_time_match.group(1)) if overall_exec_time_match else None
+    # Extract Overall Compute Time
+    overall_comp_exec_time_match = re.search(r'Overall Compute Function execution time:\s+([\d.]+) seconds', captured_output)
+    overall_comp_exec_time = float(overall_comp_exec_time_match.group(1)) if overall_comp_exec_time_match else None
 
     """
     # Debugging: Print the extracted values
     print(f'num_rows: {num_rows}')
     print(f'num_cols: {num_cols}')
-    print(f'type_check_exec_time: {type_check_exec_time}')
-    print(f'col_exec_times: {col_exec_times}')
-    print(f'all_cols_exec_time: {all_cols_exec_time}')
-    print(f'overall_exec_time: {overall_exec_time}')
+    print(f'exec_func_exec_time: {exec_func_exec_time}')
+    print(f'comp_op_time: {comp_op_time}')
+    print(f'overall_comp_exec_time: {overall_comp_exec_time}')
+
+    print(captured_output)
     """
 
     # Put the data together into a List
-    data = [num_rows, num_cols, type_check_exec_time] + col_exec_times + [all_cols_exec_time, overall_exec_time]
+    data = [num_rows, num_cols, exec_func_exec_time, comp_op_time, overall_comp_exec_time]
     testData.append(data)
 
     # Create headers in first run
     if(idx == 0):
-        header = ['num_rows', 'num_cols', 'type_check_exec_time']
-        header += [f'col{i}_exec_time' for i in range(num_cols)]
-        header += ['all_cols_exec_time', 'overall_exec_time']
+        header = ['num_rows', 'num_cols', 'exec_func_exec_time', 'comp_op_time', 'overall_comp_exec_time']
     
     # Clear the text stream for the next iteration
     text_stream.seek(0)
@@ -108,7 +105,7 @@ testResults = pd.DataFrame(testData, columns=header)
 print("\nFrame from Output:")
 print(testResults)
 
-testResults.to_csv('scripts/examples/daphnelib/testoutputs/FromPandas-PerformaceTest.csv', index=False)
+testResults.to_csv('scripts/examples/daphnelib/testoutputs/Pandas-Compute-PerformaceTest.csv', index=False)
 
 
 print("\n###End of Performance Experiments.\n")
