@@ -26,11 +26,6 @@
 #include "run_tests.h"
 
 std::unique_ptr<DaphneContext> setupContextAndLogger() {
-//    ToDo: Setting precompiled log level here as passing user config at runtime is not supported in our test suite
-    auto loglevel = spdlog::level::off;
-    user_config.log_level_limit = loglevel;
-    user_config.loggers.push_back(LogConfig({"default", "daphne-tests.txt", static_cast<int>(loglevel),
-            "\">>>>>>>>> %H:%M:%S %z %v\""}));
     if(not logger)
         logger = std::make_unique<DaphneLogger>(user_config);
 

@@ -41,7 +41,7 @@ set(LIBS
         DaphneMetaDataParser
         Arrow::arrow_shared
         Parquet::parquet_shared
-        )
+        Util)
 
 add_library(WorkerImpl ${SOURCES})
 #llvm_update_compile_flags(WorkerImpl)

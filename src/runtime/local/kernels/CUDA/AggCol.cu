@@ -81,8 +81,7 @@ namespace CUDA {
             agg_col<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), arg->getValues(&alloc_desc), N, numCols, op);
         }
         else {
-            std::cerr << "opCode=" << static_cast<uint32_t>(opCode) << std::endl;
-            throw std::runtime_error("unknown operator for aggCol");
+            throw std::runtime_error(fmt::format("Unknown opCode {} for aggCol", static_cast<uint32_t>(opCode)));
         }
     }
     template struct AggCol<DenseMatrix<double>, DenseMatrix<double>>;

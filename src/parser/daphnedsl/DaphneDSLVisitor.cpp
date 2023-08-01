@@ -470,9 +470,18 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     for(auto it = owUnion.begin(); it != owUnion.end(); it++) {
         mlir::Value valThen = symbolTable.get(*it, owThen).value;
         mlir::Value valElse = symbolTable.get(*it, owElse).value;
-        if(valThen.getType() != valElse.getType())
+        if(valThen.getType() != valElse.getType()) {
             // TODO We could try to cast the types.
-            throw std::runtime_error("type mismatch");
+            std::string s;
+            llvm::raw_string_ostream stream(s);
+            loc.print(stream);
+            stream << ":\n    ";
+            valThen.print(stream);
+            stream << "\n      is not equal to \n    ";
+            valElse.print(stream);
+            throw std::runtime_error(fmt::format("in {}:{}:\n  type mismatch near script location: {}",
+                    __FILE__, __LINE__, stream.str()));
+        }
         resultsThen.push_back(valThen);
         resultsElse.push_back(valElse);
     }
