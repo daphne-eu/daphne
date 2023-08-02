@@ -28,7 +28,7 @@ print(tensor2d)
 T2D = dc.from_pytorch(tensor2d, verbose=True)
 
 print("\nHow DAPHNE sees the 2d tensor from tensorflow:")
-T2D.print().compute(verbose=True)
+T2D.print().compute(isPytroch=True, verbose=True)
 
 
 # Example usage for a 3x3x3 tensor
