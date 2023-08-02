@@ -103,6 +103,6 @@ MAKE_TEST_CASE("agg_sum", 1)
 
 MAKE_TEST_CASE("reuseString", 2)
 
-MAKE_TEST_CASE("distinct", 4)
+MAKE_TEST_CASE("distinct", 5)
 
 // TODO Use the scripts testing failure cases.

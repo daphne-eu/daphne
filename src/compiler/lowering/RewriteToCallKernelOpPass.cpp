@@ -215,6 +215,18 @@ namespace
                     // of the variadic pack ops. Should be changed when reworking the lowering to kernels.
                     if(llvm::dyn_cast<daphne::GroupOp>(op) && idx >= operandTypes.size()) {
                         callee << "__char_variadic__size_t";
+                        auto cvpOp = rewriter.create<daphne::CreateVariadicPackOp>(
+                                loc,
+                                daphne::VariadicPackType::get(
+                                        rewriter.getContext(),
+                                        daphne::StringType::get(rewriter.getContext())
+                                ),
+                                rewriter.getI64IntegerAttr(0)
+                        );
+                        newOperands.push_back(cvpOp);
+                        newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                                loc, rewriter.getIndexType(), rewriter.getIndexAttr(0))
+                        );
                         continue;
                     } else {
                         callee << "__" << CompilerUtils::mlirTypeToCppTypeName(operandTypes[idx], generalizeInputTypes);

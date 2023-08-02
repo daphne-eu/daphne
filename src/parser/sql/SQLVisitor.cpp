@@ -584,14 +584,10 @@ antlrcpp::Any SQLVisitor::visitDistinctExpr(
     SQLGrammarParser::DistinctExprContext *ctx
 )
 {
-    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)    //If group is active
-     && columnName.size())                                         //AND there is an aggregation
+    if(isBitSet(sqlFlag, (int64_t)SQLBit::group)       //If group is active
+       != columnName.size())                                          //EXCLUSIVE OR there is an aggregation  
     {
-        throw std::runtime_error("DISTINCT with GROUP BY and Aggregation is not supported");
-    }else if(isBitSet(sqlFlag, (int64_t)SQLBit::group) //If group is active
-     || columnName.size())                                            //OR there is an aggregation  
-    {
-        // due to earlier grouping/aggregation the result is already distinct
+        // due to earlier grouping XOR aggregation the result is already distinct
         return currentFrame;
     }else {
         mlir::Location loc = utils.getLoc(ctx->start);
