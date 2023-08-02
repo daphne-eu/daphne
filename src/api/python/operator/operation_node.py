@@ -29,7 +29,8 @@ from api.python.utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd
-# import tensorflow as tf
+import tensorflow as tf
+import torch
 
 import time
 
@@ -72,7 +73,7 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
 
-    def compute(self, type="shared memory", isTensor=False, verbose=False):
+    def compute(self, type="shared memory", isTensorflow=False, isPytorch=False, verbose=False):
         if self._result_var is None:
             
             if(verbose):
@@ -170,7 +171,7 @@ class OperationNode(DAGNode):
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )[0, 0]
                 self.clear_tmp()
-            """
+            
             if isTensorFLow:
                 if(verbose):
                     # Time the execution for the whole processing
@@ -214,7 +215,7 @@ class OperationNode(DAGNode):
                 end_time = time.time()
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
-            if isPyTorch:
+            if isPytorch:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
@@ -251,7 +252,7 @@ class OperationNode(DAGNode):
                     # Print the tensor timing
                     tensor_end_time = time.time()
                     print(f"PyTorch Tensor Transformation Execution time: \n{tensor_end_time - tensor_start_time} seconds\n")
-            """
+            
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
