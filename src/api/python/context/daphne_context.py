@@ -175,7 +175,8 @@ class DaphneContext(object):
                     col_start_time = time.time()
 
                 mat = df[column].values
-
+                
+                # Test execution time 
                 if mat.dtype == np.int16:
                     mat = mat.astype(np.int32)
 
@@ -242,91 +243,79 @@ class DaphneContext(object):
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     
-    def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False):
-        if verbose:
-            start_time = time.time()
-
-        if len(tensor.shape) == 2:
-            # 2D tensor, handle as a matrix
-            mat = tensor.numpy()  # Convert to numpy array
-
-            if verbose:
-                end_time = time.time()
-                print(f"TensorFlow Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
-
-            return self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method
+    def from_tensorflow(self, tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False):
+        # Store the original shape for later use
+        original_shape = tensor.shape
         
-        else:
-            # N-dimensional tensor, reshape to 2D and handle as a frame
-
-            # Create a list of indices for all dimensions beyond the first
-            indices = [range(dim) for dim in tensor.shape[1:]]
-
-            # Create the column labels by using itertools.product to iterate over all combinations of indices
-            columns = [f'dim_{"_".join(map(str, idx))}' for idx in product(*indices)]
-
-            # Reshape the tensor into 2D, maintaining the first dimension and flattening all other dimensions
-            reshaped_tensor = tf.reshape(tensor, (tensor.shape[0], -1))
-
-            if verbose:
-                df_start_time = time.time()
-
-            # Convert to pandas DataFrame
-            np_array = reshaped_tensor.numpy()
-            df = pd.DataFrame(np_array, columns=columns)
-
-            if verbose:
-                df_end_time = time.time()
-                print(f"TensorFlow Tensor to Dataframe Execution time: \n{df_end_time - df_start_time} seconds\n")
-
-            if verbose:
-                end_time = time.time()
-                print(f"TensorFlow Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
-
-            return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
-    
-    def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False):
+        # If verbose mode is on, start timing the total and reshape operations
         if verbose:
-            start_time = time.time()
+            total_start_time = time.time()
+            reshape_start_time = time.time()
 
+        # Check if the tensor is 2D or higher dimensional
+        if len(original_shape) == 2:
+            # If 2D, handle as a matrix, convert to numpy array
+            mat = tensor.numpy()
+            matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
+        else:
+            # If higher dimensional, reshape to 2D and handle as a matrix
+            original_tensor = tensor.numpy()  # Store the original numpy representation
+            reshaped_tensor = tf.reshape(tensor, (original_shape[0], -1)).numpy()  # Reshape to 2D
+
+            # If verbose, check if the original and reshaped tensors share memory and print the result
+            if verbose:
+                shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
+                print(f"Original and reshaped tensors share memory: {shares_memory}\n")
+
+            # Use the existing from_numpy method for the reshaped 2D array
+            matrix = self.from_numpy(reshaped_tensor, shared_memory, verbose)
+
+        # If verbose, print the reshape and total execution times
+        if verbose:
+            reshape_end_time = time.time()
+            print(f"TensorFlow Tensor Reshape Execution time: \n{reshape_end_time - reshape_start_time} seconds\n")
+            total_end_time = time.time()
+            print(f"Total Execution time: \n{total_end_time - total_start_time} seconds\n")
+
+        # Return the matrix, and the original shape if return_shape is set to True
+        return (matrix, original_shape) if return_shape else matrix
+
+    def from_pytorch(self, tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False):
+        # Store the original shape for later use
+        original_shape = tensor.size()
+        
+        # If verbose mode is on, start timing the total and reshape operations
+        if verbose:
+            total_start_time = time.time()
+            reshape_start_time = time.time()
+
+        # Check if the tensor is 2D or higher dimensional
         if tensor.dim() == 2:
-            # 2D tensor, handle as a matrix
-            mat = tensor.numpy()  # Convert to numpy array
-
-            if verbose:
-                end_time = time.time()
-                print(f"PyTorch Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
-
-            return self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method
-        
+            # If 2D, handle as a matrix, convert to numpy array
+            mat = tensor.numpy()
+            matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
         else:
-            # N-dimensional tensor, reshape to 2D and handle as a frame
+            # If higher dimensional, reshape to 2D and handle as a matrix
+            original_tensor = tensor.numpy()  # Store the original numpy representation
+            reshaped_tensor = torch.reshape(tensor, (original_shape[0], -1)).numpy()  # Reshape to 2D
 
-            # Create a list of indices for all dimensions beyond the first
-            indices = [range(dim) for dim in tensor.size()[1:]]
-
-            # Create the column labels by using itertools.product to iterate over all combinations of indices
-            columns = [f'dim_{"_".join(map(str, idx))}' for idx in product(*indices)]
-
-            # Reshape the tensor into 2D, maintaining the first dimension and flattening all other dimensions
-            reshaped_tensor = torch.reshape(tensor, (tensor.size(0), -1))
-
+            # If verbose, check if the original and reshaped tensors share memory and print the result
             if verbose:
-                df_start_time = time.time()
+                shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
+                print(f"Original and reshaped tensors share memory: {shares_memory}\n")
 
-            # Convert to pandas DataFrame
-            np_array = reshaped_tensor.numpy()
-            df = pd.DataFrame(np_array, columns=columns)
+            # Use the existing from_numpy method for the reshaped 2D array
+            matrix = self.from_numpy(reshaped_tensor, shared_memory, verbose)
 
-            if verbose:
-                df_end_time = time.time()
-                print(f"PyTorch Tensor to Dataframe Execution time: \n{df_end_time - df_start_time} seconds\n")
+        # If verbose, print the reshape and total execution times
+        if verbose:
+            reshape_end_time = time.time()
+            print(f"PyTorch Tensor Reshape Execution time: \n{reshape_end_time - reshape_start_time} seconds\n")
+            total_end_time = time.time()
+            print(f"Total Execution time: \n{total_end_time - total_start_time} seconds\n")
 
-            if verbose:
-                end_time = time.time()
-                print(f"PyTorch Tensor Reshape Execution time: \n{end_time - start_time} seconds\n")
-
-            return self.from_pandas(df, shared_memory, verbose)  # Using the existing from_pandas method
+        # Return the matrix, and the original shape if return_shape is set to True
+        return (matrix, original_shape) if return_shape else matrix
 
     def fill(self, arg, rows:int, cols:int) -> Matrix:
         named_input_nodes = {'arg':arg, 'rows':rows, 'cols':cols}

@@ -73,7 +73,7 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
 
-    def compute(self, type="shared memory", isTensorflow=False, isPytorch=False, verbose=False):
+    def compute(self, type="shared memory", isTensorflow=False, isPytorch=False, verbose=False, shape=None):
         if self._result_var is None:
             
             if(verbose):
@@ -172,81 +172,34 @@ class OperationNode(DAGNode):
                 )[0, 0]
                 self.clear_tmp()
             
-            if isTensorFLow:
+            if isTensorflow:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
 
-                # If result is a DataFrame (Frame)
-                if self._output_type == OutputType.FRAME:
-                    # Extract the dimension indices from the column labels
-                    dimension_indices = [list(map(int, col.split('_')[1:])) for col in df.columns]
+                # Convert the Matrix to a TF Tensor
+                result = tf.convert_to_tensor(result)
 
-                    # Convert to a numpy array for easy manipulation
-                    dimension_indices = np.array(dimension_indices)
-
-                    # Find the maximum value for each dimension, plus 1, to compute the original shape
-                    original_shape = tuple(dimension_indices.max(axis=0) + 1)
-
-                    # Add the first dimension (rows)
-                    original_shape = (len(df),) + original_shape
-
-                    # Reconstruct the tensor
-                    reshaped_arr = df.to_numpy().reshape(original_shape)
-                    result = tf.convert_to_tensor(reshaped_arr)
-
-                # If result is a numpy array (Matrix)
-                elif self._output_type == OutputType.MATRIX:
-                    result = tf.convert_to_tensor(result)  # Convert to a tensor
-
-                else: 
-                    print("Couldn't convert this Daphne Type to a tensor...")
-                    print("Creating exemplary Tensor as return object")
-                    tensor = tf.constant(np.arange(27).reshape((3, 3, 3)))
-                    result = tensor
+                # If a shape is provided, reshape the TF Tensor
+                if shape is not None:
+                    result = tf.reshape(result, shape)
 
                 if(verbose):
                     # Print the tensor timing
                     tensor_end_time = time.time()
                     print(f"TensorFlow Tensor Transformation Execution time: \n{tensor_end_time - tensor_start_time} seconds\n")
-            
-            if(verbose):
-                # Print the overall timing
-                end_time = time.time()
-                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
 
             if isPytorch:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
 
-                # If result is a DataFrame (Frame)
-                if self._output_type == OutputType.FRAME:
-                    # Extract the dimension indices from the column labels
-                    dimension_indices = [list(map(int, col.split('_')[1:])) for col in df.columns]
+                # Convert the Matrix to a Torch Tensor
+                result = torch.from_numpy(result)
 
-                    # Convert to a numpy array for easy manipulation
-                    dimension_indices = np.array(dimension_indices)
-
-                    # Find the maximum value for each dimension, plus 1, to compute the original shape
-                    original_shape = tuple(dimension_indices.max(axis=0) + 1)
-
-                    # Add the first dimension (rows)
-                    original_shape = (len(df),) + original_shape
-
-                    # Reconstruct the tensor
-                    reshaped_arr = df.to_numpy().reshape(original_shape)
-                    result = torch.from_numpy(reshaped_arr)
-
-                # If result is a numpy array (Matrix)
-                elif self._output_type == OutputType.MATRIX:
-                    result = torch.from_numpy(result)  # Convert to a tensor
-
-                else: 
-                    print("Couldn't convert this Daphne Type to a tensor...")
-                    print("Creating exemplary Tensor as return object")
-                    tensor = torch.tensor(np.arange(27).reshape((3, 3, 3)))
-                    result = tensor
+                # If a shape is provided, reshape the Torch Tensor               
+                if shape is not None:
+                    result = torch.reshape(result, shape)
 
                 if(verbose):
                     # Print the tensor timing
