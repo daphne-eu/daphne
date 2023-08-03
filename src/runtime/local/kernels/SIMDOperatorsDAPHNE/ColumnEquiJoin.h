@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNEQUIJOIN_H
+#define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNEQUIJOIN_H
 
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
 #include <SIMDOperators/datastructures/column.hpp>
-#include <SIMDOperators/wrappers/DAPHNE/project.hpp>
+#include <SIMDOperators/wrappers/DAPHNE/equiJoin.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -30,18 +30,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
-struct ColumnProject {
-    static void apply(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) = delete;
+template<class DTRes, class DTDataLhs, class DTDataRhs>
+struct ColumnEquiJoin {
+    static void apply(DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
-void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) {
-    ColumnProject<DTRes, DTData, DTPos>::apply(res, data, pos, ctx);
+template<class DTRes, class DTDataLhs, class DTDataRhs>
+void columnEquiJoin(DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
+    ColumnEquiJoin<DTRes, DTDataLhs, DTDataRhs>::apply(res, data_lhs, data_rhs, ctx);
 }
 
 // ****************************************************************************
@@ -53,11 +53,15 @@ void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ct
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VT> * pos, DCTX(ctx)) {
+struct ColumnEquiJoin<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
+    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data_lhs, const tuddbs::Column<VT> * data_rhs, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        res = tuddbs::daphne_project<ps>(data, pos);   
+        if (data_lhs->getPopulationCount() < data_rhs->getPopulationCount()) {
+            res = tuddbs::natural_equi_join<ps>(data_lhs, data_rhs);
+        } else {
+            res = tuddbs::natural_equi_join<ps>(data_rhs, data_lhs);
+        }
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNEQUIJOIN_H

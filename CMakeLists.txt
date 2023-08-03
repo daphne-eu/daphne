@@ -190,7 +190,7 @@ include(FetchContent)
 FetchContent_Declare(
   SIMDOperators
   GIT_REPOSITORY https://github.com/db-tu-dresden/SIMDOperators.git
-  GIT_TAG        project_implementation # or a later release
+  GIT_TAG        daphne_integration # or a later release
 )
 
 FetchContent_MakeAvailable(SIMDOperators)

@@ -17,12 +17,11 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNSELECT_H
 #define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNSELECT_H
 
-#include "generated/declarations/compare.hpp"
 #include <runtime/local/kernels/SIMDOperatorsDAPHNE/SelectOpCode.h>
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
 #include <SIMDOperators/datastructures/column.hpp>
-#include <SIMDOperators/operators/select.hpp>
+#include <SIMDOperators/wrappers/DAPHNE/select.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -60,17 +59,17 @@ struct ColumnSelect<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
         using ps = typename tsl::simd<VT, tsl::avx512>;
 
         if (opCode == SelectOpCode::LT) {
-            res = tuddbs::select<ps, tsl::functors::less_than>::apply(lhs, rhs);
+            res = tuddbs::daphne_select<ps, tsl::functors::less_than>(lhs, rhs);
         } else if (opCode == SelectOpCode::LE) {
-            res = tuddbs::select<ps, tsl::functors::less_than_or_equal>::apply(lhs, rhs);
+            res = tuddbs::daphne_select<ps, tsl::functors::less_than_or_equal>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::GT) {
-            res = tuddbs::select<ps, tsl::functors::greater_than>::apply(lhs, rhs);
+            res = tuddbs::daphne_select<ps, tsl::functors::greater_than>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::GE) {
-            res = tuddbs::select<ps, tsl::functors::greater_than_or_equal>::apply(lhs, rhs);
+            res = tuddbs::daphne_select<ps, tsl::functors::greater_than_or_equal>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::EQ) {
-            res = tuddbs::select<ps, tsl::functors::equal>::apply(lhs, rhs);
+            res = tuddbs::daphne_select<ps, tsl::functors::equal>::apply(lhs, rhs);
         } else if (opCode == SelectOpCode::NEQ) {
-            res = tuddbs::select<ps, tsl::functors::nequal>::apply(lhs, rhs);
+            res = tuddbs::daphne_select<ps, tsl::functors::nequal>::apply(lhs, rhs);
         }
         
     }

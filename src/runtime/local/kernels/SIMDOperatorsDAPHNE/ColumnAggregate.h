@@ -14,13 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNAGGREGATE_H
+#define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNAGGREGATE_H
 
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
 #include <SIMDOperators/datastructures/column.hpp>
-#include <SIMDOperators/wrappers/DAPHNE/project.hpp>
+#include <SIMDOperators/wrappers/DAPHNE/aggregate.hpp>
+#include <runtime/local/kernels/AggOpCode.h>
 
 #include <cassert>
 #include <cstddef>
@@ -30,18 +31,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
-struct ColumnProject {
-    static void apply(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) = delete;
+template<class DTRes, class DTData>
+struct ColumnAggregate {
+    static void apply(AggOpCode opCode, DTRes *& res, const DTData * data, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
-void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) {
-    ColumnProject<DTRes, DTData, DTPos>::apply(res, data, pos, ctx);
+template<class DTRes, class DTData>
+void columnAgg(AggOpCode opCode, DTRes *& res, const DTData * data, DCTX(ctx)) {
+    ColumnAggregate<DTRes, DTData>::apply(opCode, res, data, ctx);
 }
 
 // ****************************************************************************
@@ -53,11 +54,15 @@ void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ct
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VT> * pos, DCTX(ctx)) {
+struct ColumnAggregate<tuddbs::Column<VT>, tuddbs::Column<VT>> {
+    static void apply(AggOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        res = tuddbs::daphne_project<ps>(data, pos);   
+        if (opCode==AggOpCode::SUM) {
+            res = tuddbs::daphne_aggregate<ps, tsl::functors::add, tsl::functors::hadd>(data);   
+        } else {
+            assert(false);
+        }
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNAGGREGATE_H

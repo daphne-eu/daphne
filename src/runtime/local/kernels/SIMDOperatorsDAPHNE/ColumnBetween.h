@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
-#define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNBETWEEN_H
+#define SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNBETWEEN_H
 
 #include <memory>
 #include <runtime/local/context/DaphneContext.h>
 #include <SIMDOperators/datastructures/column.hpp>
-#include <SIMDOperators/wrappers/DAPHNE/project.hpp>
+#include <SIMDOperators/wrappers/DAPHNE/between.hpp>
 
 #include <cassert>
 #include <cstddef>
@@ -30,18 +30,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
-struct ColumnProject {
-    static void apply(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) = delete;
+template<class DTRes, class DTData, typename VT>
+struct ColumnBetween {
+    static void apply(DTRes *& res, const DTData * data, const VT lower_bound, const VT higher_bound, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
-void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) {
-    ColumnProject<DTRes, DTData, DTPos>::apply(res, data, pos, ctx);
+template<class DTRes, class DTData, typename VT>
+void columnBetween(DTRes *& res, const DTData * data, const VT lower_bound, const VT higher_bound, DCTX(ctx)) {
+    ColumnBetween<DTRes, DTData, VT>::apply(res, data, lower_bound, higher_bound, ctx);
 }
 
 // ****************************************************************************
@@ -53,11 +53,11 @@ void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ct
 // ----------------------------------------------------------------------------
 
 template<typename VT>
-struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VT> * pos, DCTX(ctx)) {
+struct ColumnBetween<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
+    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const VT lower_bound, const VT higher_bound, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        res = tuddbs::daphne_project<ps>(data, pos);   
+        res = tuddbs::daphne_between<ps>(data, lower_bound, higher_bound);   
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNPROJECT_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_SIMDOPERATORSDAPHNE_COLUMNBETWEEN_H
