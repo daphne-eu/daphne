@@ -58,7 +58,8 @@ struct ColumnAggregate<tuddbs::Column<VT>, tuddbs::Column<VT>> {
     static void apply(AggOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
         if (opCode==AggOpCode::SUM) {
-            res = tuddbs::daphne_aggregate<ps, tsl::functors::add, tsl::functors::hadd>(data);   
+            tuddbs::daphne_aggregate<ps, tsl::functors::add, tsl::functors::hadd> aggregate;
+            res = aggregate(data);   
         } else {
             assert(false);
         }

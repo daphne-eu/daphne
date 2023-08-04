@@ -3931,10 +3931,303 @@
                 "name":  ["CPP"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "size_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "size_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnAggregate.h",
+            "opName": "columnAgg",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTData",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "AggOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTData *",
+                    "name": "data"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
+                ],
+                "opCodes": ["SUM"]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnBetween.h",
+            "opName": "columnBetween",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTData",
+                    "isDataType": true
+                },
+                {
+                    "name": "VTL",
+                    "isDataType": false
+                },
+                {
+                    "name": "VTU",
+                    "isDataType": false
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTData *",
+                    "name": "data"
+                },
+                {
+                    "type": "const VTL",
+                    "name": "lower_bound"
+                },
+                {
+                    "type": "const VTU",
+                    "name": "upper_bound"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], "uint64_t", "uint64_t"],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t", "int64_t"],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], "size_t", "size_t"]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnIntersect.h",
+            "opName": "columnIntersect",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTPosLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTPosRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTPosLhs *",
+                    "name": "pos_lhs"
+                },
+                {
+                    "type": "const DTPosRhs *",
+                    "name": "pos_rhs"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
                     [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
                 ]
             }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnEquiJoin.h",
+            "opName": "columnEquiJoin",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTResLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTResRhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTDataLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTDataRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTResLhs *&",
+                    "name": "res_lhs"
+                },
+                {
+                    "type": "DTResRhs *&",
+                    "name": "res_rhs"
+                },
+                {
+                    "type": "const DTDataLhs *",
+                    "name": "data_lhs"
+                },
+                {
+                    "type": "const DTDataRhs *",
+                    "name": "data_rhs"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]]
+                ]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnCalc.h",
+            "opName": "columnBinary",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTLhs",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTRhs",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "BinaryOpCode",
+                    "name": "opCode"
+                },
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTLhs *",
+                    "name": "data_lhs"
+                },
+                {
+                    "type": "const DTRhs *",
+                    "name": "data_rhs"
+                }
+            ]
+        },
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
+                ],
+                "opCodes": ["ADD", "MUL", "AND", "OR"]
+            }
+        ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnProjectionPath.h",
+            "opName": "columnProjectionPath",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTData",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTPos",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTData *",
+                    "name": "data"
+                },
+                {
+                    "type": "const DTPos **",
+                    "name": "pos"
+                },
+                {
+                    "type": "size_t",
+                    "name": "num_cols"
+                }
+            ]
+        },
+        "instantiations": [
+            [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+            [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+            [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
         ]
     }
 ]

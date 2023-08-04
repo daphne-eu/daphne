@@ -52,11 +52,13 @@ void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ct
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VT> * pos, DCTX(ctx)) {
+template<typename VT, typename VTPos>
+struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VTPos>> {
+    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VTPos> * pos, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        res = tuddbs::daphne_project<ps>(data, pos);   
+        tuddbs::daphne_project<ps> project;
+        const tuddbs::Column<VT> * pos_cast = reinterpret_cast<const tuddbs::Column<VT> *>(pos);
+        res = project(data, pos_cast);
     }
 };
 

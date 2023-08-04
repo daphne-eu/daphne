@@ -366,7 +366,7 @@ def Daphne_ColumnAggMeanOp   : Daphne_ColumnAggOp<"columnMean", NumScalar, [Valu
 def Daphne_ColumnAggVarOp    : Daphne_ColumnAggOp<"columnVar", NumScalar, [ValueTypeFromArgsFP]>;
 def Daphne_ColumnAggStddevOp : Daphne_ColumnAggOp<"columnStddev", NumScalar, [ValueTypeFromArgsFP]>;
 
-def Daphne_ColumnJoinOp : Daphne_Op<"columnJoin", [
+def Daphne_ColumnJoinOp : Daphne_Op<"columnEquiJoin", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>
 ]> {

@@ -30,18 +30,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData, typename VT>
+template<class DTRes, class DTData, typename VTL, typename VTU>
 struct ColumnBetween {
-    static void apply(DTRes *& res, const DTData * data, const VT lower_bound, const VT higher_bound, DCTX(ctx)) = delete;
+    static void apply(DTRes *& res, const DTData * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, typename VT>
-void columnBetween(DTRes *& res, const DTData * data, const VT lower_bound, const VT higher_bound, DCTX(ctx)) {
-    ColumnBetween<DTRes, DTData, VT>::apply(res, data, lower_bound, higher_bound, ctx);
+template<class DTRes, class DTData, typename VTL, typename VTU>
+void columnBetween(DTRes *& res, const DTData * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) {
+    ColumnBetween<DTRes, DTData, VTL, VTU>::apply(res, data, lower_bound, upper_bound, ctx);
 }
 
 // ****************************************************************************
@@ -52,11 +52,12 @@ void columnBetween(DTRes *& res, const DTData * data, const VT lower_bound, cons
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnBetween<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const VT lower_bound, const VT higher_bound, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, tsl::avx512>;
-        res = tuddbs::daphne_between<ps>(data, lower_bound, higher_bound);   
+template<typename VT, typename VTL, typename VTU>
+struct ColumnBetween<tuddbs::Column<VT>, tuddbs::Column<VT>, VTL, VTU> {
+    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) {
+        using ps = typename tsl::simd<VTL, tsl::avx512>;
+        tuddbs::daphne_between<ps> between;
+        res = between(data, lower_bound, upper_bound);   
     }
 };
 

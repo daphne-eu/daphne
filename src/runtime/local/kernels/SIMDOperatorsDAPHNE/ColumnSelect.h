@@ -59,17 +59,23 @@ struct ColumnSelect<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
         using ps = typename tsl::simd<VT, tsl::avx512>;
 
         if (opCode == SelectOpCode::LT) {
-            res = tuddbs::daphne_select<ps, tsl::functors::less_than>(lhs, rhs);
+            tuddbs::daphne_select<ps, tsl::functors::less_than> select;
+            res = select(lhs, rhs);
         } else if (opCode == SelectOpCode::LE) {
-            res = tuddbs::daphne_select<ps, tsl::functors::less_than_or_equal>::apply(lhs, rhs);
+            tuddbs::daphne_select<ps, tsl::functors::less_than_or_equal> select;
+            res = select(lhs, rhs);
         } else if (opCode == SelectOpCode::GT) {
-            res = tuddbs::daphne_select<ps, tsl::functors::greater_than>::apply(lhs, rhs);
+            tuddbs::daphne_select<ps, tsl::functors::greater_than> select;
+            res = select(lhs, rhs);
         } else if (opCode == SelectOpCode::GE) {
-            res = tuddbs::daphne_select<ps, tsl::functors::greater_than_or_equal>::apply(lhs, rhs);
+            tuddbs::daphne_select<ps, tsl::functors::greater_than_or_equal> select;
+            res = select(lhs, rhs);
         } else if (opCode == SelectOpCode::EQ) {
-            res = tuddbs::daphne_select<ps, tsl::functors::equal>::apply(lhs, rhs);
+            tuddbs::daphne_select<ps, tsl::functors::equal> select;
+            res = select(lhs, rhs);
         } else if (opCode == SelectOpCode::NEQ) {
-            res = tuddbs::daphne_select<ps, tsl::functors::nequal>::apply(lhs, rhs);
+            tuddbs::daphne_select<ps, tsl::functors::nequal> select;
+            res = select(lhs, rhs);
         }
         
     }

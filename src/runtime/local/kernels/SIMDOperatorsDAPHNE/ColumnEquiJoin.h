@@ -30,18 +30,18 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTDataLhs, class DTDataRhs>
+template<class DTResLhs, class DTResRhs, class DTDataLhs, class DTDataRhs>
 struct ColumnEquiJoin {
-    static void apply(DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) = delete;
+    static void apply(DTResLhs *& res_lhs, DTResRhs *& res_rhs, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTDataLhs, class DTDataRhs>
-void columnEquiJoin(DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
-    ColumnEquiJoin<DTRes, DTDataLhs, DTDataRhs>::apply(res, data_lhs, data_rhs, ctx);
+template<class DTResLhs, class DTResRhs, class DTDataLhs, class DTDataRhs>
+void columnEquiJoin(DTResLhs *& res_lhs, DTResRhs *& res_rhs, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
+    ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
 }
 
 // ****************************************************************************
@@ -52,14 +52,18 @@ void columnEquiJoin(DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * 
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnEquiJoin<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data_lhs, const tuddbs::Column<VT> * data_rhs, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, tsl::avx512>;
+template<typename VTRes, typename VTLhs, typename VTRhs>
+struct ColumnEquiJoin<tuddbs::Column<VTRes>, tuddbs::Column<VTRes>, tuddbs::Column<VTLhs>, tuddbs::Column<VTRhs>> {
+    static void apply(tuddbs::Column<VTRes> *& res_lhs, tuddbs::Column<VTRes> *& res_rhs, const tuddbs::Column<VTLhs> * data_lhs, const tuddbs::Column<VTRhs> * data_rhs, DCTX(ctx)) {
+        using ps = typename tsl::simd<VTLhs, tsl::avx512>;
         if (data_lhs->getPopulationCount() < data_rhs->getPopulationCount()) {
-            res = tuddbs::natural_equi_join<ps>(data_lhs, data_rhs);
+            auto res = tuddbs::natural_equi_join<ps>(data_lhs, data_rhs);
+            res_lhs = reinterpret_cast<tuddbs::Column<VTRes> *>(std::get<0>(res));
+            res_rhs = reinterpret_cast<tuddbs::Column<VTRes> *>(std::get<1>(res));
         } else {
-            res = tuddbs::natural_equi_join<ps>(data_rhs, data_lhs);
+            auto res = tuddbs::natural_equi_join<ps>(data_rhs, data_lhs);
+            res_lhs = reinterpret_cast<tuddbs::Column<VTRes> *>(std::get<1>(res));
+            res_rhs = reinterpret_cast<tuddbs::Column<VTRes> *>(std::get<0>(res));
         }
     }
 };

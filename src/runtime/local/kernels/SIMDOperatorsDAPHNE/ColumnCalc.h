@@ -41,7 +41,7 @@ struct ColumnCalc {
 // ****************************************************************************
 
 template<class DTRes, class DTDataLhs, class DTDataRhs>
-void columnCalcBinary(BinaryOpCode opCode, DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
+void columnBinary(BinaryOpCode opCode, DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
     ColumnCalc<DTRes, DTDataLhs, DTDataRhs>::apply(opCode, res, data_lhs, data_rhs, ctx);
 }
 
@@ -58,17 +58,17 @@ struct ColumnCalc<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
     static void apply(BinaryOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data_lhs, const tuddbs::Column<VT> * data_rhs, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
         if (opCode==BinaryOpCode::ADD) {
-            res = tuddbs::daphne_calc<ps, tsl::functors::add>(data_lhs, data_rhs);   
-        } else if (opCode==BinaryOpCode::SUB) {
-            res = tuddbs::daphne_calc<ps, tsl::functors::sub>(data_lhs, data_rhs);
+            tuddbs::daphne_calc<ps, tsl::functors::add> calc;
+            res = calc(data_lhs, data_rhs);   
         } else if (opCode==BinaryOpCode::MUL) {
-            res = tuddbs::daphne_calc<ps, tsl::functors::mul>(data_lhs, data_rhs);
-        } else if (opCode==BinaryOpCode::DIV) {
-            res = tuddbs::daphne_calc<ps, tsl::functors::div>(data_lhs, data_rhs);
+            tuddbs::daphne_calc<ps, tsl::functors::mul> calc;
+            res = calc(data_lhs, data_rhs);
         } else if (opCode==BinaryOpCode::AND) {
-            res = tuddbs::daphne_calc<ps, tsl::functors::binary_and>(data_lhs, data_rhs);
+            tuddbs::daphne_calc<ps, tsl::functors::binary_and> calc;
+            res = calc(data_lhs, data_rhs);
         } else if (opCode==BinaryOpCode::OR) {
-            res = tuddbs::daphne_calc<ps, tsl::functors::binary_or>(data_lhs, data_rhs);
+            tuddbs::daphne_calc<ps, tsl::functors::binary_or> calc;
+            res = calc(data_lhs, data_rhs);
         } else {
             throw std::runtime_error("Unsupported binary operator");
         }

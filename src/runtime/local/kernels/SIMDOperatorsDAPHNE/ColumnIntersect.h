@@ -52,11 +52,12 @@ void columnIntersect(DTRes *& res, const DTPosLhs * pos_lhs, const DTPosRhs * po
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnIntersect<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * pos_lhs, const tuddbs::Column<VT> * pos_rhs, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, tsl::avx512>;
-        res = tuddbs::daphne_intersect<ps>(pos_lhs, pos_rhs);   
+template<typename VTRes, typename VTPos1, typename VTPos2>
+struct ColumnIntersect<tuddbs::Column<VTRes>, tuddbs::Column<VTPos1>, tuddbs::Column<VTPos2>> {
+    static void apply(tuddbs::Column<VTRes> *& res, const tuddbs::Column<VTPos1> * pos_lhs, const tuddbs::Column<VTPos2> * pos_rhs, DCTX(ctx)) {
+        using ps = typename tsl::simd<VTPos1, tsl::avx512>;
+        tuddbs::daphne_intersect<ps> intersect;
+        res = intersect(pos_lhs, pos_rhs);   
     }
 };
 
