@@ -133,6 +133,8 @@ class DaphneContext(object):
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :param verbose: Whether the execution time and further information should be output to the console.
         :return: A Frame
+
+        # Does not carry over Indices of DataFrames. Please use "pandas.Dataframe.reset_index()" in advance to keep indices.
         """
 
         if(verbose):
