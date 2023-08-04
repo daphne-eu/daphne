@@ -145,9 +145,7 @@ class DaphneContext(object):
 
         # Check for MultiIndex and convert to standard DataFrame
         elif isinstance(df, pd.MultiIndex):
-            print("Handling of pandas MultiIndex DataFrame is not implemented yet. \nConverting to a standard DataFrame is not possible...")
-            print("Proceeding with an empty DataFrame")
-            df = pd.DataFrame({"a": [0], "b": [0.0]})
+            raise TypeError ("Handling of pandas MultiIndex DataFrame is not implemented yet. \nConverting to a standard DataFrame is not possible...")
 
         # Check for sparse DataFrame and convert to standard DataFrame
         elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
