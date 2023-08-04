@@ -34,7 +34,6 @@ import pandas as pd
 import tensorflow as tf
 
 import time
-import gc  # Python built in garbage collection module
 
 import ctypes
 import json
@@ -76,13 +75,12 @@ class OperationNode(DAGNode):
         self._output_type = output_type
 
     def delete(self):
-        print(f"Object '{self}' deleted")
+        #print(f"Object '{self}' deleted")
         self._script = DaphneDSLScript(self.daphne_context)
         self._script.build_code(self, type="free memory")
 
         self._script.execute()
         self._script.clear(self)
-
 
     def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None):
         if self._result_var is None:
@@ -163,14 +161,14 @@ class OperationNode(DAGNode):
                     df.columns = [x["label"] for x in fmd["schema"]]
                 result = df
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX and type=="shared memory" and isTensorflow == False and isPytorch == False:
+            elif self._output_type == OutputType.MATRIX and type=="shared memory":
                 daphneLibResult = DaphneLib.getResult()
                 result = np.ctypeslib.as_array(
                     ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX and type=="files" and isTensorflow == False and isPytorch == False:
+            elif self._output_type == OutputType.MATRIX and type=="files":
                 arr = np.genfromtxt(result, delimiter=',')
                 self.clear_tmp()
                 return arr
@@ -183,7 +181,7 @@ class OperationNode(DAGNode):
                 )[0, 0]
                 self.clear_tmp()
             
-            elif isTensorflow and self._output_type == OutputType.MATRIX:
+            if isTensorflow and self._output_type == OutputType.MATRIX:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
@@ -200,7 +198,7 @@ class OperationNode(DAGNode):
                     tensor_end_time = time.time()
                     print(f"TensorFlow Tensor Transformation Execution time: \n{tensor_end_time - tensor_start_time} seconds\n")
 
-            elif isPytorch and self._output_type == OutputType.MATRIX:
+            if isPytorch and self._output_type == OutputType.MATRIX:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
@@ -220,10 +218,7 @@ class OperationNode(DAGNode):
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
-                print(f"Overall Compute Function execution time: \n{(end_time - start_time):.10f} seconds\n")
-
-            # Run the garbage collector
-            gc.collect()
+                print(f"Overall Compute Function execution time: \n{(end_time - start_time):.10f} seconds\n")    
 
             if result is None:
                 return

@@ -58,7 +58,6 @@ class Frame(OperationNode):
 
         super().__init__(daphne_context, operation, unnamed_input_nodes,
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
-    
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str], named_input_vars: Dict[str, str]) -> str:
         if self.__copy:
@@ -86,10 +85,7 @@ class Frame(OperationNode):
         return code_line
 
     def compute(self, type="shared memory", verbose=False) -> Union[pd.DataFrame]:
-        if self._is_pandas():
-            return self._pd_dataframe
-        else:
-            return super().compute(type=type, verbose=verbose)
+        return super().compute(type=type, verbose=verbose)
 
     def _is_pandas(self) -> bool:
         return self._pd_dataframe is not None
