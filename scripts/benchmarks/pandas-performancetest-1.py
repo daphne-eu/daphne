@@ -42,8 +42,6 @@ for df in dataframes:
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
-    F = F.cartesian(F)
-    F.compute()
     print(F.compute())
 print("\n###End of Dataframe Experiments.\n")
 
@@ -59,14 +57,12 @@ for s in series:
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
-    F = F.cartesian(F)
-    F.compute()
     print(F.compute())
 print("\n###End of Series Experiments.\n")
 
 # SPARSE DATAFRAME
 # Creating a list of sparse dataframes with different sizes
-sparse_dataframes = [pd.SparseDataFrame(np.random.randn(size, 15)) for size in sizes]
+sparse_dataframes = [pd.DataFrame({"A": pd.arrays.SparseArray(np.random.randn(size)), "B": pd.arrays.SparseArray(np.random.randn(size)), "C": pd.arrays.SparseArray(np.random.randn(size))}) for size in sizes]
 # Looping through the sparse dataframes and testing the from_pandas and compute operation
 print("\n\n###\n### Sparse DataFrame Experiments:\n###\n")
 for sdf in sparse_dataframes:
@@ -76,26 +72,8 @@ for sdf in sparse_dataframes:
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
-    F = F.cartesian(F)
-    F.compute()
     print(F.compute())
 print("\n###End of Sparse DataFrame Experiments.\n")
-
-# MULTIINDEX DATAFRAME
-# Creating a list of multiindex dataframes with different sizes
-multiindex_dataframes = [pd.MultiIndex.from_product([list('"AB"'), range(size)]) for size in sizes]
-# Looping through the categorical dataframes and testing the from_pandas and compute operation
-print("\n\n###\n### MultiIndex Experiments:\n###\n")
-for midf in multiindex_dataframes:
-    # Transfer data to DaphneLib
-    F = dc.from_pandas(midf)
-    # Appending and cartesian calculation
-    F = F.rbind(F)
-    F.compute()
-    F = F.cartesian(F)
-    F.compute()
-    print(F.compute())
-print("\n###End of MultiIndex Experiments.\n")
 
 # CATEGORICAL DATAFRAME
 # Creating a list of categorical dataframes with different sizes
@@ -109,7 +87,19 @@ for cdf in categorical_dataframes:
     # Appending and cartesian calculation
     F = F.rbind(F)
     F.compute()
-    F = F.cartesian(F)
-    F.compute()
     print(F.compute())
 print("\n###End of Categorical DataFrame Experiments.\n")
+
+# MULTIINDEX DATAFRAME - Since A Conversion is not possible yet, the script will fail here..
+# Creating a list of multiindex dataframes with different sizes
+multiindex_dataframes = [pd.MultiIndex.from_product([list('"AB"'), range(size)]) for size in sizes]
+# Looping through the categorical dataframes and testing the from_pandas and compute operation
+print("\n\n###\n### MultiIndex Experiments:\n###\n")
+for midf in multiindex_dataframes:
+    # Transfer data to DaphneLib
+    F = dc.from_pandas(midf)
+    # Appending and cartesian calculation
+    F = F.rbind(F)
+    F.compute()
+    print(F.compute())
+print("\n###End of MultiIndex Experiments.\n")

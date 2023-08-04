@@ -96,17 +96,13 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-        try:
-            temp_out_file = open("tmpdaphne.daphne", "w")
-            temp_out_file.writelines(self.daphnedsl_script)
-            temp_out_file.close()
+        temp_out_file = open("tmpdaphne.daphne", "w")
+        temp_out_file.writelines(self.daphnedsl_script)
+        temp_out_file.close()
 
-            #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-            res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
-            #os.environ['OPENBLAS_NUM_THREADS'] = '32'
-
-        except Exception as e: 
-            print(f"An unexpected error occurred: {e}")
+        #os.environ['OPENBLAS_NUM_THREADS'] = '1'
+        res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+        #os.environ['OPENBLAS_NUM_THREADS'] = '32'
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """Uses Depth-First-Search to create code from DAG

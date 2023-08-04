@@ -36,7 +36,6 @@ import tensorflow as tf
 
 import time
 from itertools import repeat
-import gc  # Python built in garbage collection module
 
 from typing import Sequence, Dict, Union
 
@@ -103,10 +102,7 @@ class DaphneContext(object):
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
-                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
-            
-            # Run the garbage collector
-            gc.collect()
+                print(f"Numpy Execution time: \n{(end_time - start_time):.10f} seconds\n")
 
             return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], mat.shape[1], vtc], local_data=mat)
         else:
@@ -117,10 +113,7 @@ class DaphneContext(object):
             if(verbose):
                 # Print the overall timing
                 end_time = time.time()
-                print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
-            
-            # Run the garbage collector
-            gc.collect()
+                print(f"Numpy Execution time: \n{(end_time - start_time):.10f} seconds\n")
 
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
@@ -145,9 +138,7 @@ class DaphneContext(object):
 
         # Check for MultiIndex and convert to standard DataFrame
         elif isinstance(df, pd.MultiIndex):
-            print("Handling of pandas MultiIndex DataFrame is not implemented yet. \nConverting to a standard DataFrame is not possible...")
-            print("Proceeding with an empty DataFrame")
-            df = pd.DataFrame({"a": [0], "b": [0.0]})
+            raise TypeError("Handling of pandas MultiIndex DataFrame is not implemented yet. \nConverting to a standard DataFrame is not possible...")
 
         # Check for sparse DataFrame and convert to standard DataFrame
         elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
@@ -234,9 +225,6 @@ class DaphneContext(object):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Execution time: \n{(end_time - start_time):.10f} seconds\n")
-            
-            # Run the garbage collector
-            gc.collect()
 
             # Return the Frame
             return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
@@ -250,9 +238,6 @@ class DaphneContext(object):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Execution time: \n{(end_time - start_time)::.10f} seconds\n")
-            
-            # Run the garbage collector
-            gc.collect()
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     
@@ -273,7 +258,7 @@ class DaphneContext(object):
         else:
             # If higher dimensional, reshape to 2D and handle as a matrix
             original_tensor = tensor.numpy()  # Store the original numpy representation
-            reshaped_tensor = tf.reshape(tensor, (original_shape[0], -1)).numpy()  # Reshape to 2D
+            reshaped_tensor = original_tensor.reshape((original_shape[0], -1))  # Reshape to 2D using NumPy's zero copy reshape
 
             # If verbose, check if the original and reshaped tensors share memory and print the result
             if verbose:
@@ -281,17 +266,14 @@ class DaphneContext(object):
                 print(f"Original and reshaped tensors share memory: {shares_memory}\n")
 
             # Use the existing from_numpy method for the reshaped 2D array
-            matrix = self.from_numpy(reshaped_tensor, shared_memory, verbose)
+            matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
         # If verbose, print the reshape and total execution times
         if verbose:
             reshape_end_time = time.time()
-            print(f"TensorFlow Tensor Reshape Execution time: \n{reshape_end_time - reshape_start_time} seconds\n")
+            print(f"TensorFlow Tensor Reshape Execution time: \n{(reshape_end_time - reshape_start_time):.10f} seconds\n")
             total_end_time = time.time()
-            print(f"Total Execution time: \n{total_end_time - total_start_time} seconds\n")
-        
-        # Run the garbage collector
-        gc.collect()
+            print(f"Total Execution time: \n{(total_end_time - total_start_time):.10f} seconds\n")
 
         # Return the matrix, and the original shape if return_shape is set to True
         return (matrix, original_shape) if return_shape else matrix
@@ -321,17 +303,14 @@ class DaphneContext(object):
                 print(f"Original and reshaped tensors share memory: {shares_memory}\n")
 
             # Use the existing from_numpy method for the reshaped 2D array
-            matrix = self.from_numpy(reshaped_tensor, shared_memory, verbose)
+            matrix = self.from_numpy(mat=reshaped_tensor, shared_memory=shared_memory, verbose=verbose)
 
         # If verbose, print the reshape and total execution times
         if verbose:
             reshape_end_time = time.time()
-            print(f"PyTorch Tensor Reshape Execution time: \n{reshape_end_time - reshape_start_time} seconds\n")
+            print(f"PyTorch Tensor Reshape Execution time: \n{(reshape_end_time - reshape_start_time):.10f} seconds\n")
             total_end_time = time.time()
-            print(f"Total Execution time: \n{total_end_time - total_start_time} seconds\n")
-        
-        # Run the garbage collector
-        gc.collect()
+            print(f"Total Execution time: \n{(total_end_time - total_start_time):.10f} seconds\n")
 
         # Return the matrix, and the original shape if return_shape is set to True
         return (matrix, original_shape) if return_shape else matrix

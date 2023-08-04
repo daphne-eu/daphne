@@ -15,19 +15,17 @@
 from api.python.context.daphne_context import DaphneContext
 import pandas as pd
 import numpy as np
-import csv
-import time
+from datetime import datetime
 import io
 import contextlib
 import re
-import gc
 
 # Adjust based on the number of runs for this benchmark
-runs = 3
+runs = 10
 
 # Creating a list of sizes for the objects
-sizes = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]#, 5000000]#, 10000000, 50000000]
-cols = 30
+sizes = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000]#, 5000000, 10000000, 50000000]
+cols = 25
 
 # Different Data Types for the benchmark
 dtypes_list = [np.double, np.float64, np.float32, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
@@ -73,7 +71,7 @@ for run in range(runs):
                 df_data[col] = np.random.randint(low, high, size=size).astype(dtype)
 
         # Create a Data Frame with the data from the arrays above
-        df = pd.DataFrame(df_data)
+        df = pd.DataFrame(df_data, copy=False)
 
         # Capture Verbose Outputs
         with contextlib.redirect_stdout(text_stream):
@@ -148,9 +146,6 @@ for run in range(runs):
         # Delete the Object in Daphne to prevent Memory Overflow
         F.delete()
         del F
-                
-        # Run the garbage collector
-        gc.collect()
 
         print(f'Progress: [{progress_bar}] {progress_percentage:.2f}% - Run {run + 1} - Total Size Processed: {total_size_gb:.3f} GB', end="\r")
 
@@ -170,15 +165,18 @@ for size in sizes:
 # Create a DataFrame from the intermediate array
 averageResults = pd.DataFrame(averageResults_list, columns=header)
 
+# Create a timestamp using the current date and time
+timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
+
 """
-print("\nFrame from Output:")
+print("\nFrame of all Results:")
 print(testResults)
 """
 
-print("\nAverage Frame:")
+print(f"\nAverage Results at {timestamp}:\n")
 print(averageResults)  # This prints the frame of averages
 
-testResults.to_csv('scripts/examples/daphnelib/testoutputs/Pandas-Compute-PerformaceTest.csv', index=False)
-averageResults.to_csv('scripts/examples/daphnelib/testoutputs/Avg-Pandas-Compute-PerformaceTest.csv', index=False)
+testResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_Pandas-Compute-PerformaceTest.csv', index=False)
+averageResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_Avg-Pandas-Compute-PerformaceTest.csv', index=False)
 
 print("\n###End of Performance Test.\n")
