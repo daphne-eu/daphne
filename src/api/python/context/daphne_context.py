@@ -127,14 +127,13 @@ class DaphneContext(object):
 
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
-    def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False) -> Frame:
+    def from_pandas(self, df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame:
         """Generates a `DAGNode` representing a frame with data given by a pandas `DataFrame`.
         :param df: The pandas DataFrame.
         :param shared_memory: Whether to use shared memory data transfer (True) or not (False).
         :param verbose: Whether the execution time and further information should be output to the console.
+        :param keepIndex: Whether the frame should keep it's index from pandas within Daphne
         :return: A Frame
-
-        # Does not carry over Indices of DataFrames. Please use "pandas.Dataframe.reset_index()" in advance to keep indices.
         """
 
         if(verbose):
@@ -142,6 +141,10 @@ class DaphneContext(object):
             start_time = time.time()
             # Time the execution for the Pandas Frame Type Checks
             typeCheck_start_time = time.time()
+        
+        if keepIndex:
+            # Reset the index, moving it to a new column. 
+            df.reset_index(drop=False, inplace=True)
 
         # Check for a Series and convert to DataFrame
         if isinstance(df, pd.Series):

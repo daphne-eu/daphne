@@ -82,7 +82,7 @@ class OperationNode(DAGNode):
         self._script.execute()
         self._script.clear(self)
 
-    def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None):
+    def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None, useIndexColumn=False):
         if self._result_var is None:
             
             if(verbose):
@@ -139,6 +139,10 @@ class OperationNode(DAGNode):
 
                     # Create DataFrame from dictionary
                     df = pd.DataFrame(data, copy=False)
+
+                    # If useIndexColumn is true, set 'index' column as the DataFrame's index
+                    if  useIndexColumn and 'index' in df.columns:
+                        df.set_index('index', inplace=True, drop=True)
 
                 else:
                     print("Error: NULL pointer access")

@@ -84,8 +84,8 @@ class Frame(OperationNode):
                 )
         return code_line
 
-    def compute(self, type="shared memory", verbose=False) -> Union[pd.DataFrame]:
-        return super().compute(type=type, verbose=verbose)
+    def compute(self, type="shared memory", verbose=False, useIndexColumn=False) -> Union[pd.DataFrame]:
+        return super().compute(type=type, verbose=verbose, useIndexColumn=useIndexColumn)
 
     def _is_pandas(self) -> bool:
         return self._pd_dataframe is not None
