@@ -39,6 +39,11 @@ void saveDaphneLibResult(const DTArg * arg, DCTX(ctx)) {
     SaveDaphneLibResult<DTArg>::apply(arg, ctx);
 }
 
+template<class DTArg>
+void freeDaphneLibResult(const DTArg * arg, DCTX(ctx)) {
+    SaveDaphneLibResult<DTArg>::free(arg, ctx);
+}
+
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
 // ****************************************************************************
@@ -65,6 +70,10 @@ struct SaveDaphneLibResult<DenseMatrix<VT>> {
         daphneLibRes->rows = arg->getNumRows();
         daphneLibRes->vtc = (int64_t)ValueTypeUtils::codeFor<VT>;
     }
+    static void free(const DenseMatrix<VT> * arg,  DCTX(ctx)) {
+        // Decrease the Reference Counter to allow for the Daphne garbage collection
+        DataObjectFactory::destroy(arg);
+    }
 };
 
 // ----------------------------------------------------------------------------
@@ -77,10 +86,6 @@ struct SaveDaphneLibResult<Frame> {
         // Increase the reference counter of the data object to be transferred
         // to python, such that the data is not garbage collected by DAPHNE.
         // TODO But who will free the memory in the end?
-        // Memory allocated with new has to be freed manually with delete[]. 
-        // Therefore, we should call delete[] for vtcs and each element of labels array 
-        // (and then for labels array itself) when you're done with these arrays.
-        // Delete Function for Both DenseMatrix and Frame should be implemented.
 
         arg->increaseRefCounter();
 
@@ -116,6 +121,10 @@ struct SaveDaphneLibResult<Frame> {
         daphneLibRes->vtcs = vtcs;
         daphneLibRes->labels = labels;
         daphneLibRes->columns = columns; 
+    }
+    static void free(const Frame * arg,  DCTX(ctx)) {
+        // Decrease the Reference Counter to allow for the Daphne garbage collection
+        DataObjectFactory::destroy(arg);
     }
 };
 
