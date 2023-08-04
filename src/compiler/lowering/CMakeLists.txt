@@ -29,6 +29,8 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     WhileLoopInvariantCodeMotionPass.cpp
     RewriteColumnarOpPass.cpp
     OptimizeColumnarOpPass.cpp
+    ReduceColumnarOpPass.cpp
+    SelectionPushdownPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

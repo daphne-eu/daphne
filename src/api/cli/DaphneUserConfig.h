@@ -36,6 +36,9 @@ struct DaphneUserConfig {
     // Remember to update UserConfig.json accordingly!
 
     bool use_columnar = false;
+    bool use_columnar_reduce = false;
+    bool use_columnar_rewrite = false;
+    bool use_selection_pushdown = false;
     bool use_cuda = false;
     bool use_vectorized_exec = false;
     bool use_distributed = false;
@@ -59,6 +62,7 @@ struct DaphneUserConfig {
     bool explain_parsing_simplified = false;
     bool explain_property_inference = false;
     bool explain_select_matrix_repr = false;
+    bool explain_selection_pushdown = false;
     bool explain_sql = false;
     bool explain_phy_op_selection = false;
     bool explain_type_adaptation = false;

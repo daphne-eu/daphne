@@ -86,14 +86,33 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             if(userConfig_.explain_property_inference)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
 
+            if(userConfig_.use_columnar_rewrite) {
+                pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+            }
+
+            if(userConfig_.use_columnar_reduce) {
+                pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
+                pm.addPass(mlir::createCanonicalizerPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+            }
+
             if(userConfig_.use_columnar) {
                 pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
                 pm.addPass(mlir::createCanonicalizerPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
             }
             if(userConfig_.explain_columnar)    
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after columnar rewriting:"));
+
+            if(userConfig_.use_selection_pushdown) {
+                pm.addPass(mlir::daphne::createSelectionPushdownPass());
+            }
+            if(userConfig_.explain_selection_pushdown) {
+                pm.addPass(mlir::daphne::createPrintIRPass("IR after selection pushdown:"));
+            }
 
             if(failed(pm.run(module))) {
                 module->dump();
