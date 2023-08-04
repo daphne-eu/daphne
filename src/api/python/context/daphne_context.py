@@ -23,6 +23,8 @@
 
 __all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]
 
+import torch as torch 
+
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.scalar import Scalar
@@ -37,10 +39,10 @@ import numpy as np
 import pandas as pd
 import csv
 import tensorflow as tf
-import torch as torch 
 
 import time
 from itertools import repeat
+import gc  # Python built in garbage collection module
 
 from typing import Sequence, Dict, Union
 
@@ -81,6 +83,13 @@ class DaphneContext(object):
             address = mat.ctypes.data_as(np.ctypeslib.ndpointer(dtype=mat.dtype, ndim=1, flags='C_CONTIGUOUS')).value
             upper = (address & 0xFFFFFFFF00000000) >> 32
             lower = (address & 0xFFFFFFFF)
+
+            # Change the Data type, if int16 or uint16 is handed over
+            if mat.dtype == np.int16:
+                mat = mat.astype(np.int32, copy=False)
+            elif mat.dtype == np.uint16:
+                mat = mat.astype(np.uint32, copy=False)
+
             d_type = mat.dtype
             if d_type == np.double or d_type == np.float64:
                 vtc = F64
@@ -105,6 +114,9 @@ class DaphneContext(object):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+            
+            # Run the garbage collector
+            gc.collect()
 
             return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], mat.shape[1], vtc], local_data=mat)
         else:
@@ -116,6 +128,9 @@ class DaphneContext(object):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Execution time: \n{end_time - start_time} seconds\n")
+            
+            # Run the garbage collector
+            gc.collect()
 
             return Matrix(self, 'readMatrix', unnamed_params, named_params, local_data=mat)
 
@@ -176,9 +191,11 @@ class DaphneContext(object):
 
                 mat = df[column].values
                 
-                # Test execution time 
+                # Change the Data type, if int16 or uint16 is handed over
                 if mat.dtype == np.int16:
-                    mat = mat.astype(np.int32)
+                    mat = mat.astype(np.int32, copy=False)
+                elif mat.dtype == np.uint16:
+                    mat = mat.astype(np.uint32, copy=False)
 
                 if(verbose):
                     #Check if this step was zero copy
@@ -227,6 +244,9 @@ class DaphneContext(object):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Execution time: \n{(end_time - start_time):.10f} seconds\n")
+            
+            # Run the garbage collector
+            gc.collect()
 
             # Return the Frame
             return Frame(self, 'createFrame', unnamed_input_nodes=mats, local_data = df)
@@ -240,6 +260,9 @@ class DaphneContext(object):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Execution time: \n{(end_time - start_time)::.10f} seconds\n")
+            
+            # Run the garbage collector
+            gc.collect()
 
             return Frame(self, 'readFrame', unnamed_params, named_params, local_data=df, column_names=df.columns)    
     
@@ -276,6 +299,9 @@ class DaphneContext(object):
             print(f"TensorFlow Tensor Reshape Execution time: \n{reshape_end_time - reshape_start_time} seconds\n")
             total_end_time = time.time()
             print(f"Total Execution time: \n{total_end_time - total_start_time} seconds\n")
+        
+        # Run the garbage collector
+        gc.collect()
 
         # Return the matrix, and the original shape if return_shape is set to True
         return (matrix, original_shape) if return_shape else matrix
@@ -313,6 +339,9 @@ class DaphneContext(object):
             print(f"PyTorch Tensor Reshape Execution time: \n{reshape_end_time - reshape_start_time} seconds\n")
             total_end_time = time.time()
             print(f"Total Execution time: \n{total_end_time - total_start_time} seconds\n")
+        
+        # Run the garbage collector
+        gc.collect()
 
         # Return the matrix, and the original shape if return_shape is set to True
         return (matrix, original_shape) if return_shape else matrix

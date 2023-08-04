@@ -21,6 +21,8 @@
 #
 # -------------------------------------------------------------
 
+import torch as torch 
+
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
 from api.python.utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
@@ -30,9 +32,9 @@ from api.python.utils.helpers import create_params_string
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import torch
 
 import time
+import gc  # Python built in garbage collection module
 
 import ctypes
 import json
@@ -73,7 +75,16 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
 
-    def compute(self, type="shared memory", isTensorflow=False, isPytorch=False, verbose=False, shape=None):
+    def delete(self):
+        print(f"Object '{self}' deleted")
+        self._script = DaphneDSLScript(self.daphne_context)
+        self._script.build_code(self, type="free memory")
+
+        self._script.execute()
+        self._script.clear(self)
+
+
+    def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None):
         if self._result_var is None:
             
             if(verbose):
@@ -97,7 +108,7 @@ class OperationNode(DAGNode):
                 # Print the overall timing
                 exec_end_time = time.time()
                 print(f"Execute Function execution time: \n{(exec_end_time - exec_start_time):.10f} seconds\n")
-
+            
             if self._output_type == OutputType.FRAME and type=="shared memory":
 
                 if(verbose):
@@ -105,8 +116,6 @@ class OperationNode(DAGNode):
                     comp_start_time = time.time()
 
                 daphneLibResult = DaphneLib.getResult()
-
-                data = []
                 
                 # Read the frame's address into a numpy array
                 if daphneLibResult.columns is not None:
@@ -118,25 +127,27 @@ class OperationNode(DAGNode):
                     vtcs_array = ctypes.cast(daphneLibResult.vtcs, ctypes.POINTER(VTArray)).contents  # cast the pointer to this type and access its contents
                     dtypes = [self.getNumpyType(vtc) for vtc in vtcs_array]  # Convert the Data Types into Numpy Data Types
 
-                    for idx in range(daphneLibResult.cols): 
-                        data.append(np.ctypeslib.as_array(
-                            ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(self.getType(daphneLibResult.vtcs[idx]))),
-                            shape=[daphneLibResult.rows, 1]
-                        ))
+                    data = {label: None for label in labels}
+
+                    # Using ctypes cast and NumPy array view to create dictionary directly
+                    for idx in range(daphneLibResult.cols):
+                        c_data_type = self.getType(daphneLibResult.vtcs[idx])
+                        array_view = np.ctypeslib.as_array(
+                            ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(c_data_type)),
+                            shape=[daphneLibResult.rows]
+                        )
+                        label = labels[idx]
+                        data[label] = array_view
+
+                    # Create DataFrame from dictionary
+                    df = pd.DataFrame(data, copy=False)
+
                 else:
                     print("Error: NULL pointer access")
                     labels = []
                     dtypes = []
-
-                # Convert the numpy array to a pandas DataFrame
-                df = pd.DataFrame(np.concatenate(data, axis=1))
-                # Set the column labels in the DataFrame
-                df.columns = labels
-
-                # Cast each column to its appropriate dtype
-                for col, dtype in zip(labels, dtypes):
-                    df[col] = df[col].astype(dtype)
-
+                    df = pd.DataFrame()
+                
                 result = df
                 self.clear_tmp()
 
@@ -152,14 +163,14 @@ class OperationNode(DAGNode):
                     df.columns = [x["label"] for x in fmd["schema"]]
                 result = df
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX and type=="shared memory":
+            elif self._output_type == OutputType.MATRIX and type=="shared memory" and isTensorflow == False and isPytorch == False:
                 daphneLibResult = DaphneLib.getResult()
                 result = np.ctypeslib.as_array(
                     ctypes.cast(daphneLibResult.address, ctypes.POINTER(self.getType(daphneLibResult.vtc))),
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )
                 self.clear_tmp()
-            elif self._output_type == OutputType.MATRIX and type=="files":
+            elif self._output_type == OutputType.MATRIX and type=="files" and isTensorflow == False and isPytorch == False:
                 arr = np.genfromtxt(result, delimiter=',')
                 self.clear_tmp()
                 return arr
@@ -172,7 +183,7 @@ class OperationNode(DAGNode):
                 )[0, 0]
                 self.clear_tmp()
             
-            if isTensorflow:
+            elif isTensorflow and self._output_type == OutputType.MATRIX:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
@@ -189,7 +200,7 @@ class OperationNode(DAGNode):
                     tensor_end_time = time.time()
                     print(f"TensorFlow Tensor Transformation Execution time: \n{tensor_end_time - tensor_start_time} seconds\n")
 
-            if isPytorch:
+            elif isPytorch and self._output_type == OutputType.MATRIX:
                 if(verbose):
                     # Time the execution for the whole processing
                     tensor_start_time = time.time()
@@ -210,6 +221,9 @@ class OperationNode(DAGNode):
                 # Print the overall timing
                 end_time = time.time()
                 print(f"Overall Compute Function execution time: \n{(end_time - start_time):.10f} seconds\n")
+
+            # Run the garbage collector
+            gc.collect()
 
             if result is None:
                 return

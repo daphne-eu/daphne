@@ -99,11 +99,11 @@ class Matrix(OperationNode):
     def _is_numpy(self) -> bool:
         return self._np_array is not None
     
-    def compute(self, type="shared memory") -> Union[np.array]:
+    def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None) -> Union[np.array]:
         if self._is_numpy():
             return self._np_array
         else:
-            return super().compute(type)
+            return super().compute(type=type, verbose=verbose, isTensorflow=isTensorflow, isPytorch=isPytorch, shape=shape)
 
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context, '+', [self, other])

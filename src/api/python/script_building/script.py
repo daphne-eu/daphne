@@ -57,6 +57,9 @@ class DaphneDSLScript:
                 elif type == "shared memory":
                     self.add_code(f'saveDaphneLibResult({baseOutVarString});')
                     return None
+                elif type == "free memory": 
+                    self.add_code(f'freeDaphneLibResult({baseOutVarString});')
+                    return None
                 else:
                     raise RuntimeError(f"unknown way to transfer the data: '{type}'")
             elif dag_root.output_type == OutputType.FRAME:
@@ -65,6 +68,9 @@ class DaphneDSLScript:
                     return TMP_PATH + "/" + baseOutVarString + ".csv"
                 elif type == "shared memory":
                     self.add_code(f'saveDaphneLibResult({baseOutVarString});')
+                    return None
+                elif type == "free memory": 
+                    self.add_code(f'freeDaphneLibResult({baseOutVarString});')
                     return None
                 else:
                     raise RuntimeError(f"unknown way to transfer the data: '{type}'")
@@ -83,19 +89,24 @@ class DaphneDSLScript:
         :param code: the DaphneDSL code line
         """
         self.daphnedsl_script += code +'\n'
+        #print(self.daphnedsl_script)
     
     def clear(self, dag_root:DAGNode):
         self._dfs_clear_dag_nodes(dag_root)
         self._variable_counter = 0
 
     def execute(self):
-        temp_out_file = open("tmpdaphne.daphne", "w")
-        temp_out_file.writelines(self.daphnedsl_script)
-        temp_out_file.close()
-        
-        #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-        res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
-        #os.environ['OPENBLAS_NUM_THREADS'] = '32'
+        try:
+            temp_out_file = open("tmpdaphne.daphne", "w")
+            temp_out_file.writelines(self.daphnedsl_script)
+            temp_out_file.close()
+
+            #os.environ['OPENBLAS_NUM_THREADS'] = '1'
+            res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+            #os.environ['OPENBLAS_NUM_THREADS'] = '32'
+
+        except Exception as e: 
+            print(f"An unexpected error occurred: {e}")
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """Uses Depth-First-Search to create code from DAG
