@@ -57,20 +57,29 @@ template<typename VT>
 struct ColumnCalc<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
     static void apply(BinaryOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data_lhs, const tuddbs::Column<VT> * data_rhs, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        if (opCode==BinaryOpCode::ADD) {
-            tuddbs::daphne_calc<ps, tsl::functors::add> calc;
-            res = calc(data_lhs, data_rhs);   
-        } else if (opCode==BinaryOpCode::MUL) {
-            tuddbs::daphne_calc<ps, tsl::functors::mul> calc;
-            res = calc(data_lhs, data_rhs);
-        } else if (opCode==BinaryOpCode::AND) {
-            tuddbs::daphne_calc<ps, tsl::functors::binary_and> calc;
-            res = calc(data_lhs, data_rhs);
-        } else if (opCode==BinaryOpCode::OR) {
-            tuddbs::daphne_calc<ps, tsl::functors::binary_or> calc;
-            res = calc(data_lhs, data_rhs);
-        } else {
-            throw std::runtime_error("Unsupported binary operator");
+        switch (opCode) {
+            case BinaryOpCode::ADD: {
+                tuddbs::daphne_calc<ps, tsl::functors::add> calc;
+                res = calc(data_lhs, data_rhs);   
+                break;
+            } 
+            case BinaryOpCode::MUL: {
+                tuddbs::daphne_calc<ps, tsl::functors::mul> calc;
+                res = calc(data_lhs, data_rhs);
+                break;
+            } 
+            case BinaryOpCode::AND: {
+                tuddbs::daphne_calc<ps, tsl::functors::binary_and> calc;
+                res = calc(data_lhs, data_rhs);
+                break;
+            } 
+            case BinaryOpCode::OR: {
+                tuddbs::daphne_calc<ps, tsl::functors::binary_or> calc;
+                res = calc(data_lhs, data_rhs);
+                break;
+            } default: {
+                throw std::runtime_error("Unsupported binary operator");
+            }
         }
         
     }

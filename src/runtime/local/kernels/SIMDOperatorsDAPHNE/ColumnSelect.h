@@ -22,6 +22,7 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <SIMDOperators/datastructures/column.hpp>
 #include <SIMDOperators/wrappers/DAPHNE/select.hpp>
+#include <runtime/local/kernels/SIMDOperatorsDAPHNE/VectorExtensions.h>
 
 #include <cassert>
 #include <cstddef>
@@ -56,28 +57,48 @@ void columnSelect(SelectOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rh
 template<typename VT>
 struct ColumnSelect<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
     static void apply(SelectOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * lhs, VT rhs, DCTX(ctx)) {
+        VectorExtensions ext = ctx->getUserConfig().vector_extension;
+        /**switch (ext)
+        {
+            case VectorExtensions::AVX512:
+                using ps = typename tsl::simd<VT, tsl::avx512>;
+                break;
+        }**/
         using ps = typename tsl::simd<VT, tsl::avx512>;
 
-        if (opCode == SelectOpCode::LT) {
-            tuddbs::daphne_select<ps, tsl::functors::less_than> select;
-            res = select(lhs, rhs);
-        } else if (opCode == SelectOpCode::LE) {
-            tuddbs::daphne_select<ps, tsl::functors::less_than_or_equal> select;
-            res = select(lhs, rhs);
-        } else if (opCode == SelectOpCode::GT) {
-            tuddbs::daphne_select<ps, tsl::functors::greater_than> select;
-            res = select(lhs, rhs);
-        } else if (opCode == SelectOpCode::GE) {
-            tuddbs::daphne_select<ps, tsl::functors::greater_than_or_equal> select;
-            res = select(lhs, rhs);
-        } else if (opCode == SelectOpCode::EQ) {
-            tuddbs::daphne_select<ps, tsl::functors::equal> select;
-            res = select(lhs, rhs);
-        } else if (opCode == SelectOpCode::NEQ) {
-            tuddbs::daphne_select<ps, tsl::functors::nequal> select;
-            res = select(lhs, rhs);
+        switch (opCode)
+        {
+            case SelectOpCode::LT: {
+                tuddbs::daphne_select<ps, tsl::functors::less_than> select;
+                res = select(lhs, rhs);
+                break;
+            } 
+            case SelectOpCode::LE: {
+                tuddbs::daphne_select<ps, tsl::functors::less_than_or_equal> select;
+                res = select(lhs, rhs);
+                break;
+            } 
+            case SelectOpCode::GT: {
+                tuddbs::daphne_select<ps, tsl::functors::greater_than> select;
+                res = select(lhs, rhs);
+                break;
+            } 
+            case SelectOpCode::GE: {
+                tuddbs::daphne_select<ps, tsl::functors::greater_than_or_equal> select;
+                res = select(lhs, rhs);
+                break;
+            } 
+            case SelectOpCode::EQ: {
+                tuddbs::daphne_select<ps, tsl::functors::equal> select;
+                res = select(lhs, rhs);
+                break;
+            } 
+            case SelectOpCode::NEQ: {
+                tuddbs::daphne_select<ps, tsl::functors::nequal> select;
+                res = select(lhs, rhs);
+                break;
+            }
         }
-        
     }
 };
 

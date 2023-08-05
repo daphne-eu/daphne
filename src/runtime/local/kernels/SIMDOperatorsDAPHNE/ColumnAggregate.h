@@ -57,12 +57,16 @@ template<typename VT>
 struct ColumnAggregate<tuddbs::Column<VT>, tuddbs::Column<VT>> {
     static void apply(AggOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, DCTX(ctx)) {
         using ps = typename tsl::simd<VT, tsl::avx512>;
-        if (opCode==AggOpCode::SUM) {
-            tuddbs::daphne_aggregate<ps, tsl::functors::add, tsl::functors::hadd> aggregate;
-            res = aggregate(data);   
-        } else {
-            assert(false);
+        switch (opCode) {
+            case AggOpCode::SUM: {
+                tuddbs::daphne_aggregate<ps, tsl::functors::add, tsl::functors::hadd> aggregate;
+                res = aggregate(data);
+                break;   
+            } default: {
+                assert(false);
+            }
         }
+        
     }
 };
 
