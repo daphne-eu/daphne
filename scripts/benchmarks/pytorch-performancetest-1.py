@@ -29,7 +29,7 @@ import re
 runs = 15
 
 # Creating a list of sizes for the objects
-sizes = [1, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300]
+sizes = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 200, 300, 500]
 
 dc = DaphneContext()
 
@@ -46,6 +46,7 @@ for init_run in range(5):
 # Set the iterations for the progress bar
 total_iterations = len(sizes) * runs
 current_iteration = 0
+total_size_gb = 0.0
 
 print("\n\n###\n### PyTorch Tensor from_pytorch Function Performance Test\n###\n")
 
@@ -54,7 +55,8 @@ print("\n\n###\n### PyTorch Tensor from_pytorch Function Performance Test\n###\n
 for idx, run in enumerate(range(runs)): 
     for size in sizes:
         # Create a 3DTensor with the given size
-        tensor3d = torch.tensor(np.random.randn(size,size,size))
+        tensor3d = torch.as_tensor(np.random.randn(size,size,size))
+
         #print(tensor3d)
         # Capture Verbose Outputs
         with contextlib.redirect_stdout(text_stream):
@@ -64,6 +66,11 @@ for idx, run in enumerate(range(runs)):
 
             # Transfer Tensor to DaphneLib
             F = dc.from_pytorch(tensor3d, verbose=True)
+
+        # Calculate the sizes for the tensor
+        tensor_size_bytes = tensor3d.element_size() * tensor3d.nelement()
+        tensor_size_mb = tensor_size_bytes / (1024 ** 2)
+        total_size_gb += tensor_size_mb / 1024
 
         # Reset to the beginning of the text stream
         text_stream.seek(0)
@@ -87,6 +94,10 @@ for idx, run in enumerate(range(runs)):
         reshape_exec_time_match = re.search(r'PyTorch Tensor Reshape Execution time:\s+([\d.]+) seconds', captured_output)
         reshape_exec_time = float(reshape_exec_time_match.group(1)) if reshape_exec_time_match else None
 
+        # Extract data_transfer_exec_time
+        transfer_exec_time_match = re.search(r'Numpy Execution time:\s+([\d.]+) seconds', captured_output)
+        transfer_exec_time = float(transfer_exec_time_match.group(1)) if transfer_exec_time_match else None       
+
         # Extract overall_exec_time
         overall_exec_time_match = re.search(r'Total Execution time:\s+([\d.]+) seconds', captured_output)
         overall_exec_time = float(overall_exec_time_match.group(1)) if overall_exec_time_match else None
@@ -101,12 +112,12 @@ for idx, run in enumerate(range(runs)):
         """
 
         # Put the data together into a List
-        data = [num_dim1, num_dim2, num_dim3, reshape_exec_time, overall_exec_time]
+        data = [num_dim1, num_dim2, num_dim3, reshape_exec_time, transfer_exec_time, overall_exec_time, tensor_size_mb]
         testData.append(data)
 
         # Create headers in first run
         if(idx == 0):
-            header = ['num_dim1', 'num_dim2', 'num_dim3', 'reshape_exec_time', 'overall_exec_time']
+            header = ['num_dim1', 'num_dim2', 'num_dim3', 'reshape_exec_time', 'data_transfer_exec_time', 'overall_exec_time', 'tensor_size_mb' ]
 
         # Clear the text stream for the next iteration
         text_stream.seek(0)
@@ -115,11 +126,11 @@ for idx, run in enumerate(range(runs)):
         # Update the progress bar
         current_iteration += 1
         progress_percentage = (current_iteration / total_iterations) * 100
-        bar_length = 40
+        bar_length = 30
         completed_length = int(bar_length * current_iteration // total_iterations)
         progress_bar = "#" * completed_length + "-" * (bar_length - completed_length)
 
-        print(f'Progress: [{progress_bar}] {progress_percentage:.2f}% - Run {run + 1}', end="\r")
+        print(f'Progress: [{progress_bar}] {progress_percentage:.2f}% - Run {run + 1} - Total Size Processed: {total_size_gb:.3f} GB', end="\r")
 
 print("Benchmark finished! [")
 print()
