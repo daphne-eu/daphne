@@ -200,7 +200,7 @@ class OperationNode(DAGNode):
                 if(verbose):
                     # Print the tensor timing
                     tensor_end_time = time.time()
-                    print(f"TensorFlow Tensor Transformation Execution time: \n{tensor_end_time - tensor_start_time} seconds\n")
+                    print(f"TensorFlow Tensor Transformation Execution time: \n{(tensor_end_time - tensor_start_time):.10f} seconds\n")
 
             if isPytorch and self._output_type == OutputType.MATRIX:
                 if(verbose):
@@ -217,7 +217,7 @@ class OperationNode(DAGNode):
                 if(verbose):
                     # Print the tensor timing
                     tensor_end_time = time.time()
-                    print(f"PyTorch Tensor Transformation Execution time: \n{tensor_end_time - tensor_start_time} seconds\n")
+                    print(f"PyTorch Tensor Transformation Execution time: \n{(tensor_end_time - tensor_start_time):.10f} seconds\n")
             
             if(verbose):
                 # Print the overall timing
