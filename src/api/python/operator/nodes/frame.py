@@ -25,6 +25,7 @@ __all__ = ["Frame"]
 
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.scalar import Scalar
+from api.python.operator.nodes.matrix import Matrix
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
 
@@ -40,13 +41,13 @@ if TYPE_CHECKING:
 
 class Frame(OperationNode):
     _pd_dataframe: pd.DataFrame
-    _column_names: Optional[List[str]] = None  # Add this line
+    _column_names: Optional[List[str]] = None
 
     def __init__(self, daphne_context: "DaphneContext", operation: str,
                  unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
                  local_data: pd.DataFrame = None, brackets: bool = False, 
-                 column_names: Optional[List[str]] = None) -> "Frame":  # Modify this line
+                 column_names: Optional[List[str]] = None) -> "Frame":
         is_python_local_data = False
         if local_data is not None:
             self._pd_dataframe = local_data
@@ -54,7 +55,7 @@ class Frame(OperationNode):
         else:
             self._pd_dataframe = None
 
-        self._column_names = column_names  # Add this line
+        self._column_names = column_names
 
         super().__init__(daphne_context, operation, unnamed_input_nodes,
                          named_input_nodes, OutputType.FRAME, is_python_local_data, brackets)
@@ -122,7 +123,76 @@ class Frame(OperationNode):
         cartesian product
         """
         return Frame(self.daphne_context, "cartesian", [self, other])
+    
+    def innerJoin(self, right_frame, left_on, right_on) -> 'Frame':
+        """
+        Creates an Inner Join between the object (left) and another frame (right)
+        :param right_frame: Frame to join with the object
+        :param left_on: Left Key (with left_on == right_on)
+        :param right_on: Right Key (with left_on == right_on)
+        :return: A Frame containing the Inner Join of both Frames.
+        """
+        return Frame(self.daphne_context, "innerJoin", [self, right_frame, left_on, right_on])
 
+    def semiJoin(self, right_frame, left_on, right_on) -> 'Frame':
+        """
+        Creates a Semi Join between the object (left) and another frame (right)
+        :param right_frame: Frame to join with the object
+        :param left_on: Left Key (with left_on == right_on)
+        :param right_on: Right Key (with left_on == right_on)
+        :return: A Frame containing the Semi Join of both Frames.
+        """
+        return Frame(self.daphne_context, "semiJoin", [self, right_frame, left_on, right_on])
+    
+    def groupJoin(self, right_frame, left_on, right_on, right_Agg) -> 'Frame':
+        """
+        Creates a Group Join between the object (left) and another frame (right)
+        :param right_frame: Frame to join with the object
+        :param left_on: Left Key (with left_on == right_on)
+        :param right_on: Right Key (with left_on == right_on)
+        :param right_Agg: Aggregation Argument
+        :return: A Frame containing the Group Join of both Frames.
+        """
+        return Frame(self.daphne_context, "groupJoin", [self, right_frame, left_on, right_on, right_Agg])
+    
+    def setColLabels(self, labels) -> 'Frame':
+        """
+        Changes the Column labels to the handed over labels.
+        There must be as many labels as columns!
+        :param labels: List of new labels
+        :return: A Frame with the new labels
+        """
+        args = []
+        args.append(self)
+        numCols = self.ncol()
+
+        if len(labels) == numCols:
+            for label in labels: 
+                label_str = f'"{label}"'
+                args.append(label_str)
+
+            return Frame(self.daphne_context, "setColLabels", args)
+        else: 
+            raise ValueError(f"Number of labels is not equal to the number of columns! \nExpected labels for {numCols} columns, but received {len(labels)} labels.")
+    
+    def setColLabelsPrefix(self, prefix) -> 'Frame':
+        """
+        Adds a Prefix to the labels of all columns
+        :param prefix: Prefix to be added to every label
+        :return: A Frame with updated labels
+        """
+        prefix_str=f'"{prefix}"'
+
+        return Frame(self.daphne_context, "setColLabelsPrefix", [self, prefix_str])
+    
+    def toMatrix(self, data_type="f64") -> 'Matrix': 
+        """
+        Transforms the Frame to a Matrix of the type: data_type
+        :param data_type: Data Type for the Matrix
+        :return: A Matrix with the values of the datatype
+        """
+        return Matrix(self.daphne_context, f"as.matrix<{data_type}>", [self])
+        
     def nrow(self) -> 'Scalar':
         """
         :return: Scalar containing number of rows of frame
