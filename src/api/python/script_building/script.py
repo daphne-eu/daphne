@@ -39,12 +39,12 @@ class DaphneDSLScript:
     out_var_name:List[str]
     _variable_counter: int
 
-    def __init__(self, context) -> None:
+    def __init__(self, context, var_counter = 0) -> None:
         self.daphne_context = context
         self.daphnedsl_script = ''
         self.inputs = {}
         self.out_var_name = []
-        self._variable_counter = 0
+        self._variable_counter = var_counter
     
     def build_code(self, dag_root: DAGNode, type="shared memory"):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
@@ -81,6 +81,7 @@ class DaphneDSLScript:
             else:
                 self.add_code(f'print({baseOutVarString});')
                 return None
+
             
 
     def add_code(self, code:str)->None:
@@ -89,20 +90,44 @@ class DaphneDSLScript:
         :param code: the DaphneDSL code line
         """
         self.daphnedsl_script += code +'\n'
-        #print(self.daphnedsl_script)
     
     def clear(self, dag_root:DAGNode):
         self._dfs_clear_dag_nodes(dag_root)
         self._variable_counter = 0
 
     def execute(self):
-        temp_out_file = open("tmpdaphne.daphne", "w")
-        temp_out_file.writelines(self.daphnedsl_script)
-        temp_out_file.close()
+            print(self.daphnedsl_script)
 
-        #os.environ['OPENBLAS_NUM_THREADS'] = '1'
-        res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
-        #os.environ['OPENBLAS_NUM_THREADS'] = '32'
+            temp_out_file = open("tmpdaphne.daphne", "w")
+            temp_out_file.writelines(self.daphnedsl_script)
+            temp_out_file.close()
+
+            #os.environ['OPENBLAS_NUM_THREADS'] = '1'
+            res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+            #os.environ['OPENBLAS_NUM_THREADS'] = '32'
+    
+    def executeSQL(self, multiText=False, writeOnly=False):
+        if multiText == False:
+            temp_out_file = open("tmpdaphne.daphne", "w")
+            temp_out_file.writelines(self.daphnedsl_script)
+            temp_out_file.close()
+
+            if writeOnly == False:
+                #os.environ['OPENBLAS_NUM_THREADS'] = '1'
+                res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+                #os.environ['OPENBLAS_NUM_THREADS'] = '32'
+
+        else: 
+            temp_out_file = open("tmpdaphne.daphne", "a")
+            temp_out_file.writelines(self.daphnedsl_script)
+            temp_out_file.close()
+
+            if writeOnly == False:
+                #os.environ['OPENBLAS_NUM_THREADS'] = '1'
+                res = DaphneLib.daphne(ctypes.c_char_p(b"tmpdaphne.daphne"))
+                #os.environ['OPENBLAS_NUM_THREADS'] = '32'
+                
+        return self._variable_counter
 
     def _dfs_dag_nodes(self, dag_node: VALID_INPUT_TYPES)->str:
         """Uses Depth-First-Search to create code from DAG

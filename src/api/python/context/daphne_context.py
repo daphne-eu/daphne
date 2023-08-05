@@ -28,6 +28,7 @@ import torch as torch
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.operation_node import OperationNode
+from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -208,7 +209,7 @@ class DaphneContext(object):
                 elif d_type == np.uint64:
                     vtc = UI64
                 else:
-                    print(f'Unsupported numpy dtype in column "{column}" ({idx})')
+                    raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
                 
                 mats.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
 
@@ -355,17 +356,6 @@ class DaphneContext(object):
             'rows': rows, 'cols': cols, 'min': min, 'max':max, 'sparsity':sparsity, 'seed':seed}
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
-    
-    def sqlRegisterView(self, table_name:str, frame: Frame): 
-        """
-        Registers a frame for sql operation under the specified table name
-        :param table_name: Name for the registered Table
-        :param frame: Frame to create a table
-        """
-        table_name_str = f'"{table_name}"'
-
-        print(f'Registered as {table_name_str}: \n{frame}')
-        return OperationNode(self, 'registerView', [table_name_str, frame])
     
     def sql(self, query) -> Frame: 
         """
