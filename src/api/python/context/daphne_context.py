@@ -27,6 +27,7 @@ import torch as torch
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
+from api.python.operator.operation_node import OperationNode
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -354,3 +355,24 @@ class DaphneContext(object):
             'rows': rows, 'cols': cols, 'min': min, 'max':max, 'sparsity':sparsity, 'seed':seed}
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
+    
+    def sqlRegisterView(self, table_name:str, frame: Frame): 
+        """
+        Registers a frame for sql operation under the specified table name
+        :param table_name: Name for the registered Table
+        :param frame: Frame to create a table
+        """
+        table_name_str = f'"{table_name}"'
+
+        print(f'Registered as {table_name_str}: \n{frame}')
+        return OperationNode(self, 'registerView', [table_name_str, frame])
+    
+    def sql(self, query) -> Frame: 
+        """
+        Forwards and executes a sql query in Daphne
+        :param query: The full SQL Query to be executed
+        :return: A Frame based on the SQL Result
+        """
+        query_str = f'"{query}"'
+
+        return Frame(self, 'sql', [query_str])
