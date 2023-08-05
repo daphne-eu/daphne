@@ -35,6 +35,7 @@ from api.python.operator.nodes.do_while_loop import DoWhileLoop
 from api.python.operator.nodes.multi_return import MultiReturn
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 from api.python.operator.operation_node import OperationNode
+from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -219,7 +220,7 @@ class DaphneContext(object):
                 elif d_type == np.uint64:
                     vtc = UI64
                 else:
-                    print(f'Unsupported numpy dtype in column "{column}" ({idx})')
+                    raise TypeError(f'Unsupported numpy dtype in column "{column}" ({idx})')
                 
                 mats.append(Matrix(self, 'receiveFromNumpy', [upper, lower, len(mat), 1 , vtc], local_data=mat))
 
