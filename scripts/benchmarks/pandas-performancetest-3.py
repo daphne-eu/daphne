@@ -135,7 +135,7 @@ for run in range(runs):
         # Update the progress bar
         current_iteration += 1
         progress_percentage = (current_iteration / total_iterations) * 100
-        bar_length = 40
+        bar_length = 30
         completed_length = int(bar_length * current_iteration // total_iterations)
         progress_bar = "#" * completed_length + "-" * (bar_length - completed_length)
 

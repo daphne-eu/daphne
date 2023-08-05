@@ -16,33 +16,38 @@ from api.python.context.daphne_context import DaphneContext
 import pandas as pd
 import numpy as np
 
+# Initialize the Daphne Context
 dc = DaphneContext()
 
+# Create a Dataframe and Daphne Frame
 df = pd.DataFrame(np.random.randn(20, 5))
 F = dc.from_pandas(df)
 
-#F.print().compute()
-
+# Set the column labels in Daphne
 F = F.setColLabels(["label1", "label2", "label3", "label4", "label5"])
 print(F.compute())
 
+# Create a Prefix for the Column Labels (F1.label1)
 F = F.setColLabelsPrefix("F1")
 print(F.compute())
 
+# Transform the Frame to a Matrix
 M = F.toMatrix()
 print(M.compute())
 
-#print(F)
-
+# Create a new Frame
 df2 = pd.DataFrame(np.random.randn(20, 3))
 F2 = dc.from_pandas(df2)
 
+# Set the column labels
 F2 = F2.setColLabels(["label1", "label2", "label3"])
 print(F2.compute())
 
+# Add a new Prefix, to make the labels unique
 F2 = F2.setColLabelsPrefix("F2")
 print(F2.compute())
 
+# Do a horizontal bind of the two frames
 F2 = F2.cbind(F)
 
 F.delete()
@@ -50,5 +55,4 @@ M.delete()
 
 print(F2.compute())
 
-#print(F2)
 
