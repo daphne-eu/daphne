@@ -102,6 +102,7 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
                 pm.addPass(mlir::createCanonicalizerPass());
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+                pm.addPass(mlir::createCSEPass());
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createOptimizeColumnarOpPass());
             }
             if(userConfig_.explain_columnar)    

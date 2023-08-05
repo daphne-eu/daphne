@@ -21,16 +21,6 @@ using namespace mlir;
 
 namespace
 {
-    void eraseOps(std::vector<Operation*> ops){
-        for(auto op : ops){
-            if(!op->use_empty()) {
-                ops.push_back(op);
-                continue;
-            }
-            op->erase();
-        }
-    }
-
     void dfsIntersect(Operation *op, std::vector<Operation *> &intersects) {
         for (Operation *intersectFollowOp : op->getResult(0).getUsers()) {
             if (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(intersectFollowOp)) {
@@ -40,7 +30,7 @@ namespace
         }
     }
 
-    void insertBetween(mlir::OpBuilder &builder, Operation *op, std::vector<Operation *> &toDelete) {
+    void insertBetween(mlir::OpBuilder &builder, Operation *op) {
         mlir::Type vt = mlir::daphne::UnknownType::get(builder.getContext());
         mlir::Type resType = mlir::daphne::ColumnType::get(
             builder.getContext(), vt
@@ -114,13 +104,11 @@ namespace
             for (Operation *intersectFollowOp : commonIntersectOp->getResult(0).getUsers()) {
                 intersectFollowOp->replaceUsesOfWith(commonIntersectOp->getResult(0), betweenOp->getResult(0));
             }
-            toDelete.push_back(commonIntersectOp);
         } else {
             std::cout << std::boolalpha <<"Intersect" << intersectToRemove->getResult(0).getUsers().empty() << std::endl;
             for (Operation *intersectToRemoveFollowOp : intersectToRemove->getResult(0).getUsers()) {
                 intersectToRemoveFollowOp->replaceUsesOfWith(intersectToRemove->getResult(0), intersectToRemovePrevOp->getResult(0));
             }
-            toDelete.push_back(intersectToRemove);
             auto intersectLeftOp = intersectToRemove->getOperand(0).getDefiningOp();
             auto intersectRightOp = intersectToRemove->getOperand(1).getDefiningOp();
             if (intersectLeftOp == leOp || intersectRightOp == geOp) {
@@ -129,20 +117,15 @@ namespace
                 commonIntersectOp->replaceUsesOfWith(geOp->getResult(0), betweenOp->getResult(0));
             }
         }
-
-        toDelete.push_back(leOp);
-        toDelete.push_back(geOp);
     }
 
 //projectionPath (evtl updateProjectionPath extra)
-    void insertProjectionPath(mlir::OpBuilder &builder, Operation *op, std::vector<Operation *> &toDelete) {
+    void insertProjectionPath(mlir::OpBuilder &builder, Operation *op) {
         mlir::Type vt = mlir::daphne::UnknownType::get(builder.getContext());
         mlir::Type resType = mlir::daphne::ColumnType::get(
             builder.getContext(), vt
         );
         auto projectResult = op->getResult(0);
-        int successors = 0;
-        int deleteCount = 0;
         for (Operation * projectFollowOp : projectResult.getUsers()) {
             auto projectFollowOpResult = projectFollowOp->getResult(0);
             if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(projectFollowOp)) {
@@ -153,17 +136,7 @@ namespace
                 for (Operation *projectTwoFollowOp : projectFollowOpResult.getUsers()) {
                     projectTwoFollowOp->replaceUsesOfWith(projectFollowOpResult, projectionPathOp->getResult(0));
                 }
-
-                if (projectFollowOp->use_empty()) {
-                    toDelete.push_back(projectFollowOp);
-                    deleteCount++;
-                }
             }
-            
-            successors++;    
-        }
-        if (successors == deleteCount && successors > 0) {
-            toDelete.push_back(op);
         }
     }
 
@@ -178,23 +151,19 @@ namespace
 
 void OptimizeColumnarOpPass::runOnOperation() {
     func::FuncOp f = getOperation();
-    std::vector<Operation *> toDelete;
     
     f->walk([&](Operation *op) {
         if(llvm::dyn_cast<mlir::daphne::ColumnLeOp>(op)) {
             OpBuilder builder(op);
-            insertBetween(builder, op, toDelete);
+            insertBetween(builder, op);
         } else if(llvm::dyn_cast<mlir::daphne::ColumnGeOp>(op)) {
             OpBuilder builder(op);
-            insertBetween(builder, op, toDelete);
+            insertBetween(builder, op);
         } else if(llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
             OpBuilder builder(op);
-            insertProjectionPath(builder, op, toDelete);
+            insertProjectionPath(builder, op);
         }
-    });
-
-    eraseOps(toDelete);
-    
+    });    
 }
 
 std::unique_ptr<Pass> daphne::createOptimizeColumnarOpPass()

@@ -90,7 +90,8 @@ def Daphne_CreateFrameOp : Daphne_Op<"createFrame", [
     SameVariadicOperandSize,
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    Pure
 ]> {
     let arguments = (ins Variadic<MatrixOrU>:$cols, Variadic<StrScalar>:$labels);
     let results = (outs FrameOrU:$res);
@@ -318,14 +319,15 @@ def Daphne_EwGeOp  : Daphne_EwCmpOp<"ewGe" , AnyScalar>;
 class Daphne_ColumnBinaryOp<string name, Type scalarType, list<Trait> traits = []>
 : Daphne_Op<name, !listconcat(traits, [
     DataTypeFromArgs,
-    CastArgsToResType
+    CastArgsToResType,
+    Pure
 ])> {
     let arguments = (ins AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[ColumnOf<[scalarType]>, Unknown]>:$res);
 }
 
 class Daphne_ColumnCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
-: Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs])> {
+: Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs, Pure])> {
     
 }
 
@@ -339,7 +341,8 @@ def Daphne_ColumnGeOp  : Daphne_ColumnCmpOp<"columnGe" , AnyScalar>;
 def Daphne_ColumnProjectOp
 : Daphne_Op<"columnProject", [
     TypeFromFirstArg,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins Column:$data, Column:$pos);
     let results = (outs Column:$res);
@@ -347,14 +350,15 @@ def Daphne_ColumnProjectOp
 
 def Daphne_ColumnProjectionPathOp : Daphne_Op<"columnProjectionPath", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    Pure
 ]> {
     let arguments = (ins Column:$data, Variadic<Column>:$posLists);
     let results = (outs Column:$res);
 }
 
 class Daphne_ColumnAggOp<string name, Type scalarType, list<Trait> traits = []>
-: Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg])> {
+: Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg, Pure])> {
     let arguments = (ins ColumnOf<[scalarType]>:$arg);
     let results = (outs ColumnOf<[scalarType]>:$res);
 }
@@ -368,14 +372,15 @@ def Daphne_ColumnAggStddevOp : Daphne_ColumnAggOp<"columnStddev", NumScalar, [Va
 
 def Daphne_ColumnJoinOp : Daphne_Op<"columnEquiJoin", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    DeclareOpInterfaceMethods<InferShapeOpInterface>
+    DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    Pure
 ]> {
     let arguments = (ins ColumnOrU:$lhs, ColumnOrU:$rhs);
     let results = (outs ColumnOrU:$resLhs, ColumnOrU:$resRhs);
 }
 
 def Daphne_ColumnBetweenOp : Daphne_Op<"columnBetween", 
-    [TypeFromFirstArg]> {
+    [TypeFromFirstArg, Pure]> {
     let arguments = (ins Column:$data, AnyScalar:$lower, AnyScalar:$upper);
     let results = (outs Column:$res);
 }
@@ -658,7 +663,7 @@ def Daphne_ExtractColOp : Daphne_Op<"extractCol", [
     DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<VectorizableOpInterface>,
-    NumRowsFromArg, NumColsFromIthArgNumRows<1>, CUDASupport
+    NumRowsFromArg, NumColsFromIthArgNumRows<1>, CUDASupport, Pure
 ]> {
     let summary = "Copies the specified columns from the argument to the result.";
 
@@ -1267,7 +1272,8 @@ def Daphne_ToStringOp : Daphne_Op<"toString", [DataTypeSca, ValueTypeStr]> {
 
 def Daphne_CastOp : Daphne_Op<"cast", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     // Note that the requested result type is not an argument, but should be
     // specified as the output type when creating a CastOp.
@@ -1301,7 +1307,8 @@ def Daphne_CastOp : Daphne_Op<"cast", [
 
 def Daphne_PositionListBitmapConverterOp : Daphne_Op<"positionListBitmapConverter", [
     TypeFromFirstArg,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins Matrix:$arg, Size:$numRows);
     let results = (outs Matrix:$res);
@@ -1309,7 +1316,8 @@ def Daphne_PositionListBitmapConverterOp : Daphne_Op<"positionListBitmapConverte
 
 def Daphne_BitmapPositionListConverterOp : Daphne_Op<"bitmapPositionListConverter", [
     TypeFromFirstArg,
-    ShapeFromArg
+    ShapeFromArg,
+    Pure
 ]> {
     let arguments = (ins Matrix:$arg);
     let results = (outs Matrix:$res);
