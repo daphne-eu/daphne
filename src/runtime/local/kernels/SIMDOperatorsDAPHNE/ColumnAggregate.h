@@ -31,7 +31,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData>
+template<class DTRes, class DTData, typename VE>
 struct ColumnAggregate {
     static void apply(AggOpCode opCode, DTRes *& res, const DTData * data, DCTX(ctx)) = delete;
 };
@@ -42,7 +42,23 @@ struct ColumnAggregate {
 
 template<class DTRes, class DTData>
 void columnAgg(AggOpCode opCode, DTRes *& res, const DTData * data, DCTX(ctx)) {
-    ColumnAggregate<DTRes, DTData>::apply(opCode, res, data, ctx);
+    switch (ctx->getUserConfig().vector_extension) {
+        case VectorExtensions::AVX512:
+            ColumnAggregate<DTRes, DTData, tsl::avx512>::apply(opCode, res, data, ctx);
+            break;
+        case VectorExtensions::AVX2:
+            ColumnAggregate<DTRes, DTData, tsl::avx2>::apply(opCode, res, data, ctx);
+            break;
+        //case VectorExtensions::SSE:
+        //    ColumnAggregate<DTRes, DTData, tsl::sse>::apply(opCode, res, data, ctx);
+        //    break;
+        case VectorExtensions::SCALAR:
+            ColumnAggregate<DTRes, DTData, tsl::scalar>::apply(opCode, res, data, ctx);
+            break;
+        default:
+            throw std::runtime_error("Unknown vector extension");
+    }
+    //ColumnAggregate<DTRes, DTData>::apply(opCode, res, data, ctx);
 }
 
 // ****************************************************************************
@@ -53,10 +69,10 @@ void columnAgg(AggOpCode opCode, DTRes *& res, const DTData * data, DCTX(ctx)) {
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnAggregate<tuddbs::Column<VT>, tuddbs::Column<VT>> {
+template<typename VT, typename VE>
+struct ColumnAggregate<tuddbs::Column<VT>, tuddbs::Column<VT>, VE> {
     static void apply(AggOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, tsl::avx512>;
+        using ps = typename tsl::simd<VT, VE>;
         switch (opCode) {
             case AggOpCode::SUM: {
                 tuddbs::daphne_aggregate<ps, tsl::functors::add, tsl::functors::hadd> aggregate;

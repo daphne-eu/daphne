@@ -21,6 +21,7 @@
     "explain_vectorized": false,
     "explain_obj_ref_mgnt": false,
     "taskPartitioningScheme": "STATIC",
+    "vector_extension": "SCALAR",
     "numberOfThreads": -1,
     "minimumTaskSize": 1,
     "library_paths": [],

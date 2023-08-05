@@ -31,7 +31,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTDataLhs, class DTDataRhs>
+template<class DTRes, class DTDataLhs, class DTDataRhs, typename VE>
 struct ColumnCalc {
     static void apply(BinaryOpCode opCode, DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) = delete;
 };
@@ -42,7 +42,23 @@ struct ColumnCalc {
 
 template<class DTRes, class DTDataLhs, class DTDataRhs>
 void columnBinary(BinaryOpCode opCode, DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
-    ColumnCalc<DTRes, DTDataLhs, DTDataRhs>::apply(opCode, res, data_lhs, data_rhs, ctx);
+    switch (ctx->getUserConfig().vector_extension) {
+        case VectorExtensions::AVX512:
+            ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::avx512>::apply(opCode, res, data_lhs, data_rhs, ctx);
+            break;
+        case VectorExtensions::AVX2:
+            ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::avx2>::apply(opCode, res, data_lhs, data_rhs, ctx);
+            break;
+        //case VectorExtensions::SSE:
+        //    ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::sse>::apply(opCode, res, data_lhs, data_rhs, ctx);
+        //    break;
+        case VectorExtensions::SCALAR:
+            ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::scalar>::apply(opCode, res, data_lhs, data_rhs, ctx);
+            break;
+        default:
+            throw std::runtime_error("Unknown vector extension");
+    }
+    //ColumnCalc<DTRes, DTDataLhs, DTDataRhs>::apply(opCode, res, data_lhs, data_rhs, ctx);
 }
 
 // ****************************************************************************
@@ -53,10 +69,10 @@ void columnBinary(BinaryOpCode opCode, DTRes *& res, const DTDataLhs * data_lhs,
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnCalc<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>> {
+template<typename VT, typename VE>
+struct ColumnCalc<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>, VE> {
     static void apply(BinaryOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data_lhs, const tuddbs::Column<VT> * data_rhs, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, tsl::avx512>;
+        using ps = typename tsl::simd<VT, VE>;
         switch (opCode) {
             case BinaryOpCode::ADD: {
                 tuddbs::daphne_calc<ps, tsl::functors::add> calc;

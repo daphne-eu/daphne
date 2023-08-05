@@ -30,7 +30,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
+template<class DTRes, class DTData, class DTPos, typename VE>
 struct ColumnProject {
     static void apply(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) = delete;
 };
@@ -41,7 +41,23 @@ struct ColumnProject {
 
 template<class DTRes, class DTData, class DTPos>
 void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) {
-    ColumnProject<DTRes, DTData, DTPos>::apply(res, data, pos, ctx);
+    switch (ctx->getUserConfig().vector_extension) {
+        case VectorExtensions::AVX512:
+            ColumnProject<DTRes, DTData, DTPos, tsl::avx512>::apply(res, data, pos, ctx);
+            break;
+        //case VectorExtensions::AVX2:
+        //    ColumnProject<DTRes, DTData, DTPos, tsl::avx2>::apply(res, data, pos, ctx);
+        //    break;
+        //case VectorExtensions::SSE:
+        //    ColumnProject<DTRes, DTData, DTPos, tsl::sse>::apply(res, data, pos, ctx);
+        //    break;
+        case VectorExtensions::SCALAR:
+            ColumnProject<DTRes, DTData, DTPos, tsl::scalar>::apply(res, data, pos, ctx);
+            break;
+        default:
+            throw std::runtime_error("Unknown vector extension");
+    }
+    //ColumnProject<DTRes, DTData, DTPos>::apply(res, data, pos, ctx);
 }
 
 // ****************************************************************************
@@ -52,10 +68,10 @@ void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ct
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT, typename VTPos>
-struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VTPos>> {
+template<typename VT, typename VTPos, typename VE>
+struct ColumnProject<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VTPos>, VE> {
     static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VTPos> * pos, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, tsl::avx512>;
+        using ps = typename tsl::simd<VT, VE>;
         tuddbs::daphne_project<ps> project;
         const tuddbs::Column<VT> * pos_cast = reinterpret_cast<const tuddbs::Column<VT> *>(pos);
         res = project(data, pos_cast);

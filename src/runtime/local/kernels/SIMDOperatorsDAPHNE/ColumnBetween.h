@@ -30,7 +30,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTData, typename VTL, typename VTU>
+template<class DTRes, class DTData, typename VTL, typename VTU, typename VE>
 struct ColumnBetween {
     static void apply(DTRes *& res, const DTData * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) = delete;
 };
@@ -41,7 +41,23 @@ struct ColumnBetween {
 
 template<class DTRes, class DTData, typename VTL, typename VTU>
 void columnBetween(DTRes *& res, const DTData * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) {
-    ColumnBetween<DTRes, DTData, VTL, VTU>::apply(res, data, lower_bound, upper_bound, ctx);
+    switch (ctx->getUserConfig().vector_extension) {
+        case VectorExtensions::AVX512:
+            ColumnBetween<DTRes, DTData, VTL, VTU, tsl::avx512>::apply(res, data, lower_bound, upper_bound, ctx);
+            break;
+        case VectorExtensions::AVX2:
+            ColumnBetween<DTRes, DTData, VTL, VTU, tsl::avx2>::apply(res, data, lower_bound, upper_bound, ctx);
+            break;
+        //case VectorExtensions::SSE:
+        //    ColumnBetween<DTRes, DTData, VTL, VTU, tsl::sse>::apply(res, data, lower_bound, upper_bound, ctx);
+        //    break;
+        case VectorExtensions::SCALAR:
+            ColumnBetween<DTRes, DTData, VTL, VTU, tsl::scalar>::apply(res, data, lower_bound, upper_bound, ctx);
+            break;
+        default:
+            throw std::runtime_error("Unknown vector extension");
+    }
+    //ColumnBetween<DTRes, DTData, VTL, VTU>::apply(res, data, lower_bound, upper_bound, ctx);
 }
 
 // ****************************************************************************
@@ -52,10 +68,10 @@ void columnBetween(DTRes *& res, const DTData * data, const VTL lower_bound, con
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT, typename VTL, typename VTU>
-struct ColumnBetween<tuddbs::Column<VT>, tuddbs::Column<VT>, VTL, VTU> {
+template<typename VT, typename VTL, typename VTU, typename VE>
+struct ColumnBetween<tuddbs::Column<VT>, tuddbs::Column<VT>, VTL, VTU, VE> {
     static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) {
-        using ps = typename tsl::simd<VTL, tsl::avx512>;
+        using ps = typename tsl::simd<VTL, VE>;
         tuddbs::daphne_between<ps> between;
         res = between(data, lower_bound, upper_bound);   
     }

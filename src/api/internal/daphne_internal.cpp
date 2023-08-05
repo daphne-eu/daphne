@@ -25,6 +25,7 @@
 #include <parser/daphnedsl/DaphneDSLParser.h>
 #include "compiler/execution/DaphneIrExecutor.h"
 #include <runtime/local/vectorized/LoadPartitioning.h>
+#include <runtime/local/kernels/SIMDOperatorsDAPHNE/VectorExtensions.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
 
@@ -209,6 +210,17 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     );
 
     // Columnar operations
+    static opt<VectorExtensions> vectorExtension("vector_extension",
+            cat(daphneOptions), desc("Choose vector extension to use for columnar operations when enabled."),
+            values(
+                clEnumVal(SCALAR, "Using scalar instructions"),
+                clEnumVal(SSE, "Using SSE instructions"),
+                clEnumVal(AVX2, "Using AVX2 instructions"),
+                clEnumVal(AVX512, "Using AVX512 instructions")
+            ),
+            init(SCALAR)
+    );
+
     static opt<bool> useColumnar(
             "columnar", cat(daphneOptions),
             desc(
@@ -407,6 +419,7 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.debugMultiThreading = debugMultiThreading;
     user_config.prePartitionRows = prePartitionRows;
     user_config.distributedBackEndSetup = distributedBackEndSetup;
+    user_config.vector_extension = vectorExtension;
     user_config.use_columnar = useColumnar;
     user_config.use_columnar_reduce = useColumnarReduce;
     user_config.use_columnar_rewrite = useColumnarRewrite;

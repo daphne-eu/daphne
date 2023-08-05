@@ -32,7 +32,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTLhs, typename VTRhs>
+template<class DTRes, class DTLhs, typename VTRhs, typename VE>
 struct ColumnSelect {
     static void apply(SelectOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) = delete;
 };
@@ -43,7 +43,23 @@ struct ColumnSelect {
 
 template<class DTRes, class DTLhs, typename VTRhs>
 void columnSelect(SelectOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
-    ColumnSelect<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    switch (ctx->getUserConfig().vector_extension) {
+        case VectorExtensions::AVX512:
+            ColumnSelect<DTRes, DTLhs, VTRhs, tsl::avx512>::apply(opCode, res, lhs, rhs, ctx);
+            break;
+        case VectorExtensions::AVX2:
+            ColumnSelect<DTRes, DTLhs, VTRhs, tsl::avx2>::apply(opCode, res, lhs, rhs, ctx);
+            break;
+        //case VectorExtensions::SSE:
+        //    ColumnSelect<DTRes, DTLhs, VTRhs, tsl::sse>::apply(opCode, res, lhs, rhs, ctx);
+        //    break;
+        case VectorExtensions::SCALAR:
+            ColumnSelect<DTRes, DTLhs, VTRhs, tsl::scalar>::apply(opCode, res, lhs, rhs, ctx);
+            break;
+        default:
+            throw std::runtime_error("Unknown vector extension");
+    }
+    //ColumnSelect<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************
@@ -54,17 +70,10 @@ void columnSelect(SelectOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rh
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT>
-struct ColumnSelect<tuddbs::Column<VT>, tuddbs::Column<VT>, VT> {
+template<typename VT, typename VE>
+struct ColumnSelect<tuddbs::Column<VT>, tuddbs::Column<VT>, VT, VE> {
     static void apply(SelectOpCode opCode, tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * lhs, VT rhs, DCTX(ctx)) {
-        VectorExtensions ext = ctx->getUserConfig().vector_extension;
-        /**switch (ext)
-        {
-            case VectorExtensions::AVX512:
-                using ps = typename tsl::simd<VT, tsl::avx512>;
-                break;
-        }**/
-        using ps = typename tsl::simd<VT, tsl::avx512>;
+        using ps = typename tsl::simd<VT, VE>;
 
         switch (opCode)
         {

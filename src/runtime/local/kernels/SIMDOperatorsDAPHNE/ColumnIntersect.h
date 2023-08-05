@@ -30,7 +30,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 
-template<class DTRes, class DTPosLhs, class DTPosRhs>
+template<class DTRes, class DTPosLhs, class DTPosRhs, typename VE>
 struct ColumnIntersect {
     static void apply(DTRes *& res, const DTPosLhs * pos_lhs, const DTPosRhs * pos_rhs, DCTX(ctx)) = delete;
 };
@@ -41,7 +41,23 @@ struct ColumnIntersect {
 
 template<class DTRes, class DTPosLhs, class DTPosRhs>
 void columnIntersect(DTRes *& res, const DTPosLhs * pos_lhs, const DTPosRhs * pos_rhs, DCTX(ctx)) {
-    ColumnIntersect<DTRes, DTPosLhs, DTPosRhs>::apply(res, pos_lhs, pos_rhs, ctx);
+    switch (ctx->getUserConfig().vector_extension) {
+        case VectorExtensions::AVX512:
+            ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::avx512>::apply(res, pos_lhs, pos_rhs, ctx);
+            break;
+        case VectorExtensions::AVX2:
+            ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::avx2>::apply(res, pos_lhs, pos_rhs, ctx);
+            break;
+        //case VectorExtensions::SSE:
+        //    ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::sse>::apply(res, pos_lhs, pos_rhs, ctx);
+        //    break;
+        case VectorExtensions::SCALAR:
+            ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::scalar>::apply(res, pos_lhs, pos_rhs, ctx);
+            break;
+        default:
+            throw std::runtime_error("Unknown vector extension");
+    }
+    //ColumnIntersect<DTRes, DTPosLhs, DTPosRhs>::apply(res, pos_lhs, pos_rhs, ctx);
 }
 
 // ****************************************************************************
@@ -52,10 +68,10 @@ void columnIntersect(DTRes *& res, const DTPosLhs * pos_lhs, const DTPosRhs * po
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VTRes, typename VTPos1, typename VTPos2>
-struct ColumnIntersect<tuddbs::Column<VTRes>, tuddbs::Column<VTPos1>, tuddbs::Column<VTPos2>> {
+template<typename VTRes, typename VTPos1, typename VTPos2, typename VE>
+struct ColumnIntersect<tuddbs::Column<VTRes>, tuddbs::Column<VTPos1>, tuddbs::Column<VTPos2>, VE> {
     static void apply(tuddbs::Column<VTRes> *& res, const tuddbs::Column<VTPos1> * pos_lhs, const tuddbs::Column<VTPos2> * pos_rhs, DCTX(ctx)) {
-        using ps = typename tsl::simd<VTPos1, tsl::avx512>;
+        using ps = typename tsl::simd<VTPos1, VE>;
         tuddbs::daphne_intersect<ps> intersect;
         res = intersect(pos_lhs, pos_rhs);   
     }
