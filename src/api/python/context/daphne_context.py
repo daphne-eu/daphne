@@ -271,16 +271,18 @@ class DaphneContext(object):
         # Check if the tensor is 2D or higher dimensional
         if len(original_shape) == 2:
             # If 2D, handle as a matrix, convert to numpy array
-            mat = tensor.numpy()
+            mat = tensor.numpy() # This function is only zero copy, if the tensor is shared within the CPU
             matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
         else:
             # If higher dimensional, reshape to 2D and handle as a matrix
             original_tensor = tensor.numpy()  # Store the original numpy representation
             reshaped_tensor = original_tensor.reshape((original_shape[0], -1))  # Reshape to 2D using NumPy's zero copy reshape
 
+            #reshaped_tensor = tf.reshape(tensor, (original_shape[0], -1))
+
             # If verbose, check if the original and reshaped tensors share memory and print the result
             if verbose:
-                shares_memory = np.shares_memory(original_tensor, reshaped_tensor)
+                shares_memory = np.shares_memory(tensor, reshaped_tensor)
                 print(f"Original and reshaped tensors share memory: {shares_memory}\n")
 
             # Use the existing from_numpy method for the reshaped 2D array
@@ -308,12 +310,12 @@ class DaphneContext(object):
         # Check if the tensor is 2D or higher dimensional
         if tensor.dim() == 2:
             # If 2D, handle as a matrix, convert to numpy array
-            mat = tensor.numpy()
+            mat = tensor.numpy(force=True)
             matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
         else:
             # If higher dimensional, reshape to 2D and handle as a matrix
-            original_tensor = tensor.numpy()  # Store the original numpy representation
-            reshaped_tensor = torch.reshape(tensor, (original_shape[0], -1)).numpy()  # Reshape to 2D
+            original_tensor = tensor.numpy(force=True)  # Store the original numpy representation
+            reshaped_tensor = original_tensor.reshape((original_shape[0], -1)) # Reshape to 2D
 
             # If verbose, check if the original and reshaped tensors share memory and print the result
             if verbose:
