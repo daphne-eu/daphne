@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script will test the performance of importing tensors from python into daphne with the from_tensorflow function
+# This script benchmarks the performance of importing tensors from python into daphne with the from_tensorflow function
+# Execution Times for the Tensorflow Tensor Reshape Execution, Numpy Execution time and overall execution are saved
+# Results are saved to FromTensorflow-PerformaceTest.csv and Avg-FromTensorflow-PerformaceTest.csv
+
 
 from api.python.context.daphne_context import DaphneContext
 

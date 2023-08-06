@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script benchmarks the performance of the daphne compute() function for pandas dataframes
+# Execution Times for the execute() function, the computing operation of building the dataframe and overall compute() function are saved
+# Results are saved to Pandas-Compute-PerformaceTest.csv and Avg-Pandas-Compute-PerformaceTest.csv
+
 from api.python.context.daphne_context import DaphneContext
 import pandas as pd
 import numpy as np

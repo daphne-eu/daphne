@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# This script demonstarted the capability of importing dataframes in various types from python into daphne with the from_pandas function
+# Dataframes such as Series, Sparse Dataframe and Categorical Dataframe are converted to regular dataframes to be supported
+# rbind() is performed as a computation 
+# Results are printed in the console
+
 from api.python.context.daphne_context import DaphneContext
 import pandas as pd
 import numpy as np
@@ -39,7 +44,7 @@ for df in dataframes:
     print("Dataframe Size:",df.size)
     # Transfer data to DaphneLib
     F = dc.from_pandas(df)
-    # Appending and cartesian calculation
+    # Appending 
     F = F.rbind(F)
     F.compute()
     print(F.compute())
@@ -54,7 +59,7 @@ for s in series:
     print("Series Size:",s.size)
     # Transfer data to DaphneLib
     F = dc.from_pandas(s)
-    # Appending and cartesian calculation
+    # Appending
     F = F.rbind(F)
     F.compute()
     print(F.compute())
@@ -69,7 +74,7 @@ for sdf in sparse_dataframes:
     print("Sparse Dataframe Size:",sdf.size)
     # Transfer data to DaphneLib
     F = dc.from_pandas(sdf)
-    # Appending and cartesian calculation
+    # Appending 
     F = F.rbind(F)
     F.compute()
     print(F.compute())
@@ -84,7 +89,7 @@ for cdf in categorical_dataframes:
     cdf = cdf.astype("category")
     # Transfer data to DaphneLib
     F = dc.from_pandas(cdf, verbose=True)
-    # Appending and cartesian calculation
+    # Appending
     F = F.rbind(F)
     F.compute()
     print(F.compute())
@@ -98,7 +103,7 @@ print("\n\n###\n### MultiIndex Experiments:\n###\n")
 for midf in multiindex_dataframes:
     # Transfer data to DaphneLib
     F = dc.from_pandas(midf)
-    # Appending and cartesian calculation
+    # Appending 
     F = F.rbind(F)
     F.compute()
     print(F.compute())

@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script will test the performance of the daphne compute fuction for pytorch tensors
+# This script benchmarks the performance of the daphne compute() fuction for pytorch tensors
+# Execution Times for the execute() function execution, the PyTorch Tensor Transformation execution and overall execution are saved
+# Results are saved to PyTorch-Compute-PerformaceTest.csv and Avg-PyTorch-Compute-PerformaceTest.csv
 
 import torch
 
