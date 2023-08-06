@@ -54,3 +54,11 @@ MAKE_TEST_CASE("scalar_ops")
 MAKE_TEST_CASE("frame_cartesian")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
+
+MAKE_TEST_CASE("data_transfer_pandas_2")
+MAKE_TEST_CASE("data_transfer_tensorflow_1")
+MAKE_TEST_CASE("data_transfer_pytorch_1")
+
+MAKE_TEST_CASE("frame_innerJoin")
+MAKE_TEST_CASE("frame_setColLabels")
+MAKE_TEST_CASE("frame_setColLabelsPrefix")
