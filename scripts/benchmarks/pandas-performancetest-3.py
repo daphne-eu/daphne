@@ -28,8 +28,8 @@ import re
 runs = 10
 
 # Creating a list of sizes for the objects
-sizes = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000]#, 10000000, 50000000]
-cols = 25
+sizes = [50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000]#, 10000000], 50000000]
+cols = 30
 
 # Different Data Types for the benchmark
 dtypes_list = [np.double, np.float64, np.float32, np.int8, np.int16, np.int32, np.int64, np.uint8, np.uint16, np.uint32, np.uint64]
@@ -143,13 +143,10 @@ for run in range(runs):
         completed_length = int(bar_length * current_iteration // total_iterations)
         progress_bar = "#" * completed_length + "-" * (bar_length - completed_length)
 
-        
-        # Delete objects that are no longer need
-        #del df
 
         # Delete the Object in Daphne to prevent Memory Overflow
         F.delete()
-        #del F
+        del F
 
         print(f'Progress: [{progress_bar}] {progress_percentage:.2f}% - Run {run + 1} - Total Size Processed: {total_size_gb:.3f} GB', end="\r")
 

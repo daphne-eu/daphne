@@ -29,7 +29,7 @@ import re
 runs = 15
 
 # Creating a list of sizes for the objects
-sizes = [1, 5, 10, 50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000]
+sizes = [50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000]
 cols = 20
 
 # Different Data Types for the benchmark

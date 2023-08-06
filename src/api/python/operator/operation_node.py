@@ -77,12 +77,24 @@ class OperationNode(DAGNode):
         self._brackets = brackets
         self._output_type = output_type
         self._deleted = False
-    """
-    def __del__(self): 
+
+    """ 
+    Todo: 
+    A __del__ Function could be added that would allow an automatic deletion of Daphne Objects 
+    through the Python Garbage Collector. At the moment this does not work, 
+    as it deletes objects, still needed (like Matrixes used as Columns for Frames). 
+
+    A logic to make __del__ work would make the use of this extension much more convenient.
+    
+
+    def __del__(self):
         self.delete()
     """
 
     def delete(self):
+        """
+        Function to manually delete Daphne Objects
+        """
         if self._deleted:
             return
 
@@ -104,6 +116,24 @@ class OperationNode(DAGNode):
         self._deleted = True
 
     def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None, useIndexColumn=False):
+        """
+        Compute function for processing the Daphne Object or operation node and returning the results.
+        The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
+        to produce a pandas DataFrame, numpy array, or tensors.
+
+        :param type: Execution type, either "shared memory" for in-memory data transfer or "files" for file-based data transfer.
+        :param verbose: If True, outputs verbose logs, including timing information for each step.
+        :param isTensorflow: If True and the result is a matrix, the output will be converted to a TensorFlow tensor.
+        :param isPytorch: If True and the result is a matrix, the output will be converted to a PyTorch tensor.
+        :param shape: If provided and the result is a matrix, it defines the shape to reshape the resulting tensor (either TensorFlow or PyTorch).
+        :param useIndexColumn: If True and the result is a DataFrame, uses the 'index' column as the DataFrame's index.
+
+        :return: Depending on the parameters and the operation's output type, this function can return:
+            - A pandas DataFrame for frame outputs.
+            - A numpy array for matrix outputs.
+            - A scalar value for scalar outputs.
+            - TensorFlow or PyTorch tensors if `isTensorflow` or `isPytorch` is set to True respectively.
+        """
         if self._result_var is None:
 
             if(verbose):
