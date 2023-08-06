@@ -264,7 +264,7 @@ class Frame(OperationNode):
         :return: A Matrix with the values of the datatype
         """
         return Matrix(self.daphne_context, f"as.matrix<{data_type}>", [self])
-        
+
     def nrow(self) -> 'Scalar':
         """
         :return: Scalar containing number of rows of frame

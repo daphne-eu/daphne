@@ -25,6 +25,7 @@ __all__ = ["Matrix"]
 
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.scalar import Scalar
+from api.python.operator.nodes.multi_return import MultiReturn
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS, TMP_PATH
 
@@ -202,6 +203,18 @@ class Matrix(OperationNode):
 
     def t(self) -> 'OperationNode':
         return Matrix(self.daphne_context, 't', [self])
+    
+    def cbind(self, other) -> 'Matrix':
+        return Matrix(self.daphne_context, "cbind", [self, other])
+    
+    """ Eigen is not Working yet, as the MultiReturn Type is not Working yet
+    def eigen(self, eValues: 'Matrix', eVectors: 'Matrix') -> 'Matrix': 
+
+        return MultiReturn(self.daphne_context, 'eigen', unnamed_input_nodes=[self], output_nodes=[eValues, eVectors])
+    """
+    
+    def replace(self, pattern, replacement) -> 'Matrix':
+        return Matrix(self.daphne_context, 'replace', [self, pattern, replacement])
         
     def max(self, other: 'Matrix') -> 'Matrix':
         """Calculate elementwise max of two matrices.
