@@ -40,6 +40,9 @@ import json
 import os
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
 
+libc = ctypes.CDLL(None)
+free = libc.free
+
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
@@ -73,14 +76,32 @@ class OperationNode(DAGNode):
         self._is_python_local_data = is_python_local_data
         self._brackets = brackets
         self._output_type = output_type
+        self._deleted = False
+    """
+    def __del__(self): 
+        self.delete()
+    """
 
     def delete(self):
+        if self._deleted:
+            return
+
         #print(f"Object '{self}' deleted")
+        
         self._script = DaphneDSLScript(self.daphne_context)
         self._script.build_code(self, type="free memory")
 
         self._script.execute()
         self._script.clear(self)
+        
+        # Fetch the current result from DAPHNE
+        daphneLibResult = DaphneLib.getResult()
+
+        # Call the newly bound C++ function to free memory
+        DaphneLib.freeDaphneMemory(daphneLibResult)
+
+        # Mark as deleted to avoid duplicate frees
+        self._deleted = True
 
     def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None, useIndexColumn=False):
         if self._result_var is None:
