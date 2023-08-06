@@ -96,8 +96,6 @@ class DaphneDSLScript:
         self._variable_counter = 0
 
     def execute(self):
-            print(self.daphnedsl_script)
-
             temp_out_file = open("tmpdaphne.daphne", "w")
             temp_out_file.writelines(self.daphnedsl_script)
             temp_out_file.close()

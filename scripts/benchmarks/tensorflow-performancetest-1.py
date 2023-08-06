@@ -63,7 +63,7 @@ for idx, run in enumerate(range(runs)):
             print(f"Tensor length of Dim3:{tensor3d.get_shape()[2]}\n")
 
             # Transfer Tensor to DaphneLib
-            F = dc.from_tensorflow(tensor3d, verbose=True)
+            T = dc.from_tensorflow(tensor3d, verbose=True)
         
         # Calculate the sizes for the tensor in MB and GB
         tensor_size_bytes = tensor3d.numpy().size * 8  # assuming float64 data type
