@@ -43,7 +43,7 @@ testData = []
 # Initialize to prevent "cold start effects" for the Performance Test
 for init_run in range(5):
     tensor2d = torch.tensor(np.random.randn(3,3))
-    dc.from_tensorflow(tensor2d)
+    dc.from_pytorch(tensor2d)
 
 # Set the iterations for the progress bar
 total_iterations = len(sizes) * runs
