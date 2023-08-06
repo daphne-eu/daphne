@@ -118,27 +118,33 @@ namespace
             }
         }
     }
+    
 
-//projectionPath (evtl updateProjectionPath extra)
-    void insertProjectionPath(mlir::OpBuilder &builder, Operation *op) {
-        mlir::Type vt = mlir::daphne::UnknownType::get(builder.getContext());
-        mlir::Type resType = mlir::daphne::ColumnType::get(
-            builder.getContext(), vt
-        );
-        auto projectResult = op->getResult(0);
-        for (Operation * projectFollowOp : projectResult.getUsers()) {
-            auto projectFollowOpResult = projectFollowOp->getResult(0);
-            if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(projectFollowOp)) {
-                builder.setInsertionPointAfter(projectFollowOp);
-                std::vector<mlir::Value> posLists{projectFollowOp->getOperand(1), op->getOperand(1)};
-                auto projectionPathOp = builder.create<daphne::ColumnProjectionPathOp>(builder.getUnknownLoc(), resType, op->getOperand(0), posLists);
-            
-                for (Operation *projectTwoFollowOp : projectFollowOpResult.getUsers()) {
-                    projectTwoFollowOp->replaceUsesOfWith(projectFollowOpResult, projectionPathOp->getResult(0));
+    struct ColumnarOpOptimization : public RewritePattern{
+
+        ColumnarOpOptimization(MLIRContext * context, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
+        {}
+
+        LogicalResult matchAndRewrite(
+            Operation *op,
+            PatternRewriter &rewriter
+        ) const override
+        {
+            if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
+                Operation * prevOp = op->getOperand(0).getDefiningOp();
+                std::vector<mlir::Value> posLists{op->getOperand(1)};
+                for (mlir::Value posList : prevOp->getOperands().drop_front(1)) {
+                    posLists.push_back(posList);
                 }
-            }
+                auto projectionPathOp = rewriter.replaceOpWithNewOp<daphne::ColumnProjectionPathOp>(op, op->getResult(0).getType(), op->getOperand(0), posLists);
+                for (Operation *projectFollowOp : op->getResult(0).getUsers()) {
+                    projectFollowOp->replaceUsesOfWith(op->getResult(0), projectionPathOp->getResult(0));
+                }
+                return success();
+            }            
         }
-    }
+    };
 
     struct OptimizeColumnarOpPass : public PassWrapper<OptimizeColumnarOpPass, OperationPass<func::FuncOp>> {
 
@@ -150,7 +156,7 @@ namespace
 }
 
 void OptimizeColumnarOpPass::runOnOperation() {
-    func::FuncOp f = getOperation();
+    /**func::FuncOp f = getOperation();
     
     f->walk([&](Operation *op) {
         if(llvm::dyn_cast<mlir::daphne::ColumnLeOp>(op)) {
@@ -163,7 +169,28 @@ void OptimizeColumnarOpPass::runOnOperation() {
             OpBuilder builder(op);
             insertProjectionPath(builder, op);
         }
-    });    
+    });  **/
+
+    auto module = getOperation();
+
+    RewritePatternSet patterns(&getContext());
+    ConversionTarget target(getContext());
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
+    target.addLegalOp<ModuleOp, func::FuncOp>();
+    target.addDynamicallyLegalOp<mlir::daphne::ColumnProjectOp>([&](Operation *op) {
+        Operation * prevOp = op->getOperand(0).getDefiningOp();
+        if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOp)) {
+            return false;
+        } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectionPathOp>(op)) {
+            return false;
+        }
+        return true;
+    });
+
+    patterns.add<ColumnarOpOptimization>(&getContext());
+
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+        signalPassFailure();  
 }
 
 std::unique_ptr<Pass> daphne::createOptimizeColumnarOpPass()
