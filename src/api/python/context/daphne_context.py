@@ -79,6 +79,15 @@ class DaphneContext(object):
         if(verbose):
             # Time the execution for the whole processing
             start_time = time.time()
+        
+        # Handle the dimensionality of the matrix
+        if mat.ndim == 1:
+            rows = mat.shape[0]
+            cols = 1
+        elif mat.ndim == 2:
+            rows, cols = mat.shape
+        else:
+            raise ValueError("Input numpy array should be 1D or 2D.")
 
         if shared_memory:
             # Data transfer via shared memory.
@@ -117,7 +126,7 @@ class DaphneContext(object):
                 end_time = time.time()
                 print(f"Numpy Execution time: \n{(end_time - start_time):.10f} seconds\n")
 
-            return Matrix(self, 'receiveFromNumpy', [upper, lower, mat.shape[0], mat.shape[1], vtc], local_data=mat)
+            return Matrix(self, 'receiveFromNumpy', [upper, lower, rows, cols, vtc], local_data=mat)
         else:
             # Data transfer via a file.
             unnamed_params = ['"src/api/python/tmp/{file_name}.csv\"']

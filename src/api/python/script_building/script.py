@@ -46,7 +46,7 @@ class DaphneDSLScript:
         self.out_var_name = []
         self._variable_counter = var_counter
     
-    def build_code(self, dag_root: DAGNode, type="shared memory"):
+    def build_code(self, dag_root: DAGNode, type="shared memory", num_returns = 2):
         baseOutVarString = self._dfs_dag_nodes(dag_root)
         if dag_root._output_type != OutputType.NONE:
             self.out_var_name.append(baseOutVarString)
@@ -77,6 +77,10 @@ class DaphneDSLScript:
             elif dag_root.output_type == OutputType.SCALAR:
                 # We transfer scalars back to Python by wrapping them into a 1x1 matrix.
                 self.add_code(f'saveDaphneLibResult(as.matrix({baseOutVarString}));')
+                return None
+            elif dag_root.output_type == OutputType.MULTI_RETURN:
+                for return_num in range(num_returns): 
+                    self.add_code(f'saveDaphneLibResult({baseOutVarString}_{return_num});')
                 return None
             else:
                 self.add_code(f'print({baseOutVarString});')

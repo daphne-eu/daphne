@@ -27,6 +27,11 @@ from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_COMPUTED_TYPES
+from api.python.script_building.script import DaphneDSLScript
+from api.python.operator.nodes.scalar import Scalar
+from api.python.script_building.dag import OutputType
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
+from api.python.utils.daphnelib import DaphneLib, DaphneLibResult
 from api.python.utils.helpers import create_params_string
 from api.python.utils.analyzer import get_argument_types
 from api.python.script_building.nested_script import NestedDaphneDSLScript
@@ -37,26 +42,18 @@ from typing import TYPE_CHECKING, Union, Dict, Iterable, Sequence, Callable, Tup
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
     from context.daphne_context import DaphneContext
+import ctypes
+
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
 
 class MultiReturn(OperationNode):
     _outputs: Iterable['OperationNode']
 
-    def __init__(self, daphne_context: 'DaphneContext', operation:str, output_nodes: Iterable[VALID_INPUT_TYPES], unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
-                named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None):
-        """
-        Operational node that represents calling a function with potentially multiple return values.
-        Its reserved variable is left unused and is not added ot the generated script, however
-        this variable name is used for a prefix for the return value nodes.
-
-        :param daphne_context:
-        :output_nodes: nodes reserved for representing the return values
-        :param unnamed_input_nodes: unnamed nodes to be used as arguments
-        :param named_input_nodes: named nodes to be used as arguments
-        """
+    def __init__(self, daphne_context, operation:str,output_nodes, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
+                named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None):
         self._outputs = output_nodes
-        # set this node to be a source node for each retrun value node
-        for node in self._outputs:
-            node._source_node = self
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MULTI_RETURN, False)
     
     def __getitem__(self, index):
@@ -75,63 +72,40 @@ class MultiReturn(OperationNode):
         """
         inputs_comma_sep = create_params_string(
             unnamed_input_vars, named_input_vars)
-        output_list=list()
+        output=""
         for idx, output_node in enumerate(self._outputs):
             name = f'{var_name}_{idx}'
             output_node.daphnedsl_name = name
-            output_list.append(name)
-        output_str = ",".join(output_list)
-        return f'{output_str}={self.operation}({inputs_comma_sep});'
-    
-    def compute(self) -> None:
-        raise NotImplementedError("'MultiReturn' node is not intended to be computed")
+            output += f'{name},'
+        output = output[:-1]
+        print(f'{output}={self.operation}({inputs_comma_sep})')
+        return f'{output}={self.operation}({inputs_comma_sep});'
 
-    @staticmethod
-    def define_function(context: 'DaphneContext', callback: Callable[..., Tuple[VALID_COMPUTED_TYPES]]) -> Tuple[str, Iterable[VALID_COMPUTED_TYPES]]:
+def compute(self, type="shared memory", num_returns = 2, verbose=False):
         """
-        Generate DaphneDSL function defintion.
+        Compute function for processing the Daphne Object or operation node and returning the results.
+        The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
+        to produce a pandas DataFrame, numpy array, or tensors.
 
-        :param context : 'DaphneContext' for storing the function definition
-        :param callback : function for lazy evaluation
-        :return : a tuple containing:
-            - generated function name
-            - tuple of operation nodes for the outputs
+        :param type: Execution type, either "shared memory" for in-memory data transfer or "files" for file-based data transfer.
+        :param verbose: If True, outputs verbose logs, including timing information for each step.
+
+        :return: Depending on the parameters and the operation's output type, this function can return:
+            - A pandas DataFrame for frame outputs.
+            - A numpy array for matrix outputs.
+            - A scalar value for scalar outputs.
+            - TensorFlow or PyTorch tensors if `isTensorflow` or `isPytorch` is set to True respectively.
         """
-        # intiate input nodes (arguments) for generating the function definition
-        input_nodes = list()
-        # dict with the same argument sequence as the callback signature
-        arg_types = get_argument_types(callback)
-        function_name = f"function_{len(context._functions.keys())}"
-        for i, arg_type in enumerate(arg_types.values()):
-            new_matrix = None
-            if arg_type is None or arg_type == Matrix:
-                new_matrix = Matrix(context, None)
-            elif arg_type == Frame:
-                new_matrix = Frame(context, None)
-            elif arg_type == Scalar:
-                new_matrix = Scalar(context, None)
-            else:
-                raise ValueError(f"Not allowed type hint {arg_type} for the 'dctx.function' signature")
-            new_matrix.daphnedsl_name = f"ARG_{i}"
-            input_nodes.append(new_matrix)
-        # initiate return/output nodes to represent the return values for generating the function definition
-        callback_outputs = callback(*input_nodes)        
-        if (not isinstance(callback_outputs, tuple)):
-            callback_outputs = (callback_outputs, )
-        # check if all return values are valid types
-        for node in callback_outputs:
-            if not isinstance(node, (Matrix, Frame, Scalar)):
-                raise ValueError(f"Not valid output node type {type(node)}")
-        # generate the script witht the function definition
-        script = NestedDaphneDSLScript(context, 1, 'F')
-        names = script.build_code(callback_outputs)
-        function_definition = str()
-        function_definition += f"def {function_name}({','.join(map(lambda x: x.daphnedsl_name, input_nodes))}) {{\n"
-        function_definition += textwrap.indent(script.daphnedsl_script, prefix="    ")
-        function_definition += f"    return {','.join(names)};\n"
-        function_definition += "}\n"
-        # store the definition at the context
-        context._functions[function_name] = function_definition
-        return function_name, callback_outputs
+        if self._result_var is None:
 
+            self._script = DaphneDSLScript(self.daphne_context)
+            print(self)
+            result = self._script.build_code(self, type, num_returns=num_returns)
 
+            # Still a hard copy function that creates tmp files to execute
+            self._script.executeSQL(multiText=True)
+            self._script.clear(self)
+
+            if result is None:
+                return
+            return result
