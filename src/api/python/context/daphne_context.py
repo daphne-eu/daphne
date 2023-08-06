@@ -310,7 +310,7 @@ class DaphneContext(object):
         # Check if the tensor is 2D or higher dimensional
         if tensor.dim() == 2:
             # If 2D, handle as a matrix, convert to numpy array
-            mat = tensor.numpy(force=True)
+            mat = tensor.numpy() # If the Tensor is stored on the CPU, mat = tensor.numpy(force=True) can speed up the performance
             matrix = self.from_numpy(mat, shared_memory, verbose)  # Using the existing from_numpy method for 2D arrays
         else:
             # If higher dimensional, reshape to 2D and handle as a matrix
