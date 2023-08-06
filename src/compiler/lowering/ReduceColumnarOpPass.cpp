@@ -21,118 +21,24 @@ using namespace mlir;
 
 namespace
 {
-    void checkAndRemoveCmpCasts(mlir::OpBuilder &builder, Operation *op) {
-        mlir::Type vt = mlir::daphne::UnknownType::get(builder.getContext());
-        mlir::Type resType = mlir::daphne::ColumnType::get(
-            builder.getContext(), vt
-        );
-        auto indexedResult = op->getResult(0);
-        for (Operation *userOp : indexedResult.getUsers()) {
-            if (llvm::dyn_cast<mlir::daphne::CastOp>(userOp)) {
-                auto resultCast = userOp->getResult(0);
-                for (Operation *followCastOp : resultCast.getUsers()) {
-                    if(llvm::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(followCastOp)) {
-                        auto resultBitmap = followCastOp->getResult(0);
-                        for (Operation *followBitmapOp : resultBitmap.getUsers()) {
-                            if (llvm::dyn_cast<mlir::daphne::CreateFrameOp>(followBitmapOp)) {
-                                auto frameResult = followBitmapOp->getResult(0);
-                                for (Operation *followFrameOp : frameResult.getUsers()) {
-                                    if (llvm::dyn_cast<mlir::daphne::CastOp>(followFrameOp)) {
-                                        auto frameCastResult = followFrameOp->getResult(0);
-                                        for (Operation *followFrameCastOp : frameCastResult.getUsers()){
-                                            if (llvm::dyn_cast<mlir::daphne::ColumnAndOp>(followFrameCastOp)) {
-                                                builder.setInsertionPointAfter(followFrameCastOp);
-                                                auto intersect = builder.create<daphne::ColumnIntersectOp>(builder.getUnknownLoc(), resType, followFrameCastOp->getOperands());
-                                                intersect->replaceUsesOfWith(frameCastResult, indexedResult);
-                                                auto andResult = followFrameCastOp->getResult(0);
-                                                for (Operation *andSuccessorOp : andResult.getUsers()) {
-                                                    andSuccessorOp->replaceUsesOfWith(andResult, intersect->getResult(0));
-                                                }
-                                            } else if(llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(followFrameCastOp)) {
-                                                followFrameCastOp->replaceUsesOfWith(frameCastResult, indexedResult);
-                                            } else if(llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(followFrameCastOp)) {
-                                                followFrameCastOp->replaceUsesOfWith(frameCastResult, indexedResult);
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+    Operation * getCmpWOBitmap(Operation * castOp) {
+        if (castOp->getOperand(0).getType().isa<mlir::daphne::FrameType>() && castOp->getResult(0).getType().isa<mlir::daphne::ColumnType>()) {
+            auto frameOp = castOp->getOperand(0).getDefiningOp();
+            if (mlir::dyn_cast<mlir::daphne::CreateFrameOp>(frameOp)) {
+                auto bitmapOp = frameOp->getOperand(0).getDefiningOp();
+                if (mlir::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(bitmapOp)) {
+                    auto castOp2 = bitmapOp->getOperand(0).getDefiningOp();
+                    if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
+                        if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
+                            return castOp2->getOperand(0).getDefiningOp();
                         }
                     }
                 }
             }
         }
+        return nullptr;
     }
 
-    void checkAndRemoveIntersectCasts(mlir::OpBuilder &builder, Operation *op) {
-        auto indexedResult = op->getResult(0);
-        for (Operation *userOp : indexedResult.getUsers()) {
-            if (llvm::dyn_cast<mlir::daphne::CastOp>(userOp)) {
-                for (Operation *followCastOp : userOp->getResult(0).getUsers()){
-                    if (llvm::dyn_cast<mlir::daphne::BitmapPositionListConverterOp>(followCastOp)) {
-                        for (Operation *followBitmapOp : followCastOp->getResult(0).getUsers()) {
-                            if (llvm::dyn_cast<mlir::daphne::CastOp>(followBitmapOp)) {
-                                auto bitmapCastResult = followBitmapOp->getResult(0);
-                                std::vector<Operation *> toReplace;
-                                for (Operation *followBitmapCastOp : bitmapCastResult.getUsers()) {
-                                    if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(followBitmapCastOp)) {
-                                        toReplace.push_back(followBitmapCastOp);
-                                    }
-                                }
-                                for (Operation *replaceUsesOp : toReplace) {
-                                    replaceUsesOp->replaceUsesOfWith(bitmapCastResult, indexedResult);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    void checkAndRemoveCreateFrames(mlir::OpBuilder &builder, Operation *op) {
-        auto numInputColMatrix = op->getNumOperands()/2;
-        std::map<std::string, Operation *> inputColumns;
-        std::map<std::string, std::pair<Operation *, Operation *>> outputColumns;
-        for (int i = 0; i < numInputColMatrix; i++) {
-            auto inputName = op->getOperand(i+numInputColMatrix).getDefiningOp()->getAttr("value").cast<StringAttr>().getValue().str();
-            auto inputMatrixOp = op->getOperand(i).getDefiningOp();
-            if (llvm::dyn_cast<mlir::daphne::CastOp>(inputMatrixOp)) {
-                auto inputColumnOp = inputMatrixOp->getOperand(0).getDefiningOp();
-                if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(inputColumnOp)) {
-                    inputColumns[inputName] = inputColumnOp;
-                }
-            }
-        }
-        auto frameResult = op->getResult(0);
-        for (Operation *followFrameOp : frameResult.getUsers()) {
-            if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(followFrameOp)) {
-                auto extractName = followFrameOp->getOperand(1).getDefiningOp()->getAttr("value").cast<StringAttr>().getValue().str();
-                auto extractResult = followFrameOp->getResult(0);
-                for (Operation *followExtractOp : extractResult.getUsers()) {
-                    if (llvm::dyn_cast<mlir::daphne::CastOp>(followExtractOp)) {
-                        auto extractCastResult = followExtractOp->getResult(0);
-                        for (Operation *followExtractCastOp : extractCastResult.getUsers()) {
-                            outputColumns[extractName] = std::make_pair(followExtractCastOp, followExtractOp);
-                        }
-                    }
-                }
-            }
-        }
-
-        for (auto columnIn = inputColumns.begin(); columnIn != inputColumns.end(); columnIn++) {
-            std::string inputColName = columnIn->first;
-            Operation *inputColOp = columnIn->second;
-            for (auto columnOut = outputColumns.begin(); columnOut != outputColumns.end(); columnOut++) {
-                std::string outputColName = columnOut->first;
-                Operation *outputColOp = columnOut->second.first;
-                Operation *replaceCastOp = columnOut->second.second;
-                if (inputColName == outputColName) {
-                    outputColOp->replaceUsesOfWith(replaceCastOp->getResult(0), inputColOp->getResult(0));
-                }
-            }
-        }
-    }
 
     struct ColumnarReduceReplacement : public RewritePattern{
 
@@ -163,6 +69,44 @@ namespace
                     followOp->replaceUsesOfWith(castResult, predecessor->getResult(0));
                 }
                 rewriter.finalizeRootUpdate(op);
+                return success();
+            } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
+                auto posListOp = op->getOperand(1).getDefiningOp()
+                                            ->getOperand(0).getDefiningOp()
+                                            ->getOperand(0).getDefiningOp()
+                                            ->getOperand(0).getDefiningOp();
+                rewriter.startRootUpdate(op);
+                op->replaceUsesOfWith(op->getOperand(1), posListOp->getResult(0));
+                rewriter.finalizeRootUpdate(op);
+                return success();
+            } else if (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(op)) {
+                auto firstOp = getCmpWOBitmap(op->getOperand(0).getDefiningOp());
+                auto secondOp = getCmpWOBitmap(op->getOperand(1).getDefiningOp());
+                rewriter.startRootUpdate(op);
+                if (firstOp != nullptr) {
+                    op->replaceUsesOfWith(op->getOperand(0), firstOp->getResult(0));
+                }
+                if (secondOp != nullptr) {
+                    op->replaceUsesOfWith(op->getOperand(1), secondOp->getResult(0));
+                }
+                rewriter.finalizeRootUpdate(op);
+                return success();
+            } else if (llvm::dyn_cast<mlir::daphne::ColumnAndOp>(op)) {
+                auto firstOp = getCmpWOBitmap(op->getOperand(0).getDefiningOp());
+                auto secondOp = getCmpWOBitmap(op->getOperand(1).getDefiningOp());
+                rewriter.startRootUpdate(op);
+                if (firstOp != nullptr) {
+                    op->replaceUsesOfWith(op->getOperand(0), firstOp->getResult(0));
+                }
+                if (secondOp != nullptr) {
+                    op->replaceUsesOfWith(op->getOperand(1), secondOp->getResult(0));
+                }
+                auto intersect = rewriter.replaceOpWithNewOp<daphne::ColumnIntersectOp>(op, op->getResult(0).getType(), op->getOperands());
+                for(Operation *followOp : op->getResult(0).getUsers()) {
+                    followOp->replaceUsesOfWith(op->getResult(0), intersect->getResult(0));
+                }
+                rewriter.finalizeRootUpdate(op);
+                return success();
             }
         }
     };
@@ -233,6 +177,40 @@ void ReduceColumnarOpPass::runOnOperation() {
             }
         }
         return true;
+    });
+
+    target.addDynamicallyLegalOp<mlir::daphne::ColumnProjectOp>([&](Operation *op) {
+        Operation * castOp = op->getOperand(1).getDefiningOp();
+        if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp)) {
+            auto bitmapOp = castOp->getOperand(0).getDefiningOp();
+            if (mlir::dyn_cast<mlir::daphne::BitmapPositionListConverterOp>(bitmapOp)) {
+                auto castOp2 = bitmapOp->getOperand(0).getDefiningOp();
+                if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
+                    if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    });
+
+    target.addDynamicallyLegalOp<mlir::daphne::ColumnIntersectOp, mlir::daphne::ColumnAndOp>([&](Operation *op) {
+        Operation * firstOp = nullptr;
+        Operation * secondOp = nullptr;
+        auto castOp = op->getOperand(0).getDefiningOp();
+        if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp)) {
+            firstOp = getCmpWOBitmap(castOp);
+        }
+        auto castOp2 = op->getOperand(1).getDefiningOp();
+        if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
+            firstOp = getCmpWOBitmap(castOp2);
+        }
+        if (firstOp == nullptr && secondOp == nullptr) {
+            return true;
+        } else {
+            return false;
+        }
     });
 
     patterns.add<ColumnarReduceReplacement>(&getContext());
