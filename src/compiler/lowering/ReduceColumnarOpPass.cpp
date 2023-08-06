@@ -71,10 +71,13 @@ namespace
                 rewriter.finalizeRootUpdate(op);
                 return success();
             } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
-                auto posListOp = op->getOperand(1).getDefiningOp()
+                Operation * posListOp = op->getOperand(1).getDefiningOp()
                                             ->getOperand(0).getDefiningOp()
                                             ->getOperand(0).getDefiningOp()
                                             ->getOperand(0).getDefiningOp();
+                if (mlir::dyn_cast<mlir::daphne::CastOp>(posListOp)) {
+                    posListOp = posListOp->getOperand(0).getDefiningOp();
+                }
                 rewriter.startRootUpdate(op);
                 op->replaceUsesOfWith(op->getOperand(1), posListOp->getResult(0));
                 rewriter.finalizeRootUpdate(op);
@@ -121,35 +124,6 @@ namespace
 }
 
 void ReduceColumnarOpPass::runOnOperation() {
-    /**func::FuncOp f = getOperation();
-    f->walk([&](Operation *op) {
-
-        if(llvm::dyn_cast<mlir::daphne::ColumnGeOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCmpCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnGtOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCmpCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnLeOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCmpCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnLtOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCmpCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnEqOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCmpCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnNeqOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCmpCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveIntersectCasts(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::CreateFrameOp>(op)) {
-            OpBuilder builder(op);
-            checkAndRemoveCreateFrames(builder, op);
-        }
-    }); **/
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -184,10 +158,18 @@ void ReduceColumnarOpPass::runOnOperation() {
         if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp)) {
             auto bitmapOp = castOp->getOperand(0).getDefiningOp();
             if (mlir::dyn_cast<mlir::daphne::BitmapPositionListConverterOp>(bitmapOp)) {
-                auto castOp2 = bitmapOp->getOperand(0).getDefiningOp();
-                if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
-                    if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
+                auto castOrPosOp = bitmapOp->getOperand(0).getDefiningOp();
+                if (mlir::dyn_cast<mlir::daphne::CastOp>(castOrPosOp)) {
+                    if (castOrPosOp->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
                         return false;
+                    }
+                }
+                if (mlir::dyn_cast<mlir::daphne::PositionListBitmapConverterOp>(castOrPosOp)) {
+                    auto castOp2 = castOrPosOp->getOperand(0).getDefiningOp();
+                    if (mlir::dyn_cast<mlir::daphne::CastOp>(castOp2)) {
+                        if (castOp2->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
+                            return false;
+                        }
                     }
                 }
             }
