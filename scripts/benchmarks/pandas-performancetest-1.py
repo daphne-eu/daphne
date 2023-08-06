@@ -41,7 +41,7 @@ categoricalDataframeTestData = []
 testResults = pd.DataFrame()
 
 # Adjust based on the number of runs for this benchmark
-runs = 15
+runs = 50
 
 # Creating a list of sizes for the objects
 sizes = [1, 10, 100, 1000, 10000, 100000]

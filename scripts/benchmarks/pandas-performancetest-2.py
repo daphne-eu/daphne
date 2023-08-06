@@ -26,7 +26,7 @@ import contextlib
 import re
 
 # Adjust based on the number of runs for this benchmark
-runs = 15
+runs = 50
 
 # Creating a list of sizes for the objects
 sizes = [50, 100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000, 5000000, 10000000]
