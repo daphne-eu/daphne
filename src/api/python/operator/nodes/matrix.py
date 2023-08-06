@@ -54,7 +54,7 @@ class Matrix(OperationNode):
         else:
             self._np_array = None
         super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MATRIX,is_python_local_data, brackets)
-
+    
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
         if self.__copy:
