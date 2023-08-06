@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script will test the performance of the daphne compute fuction for tensorflow tensors
+# This script benchmarks the performance of the daphne compute() fuction for tensorflow tensors
+# Execution Times for the execute() function execution, the Tensorflow Tensor Transformation execution and overall execution are saved
+# Results are saved to TensorFlow-Compute-PerformaceTest.csv and Avg-TensorFlow-Compute-PerformaceTest.csv
 
 from api.python.context.daphne_context import DaphneContext
 

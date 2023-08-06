@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# This script will test the performance of importing tensors from python into daphne with the from_pytorch function
+# This script benchmarks the performance of importing tensors from python into daphne with the from_pytorch function
+# Execution Times for the PyTorch Tensor Reshape Execution, Numpy Execution time and overall execution are saved
+# Results are saved to FromPyTorch-PerformaceTest.csv and Avg-FromPyTorch-PerformaceTest.csv
 
 import torch
 

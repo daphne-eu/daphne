@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# This script benchmarks importing dataframes from python into daphne with the from_pandas function
+# The type of Dataframe is checked and converted if possible
+# Execution Times for each column, all columns and overall are saved
+# Results are saved to FromPandas-PerformaceTest.csv and Avg-FromPandas-PerformaceTest.csv
+
 from api.python.context.daphne_context import DaphneContext
 import pandas as pd
 import numpy as np
