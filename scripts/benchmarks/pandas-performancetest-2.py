@@ -179,7 +179,7 @@ print(testResults)
 print(f"\nAverage Results at {timestamp}:\n")
 print(averageResults)  # This prints the frame of averages
 
-testResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_FromPandas-PerformaceTest.csv', index=False)
-averageResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_Avg-FromPandas-PerformaceTest.csv', index=False)
+testResults.to_csv(f'scripts/benchmarks/testoutputs/pandas02_FromPandas-PerformaceTest_{timestamp}.csv', index=False)
+averageResults.to_csv(f'scripts/benchmarks/testoutputs/pandas02_Avg-FromPandas-PerformaceTest_{timestamp}.csv', index=False)
 
 print("\n###End of Performance Test.\n")

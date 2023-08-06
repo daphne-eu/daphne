@@ -160,7 +160,7 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
 print(f"\nAverage Results at {timestamp}:\n")
 print(averageResults)  # This prints the frame of averages
 
-testResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_FromTensorflow-PerformaceTest.csv', index=False)
-averageResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_Avg-FromTensorflow-PerformaceTest.csv', index=False)
+testResults.to_csv(f'scripts/benchmarks/testoutputs/tensorflow01_FromTensorflow-PerformaceTest_{timestamp}.csv', index=False)
+averageResults.to_csv(f'scripts/benchmarks/testoutputs/tensorflow01_Avg-FromTensorflow-PerformaceTest_{timestamp}.csv', index=False)
 
 print("\n###End of Performance Test.\n")

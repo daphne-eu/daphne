@@ -161,7 +161,7 @@ timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M")
 print(f"\nAverage Results at {timestamp}:\n")
 print(averageResults)  # This prints the frame of averages
 
-testResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_FromPyTorch-PerformaceTest.csv', index=False)
-averageResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_Avg-FromPyTorch-PerformaceTest.csv', index=False)
+testResults.to_csv(f'scripts/benchmarks/testoutputs/pytorch01_FromPyTorch-PerformaceTest_{timestamp}.csv', index=False)
+averageResults.to_csv(f'scripts/benchmarks/testoutputs/pytorch01_Avg-FromPyTorch-PerformaceTest_{timestamp}.csv', index=False)
 
 print("\n###End of Performance Test.\n")

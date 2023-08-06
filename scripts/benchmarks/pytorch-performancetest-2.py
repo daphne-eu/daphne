@@ -167,7 +167,7 @@ print(testResults)
 print(f"\nAverage Results at {timestamp}:\n")
 print(averageResults)  # This prints the frame of averages
 
-testResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_PyTorch-Compute-PerformaceTest.csv', index=False)
-averageResults.to_csv(f'scripts/benchmarks/testoutputs/{timestamp}_Avg-PyTorch-Compute-PerformaceTest.csv', index=False)
+testResults.to_csv(f'scripts/benchmarks/testoutputs/pytorch02_PyTorch-Compute-PerformaceTest_{timestamp}.csv', index=False)
+averageResults.to_csv(f'scripts/benchmarks/testoutputs/pytorch02_Avg-PyTorch-Compute-PerformaceTest{timestamp}.csv', index=False)
 
 print("\n###End of Performance Test.\n")
