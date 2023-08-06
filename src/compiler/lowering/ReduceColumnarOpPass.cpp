@@ -134,6 +134,39 @@ namespace
         }
     }
 
+    struct ColumnarReduceReplacement : public RewritePattern{
+
+        ColumnarReduceReplacement(MLIRContext * context, PatternBenefit benefit = 1)
+        : RewritePattern(Pattern::MatchAnyOpTypeTag(), benefit, context)
+        {}
+
+        LogicalResult matchAndRewrite(
+            Operation *op,
+            PatternRewriter &rewriter
+        ) const override
+        {
+            if (llvm::dyn_cast<mlir::daphne::CastOp>(op)) {
+                auto columnName = op->getOperand(0).getDefiningOp()->getOperand(1).getDefiningOp()->getAttr("value").cast<StringAttr>().getValue().str();
+                auto frameOp = op->getOperand(0).getDefiningOp()->getOperand(0).getDefiningOp();
+                auto numInputColMatrix = frameOp->getNumOperands()/2;
+                Operation *predecessor = nullptr;
+                for (int i = 0; i < numInputColMatrix; i++) {
+                    auto inputName = frameOp->getOperand(i+numInputColMatrix).getDefiningOp()->getAttr("value").cast<StringAttr>().getValue().str();
+                    auto inputMatrixOp = frameOp->getOperand(i).getDefiningOp();
+                    if (columnName == inputName) {
+                        predecessor = inputMatrixOp->getOperand(0).getDefiningOp();
+                    }
+                }
+                auto castResult = op->getResult(0);
+                rewriter.startRootUpdate(op);
+                for(Operation *followOp : castResult.getUsers()) {
+                    followOp->replaceUsesOfWith(castResult, predecessor->getResult(0));
+                }
+                rewriter.finalizeRootUpdate(op);
+            }
+        }
+    };
+
     struct ReduceColumnarOpPass : public PassWrapper<ReduceColumnarOpPass, OperationPass<func::FuncOp>> {
 
         ReduceColumnarOpPass() = default;
@@ -144,7 +177,7 @@ namespace
 }
 
 void ReduceColumnarOpPass::runOnOperation() {
-    func::FuncOp f = getOperation();
+    /**func::FuncOp f = getOperation();
     f->walk([&](Operation *op) {
 
         if(llvm::dyn_cast<mlir::daphne::ColumnGeOp>(op)) {
@@ -172,7 +205,40 @@ void ReduceColumnarOpPass::runOnOperation() {
             OpBuilder builder(op);
             checkAndRemoveCreateFrames(builder, op);
         }
+    }); **/
+    auto module = getOperation();
+
+    RewritePatternSet patterns(&getContext());
+    ConversionTarget target(getContext());
+    target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
+    target.addLegalOp<ModuleOp, func::FuncOp>();
+    target.addDynamicallyLegalOp<mlir::daphne::CastOp>([&](Operation *op) {
+        if (op->getResult(0).use_empty()) {
+            return true;
+        }
+        if (op->getResult(0).getType().isa<mlir::daphne::ColumnType>()) {
+            if(op->getOperand(0).getType().isa<mlir::daphne::FrameType>()) {
+                auto extractOp = op->getOperand(0).getDefiningOp();
+                if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(extractOp)) {
+                    auto frameOp = extractOp->getOperand(0).getDefiningOp();
+                    if (llvm::dyn_cast<mlir::daphne::CreateFrameOp>(frameOp)) {
+                        auto castOp = frameOp->getOperand(0).getDefiningOp();
+                        if (llvm::dyn_cast<mlir::daphne::CastOp>(castOp)) {
+                            if (castOp->getOperand(0).getType().isa<mlir::daphne::ColumnType>()) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     });
+
+    patterns.add<ColumnarReduceReplacement>(&getContext());
+
+    if (failed(applyPartialConversion(module, target, std::move(patterns))))
+        signalPassFailure();
     
 }
 
