@@ -65,9 +65,7 @@ namespace
                 }
                 auto castResult = op->getResult(0);
                 rewriter.startRootUpdate(op);
-                for(Operation *followOp : castResult.getUsers()) {
-                    followOp->replaceUsesOfWith(castResult, predecessor->getResult(0));
-                }
+                castResult.replaceAllUsesWith(predecessor->getResult(0));
                 rewriter.finalizeRootUpdate(op);
                 return success();
             } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
@@ -104,10 +102,9 @@ namespace
                 if (secondOp != nullptr) {
                     op->replaceUsesOfWith(op->getOperand(1), secondOp->getResult(0));
                 }
+                //TODO: Need to add PositionListBitmapConverter after it, need to implement numRowOp for column and use the right operand 1 as input
                 auto intersect = rewriter.replaceOpWithNewOp<daphne::ColumnIntersectOp>(op, op->getResult(0).getType(), op->getOperands());
-                for(Operation *followOp : op->getResult(0).getUsers()) {
-                    followOp->replaceUsesOfWith(op->getResult(0), intersect->getResult(0));
-                }
+                op->getResult(0).replaceAllUsesWith(intersect->getResult(0));
                 rewriter.finalizeRootUpdate(op);
                 return success();
             }

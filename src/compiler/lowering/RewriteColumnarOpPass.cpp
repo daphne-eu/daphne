@@ -74,10 +74,7 @@ namespace
         auto finalCast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), resTypeCast, columnGe->getResult(0));
         auto numRows = rewriter.create<mlir::daphne::NumRowsOp>(prevOp->getLoc(), rewriter.getIndexType(), cast->getOperand(0));
         auto res = rewriter.replaceOpWithNewOp<mlir::daphne::PositionListBitmapConverterOp>(cmpOp, resTypeCast, finalCast->getResult(0), numRows);
-        auto uses = cmpOp->getUses();
-        for (auto x = uses.begin(); x != uses.end(); x++) {
-            x->getOwner()->replaceUsesOfWith(cmpOp, res);
-        }
+        cmpOp->getResult(0).replaceAllUsesWith(res->getResult(0));
         return success();
     }
 
@@ -107,10 +104,7 @@ namespace
 
         auto colBinaryOp = rewriter.create<ColumnBinaryOp>(binaryOp->getLoc(), resType, castLhs, castRhs);
         auto res = rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(binaryOp, resTypeCast, colBinaryOp->getResult(0));
-        auto uses = binaryOp->getUses();
-        for (auto x = uses.begin(); x != uses.end(); x++) {
-            x->getOwner()->replaceUsesOfWith(binaryOp, res);
-        }
+        binaryOp->getResult(0).replaceAllUsesWith(res->getResult(0));
         return success();
     }
 
@@ -144,10 +138,7 @@ namespace
                 return failure();
             }
             auto res = rewriter.replaceOpWithNewOp<mlir::daphne::CastOp>(removeCast, resTypeCast, columnAgg->getResult(0));
-            auto castUses = removeCast->getUses();
-            for (auto y = castUses.begin(); y != castUses.end(); y++) {
-                y->getOwner()->replaceUsesOfWith(removeCast, res);
-            }
+            removeCast->getResult(0).replaceAllUsesWith(res->getResult(0));
         }
         return success();
     }
