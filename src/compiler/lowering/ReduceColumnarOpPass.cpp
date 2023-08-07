@@ -105,6 +105,17 @@ namespace
                 //TODO: Need to add PositionListBitmapConverter after it, need to implement numRowOp for column and use the right operand 1 as input
                 auto intersect = rewriter.replaceOpWithNewOp<daphne::ColumnIntersectOp>(op, op->getResult(0).getType(), op->getOperands());
                 op->getResult(0).replaceAllUsesWith(intersect->getResult(0));
+                for (mlir::Operation * followOp : intersect->getResult(0).getUsers()) {
+                    if (mlir::dyn_cast<mlir::daphne::CastOp>(followOp)) {
+                        rewriter.setInsertionPointAfter(followOp);
+                        auto numRows = rewriter.create<mlir::daphne::ColumnNumRowsOp>(followOp->getLoc(), rewriter.getIndexType(), intersect->getOperand(1).getDefiningOp()->getOperand(0));
+                        auto users = followOp->getResult(0).getUsers();
+                        auto converter = rewriter.create<mlir::daphne::PositionListBitmapConverterOp>(followOp->getLoc(), followOp->getResult(0).getType(), followOp->getResult(0), numRows->getResult(0));
+                        for (mlir::Operation * user : users) {
+                            user->replaceUsesOfWith(followOp->getResult(0), converter->getResult(0));
+                        }
+                    }
+                }
                 rewriter.finalizeRootUpdate(op);
                 return success();
             }

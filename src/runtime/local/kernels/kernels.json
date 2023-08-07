@@ -4229,5 +4229,29 @@
             [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
             [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
         ]
+    },
+    {
+        "kernelTemplate": {
+            "header": "SIMDOperatorsDAPHNE/ColumnNumRows.h",
+            "opName": "columnNumRows",
+            "returnType": "size_t",
+            "templateParams": [
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                }
+            ]
+        },
+        "instantiations": [
+            [["tuddbs::Column", "uint64_t"]],
+            [["tuddbs::Column", "int64_t"]],
+            [["tuddbs::Column", "size_t"]]
+        ]
     }
 ]

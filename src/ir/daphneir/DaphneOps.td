@@ -401,6 +401,17 @@ def Daphne_ColumnDivOp    : Daphne_ColumnBinaryOp<"columnDiv", NumScalar, [Value
 def Daphne_ColumnAndOp    : Daphne_ColumnBinaryOp<"columnAnd", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
 
 def Daphne_ColumnIntersectOp    : Daphne_ColumnBinaryOp<"columnIntersect", NumScalar, [Commutative, ValueTypeFromArgsInt]>;
+
+class Daphne_ColumnNumOp<string name, list<Trait> traits = []> : Daphne_Op<name, !listconcat(traits, [
+    DataTypeSca, ValueTypeSize, Pure
+])> {
+    let arguments = (ins Column:$arg);
+    let results = (outs Size:$res);
+
+    let hasCanonicalizeMethod = 1;
+}
+
+def Daphne_ColumnNumRowsOp : Daphne_ColumnNumOp<"columnNumRows">;
 // ****************************************************************************
 // Outer binary (generalized outer product)
 // ****************************************************************************

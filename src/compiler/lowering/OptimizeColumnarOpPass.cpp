@@ -74,7 +74,7 @@ namespace
                 if (geOp == nullptr || leOp == nullptr) {
                     return failure();
                 }
-
+                rewriter.setInsertionPointAfter(rightOp);
                 auto betweenOp = rewriter.create<daphne::ColumnBetweenOp>(rightOp->getLoc(), rightOp->getResult(0).getType(), leOp->getOperand(0), geOp->getOperand(1), leOp->getOperand(1));
                 
                 rewriter.startRootUpdate(op);
@@ -124,6 +124,9 @@ void OptimizeColumnarOpPass::runOnOperation() {
     });
 
     target.addDynamicallyLegalOp<mlir::daphne::ColumnIntersectOp>([](Operation *op) {
+        if (op->use_empty()) {
+            return true;
+        }
         Operation * rightOp = op->getOperand(1).getDefiningOp();
         mlir::Value rightOpSource = rightOp->getOperand(0);
         Operation * partnerOp = nullptr;
