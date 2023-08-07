@@ -19,5 +19,5 @@ f1 = createFrame(
     "a", "b"
 );
 
-f2 = setColLabels(["c"]);
+f2 = setColLabelsPrefix(f1, "c");
 print(f2);

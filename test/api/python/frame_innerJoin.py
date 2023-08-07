@@ -21,9 +21,9 @@ dctx = DaphneContext()
 
 df1 = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
 
-df2 = pd.DataFrame({"a": [3, 4, 5], "d": [6, 7, 8]})
+df2 = pd.DataFrame({"b": [3, 4, 5], "d": [6, 7, 8]})
 
 f1 = dctx.from_pandas(df1)
 f2 = dctx.from_pandas(df2)
 
-f1.innerJoin(f2, "a", "a").print().compute()
+f1.innerJoin(f2, "b", "b").print().compute()
