@@ -78,3 +78,4 @@ src/parser/.DS_Store
 src/runtime/.DS_Store
 test/.DS_Store
 test/api/.DS_Store
+*.code-workspace
