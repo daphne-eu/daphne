@@ -16,10 +16,11 @@
 
 # Data transfer from pandas to DAPHNE and back, via shared memory.
 
+import torch 
 import tensorflow as tf
 from api.python.context.daphne_context import DaphneContext
 
-tensor = tf.constant([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+tensor = tf.constant([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=tf.int64)
 
 dctx = DaphneContext()
 
