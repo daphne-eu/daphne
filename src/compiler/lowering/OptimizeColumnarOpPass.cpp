@@ -21,105 +21,6 @@ using namespace mlir;
 
 namespace
 {
-    void dfsIntersect(Operation *op, std::vector<Operation *> &intersects) {
-        for (Operation *intersectFollowOp : op->getResult(0).getUsers()) {
-            if (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(intersectFollowOp)) {
-                intersects.push_back(op);
-                dfsIntersect(intersectFollowOp, intersects);
-            }
-        }
-    }
-
-    void insertBetween(mlir::OpBuilder &builder, Operation *op) {
-        mlir::Type vt = mlir::daphne::UnknownType::get(builder.getContext());
-        mlir::Type resType = mlir::daphne::ColumnType::get(
-            builder.getContext(), vt
-        );
-        auto sourceDataOp = op->getOperand(0).getDefiningOp();
-        auto sourceResult = sourceDataOp->getResult(0);
-        Operation * leOp = nullptr;
-        Operation * geOp = nullptr;
-        for(Operation * sourceFollowOp : sourceResult.getUsers()) {
-            if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(sourceFollowOp)) {
-                leOp = sourceFollowOp;
-            } else if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(sourceFollowOp)) {
-                geOp = sourceFollowOp;
-            }
-        }
-        if(!geOp || !leOp) {
-            return;
-        }
-
-        std::vector<Operation *> intersectsLeOp;
-        std::vector<Operation *> intersectsGeOp;
-        for (Operation* leFollowOp : leOp->getResult(0).getUsers()) {
-            dfsIntersect(leFollowOp, intersectsLeOp);
-        }
-        for (Operation* geFollowOp : geOp->getResult(0).getUsers()) {
-            dfsIntersect(geFollowOp, intersectsGeOp);
-        }
-
-        auto firstCommonIntersect = std::find_first_of (intersectsLeOp.begin(), intersectsLeOp.end(),
-                               intersectsGeOp.begin(), intersectsGeOp.end());
-        bool commonIntersect = firstCommonIntersect != intersectsLeOp.end();
-
-        if (!commonIntersect) {
-            return;
-        }
-
-        auto commonIntersectOp = *firstCommonIntersect;
-
-        builder.setInsertionPointAfter(op);
-        auto betweenOp = builder.create<daphne::ColumnBetweenOp>(builder.getUnknownLoc(), resType, sourceDataOp->getResult(0), geOp->getOperand(1), leOp->getOperand(1));
-
-        Operation *intersectToRemove = nullptr;
-        Operation *intersectToRemovePrevOp;
-        for (Operation *leFollowOp : leOp->getResult(0).getUsers()) {
-            if (mlir::dyn_cast<mlir::daphne::ColumnIntersectOp>(leFollowOp)) {
-                if (leFollowOp == commonIntersectOp) {
-                continue;
-            }
-            intersectToRemove = leFollowOp;
-            Operation *intersectLeftOp = intersectToRemove->getOperand(0).getDefiningOp();
-            Operation *intersectRightOp = intersectToRemove->getOperand(1).getDefiningOp();
-            intersectToRemovePrevOp = intersectLeftOp == leOp ? intersectRightOp : intersectLeftOp;
-            }
-        }
-
-        if(!intersectToRemove) {
-            for (Operation *geFollowOp : geOp->getResult(0).getUsers()) {
-                if (mlir::dyn_cast<mlir::daphne::ColumnIntersectOp>(geFollowOp)) {
-                    if (geFollowOp == commonIntersectOp) {
-                    continue;
-                }
-                intersectToRemove = geFollowOp;
-                Operation *intersectLeftOp = intersectToRemove->getOperand(0).getDefiningOp();
-                Operation *intersectRightOp = intersectToRemove->getOperand(1).getDefiningOp();
-                intersectToRemovePrevOp = intersectLeftOp == geOp ? intersectRightOp : intersectLeftOp;
-                }
-            }
-        }
-        // They are both connected to the same intersect
-        if(!intersectToRemove) {
-            for (Operation *intersectFollowOp : commonIntersectOp->getResult(0).getUsers()) {
-                intersectFollowOp->replaceUsesOfWith(commonIntersectOp->getResult(0), betweenOp->getResult(0));
-            }
-        } else {
-            std::cout << std::boolalpha <<"Intersect" << intersectToRemove->getResult(0).getUsers().empty() << std::endl;
-            for (Operation *intersectToRemoveFollowOp : intersectToRemove->getResult(0).getUsers()) {
-                intersectToRemoveFollowOp->replaceUsesOfWith(intersectToRemove->getResult(0), intersectToRemovePrevOp->getResult(0));
-            }
-            auto intersectLeftOp = intersectToRemove->getOperand(0).getDefiningOp();
-            auto intersectRightOp = intersectToRemove->getOperand(1).getDefiningOp();
-            if (intersectLeftOp == leOp || intersectRightOp == geOp) {
-                commonIntersectOp->replaceUsesOfWith(leOp->getResult(0), betweenOp->getResult(0));
-            } else {
-                commonIntersectOp->replaceUsesOfWith(geOp->getResult(0), betweenOp->getResult(0));
-            }
-        }
-    }
-    
-
     struct ColumnarOpOptimization : public RewritePattern{
 
         ColumnarOpOptimization(MLIRContext * context, PatternBenefit benefit = 1)
@@ -137,12 +38,62 @@ namespace
                 for (mlir::Value posList : prevOp->getOperands().drop_front(1)) {
                     posLists.push_back(posList);
                 }
-                auto projectionPathOp = rewriter.replaceOpWithNewOp<daphne::ColumnProjectionPathOp>(op, op->getResult(0).getType(), op->getOperand(0), posLists);
-                for (Operation *projectFollowOp : op->getResult(0).getUsers()) {
-                    projectFollowOp->replaceUsesOfWith(op->getResult(0), projectionPathOp->getResult(0));
-                }
+                auto projectionPathOp = rewriter.replaceOpWithNewOp<daphne::ColumnProjectionPathOp>(op, op->getResult(0).getType(), prevOp->getOperand(0), posLists);
+                op->getResult(0).replaceAllUsesWith(projectionPathOp->getResult(0));
                 return success();
-            }            
+            } else if (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(op)) {
+                Operation * rightOp = op->getOperand(1).getDefiningOp();
+                mlir::Value rightOpSource = rightOp->getOperand(0);
+                Operation * geOp = nullptr;
+                Operation * leOp = nullptr;
+                Operation * leftPrevIntersectOp = op;
+                
+                Operation * leftOp = op->getOperand(0).getDefiningOp();
+                while (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(leftOp)) {
+                    leftPrevIntersectOp = leftOp;
+                    Operation * rightTempOp = leftOp->getOperand(1).getDefiningOp();
+                    if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource == rightTempOp->getOperand(0)) {
+                        geOp = rightTempOp;
+                        leOp = rightOp;
+                        break;
+                    } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource == rightTempOp->getOperand(0)) {
+                        leOp = rightTempOp;
+                        geOp = rightOp;
+                        break;
+                    }
+                    leftOp = leftOp->getOperand(0).getDefiningOp();
+                }
+                if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource == leftOp->getOperand(0)) {
+                    geOp = leftOp;
+                    leOp = rightOp;
+                } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource == leftOp->getOperand(0)) {
+                    leOp = leftOp;
+                    geOp = rightOp;
+                }
+
+                if (geOp == nullptr || leOp == nullptr) {
+                    return failure();
+                }
+
+                auto betweenOp = rewriter.replaceOpWithNewOp<daphne::ColumnBetweenOp>(rightOp, rightOp->getResult(0).getType(), leOp->getOperand(0), geOp->getOperand(1), leOp->getOperand(1));
+                
+                rewriter.startRootUpdate(op);
+                //Both operations share the same intersect
+                if (op == leftPrevIntersectOp) {
+                    op->getResult(0).replaceAllUsesWith(betweenOp->getResult(0));
+                } else {
+                    op->replaceUsesOfWith(rightOp->getResult(0), betweenOp->getResult(0));
+                    for (mlir::Value intersectOperands: leftPrevIntersectOp->getOperands()) {
+                        auto intersectOperandsOp = intersectOperands.getDefiningOp();
+                        if (intersectOperandsOp != geOp && intersectOperandsOp != leOp) {
+                            leftPrevIntersectOp->getResult(0).replaceAllUsesWith(intersectOperandsOp->getResult(0));
+                        } 
+                    }
+                }
+                rewriter.finalizeRootUpdate(op);
+
+                return success();
+            }           
         }
     };
 
@@ -156,21 +107,6 @@ namespace
 }
 
 void OptimizeColumnarOpPass::runOnOperation() {
-    /**func::FuncOp f = getOperation();
-    
-    f->walk([&](Operation *op) {
-        if(llvm::dyn_cast<mlir::daphne::ColumnLeOp>(op)) {
-            OpBuilder builder(op);
-            insertBetween(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnGeOp>(op)) {
-            OpBuilder builder(op);
-            insertBetween(builder, op);
-        } else if(llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
-            OpBuilder builder(op);
-            insertProjectionPath(builder, op);
-        }
-    });  **/
-
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -186,6 +122,37 @@ void OptimizeColumnarOpPass::runOnOperation() {
         }
         return true;
     });
+
+    target.addDynamicallyLegalOp<mlir::daphne::ColumnIntersectOp>([](Operation *op) {
+        Operation * rightOp = op->getOperand(1).getDefiningOp();
+        mlir::Value rightOpSource = rightOp->getOperand(0);
+        Operation * partnerOp = nullptr;
+        if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) || llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
+            Operation * leftOp = op->getOperand(0).getDefiningOp();
+            while (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(leftOp)) {
+                Operation * rightTempOp = leftOp->getOperand(1).getDefiningOp();
+                if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource == rightTempOp->getOperand(0)) {
+                    partnerOp = rightTempOp;
+                    break;
+                } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource == rightTempOp->getOperand(0)) {
+                    partnerOp = rightTempOp;
+                    break;
+                }
+                leftOp = leftOp->getOperand(0).getDefiningOp();
+            }
+            if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource == leftOp->getOperand(0)) {
+                partnerOp = leftOp;
+            } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource == leftOp->getOperand(0)) {
+                partnerOp = leftOp;
+            }
+        }
+
+        if (partnerOp != nullptr) {
+            return false;
+        } else {
+            return true;
+        }
+    }); 
 
     patterns.add<ColumnarOpOptimization>(&getContext());
 
