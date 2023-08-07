@@ -75,7 +75,7 @@ namespace
                     return failure();
                 }
 
-                auto betweenOp = rewriter.replaceOpWithNewOp<daphne::ColumnBetweenOp>(rightOp, rightOp->getResult(0).getType(), leOp->getOperand(0), geOp->getOperand(1), leOp->getOperand(1));
+                auto betweenOp = rewriter.create<daphne::ColumnBetweenOp>(rightOp->getLoc(), rightOp->getResult(0).getType(), leOp->getOperand(0), geOp->getOperand(1), leOp->getOperand(1));
                 
                 rewriter.startRootUpdate(op);
                 //Both operations share the same intersect
