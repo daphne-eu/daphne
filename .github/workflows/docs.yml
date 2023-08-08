@@ -1,4 +1,4 @@
-name: Build HTML Docs from Markdown and Push to GitHub Pages Branch
+name: Build (& Deploy) Docs
 on:
   push:
     branches:
@@ -31,8 +31,9 @@ jobs:
         with:
           mkdocs_version: 'latest'
           requirements: 'doc/docs-build-requirements.txt'
-          configfile: 'mkdocs.yml' # option
+          configfile: 'mkdocs.yml'
       - name: Deploy
+        if: github.ref == 'refs/heads/main'
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
