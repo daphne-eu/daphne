@@ -26,6 +26,8 @@
 #include <mlir/IR/Builders.h>
 #include <mlir/IR/Location.h>
 
+#include <spdlog/spdlog.h>
+
 #include <istream>
 #include <parser/CancelingErrorListener.h>
 
@@ -48,7 +50,15 @@ mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream 
         parser.setErrorHandler(errorStrategy);
         SQLGrammarParser::SqlContext * ctx = parser.sql();
         SQLVisitor visitor(builder, view);
-        antlrcpp::Any a = visitor.visitSql(ctx);
+        antlrcpp::Any a;
+        try {
+            a = visitor.visitSql(ctx);
+        }
+        catch (std::runtime_error& re) {
+            spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+            throw;
+        }
+
         if(a.is<mlir::Value>()){
           return a.as<mlir::Value>();
         }

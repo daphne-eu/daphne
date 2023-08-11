@@ -653,7 +653,7 @@ def Daphne_TransposeOp : Daphne_Op<"transpose", [
 
     let builders = [
         OpBuilder<(ins "Value":$input), [{
-            auto ty = input.getType().cast<MatrixType>();
+            auto ty = input.getType();
             build($_builder, $_state, ty, input);
         }]>,
     ];
@@ -701,7 +701,7 @@ def Daphne_OrderOp : Daphne_Op<"order", [
 // Matrix decompositions & co
 // ****************************************************************************
 
-def Daphne_EigenOp : Daphne_Op<"eigenCal"> {
+def Daphne_EigenOp : Daphne_Op<"eigenCal", [TypeFromFirstArg, DeclareOpInterfaceMethods<InferShapeOpInterface>]> {
     let arguments = (ins MatrixOf<[FloatScalar]>:$arg);
     let results = (outs MatrixOf<[FloatScalar]>:$eigenValues, MatrixOf<[FloatScalar]>:$eigenVectors);
 }

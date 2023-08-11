@@ -1,0 +1,8 @@
+// var defined at depth 0, update at depth 2, block-while
+
+k = 1;
+{
+    while(k < 3)
+        k = k + 1;
+}
+print(k);

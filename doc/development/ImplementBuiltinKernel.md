@@ -16,16 +16,17 @@ limitations under the License.
 
 # Implementing a Built-in Kernel for a DaphneIR Operation
 
-### Background
+## Background
 
 (Almost) every DaphneIR operation will be backed by a kernel (= physical operator) at run-time.
 Extensibility w.r.t. kernels is one on the core goals of the DAPHNE system.
 It shall be easy for a user to add a custom kernel.
 However, the system will offer a full set of built-in kernels so that all DaphneIR operations can be used out-of-the-box.
 
-### Scope
+## Scope
 
 This document focuses on:
+
 - default built-in kernels (not custom/external kernels)
 - implementations for CPU (not HW accelerators)
 - local execution (not distributed)
@@ -40,14 +41,14 @@ As we proceed, we might adapt these guidelines step by step.
 The goal is to clarify how to implement a built-in kernel and what the thoughts behind it are.
 This is meant as a proposal, *comments/suggestions are always welcome*.
 
-**Integration into the directory tree**
+**Integration into the directory tree:**
 
 The implementations of built-in kernels shall reside in `src/runtime/local/kernels`.
 By default, one C++ header-file should be used for all specializations of a kernel.
 Depending on the amount of code, the separation into multiple header files is also possible.
 At least, we should rather not mix kernels of different DaphneIR operations in one header file.
 
-**Interfaces**
+**Interfaces:**
 
 Technically, a kernel is a C++ function taking one or more data objects (matrices, frames) and/or scalars as input and returning one or more data objects and/or scalars as output.
 As a central idea, (almost) all DaphneIR operations should be able to process (almost) all kinds of Daphne data structures, whereby these could have any Daphne value type.
@@ -69,7 +70,7 @@ The reason for passing output data objects as parameters is that this mechanism 
 
 The declaration of a kernel function could look as follows:
 
-```c++
+```cpp
 template<class DTRes, class DTArg, typename VT>
 void someOp(DTRes *& res, const DTArg * arg, VT otherArg);
 ```
@@ -91,7 +92,7 @@ Instead of partially specializing the kernel function, we partially specialize t
 Finally, callers will call an instantiation of the kernel template function.
 C++ templates offer many ways to express such (partial) specializations, some examples are given below:
 
-```c++
+```cpp
 // Kernel struct to enable partial template specialization.
 template<class DTRes, class DTArg, typename VT>
 struct SomeOp {
@@ -147,7 +148,7 @@ struct SomeOp<DenseMatrix<double>, CSRMatrix<float>, double> {
 };
 ```
 
-**Implementation of the `apply`-functions**
+**Implementation of the `apply`-functions:**
 
 As stated above, the `apply`-function contain the actual implementation of the kernel.
 Of course, that depends on what the kernel is supposed to do, but there some recurring actions.
@@ -155,9 +156,11 @@ Of course, that depends on what the kernel is supposed to do, but there some rec
 - *Obtaining an output data object*
 
   Data objects like matrices and frames cannot be obtained using the `new`-operator, but must be obtained from the `DataObjectFactory`, e.g., as follows:
-  ```c++
+
+  ```cpp
   auto res = DataObjectFactory::create<CSRMatrix<double>>(3, 4, 6, false);
   ```
+
   Internally, this `create`-function calls a private constructor of the specified data type implementation; so please have a look at these.
 - *Accessing the input and output data objects*
 
@@ -172,6 +175,7 @@ Of course, that depends on what the kernel is supposed to do, but there some rec
 
 For concrete examples, please have a look at existing kernel implementations in [src/runtime/local/kernels](/src/runtime/local/kernels).
 For instance, the following kernels represent some interesting cases:
+
 - [ewBinarySca](/src/runtime/local/kernels/EwBinarySca.h) works only on scalars.
 - [ewBinaryMat](/src/runtime/local/kernels/EwBinaryMat.h) works only on matrices.
 - [ewBinaryObjSca](/src/runtime/local/kernels/EwBinaryObjSca.h) combines matrix/frame and scalar inputs.

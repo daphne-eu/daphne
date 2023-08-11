@@ -43,11 +43,11 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
-
-#include <cstdlib>
+#include <csignal>
+#include <csetjmp>
 
 // global logger handle for this executable
-[[maybe_unused]] std::unique_ptr<DaphneLogger> logger;
+static std::unique_ptr<DaphneLogger> logger;
 
 using namespace std;
 using namespace mlir;
@@ -68,14 +68,29 @@ void parseScriptArgs(const llvm::cl::list<string>& scriptArgsCli, unordered_map<
 void printVersion(llvm::raw_ostream& os) {
     // TODO Include some of the important build flags into the version string.
     os
-      << "DAPHNE Version 0.2-rc1\n"
+      << "DAPHNE Version 0.2-rc2\n"
       << "An Open and Extensible System Infrastructure for Integrated Data Analysis Pipelines\n"
       << "https://github.com/daphne-eu/daphne\n";
 }
-    
+
+namespace
+{
+    volatile std::sig_atomic_t gSignalStatus;
+    jmp_buf return_from_handler;
+}
+
+void handle_sig_abort(int signal) {
+    spdlog::error("Got an abort signal from the execution engine. Most likely an exception in a shared library. Check logs!");
+    gSignalStatus = signal;
+    longjmp(return_from_handler, gSignalStatus);
+}
+
 int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int *id){
     using clock = std::chrono::high_resolution_clock;
     clock::time_point tpBeg = clock::now();
+
+    // install signal handler to catch information from shared libraries (for exception handling)
+    std::signal(SIGABRT, handle_sig_abort);
 
     // ************************************************************************
     // Parse command line arguments
@@ -458,8 +473,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         std::cerr << "Parser error: " << e.what() << std::endl;
         return StatusCode::PARSER_ERROR;
     }
-    
-    logger = std::make_unique<DaphneLogger>(user_config);
+
+    if(not logger)
+        logger = std::make_unique<DaphneLogger>(user_config);
 
     // ************************************************************************
     // Parse, compile and execute DaphneDSL script
@@ -498,8 +514,19 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
             return StatusCode::PASS_ERROR;
         }
     }
-    catch(std::exception & e){
-        std::cerr << "Pass error: " << e.what() << std::endl;
+    catch(std::runtime_error & re) {
+        spdlog::error("Pass std::runtime_error: {}", re.what());
+        cerr << "Pass error: " << re.what() << endl;
+        return StatusCode::PASS_ERROR;
+    }
+    catch(std::exception & e) {
+        spdlog::error("Pass std::exception: {}", e.what());
+        cerr << "Pass error: " << e.what() << endl;
+        return StatusCode::PASS_ERROR;
+    }
+    catch(...) {
+        spdlog::error("Pass error caught by ellipsis(...)");
+        cerr << "Pass error: (no message)" << endl;
         return StatusCode::PASS_ERROR;
     }
 
@@ -509,11 +536,23 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     try{
         auto engine = executor.createExecutionEngine(moduleOp);
         tpBegExec = clock::now();
-        auto error = engine->invoke("main");
-        if (error) {
-            llvm::errs() << "JIT-Engine invocation failed: " << error;
+
+        // set jump address for catching exceptions in kernel libraries via signal handling
+        if(setjmp(return_from_handler) == 0) {
+            auto error = engine->invoke("main");
+            if (error) {
+                llvm::errs() << "JIT-Engine invocation failed: " << error;
+                return StatusCode::EXECUTION_ERROR;
+            }
+        }
+        else {
+            spdlog::error("Execution error! Returning from signal {}", gSignalStatus);
             return StatusCode::EXECUTION_ERROR;
         }
+    }
+    catch (std::runtime_error& re) {
+        spdlog::error("Execution error!\nFinal catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+        return StatusCode::EXECUTION_ERROR;
     }
     catch(std::exception & e){
         std::cerr << "Execution error: " << e.what() << std::endl;
@@ -538,7 +577,10 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
         std::cerr << "}" << std::endl;
     }
 
-    return StatusCode::SUCCESS;
+    if(gSignalStatus != 0)
+        return StatusCode::EXECUTION_ERROR;
+    else
+        return StatusCode::SUCCESS;
 }
 
 

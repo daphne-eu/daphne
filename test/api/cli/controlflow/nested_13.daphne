@@ -1,0 +1,8 @@
+// var defined at depth 0, update at depth 2, block-if
+
+k = 1;
+{
+    if(true)
+        k = 2;
+}
+print(k);

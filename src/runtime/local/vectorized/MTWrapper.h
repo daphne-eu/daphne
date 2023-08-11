@@ -196,7 +196,7 @@ public:
 #else
         spdlog::debug("Querying arm cpu topology");
         _numCPPThreads = std::thread::hardware_concurrency();
-        for (auto i = 0; i < _numCPPThreads; i++) {
+        for (auto i = 0; i < static_cast<int>(_numCPPThreads); i++) {
             topologyPhysicalIds.push_back(i);
             topologyUniqueThreads.push_back(i);
             topologyResponsibleThreads.push_back(i);
@@ -251,13 +251,8 @@ public:
             std::cout << std::endl << "_totalNumaDomains=" << _totalNumaDomains << std::endl;
             std::cout << "_numQueues=" << _numQueues << std::endl;
         }
-#ifndef NDEBUG
-        std::stringstream ss;
-        ss << "spawning " << this->_numCPPThreads << " CPU and " << this->_numCUDAThreads << " CUDA worker threads"
-                  << std::endl;
-        spdlog::debug(ss.str());
-//        std::cerr << ss.str();
-#endif
+
+        spdlog::debug("spawning {} CPU and {} CUDA worker threads", this->_numCPPThreads, this->_numCUDAThreads);
     }
 
     virtual ~MTWrapperBase() = default;

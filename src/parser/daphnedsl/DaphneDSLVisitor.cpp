@@ -105,32 +105,16 @@ void DaphneDSLVisitor::handleAssignmentPart(
 
 template<class ExtractAxOp, class SliceAxOp, class NumAxOp>
 mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value arg, antlrcpp::Any ax, bool allowLabel) {
-    mlir::Type argType = arg.getType();
-    mlir::Type resType;
-    if(argType.isa<mlir::daphne::MatrixType>())
-        // Right indexing on a matrix retains the value type.
-        resType = argType;
-    else if(argType.isa<mlir::daphne::FrameType>())
-        // Right indexing on a frame may change the list of column value types
-        // (schema).
-        // TODO The following is invalid when extracting multiple columns, but
-        // we should better handle that during type inference.
-        resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
-    else if(argType.isa<mlir::daphne::UnknownType>())
-        resType = utils.unknownType;
-    else
-        throw std::runtime_error("right indexing is only allowed on matrices and frames");
-
     if(ax.is<mlir::Value>()) { // indexing with a single SSA value (no ':')
         mlir::Value axVal = ax.as<mlir::Value>();
         if(CompilerUtils::hasObjType(axVal)) // data object
-            return static_cast<mlir::Value>(
-                    builder.create<ExtractAxOp>(loc, argType, arg, axVal)
+            return utils.retValWithInferedType(
+                    builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal)
             );
         else if(axVal.getType().isa<mlir::daphne::StringType>()) { // string
             if(allowLabel)
-                return static_cast<mlir::Value>(
-                        builder.create<ExtractAxOp>(loc, argType, arg, axVal)
+                return utils.retValWithInferedType(
+                        builder.create<ExtractAxOp>(loc, utils.unknownType, arg, axVal)
                 );
             else
                 throw std::runtime_error(
@@ -138,9 +122,9 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
                 );
         }
         else // scalar
-            return static_cast<mlir::Value>(
+            return utils.retValWithInferedType(
                     builder.create<SliceAxOp>(
-                            loc, argType, arg,
+                            loc, utils.unknownType, arg,
                             utils.castSizeIf(axVal),
                             utils.castSizeIf(
                                     builder.create<mlir::daphne::EwAddOp>(
@@ -165,9 +149,9 @@ mlir::Value DaphneDSLVisitor::applyRightIndexing(mlir::Location loc, mlir::Value
         if(axUpperExcl == nullptr)
             axUpperExcl = builder.create<NumAxOp>(loc, utils.sizeType, arg);
 
-        return static_cast<mlir::Value>(
+        return utils.retValWithInferedType(
                 builder.create<SliceAxOp>(
-                        loc, argType, arg,
+                        loc, utils.unknownType, arg,
                         utils.castSizeIf(axLowerIncl),
                         utils.castSizeIf(axUpperExcl)
                 )
@@ -524,7 +508,7 @@ antlrcpp::Any DaphneDSLVisitor::visitIfStatement(DaphneDSLGrammarParser::IfState
     // Rewire the results of the if-operation to their variable names.
     size_t i = 0;
     for(auto it = owUnion.begin(); it != owUnion.end(); it++)
-        symbolTable.put(*it, ifOp.getResults()[i++]);
+        symbolTable.put(*it, ScopedSymbolTable::SymbolInfo(ifOp.getResults()[i++], false));
 
     return nullptr;
 }
@@ -629,7 +613,7 @@ antlrcpp::Any DaphneDSLVisitor::visitWhileStatement(DaphneDSLGrammarParser::Whil
         });
 
         // Rewire the results of the WhileOp to their variable names.
-        symbolTable.put(it->first, whileOp.getResults()[i++]);
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(whileOp.getResults()[i++], false));
     }
 
     return nullptr;
@@ -740,7 +724,7 @@ antlrcpp::Any DaphneDSLVisitor::visitForStatement(DaphneDSLGrammarParser::ForSta
         });
 
         // Rewire the results of the ForOp to their variable names.
-        symbolTable.put(it->first, forOp.getResults()[i]);
+        symbolTable.put(it->first, ScopedSymbolTable::SymbolInfo(forOp.getResults()[i], false));
 
         i++;
     }

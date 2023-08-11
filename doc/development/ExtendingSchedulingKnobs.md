@@ -14,54 +14,56 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# Extending DAPHNE with more scheduling knobs
+# Extending DAPHNE with More Scheduling Knobs
 
-This document focuses on:
-- how a daphne developer may extend the DAPHNE system by adding new scheduling techniques
+This document focuses on how a daphne developer may extend the DAPHNE system by adding new scheduling techniques
 
-### Guidelines
+## Guidelines
 
 The daphne developer should consider the following files for adding a new scheduling technique
+
 1. src/runtime/local/vectorized/LoadPartitioning.h
-2. src/api/cli/daphne.cpp
+1. src/api/cli/daphne.cpp
 
-**Adding the actual code of the technique**
+**Adding the actual code of the technique:**
 
-The first file `LoadPartitioning.h` contains the implementation of the currently supported scheduling techniques, i.e., the current version of DAPHNE uses self-scheduling techniques to partition the tasks. Also, it uses the self-scheduling principle for executing the tasks. 
+The first file `LoadPartitioning.h` contains the implementation of the currently supported scheduling techniques, i.e., the current version of DAPHNE uses self-scheduling techniques to partition the tasks. Also, it uses the self-scheduling principle for executing the tasks.
 For more details, please visit [Scheduler design for tasks and pipelines](https://daphne-eu.eu/wp-content/uploads/2021/11/Deliverable-5.1-fin.pdf).
 
 In this file, the developer should change two things:
+
 1. The enumeration that is called `SelfSchedulingScheme`. The developer will have to add a name for the new technique, e.g., `MYTECH`
 
-```c++
-enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, PLS, MSTATIC, MFSC, PSS, MYTECH };
-```
+    ```cpp
+    enum SelfSchedulingScheme { STATIC=0, SS, GSS, TSS, FAC2, TFSS, FISS, VISS, PLS, MSTATIC, MFSC, PSS, MYTECH };
+    ```
 
-2. The function that is called `getNextChunk()`. This function has a switch case that selects the mathematical formula that corresponds to the chosen scheduling method. The developer has to add a new case to handle the new technique.
+1. The function that is called `getNextChunk()`. This function has a switch case that selects the mathematical formula that corresponds to the chosen scheduling method. The developer has to add a new case to handle the new technique.
 
-```c++
- uint64_t getNextChunk(){
-    //...
-    switch (schedulingMethod){
-        //...
-        //Only the following part is what the developer has to add. The rest remains the same
-        case MYTECH:{ // the new technique
-            chunkSize= FORMULA;//Some Formula to calculate the chunksize (partition size)
-            break; 
-        }
-        //...
+    ```cpp
+    uint64_t getNextChunk(){
+       //...
+       switch (schedulingMethod){
+           //...
+           //Only the following part is what the developer has to add. The rest remains the same
+           case MYTECH:{ // the new technique
+               chunkSize= FORMULA;//Some Formula to calculate the chunksize (partition size)
+               break; 
+           }
+           //...
+       }
+       //...
+       return chunkSize;
     }
-    //...
-    return chunkSize;
- }
-            
-``` 
-**Enabling the selection of the newly added technique**
+    ```
 
-The second file `daphne.cpp` contains the code that parses the command line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a vaild option. Otherwise, the developer will not be able to use the newly added technique. 
+**Enabling the selection of the newly added technique:**
+
+The second file `daphne.cpp` contains the code that parses the command line arguments and passes them to the DAPHNE compiler and runtime. The developer has to add the new technique as a vaild option. Otherwise, the developer will not be able to use the newly added technique.
 There is a variable called `taskPartitioningScheme` and it is of type `opt<SelfSchedulingScheme>`.
 The developer should extend the declaration of `opt<SelfSchedulingScheme>` as follows:
-```c++
+
+```cpp
 opt<SelfSchedulingScheme> taskPartitioningScheme(
         cat(daphneOptions), desc("Choose task partitioning scheme:"),
         values(
@@ -82,20 +84,23 @@ opt<SelfSchedulingScheme> taskPartitioningScheme(
 ); 
 ```
 
-**Usage of the new technique**
+**Usage of the new technique:**
 
 Daphne developers may now pass the new technique as an option when they execute a DaphneDSL script.
+
 ```bash
 daphne --vec --MYTECH --grain-size 10 --num-threads 4 --PERCPU --SEQPRI --hyperthreading --debug-mt my_script.daphne
 ```
+
 In this example, the daphne system will execute `my_script.daphne`  with the following configuration:
+
 1. the vectorized engine is enabled due to `--vec`
-2. the DAPHNE runtime will use MYTECH for task partitioning due to `--MYTECH`
-3. the minimum partition size will be 10 due to `--grain-size 10 ` 
-4. the vectorized engine will use 4 threads due to `--num-threads 4` 
-5. work stealing will be used with a separate queue for each CPU due to `--PERCPU`
-6. the work stealing victim selection will be sequential prioritized due to `--SEQPRI`
-7. the rows will be evenly distributed before the scheduling technique is applied due to `--pre-partition`
-8. the CPU workers will be pinned to CPU cores due to `--pin-workers`
-9. if the number of threads were not specified the number of logical CPU cores would be used (instead of physical CPU cores) due to `--hyperthreading`
-10. Debugging information related to the multithreading of vectorizable operations will be printed due to `--debug-mt`
+1. the DAPHNE runtime will use MYTECH for task partitioning due to `--MYTECH`
+1. the minimum partition size will be 10 due to `--grain-size 10`
+1. the vectorized engine will use 4 threads due to `--num-threads 4`
+1. work stealing will be used with a separate queue for each CPU due to `--PERCPU`
+1. the work stealing victim selection will be sequential prioritized due to `--SEQPRI`
+1. the rows will be evenly distributed before the scheduling technique is applied due to `--pre-partition`
+1. the CPU workers will be pinned to CPU cores due to `--pin-workers`
+1. if the number of threads were not specified the number of logical CPU cores would be used (instead of physical CPU cores) due to `--hyperthreading`
+1. Debugging information related to the multithreading of vectorizable operations will be printed due to `--debug-mt`

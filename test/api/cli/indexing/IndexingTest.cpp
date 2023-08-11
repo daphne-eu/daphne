@@ -20,7 +20,6 @@
 
 #include <catch.hpp>
 
-#include <sstream>
 #include <string>
 
 const std::string dirPath = "test/api/cli/indexing/";
