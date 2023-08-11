@@ -57,6 +57,15 @@ include(HandleLLVMOptions)
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
 
+#find_package(Python REQUIRED)
+set(Python_INCLUDE_DIRS "/usr/include/python3.8")
+include_directories(${Python_INCLUDE_DIRS})
+message(STATUS "Python_INCLUDE_DIRS: ${Python_INCLUDE_DIRS}")
+
+#find_package(PythonLibs REQUIRED)
+set(PYTHON_LIBRARIES "/usr/lib/python3.8/config-3.8-x86_64-linux-gnu/libpython3.8.so")
+message(STATUS "PYTHON_LIBRARIES: ${PYTHON_LIBRARIES}")
+
 link_directories(${LLVM_BUILD_LIBRARY_DIR})
 add_definitions(${LLVM_DEFINITIONS})
 
@@ -173,6 +182,7 @@ add_subdirectory(src/runtime/distributed/worker)
 add_subdirectory(src/runtime/local/datastructures)
 add_subdirectory(src/runtime/local/io)
 add_subdirectory(src/runtime/local/kernels)
+add_subdirectory(src/runtime/local/kernels/MAP_PYBIND)
 if(USE_FPGAOPENCL)
     add_subdirectory(src/runtime/local/kernels/FPGAOPENCL)
 endif() 

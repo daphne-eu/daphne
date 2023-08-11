@@ -101,6 +101,7 @@ set(TEST_SOURCES
         runtime/local/kernels/IsSymmetricTest.cpp
         runtime/local/kernels/NumDistinctApproxTest.cpp
         runtime/local/kernels/MapTest.cpp
+        runtime/local/kernels/AlternativeMapTest.cpp
         runtime/local/kernels/MatMulTest.cpp
         runtime/local/kernels/OrderTest.cpp
         runtime/local/kernels/OuterBinaryTest.cpp
@@ -159,7 +160,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     list(APPEND LIBS CUDAKernels CUDA::cudart CUDA::cublasLt CUDA::cublas CUDA::cusparse ${CUDA_cudnn_LIBRARY})
 endif()
 
-target_link_libraries(run_tests PRIVATE ${LIBS})
+target_link_libraries(run_tests PRIVATE ${LIBS} ${PYTHON_LIBRARIES})
 target_link_directories(run_tests PRIVATE ${PROJECT_BINARY_DIR}/lib)
 add_executable(theta_join_test run_tests.cpp run_tests.h runtime/local/kernels/ThetaJoinTest.cpp)
 set_target_properties(theta_join_test PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
