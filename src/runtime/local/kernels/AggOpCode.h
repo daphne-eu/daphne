@@ -26,6 +26,7 @@
 
 enum class AggOpCode {
     SUM,
+    PROD,
     MIN,
     MAX,
     IDXMIN,
@@ -38,6 +39,7 @@ struct AggOpCodeUtils {
     static bool isPureBinaryReduction(AggOpCode opCode) {
         switch(opCode) {
             case AggOpCode::SUM:
+            case AggOpCode::PROD:
             case AggOpCode::MIN:
             case AggOpCode::MAX:
                 return true;
@@ -53,6 +55,7 @@ struct AggOpCodeUtils {
         assert(isPureBinaryReduction(opCode));
         switch(opCode) {
             case AggOpCode::SUM: return BinaryOpCode::ADD;
+            case AggOpCode::PROD: return BinaryOpCode::MUL;
             case AggOpCode::MIN: return BinaryOpCode::MIN;
             case AggOpCode::MAX: return BinaryOpCode::MAX;
             default:
@@ -65,6 +68,7 @@ struct AggOpCodeUtils {
         assert(isPureBinaryReduction(opCode));
         switch(opCode) {
             case AggOpCode::SUM: return VT(0);
+            case AggOpCode::PROD: return VT(1);
             case AggOpCode::MIN: return std::numeric_limits<VT>::has_infinity ?  std::numeric_limits<VT>::infinity() : std::numeric_limits<VT>::max();
             case AggOpCode::MAX: return std::numeric_limits<VT>::has_infinity ? -std::numeric_limits<VT>::infinity() : std::numeric_limits<VT>::min();
             default:
@@ -76,6 +80,7 @@ struct AggOpCodeUtils {
         switch(opCode) {
             case AggOpCode::SUM:
                 return true;
+            case AggOpCode::PROD:
             case AggOpCode::MIN:
             case AggOpCode::MAX:
             case AggOpCode::MEAN:

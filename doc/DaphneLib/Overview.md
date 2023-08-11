@@ -1,5 +1,5 @@
 <!--
-Copyright 2023 The DAPHNE Consortium
+Copyright 2021 The DAPHNE Consortium
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,10 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# DaphneLib: DAPHNE's Python API
+# Overview: DAPHNE's Python API
 
 DaphneLib is a simple user-facing Python API that allows calling individual basic and higher-level DAPHNE built-in functions.
-The overall design follows similar abstractions like PySpark and Dask by using lazy evaluation. When the evaluation is triggered, DaphneLib assembles and executes a [DaphneDSL](/doc/DaphneDSLLanguageRef.md) script that uses the entire DAPHNE compilation and runtime stack, including all optimizations.
+The overall design follows similar abstractions like PySpark and Dask by using lazy evaluation. When the evaluation is triggered, DaphneLib assembles and executes a [DaphneDSL](/doc/DaphneDSL/LanguageRef.md) script that uses the entire DAPHNE compilation and runtime stack, including all optimizations.
 Users can easily mix and match DAPHNE computations with other Python libraries and plotting functionality.
 
 **DaphneLib is still in an experimental stage, feedback and bug reports via GitHub issues are highly welcome.**
@@ -58,7 +58,7 @@ Up until here, no acutal computations are performed.
 Instead, an internal DAG (directed acyclic graph) representation of the computation is built.
 When calling `compute()` on the result **(5)**, the DAG is automatically optimized and executed by DAPHNE.
 This principle is known as *lazy evaluation*.
-(Internally, a [DaphneDSL](/doc/DaphneDSLLanguageRef.md) script is created, which is sent through the entire DAPHNE compiler and runtime stack, thereby profiting from all optimizations in DAPHNE.)
+(Internally, a [DaphneDSL](/doc/DaphneDSL/LanguageRef.md) script is created, which is sent through the entire DAPHNE compiler and runtime stack, thereby profiting from all optimizations in DAPHNE.)
 The result is returned as a `numpy.ndarray` (for DAPHNE matrices), as a `pandas.DataFrame` (for DAPHNE frames), or as a plain Python scalar (for DAPHNE scalars), and can then be further used in Python.
 
 The script above can be executed by:
@@ -68,8 +68,10 @@ python3 scripts/examples/daphnelib/shift-and-scale.py
 ```
 
 Note that there are some **temporary limitations** (which will be fixed in the future):
+
 - `python3` must be executed from the DAPHNE base directory.
 - Before executing DaphneLib Python scripts, the environment variable `PYTHONPATH` must be updated by executing the following command once per session:
+
   ```bash
   export PYTHONPATH="$PYTHONPATH:$PWD/src/"
   ```
@@ -81,35 +83,40 @@ The remainder of this document presents the core features of DaphneLib *as they 
 DAPHNE differentiates *data types* and *value types*.
 
 Currently, DAPHNE supports the following *abstract* **data types**:
+
 - `matrix`: homogeneous value type for all cells
 - `frame`: a table with columns of potentially different value types
 - `scalar`: a single value
 
 **Value types** specify the representation of individual values. We currently support:
+
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
 - strings `str` *(currently only for scalars, support for matrix elements is still experimental)*
 - booleans `bool` *(currently only for scalars)*
 
 Data types and value types can be combined, e.g.:
+
 - `matrix<f64>` is a matrix of double-precision floating point values
 
 In DaphneLib, each node of the computation DAG has one of the types `api.python.operator.nodes.matrix.Matrix`, `api.python.operator.nodes.frame.Frame`, or `api.python.operator.nodes.scalar.Scalar`.
-The type of a node determines which methods can be invoked on it (see [DaphneLib API reference](/doc/DaphneLibAPIRef.md)).
+The type of a node determines which methods can be invoked on it (see [DaphneLib API reference](/doc/DaphneLib/APIRef.md)).
 
 ## Obtaining DAPHNE Matrices and Frames
 
 The `DaphneContext` offers means to obtain DAPHNE matrices and frames, which serve as the starting point for defining complex computations.
 More precisely, DAPHNE matrices and frames can be obtained in the following ways:
+
 - importing data from other Python libraries (e.g., numpy and pandas)
 - generating data in DAPHNE (e.g., random data, constants, or sequences)
 - reading files using DAPHNE's readers (e.g., CSV, Matrix Market, Parquet, DAPHNE binary format)
 
-A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLibAPIRef.md#daphnecontext).
+A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#daphnecontext).
 
 ## Building Complex Computations
 
 Based on DAPHNE matrices/frames/scalars and Python scalars, complex expressions can be defined by
+
 - Python operators
 - DAPHNE matrix/frame/scalar methods
 
@@ -143,22 +150,24 @@ The following table shows which combinations of inputs are allowed and which res
 | matrix (n x m) | matrix (1 x m) | matrix (n x m) | broadcasting of row-vector |
 | matrix (n x m) | matrix (n x 1) | matrix (n x m) | broadcasting of column-vector |
 
-**(*)** *Scalar-`op`-matrix* operations are so far only supported for `+`, `-`, `*`, `/`; for `/` only if the matrix is of a floating-point value type.
+**(\*)** *Scalar-`op`-matrix* operations are so far only supported for `+`, `-`, `*`, `/`; for `/` only if the matrix is of a floating-point value type.
 
 In the future, we will fully support *scalar-`op`-matrix* operations as well as row/column-matrices as the left-hand-side operands.
 
-*Examples*
-```
+*Examples:*
+
+```r
 1.5 * X @ y + 0.001
 ```
 
 ### Matrix/Frame/Scalar Methods
 
 DaphneLib's classes `Matrix`, `Frame`, and `Scalar` offer a range of methods to call DAPHNE built-in functions.
-A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLibAPIRef.md#building-complex-computations).
+A comprehensive list can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#building-complex-computations).
 
-*Examples*
-```
+*Examples:*
+
+```r
 X.t()
 X.sqrt()
 X.cbind(Y)
@@ -168,17 +177,18 @@ X.cbind(Y)
 
 DaphneLib will support efficient data exchange with other well-known Python libraries, in both directions.
 The data transfer from other Python libraries to DaphneLib can be triggered through the `from_...()` methods of the `DaphneContext` (e.g., `from_numpy()`).
-A comprehensive list of these methods can be found in the [DaphneLib API reference](/doc/DaphneLibAPIRef.md#daphnecontext).
+A comprehensive list of these methods can be found in the [DaphneLib API reference](/doc/DaphneLib/APIRef.md#daphnecontext).
 The data transfer from DaphneLib back to Python happens during the call to `compute()`.
 If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray`; if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
 
 So far, DaphneLib can exchange data with numpy (via shared memory) and  pandas (via CSV files).
 Enabling data exchange with TensorFlow and PyTorch is on our agenda.
-Furthermore, we are working on making the data exchange more efficient in general. 
+Furthermore, we are working on making the data exchange more efficient in general.
 
 ### Data Exchange with numpy
 
 *Example:*
+
 ```python
 from api.python.context.daphne_context import DaphneContext
 import numpy as np
@@ -201,12 +211,16 @@ X = X + 100.0
 print("\nResult of adding 100 to each value, back in Python:")
 print(X.compute())
 ```
+
 *Run by:*
-```
+
+```shell
 python3 scripts/examples/daphnelib/data-exchange-numpy.py
 ```
+
 *Output:*
-```
+
+```text
 How DAPHNE sees the data from numpy:
 DenseMatrix(2x4, double)
 0 1 2 3
@@ -215,12 +229,12 @@ DenseMatrix(2x4, double)
 Result of adding 100 to each value, back in Python:
 [[100. 101. 102. 103.]
  [104. 105. 106. 107.]]
-
 ```
 
 ### Data Exchange with pandas
 
 *Example:*
+
 ```python
 from api.python.context.daphne_context import DaphneContext
 import pandas as pd
@@ -243,12 +257,16 @@ F = F.rbind(F)
 print("\nResult of appending the frame to itself, back in Python:")
 print(F.compute())
 ```
+
 *Run by:*
-```
+
+```shell
 python3 scripts/examples/daphnelib/data-exchange-pandas.py
 ```
+
 *Output:*
-```
+
+```text
 How DAPHNE sees the data from pandas:
 Frame(3x2, [a:int64_t, b:double])
 1 1.1

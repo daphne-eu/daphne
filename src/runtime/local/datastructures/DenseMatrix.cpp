@@ -26,7 +26,7 @@ DenseMatrix<ValueType>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero
 {
     DataPlacement* new_data_placement;
     if(allocInfo != nullptr) {
-        spdlog::get("default")->debug("Creating {} x {} dense matrix of type: {}. Required memory: {} Mb",
+        spdlog::debug("Creating {} x {} dense matrix of type: {}. Required memory: {} Mb",
                 numRows, numCols, static_cast<int>(allocInfo->getType()),
                 static_cast<float>(getBufferSize()) / (1048576));
 
@@ -59,12 +59,12 @@ DenseMatrix<ValueType>::DenseMatrix(const DenseMatrix<ValueType> * src, size_t r
         lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
     assert(src && "src must not be null");
-    assert((rowLowerIncl < src->numRows) && "rowLowerIncl is out of bounds");
+    assert(((rowLowerIncl < src->numRows) || rowLowerIncl == 0) && "rowLowerIncl is out of bounds");
     assert((rowUpperExcl <= src->numRows) && "rowUpperExcl is out of bounds");
-    assert((rowLowerIncl < rowUpperExcl) && "rowLowerIncl must be lower than rowUpperExcl");
-    assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+    assert((rowLowerIncl <= rowUpperExcl) && "rowLowerIncl must be lower or equal than rowUpperExcl");
+    assert(((colLowerIncl < src->numCols) || colLowerIncl == 0) && "colLowerIncl is out of bounds");
     assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
-    assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
+    assert((colLowerIncl <= colUpperExcl) && "colLowerIncl must be lower or equal than colUpperExcl");
     
     this->row_offset = rowLowerIncl;
     this->col_offset = colLowerIncl;
@@ -184,13 +184,13 @@ auto DenseMatrix<ValueType>::getValuesInternal(const IAllocationDescriptor* allo
                 std::get<2>(result) = startAddress();
             }
             if(std::get<2>(result) == nullptr)
-                throw std::runtime_error("Error: no object meta data in matrix");
+                throw std::runtime_error("No object meta data in matrix");
             else
                 return result;
         }
     }
     else
-        throw std::runtime_error("Error: range support under construction");
+        throw std::runtime_error("Range support under construction");
 }
 
 template <typename ValueType> void DenseMatrix<ValueType>::printValue(std::ostream & os, ValueType val) const {
@@ -235,10 +235,7 @@ size_t DenseMatrix<bool>::serialize(std::vector<char> &buf) const{
 DenseMatrix<const char*>::DenseMatrix(size_t maxNumRows, size_t numCols, bool zero, size_t strBufferCapacity_, ALLOCATION_TYPE type) :
         Matrix<const char*>(maxNumRows, numCols), rowSkip(numCols), lastAppendedRowIdx(0), lastAppendedColIdx(0)
 {
-#ifndef NDEBUG
-    std::cerr << "creating dense matrix of allocation type " << static_cast<int>(type) <<
-              ", dims: " << numRows << "x" << numCols << " req.mem.: " << printBufferSize() << "Mb" << " with at least " << strBufferCapacity_ << " bytes for strings" <<  std::endl;
-#endif
+    spdlog::debug("creating dense matrix of allocation type {}, dims: {}x{} req.mem.: {}Mb with at least {} bytes for strings",  static_cast<int>(type), numRows, numCols, printBufferSize(), strBufferCapacity_);
     if (type == ALLOCATION_TYPE::HOST) {
         alloc_shared_values();
         alloc_shared_strings(nullptr, strBufferCapacity_);

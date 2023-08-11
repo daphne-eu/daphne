@@ -231,8 +231,7 @@ namespace CUDA {
             }
         }
         else {
-            std::cerr << "opCode=" << static_cast<uint32_t>(opCode) << std::endl;
-            throw std::runtime_error("unknown operator for EwBinaryMat");
+            throw std::runtime_error(fmt::format("Unknown opCode {} for EwBinaryMat", static_cast<uint32_t>(opCode)));
         }
         if(err) {
             assert(
@@ -241,11 +240,8 @@ namespace CUDA {
                              "width/height of the other"
             );
         }
-#ifndef NDEBUG
-        std::cerr << " EwBinMat[" << static_cast<int>(opCode) << "]: " << gridSize << " blocks x " << blockSize
-                  << " threads = " << gridSize * blockSize
-                  << " total threads for " << N << " items" << std::endl;
-#endif
+        spdlog::get("runtime::cuda")->debug("EwBinMat[{}]: {} blocks x {} threads = {} total threads for {} items",
+                static_cast<int>(opCode), gridSize, blockSize, gridSize*blockSize,N);
     }
 
     template struct EwBinaryMat<DenseMatrix<long>, DenseMatrix<long>, DenseMatrix<long>>;

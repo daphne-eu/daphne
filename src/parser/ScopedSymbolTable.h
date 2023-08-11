@@ -138,37 +138,15 @@ public:
     
     /**
      * @brief Associates the given symbol information (including an SSA value)
-     * with the given symbol.
+     * with the given symbol in the current scope.
      * 
-     * The association is always created in the current scope. Any existing
-     * mapping in that scope will be overwritten.
+     * Any existing mapping in that scope will be overwritten.
      * 
      * @param sym The symbol (variable name).
      * @param info The symbol information, including the SSA value.
      */
     void put(std::string sym, SymbolInfo info) {
         scopes.back()[sym] = info;
-    }
-    
-    /**
-     * @brief Updates the SSA value associated with the given symbol, while
-     * retaining all other information on the symbol; requires the symbol to
-     * exist already.
-     * 
-     * @param sym The symbol (variable name).
-     * @param val The new SSA value to associate with the symbol.
-     */
-    void put(std::string sym, mlir::Value val) {
-        //update the symbol in the closest parent scope
-        for(int i = scopes.size() - 1; i >= 0; i--) {
-            auto it = scopes[i].find(sym);
-            if(it != scopes[i].end()) {
-                it->second.value = val;
-                return;
-            }
-        }
-        throw std::runtime_error(
-            "trying to update the value of an unknown symbol: " + sym );
     }
     
     /**

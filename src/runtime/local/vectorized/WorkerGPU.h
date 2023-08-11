@@ -25,8 +25,8 @@ class WorkerGPU : public Worker {
     uint32_t _fid;
     uint32_t _batchSize;
 public:
-    // this constructor is to be used in practice
-    WorkerGPU(TaskQueue* tq, bool verbose, uint32_t fid = 0, uint32_t batchSize = 100) : Worker(), _q(tq),
+    // ToDo: remove compile-time verbose parameter and use logger
+    WorkerGPU(TaskQueue* tq, DCTX(dctx), bool verbose, uint32_t fid = 0, uint32_t batchSize = 100) : Worker(dctx), _q(tq),
             _verbose(verbose), _fid(fid), _batchSize(batchSize) {
         // at last, start the thread
         t = std::make_unique<std::thread>(&WorkerGPU::run, this);
@@ -40,13 +40,13 @@ public:
         while( !isEOF(t) ) {
             //execute self-contained task
             if( _verbose )
-                std::cerr << "WorkerGPU: executing task." << std::endl;
+                ctx->logger->trace("WorkerGPU: executing task.");
             t->execute(_fid, _batchSize);
             delete t;
             //get next tasks (blocking)
             t = _q->dequeueTask();
         }
         if( _verbose )
-            std::cerr << "WorkerGPU: received EOF, finalized." << std::endl;
+            ctx->logger->trace("WorkerGPU: received EOF, finalized.");
     }
 };

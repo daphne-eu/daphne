@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-time unminimize
 /usr/sbin/sshd -f /etc/ssh/sshd_config
 /usr/sbin/groupadd -g "$GID" dockerusers
 /usr/sbin/useradd -c 'Docker Container User' -u $UID -g "$GID" -G sudo -m -s /bin/bash -d /home/"$USER" "$USER"
@@ -26,6 +25,9 @@ touch /home/"$USER"/.sudo_as_admin_successful
 SALT=$(date +%M%S)
 PASS=Docker!"$SALT"
 echo "${USER}":"$PASS" | chpasswd
+echo
+echo For longer running containers consider running \'unminimize\' to update packages
+echo and make the container more suitable for interactive use.
 echo
 echo "Use "$USER" with password "$PASS" for SSH login"
 echo "Docker Container IP address(es):"

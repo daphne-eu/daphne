@@ -18,8 +18,6 @@
 
 #include <runtime/local/datastructures/AllocationDescriptorCUDA.h>
 
-#include <cstdint>
-
 namespace CUDA {
     template<class DTRes, class DTArg, class DTSel>
     __global__ void extract_col(DTRes *res, const DTArg *arg, const DTSel *sel, const size_t sel_rows, const size_t arg_cols, const size_t cols) {
@@ -51,10 +49,8 @@ namespace CUDA {
         CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize(&minGridSize, &blockSize, extract_col<DTRes, DTArg, DTSel>, 0, 0));
         gridSize = (N + blockSize - 1) / blockSize;
 
-#ifndef NDEBUG
-        std::cerr << " ExtractCol: " << gridSize << " blocks x " << blockSize << " threads = " << gridSize*blockSize
-                << " total threads for " << N << " items" << std::endl;
-#endif
+        spdlog::get("runtime::cuda")->debug("ExtractCol: {} blocks x {} threads = {} total threads for {} items",
+                gridSize, blockSize, gridSize*blockSize, N);
 
         extract_col<<<gridSize, blockSize>>>(res->getValues(&alloc_desc), arg->getValues(&alloc_desc),
                 sel->getValues(&alloc_desc), sel->getNumRows(), arg->getNumCols(), N);

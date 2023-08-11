@@ -1,5 +1,5 @@
 <!--
-Copyright 2023 The DAPHNE Consortium
+Copyright 2021 The DAPHNE Consortium
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,63 +14,63 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# DaphneLib API Reference
+# API Reference
 
 This document is a hand-crafted reference of the DaphneLib API.
-A general introduction to [DaphneLib (DAPHNE's Python API)](/doc/DaphneLib.md) can be found in a separate document.
+A general introduction to [DaphneLib (DAPHNE's Python API)](/doc/DaphneLib/Overview.md) can be found in a separate document.
 DaphneLib will offer numerous methods for *obtaining DAPHNE matrices and frames* as well as for *building complex computations* based on them.
-Ultimately, DaphneLib will support all [DaphneDSL built-in functions](/doc/DaphneDSLBuiltins.md) on matrices and frames.
+Ultimately, DaphneLib will support all [DaphneDSL built-in functions](/doc/DaphneDSL/Builtins.md) on matrices and frames.
 Futhermore, **we also plan to create a library of higher-level primitives** allowing users to productively implement integrated data analysis pipelines at a much higher level of abstraction.
 
 At the moment, the documentation is still rather incomplete.
-However, as the methods largely map to DaphneDSL built-in functions, you can find some more information in the [List of DaphneDSL built-in functions](/doc/DaphneDSLBuiltins.md), for the time being.
+However, as the methods largely map to DaphneDSL built-in functions, you can find some more information in the [List of DaphneDSL built-in functions](/doc/DaphneDSL/Builtins.md), for the time being.
 
 ## Obtaining DAPHNE Matrices and Frames
 
 ### `DaphneContext`
 
-**Importing data from other Python libraries**
+**Importing data from other Python libraries:**
 
 - **`from_numpy`**`(mat: np.array, shared_memory=True) -> Matrix`
 - **`from_pandas`**`(df: pd.DataFrame) -> Frame`
   
-**Generating data in DAPHNE**
+**Generating data in DAPHNE:**
 
 - **`fill`**`(arg, rows:int, cols:int) -> Matrix`
 - **`seq`**`(start, end, inc) -> Matrix`
 - **`rand`**`(rows: int, cols: int, min: Union[float, int] = None, max: Union[float, int] = None, sparsity: Union[float, int] = 0, seed: Union[float, int] = 0) -> Matrix`
 
-**Reading files using DAPHNE's readers**
+**Reading files using DAPHNE's readers:**
 
 - **`readMatrix`**`(file:str) -> Matrix`
 - **`readFrame`**`(file:str) -> Frame`
 
 ## Building Complex Computations
 
-Complex computations can be built using Python operators (see [DaphneLib](/doc/DaphneLib.md)) and using DAPHNE matrix/frame/scalar methods.
+Complex computations can be built using Python operators (see [DaphneLib](/doc/DaphneLib/Overview.md)) and using DAPHNE matrix/frame/scalar methods.
 In the following, we describe only the latter.
 
 ### `Matrix` API Reference
 
-**Data Generation**
+**Data Generation:**
 
 - **`diagMatrix`**`()`
 
-**Matrix dimensions**
+**Matrix dimensions:**
 
 - **`ncol`**`()`
 - **`nrow`**`()`
 
-**Elementwise unary**
+**Elementwise unary:**
 
 - **`sqrt`**`()`
 
-**Elementwise binary**
+**Elementwise binary:**
 
 - **`max`**`(other: 'Matrix')`
 - **`min`**`(other: 'Matrix')`
 
-**Aggregation**
+**Aggregation:**
 
 - **`sum`**`(axis: int = None)`
 - **`aggMin`**`(axis: int = None)`
@@ -78,46 +78,46 @@ In the following, we describe only the latter.
 - **`mean`**`(axis: int = None)`
 - **`stddev`**`(axis: int = None)`
 
-**Reorganization**
+**Reorganization:**
 
 - **`t`**`()`
 
-**Other matrix operations**
+**Other matrix operations:**
 
 - **`solve`**`(other: 'Matrix')`
 
-**Input/output**
+**Input/output:**
 
 - **`print`**`()`
 - **`write`**`(file: str)`
 
 ### `Frame` API Reference
 
-**Frame dimensions**
+**Frame dimensions:**
 
 - **`nrow`**`()`
 - **`ncol`**`()`
 
-**Reorganization**
+**Reorganization:**
 
 - **`cbind`**`(other)`
 - **`rbind`**`(other)`
 
-**Extended relational algebra**
+**Extended relational algebra:**
 
 - **`cartesian`**`(other)`
 
-**Input/output**
+**Input/output:**
 
 - **`print`**`()`
 - **`write`**`(file: str)`
 
 ### `Scalar` API Reference
 
-**Unary operations**
+**Unary operations:**
 
 - **`sqrt`**`()`
 
-**Input/output**
+**Input/output:**
 
 - **`print`**`()`

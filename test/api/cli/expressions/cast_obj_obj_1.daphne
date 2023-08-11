@@ -6,7 +6,7 @@ print(as.frame(m0));
 
 //frame->matrix
 f0 = createFrame([20, 21, 22]);
-print(as.matrix(f0[,0]));
+print(as.matrix(f0));
 
 //-- Specify ValueType Only
 
@@ -20,4 +20,4 @@ print(as.f64(m2));
 
 //-- Specify DataType and ValueType
 f0 = createFrame([20, 21, 22]);
-print(as.matrix<f64>(f0[,0]));
+print(as.matrix<f64>(f0));

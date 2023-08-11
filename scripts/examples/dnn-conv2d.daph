@@ -14,6 +14,10 @@
  * limitations under the License.
  */
 
+# ---- !!! ----
+# NOTE: This script uses DNN operations that DAPHNE can only provide via CUDA (e.g., GPU support required)
+
+
 msec_factor = as.f32(0.000001);
 
 # num images

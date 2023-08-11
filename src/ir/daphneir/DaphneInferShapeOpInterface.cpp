@@ -48,9 +48,9 @@ std::pair<ssize_t, ssize_t> getShape(Value v) {
 
 ssize_t inferNumRowsFromArgs(ValueRange vs) {
     // If the #rows of all arguments is known and matches, then this is the
-    // infered #rows. If the known #rows of any two arguments mismatch, an
+    // inferred #rows. If the known #rows of any two arguments mismatch, an
     // exception is thrown. Otherwise, if the #rows of any argument is unknown,
-    // the infered #rows is unknown.
+    // the inferred #rows is unknown.
     ssize_t numRows = getShape(vs[0]).first;
     bool someUnknown = false;
     if(numRows == -1)
@@ -400,6 +400,11 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::SliceColOp::inferShape() {
     }
 
     return {{srcNumRows, resNumCols}};
+}
+
+std::vector<std::pair<ssize_t, ssize_t>> daphne::EigenOp::inferShape() {
+    auto shape = getShape(getOperand());
+    return {{shape.first, 1}, {shape.first, shape.first}};
 }
 
 // ****************************************************************************

@@ -39,7 +39,6 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     std::ifstream ifs(filename);
     auto jf = nlohmann::json::parse(ifs);
 
-//try {
     checkAnyUnexpectedKeys(jf, filename);   // raise an error if the config JSON file contains any unexpected keys
 
     if (keyExists(jf, DaphneConfigJsonParams::USE_CUDA_))
@@ -105,21 +104,24 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
     }
     if (keyExists(jf, DaphneConfigJsonParams::LOGGING)) {
         for (const auto&[key, val]: jf.at(DaphneConfigJsonParams::LOGGING).items()) {
-//            spdlog::warn(key);
-//            for (const auto&[key2, val2]: val.items()) {
-//                spdlog::warn(key2);
-//                spdlog::warn(val2);
-//            }
-            config.loggers.emplace_back(LogConfig({val.at("name"), val.at("filename"), readLogLevel(val.at("level")), val.at("format")}));
+            if(val.contains("log-level-limit")) {
+                config.log_level_limit = static_cast<spdlog::level::level_enum>(readLogLevel(val.front()));
+            }
+            else if (val.contains("name")) {
+                config.loggers.emplace_back(LogConfig({val.at("name"), val.at("filename"), readLogLevel(val.at("level")),
+                        val.at("format")}));
+            }
+            else {
+                spdlog::error("Not handling unknown/malformed log config entry {}", key);
+                for (const auto&[key2, val2]: val.items()) {
+                    // not using spdlog::get() here as loggers are most likely not configured yet
+                    spdlog::error(key2);
+                    spdlog::error(val2);
+                }
+            }
+
         }
     }
-//} catch (const nlohmann::detail::type_error& ex) {
-//    std::cerr << ex.what() << std::endl;
-//} catch (const nlohmann::detail::out_of_range& ex) {
-//    std::cerr << ex.what() << std::endl;
-//} catch (const std::invalid_argument& ex) {
-//    std::cerr << ex.what() << std::endl;
-//}
 }
 
 bool ConfigParser::keyExists(const nlohmann::json& j, const std::string& key) {

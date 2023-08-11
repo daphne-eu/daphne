@@ -1,0 +1,11 @@
+// var defined at depth 0, update at depth 3, block-block-block
+
+k = 1;
+{
+    {
+        {
+            k = 2;
+        }
+    }
+}
+print(k);

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-# DaphneDSL Language Reference
+# Language Reference
 
 DaphneDSL is DAPHNE's domain-specific language (DSL).
 DaphneDSL is written in plain text files, typically ending with `.daphne` or `.daph`.
@@ -27,13 +27,13 @@ Its syntax is inspired by C/Java-like languages.
 
 A simple hello-world script can look as follows:
 
-```
+```csharp
 print("hello world");
 ```
 
 Assuming this script is stored in the file `hello.daphne`, it can be executed by the following command:
 
-```
+```shell
 bin/daphne hello.daphne
 ```
 
@@ -47,8 +47,9 @@ Variables are used to refer to values.
 
 The following reserved keywords must not be used as identifiers: `if`, `else`, `while`, `do`, `for`, `in`, `true`, `false`, `as`, `def`, `return`, `import`, `matrix`, `frame`, `scalar`, `f64`, `f32`, `si64`, `si8`, `ui64`, `ui32`, `ui8`, `str`, `nan`, and `inf`.
 
-*Examples*
-```
+*Examples:*
+
+```text
 X
 y
 _hello123
@@ -64,25 +65,29 @@ Variables must have been assigned to before they are used in an expression.
 DaphneDSL differentiates *data types* and *value types*.
 
 Currently, DaphneDSL supports the following *abstract* **data types**:
+
 - `matrix`: homogeneous value type for all cells
 - `frame`: a table with columns of potentially different value types
 - `scalar`: a single value
 
 **Value types** specify the representation of individual values. We currently support:
+
 - floating-point numbers of various widths: `f64`, `f32`
 - signed and unsigned integers of various widths: `si64`, `si32`, `si8`, `ui64`, `ui32`, `ui8`
 - strings `str` *(currently only for scalars, support for matrix elements is still experimental)*
 - booleans `bool` *(currently only for scalars)*
 
 Data types and value types can be combined, e.g.:
+
 - `matrix<f64>` is a matrix of double-precision floating point values
 
 ## Comments
 
 DaphneDSL supports single-line comments (starting with `#` or `//`) and multi-line comments (everything enclosed in `/*` and `*/`).
 
-*Examples*
-```
+*Examples:*
+
+```csharp
 # this is a comment
 print("Hello World!"); // this is also a comment
 /* comments can
@@ -115,6 +120,7 @@ Furthermore, the following literals stand for special floating-point values: `na
 
 **String literals** are enclosed in quotation marks `"`.
 Special characters must be escaped using a backslash:
+
 - `\n`: new line
 - `\t`: tab
 - `\"`: quotation mark
@@ -123,8 +129,9 @@ Special characters must be escaped using a backslash:
 - `\f`: line feed
 - `\r`: carriage return
 
-*Examples*
-```
+*Examples*:
+
+```csharp
 "Hello World!"
 "line 1\nline 2\nline 3"
 "This is \"hello.daphne\"."
@@ -136,20 +143,22 @@ A matrix literal consists of a comma-separated list of scalar literals, enclosed
 All scalars specified for the elements must be of the same type. <!--TODO relax this, infer the most general type-->
 Furthermore, all specified elements must be actual literals, i.e., expressions are not supported yet. <!--TODO support expressions for the elements (both compile-time constant and known-only-at-runtime-->
 The resulting matrix is always a column matrix, i.e., if *n* elements are specified, its shape is *(n x 1)*.
-Note that the [built-in function](/doc/DaphneDSLBuiltins.md) `reshape` can be used to modify the shape.
+Note that the [built-in function](/doc/DaphneDSL/Builtins.md) `reshape` can be used to modify the shape.
 
 *Examples:*
-```
+
+```r
 [1.0, 0.0, -4.0]            # matrix<f64> with shape (3 x 1)
 reshape([1, 2, 3, 4], 1, 4) # matrix<si64> with shape (1 x 4)
 ```
 
-#### Variables
+#### Variable Expressions
 
 Variables are referenced by their name.
 
-*Examples*
-```
+*Examples:*
+
+```text
 x
 ```
 
@@ -158,8 +167,9 @@ x
 Script arguments are named *literals* that can be passed to a DaphneDSL script.
 They are referenced by a dollar sign `$` followed by the argument's name.
 
-*Examples*
-```
+*Examples:*
+
+```r
 $x
 ```
 
@@ -201,12 +211,13 @@ The following table shows which combinations of inputs are allowed and which res
 | matrix (n x m) | matrix (1 x m) | matrix (n x m) | broadcasting of row-vector |
 | matrix (n x m) | matrix (n x 1) | matrix (n x m) | broadcasting of column-vector |
 
-**(*)** *Scalar-`op`-matrix* operations are so far only supported for `+`, `-`, `*`, `/`; for `/` only if the matrix is of a floating-point value type.
+**(\*)** *Scalar-`op`-matrix* operations are so far only supported for `+`, `-`, `*`, `/`; for `/` only if the matrix is of a floating-point value type.
 
 In the future, we will fully support *scalar-`op`-matrix* operations as well as row/column-matrices as the left-hand-side operands.
 
-*Examples*
-```
+*Examples:*
+
+```r
 1.5 * X @ y + 0.001
 x == 1 && y < 3.5
 ```
@@ -215,8 +226,9 @@ x == 1 && y < 3.5
 
 Parentheses can be used to manually control operator precedence.
 
-*Examples*
-```
+*Examples:*
+
+```r
 1 * (2 + 3)
 ```
 
@@ -231,8 +243,9 @@ The rows and columns to extract can be specified independently in any of the fol
 
 Omitting the specification of rows/columns means extracting all rows/columns.
 
-*Examples*
-```
+*Examples:*
+
+```r
 X[, ] # same as X (all rows and columns)
 ```
 
@@ -243,8 +256,9 @@ This is supported for addressing rows and columns in matrices and frames.
 - *Single row/column position:*
   Extracts only the specified row/column.
 
-  *Examples*
-  ```
+  *Examples:*
+
+  ```r
   X[2, 3] # extracts the cell in row 2, column 3 as a 1 x 1 matrix
   ```
 
@@ -253,8 +267,9 @@ This is supported for addressing rows and columns in matrices and frames.
   The lower and upper bounds can be omitted independently of each other.
   In that case, they are replaced by zero and the number of rows/columns, respectively.
   
-  *Examples*
-  ```
+  *Examples:*
+
+  ```r
   X[2:5, 3] # extracts rows 2, 3, 4 of column 3
   X[2, 3:]  # extracts row 2 of all columns from column 3 onward
   X[:5, 3]  # extracts rows 0, 1, 2, 3, 4 of column 3
@@ -266,8 +281,9 @@ This is supported for addressing rows and columns in matrices and frames.
   There are no restrictions on these positions, except that they must be in bounds.
   In particular, they do *not* need to be contiguous, sorted, or unique.
 
-  *Examples*
-  ```
+  *Examples:*
+
+  ```r
   X[ [5, 1, 3], ] # extracts rows 5, 1, and 3
   X[, [2, 2, 2] ] # extracts column 2 three times
   ```
@@ -275,14 +291,16 @@ This is supported for addressing rows and columns in matrices and frames.
   Note that, when using matrix literals to specify the positions, a space must be left between the opening/closing bracket `[`/`]` of the indexing and that of the matrix literal, in order to avoid confusion with the indexing by bit vector.
 
 A few remarks on positions:
+
 - Counting starts at zero.
   For instance, a 5 x 3 matrix has row positions 0, 1, 2, 3, and 4, and column positions 0, 1, and 2.
 - They must be non-negative.
 - They can be provided as integers or floating-point numbers (the latter are rounded down to integers).
 - They can be given as literals or as any expression evaluating to a suitable value.
 
-*Examples*
-```
+*Examples:*
+
+```r
 X[1.2, ]              # same as X[1, ]
 X[1.9, ]              # same as X[1, ]
 X[i, (j + 2*sum(Y)):] # expressions
@@ -295,8 +313,9 @@ So far, this is only supported for addressing columns of frames.
 - *Single column label:*
   Extracts only the column with the given label.
 
-  *Examples*
-  ```
+  *Examples:*
+
+  ```r
   X[, "revenue"]        # extracts the column labeled "revenue"
   X[100:200, "revenue"] # extracts rows 100 through 199 of the column labeled "revenue"
   ```
@@ -311,8 +330,9 @@ Only the rows/columns with a corresponding 1-value in the bit vector are present
 
 Note that double square brackets (`[[...]]`) must be used to distinguish indexing by bit vector from indexing by an arbitrary sequence of positions.
 
-*Examples*
-```
+*Examples:*
+
+```r
 # Assume X is a 4x3 matrix.
 X[[[0, 1, 1, 0], ]]           # extracts rows 1 and 2
                               # same as X[[1, 2], ]
@@ -328,6 +348,7 @@ Note that, when using a matrix literal to provide the column bit vector, there m
 
 Values can be casted to a particular type explicitly.
 Currently, it is possible to cast:
+
 - between scalars of different types
 - between matrices of different value types
 - between matrix and frame
@@ -336,8 +357,9 @@ Currently, it is possible to cast:
 Casts can either fully specify the target data *and* value type, or specify only the target data type *or* the target value type.
 In the latter case, the unspecified part of the type will be retained from the argument.
 
-*Examples*
-```
+*Examples:*
+
+```r
 as.scalar<f64>(x)  # casts x to f64 scalar
 as.matrix<ui32>(x) # casts x to a matrix of ui32
 
@@ -353,11 +375,12 @@ Note that casting to frames does not support changing the value/column type yet,
 
 #### Function calls
 
-Function calls can address [*built-in* functions](/doc/DaphneDSLBuiltins.md) as well as [*user-defined* functions](#user-defined-functions-udfs), but the syntax is the same in both cases:
+Function calls can address [*built-in* functions](/doc/DaphneDSL/Builtins.md) as well as [*user-defined* functions](#user-defined-functions-udfs), but the syntax is the same in both cases:
 The name of the function followed by a comma-separated list of positional parameters in parentheses.
 
-*Examples*
-```
+*Examples:*
+
+```r
 print("hello");
 t(myMatrix);
 seq(0, 10, 2);
@@ -366,11 +389,13 @@ seq(0, 10, 2);
 #### Conditional expression
 
 DaphneDSL supports the conditional expression with the general syntax:
-```
+
+```csharp
 condition ? then-value : else-value
 ```
 
 The condition can be either a scalar or a matrix.
+
 - *Condition is a scalar:*
   If the condition is `true` (when casted to boolean), then the result is the `then-value`.
   Otherwise, the result is the `else-value`.
@@ -382,8 +407,9 @@ The condition can be either a scalar or a matrix.
   The `then-value` and `else-value` may also be scalars, in which case they are treated like matrices with a constant value.
   The result is a matrix of the same shape as the condition and the same value type as the `then-value`/`else-value`.
 
-*Examples*
-```
+*Examples:*
+
+```r
 (i > 5) ? 42.0 : -42.0                      # 42.0 if i > 5, -42.0 otherwise
 [1, 0, 0, 1] ? [1.0, 2.0, 3.0, 4.0] : 99.9  # [1.0, 99.9, 99.9, 4.0]
 ```
@@ -399,8 +425,9 @@ Every expression followed by a semicolon `;` can be used as a statement.
 This is useful for expressions (especially function calls) which do not return a value.
 Nevertheless, it can also be used for expressions with one or more return values, in which case these values are ignored.
 
-*Examples*
-```
+*Examples:*
+
+```r
 print("hello"); # built-in function without return value
 1 + 2;          # value is ignored, useless but possible
 doSomething();  # possible return values are ignored, but the execution 
@@ -413,15 +440,17 @@ The return value(s) of an expression can be assigned to one (or more) variable(s
 
 **Single-assignments** are used for expressions with exactly one return value.
 
-*Examples*
-```
+*Examples:*
+
+```r
 x = 1 + 2;
 ```
 
 **Multi-assignments** are used for expressions with more than one return value.
 
-*Examples*
-```
+*Examples:*
+
+```r
 evals, evecs = eigen(A); # eigen() returns two values, the (n x 1)-matrix of
                          # eigen-values and the (n x n)-matrix of eigen-vectors
                          # of the input matrix A.
@@ -435,13 +464,15 @@ This is done by (left) indexing, whose syntax is similar to (right) indexing in 
 Currently, left indexing is supported only for matrices.
 Furthermore, the rows/columns cannot be addressed by arbitrary positions lists or bit vectors (yet).
 
-*Examples*
-```
+*Examples:*
+
+```r
 X[5, 2]       = [123];            # insert (1 x 1)-matrix
 X[10:20, 2:5] = fill(123, 10, 3); # insert (10 x 3)-matrix
 ```
 
 The following conditions must be fulfilled:
+
 - The left-hand-side variable must have been initialized.
 - The left-hand-side variable must be of data type matrix.
 - The right-hand-side expression must return a matrix.
@@ -451,8 +482,9 @@ The following conditions must be fulfilled:
 Left indexing can be used with both single and multi-assignments.
 With the latter, it can be used with each variable on the left-hand side individually and independently.
 
-*Examples*
-```
+*Examples:*
+
+```r
 x, Y[3, :], Z = calculateSomething();
 ```
 
@@ -462,8 +494,9 @@ Left indexing enables the modification of existing data objects, whereby the sem
 That is, if two different variables represent the same runtime data object, then left indexing on one of these variables does not have any effects on the other one.
 This is achieved by transparently copying the data as necessary.
 
-*Examples*
-```
+*Examples:*
+
+```r
 A = ...;           # some matrix
 B = A;             # copy-by-reference
 B[..., ...] = ...; # copy-on-write: changes B, but no effect on A
@@ -484,7 +517,8 @@ Within a block, all variables from outside the block can be read and written.
 However, variables created inside a block are not visible anymore after the block.
 
 The syntax of a block statement is:
-```
+
+```r
 {
     statement1
     statement2
@@ -492,8 +526,9 @@ The syntax of a block statement is:
 }
 ```
 
-*Examples*
-```
+*Examples:*
+
+```r
 x = 1;
 {
     print(x); # read access
@@ -507,12 +542,14 @@ print(y);     # error
 #### If-then-else
 
 The syntax of an if-then-else statement is as follows:
-```
+
+```csharp
 if (condition)
     then-statement
 else
     else-statement
 ```
+
 *condition* is an expression returning a single value.
 If this value is `true` (when casted to value type `bool`, if necessary), the *then-statement* is executed.
 Otherwise, the *else-statement* is executed, *if it is present*.
@@ -520,11 +557,13 @@ Note that the *else*-branch (keyword and statement) may be omitted.
 Furthermore, *then-statement* and *else-statement* can be block statements, to allow any number of statements in the then and else-branches.
 
 *Examples:*
-```
+
+```r
 if (sum(X) == 0)
     X = X + 1;
 ```
-```
+
+```r
 if (2 * x > y) {
     z = z / 2;
     a = true;
@@ -532,7 +571,8 @@ if (2 * x > y) {
 else
     z = z * 2;
 ```
-```
+
+```r
 if (a)
     print("a");
 else if (b)
@@ -550,10 +590,12 @@ In the future we plan to support also parfor-loops as well as `break` and `conti
 
 For-loops are used to iterate over the elements of a sequence of integers.
 The syntax of a for-loop is as follows:
-```
+
+```r
 for (var in start:end[:step])
     body-statement
 ```
+
 *var* must be a valid identifier and is assigned the values from *start* to *end* in increments of *step*.
 *start*, *end*, and *step* are expressions evaluating to a single number.
 *step* is optional and defaults to 1 if *end* is greater than *start*, or -1 otherwise.
@@ -562,11 +604,13 @@ The *body-statement* is executed for each value in the sequence, and within the 
 Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
 
 *Examples:*
-```
+
+```csharp
 for(i in 1:3)
     print(i); # 1 2 3
 ```
-```
+
+```r
 x = 0; y = 0;
 for(i in 10:1:-3) {
     x = x + i;
@@ -580,17 +624,20 @@ print(y); #  4
 
 While loops are used to execute a (block of) statement(s) as long as an arbitrary condition holds true.
 The syntax of a while-loop is as follows:
-```
+
+```csharp
 while (condition)
     body-statement
 ```
+
 *condition* is an expression returning a single value, and is evaluated before each iteration.
 If this value is `true` (when casted to value type `bool`, if necessary), the *body-statement* is executed, and the loop starts anew.
 Otherwise, the program continues after the loop.
 Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
 
 *Examples:*
-```
+
+```r
 i = 0;
 while(i < 10 && !converged) {
     A = A @ B;
@@ -604,16 +651,19 @@ while(i < 10 && !converged) {
 Do-while-loops are a variant of while-loops, which checks the condition after each iteration.
 Consequently, a do-while-loop always executes at least one iteration.
 The syntax of a do-while-loop is as follows:
-```
+
+```csharp
 do
     body-statement
 while (condition);
 ```
+
 The semicolon at the end is optional.
 Note that the *body-statement* may be a block statement enclosing an arbitrary number of statements.
 
 *Examples:*
-```
+
+```csharp
 i = 5;
 do {
     A = sqrt(A);
@@ -626,7 +676,7 @@ do {
 DaphneDSL allows users to define their own functions.
 The syntax of a function definition looks as follows:
 
-```
+```csharp
 def funcName(paramName1[:paramType1], paramName2[:paramType2], ...) [-> returnType] {
     statement1
     statement2
@@ -649,7 +699,8 @@ Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a 
 
 User-defined functions can return zero or more values.
 Values are returned by a `return`-statement with the following syntax:
-```
+
+```csharp
 return x;
 ```
 
@@ -658,7 +709,8 @@ Alternatively, it can be nested into if-then-else (early return), as long as it 
 Note that multi-value returns are not fully supported yet.
 
 *Examples:*
-```
+
+```csharp
 def fib(n: si64) -> si64 {
     if (n <= 0)
         return 0;
@@ -674,7 +726,8 @@ A user-defined function can be called like any other (built-in) function (see *f
 Note that user-defined functions returning multiple values are not fully supported yet.
 
 *Examples:*
-```
+
+```r
 fib(5);
 ```
 
@@ -694,6 +747,7 @@ Consistently, the types of untyped return values are infered from the parameter 
 ## Example Scripts
 
 A few example DaphneDSL scripts can be found in:
+
 - [scripts/algorithms/](/scripts/algorithms/)
 - [scripts/examples/](/scripts/examples/)
 - [test/api/cli/algorithms/](/test/api/cli/algorithms/)
