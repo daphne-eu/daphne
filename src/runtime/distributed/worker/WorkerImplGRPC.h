@@ -32,14 +32,16 @@ private:
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::Server> server;
 public:
-    WorkerImplGRPC(std::string addr);
+    explicit WorkerImplGRPC(const std::string& addr, DaphneUserConfig& _cfg);
+
     void Wait() override;
+
     grpc::Status StoreGRPC(::grpc::ServerContext *context,
                          const ::distributed::Data *request,
                          ::distributed::StoredData *response) ;
     grpc::Status ComputeGRPC(::grpc::ServerContext *context,
                          const ::distributed::Task *request,
-                         ::distributed::ComputeResult *response) ;
+                         ::distributed::ComputeResult *response);
     grpc::Status TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
                          ::distributed::Data *response) ;

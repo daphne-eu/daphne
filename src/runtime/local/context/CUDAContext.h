@@ -83,6 +83,16 @@ public:
 
     void free(size_t id);
 
+    template<typename T>
+    static void debugPrintCUDABuffer(const CUDAContext& ctx, std::string_view title, const T* data, size_t num_items) {
+        std::vector<T> tmp(num_items);
+        CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
+        auto out = fmt::memory_buffer();
+        fmt::format_to(std::back_inserter(out),"{} \n", title);
+        fmt::format_to(std::back_inserter(out), fmt::join(tmp, ", "));
+        ctx.logger->debug(out);
+    }
+
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
     cudnnTensorDescriptor_t src_tensor_desc{}, dst_tensor_desc{}, bn_tensor_desc{};
@@ -95,5 +105,7 @@ public:
     // A block size of 256 works well in many cases.
     // Putting it here to avoid hard coding things elsewhere.
     const uint32_t default_block_size = 256;
-    
+
+    // cuda runtime logger
+    std::shared_ptr<spdlog::logger> logger;
 };

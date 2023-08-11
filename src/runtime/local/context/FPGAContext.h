@@ -16,10 +16,8 @@
 
 #pragma once
 
-//#include <api/cli/DaphneUserConfig.h>
+#include <spdlog/spdlog.h>
 #include "IContext.h"
-//#include <runtime/local/kernels/CUDA/HostUtils.h>
-//#include <cublasLt.h>
 #include <AOCLUtils/aocl_utils.h>
 #include <CL/opencl.h>
 #include <cassert>

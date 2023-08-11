@@ -26,24 +26,21 @@
 #include <iostream>
 #include <memory>
 
-#define CHECK_CUDART(call)                                                   \
+#define CHECK_CUDART(call)                                                \
   do {                                                                    \
     cudaError_t status = call;                                            \
     if (status != cudaSuccess) {                                          \
-      std::cout << "(CUDART) returned: " << cudaGetErrorString(status);   \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
-        std::abort();       \
+        throw std::runtime_error(fmt::format("(CUDART) returned: {} ({}:{}:{}())", \
+                cudaGetErrorString(status), __FILE__, __LINE__, __func__));\
     }                                                                     \
   } while (0)
 
-#define CHECK_CUBLAS(call)                                                   \
+#define CHECK_CUBLAS(call)                                                \
   do {                                                                    \
     cublasStatus_t status = call;                                         \
     if (status != CUBLAS_STATUS_SUCCESS) {                                \
-      std::cout << "(CUBLAS) returned " << status;                          \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
+        throw std::runtime_error(fmt::format("(CUBLAS) returned: {} ({}:{}:{}())", \
+                status, __FILE__, __LINE__, __func__));\
     }                                                                     \
   } while (0)
 
@@ -51,9 +48,8 @@
     do {                                                                      \
         cusparseStatus_t status = call;                                        \
         if (status != CUSPARSE_STATUS_SUCCESS) {                                \
-            std::cout << "(CUSPARSE) returned " << status;                       \
-            std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__   \
-            << "())" << std::endl;                                                 \
+        throw std::runtime_error(fmt::format("(CUSPARSE) returned: {} ({}:{}:{}())",  \
+                status, __FILE__, __LINE__, __func__)); \
         }                                                                           \
     } while (0)
 
@@ -61,9 +57,8 @@
   do {                                                                    \
     cudnnStatus_t status = call;                                          \
     if (status != CUDNN_STATUS_SUCCESS) {                                 \
-      std::cerr << "(CUDNN) returned " <<  cudnnGetErrorString(status);   \
-      std::cerr << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
+        throw std::runtime_error(fmt::format("(CUDNN) returned: {} ({}:{}:{}())", \
+                status, __FILE__, __LINE__, __func__));\
     }                                                                     \
   } while (0)
 
@@ -71,9 +66,8 @@
   do {                                                                    \
     cusolverStatus_t status = call;                                         \
     if (status != CUSOLVER_STATUS_SUCCESS) {                                \
-      std::cout << "(CUSOLVER) returned " << status;                          \
-      std::cout << " (" << __FILE__ << ":" << __LINE__ << ":" << __func__ \
-                << "())" << std::endl;                                    \
+        throw std::runtime_error(fmt::format("(CUSOLVER) returned: {} ({}:{}:{}())", \
+                status, __FILE__, __LINE__, __func__));\
     }                                                                     \
   } while (0)
 
@@ -104,19 +98,7 @@ template<typename T>
 struct CudaDeleter {
     void operator()(T* dev_ptr) const { del(dev_ptr); };
     static void del(T* dev_ptr) {
-//#ifndef NDEBUG
-//        std::ios state(nullptr);
-//        state.copyfmt(std::cout);
-//        std::cout << "calling cudaFree on dev_ptr: " << dev_ptr << std::endl;
-//        std::cout << "addressof dev_ptr in cudaFree: " << &dev_ptr << std::endl;
-//#endif
         cudaFree(reinterpret_cast<void*>(dev_ptr));
-//#ifndef NDEBUG
-//        size_t available; size_t total;
-//        cudaMemGetInfo(&available, &total);
-//        std::cout << "Available mem: " << (available / (1048576)) << "Mb" << std::endl;
-//        std::cout.copyfmt(state);
-//#endif
     }
 };
 
@@ -125,18 +107,6 @@ void cuda_deleter(T* dev_ptr) { CudaDeleter<T>::del(dev_ptr); }
 
 template<typename T>
 using CudaUniquePtr [[maybe_unused]] = std::unique_ptr<T, decltype(&cuda_deleter<T>)>;
-
-#ifndef NDEBUG
-template<typename T>
-void debugPrintCUDABuffer(std::string_view title, const T* data, size_t num_items) {
-    std::vector<T> tmp(num_items);
-    CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
-    std::cerr << title << ":\n";
-    for(auto i = 0u; i < num_items; ++i)
-        std::cerr << tmp[i] << " ";
-    std::cerr << "\n";
-}
-#endif
 
 static inline uint32_t divup(unsigned n, unsigned div)
 {

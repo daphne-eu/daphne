@@ -104,8 +104,6 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
                 "have the same dimensions, or one of them must be a row/column vector "
                 "with the width/height of the other");
         }
-//        auto end = std::chrono::high_resolution_clock::now();
-//        std::cout << "EwBinaryMat time=" << std::chrono::duration_cast<std::chrono::microseconds>(end - start).count() << "µs)" << std::endl;
     }
 };
 

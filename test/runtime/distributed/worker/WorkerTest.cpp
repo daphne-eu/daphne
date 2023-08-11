@@ -19,6 +19,7 @@
 #include "runtime/distributed/worker/WorkerImpl.h"
 #include "runtime/local/kernels/EwBinaryMat.h"
 #include "runtime/local/kernels/CheckEq.h"
+#include "run_tests.h"
 
 #include <tags.h>
 
@@ -33,8 +34,9 @@ const std::string dirPath = "test/runtime/distributed/worker/";
 
 TEMPLATE_PRODUCT_TEST_CASE("Simple distributed worker functionality test", TAG_DISTRIBUTED, (DenseMatrix), (double))
 {
+    auto dctx = setupContextAndLogger();
     using DT = TestType;    
-    WorkerImpl workerImpl;
+    WorkerImpl workerImpl(user_config);
     
     WHEN ("Sending a task where no outputs are expected")
     {

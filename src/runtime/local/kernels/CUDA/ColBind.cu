@@ -67,12 +67,8 @@ namespace CUDA {
         size_t gridSize;
         CHECK_CUDART(cudaOccupancyMaxPotentialBlockSize( &minGridSize, &blockSize, cbind<VTres>, 0, 0));
         gridSize = (N + blockSize - 1) / blockSize;
-
-#ifndef NDEBUG
-        std::cerr << " ColBind: " << gridSize << " blocks x " << blockSize << " threads = " << gridSize*blockSize <<
-                " total threads for " << N << " items" << std::endl;
-#endif
-
+        spdlog::get("runtime::cuda")->debug("ColBind: {} blocks x {} threads = {} total threads for {} items", gridSize,
+                blockSize, gridSize*blockSize,N);
         cbind<<<gridSize, blockSize>>>(lhs->getValues(&alloc_desc), rhs->getValues(&alloc_desc), res->getValues(&alloc_desc),
                 numRowsLhs, numColsLhs, numRowsRhs, numColsRhs);
     }
