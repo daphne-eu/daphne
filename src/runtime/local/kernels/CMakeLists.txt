@@ -87,7 +87,6 @@ set(HEADERS_cpp_kernels
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
-        ${PREFIX}/MAP_PYBIND/PyBindMapKernel.cpp
         ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/kernels.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/CreateDaphneContext.cpp
         ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/Pooling.cpp

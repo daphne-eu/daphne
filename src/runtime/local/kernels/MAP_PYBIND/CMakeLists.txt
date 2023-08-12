@@ -12,7 +12,7 @@ find_package(pybind11 REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 
 # Add the Pybind11 module
-pybind11_add_module(mapExternalPL_PyBindKernel MODULE PyBindMapKernel.cpp)
+pybind11_add_module(mapExternalPL_PyBindKernel MODULE PyBindMapKernel.h)
 
 # Link the Pybind11 module with the existing libraries (e.g., AllKernels)
 #find_library(ALL_KERNELS_LIB NAMES AllKernels PATHS "../../../../../lib")

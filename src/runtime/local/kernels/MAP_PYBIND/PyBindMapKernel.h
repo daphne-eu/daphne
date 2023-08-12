@@ -20,11 +20,62 @@
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
+namespace py = pybind11;
 
-//namespace py = pybind11;
-
-template<typename VTRes, typename VTArg>
+// ****************************************************************************
+// Struct for partial template specialization
+// ****************************************************************************
+template<typename DTRes, typename DTArg>
 struct PyBindMapKernel
-{    
-    static void applyMapFunction(DenseMatrix<VTRes>*& res, const DenseMatrix<VTArg>* arg, void* func);
+{
+    static void apply(DTRes *& res, const DTArg * arg, void* func) = delete;
+};
+
+// ****************************************************************************
+// Convenience function
+// ****************************************************************************
+template<class DTRes, class DTArg>
+void pyBindMapKernel(DTRes *& res, const DTArg * arg, void* func) {
+    PyBindMapKernel<DTRes,DTArg>::apply(res, arg, func);
+}
+
+// ----------------------------------------------------------------------------
+// DenseMatrix
+// ----------------------------------------------------------------------------
+template<typename VTRes, typename VTArg>
+struct PyBindMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func)
+    {
+       // Get the raw pointers to the data of input and output DenseMatrices
+        const VTArg* arg_data = arg->getValuesSharedPtr().get();
+        VTRes* res_data = res->getValuesSharedPtr().get();
+        std::cout << "arg_data: " << arg_data << ", res_data: " << res_data << std::endl;
+
+        // Get the number of rows and columns in the input and output DenseMatrices
+        size_t rows = arg->getNumRows();
+        size_t cols = arg->getNumCols();
+        std::cout << "rows: " << rows << ", cols: " << cols << std::endl;
+
+        // Import the Python Map function from map_function.py
+        py::object map_function = py::module::import("map_function").attr("map_kernel_pybind");
+
+        // Create numpy arrays from the raw pointers without making copies
+        py::array_t<VTArg> py_input(rows * cols, arg_data);
+        py_input.resize({rows, cols});
+
+        py::array_t<VTRes> py_output(rows * cols, res_data);
+        py_output.resize({rows, cols});
+
+        std::cout << "py_input rows: " << py_input.shape(0) << ", cols: " << py_input.shape(1) << std::endl;
+        std::cout << "py_output rows: " << py_output.shape(0) << ", cols: " << py_output.shape(1) << std::endl;
+
+        // Convert the function pointer into a String Representation
+        std::string func_str = reinterpret_cast<char*>(func);
+        
+        std::cout << "func_str: " << func_str << std::endl;
+    
+        // Call the Python Map function on the input matrix and function pointer
+        map_function(py_input, py_output, func_str);
+        std::cout << "Python function called successfully" << std::endl;
+    }
 };

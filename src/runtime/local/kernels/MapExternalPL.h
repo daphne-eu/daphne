@@ -26,23 +26,6 @@
 #include <cassert>
 
 // ****************************************************************************
-// Workaround Methods
-// ****************************************************************************
-/*
-template <class DT>
-struct IsDenseMatrix : std::false_type {};
-
-template <typename VT>
-struct IsDenseMatrix<DenseMatrix<VT>> : std::true_type {};
-
-template <typename T>
-struct IsPointer : std::false_type {};
-
-template <typename T>
-struct IsPointer<T*> : std::true_type {};
-*/
-
-// ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 
@@ -67,7 +50,6 @@ void mapExternalPL(DTRes *& res, const DTArg * arg, void* func, const char* varN
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
-
 template<typename VTRes, typename VTArg>
 struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func, const char* varName, const char* plName, DCTX(ctx)) {
@@ -89,7 +71,7 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     }
 
     static void applyPyBindKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func, const char* varName) {
-        PyBindMapKernel<VTRes, VTArg>::applyMapFunction(res, arg, func);
+        pyBindMapKernel(res, arg, func);
     }
 
 };
