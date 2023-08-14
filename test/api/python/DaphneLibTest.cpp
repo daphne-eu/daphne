@@ -57,6 +57,9 @@ MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
 MAKE_TEST_CASE("numpy_matrix_ops_replace")
 
 MAKE_TEST_CASE("data_transfer_pandas_2")
+MAKE_TEST_CASE("data_transfer_pandas_3_series")
+MAKE_TEST_CASE("data_transfer_pandas_4_sparse_dataframe")
+MAKE_TEST_CASE("data_transfer_pandas_5_categorical_dataframe")
 MAKE_TEST_CASE("data_transfer_tensorflow_1")
 MAKE_TEST_CASE("data_transfer_pytorch_1")
 
