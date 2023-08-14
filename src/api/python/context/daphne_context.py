@@ -160,7 +160,7 @@ class DaphneContext(object):
 
         # Check for a Series and convert to DataFrame
         if isinstance(df, pd.Series):
-            print("Handling of pandas Series is not implemented yet. Converting to a standard DataFrame.")
+            # print("Handling of pandas Series is not implemented yet. Converting to a standard DataFrame.")
             df = df.to_frame()
 
         # Check for MultiIndex and convert to standard DataFrame
@@ -169,12 +169,12 @@ class DaphneContext(object):
 
         # Check for sparse DataFrame and convert to standard DataFrame
         elif isinstance(df.dtypes, pd.SparseDtype) or any(isinstance(item, pd.SparseDtype) for item in df.dtypes):
-            print("Handling of pandas Sparse DataFrame is not implemented yet. Converting to a standard DataFrame.")
+            # print("Handling of pandas Sparse DataFrame is not implemented yet. Converting to a standard DataFrame.")
             df = df.sparse.to_dense()
 
         # Check for Categorical data and convert to standard DataFrame
         elif df.select_dtypes(include=["category"]).shape[1] > 0:
-            print("Handling of pandas Categorical DataFrame is not implemented yet. Converting to a standard DataFrame.")
+            # print("Handling of pandas Categorical DataFrame is not implemented yet. Converting to a standard DataFrame.")
             df = df.apply(lambda x: x.cat.codes if x.dtype.name == 'category' else x)
 
         if(verbose):
