@@ -68,8 +68,10 @@ struct DaphneContext {
      */
     DaphneUserConfig& config;
 
+    std::shared_ptr<spdlog::logger> logger;
+
     explicit DaphneContext(DaphneUserConfig& config) : config(config) {
-        //
+        logger = spdlog::get("runtime");
     }
 
     ~DaphneContext() {
