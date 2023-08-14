@@ -84,28 +84,32 @@ void daphne::CreateFrameOp::inferFrameLabels() {
 void daphne::ExtractColOp::inferFrameLabels() {
     auto ft = getSource().getType().dyn_cast<daphne::FrameType>();
     auto st = getSelectedCols().getType().dyn_cast<daphne::StringType>();
-    std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
-    std::string delimiter = ".";
-    const std::string frameName = label.substr(0, label.find(delimiter));
-    const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
-    if(ft && st && colLabel.compare("*") == 0) {
-        std::vector<std::string> labels = *ft.getLabels();
-        std::vector<std::string> *resultLabels = new std::vector<std::string>();
-        for (std::string label : labels) {
-            std::string labelFrameName = label.substr(0, label.find(delimiter));
-            if (labelFrameName.compare(frameName) == 0) {
-                resultLabels->push_back(label);
+    
+    if(ft && st) {
+        std::string label = CompilerUtils::constantOrThrow<std::string>(getSelectedCols());
+        std::string delimiter = ".";
+        const std::string frameName = label.substr(0, label.find(delimiter));
+        const std::string colLabel = label.substr(label.find(delimiter) + delimiter.length(), label.length());
+        if (colLabel.compare("*") == 0) {
+            std::vector<std::string> labels = *ft.getLabels();
+            std::vector<std::string> *resultLabels = new std::vector<std::string>();
+            for (std::string label : labels) {
+                std::string labelFrameName = label.substr(0, label.find(delimiter));
+                if (labelFrameName.compare(frameName) == 0) {
+                    resultLabels->push_back(label);
+                } 
             }
+            Value res = getResult();
+            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resultLabels));
+        } else {
+            auto resLabels = new std::vector<std::string>();
+            resLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getSelectedCols()));
+            Value res = getResult();
+            res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
         }
-        Value res = getResult();
-        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resultLabels));
+        
     }
-    else if(ft && st) {
-        auto resLabels = new std::vector<std::string>();
-        resLabels->push_back(CompilerUtils::constantOrThrow<std::string>(getSelectedCols()));
-        Value res = getResult();
-        res.setType(res.getType().dyn_cast<daphne::FrameType>().withLabels(resLabels));
-    }
+
 }
 
 void daphne::ExtractRowOp::inferFrameLabels() {

@@ -131,7 +131,7 @@ std::vector<Type> daphne::ExtractColOp::inferTypes() {
             if(colLabel.compare("*") == 0) {
                 std::vector<std::string> labels = *srcFrmTy.getLabels();
                 std::vector<mlir::Type> colTypes = srcFrmTy.getColumnTypes();
-                for (int i = 0; i < labels.size(); i++) {
+                for (size_t i = 0; i < labels.size(); i++) {
                     std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
                     if (labelFrameName.compare(frameName) == 0) {
                         resColTys.push_back(colTypes[i]);
@@ -260,7 +260,7 @@ std::vector<Type> daphne::GroupOp::inferTypes() {
         } else if(colLabel.compare("*") == 0) {
             std::vector<std::string> labels = *arg.getLabels();
             std::vector<mlir::Type> colTypes = arg.getColumnTypes();
-            for (int i = 0; i < labels.size(); i++) {
+            for (size_t i = 0; i < labels.size(); i++) {
                 std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
                 if (labelFrameName.compare(frameName) == 0) {
                     newColumnTypes.push_back(colTypes[i]);

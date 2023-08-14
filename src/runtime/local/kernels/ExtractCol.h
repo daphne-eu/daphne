@@ -103,7 +103,7 @@ struct ExtractCol<Frame, Frame, char> {
             const std::string * labels = arg->getLabels();
             const size_t numLabels = arg->getNumCols();
             std::vector<size_t> extractLabelIdxs;
-            for (int i = 0; i < numLabels; i++) {
+            for (size_t i = 0; i < numLabels; i++) {
                 std::string labelFrameName = labels[i].substr(0, labels[i].find(delimiter));
                 if (labelFrameName.compare(frameName) == 0) {
                     extractLabelIdxs.push_back(arg->getColumnIdx(labels[i]));
