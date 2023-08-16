@@ -20,7 +20,6 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-//#include <runtime/local/kernels/MAP_PYBIND/PyBindMapKernel.h>
 #include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel.h>
 #include <runtime/local/kernels/MAP_NUMPY/NumpyMapKernel.h>
 #include <util/PythonInterpreter.h>
@@ -66,10 +65,7 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if(plName != NULL)
         {
             PythonInterpreter::getInstance();   
-            /*if (strcmp(plName, "Python_PyBind") == 0)
-            {
-                applyPyBindKernel(res, arg, func, varName);
-            }*/
+
             if (strcmp(plName, "Python_Numpy") == 0)
             {
                 applyNumpyKernel(res, arg, func, varName);
@@ -90,18 +86,11 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         
     }
 
-    /*static void applyPyBindKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        std::cout << "Starting PyBind Kernel" << std::endl;
-        pyBindMapKernel(res, arg, func, varName);
-    }*/
-
     static void applyCTypesKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        std::cout << "Starting Python_Ctypes Kernel" << std::endl;
         ctypesMapKernel(res, arg, func, varName);
     }
 
     static void applyNumpyKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        std::cout << "Starting Python_Numpy Kernel" << std::endl;
         numpyMapKernel(res, arg, func, varName);
     }
 };

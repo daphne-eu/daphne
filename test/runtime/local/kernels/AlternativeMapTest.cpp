@@ -23,7 +23,6 @@
 #include <vector>
 #include <tags.h>
 
-
 #define TYPES double
 
 /* C++ like functions in a String */
@@ -51,21 +50,12 @@ void checkMap(const DTArg * arg, const DTRes * exp, const char * func)
 {
     DTRes * res = nullptr;
     mapExternalPL(res, arg, func, "x", "Python_Ctypes", nullptr);
-    if (res) {
-        std::cout << "arg matrix:" << std::endl;
-        arg->print(std::cout);
-
-        std::cout << "res matrix:" << std::endl;
-        res->print(std::cout);
-        
-        CHECK(*res == *exp);
-        DataObjectFactory::destroy(res);
-    }
+    CHECK(*res == *exp);
+    DataObjectFactory::destroy(res);
 }
 
 template<template<typename VT> class DT, class VTArg, class VTRes>
-void testApplyMapFunctionPyBind() {
-    std::cout << "testApplyMapFunction" << std::endl;
+void testApplyMapFunctionCtypes() {
     using DTArg = DT<VTArg>;
     using DTRes = DT<VTRes>;
 
@@ -109,20 +99,13 @@ void testApplyMapFunctionPyBind() {
         343, 512, 729
     });
 
-    std::cout << "checkpoint check map with input 1" << std::endl;
     checkMap(input1, squarefunc_res, squareFunc);
-
-    std::cout << "checkpoint check map with input 2" << std::endl;
     checkMap(input2, doublefunc_res, doubleValueFunc);
-
-    std::cout << "checkpoint check map with input 3" << std::endl;
     checkMap(input3, cubefunc_res, cubeFunc);
 
-    std::cout << "Destroy the Test Objects" << std::endl;
     DataObjectFactory::destroy(input1, input2, input3, squarefunc_res, doublefunc_res, cubefunc_res);
-    std::cout << "Test Objects sucessfully destroyed" << std::endl;
 }
 
-TEMPLATE_TEST_CASE("Test applyMapFunction with Alternative Kernels of other languages", "[applyMapFunction][PyBind]", TYPES) {
-    testApplyMapFunctionPyBind<DenseMatrix, TestType, TestType>();
+TEMPLATE_TEST_CASE("Test applyMapFunction with Alternative Kernels of other languages", "[applyMapFunction][Ctypes]", TYPES) {
+    testApplyMapFunctionCtypes<DenseMatrix, TestType, TestType>();
 }

@@ -403,7 +403,6 @@ arrowVersion=12.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
-pyBindVersion=2.11.1
 papiVersion=7.0.1
 
 #******************************************************************************
@@ -887,27 +886,6 @@ if [ $WITH_DEPS -gt 0 ]; then
         dependency_install_success "spdlog_v${spdlogVersion}"
     else
         daphne_msg "No need to build spdlog again."
-    fi
-    #------------------------------------------------------------------------------
-    # PyBind11
-    #------------------------------------------------------------------------------
-    pyBindDirName="pybind11-$pyBindVersion"
-    pyBindArtifactFileName=$pyBindDirName.tar.gz
-    if ! is_dependency_downloaded "pybind11_v${pyBindVersion}"; then
-        rm -rf "${sourcePrefix:?}/${pyBindDirName}"
-        wget "https://github.com/pybind/pybind11/archive/refs/tags/v$pyBindVersion.tar.gz" -qO \
-            "$cacheDir/$pyBindArtifactFileName"
-        tar xzf "$cacheDir/$pyBindArtifactFileName" --directory="$sourcePrefix"
-        dependency_download_success "pybind11_v${pyBindVersion}"
-    fi
-
-    if ! is_dependency_installed "pybind_v${pyBindVersion}"; then
-        cmake -G Ninja -S "${sourcePrefix}/${pyBindDirName}" -B "${buildPrefix}/${pyBindDirName}" \
-            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DCMAKE_POSITION_INDEPENDENT_CODE=ON
-        cmake --build "${buildPrefix}/${pyBindDirName}" --target install/strip
-        dependency_install_success "pybind11_v${pyBindVersion}"
-    else
-        daphne_msg "No need to build PyBind again."
     fi
     #------------------------------------------------------------------------------
     # Eigen

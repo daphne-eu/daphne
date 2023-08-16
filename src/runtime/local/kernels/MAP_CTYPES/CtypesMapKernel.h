@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_H
 
 #pragma once
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -57,9 +59,9 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PythonInterpreter::getInstance();
 
         PyPtr pName(PyUnicode_DecodeFSDefault("CtypesMapKernel"));
-        std::cout << "Reference count of pName: " << Py_REFCNT(pName.get()) << std::endl;
+        //std::cout << "Reference count of pName: " << Py_REFCNT(pName.get()) << std::endl;
         PyPtr pModule(PyImport_Import(pName.get()));
-        std::cout << "Reference count of pModule: " << Py_REFCNT(pModule.get()) << std::endl;
+        //std::cout << "Reference count of pModule: " << Py_REFCNT(pModule.get()) << std::endl;
 
         if (!pModule) {
             PyErr_Print();
@@ -68,7 +70,7 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
 
         PyPtr pFunc(PyObject_GetAttrString(pModule.get(), "apply_map_function"));
-        std::cout << "Reference count of pFunc: " << Py_REFCNT(pFunc.get()) << std::endl;
+        //std::cout << "Reference count of pFunc: " << Py_REFCNT(pFunc.get()) << std::endl;
 
         if (!PyCallable_Check(pFunc.get())) {
             std::cerr << "Function not callable!" << std::endl;
@@ -96,15 +98,14 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                                   func,
                                   varName));
         
-        std::cout << "Reference count of pArgs: " << Py_REFCNT(pArgs.get()) << std::endl;
+        //std::cout << "Reference count of pArgs: " << Py_REFCNT(pArgs.get()) << std::endl;
         
         PyPtr pResult(PyObject_CallObject(pFunc.get(), pArgs.get()));
-        std::cout << "Reference count of pResult: " << Py_REFCNT(pResult.get()) << std::endl;
+        //std::cout << "Reference count of pResult: " << Py_REFCNT(pResult.get()) << std::endl;
 
         if (!pResult) {
             PyErr_Print();
         }
-
 
     }
 
@@ -116,3 +117,4 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         return static_cast<uint32_t>(data_address & 0xFFFFFFFF);
     }
 };
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_H
