@@ -31,14 +31,18 @@ However, as the methods largely map to DaphneDSL built-in functions, you can fin
 
 **Importing data from other Python libraries:**
 
-- **`from_numpy`**`(mat: np.array, shared_memory=True) -> Matrix`
-- **`from_pandas`**`(df: pd.DataFrame) -> Frame`
+- **`from_numpy`**`(mat: np.array, shared_memory=True, verbose=False) -> Matrix`
+- **`from_pandas`**`(df: pd.DataFrame, shared_memory=True, verbose=False, keepIndex=False) -> Frame`
+- **`from_tensorflow`**`(tensor: tf.Tensor, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
+- **`from_pytorch`**`(tensor: torch.Tensor, shared_memory=True, verbose=False, return_shape=False) -> Matrix`
+
   
 **Generating data in DAPHNE:**
 
 - **`fill`**`(arg, rows:int, cols:int) -> Matrix`
 - **`seq`**`(start, end, inc) -> Matrix`
 - **`rand`**`(rows: int, cols: int, min: Union[float, int] = None, max: Union[float, int] = None, sparsity: Union[float, int] = 0, seed: Union[float, int] = 0) -> Matrix`
+- **`sql`**`(query) -> Frame`
 
 **Reading files using DAPHNE's readers:**
 
@@ -81,6 +85,8 @@ In the following, we describe only the latter.
 **Reorganization:**
 
 - **`t`**`()`
+- **`cbind`**`(other)`
+- **`replace`**`(pattern, replacement)`
 
 **Other matrix operations:**
 
@@ -98,19 +104,30 @@ In the following, we describe only the latter.
 - **`nrow`**`()`
 - **`ncol`**`()`
 
+**Frame labels:**
+
+- **`setColLabels`**`(labels)`
+- **`setColLabelsPrefix`**`(prefix)`
+
 **Reorganization:**
 
 - **`cbind`**`(other)`
 - **`rbind`**`(other)`
+- **`innerJoin`**`(right_frame, left_on, right_on)`
 
 **Extended relational algebra:**
 
 - **`cartesian`**`(other)`
 
+**Enable SQL:**
+
+- **`registerView`**`(table_name)`
+
 **Input/output:**
 
 - **`print`**`()`
 - **`write`**`(file: str)`
+- **`toMatrix`**`(data_type="f64") -> Matrix`
 
 ### `Scalar` API Reference
 
