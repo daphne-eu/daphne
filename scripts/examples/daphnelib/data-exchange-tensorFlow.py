@@ -50,21 +50,21 @@ print("\nHow the 3d tensor looks transformed back to the original shape:")
 tensor3d_back = T3D.compute(isTensorflow=True, shape=T3D_shape)
 print(tensor3d_back)
 
-# Example usage for a 4x3x3x3 tensor
+# Example usage for a 3x3x3x3 tensor
 tensor4d = tf.constant(np.random.randn(3,3,3,3))
 
 # Print the tensor
 print("\nHow the 4d Tensor looks in Python:")
 print(tensor4d)
 
-T4D, T4D_shape = dc.from_tensorflow(tensor4d, verbose=True, return_shape=True)
+T4D, T4D_shape = dc.from_tensorflow(tensor4d, return_shape=True)
 
 print("\nHow DAPHNE sees the 4d tensor from tensorflow:")
-print(T3D.compute(verbose=True, isTensorflow=True))
+print(T3D.compute(isTensorflow=True))
 
 print("\nHow the original shape of the tensor looks like:")
 print(T3D_shape)
 
-tensor4d_back = T4D.compute(verbose=True, isTensorflow=True, shape=T4D_shape)
+tensor4d_back = T4D.compute(isTensorflow=True, shape=T4D_shape)
 print("\nHow the 4d tensor looks transformed back to the original shape:")
 print(tensor4d_back)

@@ -182,11 +182,10 @@ A comprehensive list of these methods can be found in the [DaphneLib API referen
 The data transfer from DaphneLib back to Python happens during the call to `compute()`.
 If the result of the computation in DAPHNE is a matrix, `compute()` returns a `numpy.ndarray`; if the result is a frame, it returns a `pandas.DataFrame`; and if the result is a scalar, it returns a plain Python scalar.
 
-So far, DaphneLib can exchange data with numpy (via shared memory) and  pandas (via CSV files).
-Enabling data exchange with TensorFlow and PyTorch is on our agenda.
+So far, DaphneLib can exchange data with numpy (via shared memory) pandas (via shared memory or CSV files), TensorFlow (via shared memory) and PyTorch (via shared memory).
 Furthermore, we are working on making the data exchange more efficient in general.
 
-### Data Exchange with numpy
+### Data Exchange with numpy via shared memory
 
 *Example:*
 
@@ -232,7 +231,7 @@ Result of adding 100 to each value, back in Python:
  [104. 105. 106. 107.]]
 ```
 
-### Data Exchange with pandas
+### Data Exchange with pandas via shared memory
 
 *Example:*
 
@@ -281,6 +280,474 @@ Result of appending the frame to itself, back in Python:
 2  1  1.1
 3  2 -2.2
 4  3  3.3
+```
+
+### Data Exchange with tensorflow via shared memory
+
+*Example:*
+
+```python
+from api.python.context.daphne_context import DaphneContext
+import tensorflow as tf
+import numpy as np
+
+dc = DaphneContext()
+
+# 2D Tensor Example
+# Example usage for a 3x3 tensor
+tensor2d = tf.constant(np.random.randn(4,3))
+
+# Print the tensor
+print("How the 2d Tensor looks in Python:")
+print(tensor2d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T2D = dc.from_tensorflow(tensor2d)
+
+print("\nHow DAPHNE sees the 2d tensor from tensorflow:")
+print(T2D.compute(isTensorflow=True))
+
+# 3D Tensor Example
+# Example usage for a 3x3x3 tensor
+tensor3d = tf.constant(np.random.randn(4,3,4))
+
+# Print the tensor
+print("\nHow the 3d Tensor looks in Python:")
+print(tensor3d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T3D, T3D_shape = dc.from_tensorflow(tensor3d, return_shape=True)
+
+print("\nHow DAPHNE sees the 3d tensor from tensorflow:")
+print(T3D.compute(isTensorflow=True))
+
+print("\nHow the original shape of the tensor looks like:")
+print(T3D_shape)
+
+print("\nHow the 3d tensor looks transformed back to the original shape:")
+tensor3d_back = T3D.compute(isTensorflow=True, shape=T3D_shape)
+print(tensor3d_back)
+
+# 4D Tensor Example
+# Example usage for a 3x3x3x3 tensor
+tensor4d = tf.constant(np.random.randn(3,3,3,3))
+
+# Print the tensor
+print("\nHow the 4d Tensor looks in Python:")
+print(tensor4d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T4D, T4D_shape = dc.from_tensorflow(tensor4d, return_shape=True)
+
+print("\nHow DAPHNE sees the 4d tensor from tensorflow:")
+print(T3D.compute(isTensorflow=True))
+
+print("\nHow the original shape of the tensor looks like:")
+print(T3D_shape)
+
+tensor4d_back = T4D.compute(isTensorflow=True, shape=T4D_shape)
+print("\nHow the 4d tensor looks transformed back to the original shape:")
+print(tensor4d_back)
+```
+
+*Run by:*
+
+```shell
+python3 scripts/examples/daphnelib/data-exchange-tensorFlow.py
+```
+
+*Output:*
+
+```text
+How the 2d Tensor looks in Python:
+tf.Tensor(
+[[ 1.31308388 -0.36838566 -0.03866165]
+ [ 0.25121815  1.2599527  -0.32129125]
+ [ 0.49458581 -0.39470534  0.76608223]
+ [-0.41603116  0.94447836 -0.14717533]], shape=(4, 3), dtype=float64)
+
+How DAPHNE sees the 2d tensor from tensorflow:
+tf.Tensor(
+[[ 1.31308388 -0.36838566 -0.03866165]
+ [ 0.25121815  1.2599527  -0.32129125]
+ [ 0.49458581 -0.39470534  0.76608223]
+ [-0.41603116  0.94447836 -0.14717533]], shape=(4, 3), dtype=float64)
+
+How the 3d Tensor looks in Python:
+tf.Tensor(
+[[[ 1.56864929 -1.22525487  1.69396538 -1.28685487]
+  [-0.20661403 -1.24320567  0.39141006  0.63943356]
+  [-1.14795786 -0.12232087 -1.18676617  1.93846369]]
+
+ [[ 1.22882572  0.63120536  0.47275368  0.22931509]
+  [-0.98383632 -0.63013434  0.59430688 -0.40633607]
+  [ 0.33884281 -1.03378493 -1.20880607  0.77959906]]
+
+ [[ 1.2301541  -0.32946876 -1.92364301 -1.16800199]
+  [-0.01093835  0.24008057  1.10871988 -0.85863546]
+  [ 1.40991172  2.72914074 -0.95619877  1.24676744]]
+
+ [[-1.23989242  0.55945371  1.70992959  0.45362342]
+  [ 0.74710677 -0.20035434 -0.43069097 -0.40705533]
+  [ 1.72164462  0.05490404 -1.22038438  0.4368896 ]]], shape=(4, 3, 4), dtype=float64)
+
+How DAPHNE sees the 3d tensor from tensorflow:
+tf.Tensor(
+[[ 1.56864929 -1.22525487  1.69396538 -1.28685487 -0.20661403 -1.24320567
+   0.39141006  0.63943356 -1.14795786 -0.12232087 -1.18676617  1.93846369]
+ [ 1.22882572  0.63120536  0.47275368  0.22931509 -0.98383632 -0.63013434
+   0.59430688 -0.40633607  0.33884281 -1.03378493 -1.20880607  0.77959906]
+ [ 1.2301541  -0.32946876 -1.92364301 -1.16800199 -0.01093835  0.24008057
+   1.10871988 -0.85863546  1.40991172  2.72914074 -0.95619877  1.24676744]
+ [-1.23989242  0.55945371  1.70992959  0.45362342  0.74710677 -0.20035434
+  -0.43069097 -0.40705533  1.72164462  0.05490404 -1.22038438  0.4368896 ]], shape=(4, 12), dtype=float64)
+
+How the original shape of the tensor looks like:
+(4, 3, 4)
+
+How the 3d tensor looks transformed back to the original shape:
+tf.Tensor(
+[[[ 1.56864929 -1.22525487  1.69396538 -1.28685487]
+  [-0.20661403 -1.24320567  0.39141006  0.63943356]
+  [-1.14795786 -0.12232087 -1.18676617  1.93846369]]
+
+ [[ 1.22882572  0.63120536  0.47275368  0.22931509]
+  [-0.98383632 -0.63013434  0.59430688 -0.40633607]
+  [ 0.33884281 -1.03378493 -1.20880607  0.77959906]]
+
+ [[ 1.2301541  -0.32946876 -1.92364301 -1.16800199]
+  [-0.01093835  0.24008057  1.10871988 -0.85863546]
+  [ 1.40991172  2.72914074 -0.95619877  1.24676744]]
+
+ [[-1.23989242  0.55945371  1.70992959  0.45362342]
+  [ 0.74710677 -0.20035434 -0.43069097 -0.40705533]
+  [ 1.72164462  0.05490404 -1.22038438  0.4368896 ]]], shape=(4, 3, 4), dtype=float64)
+
+How the 4d Tensor looks in Python:
+tf.Tensor(
+[[[[-0.52886132 -0.4704277  -0.18111409]
+   [ 1.93197892  0.37123903 -0.82513818]
+   [ 0.48800381  0.24264207  1.27609428]]
+
+  [[-1.09389509  1.12551675  0.19489267]
+   [-0.07091619  0.13682964  2.18854758]
+   [-1.12114595 -0.07260645 -0.35965432]]
+
+  [[ 0.08628853  1.62228194  1.94591204]
+   [-0.00529898 -2.1353978   2.21532946]
+   [ 1.15400797 -0.21243173 -0.74804815]]]
+
+
+ [[[-0.71450509 -0.94586477  0.30400512]
+   [-1.19002157 -1.32622149  0.38562885]
+   [ 0.21558625  1.66783251  0.21270647]]
+
+  [[-0.95164753 -1.9955329  -0.51945703]
+   [-2.0206637   0.97127622 -0.63599864]
+   [ 0.60782688  0.40940756 -0.05654895]]
+
+  [[ 0.9798393   1.01557608 -0.8309942 ]
+   [ 1.51148814 -0.69474533  1.16672767]
+   [-0.86577279  0.16231409  1.15357895]]]
+
+
+ [[[-0.08314909  1.28768699  0.54339417]
+   [-0.91566317 -0.81508354 -0.16462286]
+   [-0.03589313 -0.6386152  -1.27889382]]
+
+  [[-1.49414496  0.03240697 -2.13704588]
+   [ 1.85737484 -0.64363124  1.78605333]
+   [-1.07356168  1.12843806 -0.35632122]]
+
+  [[ 1.69598098 -0.92153308 -0.5534102 ]
+   [ 0.82215939  0.31581578 -0.76008927]
+   [ 0.26870027 -2.31707979  1.22018738]]]], shape=(3, 3, 3, 3), dtype=float64)
+
+How DAPHNE sees the 4d tensor from tensorflow:
+tf.Tensor(
+[[ 1.56864929 -1.22525487  1.69396538 -1.28685487 -0.20661403 -1.24320567
+   0.39141006  0.63943356 -1.14795786 -0.12232087 -1.18676617  1.93846369]
+ [ 1.22882572  0.63120536  0.47275368  0.22931509 -0.98383632 -0.63013434
+   0.59430688 -0.40633607  0.33884281 -1.03378493 -1.20880607  0.77959906]
+ [ 1.2301541  -0.32946876 -1.92364301 -1.16800199 -0.01093835  0.24008057
+   1.10871988 -0.85863546  1.40991172  2.72914074 -0.95619877  1.24676744]
+ [-1.23989242  0.55945371  1.70992959  0.45362342  0.74710677 -0.20035434
+  -0.43069097 -0.40705533  1.72164462  0.05490404 -1.22038438  0.4368896 ]], shape=(4, 12), dtype=float64)
+
+How the original shape of the tensor looks like:
+(4, 3, 4)
+
+How the 4d tensor looks transformed back to the original shape:
+tf.Tensor(
+[[[[-0.52886132 -0.4704277  -0.18111409]
+   [ 1.93197892  0.37123903 -0.82513818]
+   [ 0.48800381  0.24264207  1.27609428]]
+
+  [[-1.09389509  1.12551675  0.19489267]
+   [-0.07091619  0.13682964  2.18854758]
+   [-1.12114595 -0.07260645 -0.35965432]]
+
+  [[ 0.08628853  1.62228194  1.94591204]
+   [-0.00529898 -2.1353978   2.21532946]
+   [ 1.15400797 -0.21243173 -0.74804815]]]
+
+
+ [[[-0.71450509 -0.94586477  0.30400512]
+   [-1.19002157 -1.32622149  0.38562885]
+   [ 0.21558625  1.66783251  0.21270647]]
+
+  [[-0.95164753 -1.9955329  -0.51945703]
+   [-2.0206637   0.97127622 -0.63599864]
+   [ 0.60782688  0.40940756 -0.05654895]]
+
+  [[ 0.9798393   1.01557608 -0.8309942 ]
+   [ 1.51148814 -0.69474533  1.16672767]
+   [-0.86577279  0.16231409  1.15357895]]]
+
+
+ [[[-0.08314909  1.28768699  0.54339417]
+   [-0.91566317 -0.81508354 -0.16462286]
+   [-0.03589313 -0.6386152  -1.27889382]]
+
+  [[-1.49414496  0.03240697 -2.13704588]
+   [ 1.85737484 -0.64363124  1.78605333]
+   [-1.07356168  1.12843806 -0.35632122]]
+
+  [[ 1.69598098 -0.92153308 -0.5534102 ]
+   [ 0.82215939  0.31581578 -0.76008927]
+   [ 0.26870027 -2.31707979  1.22018738]]]], shape=(3, 3, 3, 3), dtype=float64)
+```
+
+### Data Exchange with pytorch via shared memory
+
+*Example:*
+
+```python
+from api.python.context.daphne_context import DaphneContext
+import torch
+import numpy as np
+
+dc = DaphneContext()
+
+# 2D Tensor Example
+# Example usage for a 3x3 tensor
+tensor2d = torch.tensor(np.random.randn(4, 3))
+
+# Print the tensor
+print("How the 2d Tensor looks in Python:")
+print(tensor2d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T2D = dc.from_pytorch(tensor2d)
+
+print("\nHow DAPHNE sees the 2d tensor from PyTorch:")
+print(T2D.compute(isPytorch=True))
+
+# 3D Tensor Example
+# Example usage for a 3x3x3 tensor
+tensor3d = torch.tensor(np.random.randn(4, 3, 4))
+
+# Print the tensor
+print("\nHow the 3d Tensor looks in Python:")
+print(tensor3d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T3D, T3D_shape = dc.from_pytorch(tensor3d, return_shape=True)
+
+print("\nHow DAPHNE sees the 3d tensor from PyTorch:")
+print(T3D.compute(isPytorch=True))
+
+print("\nHow the original shape of the tensor looks like:")
+print(T3D_shape)
+
+print("\nHow the 3d tensor looks transformed back to the original shape:")
+tensor3d_back = T3D.compute(isPytorch=True, shape=T3D_shape)
+print(tensor3d_back)
+
+# 4D Tensor Example
+# Example usage for a 3x3x3x3 tensor
+tensor4d = torch.tensor(np.random.randn(3, 3, 3, 3))
+
+# Print the tensor
+print("\nHow the 4d Tensor looks in Python:")
+print(tensor4d)
+
+# Transfer data to DaphneLib (lazily evaluated).
+T4D, T4D_shape = dc.from_pytorch(tensor4d, return_shape=True)
+
+print("\nHow DAPHNE sees the 4d tensor from PyTorch:")
+print(T4D.compute(isPytorch=True))
+
+print("\nHow the original shape of the tensor looks like:")
+print(T4D_shape)
+
+tensor4d_back = T4D.compute(isPytorch=True, shape=T4D_shape)
+print("\nHow the 4d tensor looks transformed back to the original shape:")
+print(tensor4d_back)
+```
+
+*Run by:*
+
+```shell
+python3 scripts/examples/daphnelib/data-exchange-pytorch.py
+```
+
+*Output:*
+
+```text
+How the 2d Tensor looks in Python:
+tensor([[-1.8535, -0.7521,  0.9446],
+        [-1.1868, -0.2862,  0.0437],
+        [-1.3503, -1.0055, -0.3218],
+        [ 0.8003,  1.1750,  1.8912]], dtype=torch.float64)
+
+How DAPHNE sees the 2d tensor from PyTorch:
+tensor([[-1.8535, -0.7521,  0.9446],
+        [-1.1868, -0.2862,  0.0437],
+        [-1.3503, -1.0055, -0.3218],
+        [ 0.8003,  1.1750,  1.8912]], dtype=torch.float64)
+
+How the 3d Tensor looks in Python:
+tensor([[[ 0.1129, -1.2178,  1.3257, -0.6831],
+         [ 0.0263, -0.7379, -2.3299, -1.7824],
+         [-0.3876, -0.7956, -0.4230,  0.8579]],
+
+        [[-0.3974, -1.0008,  0.0080, -1.2983],
+         [ 1.0793,  0.5160,  2.1831, -1.8404],
+         [ 0.3937,  0.9983, -0.6532,  0.0913]],
+
+        [[ 1.3041, -0.7766, -1.2593, -0.6739],
+         [ 0.5801,  1.2320, -1.0374,  0.8682],
+         [-0.3794, -0.5212,  0.0240, -0.6127]],
+
+        [[ 0.3299, -1.8847,  1.4791, -0.4569],
+         [-0.6936, -0.2048, -2.0930, -0.8661],
+         [ 0.4844,  0.1234,  1.1370, -0.4604]]], dtype=torch.float64)
+
+How DAPHNE sees the 3d tensor from PyTorch:
+tensor([[ 0.1129, -1.2178,  1.3257, -0.6831,  0.0263, -0.7379, -2.3299, -1.7824,
+         -0.3876, -0.7956, -0.4230,  0.8579],
+        [-0.3974, -1.0008,  0.0080, -1.2983,  1.0793,  0.5160,  2.1831, -1.8404,
+          0.3937,  0.9983, -0.6532,  0.0913],
+        [ 1.3041, -0.7766, -1.2593, -0.6739,  0.5801,  1.2320, -1.0374,  0.8682,
+         -0.3794, -0.5212,  0.0240, -0.6127],
+        [ 0.3299, -1.8847,  1.4791, -0.4569, -0.6936, -0.2048, -2.0930, -0.8661,
+          0.4844,  0.1234,  1.1370, -0.4604]], dtype=torch.float64)
+
+How the original shape of the tensor looks like:
+torch.Size([4, 3, 4])
+
+How the 3d tensor looks transformed back to the original shape:
+tensor([[[ 0.1129, -1.2178,  1.3257, -0.6831],
+         [ 0.0263, -0.7379, -2.3299, -1.7824],
+         [-0.3876, -0.7956, -0.4230,  0.8579]],
+
+        [[-0.3974, -1.0008,  0.0080, -1.2983],
+         [ 1.0793,  0.5160,  2.1831, -1.8404],
+         [ 0.3937,  0.9983, -0.6532,  0.0913]],
+
+        [[ 1.3041, -0.7766, -1.2593, -0.6739],
+         [ 0.5801,  1.2320, -1.0374,  0.8682],
+         [-0.3794, -0.5212,  0.0240, -0.6127]],
+
+        [[ 0.3299, -1.8847,  1.4791, -0.4569],
+         [-0.6936, -0.2048, -2.0930, -0.8661],
+         [ 0.4844,  0.1234,  1.1370, -0.4604]]], dtype=torch.float64)
+
+How the 4d Tensor looks in Python:
+tensor([[[[-0.5003,  0.4705, -1.0960],
+          [-0.1863, -1.1576,  1.1620],
+          [-0.3598,  1.9050,  0.7339]],
+
+         [[ 0.0467, -0.1497,  0.0979],
+          [-0.1125, -0.0446,  0.1705],
+          [ 0.2118, -0.9024,  0.1665]],
+
+         [[ 0.6349,  1.2377, -1.0773],
+          [ 0.4502, -2.3486, -0.3322],
+          [-1.4077, -1.6028, -0.2382]]],
+
+
+        [[[ 0.8510,  0.5391,  1.1461],
+          [-0.1255, -2.4009, -1.0430],
+          [-0.3053,  0.1883, -0.4420]],
+
+         [[-0.4122, -2.0053, -1.9770],
+          [ 0.4979,  1.6253, -0.2520],
+          [-0.0394,  0.0823, -0.0203]],
+
+         [[-1.7449,  0.0497,  0.5252],
+          [ 0.1901, -1.1366, -0.7679],
+          [-1.2489,  0.2665, -0.3104]]],
+
+
+        [[[-0.3290,  1.6993, -0.6693],
+          [-0.2678, -0.8967,  1.9205],
+          [-0.0950, -0.0924,  0.5839]],
+
+         [[ 0.9265,  0.5786, -1.9191],
+          [-1.6201, -0.1819,  0.5333],
+          [-1.0152, -0.1366,  0.7897]],
+
+         [[-0.0612,  0.1154, -0.4391],
+          [-0.6169, -1.1214,  2.1395],
+          [ 0.0515, -0.7475, -1.9374]]]], dtype=torch.float64)
+
+How DAPHNE sees the 4d tensor from PyTorch:
+tensor([[-0.5003,  0.4705, -1.0960, -0.1863, -1.1576,  1.1620, -0.3598,  1.9050,
+          0.7339,  0.0467, -0.1497,  0.0979, -0.1125, -0.0446,  0.1705,  0.2118,
+         -0.9024,  0.1665,  0.6349,  1.2377, -1.0773,  0.4502, -2.3486, -0.3322,
+         -1.4077, -1.6028, -0.2382],
+        [ 0.8510,  0.5391,  1.1461, -0.1255, -2.4009, -1.0430, -0.3053,  0.1883,
+         -0.4420, -0.4122, -2.0053, -1.9770,  0.4979,  1.6253, -0.2520, -0.0394,
+          0.0823, -0.0203, -1.7449,  0.0497,  0.5252,  0.1901, -1.1366, -0.7679,
+         -1.2489,  0.2665, -0.3104],
+        [-0.3290,  1.6993, -0.6693, -0.2678, -0.8967,  1.9205, -0.0950, -0.0924,
+          0.5839,  0.9265,  0.5786, -1.9191, -1.6201, -0.1819,  0.5333, -1.0152,
+         -0.1366,  0.7897, -0.0612,  0.1154, -0.4391, -0.6169, -1.1214,  2.1395,
+          0.0515, -0.7475, -1.9374]], dtype=torch.float64)
+
+How the original shape of the tensor looks like:
+torch.Size([3, 3, 3, 3])
+
+How the 4d tensor looks transformed back to the original shape:
+tensor([[[[-0.5003,  0.4705, -1.0960],
+          [-0.1863, -1.1576,  1.1620],
+          [-0.3598,  1.9050,  0.7339]],
+
+         [[ 0.0467, -0.1497,  0.0979],
+          [-0.1125, -0.0446,  0.1705],
+          [ 0.2118, -0.9024,  0.1665]],
+
+         [[ 0.6349,  1.2377, -1.0773],
+          [ 0.4502, -2.3486, -0.3322],
+          [-1.4077, -1.6028, -0.2382]]],
+
+
+        [[[ 0.8510,  0.5391,  1.1461],
+          [-0.1255, -2.4009, -1.0430],
+          [-0.3053,  0.1883, -0.4420]],
+
+         [[-0.4122, -2.0053, -1.9770],
+          [ 0.4979,  1.6253, -0.2520],
+          [-0.0394,  0.0823, -0.0203]],
+
+         [[-1.7449,  0.0497,  0.5252],
+          [ 0.1901, -1.1366, -0.7679],
+          [-1.2489,  0.2665, -0.3104]]],
+
+
+        [[[-0.3290,  1.6993, -0.6693],
+          [-0.2678, -0.8967,  1.9205],
+          [-0.0950, -0.0924,  0.5839]],
+
+         [[ 0.9265,  0.5786, -1.9191],
+          [-1.6201, -0.1819,  0.5333],
+          [-1.0152, -0.1366,  0.7897]],
+
+         [[-0.0612,  0.1154, -0.4391],
+          [-0.6169, -1.1214,  2.1395],
+          [ 0.0515, -0.7475, -1.9374]]]], dtype=torch.float64)
 ```
 
 ## Known Limitations
