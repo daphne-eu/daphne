@@ -403,7 +403,7 @@ arrowVersion=12.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
-pyBindVersion=2.10.4
+pyBindVersion=2.11.1
 papiVersion=7.0.1
 
 #******************************************************************************

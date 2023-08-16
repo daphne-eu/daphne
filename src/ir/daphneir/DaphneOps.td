@@ -1467,6 +1467,11 @@ def Daphne_MapOp : Daphne_Op<"map", [ShapeFromArg]> {
     let results = (outs MatrixOrU:$res);
 }
 
+def Daphne_MapOpExternalPL : Daphne_Op<"mapExternalPL", [ShapeFromArg]> {
+    let summary = "Applies a user defined function to elements of a matrix in another programming language.";
+    let arguments = (ins MatrixOrU:$arg, StrAttr:$func, StrAttr:$varName, StrAttr:$pl);
+    let results = (outs MatrixOrU:$res);
+}
 
 // ****************************************************************************
 // Low-level auxiliary operations

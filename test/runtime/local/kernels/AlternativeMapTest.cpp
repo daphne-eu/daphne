@@ -16,7 +16,7 @@
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
-//#include <runtime/local/kernels/CheckEq.h>
+#include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/MapExternalPL.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <catch.hpp>
@@ -26,45 +26,42 @@
 
 #define TYPES double
 
-/* C++ like functions */
-// Square function: Computes the square of a value.
-template <typename VTArg, typename VTRes>
-VTRes square(VTArg value) {
-    return static_cast<VTRes>(value) * static_cast<VTRes>(value);
-}
+/* C++ like functions in a String */
 
-// DoubleValue function: Computes the double value of a value.
-template <typename VTArg, typename VTRes>
-VTRes doubleValue(VTArg value) {
-    return static_cast<VTRes>(value) * static_cast<VTRes>(2);
-}
+const char *squareFunc = R"(
+# Square function: Computes the square of a value.
+def square(x):
+    return x * x
+)";
 
-// Cube function: Computes the cube of a value.
-template <typename VTArg, typename VTRes>
-VTRes cube(VTArg value) {
-    return static_cast<VTRes>(value) * static_cast<VTRes>(value) * static_cast<VTRes>(value);
-}
+const char *doubleValueFunc = R"(
+# DoubleValue function: Computes the double value of a value.
+def doubleValue(x):
+    return x * 2
+)";
+
+const char *cubeFunc = R"(
+# Cube function: Computes the cube of a value.
+def cube(x):
+    return x * x * x
+)";
 
 template<class DTRes, class DTArg>
-void checkMap(const DTArg * arg, const DTRes * exp, void* func) {
+void checkMap(const DTArg * arg, const DTRes * exp, const char * func) 
+{
     DTRes * res = nullptr;
-    mapExternalPL(res, arg, func, "x", "PyBind", nullptr);
+    mapExternalPL(res, arg, func, "x", "Python_Ctypes", nullptr);
     if (res) {
-        size_t numRows = res->getNumRows();
-        size_t numCols = res->getNumCols();
+        std::cout << "arg matrix:" << std::endl;
+        arg->print(std::cout);
 
-        for (size_t r = 0; r < numRows; ++r) {
-            for (size_t c = 0; c < numCols; ++c) {
-                std::cout << res->get(r, c) << " ";
-            }
-            std::cout << std::endl;
-        }
+        std::cout << "res matrix:" << std::endl;
+        res->print(std::cout);
+        
+        CHECK(*res == *exp);
+        DataObjectFactory::destroy(res);
     }
-    
-    
-    //CHECK(*res == *exp);
-    DataObjectFactory::destroy(res);
-    }
+}
 
 template<template<typename VT> class DT, class VTArg, class VTRes>
 void testApplyMapFunctionPyBind() {
@@ -73,7 +70,19 @@ void testApplyMapFunctionPyBind() {
     using DTRes = DT<VTRes>;
 
     // Create input DenseMatrix using genGivenVals
-    auto input = genGivenVals<DTArg>(3, {
+    auto input1 = genGivenVals<DTArg>(3, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9,
+    });
+
+    auto input2 = genGivenVals<DTArg>(3, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 9,
+    });
+
+    auto input3 = genGivenVals<DTArg>(3, {
         1, 2, 3,
         4, 5, 6,
         7, 8, 9,
@@ -100,17 +109,20 @@ void testApplyMapFunctionPyBind() {
         343, 512, 729
     });
 
-    void* squareFunc = reinterpret_cast<void*>(&square<VTArg, VTRes>);
-    checkMap(input, squarefunc_res, squareFunc);
+    std::cout << "checkpoint check map with input 1" << std::endl;
+    checkMap(input1, squarefunc_res, squareFunc);
 
-    void* doubleValueFunc = reinterpret_cast<void*>(&doubleValue<VTArg, VTRes>);
-    checkMap(input, doublefunc_res, doubleValueFunc);
+    std::cout << "checkpoint check map with input 2" << std::endl;
+    checkMap(input2, doublefunc_res, doubleValueFunc);
 
-    void* cubeFunc = reinterpret_cast<void*>(&cube<VTArg, VTRes>);
-    checkMap(input, cubefunc_res, cubeFunc);
-    DataObjectFactory::destroy(input, squarefunc_res, doublefunc_res, cubefunc_res);
+    std::cout << "checkpoint check map with input 3" << std::endl;
+    checkMap(input3, cubefunc_res, cubeFunc);
+
+    std::cout << "Destroy the Test Objects" << std::endl;
+    DataObjectFactory::destroy(input1, input2, input3, squarefunc_res, doublefunc_res, cubefunc_res);
+    std::cout << "Test Objects sucessfully destroyed" << std::endl;
 }
 
-TEMPLATE_TEST_CASE("Test applyMapFunction with PyBind", "[applyMapFunction][PyBind]", TYPES) {
+TEMPLATE_TEST_CASE("Test applyMapFunction with Alternative Kernels of other languages", "[applyMapFunction][PyBind]", TYPES) {
     testApplyMapFunctionPyBind<DenseMatrix, TestType, TestType>();
 }

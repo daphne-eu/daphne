@@ -20,7 +20,10 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/MAP_PYBIND/PyBindMapKernel.h>
+//#include <runtime/local/kernels/MAP_PYBIND/PyBindMapKernel.h>
+#include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel.h>
+#include <runtime/local/kernels/MAP_NUMPY/NumpyMapKernel.h>
+#include <util/PythonInterpreter.h>
 #include <memory>
 #include <algorithm>
 #include <cassert>
@@ -39,7 +42,7 @@ struct MapExternalPL {
 // ****************************************************************************
 
 template<class DTRes, class DTArg>
-void mapExternalPL(DTRes *& res, const DTArg * arg, void* func, const char* varName, const char* plName, DCTX(ctx)) {
+void mapExternalPL(DTRes *& res, const DTArg * arg, const char * func, const char* varName, const char* plName, DCTX(ctx)) {
     MapExternalPL<DTRes,DTArg>::apply(res, arg, func, varName, plName, ctx);
 }
 
@@ -52,27 +55,54 @@ void mapExternalPL(DTRes *& res, const DTArg * arg, void* func, const char* varN
 // ----------------------------------------------------------------------------
 template<typename VTRes, typename VTArg>
 struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func, const char* varName, const char* plName, DCTX(ctx)) {
+    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char * func, const char * varName, const char * plName, DCTX(ctx)) {
+        
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
         
         if (res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTRes>>(numRows, numCols, false);
         
-        if(plName == NULL){
+        if(plName != NULL)
+        {
+            PythonInterpreter::getInstance();   
+            /*if (strcmp(plName, "Python_PyBind") == 0)
+            {
+                applyPyBindKernel(res, arg, func, varName);
+            }*/
+            if (strcmp(plName, "Python_Numpy") == 0)
+            {
+                applyNumpyKernel(res, arg, func, varName);
+            }
+            else if (strcmp(plName, "Python_Ctypes") == 0)
+            {
+                applyCTypesKernel(res, arg, func, varName);
+            }
+            else
+            {
+                throw std::runtime_error("Programming Language can't be used");
+            }
+        }
+        else
+        {
             throw std::runtime_error("Programming Language field is NULL");
         }
-        else if (strcmp(plName, "PyBind") == 0)
-        {
-            std::cout << "Starting PyBind Kernel" << std::endl;
-            applyPyBindKernel(res, arg, func, varName);
-        }
-        throw std::runtime_error("Programming Language can't be used");
+        
     }
 
-    static void applyPyBindKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func, const char* varName) {
-        pyBindMapKernel(res, arg, func);
+    /*static void applyPyBindKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        std::cout << "Starting PyBind Kernel" << std::endl;
+        pyBindMapKernel(res, arg, func, varName);
+    }*/
+
+    static void applyCTypesKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        std::cout << "Starting Python_Ctypes Kernel" << std::endl;
+        ctypesMapKernel(res, arg, func, varName);
     }
 
+    static void applyNumpyKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        std::cout << "Starting Python_Numpy Kernel" << std::endl;
+        numpyMapKernel(res, arg, func, varName);
+    }
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAPEXTERNALPL_H

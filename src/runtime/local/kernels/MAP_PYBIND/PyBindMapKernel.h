@@ -28,15 +28,15 @@ namespace py = pybind11;
 template<typename DTRes, typename DTArg>
 struct PyBindMapKernel
 {
-    static void apply(DTRes *& res, const DTArg * arg, void* func) = delete;
+    static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
 
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg>
-void pyBindMapKernel(DTRes *& res, const DTArg * arg, void* func) {
-    PyBindMapKernel<DTRes,DTArg>::apply(res, arg, func);
+void pyBindMapKernel(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    PyBindMapKernel<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 // ----------------------------------------------------------------------------
@@ -44,7 +44,7 @@ void pyBindMapKernel(DTRes *& res, const DTArg * arg, void* func) {
 // ----------------------------------------------------------------------------
 template<typename VTRes, typename VTArg>
 struct PyBindMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, void* func)
+    static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
        // Get the raw pointers to the data of input and output DenseMatrices
         const VTArg* arg_data = arg->getValuesSharedPtr().get();
@@ -56,26 +56,27 @@ struct PyBindMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         size_t cols = arg->getNumCols();
         std::cout << "rows: " << rows << ", cols: " << cols << std::endl;
 
-        // Import the Python Map function from map_function.py
-        py::object map_function = py::module::import("map_function").attr("map_kernel_pybind");
-
         // Create numpy arrays from the raw pointers without making copies
-        py::array_t<VTArg> py_input(rows * cols, arg_data);
-        py_input.resize({rows, cols});
+        try {
+            py::array_t<VTArg> py_input(rows * cols, arg_data);
+            py_input.resize({rows, cols});
 
-        py::array_t<VTRes> py_output(rows * cols, res_data);
-        py_output.resize({rows, cols});
+            py::array_t<VTRes> py_output(rows * cols, res_data);
+            py_output.resize({rows, cols});
 
-        std::cout << "py_input rows: " << py_input.shape(0) << ", cols: " << py_input.shape(1) << std::endl;
-        std::cout << "py_output rows: " << py_output.shape(0) << ", cols: " << py_output.shape(1) << std::endl;
+            std::cout << "py_input rows: " << py_input.shape(0) << ", cols: " << py_input.shape(1) << std::endl;
+            std::cout << "py_output rows: " << py_output.shape(0) << ", cols: " << py_output.shape(1) << std::endl;
 
-        // Convert the function pointer into a String Representation
-        std::string func_str = reinterpret_cast<char*>(func);
-        
-        std::cout << "func_str: " << func_str << std::endl;
+            // Import the Python Map function from map_function.py
+            py::object map_function = py::module::import("map_function").attr("map_kernel_pybind");
     
-        // Call the Python Map function on the input matrix and function pointer
-        map_function(py_input, py_output, func_str);
-        std::cout << "Python function called successfully" << std::endl;
+            // Call the Python Map function on the input matrix and function pointer
+            map_function(py_input, py_output, func, varName);
+            std::cout << "Python function called successfully" << std::endl;
+        } 
+        catch (const std::exception& ex)
+        {
+            std::cerr << "An exception occurred while creating or resizing py_input: " << ex.what() << std::endl;
+        }
     }
 };

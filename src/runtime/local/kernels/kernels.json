@@ -1730,6 +1730,119 @@
     },
     {
         "kernelTemplate": {
+            "header": "MapExternalPL.h",
+            "opName": "mapExternalPL",
+            "returnType": "void",
+            "templateParams": [
+                {
+                    "name": "DTRes",
+                    "isDataType": true
+                },
+                {
+                    "name": "DTArg",
+                    "isDataType": true
+                }
+            ],
+            "runtimeParams": [
+                {
+                    "type": "DTRes *&",
+                    "name": "res"
+                },
+                {
+                    "type": "const DTArg *",
+                    "name": "arg"
+                },
+                {
+                    "type": "const char *",
+                    "name": "func"
+                },
+                {
+                    "type": "const char *",
+                    "name": "varName"
+                },
+                {
+                    "type": "const char *",
+                    "name": "plName"
+                }
+            ]
+        },
+        "instantiations": [
+            [["DenseMatrix", "double"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "double"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "float"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "float"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "int64_t"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "int32_t"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "int8_t"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint64_t"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint32_t"], ["DenseMatrix", "uint8_t"]],
+
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "int64_t"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "int32_t"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "int8_t"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint64_t"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint32_t"]],
+            [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]]
+        ]
+    }
+    ,
+    {
+        "kernelTemplate": {
             "header": "Map.h",
             "opName": "map",
             "returnType": "void",

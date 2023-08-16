@@ -84,6 +84,9 @@ set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
     ${PREFIX}/MatMul.h
     ${PREFIX}/MAP_PYBIND/PyBindMapKernel.h
+    ${PREFIX}/MAP_NUMPY/NumpyTypeString.h
+    ${PREFIX}/MAP_NUMPY/NumpyMapKernel.h
+    ${PREFIX}/MAP_CTYPES/CtypesMapKernel.h
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp
@@ -110,8 +113,9 @@ endif()
 
 
 list(APPEND LIBS DaphneMetaDataParser MLIRDaphne MLIRDaphneTransforms)
-list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared)
+list(APPEND LIBS Eigen3::Eigen Arrow::arrow_shared Parquet::parquet_shared pybind11::embed)
 
+find_package(pybind11 REQUIRED)
 find_library(PAPI_LIB NAMES libpapi.so HINTS ${PROJECT_BINARY_DIR}/installed/lib REQUIRED)
 
-target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB})
+target_link_libraries(AllKernels PUBLIC ${LIBS} ${MPI_LIBRARIES} ${PAPI_LIB} ${PYTHON_LIBRARIES})
