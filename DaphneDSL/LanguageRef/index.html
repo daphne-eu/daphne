@@ -2168,29 +2168,34 @@ Note that the <em>body-statement</em> may be a block statement enclosing an arbi
 <h2 id="user-defined-functions-udfs">User-defined Functions (UDFs)</h2>
 <p>DaphneDSL allows users to define their own functions.
 The syntax of a function definition looks as follows:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">funcName</span><span class="p">(</span><span class="n">paramName1</span><span class="p">[:</span><span class="n">paramType1</span><span class="p">],</span><span class="w"> </span><span class="n">paramName2</span><span class="p">[:</span><span class="n">paramType2</span><span class="p">],</span><span class="w"> </span><span class="p">...)</span><span class="w"> </span><span class="p">[</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">returnType</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-40-1" name="__codelineno-40-1" href="#__codelineno-40-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">funcName</span><span class="p">(</span><span class="n">paramName1</span><span class="p">[:</span><span class="n">paramType1</span><span class="p">],</span><span class="w"> </span><span class="n">paramName2</span><span class="p">[:</span><span class="n">paramType2</span><span class="p">],</span><span class="w"> </span><span class="p">...)</span><span class="w"> </span><span class="p">[</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">returnType1</span><span class="p">,</span><span class="w"> </span><span class="n">returnType2</span><span class="p">,</span><span class="w"> </span><span class="p">...]</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-40-2" name="__codelineno-40-2" href="#__codelineno-40-2"></a><span class="w">    </span><span class="n">statement1</span>
 <a id="__codelineno-40-3" name="__codelineno-40-3" href="#__codelineno-40-3"></a><span class="w">    </span><span class="n">statement2</span>
 <a id="__codelineno-40-4" name="__codelineno-40-4" href="#__codelineno-40-4"></a><span class="w">    </span><span class="p">...</span>
 <a id="__codelineno-40-5" name="__codelineno-40-5" href="#__codelineno-40-5"></a><span class="p">}</span>
 </code></pre></div>
 <p>The function name must be a valid and unique identifier.
-A function can have zero or more parameters, and their names must be valid and unique identifiers.
-Furthermore, a function may return zero or more values.
-Specifying the types of parameters and return values is optional (see <em>typed and untyped functions</em> below).
+A function can have zero, one, or more parameters, and their names must be valid and unique identifiers.
+Furthermore, a function may return zero, one, or more values.
+The types of parameters are optional and can be provided or omitted for each parameter individually.
+The types of the return values are optional, but if omitted, exactly one return value is implicitly assumed.
+Functions with multiple return values must specify the types of all return values.
+See also <em>typed and untyped functions</em> below.
 The body of a function definition is always a block statement, i.e., it must be enclosed in curly braces <code>{}</code> even if it is just a single statement.</p>
 <p>So far, DaphneDSL supports only positional parameters to functions, but in the future, we plan to support named keyword arguments as well.</p>
 <p>Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a function definition must not be nested within a control-flow statement or within another function definition.</p>
 <h3 id="returning-values">Returning Values</h3>
-<p>User-defined functions can return zero or more values.
-Values are returned by a <code>return</code>-statement with the following syntax:</p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
-</code></pre></div>
+<p>User-defined functions can return zero, one, or more (comma-separated) values using the <code>return</code>-statement.
+The number of returned values must match the function signature.</p>
+<p><em>Examples:</em>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-41-1" name="__codelineno-41-1" href="#__codelineno-41-1"></a><span class="k">return</span><span class="p">;</span><span class="w">       </span><span class="err">#</span><span class="w"> </span><span class="n">don</span><span class="err">&#39;</span><span class="n">t</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">any</span><span class="w"> </span><span class="n">values</span>
+<a id="__codelineno-41-2" name="__codelineno-41-2" href="#__codelineno-41-2"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">;</span><span class="w">     </span><span class="err">#</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">exactly</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="k">value</span>
+<a id="__codelineno-41-3" name="__codelineno-41-3" href="#__codelineno-41-3"></a><span class="k">return</span><span class="w"> </span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">;</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">two</span><span class="w"> </span><span class="n">values</span>
+</code></pre></div></p>
 <p>Currently, the return statement must be the last statement of a function.
-Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function (experimental).
-Note that multi-value returns are not fully supported yet.</p>
+Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function (experimental).</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">si64</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">si64</span><span class="w"> </span><span class="p">{</span>
+<p><div class="highlight"><pre><span></span><code><a id="__codelineno-42-1" name="__codelineno-42-1" href="#__codelineno-42-1"></a><span class="n">def</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="p">:</span><span class="w"> </span><span class="n">si64</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">si64</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-42-2" name="__codelineno-42-2" href="#__codelineno-42-2"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">0</span><span class="p">)</span>
 <a id="__codelineno-42-3" name="__codelineno-42-3" href="#__codelineno-42-3"></a><span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="m">0</span><span class="p">;</span>
 <a id="__codelineno-42-4" name="__codelineno-42-4" href="#__codelineno-42-4"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="m">1</span><span class="p">)</span>
@@ -2198,16 +2203,20 @@ Note that multi-value returns are not fully supported yet.</p>
 <a id="__codelineno-42-6" name="__codelineno-42-6" href="#__codelineno-42-6"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">1</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">fib</span><span class="p">(</span><span class="n">n</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="m">2</span><span class="p">);</span>
 <a id="__codelineno-42-7" name="__codelineno-42-7" href="#__codelineno-42-7"></a><span class="p">}</span>
 </code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a>def nextTwo(a: si64) -&gt; si64, si64 {
+<a id="__codelineno-43-2" name="__codelineno-43-2" href="#__codelineno-43-2"></a>    return a + 1, a + 2;
+<a id="__codelineno-43-3" name="__codelineno-43-3" href="#__codelineno-43-3"></a>}
+</code></pre></div></p>
 <h3 id="calling-user-defined-functions">Calling User-defined Functions</h3>
-<p>A user-defined function can be called like any other (built-in) function (see <em>function-call expressions</em> above).
-Note that user-defined functions returning multiple values are not fully supported yet.</p>
+<p>A user-defined function can be called like any other (built-in) function (see <em>function-call expressions</em> above).</p>
 <p><em>Examples:</em></p>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-43-1" name="__codelineno-43-1" href="#__codelineno-43-1"></a><span class="nf">fib</span><span class="p">(</span><span class="m">5</span><span class="p">);</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-44-1" name="__codelineno-44-1" href="#__codelineno-44-1"></a><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="m">2</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">fib</span><span class="p">(</span><span class="m">5</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="m">123</span><span class="p">;</span>
+<a id="__codelineno-44-2" name="__codelineno-44-2" href="#__codelineno-44-2"></a><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nf">nextTwo</span><span class="p">(</span><span class="m">123</span><span class="p">);</span>
 </code></pre></div>
 <h3 id="typed-and-untyped-functions-experimental">Typed and Untyped Functions (experimental)</h3>
 <p>DaphneDSL supports both typed and untyped functions.</p>
 <p>The definition of a <em>typed function</em> specifies the data and value types of all parameters and return values.
-Hence, a typed function can only be called with inputs of the specified types (if a provided input has an unexpected type, it is automatically casted to the expected type, if possible), and always return outputs of the specified types.
+Hence, a typed function can only be called with inputs of the specified types (if a provided input has an unexpected type, it is automatically casted to the expected type, if possible), and always returns outputs of the specified types.
 A typed function is compiled exactly once and specialized to the specified parameter and return types.</p>
 <p>In contrast to that, the definition of an <em>untyped function</em> leaves the data and value type, or just the value type, of one or more parameters and/or return values unspecified.
 At call sites, a value of any type, or any value type, can be passed to an untyped parameter.
