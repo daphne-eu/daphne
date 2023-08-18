@@ -22,7 +22,6 @@
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel.h>
 #include <runtime/local/kernels/MAP_NUMPY/NumpyMapKernel.h>
-#include <util/PythonInterpreter.h>
 #include <memory>
 #include <algorithm>
 #include <cassert>
@@ -64,7 +63,6 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         
         if(plName != NULL)
         {
-            PythonInterpreter::getInstance();   
 
             if (strcmp(plName, "Python_Numpy") == 0)
             {
@@ -78,6 +76,7 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             {
                 throw std::runtime_error("Programming Language can't be used");
             }
+
         }
         else
         {

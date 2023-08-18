@@ -16,7 +16,6 @@
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_H
 #define SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_H
 
-#pragma once
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
 #include <memory>
@@ -42,37 +41,28 @@ void ctypesMapKernel(DTRes *& res, const DTArg * arg, const char* func, const ch
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
-
-struct PyDeleter {
-    void operator()(PyObject* ptr) const {
-        Py_DECREF(ptr);
-    }
-};
-
 template<typename VTRes, typename VTArg>
 struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
-
-    using PyPtr = std::unique_ptr<PyObject, PyDeleter>;
 
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
         PythonInterpreter::getInstance();
 
-        PyPtr pName(PyUnicode_DecodeFSDefault("CtypesMapKernel"));
-        //std::cout << "Reference count of pName: " << Py_REFCNT(pName.get()) << std::endl;
-        PyPtr pModule(PyImport_Import(pName.get()));
-        //std::cout << "Reference count of pModule: " << Py_REFCNT(pModule.get()) << std::endl;
+        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel");
+        PyObject* pModule = PyImport_Import(pName);
+        Py_XDECREF(pName);
 
         if (!pModule) {
-            PyErr_Print();
             std::cerr << "Failed to import Python module!" << std::endl;
+            PyErr_Print();
             return;
         }
 
-        PyPtr pFunc(PyObject_GetAttrString(pModule.get(), "apply_map_function"));
-        //std::cout << "Reference count of pFunc: " << Py_REFCNT(pFunc.get()) << std::endl;
+        PyObject* pFunc = PyObject_GetAttrString(pModule, "apply_map_function");
+        Py_XDECREF(pModule);
 
-        if (!PyCallable_Check(pFunc.get())) {
+        if (!PyCallable_Check(pFunc)) {
+            Py_XDECREF(pFunc);
             std::cerr << "Function not callable!" << std::endl;
             return;
         }
@@ -87,24 +77,25 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         uint64_t data_address_res = reinterpret_cast<uint64_t>(res_data);
         uint64_t data_address_arg = reinterpret_cast<uint64_t>(arg_data);
-        
-        PyPtr pArgs(Py_BuildValue("KKKKiiss",
-                                  address_upper(data_address_res),
-                                  address_lower(data_address_res),
-                                  address_upper(data_address_arg),
-                                  address_lower(data_address_arg),
-                                  res->getNumRows(),
-                                  res->getNumCols(),
-                                  func,
-                                  varName));
-        
-        //std::cout << "Reference count of pArgs: " << Py_REFCNT(pArgs.get()) << std::endl;
-        
-        PyPtr pResult(PyObject_CallObject(pFunc.get(), pArgs.get()));
-        //std::cout << "Reference count of pResult: " << Py_REFCNT(pResult.get()) << std::endl;
+
+        PyObject* pArgs = Py_BuildValue("KKKKiiss",
+                                        address_upper(data_address_res),
+                                        address_lower(data_address_res),
+                                        address_upper(data_address_arg),
+                                        address_lower(data_address_arg),
+                                        res->getNumRows(),
+                                        res->getNumCols(),
+                                        func,
+                                        varName);
+
+        PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
+        Py_XDECREF(pFunc);
+        Py_XDECREF(pArgs);
 
         if (!pResult) {
             PyErr_Print();
+        } else {
+            Py_XDECREF(pResult);
         }
 
     }

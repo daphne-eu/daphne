@@ -18,34 +18,68 @@
 #define PYTHON_INTERPRETER_H
 #include <Python.h>
 #include <stdexcept>
+#include <iostream>
+#include <stack>
 
 // ****************************************************************************
 // PythonInterpreter Singleton
 // ****************************************************************************
 struct PythonInterpreter {
 public:
+
     static PythonInterpreter& getInstance() {
-        static PythonInterpreter instance;
-        return instance;
-    }
-private:
-    PythonInterpreter() {
-        Py_Initialize();
-        std::string kernelPath = std::string(PROJECT_SOURCE_DIR) + "/src/runtime/local/kernels/MAP_CTYPES";
-        addPath(kernelPath.c_str());
-    }
-    ~PythonInterpreter() {
-        Py_Finalize();
+        static PythonInterpreter pythonInterpreter;
+        return pythonInterpreter;
     }
 
-    // Add paths to sys.path
-    void addPath(const char* newPath) {
+    static void finalizeInterpreter() {
+        getInstance().finalize();
+    }
+
+    static void initializeInterpreter() {
+        getInstance().init();
+    }
+
+    static void addPath(const char* newPath) {
         PyObject* pSysPath = PySys_GetObject("path");
+        if (!pSysPath) {
+            throw std::runtime_error("Failed to get sys.path");
+        }
         PyObject* pPath = PyUnicode_FromString(newPath);
-        if (pSysPath && pPath && PyList_Append(pSysPath, pPath) == 0) {
-            Py_DECREF(pPath);
-        } else {
+        if (!pPath) {
+            throw std::runtime_error("Failed to create Python string from path");
+        }
+
+        // Add the path to sys.path
+        if (PyList_Append(pSysPath, pPath) != 0) {
+            Py_XDECREF(pPath);
             throw std::runtime_error("Failed to add path to sys.path");
+        }
+
+        Py_XDECREF(pPath);
+    }
+
+private:
+
+    PythonInterpreter() {
+        init();
+    }
+    
+    ~PythonInterpreter() {
+        finalize();
+    }
+
+    static void init() {
+        if (!Py_IsInitialized()) {
+            Py_Initialize();
+            std::string kernelPath = std::string(PROJECT_SOURCE_DIR) + "/src/runtime/local/kernels/MAP_CTYPES";          
+            addPath(kernelPath.c_str());
+        }
+    }
+
+    static void finalize() {
+        if (Py_IsInitialized()) {
+            Py_Finalize();
         }
     }
 
@@ -55,4 +89,5 @@ private:
     PythonInterpreter(PythonInterpreter&&) = delete;
     PythonInterpreter& operator=(PythonInterpreter&&) = delete;
 };
+
 #endif // PYTHON_INTERPRETER_H
