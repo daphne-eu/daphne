@@ -19,38 +19,38 @@ set(TEST_SOURCES
         run_tests.h
         run_tests.cpp
 
-        #api/cli/algorithms/AlgorithmsTest.cpp
-        #api/cli/config/ConfigTest.cpp
-        #api/cli/controlflow/ControlFlowTest.cpp
-        #api/cli/distributed/DistributedTest.cpp
-        #api/cli/expressions/CastTest.cpp
-        #api/cli/expressions/CondTest.cpp
-        #api/cli/expressions/MatrixLiteralTest.cpp
-        #api/cli/functions/FunctionsTest.cpp
-        #api/cli/functions/RecursiveFunctionsTest.cpp
-        #api/cli/io/ReadTest.cpp
-        #api/cli/import/ImportTest.cpp
-        #api/cli/indexing/IndexingTest.cpp
-        #api/cli/inference/InferenceTest.cpp
-        #api/cli/io/ReadTest.cpp
-        #api/cli/literals/LiteralsTest.cpp
-        #api/cli/operations/ConstantFoldingTest.cpp
-        #api/cli/operations/OperationsTest.cpp
-        #api/cli/parser/ParserTest.cpp
-        #api/cli/parser/MetaDataParserTest.cpp
-        #api/cli/scoping/ScopingTest.cpp
-        #api/cli/scriptargs/ScriptArgsTest.cpp
-        #api/cli/secondorder/SecondOrderTest.cpp
-        #api/cli/sql/SQLTest.cpp
-        #api/cli/sql/SQLResultTest.cpp
-        #api/cli/syntax/SyntaxTest.cpp
-        #api/cli/vectorized/MultiThreadedOpsTest.cpp
-        #api/cli/vectorized/VectorizedPipelineTest.cpp
-        #api/cli/Utils.cpp
+        api/cli/algorithms/AlgorithmsTest.cpp
+        api/cli/config/ConfigTest.cpp
+        api/cli/controlflow/ControlFlowTest.cpp
+        api/cli/distributed/DistributedTest.cpp
+        api/cli/expressions/CastTest.cpp
+        api/cli/expressions/CondTest.cpp
+        api/cli/expressions/MatrixLiteralTest.cpp
+        api/cli/functions/FunctionsTest.cpp
+        api/cli/functions/RecursiveFunctionsTest.cpp
+        api/cli/io/ReadTest.cpp
+        api/cli/import/ImportTest.cpp
+        api/cli/indexing/IndexingTest.cpp
+        api/cli/inference/InferenceTest.cpp
+        api/cli/io/ReadTest.cpp
+        api/cli/literals/LiteralsTest.cpp
+        api/cli/operations/ConstantFoldingTest.cpp
+        api/cli/operations/OperationsTest.cpp
+        api/cli/parser/ParserTest.cpp
+        api/cli/parser/MetaDataParserTest.cpp
+        api/cli/scoping/ScopingTest.cpp
+        api/cli/scriptargs/ScriptArgsTest.cpp
+        api/cli/secondorder/SecondOrderTest.cpp
+        api/cli/sql/SQLTest.cpp
+        api/cli/sql/SQLResultTest.cpp
+        api/cli/syntax/SyntaxTest.cpp
+        api/cli/vectorized/MultiThreadedOpsTest.cpp
+        api/cli/vectorized/VectorizedPipelineTest.cpp
+        api/cli/Utils.cpp
     
-        #api/python/DaphneLibTest.cpp
+        api/python/DaphneLibTest.cpp
         
-        #ir/daphneir/InferTypesTest.cpp
+        ir/daphneir/InferTypesTest.cpp
         
         #parser/config/ConfigParserTest.cpp
         runtime/distributed/worker/WorkerTest.cpp
@@ -68,11 +68,11 @@ set(TEST_SOURCES
 	runtime/local/io/ReadDaphneTest.cpp
         runtime/local/io/DaphneSerializerTest.cpp
 
-        runtime/local/kernels/AlternativeMapTest.cpp
         runtime/local/kernels/AggAllTest.cpp
         runtime/local/kernels/AggColTest.cpp
         runtime/local/kernels/AggCumTest.cpp
         runtime/local/kernels/AggRowTest.cpp
+        runtime/local/kernels/AlternativeMapTest.cpp
         runtime/local/kernels/CartesianTest.cpp
         runtime/local/kernels/CastObjTest.cpp
         runtime/local/kernels/CastObjScaTest.cpp
