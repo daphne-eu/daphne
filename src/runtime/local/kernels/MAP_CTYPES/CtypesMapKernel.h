@@ -78,7 +78,11 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         uint64_t data_address_res = reinterpret_cast<uint64_t>(res_data);
         uint64_t data_address_arg = reinterpret_cast<uint64_t>(arg_data);
 
-        PyObject* pArgs = Py_BuildValue("KKKKiiss",
+        std::string orig_dtype_arg = get_dtype_name();
+        std::string orig_dtype_res = orig_dtype_arg; // Assuming VTArg and VTRes have the same data type
+
+
+        PyObject* pArgs = Py_BuildValue("KKKKiissss",
                                         address_upper(data_address_res),
                                         address_lower(data_address_res),
                                         address_upper(data_address_arg),
@@ -86,7 +90,10 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                                         res->getNumRows(),
                                         res->getNumCols(),
                                         func,
-                                        varName);
+                                        varName,
+                                        orig_dtype_arg.c_str(),
+                                        orig_dtype_res.c_str()
+                                        );
 
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         Py_XDECREF(pFunc);
@@ -98,6 +105,26 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             Py_XDECREF(pResult);
         }
 
+    }
+
+    static std::string get_dtype_name() {
+        if (std::is_same<VTArg, float>::value) {
+            return "float32";
+        } else if (std::is_same<VTArg, double>::value) {
+            return "float64";
+        } else if (std::is_same<VTArg, int32_t>::value) {
+            return "int32";
+        } else if (std::is_same<VTArg, int64_t>::value) {
+            return "int64";
+        } else if (std::is_same<VTArg, int8_t>::value) {
+            return "int8";
+        } else if (std::is_same<VTArg, uint64_t>::value) {
+            return "uint64";
+        } else if (std::is_same<VTArg, uint8_t>::value) {
+            return "uint8";
+        } else {
+            throw std::runtime_error("Unsupported data type!");
+        }
     }
 
     static constexpr uint32_t address_upper(uint64_t data_address) {

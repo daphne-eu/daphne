@@ -23,8 +23,7 @@
 #include <vector>
 #include <tags.h>
 
-#define TYPES double
-
+#define TYPES double, float, int64_t, int32_t, int8_t, uint64_t, uint8_t
 /* C++ like functions in a String */
 
 const char *squareFunc = R"(
@@ -45,6 +44,18 @@ def cube(x):
     return x * x * x
 )";
 
+const char *absFunc = R"(
+# Absolute function: Computes the absolute value of a number.
+def absolute(x):
+    return abs(x)
+)";
+
+const char *roundFunc = R"(
+# Round function: Rounds the number to the nearest integer.
+def roundNum(x):
+    return round(x)
+)";
+
 template<class DTRes, class DTArg>
 void checkMap(const DTArg * arg, const DTRes * exp, const char * func) 
 {
@@ -60,50 +71,63 @@ void testApplyMapFunctionCtypes() {
     using DTRes = DT<VTRes>;
 
     // Create input DenseMatrix using genGivenVals
-    auto input1 = genGivenVals<DTArg>(3, {
+    auto input = genGivenVals<DTArg>(3, {
         1, 2, 3,
         4, 5, 6,
         7, 8, 9,
     });
 
-    auto input2 = genGivenVals<DTArg>(3, {
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9,
-    });
-
-    auto input3 = genGivenVals<DTArg>(3, {
-        1, 2, 3,
-        4, 5, 6,
-        7, 8, 9,
-    });
-
-    //Result Matrix: Square func
+    // Result Matrix: Square func
     auto squarefunc_res = genGivenVals<DTRes>(3, {
         1, 4, 9,
         16, 25, 36,
         49, 64, 81
     });
 
-    //Result Matrix: double func
+    // Result Matrix: double func
     auto doublefunc_res = genGivenVals<DTRes>(3, {
         2, 4, 6,
         8, 10, 12,
         14, 16, 18,
     });
 
-    //Result Matrix: Cube func
-    auto cubefunc_res = genGivenVals<DTRes>(3, {
-        1, 8, 27,
-        64, 125, 216,
-        343, 512, 729
-    });
+    checkMap(input, squarefunc_res, squareFunc);
+    checkMap(input, doublefunc_res, doubleValueFunc);
 
-    checkMap(input1, squarefunc_res, squareFunc);
-    checkMap(input2, doublefunc_res, doubleValueFunc);
-    checkMap(input3, cubefunc_res, cubeFunc);
+    // For integer tests
+    if constexpr (std::is_integral_v<VTArg>) {
+        auto absfunc_res = genGivenVals<DTRes>(3, {
+            1, 2, 3,
+            4, 5, 6,
+            7, 8, 9,
+        });
+        checkMap(input, absfunc_res, absFunc);
+    }
 
-    DataObjectFactory::destroy(input1, input2, input3, squarefunc_res, doublefunc_res, cubefunc_res);
+    // For float tests
+    if constexpr (std::is_floating_point_v<VTArg>) {
+        auto roundfunc_res = genGivenVals<DTRes>(3, {
+            1, 2, 3,
+            4, 5, 6,
+            7, 8, 9,
+        });
+        checkMap(input, roundfunc_res, roundFunc);
+    }
+
+    //For Double tests
+    if constexpr (std::is_same_v<VTArg, double>) {
+        // Result Matrix: Cube func
+        auto cubefunc_res = genGivenVals<DTRes>(3, {
+            1, 8, 27,
+            64, 125, 216,
+            343, 512, 729
+        });
+
+        checkMap(input, cubefunc_res, cubeFunc);
+        DataObjectFactory::destroy(cubefunc_res);
+    }
+
+    DataObjectFactory::destroy(input, squarefunc_res, doublefunc_res);
 }
 
 TEMPLATE_TEST_CASE("Test applyMapFunction with Alternative Kernels of other languages", "[applyMapFunction][Ctypes]", TYPES) {
