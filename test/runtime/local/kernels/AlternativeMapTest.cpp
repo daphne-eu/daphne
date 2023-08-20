@@ -32,6 +32,8 @@ def square(x):
     return x * x
 )";
 
+const char *squareFuncLambda = R"("x**2")";
+
 const char *doubleValueFunc = R"(
 # DoubleValue function: Computes the double value of a value.
 def doubleValue(x):
@@ -92,6 +94,7 @@ void testApplyMapFunctionCtypes() {
     });
 
     checkMap(input, squarefunc_res, squareFunc);
+    checkMap(input, squarefunc_res, squareFuncLambda);
     checkMap(input, doublefunc_res, doubleValueFunc);
 
     // For integer tests

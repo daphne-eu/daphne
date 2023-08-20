@@ -83,16 +83,12 @@ std::unique_ptr<DaphneContext> setupContextAndLogger() {
 }
 
 int main(int argc, char* argv[]) {
-    // Add any code that should run before the tests
 
-    PythonInterpreter::initializeInterpreter();  // Initialize Python interpreter
+    PythonInterpreter::initializeInterpreter();
 
-    // Run the Catch2 tests
     int result = Catch::Session().run(argc, argv);
 
-    PythonInterpreter::finalizeInterpreter();  // Finalize Python interpreter
-
-    // Add any code that should run after the tests
+    PythonInterpreter::finalizeInterpreter();
 
     return result;
 }

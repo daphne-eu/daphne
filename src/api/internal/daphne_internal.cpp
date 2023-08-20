@@ -27,6 +27,7 @@
 #include <runtime/local/vectorized/LoadPartitioning.h>
 #include <parser/config/ConfigParser.h>
 #include <util/DaphneLogger.h>
+#include <util/PythonInterpreter.h>
 
 #include "mlir/ExecutionEngine/ExecutionEngine.h"
 #include "mlir/IR/Builders.h"
@@ -482,6 +483,9 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     // ************************************************************************
 
     clock::time_point tpBegPars = clock::now();
+
+    // Start the PythonInterpreter
+    PythonInterpreter::initializeInterpreter();
 
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor executor(selectMatrixRepr, user_config);
