@@ -86,6 +86,10 @@ set(HEADERS_cpp_kernels
     ${PREFIX}/MAP_NUMPY/NumpyTypeString.h
     ${PREFIX}/MAP_NUMPY/NumpyMapKernel.h
     ${PREFIX}/MAP_CTYPES/CtypesMapKernel.h
+    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_csv.h
+    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_sharedPointer.h
+    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_binaryData.h
+    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_copy.h
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp

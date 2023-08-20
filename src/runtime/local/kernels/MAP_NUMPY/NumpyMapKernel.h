@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #pragma once
 
 #include <runtime/local/kernels/MAP_NUMPY/NumpyTypeString.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual"
 #include <numpy/arrayobject.h>
+#pragma GCC diagnostic pop
 
 // ****************************************************************************
 // Struct for partial template specialization
