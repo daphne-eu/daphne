@@ -1,6 +1,6 @@
 import numpy as np
 import ctypes
-#from sympy import symbols, lambdify
+from sympy import symbols, lambdify, sympify
 import re
 
 def apply_map_function(upper_res, lower_res, upper_arg, lower_arg, rows, cols, func, varName, dtype_arg, dtype_res):
@@ -16,15 +16,6 @@ def apply_map_function(upper_res, lower_res, upper_arg, lower_arg, rows, cols, f
         shape=(rows, cols)
     )
     
-    #Eval Approach
-    #res_array[:] = eval(func.replace(varName, 'arg_array'))
-
-    #Lambdify Approach
-    #x = symbols(varName)
-    #func = lambdify(x, func, modules=["numpy"])
-    #res_array[:] = func(arg_array)
-
-    #Exec and Re Approach for full functions defined
     match = re.search(r'def (\w+)', func)
     if match:
         try:
@@ -38,8 +29,13 @@ def apply_map_function(upper_res, lower_res, upper_arg, lower_arg, rows, cols, f
         except Exception as e:
             print(f"Failed to execute function: {str(e)}")
     else:
-        print("No function name found")
-
+        try:
+            x = symbols(varName)
+            func_expr = sympify(func.strip())
+            func_lambda = lambdify(x, func_expr, modules=["numpy"])
+            res_array[:] = func_lambda(arg_array)
+        except Exception as e:
+            print(f"Failed to execute lambda expression: {str(e)}")
 
 def get_ctypes_type(dtype_str):
     """Get the corresponding ctypes type for a dtype represented by a string."""
