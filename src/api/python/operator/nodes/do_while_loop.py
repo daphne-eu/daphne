@@ -39,28 +39,41 @@ if TYPE_CHECKING:
 class DoWhileLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', cond: Callable, callback: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'DoWhileLoop':
+        """
+        Operational node that represents do-while-loop functionality.
+        Its reserved variable is left unused and is not added ot the generated script.
+
+        :param daphne_context:
+        :param cond: function representing the condition logic
+        :param callback: function for the logic of the loop body
+        :param unnamed_input_nodes: operation nodes that are up for manipulation
+        """
         self.nested_level = 0  # default value
         _named_input_nodes = dict()
         _unnamed_input_nodes = copy(unnamed_input_nodes)
-
+        # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(cond) != analyzer.get_number_argument(callback):
             raise ValueError(f"{cond} and {callback} do not have the same number of arguments")
         elif analyzer.get_number_argument(callback) != len(unnamed_input_nodes):
             raise ValueError(f"{callback} does not have the same number of arguments as input nodes")
 
+        # spare storing the arguments additionally by redefining the functions
         self.callback = lambda: callback(*unnamed_input_nodes)
         self.cond = lambda: cond(*unnamed_input_nodes)
-
+        # get the variables in outer scope to the according functions
         outer_vars_cond = analyzer.get_outer_scope_variables(cond)
+        outer_vars_callback = analyzer.get_outer_scope_variables(callback)
+        # append the outer scope variables to inout nodes so these
+        # can be defined upfront by the Deep-First-Search pass
         for node in outer_vars_cond.values():
             if node:
                 _unnamed_input_nodes.update(node)
-
-        outer_vars = analyzer.get_outer_scope_variables(callback)
-        for node in outer_vars.values():
+        for node in outer_vars_callback.values():
             if node:
                 _unnamed_input_nodes.append(node)
 
+        # ToDo: decide if here is the best place for this piece of code: maybe just after the fist analysis
+        # initiate the output operation nodes
         self._output = list()
         for node in unnamed_input_nodes:
             new_matrix_node = Matrix(self, None, [node], copy=True)
@@ -76,24 +89,37 @@ class DoWhileLoop(OperationNode):
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
+        """
+        Generates the DaphneDSL code block for do-while-loop statement.
+        Here the 'callback' and 'cond' are being
+        evaluated and then the code lines for their according functionalities
+        are generated and added inside the loop code structure.
+
+        :param var_name: variable name reserved for the operation node - NOT used
+        :param unnamed_input_vars:
+        :param named_input_vars:
+        :return:
+        """
+        # handle loop body evaluation and code generation
         callback_outputs = self.callback()
-        if (not isinstance(callback_outputs, tuple)):
+        if not isinstance(callback_outputs, tuple):
             callback_outputs = (callback_outputs, )
+        # ToDo: check why here is used sef.nested_level without +1
         callback_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level)
         callback_names = callback_script.build_code(callback_outputs)
-        
-        cond_outputs = self.cond()
-        if (not isinstance(cond_outputs, tuple)):
-            cond_outputs = (cond_outputs, )
-        cond_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level + 1, 'C')
-        cond_name = cond_script.build_code(cond_outputs)[0]
-
         callback_body = callback_script.daphnedsl_script
         for i, name in enumerate(callback_names):
             callback_body += f"{unnamed_input_vars[i]}={name};\n"
 
+        # handle loop condition evaluation and code generation
+        cond_outputs = self.cond()
+        if not isinstance(cond_outputs, tuple):
+            cond_outputs = (cond_outputs, )
+        cond_script = NestedDaphneDSLScript(self.daphne_context, self.nested_level + 1, 'C')
+        cond_name = cond_script.build_code(cond_outputs)[0]
         cond_body = cond_script.daphnedsl_script
 
+        # pack all code lines in the while-loop structure
         multiline_str = str()
         multiline_str += cond_body
         multiline_str += "do {\n"

@@ -41,24 +41,39 @@ class ForLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', callback: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
                  named_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'ForLoop':
+        """
+        Operational node that represents for-loop functionality.
+        Its reserved variable is left unused and is not added ot the generated script.
+        It initiates a new interation variable of type scalar that is assumed to be
+        represented by the last argument at the passed callback.
+
+        :param daphne_context:
+        :param callback:
+        :param unnamed_input_nodes:
+        :param named_input_nodes:
+        """
         self.nested_level = 0  # default value
         _named_input_nodes = copy(named_input_nodes)
         _unnamed_input_nodes = copy(unnamed_input_nodes)
-
+        # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(callback) != (len(unnamed_input_nodes) + 1):
             raise ValueError(f"{callback} does not have the same number of arguments as input nodes + 1")
 
         # define the variable for iteration with value 0 since declaration is not supported by DaphneDSL
         self.iter_num = Scalar(self, "0", assign=True)
         _named_input_nodes.update({"iter": self.iter_num})
-
+        # spare storing the arguments additionally by redefining the callback function
         self.callback = lambda: callback(*unnamed_input_nodes, _named_input_nodes['iter'])
-
+        # get the variables in outer scope to the callback function
         outer_vars = analyzer.get_outer_scope_variables(callback)
+        # append the outer scope variables to inout nodes so these
+        # can be defined upfront by the Deep-First-Search pass
         for node in outer_vars.values():
             if node:
                 _unnamed_input_nodes.append(node)
 
+        # ToDo: decide if here is the best place for this piece of code: maybe just after the fist analysis
+        # initiate the output operation nodes
         self._output = list()
         for node in unnamed_input_nodes:
             new_matrix_node = Matrix(self, None, [node], copy=True)
@@ -70,10 +85,20 @@ class ForLoop(OperationNode):
 
     def get_output(self) -> Tuple['Matrix']:
         return tuple(self._output)
-        
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
+        """
+        Generates the DaphneDSL code block for for-loop statement.
+        Here the 'callback' is being evaluated and then the code
+        lines are generated and added inside the loop code structure.
+
+        :param var_name: variable name reserved for the operation node - NOT used
+        :param unnamed_input_vars:
+        :param named_input_vars:
+        :return:
+        """
+        # handle loop body evaluation and code generation
         callback_outputs = self.callback()
         if (not isinstance(callback_outputs, tuple)):
             callback_outputs = (callback_outputs, )
@@ -88,6 +113,7 @@ class ForLoop(OperationNode):
         for i, name in enumerate(names):
             body += f"{unnamed_input_vars[i]}={name};\n"
 
+        # pack all code lines in the while-loop structure
         multiline_str = str()
         multiline_str += f"for({named_input_vars['iter']} in {named_input_vars['start']}:{named_input_vars['end']}{step}) {{\n"
         multiline_str += textwrap.indent(body, prefix="    ")

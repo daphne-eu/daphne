@@ -26,21 +26,25 @@ class Worker {
 protected:
     std::unique_ptr<std::thread> t;
 
+    DCTX(ctx);
+
     // Worker only used as derived class, which starts the thread after the class has been constructed (order matters).
-    Worker() : t() {}
+    explicit Worker(DCTX(dctx)) : t(), ctx(dctx) {}
+
 public:
     // Worker is move only due to std::thread. Therefore, we delete the copy constructor and the assignment operator.
     Worker(const Worker&) = delete;
     Worker& operator=(const Worker&) = delete;
 
     // move constructor
-    Worker(Worker&& obj)  noexcept : t(std::move(obj.t)) {}
+    Worker(Worker&& obj)  noexcept : t(std::move(obj.t)), ctx(obj.ctx) {}
 
     // move assignment operator
     Worker& operator=(Worker&& obj)  noexcept {
         if(t->joinable())
             t->join();
         t = std::move(obj.t);
+        ctx = obj.ctx;
         return *this;
     }
 

@@ -21,13 +21,11 @@ dctx = DaphneContext()
 @pytest.mark.parametrize("num", [0.1, 3.8])
 def test_simple(num):
     X = dctx.fill(num, 5, 5)
-    Y = dctx.fill(1.8, 5, 5)
 
     def true_fn(x): 
         return x - 1
     
     def false_fn(x):
-        R = dctx.fill(2.8, 5, 5)
         return x + 1,
     
     cond_statement = dctx.cond([X], lambda: X.sum() < 10, true_fn, false_fn)

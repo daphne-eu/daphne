@@ -117,9 +117,8 @@ def test_complex():
     np_Y = np.array([0.8 for i in range(25)]).reshape((5,5))
     np_X = np_X @ np_Y
     np_X = np_X + 1
-    np_X = np_X.sum(axis=1)
-    # reshape the matrix resulted from the numpy calculation since the output is in different dimension
-    assert np.array_equal(daphne_output, np_X.reshape(1, -1))
+    np_X = np_X.sum(axis=0, keepdims=True)
+    assert np.allclose(daphne_output, np_X)
 
 def test_separate_computing():
     X1 = dctx.fill(0.8, 5, 5)

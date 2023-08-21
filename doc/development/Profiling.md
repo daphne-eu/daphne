@@ -15,21 +15,23 @@ limitations under the License.
 -->
 
 # Profiling in DAPHNE
+
 For a general overview of the profiling support in DAPHNE see the [user
-profiling documentation](../Profiling.md).
+profiling documentation](/doc/Profiling.md).
 
 Profiling is implemented via an instrumentation pass that injects calls to the
 ```StartProfiling``` and ```StopProfiling``` kernels at the start and end of
 each block. In turn, the kernels call the PAPI-HL API start and stop functions.
 
-### Known Issues / TODO:
+## Known Issues / TODO
+
 * For scripts with multiple blocks (e.g. UDFs), the compiler will generate
-  profiling passes for each block seperately instead of a single script-wide
+  profiling passes for each block separately instead of a single script-wide
   profiling pass.
 * The profiling kernels should be exposed at the DSL / IR level, so that users
   can instrument / profile specific parts of their script. This will also need
   compiler cooperation, to make sure that the profiled bock is not rearranged /
   fused with other operations.
 * To aid with the development and regression tracking of the runtime, the
-  profiling kernels could also be extended to suport profiling specific
+  profiling kernels could also be extended to support profiling specific
   kernels or parts of kernels.
