@@ -28,7 +28,7 @@
 
 class MPIWorker : WorkerImpl {
     public:
-        MPIWorker(){//TODO
+        MPIWorker(DaphneUserConfig& _cfg) : WorkerImpl(_cfg) {//TODO
             MPI_Comm_rank(MPI_COMM_WORLD, &id);
         }
         

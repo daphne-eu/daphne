@@ -55,7 +55,7 @@ mlir::Value SQLParser::parseStreamFrame(mlir::OpBuilder & builder, std::istream 
             a = visitor.visitSql(ctx);
         }
         catch (std::runtime_error& re) {
-            spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+            spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
             throw;
         }
 
