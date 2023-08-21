@@ -21,11 +21,11 @@
 #
 # -------------------------------------------------------------
 
-from api.python.script_building.dag import DAGNode, OutputType
-from api.python.script_building.script import DaphneDSLScript
-from api.python.utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
-from api.python.utils.daphnelib import DaphneLib, DaphneLibResult
-from api.python.utils.helpers import create_params_string
+from ..script_building.dag import DAGNode, OutputType
+from ..script_building.script import DaphneDSLScript
+from ..utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from ..utils.daphnelib import DaphneLib, DaphneLibResult
+from ..utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd

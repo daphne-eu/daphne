@@ -20,5 +20,5 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-from api.python.script_building.dag import *
-from api.python.script_building.script import *
+from .dag import *
+from .script import *

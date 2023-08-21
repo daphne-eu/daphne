@@ -21,9 +21,9 @@
 #
 # -------------------------------------------------------------
 
-from api.python.operator.operation_node import OperationNode
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
+from ..operation_node import OperationNode
+from ...script_building.dag import OutputType
+from ...utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
 
 import numpy as np
 

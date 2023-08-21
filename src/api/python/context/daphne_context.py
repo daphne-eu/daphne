@@ -23,9 +23,9 @@
 
 __all__ = ["DaphneContext"]
 
-from api.python.operator.nodes.frame import Frame
-from api.python.operator.nodes.matrix import Matrix
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from ..operator.nodes.frame import Frame
+from ..operator.nodes.matrix import Matrix
+from ..utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
 import pandas as pd

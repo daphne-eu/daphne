@@ -22,6 +22,26 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 
 **DaphneLib is still in an experimental stage, feedback and bug reports via GitHub issues are highly welcome.**
 
+## Prerequisites
+
+**Provide DAPHNE:**
+
+- `lib/` dir must be present in `daphne/` root dir, this can be achieved through
+  - Building the project OR
+  - Copying the `lib/` dir from a release into `daphne/`
+- `LD_LIBRARY_PATH` must be set (eg. executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
+
+**Provide Python Dependencies:**
+
+- Install `numpy` and `pandas` with `pip3 install pandas`
+- *Recommendation:* Use a virtual environment
+
+    ```shell
+    python3 -m venv my_venv
+    source my_venv/bin/activate
+    pip install pandas
+    ```
+
 ## Introductory Example
 
 The following simple example script generates a *5x3* matrix of random values in *[0, 1)* using numpy, imports the data to DAPHNE, and shifts and scales the data such that each column has a mean of *0* and a standard deviation of *1*.
@@ -66,15 +86,6 @@ The script above can be executed by:
 ```bash
 python3 scripts/examples/daphnelib/shift-and-scale.py
 ```
-
-Note that there are some **temporary limitations** (which will be fixed in the future):
-
-- `python3` must be executed from the DAPHNE base directory.
-- Before executing DaphneLib Python scripts, the environment variable `PYTHONPATH` must be updated by executing the following command once per session:
-
-  ```bash
-  export PYTHONPATH="$PYTHONPATH:$PWD/src/"
-  ```
 
 The remainder of this document presents the core features of DaphneLib *as they are right now*, but *note that DaphneLib is still under active development*.
 

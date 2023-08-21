@@ -21,6 +21,6 @@
 #
 # -------------------------------------------------------------
 
-from api.python.context.daphne_context import DaphneContext
+from ..context.daphne_context import DaphneContext
 
 __all__ = ["DaphneContext"]

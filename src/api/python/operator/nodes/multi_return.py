@@ -21,11 +21,11 @@
 #
 # -------------------------------------------------------------
 
-from api.python.operator.operation_node import OperationNode
-from api.python.operator.nodes.scalar import Scalar
-from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
-from api.python.utils.helpers import create_params_string
+from ..operation_node import OperationNode
+from .scalar import Scalar
+from ...script_building.dag import OutputType
+from ...utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
+from ...utils.helpers import create_params_string
 
 import numpy as np
 
