@@ -20,18 +20,18 @@
     "library_paths": [],
     "daphnedsl_import_paths": {},
     "logging": [
-        { "log-level-limit": "ERROR" },
+        { "log-level-limit": "TRACE" },
         {
             "comment": "This configuration controls logging in the GPU compiler pass only",
             "name": "compiler::cuda",
-            "level": "DEBUG",
+            "level": "TRACE",
             "filename": "compiler-trace-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
         },
         {
             "comment": "general runtime CUDA debug log",
             "name": "runtime::cuda",
-            "level": "INFO",
+            "level": "TRACE",
             "filename": "compiler-debug-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
         },
