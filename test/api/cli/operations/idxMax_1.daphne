@@ -1,8 +1,10 @@
 # Focus on type inference.
-## ColAgg # TODO We don't have kernels for this yet.
-#print(idxMax(reshape([3, 4, 4, 3], 2, 2), 1));
-#print(idxMax(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 1));
-#print("");
+# ColAgg
+print(idxMax(reshape([3, 4, 4, 3], 2, 2), 1));
+print(idxMax(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 1));
+print(idxMax(reshape([0.3, 0.4, 0.4, 0.3], 2, 2), 1));
+print("");
 # RowAgg
 print(idxMax(reshape([3, 4, 4, 3], 2, 2), 0));
 print(idxMax(reshape([3.3, 4.4, 4.4, 3.3], 2, 2), 0));
+print(idxMax(reshape([0.3, 0.4, 0.4, 0.3], 2, 2), 0));
