@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 
 
 class Cond(OperationNode):
-    def __init__(self, daphne_context: 'DaphneContext', pred: Callable, true_fn: Callable, false_fn: Callable = None,
+    def __init__(self, daphne_context: 'DaphneContext', pred: Callable, true_fn: Callable, false_fn: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'Cond':
         """
         Operational node that represents if-else statement functionality.
@@ -70,10 +70,12 @@ class Cond(OperationNode):
 
         # spare storing the arguments additionally by redefined the functions
         self.true_fn = lambda: true_fn(*unnamed_input_nodes)
-        self.false_fn = lambda: false_fn(*unnamed_input_nodes) if false_fn else None
+        self.false_fn = None
+        if false_fn:
+            self.false_fn = lambda: false_fn(*unnamed_input_nodes)
         # get the variables in outer scope to the according functions
         outer_vars_true = analyzer.get_outer_scope_variables(true_fn)
-        outer_vars_false = analyzer.get_outer_scope_variables(false_fn) if false_fn else list()
+        outer_vars_false = analyzer.get_outer_scope_variables(false_fn) if false_fn else dict()
         outer_vars_both = {**outer_vars_true, **outer_vars_false}
         outer_vars_pred = analyzer.get_outer_scope_variables(pred)
         # append the outer scope variables to inout nodes so these
@@ -136,6 +138,8 @@ class Cond(OperationNode):
         multiline_str += "}"
 
         if self.false_fn:
+            print("FUCK")
+            print(self.false_fn)
             # get tuple of output operation nodes for the 'false_fn'
             false_fn_outputs = self.false_fn()
             if not isinstance(false_fn_outputs, tuple):

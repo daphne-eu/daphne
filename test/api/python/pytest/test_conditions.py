@@ -40,6 +40,23 @@ def test_simple(num):
     assert np.array_equal(np_X, daphne_output)
 
 @pytest.mark.parametrize("num", [0.1, 3.8])
+def test_if_only(num):
+    X = dctx.fill(num, 5, 5)
+
+    def true_fn(x): 
+        return x - 1
+    
+    cond_statement = dctx.cond([X], lambda: X.sum() < 10, true_fn)
+    daphne_output = cond_statement[0].compute()
+
+    np_X = np.array([num for i in range(25)]).reshape((5,5))
+    if np_X.sum() < 10:
+        np_X = np_X - 1
+    
+    assert np.array_equal(np_X, daphne_output)
+
+
+@pytest.mark.parametrize("num", [0.1, 3.8])
 def test_simple_with_outer_scope_matrix(num):
     X = dctx.fill(num, 5, 5)
     Y = dctx.fill(1.8, 5, 5)

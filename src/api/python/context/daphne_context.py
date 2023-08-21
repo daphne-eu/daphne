@@ -163,7 +163,7 @@ class DaphneContext(object):
         node = ForLoop(self, callback, input_nodes, named_input_nodes)
         return node.get_output()
 
-    def cond(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable) -> Tuple['Matrix']:
+    def cond(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable = None) -> Tuple['Matrix']:
         """
         Generates a if-else statement block for lazy evaluation.
         The generated block/operation cannot be directly computed
