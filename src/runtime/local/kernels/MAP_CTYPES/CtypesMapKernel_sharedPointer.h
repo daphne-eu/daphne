@@ -55,13 +55,19 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         auto res_sp = res->getValuesSharedPtr();
         auto arg_sp = arg->getValuesSharedPtr();
 
-        PyObject* pArgs = Py_BuildValue("LLiiss",
+        std::string orig_dtype_arg = get_dtype_name();
+        std::string orig_dtype_res = orig_dtype_arg; // Assuming VTArg and VTRes have the same data type
+
+        PyObject* pArgs = Py_BuildValue("LLiissss",
                                         reinterpret_cast<int64_t>(res_sp.get()),
                                         reinterpret_cast<int64_t>(arg_sp.get()),
                                         res->getNumRows(),
                                         res->getNumCols(),
                                         func,
-                                        varName);
+                                        varName,
+                                        orig_dtype_arg.c_str(),
+                                        orig_dtype_res.c_str()
+                                        );
 
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         Py_XDECREF(pFunc);
@@ -72,8 +78,28 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         } else {
             Py_XDECREF(pResult);
         }
-
     }
+
+    static std::string get_dtype_name() {
+        if (std::is_same<VTArg, float>::value) {
+            return "float32";
+        } else if (std::is_same<VTArg, double>::value) {
+            return "float64";
+        } else if (std::is_same<VTArg, int32_t>::value) {
+            return "int32";
+        } else if (std::is_same<VTArg, int64_t>::value) {
+            return "int64";
+        } else if (std::is_same<VTArg, int8_t>::value) {
+            return "int8";
+        } else if (std::is_same<VTArg, uint64_t>::value) {
+            return "uint64";
+        } else if (std::is_same<VTArg, uint8_t>::value) {
+            return "uint8";
+        } else {
+            throw std::runtime_error("Unsupported data type!");
+        }
+    }
+
 };
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SHAREDPOINTER_H

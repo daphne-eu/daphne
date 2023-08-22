@@ -81,7 +81,6 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         std::string orig_dtype_arg = get_dtype_name();
         std::string orig_dtype_res = orig_dtype_arg; // Assuming VTArg and VTRes have the same data type
 
-
         PyObject* pArgs = Py_BuildValue("KKKKiissss",
                                         address_upper(data_address_res),
                                         address_lower(data_address_res),

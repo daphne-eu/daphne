@@ -1,26 +1,41 @@
+# -------------------------------------------------------------
+#
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+# Modifications Copyright 2022 The DAPHNE Consortium
+#
+# -------------------------------------------------------------
+
 import numpy as np
 import ctypes
+from sympy import symbols, lambdify, sympify
 import re
 
-def apply_map_function(res_ptr, arg_ptr, rows, cols, func, varName):
+def apply_map_function(res_ptr, arg_ptr, rows, cols, func, varName, dtype_arg, dtype_res):
     res_array = np.ctypeslib.as_array(
-        ctypes.cast(res_ptr, ctypes.POINTER(ctypes.c_double)),
+        ctypes.cast(res_ptr, ctypes.POINTER(get_ctypes_type(dtype_res))),
         shape=(rows, cols)
     )
     arg_array = np.ctypeslib.as_array(
-        ctypes.cast(arg_ptr, ctypes.POINTER(ctypes.c_double)),
+        ctypes.cast(arg_ptr, ctypes.POINTER(get_ctypes_type(dtype_arg))),
         shape=(rows, cols)
     )
 
-    #Eval Approach
-    #res_array[:] = eval(func.replace(varName, 'arg_array'))
-
-    #Lambdify Approach
-    #x = symbols(varName)
-    #func = lambdify(x, func, modules=["numpy"])
-    #res_array[:] = func(arg_array)
-
-    #Exec and Re Approach for full functions defined
     match = re.search(r'def (\w+)', func)
     if match:
         try:
@@ -34,4 +49,29 @@ def apply_map_function(res_ptr, arg_ptr, rows, cols, func, varName):
         except Exception as e:
             print(f"Failed to execute function: {str(e)}")
     else:
-        print("No function name found")
+        try:
+            x = symbols(varName)
+            func_expr = sympify(func.strip())
+            func_lambda = lambdify(x, func_expr, modules=["numpy"])
+            res_array[:] = func_lambda(arg_array)
+        except Exception as e:
+            print(f"Failed to execute lambda expression: {str(e)}")
+
+def get_ctypes_type(dtype_str):
+    """Get the corresponding ctypes type for a dtype represented by a string."""
+    if dtype_str == "float32":
+        return ctypes.c_float
+    elif dtype_str == "float64":
+        return ctypes.c_double
+    elif dtype_str == "int32":
+        return ctypes.c_int32
+    elif dtype_str == "int64":
+        return ctypes.c_int64
+    elif dtype_str == "int8":
+        return ctypes.c_int8
+    elif dtype_str == "uint64":
+        return ctypes.c_uint64
+    elif dtype_str == "uint8":
+        return ctypes.c_uint8
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype_str}")

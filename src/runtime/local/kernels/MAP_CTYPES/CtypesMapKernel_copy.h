@@ -67,11 +67,21 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         PyObject* pArgList = PyList_New(arg->getNumRows() * arg->getNumCols());
         for (size_t i = 0; i < arg->getNumRows() * arg->getNumCols(); ++i) {
-            PyObject* pValue = PyFloat_FromDouble(arg_data[i]);
+            PyObject* pValue = to_python_object<VTArg>(arg_data[i]);
             PyList_SetItem(pArgList, i, pValue);
         }
 
-        PyObject* pArgs = Py_BuildValue("Oii", pArgList, arg->getNumRows(), arg->getNumCols());
+        std::string dtype_arg = get_dtype_name();
+
+        PyObject* pArgs = Py_BuildValue("Oiisss", 
+                                        pArgList, 
+                                        arg->getNumRows(), 
+                                        arg->getNumCols(),
+                                        func,
+                                        varName,
+                                        dtype_arg.c_str()
+                                        );
+        
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         Py_XDECREF(pFunc);
         Py_XDECREF(pArgs);
@@ -86,9 +96,9 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
             for (int i = 0; i < rows * cols; ++i) {
                 PyObject* pValue = PyList_GetItem(pResult, i);
-                result_data[i] = static_cast<VTRes>(PyFloat_AsDouble(pValue));
+                result_data[i] = from_python_object<VTRes>(pValue);
                 Py_DECREF(pValue);
-        }
+            }
 
             Py_XDECREF(pResult);
 
@@ -98,7 +108,122 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 }
             }
         }
-
     }
 };
+
+
+//Helper Method for defining, weather it is a String or not
+static std::string get_dtype_name() {
+        if (std::is_same<VTArg, float>::value) {
+            return "float32";
+        } else if (std::is_same<VTArg, double>::value) {
+            return "float64";
+        } else if (std::is_same<VTArg, int32_t>::value) {
+            return "int32";
+        } else if (std::is_same<VTArg, int64_t>::value) {
+            return "int64";
+        } else if (std::is_same<VTArg, int8_t>::value) {
+            return "int8";
+        } else if (std::is_same<VTArg, uint64_t>::value) {
+            return "uint64";
+        } else if (std::is_same<VTArg, uint8_t>::value) {
+            return "uint8";
+        } else {
+            throw std::runtime_error("Unsupported data type!");
+        }
+    }
+
+//Helper Method for extracting from Python Objects
+template <typename VTArg>
+PyObject* to_python_object(const VTArg& value);
+
+template <>
+PyObject* to_python_object(const double& value)
+{
+    return PyFloat_FromDouble(value);
+}
+
+template <>
+PyObject* to_python_object(const float& value)
+{
+    return PyFloat_FromDouble(value);
+}
+
+template <>
+PyObject* to_python_object(const int64_t& value)
+{
+    return PyLong_FromLongLong(value);
+}
+
+template <>
+PyObject* to_python_object(const int32_t& value)
+{
+    return PyLong_FromLong(value);
+}
+
+template <>
+PyObject* to_python_object(const int8_t& value)
+{
+    return PyLong_FromLong(value);
+}
+
+template <>
+PyObject* to_python_object(const uint64_t& value)
+{
+    return PyLong_FromUnsignedLongLong(value);
+}
+
+template <>
+PyObject* to_python_object(const uint8_t& value)
+{
+    return PyLong_FromUnsignedLong(value);
+}
+
+
+//Helper Methods to transfer to Python Objects
+template <typename VTRes>
+VTRes from_python_object(PyObject* pValue);
+
+template <>
+double from_python_object<double>(PyObject* pValue)
+{
+    return PyFloat_AsDouble(pValue);
+}
+
+template <>
+float from_python_object<float>(PyObject* pValue)
+{
+    return static_cast<float>(PyFloat_AsDouble(pValue));
+}
+
+template <>
+int64_t from_python_object<int64_t>(PyObject* pValue)
+{
+    return PyLong_AsLongLong(pValue);
+}
+
+template <>
+int32_t from_python_object<int32_t>(PyObject* pValue)
+{
+    return static_cast<int32_t>(PyLong_AsLong(pValue));
+}
+
+template <>
+int8_t from_python_object<int8_t>(PyObject* pValue)
+{
+    return static_cast<int8_t>(PyLong_AsLong(pValue));
+}
+
+template <>
+uint64_t from_python_object<uint64_t>(PyObject* pValue)
+{
+    return PyLong_AsUnsignedLongLong(pValue);
+}
+
+template <>
+uint8_t from_python_object<uint8_t>(PyObject* pValue)
+{
+    return static_cast<uint8_t>(PyLong_AsUnsignedLong(pValue));
+}
+
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_COPY_H
