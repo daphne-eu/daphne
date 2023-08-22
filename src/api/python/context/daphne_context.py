@@ -31,6 +31,7 @@ from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.operator.nodes.do_while_loop import DoWhileLoop
+from api.python.operator.nodes.function import Function
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 
 import numpy as np
@@ -221,7 +222,7 @@ class DaphneContext(object):
         """
         return Scalar(self, ' || ', [left_operand, right_operand])
     
-    def function(self, callback: Callable) -> Tuple['OperationNode']:
+    def function(self, input_nodes: List['Matrix'], callback: Callable) -> Tuple['OperationNode']:
         """
         Generated user-defined function for lazy evaluation. 
         The generated function cannot be directly computed
@@ -229,11 +230,13 @@ class DaphneContext(object):
         :param callback: callable with user-defined instructions
         :return: output nodes (matrices, scalars or frames)
         """
-        def dctx_function(*args):
-            output = callback(*args)
-            # make the ouput representation compatible with all functions for for complex control flow
-            if (not isinstance(output, tuple)):
-                output = (output, )
-            return output
+        # def dctx_function(*args):
+        #     output = callback(*args)
+        #     # make the ouput representation compatible with all functions for for complex control flow
+        #     if (not isinstance(output, tuple)):
+        #         output = (output, )
+        #     return output
         
-        return dctx_function
+        # return dctx_function
+        node = Function(self, callback, input_nodes)
+        return node.get_output()
