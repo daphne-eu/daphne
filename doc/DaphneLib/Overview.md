@@ -27,7 +27,7 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
 **Provide DAPHNE:**
 
 - `lib/` dir must be present in `daphne/` root dir, this can be achieved through
-  - Building the project OR
+  - Building the project with `--target daphnelib` OR
   - Copying the `lib/` dir from a release into `daphne/`
 - `LD_LIBRARY_PATH` must be set (eg. executed from `daphne/`: `export LD_LIBRARY_PATH=$PWD/lib:$LD_LIBRARY_PATH`)
 
@@ -41,6 +41,12 @@ Users can easily mix and match DAPHNE computations with other Python libraries a
     source my_venv/bin/activate
     pip install pandas
     ```
+
+## Limitations
+
+Note that there are some **temporary limitations** (which will be fixed in the future):
+
+- `python3` must be executed from the DAPHNE base directory.
 
 ## Introductory Example
 
