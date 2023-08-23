@@ -76,7 +76,7 @@ class WhileLoop(OperationNode):
         # initiate the output operation nodes
         self._output = list()
         for node in unnamed_input_nodes:
-            new_matrix_node = Matrix(self, None, [node], copy=True)
+            new_matrix_node = Matrix(daphne_context, None, [node], copy=True)
             new_matrix_node._source_node = self
             self._output.append(new_matrix_node)
 
