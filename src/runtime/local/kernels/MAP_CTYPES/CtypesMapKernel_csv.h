@@ -22,6 +22,8 @@
 #include <fstream>
 #include <util/PythonInterpreter.h>
 #include <cstdio>
+#include <sstream>
+#include <string>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -72,9 +74,12 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         std::ofstream ofs("input.csv");
         for (size_t i = 0; i < arg->getNumRows(); ++i) {
             for (size_t j = 0; j < arg->getNumCols(); ++j) {
-                ofs << arg->get(i, j) << (j == arg->getNumCols() - 1 ? "\n" : ",");
+                std::string valueStr = std::to_string(arg->get(i, j));
+        
+                ofs << valueStr << (j == arg->getNumCols() - 1 ? "\n" : ",");
             }
         }
+
         ofs.close();
 
         std::string dtype = get_dtype_name();
@@ -100,9 +105,17 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         std::ifstream ifs("output.csv");
         for (size_t i = 0; i < res->getNumRows(); ++i) {
             for (size_t j = 0; j < res->getNumCols(); ++j) {
-                VTRes value = readValue<VTRes>(ifs);
+                VTRes value = readValue(ifs);
+        
+                // If not on the last column, skip the comma
+                if (j < res->getNumCols() - 1) {
+                    ifs.ignore(); // Ignore the comma (',')
+                }
+
                 res->set(i, j, value);
             }
+            // This will consume the newline at the end of each row.
+            ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
         ifs.close();
 
@@ -135,10 +148,16 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
     }
 
-    VTRes readValue(std::ifstream& ifs)
+    static VTRes readValue(std::ifstream& ifs)
     {
-        VtRes value;
-        ifs >> value;
+        VTRes value;
+        if (std::is_same<VTRes, uint8_t>::value || std::is_same<VTRes, int8_t>::value) {
+            int temp; // Use a temp int to store the parsed value
+            ifs >> temp;
+            value = static_cast<VTRes>(temp); // Cast back to uint8_t
+        } else {
+            ifs >> value;
+        }
         return value;
     }
 

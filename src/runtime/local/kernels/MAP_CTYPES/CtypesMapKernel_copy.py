@@ -35,7 +35,7 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             func_name = match.groups()[0]
             func_obj = locals().get(func_name)
             if func_obj:
-                res_array = np.vectorize(func_obj)(arg_array)
+                res_array = np.vectorize(func_obj, otypes=[dtype_arg])(arg_array)
                 return res_array.flatten().tolist()
             else:
                 print(f"Function '{func_name}' not found.")
@@ -46,7 +46,7 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             x = symbols(varName)
             func_expr = sympify(func.strip())
             func_lambda = lambdify(x, func_expr, modules=["numpy"])
-            res_array = func_lambda(arg_array)
+            res_array = np.array(func_lambda(arg_array), dtype=dtype_arg)
             return res_array.flatten().tolist()
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")

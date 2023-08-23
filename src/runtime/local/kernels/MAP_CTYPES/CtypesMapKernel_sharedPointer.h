@@ -33,7 +33,7 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     {
         PythonInterpreter::getInstance();
 
-        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_SharedPointer");
+        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_sharedPointer");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
 

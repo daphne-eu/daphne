@@ -53,7 +53,7 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         // Call Python function to process the data
         PythonInterpreter::getInstance();
-        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_BinaryData");
+        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_binaryData");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
         if (!pModule) {
@@ -72,7 +72,16 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         std::string dtype = get_dtype_name();
 
-        PyObject* pArgs = Py_BuildValue("sssiisss", inputFile.c_str(), outputFile.c_str(), res->getNumRows(), res->getNumCols(), func, varName, dtype.c_str());
+        PyObject* pArgs = Py_BuildValue("ssiisss", 
+                                        inputFile.c_str(), 
+                                        outputFile.c_str(), 
+                                        res->getNumRows(), 
+                                        res->getNumCols(), 
+                                        func, 
+                                        varName, 
+                                        dtype.c_str()
+                                        );
+        
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         Py_XDECREF(pFunc);
         Py_XDECREF(pArgs);
@@ -82,7 +91,6 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             Py_XDECREF(pResult);
         }
 
-        // Deserialize result from binary file
         std::ifstream input(outputFile, std::ios::binary);
         input.read((char *)res->getValues(), res->getNumRows() * res->getNumCols() * sizeof(VTRes));
         input.close();

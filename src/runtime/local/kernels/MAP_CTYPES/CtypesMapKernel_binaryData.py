@@ -26,8 +26,7 @@ from sympy import symbols, lambdify, sympify
 import re
 
 def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype):
-    arg_array = np.fromfile(input_file, dtype=get_dtype_type(dtype)).reshape(rows, cols)
-    
+    arg_array = np.fromfile(input_file, dtype=get_dtype_type(dtype)).reshape(rows, cols)    
     match = re.search(r'def (\w+)', func)
     if match:
         try:
@@ -35,7 +34,7 @@ def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype
             func_name = match.groups()[0]
             func_obj = locals().get(func_name)
             if func_obj:
-                res_array = np.vectorize(func_obj)(arg_array)
+                res_array = np.vectorize(func_obj, otypes=[dtype])(arg_array)
             else:
                 print(f"Function '{func_name}' not found.")
         except Exception as e:
@@ -45,7 +44,7 @@ def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype
             x = symbols(varName)
             func_expr = sympify(func.strip())
             func_lambda = lambdify(x, func_expr, modules=["numpy"])
-            res_array[:] = func_lambda(arg_array)
+            res_array = np.array(func_lambda(arg_array), dtype=dtype)
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")
 
