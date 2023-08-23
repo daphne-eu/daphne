@@ -106,55 +106,55 @@ class Matrix(OperationNode):
             return super().compute(type)
 
     def __add__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
-        return Matrix(self.daphne_context, ' + ', [self, other])
+        return Matrix(self.daphne_context, '+', [self, other])
 
     def __sub__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
         return Matrix(self.daphne_context,' - ', [self, other])
 
     def __mul__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
-        return Matrix(self.daphne_context, ' * ', [self, other])
+        return Matrix(self.daphne_context, '*', [self, other])
 
     def __truediv__(self, other: VALID_ARITHMETIC_TYPES) -> 'Matrix':
-        return Matrix(self.daphne_context, ' / ', [self, other])
+        return Matrix(self.daphne_context, '/', [self, other])
 
     def __lt__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' < ', [self, other])
+        return Matrix(self.daphne_context, '<', [self, other])
 
     def __rlt__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' < ', [other, self])
+        return Matrix(self.daphne_context, '<', [other, self])
 
     def __le__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' <= ', [self, other])
+        return Matrix(self.daphne_context, '<=', [self, other])
 
     def __rle__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' <= ', [other, self])
+        return Matrix(self.daphne_context, '<=', [other, self])
 
     def __gt__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' > ', [self, other])
+        return Matrix(self.daphne_context, '>', [self, other])
 
     def __rgt__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' > ', [other, self])
+        return Matrix(self.daphne_context, '>', [other, self])
 
     def __ge__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' >= ', [self, other])
+        return Matrix(self.daphne_context, '>=', [self, other])
 
     def __rge__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' >= ', [other, self])
+        return Matrix(self.daphne_context, '>= ', [other, self])
 
     def __eq__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' == ', [self, other])
+        return Matrix(self.daphne_context, '==', [self, other])
 
     def __req__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' == ', [other, self])
+        return Matrix(self.daphne_context, '==', [other, self])
 
     def __ne__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' != ', [self, other])
+        return Matrix(self.daphne_context, '!=', [self, other])
 
     def __rne__(self, other) -> 'Matrix':
-        return Matrix(self.daphne_context, ' != ', [other, self])
+        return Matrix(self.daphne_context, '!=', [other, self])
 
     def __matmul__(self, other: 'Matrix') -> 'Matrix':
-        return Matrix(self.daphne_context, ' @ ', [self, other])
+        return Matrix(self.daphne_context, '@', [self, other])
 
     def __getitem__(self,  pos):
         if not isinstance(pos, int):

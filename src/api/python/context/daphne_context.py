@@ -211,7 +211,7 @@ class DaphneContext(object):
         :param right_operand
         :return new Scalar
         """
-        return Scalar(self, ' && ', [left_operand, right_operand])
+        return Scalar(self, '&&', [left_operand, right_operand])
     
     def logical_or(self, left_operand: 'Scalar', right_operand: 'Scalar'):
         """
@@ -220,7 +220,7 @@ class DaphneContext(object):
         :param right_operand
         :return new Scalar
         """
-        return Scalar(self, ' || ', [left_operand, right_operand])
+        return Scalar(self, '||', [left_operand, right_operand])
     
     def function(self, input_nodes: List['Matrix'], callback: Callable) -> Tuple['OperationNode']:
         """
