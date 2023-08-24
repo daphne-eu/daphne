@@ -40,25 +40,9 @@ struct ColumnCalc {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTDataLhs, class DTDataRhs>
+template<class DTRes, class DTDataLhs, class DTDataRhs, typename VE>
 void columnBinary(BinaryOpCode opCode, DTRes *& res, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::avx512>::apply(opCode, res, data_lhs, data_rhs, ctx);
-            break;
-        case VectorExtensions::AVX2:
-            ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::avx2>::apply(opCode, res, data_lhs, data_rhs, ctx);
-            break;
-        //case VectorExtensions::SSE:
-        //    ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::sse>::apply(opCode, res, data_lhs, data_rhs, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnCalc<DTRes, DTDataLhs, DTDataRhs, tsl::scalar>::apply(opCode, res, data_lhs, data_rhs, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnCalc<DTRes, DTDataLhs, DTDataRhs>::apply(opCode, res, data_lhs, data_rhs, ctx);
+    ColumnCalc<DTRes, DTDataLhs, DTDataRhs, VE>::apply(opCode, res, data_lhs, data_rhs, ctx);
 }
 
 // ****************************************************************************

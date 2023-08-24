@@ -102,7 +102,6 @@ namespace
                 if (secondOp != nullptr) {
                     op->replaceUsesOfWith(op->getOperand(1), secondOp->getResult(0));
                 }
-                //TODO: Need to add PositionListBitmapConverter after it, need to implement numRowOp for column and use the right operand 1 as input
                 auto intersect = rewriter.replaceOpWithNewOp<daphne::ColumnIntersectOp>(op, op->getResult(0).getType(), op->getOperands());
                 op->getResult(0).replaceAllUsesWith(intersect->getResult(0));
                 for (mlir::Operation * followOp : intersect->getResult(0).getUsers()) {

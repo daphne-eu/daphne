@@ -41,25 +41,9 @@ struct ColumnSelect {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTLhs, typename VTRhs>
+template<class DTRes, class DTLhs, typename VTRhs, typename VE>
 void columnSelect(SelectOpCode opCode, DTRes *& res, const DTLhs * lhs, VTRhs rhs, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnSelect<DTRes, DTLhs, VTRhs, tsl::avx512>::apply(opCode, res, lhs, rhs, ctx);
-            break;
-        case VectorExtensions::AVX2:
-            ColumnSelect<DTRes, DTLhs, VTRhs, tsl::avx2>::apply(opCode, res, lhs, rhs, ctx);
-            break;
-        //case VectorExtensions::SSE:
-        //    ColumnSelect<DTRes, DTLhs, VTRhs, tsl::sse>::apply(opCode, res, lhs, rhs, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnSelect<DTRes, DTLhs, VTRhs, tsl::scalar>::apply(opCode, res, lhs, rhs, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnSelect<DTRes, DTLhs, VTRhs>::apply(opCode, res, lhs, rhs, ctx);
+    ColumnSelect<DTRes, DTLhs, VTRhs, VE>::apply(opCode, res, lhs, rhs, ctx);
 }
 
 // ****************************************************************************

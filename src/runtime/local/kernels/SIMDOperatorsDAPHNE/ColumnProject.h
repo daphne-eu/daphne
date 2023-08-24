@@ -39,25 +39,9 @@ struct ColumnProject {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
+template<class DTRes, class DTData, class DTPos, typename VE>
 void columnProject(DTRes *& res, const DTData * data, const DTPos * pos, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnProject<DTRes, DTData, DTPos, tsl::avx512>::apply(res, data, pos, ctx);
-            break;
-        //case VectorExtensions::AVX2:
-        //    ColumnProject<DTRes, DTData, DTPos, tsl::avx2>::apply(res, data, pos, ctx);
-        //    break;
-        //case VectorExtensions::SSE:
-        //    ColumnProject<DTRes, DTData, DTPos, tsl::sse>::apply(res, data, pos, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnProject<DTRes, DTData, DTPos, tsl::scalar>::apply(res, data, pos, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnProject<DTRes, DTData, DTPos>::apply(res, data, pos, ctx);
+    ColumnProject<DTRes, DTData, DTPos, VE>::apply(res, data, pos, ctx);
 }
 
 // ****************************************************************************

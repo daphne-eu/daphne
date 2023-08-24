@@ -40,25 +40,9 @@ struct ColumnAggregate {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData>
+template<class DTRes, class DTData, typename VE>
 void columnAgg(AggOpCode opCode, DTRes *& res, const DTData * data, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnAggregate<DTRes, DTData, tsl::avx512>::apply(opCode, res, data, ctx);
-            break;
-        case VectorExtensions::AVX2:
-            ColumnAggregate<DTRes, DTData, tsl::avx2>::apply(opCode, res, data, ctx);
-            break;
-        //case VectorExtensions::SSE:
-        //    ColumnAggregate<DTRes, DTData, tsl::sse>::apply(opCode, res, data, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnAggregate<DTRes, DTData, tsl::scalar>::apply(opCode, res, data, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnAggregate<DTRes, DTData>::apply(opCode, res, data, ctx);
+    ColumnAggregate<DTRes, DTData, VE>::apply(opCode, res, data, ctx);
 }
 
 // ****************************************************************************

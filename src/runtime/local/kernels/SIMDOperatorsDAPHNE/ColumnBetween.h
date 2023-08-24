@@ -39,25 +39,9 @@ struct ColumnBetween {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, typename VTL, typename VTU>
+template<class DTRes, class DTData, typename VTL, typename VTU, typename VE>
 void columnBetween(DTRes *& res, const DTData * data, const VTL lower_bound, const VTU upper_bound, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnBetween<DTRes, DTData, VTL, VTU, tsl::avx512>::apply(res, data, lower_bound, upper_bound, ctx);
-            break;
-        case VectorExtensions::AVX2:
-            ColumnBetween<DTRes, DTData, VTL, VTU, tsl::avx2>::apply(res, data, lower_bound, upper_bound, ctx);
-            break;
-        //case VectorExtensions::SSE:
-        //    ColumnBetween<DTRes, DTData, VTL, VTU, tsl::sse>::apply(res, data, lower_bound, upper_bound, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnBetween<DTRes, DTData, VTL, VTU, tsl::scalar>::apply(res, data, lower_bound, upper_bound, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnBetween<DTRes, DTData, VTL, VTU>::apply(res, data, lower_bound, upper_bound, ctx);
+    ColumnBetween<DTRes, DTData, VTL, VTU, VE>::apply(res, data, lower_bound, upper_bound, ctx);
 }
 
 // ****************************************************************************

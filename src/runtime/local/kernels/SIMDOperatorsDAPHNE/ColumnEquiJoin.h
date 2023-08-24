@@ -39,25 +39,9 @@ struct ColumnEquiJoin {
 // Convenience function
 // ****************************************************************************
 
-template<class DTResLhs, class DTResRhs, class DTDataLhs, class DTDataRhs>
+template<class DTResLhs, class DTResRhs, class DTDataLhs, class DTDataRhs, typename VE>
 void columnEquiJoin(DTResLhs *& res_lhs, DTResRhs *& res_rhs, const DTDataLhs * data_lhs, const DTDataRhs * data_rhs, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs, tsl::avx512>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
-            break;
-        //case VectorExtensions::AVX2:
-        //    ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs, tsl::avx2>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
-        //    break;
-        //case VectorExtensions::SSE:
-        //    ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs, tsl::sse>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs, tsl::scalar>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
+    ColumnEquiJoin<DTResLhs, DTResRhs, DTDataLhs, DTDataRhs, VE>::apply(res_lhs, res_rhs, data_lhs, data_rhs, ctx);
 }
 
 // ****************************************************************************

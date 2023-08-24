@@ -195,7 +195,22 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(SIMDOperators)
 
-
+option(USE_AVX512 "Whether to activate compilation of AVX512 features" OFF)
+if(USE_AVX512)
+    add_definitions(-DUSE_AVX512)
+endif()
+option(USE_AVX2 "Whether to activate compilation of AVX2 features" OFF)
+if(USE_AVX2)
+    add_definitions(-DUSE_AVX2)
+endif()
+option(USE_SSE "Whether to activate compilation of SSE features" OFF)
+if(USE_SSE)
+    add_definitions(-DUSE_SSE)
+endif()
+option(USE_SCALAR "Whether to activate compilation of scalar features" OFF)
+if(USE_SCALAR)
+    add_definitions(-DUSE_SCALAR)
+endif()
 
 
 # *****************************************************************************

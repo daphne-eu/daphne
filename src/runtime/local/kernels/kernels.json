@@ -3844,7 +3844,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnSelect.h",
+            "header": "ColumnSelect.h",
             "opName": "columnSelect",
             "returnType": "void",
             "templateParams": [
@@ -3882,7 +3882,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], "uint64_t"],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t"],
@@ -3894,7 +3894,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnProject.h",
+            "header": "ColumnProject.h",
             "opName": "columnProject",
             "returnType": "void",
             "templateParams": [
@@ -3928,7 +3928,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "size_t"]],
@@ -3941,7 +3941,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnAggregate.h",
+            "header": "ColumnAggregate.h",
             "opName": "columnAgg",
             "returnType": "void",
             "templateParams": [
@@ -3971,7 +3971,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
@@ -3983,7 +3983,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnBetween.h",
+            "header": "ColumnBetween.h",
             "opName": "columnBetween",
             "returnType": "void",
             "templateParams": [
@@ -4025,7 +4025,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], "uint64_t", "uint64_t"],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t", "int64_t"],
@@ -4036,7 +4036,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnIntersect.h",
+            "header": "ColumnIntersect.h",
             "opName": "columnIntersect",
             "returnType": "void",
             "templateParams": [
@@ -4070,7 +4070,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
@@ -4081,7 +4081,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnEquiJoin.h",
+            "header": "ColumnEquiJoin.h",
             "opName": "columnEquiJoin",
             "returnType": "void",
             "templateParams": [
@@ -4123,7 +4123,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]],
@@ -4138,7 +4138,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnCalc.h",
+            "header": "ColumnCalc.h",
             "opName": "columnBinary",
             "returnType": "void",
             "templateParams": [
@@ -4176,7 +4176,7 @@
         },
         "api": [
             {
-                "name":  ["CPP"],
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
@@ -4188,7 +4188,7 @@
     },
     {
         "kernelTemplate": {
-            "header": "SIMDOperatorsDAPHNE/ColumnProjectionPath.h",
+            "header": "ColumnProjectionPath.h",
             "opName": "columnProjectionPath",
             "returnType": "void",
             "templateParams": [
@@ -4224,10 +4224,15 @@
                 }
             ]
         },
-        "instantiations": [
-            [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
-            [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
-            [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
+        "api": [
+            {
+                "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
+                ]
+            }
         ]
     },
     {
@@ -4248,10 +4253,15 @@
                 }
             ]
         },
-        "instantiations": [
-            [["tuddbs::Column", "uint64_t"]],
-            [["tuddbs::Column", "int64_t"]],
-            [["tuddbs::Column", "size_t"]]
+        "api": [
+            {
+                "name":  ["CPP"],
+                "instantiations": [
+                    [["tuddbs::Column", "uint64_t"]],
+                    [["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "size_t"]]
+                ]
+            }
         ]
     }
 ]

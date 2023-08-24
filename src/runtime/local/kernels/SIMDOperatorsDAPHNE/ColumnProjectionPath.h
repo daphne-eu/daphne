@@ -39,25 +39,9 @@ struct ColumnProjectionPath {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTData, class DTPos>
+template<class DTRes, class DTData, class DTPos, typename VE>
 void columnProjectionPath(DTRes *& res, const DTData * data, const DTPos ** pos, const size_t number_cols, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnProjectionPath<DTRes, DTData, DTPos, tsl::avx512>::apply(res, data, pos, number_cols, ctx);
-            break;
-        //case VectorExtensions::AVX2:
-        //    ColumnProjectionPath<DTRes, DTData, DTPos, tsl::avx2>::apply(res, data, pos, number_cols, ctx);
-        //    break;
-        //case VectorExtensions::SSE:
-        //    ColumnProjectionPath<DTRes, DTData, DTPos, tsl::sse>::apply(res, data, pos, number_cols, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnProjectionPath<DTRes, DTData, DTPos, tsl::scalar>::apply(res, data, pos, number_cols, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnProjectionPath<DTRes, DTData, DTPos>::apply(res, data, pos, number_cols, ctx);
+    ColumnProjectionPath<DTRes, DTData, DTPos, VE>::apply(res, data, pos, number_cols, ctx);
 }
 
 // ****************************************************************************

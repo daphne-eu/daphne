@@ -33,6 +33,7 @@ include "ir/daphneir/DaphneTypeAdaptationTraits.td"
 include "ir/daphneir/DaphneTypeInferenceTraits.td"
 include "ir/daphneir/CUDASupport.td"
 include "ir/daphneir/FPGAOPENCLSupport.td"
+include "ir/daphneir/VectorExtensionSupport.td"
 
 include "mlir/Interfaces/SideEffectInterfaces.td"
 include "mlir/Interfaces/ControlFlowInterfaces.td"
@@ -320,14 +321,14 @@ class Daphne_ColumnBinaryOp<string name, Type scalarType, list<Trait> traits = [
 : Daphne_Op<name, !listconcat(traits, [
     DataTypeFromArgs,
     CastArgsToResType,
-    Pure
+    Pure, VectorExtensionSupport
 ])> {
     let arguments = (ins AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$lhs, AnyTypeOf<[ColumnOf<[scalarType]>, scalarType, Unknown]>:$rhs);
     let results = (outs AnyTypeOf<[ColumnOf<[scalarType]>, Unknown]>:$res);
 }
 
 class Daphne_ColumnCmpOp<string name, Type inputScalarType, list<Trait> traits = []>
-: Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs, Pure])> {
+: Daphne_EwBinaryOp<name, inputScalarType, !listconcat(traits, [ValueTypeFromArgs, Pure, VectorExtensionSupport])> {
     
 }
 
@@ -342,7 +343,8 @@ def Daphne_ColumnProjectOp
 : Daphne_Op<"columnProject", [
     TypeFromFirstArg,
     ShapeFromArg,
-    Pure
+    Pure,
+    VectorExtensionSupport
 ]> {
     let arguments = (ins Column:$data, Column:$pos);
     let results = (outs Column:$res);
@@ -351,14 +353,15 @@ def Daphne_ColumnProjectOp
 def Daphne_ColumnProjectionPathOp : Daphne_Op<"columnProjectionPath", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
-    Pure
+    Pure,
+    VectorExtensionSupport
 ]> {
     let arguments = (ins Column:$data, Variadic<Column>:$posLists);
     let results = (outs Column:$res);
 }
 
 class Daphne_ColumnAggOp<string name, Type scalarType, list<Trait> traits = []>
-: Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg, Pure])> {
+: Daphne_Op<name, !listconcat(traits, [DataTypeCol, ShapeFromArg, Pure, VectorExtensionSupport])> {
     let arguments = (ins ColumnOf<[scalarType]>:$arg);
     let results = (outs ColumnOf<[scalarType]>:$res);
 }
@@ -373,14 +376,15 @@ def Daphne_ColumnAggStddevOp : Daphne_ColumnAggOp<"columnStddev", NumScalar, [Va
 def Daphne_ColumnJoinOp : Daphne_Op<"columnEquiJoin", [
     DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
-    Pure
+    Pure,
+    VectorExtensionSupport
 ]> {
     let arguments = (ins ColumnOrU:$lhs, ColumnOrU:$rhs);
     let results = (outs ColumnOrU:$resLhs, ColumnOrU:$resRhs);
 }
 
 def Daphne_ColumnBetweenOp : Daphne_Op<"columnBetween", 
-    [TypeFromFirstArg, Pure]> {
+    [TypeFromFirstArg, Pure, VectorExtensionSupport]> {
     let arguments = (ins Column:$data, AnyScalar:$lower, AnyScalar:$upper);
     let results = (outs Column:$res);
 }

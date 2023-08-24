@@ -39,25 +39,9 @@ struct ColumnIntersect {
 // Convenience function
 // ****************************************************************************
 
-template<class DTRes, class DTPosLhs, class DTPosRhs>
+template<class DTRes, class DTPosLhs, class DTPosRhs, typename VE>
 void columnIntersect(DTRes *& res, const DTPosLhs * pos_lhs, const DTPosRhs * pos_rhs, DCTX(ctx)) {
-    switch (ctx->getUserConfig().vector_extension) {
-        case VectorExtensions::AVX512:
-            ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::avx512>::apply(res, pos_lhs, pos_rhs, ctx);
-            break;
-        case VectorExtensions::AVX2:
-            ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::avx2>::apply(res, pos_lhs, pos_rhs, ctx);
-            break;
-        //case VectorExtensions::SSE:
-        //    ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::sse>::apply(res, pos_lhs, pos_rhs, ctx);
-        //    break;
-        case VectorExtensions::SCALAR:
-            ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, tsl::scalar>::apply(res, pos_lhs, pos_rhs, ctx);
-            break;
-        default:
-            throw std::runtime_error("Unknown vector extension");
-    }
-    //ColumnIntersect<DTRes, DTPosLhs, DTPosRhs>::apply(res, pos_lhs, pos_rhs, ctx);
+    ColumnIntersect<DTRes, DTPosLhs, DTPosRhs, VE>::apply(res, pos_lhs, pos_rhs, ctx);
 }
 
 // ****************************************************************************
