@@ -52,7 +52,7 @@ set(TEST_SOURCES
         
         ir/daphneir/InferTypesTest.cpp
         
-        #parser/config/ConfigParserTest.cpp
+        parser/config/ConfigParserTest.cpp
         runtime/distributed/worker/WorkerTest.cpp
     
         runtime/local/datastructures/CSRMatrixTest.cpp

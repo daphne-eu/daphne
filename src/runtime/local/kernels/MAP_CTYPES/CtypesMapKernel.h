@@ -48,6 +48,9 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     {
         PythonInterpreter::getInstance();
 
+        PyGILState_STATE gstate;
+        gstate = PyGILState_Ensure();
+
         PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
@@ -63,6 +66,7 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!PyCallable_Check(pFunc)) {
             Py_XDECREF(pFunc);
+            PyGILState_Release(gstate);
             std::cerr << "Function not callable!" << std::endl;
             return;
         }
@@ -104,6 +108,7 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             Py_XDECREF(pResult);
         }
 
+        PyGILState_Release(gstate);
     }
 
     static std::string get_dtype_name() {

@@ -32,13 +32,15 @@ def square(x):
     return x * x
 )";
 
-const char *squareFuncLambda = R"("x**2")";
+const char *squareFuncLambda = R"(x**2)";
 
 const char *doubleValueFunc = R"(
 # DoubleValue function: Computes the double value of a value.
 def doubleValue(x):
     return x * 2
 )";
+
+const char *doubleValueFuncLambda = R"(x*2)";
 
 const char *cubeFunc = R"(
 # Cube function: Computes the cube of a value.
@@ -59,12 +61,24 @@ def roundNum(x):
 )";
 
 template<class DTRes, class DTArg>
-void checkMap(const DTArg * arg, const DTRes * exp, const char * func) 
+void checkMap(const DTArg * arg, const DTRes * exp, const char * func, const char * plName) 
 {
     DTRes * res = nullptr;
-    mapExternalPL(res, arg, func, "x", "Python_Ctypes", nullptr);
+    mapExternalPL(res, arg, func, "x", plName, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
+}
+
+template<class DTRes, class DTArg>
+void checkMapForAllPL(const DTArg * arg, const DTRes * exp, const char * func)
+{
+    checkMap(arg, exp, func, "Python_Ctypes");
+    checkMap(arg, exp, func, "Python_Ctypes_sharedPointer");
+    checkMap(arg, exp, func, "Python_Ctypes_copy");
+    checkMap(arg, exp, func, "Python_Ctypes_binaryData");
+    checkMap(arg, exp, func, "Python_Ctypes_csv");
+    checkMap(arg, exp, func, "Python_Ctypes_SysArg");
+    checkMap(arg, exp, func, "Python_Numpy");
 }
 
 template<template<typename VT> class DT, class VTArg, class VTRes>
@@ -93,9 +107,10 @@ void testApplyMapFunctionCtypes() {
         14, 16, 18,
     });
 
-    checkMap(input, squarefunc_res, squareFunc);
-    checkMap(input, squarefunc_res, squareFuncLambda);
-    checkMap(input, doublefunc_res, doubleValueFunc);
+    checkMapForAllPL(input, squarefunc_res, squareFunc);
+    checkMapForAllPL(input, squarefunc_res, squareFuncLambda);
+    checkMapForAllPL(input, doublefunc_res, doubleValueFunc);
+    checkMapForAllPL(input, doublefunc_res, doubleValueFuncLambda);
 
     // For integer tests
     if constexpr (std::is_integral_v<VTArg>) {
@@ -104,7 +119,7 @@ void testApplyMapFunctionCtypes() {
             4, 5, 6,
             7, 8, 9,
         });
-        checkMap(input, absfunc_res, absFunc);
+        checkMapForAllPL(input, absfunc_res, absFunc);
     }
 
     // For float tests
@@ -114,7 +129,8 @@ void testApplyMapFunctionCtypes() {
             4, 5, 6,
             7, 8, 9,
         });
-        checkMap(input, roundfunc_res, roundFunc);
+        checkMapForAllPL(input, roundfunc_res, roundFunc);
+        DataObjectFactory::destroy(roundfunc_res);
     }
 
     //For Double tests
@@ -126,7 +142,7 @@ void testApplyMapFunctionCtypes() {
             343, 512, 729
         });
 
-        checkMap(input, cubefunc_res, cubeFunc);
+        checkMapForAllPL(input, cubefunc_res, cubeFunc);
         DataObjectFactory::destroy(cubefunc_res);
     }
 

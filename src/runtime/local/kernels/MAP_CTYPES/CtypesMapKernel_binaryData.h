@@ -42,6 +42,9 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
         PythonInterpreter::getInstance();
+        
+        PyGILState_STATE gstate;
+        gstate = PyGILState_Ensure();
 
         const std::string inputFile = "input_data.bin";
         const std::string outputFile = "output_data.bin";
@@ -66,6 +69,7 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         Py_XDECREF(pModule);
         if (!PyCallable_Check(pFunc)) {
             Py_XDECREF(pFunc);
+            PyGILState_Release(gstate);
             std::cerr << "Function not callable!" << std::endl;
             return;
         }
@@ -101,6 +105,8 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (std::remove(outputFile.c_str()) != 0) {
             perror("Error deleting output file");
         }
+
+        PyGILState_Release(gstate);
     }
 
     static std::string get_dtype_name() {

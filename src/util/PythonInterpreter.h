@@ -78,6 +78,8 @@ private:
 
             std::string kernelPath_map_numpy = std::string(PROJECT_SOURCE_DIR) + "/src/runtime/local/kernels/MAP_NUMPY";          
             addPath(kernelPath_map_numpy.c_str());
+
+            PyEval_InitThreads(); // Initializes the GIL
         }
     }
 

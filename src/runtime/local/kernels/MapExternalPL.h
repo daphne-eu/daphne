@@ -25,6 +25,7 @@
 #include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel_csv.h>
 #include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel_binaryData.h>
 #include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel_copy.h>
+#include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel_SysArg.h>
 #include <runtime/local/kernels/MAP_NUMPY/NumpyMapKernel.h>
 #include <memory>
 #include <algorithm>
@@ -92,6 +93,10 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             {
                 applyCTypesMapKernel_binaryData(res, arg, func, varName);
             }
+            else if(strcmp(plName, "Python_Ctypes_SysArg") == 0)
+            {
+                applyCtypesMapKernel_SysArg(res, arg, func, varName);
+            }
             else
             {
                 throw std::runtime_error("Programming Language can't be used");
@@ -122,6 +127,10 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
     static void applyCTypesMapKernel_copy(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
         ctypesMapKernel_copy(res, arg, func, varName);
+    }
+
+    static void applyCtypesMapKernel_SysArg(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        ctypesMapKernel_SysArg(res, arg, func, varName);
     }
 
     static void applyNumpyKernel(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {

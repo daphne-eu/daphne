@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_NUMPY_NUMPYMAPKERNEL_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_NUMPY_NUMPYMAPKERNEL_H
+
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
-
 #pragma once
-
 #include <runtime/local/kernels/MAP_NUMPY/NumpyTypeString.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
@@ -46,7 +48,6 @@ void initialize_numpy() {
     import_array1();
 }
 
-
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
@@ -54,17 +55,36 @@ template <typename VTRes, typename VTArg>
 struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char * func, const char * varName)
     {
-        // Initialize the Python Interpreter
-        Py_Initialize();
+        PythonInterpreter::getInstance();
+
+        PyGILState_STATE gstate;
+        gstate = PyGILState_Ensure();
 
         // Import numpy
-        initialize_numpy();
+        //initialize_numpy();
 
         // Get the map_function from your Python script
         PyObject* pName = PyUnicode_DecodeFSDefault("NumpyMapKernel");
         PyObject* pModule = PyImport_Import(pName);
-        Py_DECREF(pName);
-        PyObject* pFunc = PyObject_GetAttrString(pModule, "map_function");
+        Py_XDECREF(pName);
+
+        if (!pModule) {
+            std::cerr << "Failed to import Python module!" << std::endl;
+            PyErr_Print();
+            return;
+        }
+
+        PyObject* pFunc = PyObject_GetAttrString(pModule, "apply_map_function");
+        Py_XDECREF(pModule);
+
+         if (!PyCallable_Check(pFunc)) {
+            Py_XDECREF(pFunc);
+            std::cerr << "Function not callable!" << std::endl;
+            return;
+        }
+
+        //std::cout << "Dtype in C++ " << NumpyTypeString<VTArg>::value << std::end;
+        std::string dtype = get_dtype_name();
 
         // Call the map_function with the appropriate arguments
         PyObject* pArgs = PyTuple_Pack(7,
@@ -74,17 +94,41 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                                         Py_BuildValue("(ii)", res->getNumRows(), res->getNumCols()),
                                         PyUnicode_FromString(func),
                                         PyUnicode_FromString(varName),
-                                        PyUnicode_FromString(NumpyTypeString<VTArg>::value));
+                                        PyUnicode_FromString(dtype.c_str())
+                                        );
 
-        PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
-        Py_DECREF(pArgs);
-        Py_DECREF(pValue);
-
-        // Clean up
+        PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
+        if (!pResult) {
+            PyErr_Print();
+        } else {
+            Py_XDECREF(pResult);
+        }
         Py_DECREF(pFunc);
-        Py_DECREF(pModule);
+        Py_DECREF(pArgs);
 
-        // Finalize the Python Interpreter
-        Py_Finalize();
+        PyGILState_Release(gstate);
+
+    }
+
+    static std::string get_dtype_name() {
+        if (std::is_same<VTArg, float>::value) {
+            return "float32";
+        } else if (std::is_same<VTArg, double>::value) {
+            return "float64";
+        } else if (std::is_same<VTArg, int32_t>::value) {
+            return "int32";
+        } else if (std::is_same<VTArg, int64_t>::value) {
+            return "int64";
+        } else if (std::is_same<VTArg, int8_t>::value) {
+            return "int8";
+        } else if (std::is_same<VTArg, uint64_t>::value) {
+            return "uint64";
+        } else if (std::is_same<VTArg, uint8_t>::value) {
+            return "uint8";
+        } else {
+            throw std::runtime_error("Unsupported data type!");
+        }
     }
 };
+
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_NUMPY_NUMPYMAPKERNEL_H

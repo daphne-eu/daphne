@@ -144,6 +144,9 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     {
         PythonInterpreter::getInstance();
 
+        PyGILState_STATE gstate;
+        gstate = PyGILState_Ensure();
+
         PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_copy");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
@@ -151,6 +154,7 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (!pModule) {
             std::cerr << "Failed to import Python module!" << std::endl;
             PyErr_Print();
+            PyGILState_Release(gstate);
             return;
         }
 
@@ -159,6 +163,7 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!PyCallable_Check(pFunc)) {
             Py_XDECREF(pFunc);
+            PyGILState_Release(gstate);
             std::cerr << "Function not callable!" << std::endl;
             return;
         }
@@ -167,12 +172,13 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!arg_data) {
             std::cerr << "Null pointer returned from getValues()!" << std::endl;
+            PyGILState_Release(gstate);
             return;
         }
 
         PyObject* pArgList = PyList_New(arg->getNumRows() * arg->getNumCols());
         for (size_t i = 0; i < arg->getNumRows() * arg->getNumCols(); ++i) {
-            PyObject* pValue = to_python_object<VTArg>(arg_data[i]);
+            PyObject *pValue = to_python_object(arg_data[i]);
             PyList_SetItem(pArgList, i, pValue);
         }
 
@@ -193,6 +199,7 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         Py_XDECREF(pArgList);
 
         if (!pResult) {
+            PyGILState_Release(gstate);
             PyErr_Print();
         } else {
             int rows = arg->getNumRows();
@@ -202,7 +209,6 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             for (int i = 0; i < rows * cols; ++i) {
                 PyObject* pValue = PyList_GetItem(pResult, i);
                 result_data[i] = from_python_object<VTRes>(pValue);
-                Py_DECREF(pValue);
             }
 
             Py_XDECREF(pResult);
@@ -213,6 +219,8 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
                 }
             }
         }
+
+        PyGILState_Release(gstate);
     }
 
     //Helper Method for defining, weather it is a String or not

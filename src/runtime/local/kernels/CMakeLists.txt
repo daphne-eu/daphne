@@ -90,6 +90,7 @@ set(HEADERS_cpp_kernels
     ${PREFIX}/MAP_CTYPES/CtypesMapKernel_sharedPointer.h
     ${PREFIX}/MAP_CTYPES/CtypesMapKernel_binaryData.h
     ${PREFIX}/MAP_CTYPES/CtypesMapKernel_copy.h
+    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_SysArg.h
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp

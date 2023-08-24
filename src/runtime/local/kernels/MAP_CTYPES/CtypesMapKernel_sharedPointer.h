@@ -33,6 +33,9 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     {
         PythonInterpreter::getInstance();
 
+        PyGILState_STATE gstate;
+        gstate = PyGILState_Ensure();
+
         PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_sharedPointer");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
@@ -48,6 +51,7 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!PyCallable_Check(pFunc)) {
             Py_XDECREF(pFunc);
+            PyGILState_Release(gstate);
             std::cerr << "Function not callable!" << std::endl;
             return;
         }
@@ -78,6 +82,9 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         } else {
             Py_XDECREF(pResult);
         }
+
+        PyGILState_Release(gstate);
+
     }
 
     static std::string get_dtype_name() {
