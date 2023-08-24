@@ -1179,18 +1179,6 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
     // Higher-order operations
     // ****************************************************************************
 
-    /*if(func == "map") {
-        checkNumArgsExact(func, numArgs, 2);
-        mlir::Value source = args[0];
-
-        auto co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
-        mlir::Attribute attr = co.getValue();
-
-        return static_cast<mlir::Value>(builder.create<MapOp>(
-            loc, source.getType(), source, attr.dyn_cast<mlir::StringAttr>()
-        ));
-    }*/
-
     if (func == "map") {
         if (numArgs == 2) {
             checkNumArgsExact(func, numArgs, 2);
@@ -1218,18 +1206,12 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
             auto pl_co = args[3].getDefiningOp<mlir::daphne::ConstantOp>();
             mlir::Attribute pl = pl_co.getValue();
-        
+            
             return static_cast<mlir::Value>(builder.create<MapOpExternalPL>(
                 loc, source.getType(), source, func.dyn_cast<mlir::StringAttr>(), 
                 varName.dyn_cast<mlir::StringAttr>(), pl.dyn_cast<mlir::StringAttr>()
             ));
-        } 
-        /*else
-        {
-            throw std::runtime_error(
-                "built-in function map expects 2 or 4 argument(s), but got " + std::to_string(numArgs)
-            );
-        }*/
+        }
     }
 
     // ********************************************************************

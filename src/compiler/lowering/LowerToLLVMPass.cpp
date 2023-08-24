@@ -554,12 +554,63 @@ public:
         // Pointer to UDF 
         callee << "__void";
 
-        
+
         // get pointer to UDF 
         LLVM::LLVMFuncOp udfFuncOp = module.lookupSymbol<LLVM::LLVMFuncOp>(op.getFunc());
         auto udfFnPtr = rewriter.create<LLVM::AddressOfOp>(loc, udfFuncOp);
 
         std::vector<Value> kernelOperands{op.getArg(), udfFnPtr};
+
+        auto kernel = rewriter.create<daphne::CallKernelOp>(
+            loc,
+            callee.str(),
+            kernelOperands,
+            op->getResultTypes()
+        );
+        rewriter.replaceOp(op, kernel.getResults());
+
+        return success();
+    }
+};
+
+class MapOpExternalPLLowering : public OpConversionPattern<daphne::MapOpExternalPL>
+{
+public:
+    using OpConversionPattern::OpConversionPattern;
+
+    LogicalResult
+    matchAndRewrite(daphne::MapOpExternalPL op, OpAdaptor adaptor,
+                    ConversionPatternRewriter &rewriter) const override
+    {
+        auto loc = op->getLoc();
+
+        std::stringstream callee;
+        callee << '_' << op->getName().stripDialect().str();
+
+        // Result Matrix
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
+
+        // Input Matrix
+        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType());
+
+        //func
+        callee << "__char";
+
+        //varName
+        callee << "__char";
+
+        //PlName
+        callee << "__char";
+
+        // Convert the function and string arguments to LLVM i8* constants
+        Value funcStr = rewriter.create<LLVM::ConstantOp>(loc, 
+                       rewriter.getStringAttr(op.getFunc()));
+        Value varNameStr = rewriter.create<LLVM::ConstantOp>(loc, 
+                       rewriter.getStringAttr(op.getVarName()));
+        Value plStr = rewriter.create<LLVM::ConstantOp>(loc, 
+                       rewriter.getStringAttr(op.getPl()));
+
+        std::vector<Value> kernelOperands{op.getArg(), funcStr, varNameStr, plStr};
 
         auto kernel = rewriter.create<daphne::CallKernelOp>(
             loc,
@@ -1006,6 +1057,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
             StoreVariadicPackOpLowering,
             GenericCallOpLowering,
             MapOpLowering
+
     >(&getContext());
 
     // We want to completely lower to LLVM, so we use a `FullConversion`. This
