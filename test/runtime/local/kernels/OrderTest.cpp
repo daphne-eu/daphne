@@ -43,7 +43,7 @@ TEMPLATE_TEST_CASE("Order", TAG_KERNELS, (Frame)) {
     
     std::vector<Structure *> colsArg = {c0, c1, c2, c3};
     auto arg = DataObjectFactory::create<Frame>(colsArg, nullptr);
-    DataObjectFactory::destroy(c0, c1, c1, c2);
+    DataObjectFactory::destroy(c0, c1, c2, c3);
     Frame* exp{};
     Frame* res{};
     DenseMatrix<size_t>* resIdxs  = nullptr;
