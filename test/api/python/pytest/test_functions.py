@@ -154,11 +154,13 @@ def test_separate_computing():
 
 #TODO: remove later; only for debuging
 if __name__ == "__main__":
-    X = dctx.fill(3.8, 5, 5)    
+    X = dctx.fill(3.8, 5, 5)   
+    Y = dctx.fill(3.8, 5, 5)  
 
-    def foo_body(x):
-        return x + 1
+    def foo_body(x, y):
+        return x + 1, y + 1
 
-    foo = dctx.function([X], foo_body)
-    ret = foo[0].compute()
+    foo = dctx.function(foo_body)
+    output = foo(X, Y)
+    ret = output[1].compute()
     print(ret)
