@@ -22,10 +22,6 @@
 #include <runtime/local/kernels/MAP_NUMPY/NumpyTypeString.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual"
-#include <numpy/arrayobject.h>
-#pragma GCC diagnostic pop
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -44,10 +40,6 @@ void numpyMapKernel(DTRes *& res, const DTArg * arg, const char* func, const cha
     NumpyMapKernel<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
-void initialize_numpy() {
-    import_array1();
-}
-
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
@@ -60,9 +52,6 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        // Import numpy
-        //initialize_numpy();
-
         // Get the map_function from your Python script
         PyObject* pName = PyUnicode_DecodeFSDefault("NumpyMapKernel");
         PyObject* pModule = PyImport_Import(pName);
@@ -71,6 +60,7 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (!pModule) {
             std::cerr << "Failed to import Python module!" << std::endl;
             PyErr_Print();
+            PyGILState_Release(gstate);
             return;
         }
 
@@ -78,8 +68,9 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         Py_XDECREF(pModule);
 
          if (!PyCallable_Check(pFunc)) {
-            Py_XDECREF(pFunc);
             std::cerr << "Function not callable!" << std::endl;
+            Py_XDECREF(pFunc);
+            PyGILState_Release(gstate);
             return;
         }
 
@@ -100,6 +91,7 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         if (!pResult) {
             PyErr_Print();
+            PyGILState_Release(gstate);
         } else {
             Py_XDECREF(pResult);
         }

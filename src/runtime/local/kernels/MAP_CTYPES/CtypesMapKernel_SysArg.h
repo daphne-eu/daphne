@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SYSARG_H
 #define SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SYSARG_H
 
@@ -42,6 +58,7 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     if (!pModule) {
         std::cerr << "Failed to import Python module!" << std::endl;
         PyErr_Print();
+        PyGILState_Release(gstate);
         return;
     }
 
@@ -60,6 +77,7 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (PyErr_Occurred()) {
             std::cerr << "Error running the provided Python code:" << std::endl;
             PyErr_Print();
+            PyGILState_Release(gstate);
         }
     } else {
         // Treat the provided string as a lambda expression
@@ -69,6 +87,7 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (PyErr_Occurred()) {
             std::cerr << "Error constructing the lambda function:" << std::endl;
             PyErr_Print();
+            PyGILState_Release(gstate);
         }
 
         functionName = "generated_function";
@@ -77,6 +96,7 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     PyObject *pFunc = PyDict_GetItemString(pDict, functionName.c_str());
     if (!PyCallable_Check(pFunc)) {
         std::cerr << "Function '" << functionName << "' not callable or not found!" << std::endl;
+        PyGILState_Release(gstate);
         return;
     }
 
@@ -92,6 +112,7 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
             if (!pResult) {
                 PyErr_Print();
+                PyGILState_Release(gstate);
             } else {
                 res_data[i*numCols + j] = from_python_object<VTRes>(pResult);
                 Py_XDECREF(pResult);
@@ -104,8 +125,6 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     Py_XDECREF(pModule);
 
     PyGILState_Release(gstate);
-
     }
-
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SYSARG_H

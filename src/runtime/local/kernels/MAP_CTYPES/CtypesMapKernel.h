@@ -58,6 +58,7 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (!pModule) {
             std::cerr << "Failed to import Python module!" << std::endl;
             PyErr_Print();
+            PyGILState_Release(gstate);
             return;
         }
 
@@ -104,6 +105,7 @@ struct CtypesMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!pResult) {
             PyErr_Print();
+            PyGILState_Release(gstate);
         } else {
             Py_XDECREF(pResult);
         }

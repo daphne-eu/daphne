@@ -199,8 +199,8 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         Py_XDECREF(pArgList);
 
         if (!pResult) {
-            PyGILState_Release(gstate);
             PyErr_Print();
+            PyGILState_Release(gstate);
         } else {
             int rows = arg->getNumRows();
             int cols = arg->getNumCols();

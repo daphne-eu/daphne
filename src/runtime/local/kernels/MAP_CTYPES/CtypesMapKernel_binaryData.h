@@ -62,6 +62,7 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (!pModule) {
             std::cerr << "Failed to import Python module!" << std::endl;
             PyErr_Print();
+            PyGILState_Release(gstate);
             return;
         }
 
@@ -91,6 +92,7 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         Py_XDECREF(pArgs);
         if (!pResult) {
             PyErr_Print();
+            PyGILState_Release(gstate);
         } else {
             Py_XDECREF(pResult);
         }
@@ -128,6 +130,5 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             throw std::runtime_error("Unsupported data type!");
         }
     }
-
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_BINARYDATA_BINARYDATAMAPKERNEL_H
