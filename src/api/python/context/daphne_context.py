@@ -26,20 +26,27 @@ __all__ = ["DaphneContext"]
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.scalar import Scalar
-from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.for_loop import ForLoop
 from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.operator.nodes.do_while_loop import DoWhileLoop
-from api.python.operator.nodes.function import Function
+from api.python.operator.nodes.multi_return import MultiReturn
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
+from api.python.utils.analyzer import get_number_argument
+from api.python.operator.nodes.matrix import Matrix
+from api.python.script_building.nested_script import NestedDaphneDSLScript
 
+import textwrap
 import numpy as np
 import pandas as pd
 
 from typing import Union, Callable, List, Tuple, Optional
 
 class DaphneContext(object):
+    _functions: dict
+    
+    def __init__(self):
+        self._functions = dict()
 
     def readMatrix(self, file: str) -> Matrix:
         """Reads a matrix from a file.
@@ -222,7 +229,7 @@ class DaphneContext(object):
         """
         return Scalar(self, '||', [left_operand, right_operand])
     
-    def function(self, input_nodes: List['Matrix'], callback: Callable) -> Tuple['OperationNode']:
+    def function(self, callback: Callable):
         """
         Generated user-defined function for lazy evaluation. 
         The generated function cannot be directly computed
@@ -238,5 +245,29 @@ class DaphneContext(object):
         #     return output
         
         # return dctx_function
-        node = Function(self, callback, input_nodes)
-        return node.get_output()
+        # node = Function(self, callback, input_nodes)
+        # return node.get_output()
+
+        input_nodes = list()
+        num_args = get_number_argument(callback)
+        func_name = f"foo_{len(self._functions.keys())}"
+        for i in range(num_args):
+            new_matrix = Matrix(self, None)
+            new_matrix.daphnedsl_name = f"arg_{i}"
+            input_nodes.append(new_matrix)
+        ret= callback(*input_nodes)
+        script = NestedDaphneDSLScript(self, 1, 'F')
+        names = script.build_code(ret)
+        func_script = str()
+        func_script += f"def {func_name}({','.join(map(lambda x: x.daphnedsl_name, input_nodes))}) {{\n"
+        func_script += textwrap.indent(script.daphnedsl_script, prefix="    ")
+        func_script += f"    return {','.join(names)};\n"
+        func_script += "}\n"
+
+        # function_string, num_outputs = create_function_string(self, callback)
+        self._functions[func_name] = func_script
+        
+        def dctx_function(*args):
+            return MultiReturn(self, func_name, [Matrix(self, '') for _ in range(len(ret))], args)
+        
+        return dctx_function

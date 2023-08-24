@@ -32,25 +32,28 @@ import numpy as np
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
 
 class MultiReturn(OperationNode):
-    _np_array: np.array
+    _outputs: Iterable['OperationNode']
 
-    def __init__(self, operation:str,output_nodes, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
+    def __init__(self, daphne_context, operation:str, output_nodes: Iterable[VALID_INPUT_TYPES], unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None):
         self._outputs = output_nodes
-        super().__init__(operation, unnamed_input_nodes, named_input_nodes, OutputType.MULTI_RETURN, False)
+        
+        for node in self._outputs:
+            node._source_node = self
+        super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MULTI_RETURN, False)
     
-    def __getitem__(self, key):
-        self._outputs[key]
+    def __getitem__(self, index):
+        return self._outputs[index]
 
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:
         inputs_comma_sep = create_params_string(
             unnamed_input_vars, named_input_vars)
-        output="["
+        output_list=list()
         for idx, output_node in enumerate(self._outputs):
             name = f'{var_name}_{idx}'
             output_node.daphnedsl_name = name
-            output += f'{name},'
-        output = output[:-1]+"]"
-        return f'{output}={self.operation}({inputs_comma_sep})'
+            output_list.append(name)
+        output_str = ",".join(output_list)
+        return f'{output_str}={self.operation}({inputs_comma_sep});'
 

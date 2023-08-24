@@ -30,6 +30,7 @@ class OutputType(Enum):
     NONE = auto()
     SCALAR = auto()
     FRAME = auto()
+    MULTI_RETURN = auto()
 
 class DAGNode(ABC):
     _unnamed_input_nodes: Sequence[Union['DAGNode', str, int, float, bool]]
