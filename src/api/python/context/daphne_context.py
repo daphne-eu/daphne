@@ -233,41 +233,35 @@ class DaphneContext(object):
         """
         Generated user-defined function for lazy evaluation. 
         The generated function cannot be directly computed
-        but any of the outputs can.
+        but any of the outputs can by using indexing.
+
         :param callback: callable with user-defined instructions
         :return: output nodes (matrices, scalars or frames)
         """
-        # def dctx_function(*args):
-        #     output = callback(*args)
-        #     # make the ouput representation compatible with all functions for for complex control flow
-        #     if (not isinstance(output, tuple)):
-        #         output = (output, )
-        #     return output
-        
-        # return dctx_function
-        # node = Function(self, callback, input_nodes)
-        # return node.get_output()
-
+        # intiate input nodes (arguments) for generating the function definition
         input_nodes = list()
         num_args = get_number_argument(callback)
-        func_name = f"foo_{len(self._functions.keys())}"
+        function_name = f"function_{len(self._functions.keys())}"
         for i in range(num_args):
             new_matrix = Matrix(self, None)
-            new_matrix.daphnedsl_name = f"arg_{i}"
+            new_matrix.daphnedsl_name = f"ARG_{i}"
             input_nodes.append(new_matrix)
-        ret= callback(*input_nodes)
+        # initiate return/output nodes to represent the return values for generating the function definition
+        callback_outputs = callback(*input_nodes)
+        if (not isinstance(callback_outputs, tuple)):
+            callback_outputs = (callback_outputs, )
+        # generate the script witht the function definition
         script = NestedDaphneDSLScript(self, 1, 'F')
-        names = script.build_code(ret)
-        func_script = str()
-        func_script += f"def {func_name}({','.join(map(lambda x: x.daphnedsl_name, input_nodes))}) {{\n"
-        func_script += textwrap.indent(script.daphnedsl_script, prefix="    ")
-        func_script += f"    return {','.join(names)};\n"
-        func_script += "}\n"
-
-        # function_string, num_outputs = create_function_string(self, callback)
-        self._functions[func_name] = func_script
-        
+        names = script.build_code(callback_outputs)
+        function_definition = str()
+        function_definition += f"def {function_name}({','.join(map(lambda x: x.daphnedsl_name, input_nodes))}) {{\n"
+        function_definition += textwrap.indent(script.daphnedsl_script, prefix="    ")
+        function_definition += f"    return {','.join(names)};\n"
+        function_definition += "}\n"
+        # store the definition at the context
+        self._functions[function_name] = function_definition
+        # generate function for calling
         def dctx_function(*args):
-            return MultiReturn(self, func_name, [Matrix(self, '') for _ in range(len(ret))], args)
+            return MultiReturn(self, function_name, [Matrix(self, '') for _ in range(len(callback_outputs))], args)
         
         return dctx_function

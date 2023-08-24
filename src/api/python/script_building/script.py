@@ -153,6 +153,9 @@ class DaphneDSLScript:
             self._dfs_clear_dag_nodes(n)
         if dag_node._source_node is not None:
             self._dfs_clear_dag_nodes(dag_node._source_node)
+            if dag_node._source_node.output_type == OutputType.MULTI_RETURN:
+                for node in dag_node._source_node:
+                    node._daphnedsl_name = ""
         if not dag_node.named_input_nodes:
             return
         for name,n in dag_node._named_input_nodes.items():

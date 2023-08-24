@@ -10,16 +10,18 @@ import sys
 CUURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 DAPHNE_SRC_DIR = os.path.abspath(os.path.join(CUURRENT_DIR, '..', '..', '..', '..', 'src'))
 sys.path.append(DAPHNE_SRC_DIR)
+import copy
 #########################
 
 import pytest
 import numpy as np
 from api.python.context.daphne_context import DaphneContext
 
-dctx = DaphneContext()
+@pytest.fixture
+def dctx():
+    return DaphneContext()
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
-def test_simple():
+def test_simple(dctx):
     X = dctx.fill(3.8, 5, 5)
 
     @dctx.function
@@ -34,23 +36,85 @@ def test_simple():
 
     assert np.array_equal(daphne_output, expected_output)
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
-def test_1_input_3_outputs():
+def test_1_input_3_outputs(dctx):
+    X = dctx.fill(3.8, 5, 5)
+    @dctx.function
+    def increment(x):
+        return x, x + 1, x + 2
+    output = increment(X)
+    
+    np_X = np.array([3.8 for i in range(25)]).reshape((5,5))
+
+    # test first return value
+    daphne_output = output[0].compute()
+    expected_output = np_X
+    assert np.array_equal(daphne_output, expected_output)
+    # test second return value
+    daphne_output = output[1].compute()
+    expected_output = np_X + 1
+    assert np.array_equal(daphne_output, expected_output)
+    # test third return value
+    daphne_output = output[2].compute()
+    expected_output = np_X + 2
+    assert np.array_equal(daphne_output, expected_output)
+
+def test_multiple_functions(dctx):
     X = dctx.fill(3.8, 5, 5)
 
     @dctx.function
     def increment(x):
-        return x, x + 1, x + 2
+        return x + 2
     
-    output = increment(X)
-    daphne_output = (output[0] + output[1] + output[2]).compute()
+    @dctx.function
+    def decrement(x):
+        return x - 1
+    
+    @dctx.function
+    def add(x, y):
+        return x + y
 
     np_X = np.array([3.8 for i in range(25)]).reshape((5,5))
-    expected_output = np_X + (np_X + 1) + (np_X + 2)
 
+    output = increment(X)
+    daphne_output = output[0].compute()
+    expected_output = np_X + 2
     assert np.array_equal(daphne_output, expected_output)
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
+    output = decrement(output[0])
+    daphne_output = output[0].compute()
+    expected_output = expected_output - 1
+    assert np.array_equal(daphne_output, expected_output)
+
+    output = add(X, output[0])
+    daphne_output = output[0].compute()
+    expected_output = np_X + expected_output
+    assert np.array_equal(daphne_output, expected_output)
+
+def test_multiple_calls(dctx):
+    X = dctx.fill(3.8, 5, 5)
+
+    @dctx.function
+    def increment(x):
+        return x + 1
+
+    np_X = np.array([3.8 for i in range(25)]).reshape((5,5))
+
+    output = increment(X)
+    daphne_output = output[0].compute()
+    expected_output = np_X + 1
+    assert np.array_equal(daphne_output, expected_output)
+
+    output = increment(output[0])
+    daphne_output = output[0].compute()
+    expected_output = expected_output + 1
+    assert np.array_equal(daphne_output, expected_output)
+
+    output = increment(output[0])
+    daphne_output = output[0].compute()
+    expected_output = expected_output + 1
+    assert np.array_equal(daphne_output, expected_output)
+
+@pytest.mark.skip("Unclear DAPHNE function behaviour")
 def test_with_for_loop():
     X = dctx.fill(3.8, 5, 5)
 
@@ -67,7 +131,7 @@ def test_with_for_loop():
 
     assert np.array_equal(daphne_output, np_X)
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
+@pytest.mark.skip("Unclear DAPHNE function behaviour")
 def test_with_while_loop():
     X = dctx.fill(3.8, 5, 5)
 
@@ -84,7 +148,7 @@ def test_with_while_loop():
 
     assert np.array_equal(daphne_output, np_X)
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
+@pytest.mark.skip("Unclear DAPHNE function behaviour")
 @pytest.mark.parametrize("num", [0.1, 3.8])
 def test_with_cond(num):
     X = dctx.fill(num, 5, 5)
@@ -104,7 +168,7 @@ def test_with_cond(num):
 
     assert np.array_equal(daphne_output, np_X)
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
+@pytest.mark.skip("Unclear DAPHNE function behaviour")
 def test_complex():
     X = dctx.fill(3.8, 5, 5)
     Y = dctx.fill(0.8, 5, 5)
@@ -126,41 +190,3 @@ def test_complex():
     np_X = np_X.sum(axis=0, keepdims=True)
     assert np.allclose(daphne_output, np_X)
 
-@pytest.mark.skip(reason="UDF logic is up for changes")
-def test_separate_computing():
-    X1 = dctx.fill(0.8, 5, 5)
-    X2 = dctx.fill(1.8, 5, 5)
-    X3 = dctx.fill(2.8, 5, 5)
-
-    @dctx.function
-    def increment_multiple(x1, x2, x3):
-        return x1 + 1, x2 + 1, x3 + 1
-    
-    output = increment_multiple(X1, X2, X3)
-    daphne_output1 = output[0].compute()
-    daphne_output2 = output[1].compute()
-    daphne_output3 = output[2].compute()
-
-    np_X1 = np.array([0.8 for i in range(25)]).reshape((5,5))
-    np_X2 = np.array([1.8 for i in range(25)]).reshape((5,5))
-    np_X3 = np.array([2.8 for i in range(25)]).reshape((5,5))
-    np_X1 = np_X1 + 1
-    np_X2 = np_X2 + 1
-    np_X3 = np_X3 + 1
-    # reshape the matrix resulted from the numpy calculation since the output is in different dimension
-    assert np.array_equal(daphne_output1, np_X1)
-    assert np.array_equal(daphne_output2, np_X2)
-    assert np.array_equal(daphne_output3, np_X3)
-
-#TODO: remove later; only for debuging
-if __name__ == "__main__":
-    X = dctx.fill(3.8, 5, 5)   
-    Y = dctx.fill(3.8, 5, 5)  
-
-    def foo_body(x, y):
-        return x + 1, y + 1
-
-    foo = dctx.function(foo_body)
-    output = foo(X, Y)
-    ret = output[1].compute()
-    print(ret)
