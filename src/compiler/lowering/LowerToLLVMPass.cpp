@@ -979,7 +979,6 @@ namespace
 
 void DaphneLowerToLLVMPass::runOnOperation()
 {
-    llvm::errs() << "Starting module conversion.\n";
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
