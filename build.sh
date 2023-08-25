@@ -686,7 +686,7 @@ if [ $WITH_DEPS -gt 0 ]; then
     catch2ZipName="v$catch2Version.zip"
     catch2SingleHeaderInstalledPath=$installPrefix/include/catch.hpp
     dep_catch2=("catch2_v${catch2Version}" "v1")
-    
+
     if ! is_dependency_installed "${dep_catch2[@]}"; then
         daphne_msg "Get catch2 version ${catch2Version}"
         mkdir --parents "${thirdpartyPath}/${catch2Name}"
