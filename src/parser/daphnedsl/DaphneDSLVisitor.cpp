@@ -870,9 +870,9 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
     assert(func == "map" && "Called 'handleMapOpCall' for another function");
     mlir::Location loc = utils.getLoc(ctx->start);
     
-    if (ctx->expr().size() != 2) {
+    if (ctx->expr().size() != 2 && ctx->expr().size() != 4) {
         throw std::runtime_error(
-                "built-in function 'map' expects exactly 2 argument(s), but got " +
+                "built-in function 'map' expects exactly 2 or 4 argument(s), but got " +
                 std::to_string(ctx->expr().size())
         );
     }
@@ -886,15 +886,28 @@ antlrcpp::Any DaphneDSLVisitor::handleMapOpCall(DaphneDSLGrammarParser::CallExpr
     if (!argMatTy)
         throw std::runtime_error("built-in function 'map' expects argument of type matrix as its first parameter");
     
-    std::string udfName = ctx->expr(1)->getText();
-    auto maybeUDF = findMatchingUnaryUDF(udfName, argMatTy.getElementType());
+    if (ctx->expr().size() == 2)
+    {
+        std::string udfName = ctx->expr(1)->getText();
+        auto maybeUDF = findMatchingUnaryUDF(udfName, argMatTy.getElementType());
 
-    if (!maybeUDF)
-        throw std::runtime_error("No function definition of `" + udfName + "` found");
+        if (!maybeUDF)
+            throw std::runtime_error("No function definition of `" + udfName + "` found");
 
-    args.push_back(static_cast<mlir::Value>(
-        builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->getSymName().str())
-    ));
+        args.push_back(static_cast<mlir::Value>(
+            builder.create<mlir::daphne::ConstantOp>(loc, maybeUDF->getSymName().str())
+        ));
+    } 
+    else if (ctx->expr().size() == 4)
+    {
+        auto func = utils.valueOrError(visit(ctx->expr(1)));
+        auto varName = utils.valueOrError(visit(ctx->expr(2)));
+        auto pl = utils.valueOrError(visit(ctx->expr(3)));
+
+        args.push_back(func);
+        args.push_back(varName);
+        args.push_back(pl);
+    }
 
     // Create DaphneIR operation for the built-in function.
     return builtins.build(loc, func, args);

@@ -602,7 +602,6 @@ public:
         //PlName
         callee << "__char";
 
-        // Convert the function and string arguments to LLVM i8* constants
         Value funcStr = rewriter.create<LLVM::ConstantOp>(loc, 
                        rewriter.getStringAttr(op.getFunc()));
         Value varNameStr = rewriter.create<LLVM::ConstantOp>(loc, 
@@ -980,6 +979,7 @@ namespace
 
 void DaphneLowerToLLVMPass::runOnOperation()
 {
+    llvm::errs() << "Starting module conversion.\n";
     auto module = getOperation();
 
     RewritePatternSet patterns(&getContext());
@@ -1056,14 +1056,13 @@ void DaphneLowerToLLVMPass::runOnOperation()
             ReturnOpLowering,
             StoreVariadicPackOpLowering,
             GenericCallOpLowering,
-            MapOpLowering
+            MapOpLowering,
+            MapOpExternalPLLowering
 
     >(&getContext());
 
-    // We want to completely lower to LLVM, so we use a `FullConversion`. This
-    // ensures that only legal operations will remain after the conversion.
     if (failed(applyFullConversion(module, target, std::move(patterns))))
-        signalPassFailure();
+        signalPassFailure();  
 }
 
 std::unique_ptr<Pass> daphne::createLowerToLLVMPass(const DaphneUserConfig& cfg)
