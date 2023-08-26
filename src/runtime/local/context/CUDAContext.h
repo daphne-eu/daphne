@@ -46,7 +46,10 @@ class CUDAContext final : public IContext {
     
     std::map<size_t, std::shared_ptr<std::byte>> allocations;
     static size_t alloc_count;
-    explicit CUDAContext(int id) : device_id(id) { }
+
+    explicit CUDAContext(int id) : device_id(id) {
+        logger = spdlog::get("runtime::cuda");
+    }
     
     void init();
     

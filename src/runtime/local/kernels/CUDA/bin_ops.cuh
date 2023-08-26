@@ -295,3 +295,17 @@ struct PowOp {
         return ProdNeutralElement<T>::get();
     }
 };
+
+/**
+ * Relational operators
+ */
+template<typename T>
+struct NeqOp {
+    __device__  __forceinline__ bool operator()(T a, T b) const {
+        return a != b;
+    }
+
+    __device__  __forceinline__ static bool exec(T const & a, T const & b) {
+        return a + b;
+    }
+};
