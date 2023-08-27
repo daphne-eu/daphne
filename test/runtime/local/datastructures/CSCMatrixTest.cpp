@@ -33,11 +33,19 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
 
       const size_t numRows = 4;
       const size_t numCols = 6;
-      const size_t numNonZeros = 8;
+      const size_t maxNumNonZeros = 8;
 
-     CSCMatrix<ValueType> * m = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, numNonZeros);
+     CSCMatrix<ValueType> * m = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
      //CSCMatrix<ValueType> * m = new CSCMatrix<ValueType>(numRows, numCols, numNonZeros);
 
+     size_t numRowsNew = m -> getNumRows();
+     size_t numColsNew = m -> getNumCols();
+     size_t maxNumNonZerosNew = m -> getMaxNumNonZeros();
+     size_t numNonZeros = m -> getNumNonZeros();
+     std::cout << "Number of rows: " << numRowsNew << '\n';
+     std::cout << "Number of columns: " << numColsNew << '\n';
+     std::cout << "Maximum number of non-zeros: " << maxNumNonZerosNew <<'\n';
+     std::cout << "Number of non-zeros: " << numNonZeros <<'\n';
 
 
 
@@ -45,5 +53,8 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
 
 
 
-     //DataObjectFactory::destroy(m);
+
+
+
+     DataObjectFactory::destroy(m);
  }

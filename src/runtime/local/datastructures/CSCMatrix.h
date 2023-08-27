@@ -34,10 +34,12 @@ class CSCMatrix : public Matrix<ValueType>{
   using Matrix<ValueType>::numRows;
   using Matrix<ValueType>::numCols;
   size_t maxNumNonZeros;
+  size_t numColumnsAllocated;
+  bool isColumnAllocatedBefore;
   std::shared_ptr<ValueType> values;
   std::shared_ptr<size_t> rowIdxs;
   std::shared_ptr<size_t> columnOffsets;
-  size_t lastAppendedColumnIdx = -1;
+  size_t lastAppendedColumnIdx;
 
   // Grant DataObjectFactory access to the private constructors and
   // destructors.
@@ -47,14 +49,22 @@ class CSCMatrix : public Matrix<ValueType>{
   friend void DataObjectFactory::destroy(const DataType * obj);
 
 public:
-    CSCMatrix(size_t numRows, size_t numCols, size_t maxNumNonZeros):
-    Matrix<ValueType>(numRows, numCols),
-    maxNumNonZeros(maxNumNonZeros),
-    values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
-    rowIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
-    columnOffsets(new size_t[numCols + 1], std::default_delete<size_t[]>())
-
+    CSCMatrix(size_t numRows, size_t numCols, size_t maxNumNonZeros, bool zero):
+      Matrix<ValueType>(numRows, numCols),
+      maxNumNonZeros(maxNumNonZeros),
+      numColumnsAllocated(numCols),
+      isColumnAllocatedBefore(false),
+      values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
+      rowIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
+      columnOffsets(new size_t[numCols + 1], std::default_delete<size_t[]>()),
+      lastAppendedColumnIdx(0)
     {
+
+      if(zero) {
+          memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
+          memset(rowIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
+          memset(columnOffsets.get(), 0, (numCols + 1) * sizeof(size_t));
+      }
 
       std::cout << "CSC Matrix" << '\n';
 
@@ -72,6 +82,21 @@ public:
     }
 public:
 
+  size_t getNumRows() const{
+    return numRows;
+  }
+
+  size_t getNumCols() const{
+    return numCols;
+  }
+
+  size_t getMaxNumNonZeros() const{
+    return maxNumNonZeros;
+  }
+
+  size_t getNumNonZeros() const {
+      return columnOffsets.get()[numCols] - columnOffsets.get()[0];
+  }
 
 
   ValueType get(size_t rowIdx, size_t colIdx) const override {
@@ -122,7 +147,7 @@ public:
 
 
   size_t serialize(std::vector<char> &buf) const override{
-
+    return 0;
   }
 
 
