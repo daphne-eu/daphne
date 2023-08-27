@@ -32,8 +32,8 @@ tmpdaphne.daphne
 
 
 # local symlinks for convenience
-TSLGen
-TSL
+./TSLGen
+./TSL
 
 
 bin/
