@@ -602,12 +602,9 @@ public:
         //PlName
         callee << "__char";
 
-        Value funcStr = rewriter.create<LLVM::ConstantOp>(loc, 
-                       rewriter.getStringAttr(op.getFunc()));
-        Value varNameStr = rewriter.create<LLVM::ConstantOp>(loc, 
-                       rewriter.getStringAttr(op.getVarName()));
-        Value plStr = rewriter.create<LLVM::ConstantOp>(loc, 
-                       rewriter.getStringAttr(op.getPl()));
+        Value funcStr = rewriter.create<daphne::ConstantOp>(loc, op.getFunc().str()).getResult();
+        Value varNameStr = rewriter.create<daphne::ConstantOp>(loc, op.getVarName().str()).getResult();
+        Value plStr = rewriter.create<daphne::ConstantOp>(loc, op.getPl().str()).getResult();
 
         std::vector<Value> kernelOperands{op.getArg(), funcStr, varNameStr, plStr};
 
