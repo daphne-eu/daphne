@@ -32,7 +32,7 @@ class Structure
 private:
     mutable size_t refCounter;
     mutable std::mutex refCounterMutex;
-    
+
     template<class DataType>
     friend void DataObjectFactory::destroy(const DataType * obj);
 
@@ -62,14 +62,14 @@ public:
     size_t getRefCounter() const {
         return refCounter;
     }
-    
+
     MetaDataObject* getMetaDataObject() const {
         return mdo.get();
     }
 
     /**
      * @brief Increases the reference counter of this data object.
-     * 
+     *
      * The access is protected by a mutex, such that multiple threads may call
      * this method concurrently.
      */
@@ -78,7 +78,7 @@ public:
         refCounter++;
         refCounterMutex.unlock();
     }
-    
+
     // Note that there is no method for decreasing the reference counter here.
     // Instead, use DataObjectFactory::destroy(). It is important that the
     // reference counter becoming zero triggers the deletion of the data
@@ -102,53 +102,53 @@ public:
     /**
      * @brief Prints a human-readable representation of this data object to the
      * given stream.
-     * 
+     *
      * This method is not optimized for performance. It should only be used for
      * moderately small data objects.
-     * 
+     *
      * @param os The stream where to print this data object.
      */
     virtual void print(std::ostream & os) const = 0;
 
     /**
      * @brief Extracts a row range out of this structure.
-     * 
+     *
      * Might be implemented as a zero-copy operation.
-     * 
+     *
      * @param rl Row range lower bound (inclusive).
      * @param ru Row range upper bound (exclusive).
-     * @return 
+     * @return
      */
     virtual Structure* sliceRow(size_t rl, size_t ru) const = 0;
 
     /**
      * @brief Extracts a column range out of this structure.
-     * 
+     *
      * Might be implemented as a zero-copy operation.
-     * 
+     *
      * @param cl Column range lower bound (inclusive).
      * @param cu Column range upper bound (exclusive).
-     * @return 
+     * @return
      */
     virtual Structure* sliceCol(size_t cl, size_t cu) const = 0;
-    
+
     /**
      * @brief Extracts a rectangular sub-structure (row and column range) out
      * of this structure.
-     * 
+     *
      * Might be implemented as a zero-copy operation.
-     * 
+     *
      * @param rl Row range lower bound (inclusive).
      * @param ru Row range upper bound (exclusive).
      * @param cl Column range lower bound (inclusive).
      * @param cu Column range upper bound (exclusive).
-     * @return 
+     * @return
      */
     virtual Structure* slice(size_t rl, size_t ru, size_t cl, size_t cu) const = 0;
 
     /**
-     * @brief Serializes the object to a void buffer.     
-     * 
+     * @brief Serializes the object to a void buffer.
+     *
      * @param buf buffer to store bytes.
      * @return The serialized buffer.
      */
