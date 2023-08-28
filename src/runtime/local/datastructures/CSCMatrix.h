@@ -60,15 +60,25 @@ public:
       lastAppendedColumnIdx(0)
     {
 
+      values.get()[0] = 10; values.get()[1] = 20; values.get()[2] = 30;
+      values.get()[3] = 50; values.get()[4] = 40; values.get()[5] = 60;
+      values.get()[6] = 70; values.get()[7] = 80;
+
+      rowIdxs.get()[0] = 0; rowIdxs.get()[1] = 0; rowIdxs.get()[2] = 1;
+      rowIdxs.get()[3] = 2; rowIdxs.get()[4] = 1; rowIdxs.get()[5] = 2;
+      rowIdxs.get()[6] = 2; rowIdxs.get()[7] = 3;
+
+      columnOffsets.get()[0] = 0; columnOffsets.get()[1] = 1; columnOffsets.get()[2] = 3;
+      columnOffsets.get()[3] = 4; columnOffsets.get()[4] = 6; columnOffsets.get()[5] = 7;
+      columnOffsets.get()[6] = 8;
+
       if(zero) {
           memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
           memset(rowIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
           memset(columnOffsets.get(), 0, (numCols + 1) * sizeof(size_t));
       }
 
-      std::cout << "CSC Matrix" << '\n';
-
-
+      //std::cout << "CSC Matrix" << '\n';
     }
 
     CSCMatrix(const CSCMatrix<ValueType>* orig, size_t cl, size_t cu):
@@ -97,6 +107,39 @@ public:
   size_t getNumNonZeros() const {
       return columnOffsets.get()[numCols] - columnOffsets.get()[0];
   }
+
+  // return values array
+  //**************************************************
+  ValueType * getValues() {
+      return values.get();
+  }
+
+  const ValueType * getValues() const {
+      return values.get();
+  }
+
+  //  return pointer to column
+  ValueType * getValues(size_t columnIdx) {
+      return values.get() + columnOffsets.get()[columnIdx];
+  }
+
+  const ValueType * getValues(size_t columnIdx) const {
+      return const_cast<CSCMatrix<ValueType> *>(this)->getValues(columnIdx);
+  }
+  //**************************************************
+
+
+  // return row indexes
+  //**************************************************
+  size_t * getRowIdxs() {
+      return rowIdxs.get();
+  }
+
+  const size_t * getRowIdxs() const {
+      return rowIdxs.get();
+  }
+  //**************************************************
+
 
 
   ValueType get(size_t rowIdx, size_t colIdx) const override {

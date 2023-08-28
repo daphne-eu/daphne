@@ -35,7 +35,7 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
       const size_t numCols = 6;
       const size_t maxNumNonZeros = 8;
 
-     CSCMatrix<ValueType> * m = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
+     CSCMatrix<ValueType> * m = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, false);
      //CSCMatrix<ValueType> * m = new CSCMatrix<ValueType>(numRows, numCols, numNonZeros);
 
      size_t numRowsNew = m -> getNumRows();
@@ -46,6 +46,25 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
      std::cout << "Number of columns: " << numColsNew << '\n';
      std::cout << "Maximum number of non-zeros: " << maxNumNonZerosNew <<'\n';
      std::cout << "Number of non-zeros: " << numNonZeros <<'\n';
+
+     ValueType * values = m->getValues();
+
+     for(size_t i = 0; i<maxNumNonZeros; i++){
+       std::cout << values[i] <<" ";
+     }
+
+     std::cout <<'\n';
+     ValueType * valuesOfColumn = m -> getValues(1);
+     std::cout << "Pointer to begin of column: "<< valuesOfColumn[0] << '\n';
+
+     size_t * rowIdxs = m-> getRowIdxs();
+     for(size_t i = 0; i<maxNumNonZeros; i++){
+       std::cout << rowIdxs[i] <<" ";
+     }
+
+     std::cout <<'\n';
+
+
 
 
 

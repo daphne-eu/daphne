@@ -50,7 +50,7 @@ TEMPLATE_TEST_CASE("CSRMatrix allocates enough space", TAG_DATASTRUCTURES, ALL_V
     for(size_t i = 0; i <= numRows; i++)
         rowOffsets[i] = size_t(1);
 
-    
+
 
 
     DataObjectFactory::destroy(m);
