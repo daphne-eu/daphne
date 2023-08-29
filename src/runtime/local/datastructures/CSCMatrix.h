@@ -138,17 +138,97 @@ public:
   const size_t * getRowIdxs() const {
       return rowIdxs.get();
   }
+
+  size_t * getRowIdxs(size_t columnIdx) {
+      // We allow equality here to enable retrieving a pointer to the end.
+      return rowIdxs.get() + columnOffsets.get()[columnIdx];
+  }
+
+  const size_t * getRowIdxs(size_t columnIdx) const {
+      return const_cast<CSCMatrix<ValueType> *>(this)->getRowIdxs(columnIdx);
+  }
+  //**************************************************
+
+
+  // return columnOffsets
+  //**************************************************
+  size_t * getColumnOffsets() {
+      return columnOffsets.get();
+  }
+
+  const size_t * getColumnOffsets() const {
+      return columnOffsets.get();
+  }
   //**************************************************
 
 
 
+
   ValueType get(size_t rowIdx, size_t colIdx) const override {
-    return values.get()[0];
+    // Get the starting and ending pointers for the specified column
+    size_t start = columnOffsets.get()[colIdx];
+    size_t end = columnOffsets.get()[colIdx+1];
+
+    // Search for the row index within the column's non-zero entries
+    for(size_t i = start; i<end; i++){
+      if(rowIdxs.get()[i] == rowIdx){
+        return values.get()[i]; //Return the value if found
+      }
+    }
+
+    return 0;
   }
 
+
+
   void set(size_t rowIdx, size_t colIdx, ValueType value) override {
-      assert((rowIdx < numRows) && "rowIdx is out of bounds");
-      assert((colIdx < numCols) && "colIdx is out of bounds");
+    assert(rowIdx < numRows && "rowIdx is out of bounds");
+    assert(colIdx < numCols && "colIdx is out of bounds");
+
+    // Find the column pointer range
+    size_t colStart = columnOffsets.get()[colIdx];
+    size_t colEnd = columnOffsets.get()[colIdx + 1];
+
+    // Find the position where this rowIdx would be inserted
+    auto it = std::lower_bound(rowIdxs.get() + colStart, rowIdxs.get() + colEnd, rowIdx);
+
+    if (it != rowIdxs.get() + colEnd && *it == rowIdx) {
+        // Element found, update value
+        size_t pos = it - rowIdxs.get();
+        if (value == 0) {
+            // Remove the element if the value is zero
+            for (size_t i = pos; i < colEnd - 1; ++i) {
+                values.get()[i] = values.get()[i + 1];
+                rowIdxs.get()[i] = rowIdxs.get()[i + 1];
+            }
+            // Update column pointers
+            for (size_t i = colIdx + 1; i <= numCols; ++i) {
+                columnOffsets.get()[i]--;
+            }
+        } else {
+            // Update the value
+            values.get()[pos] = value;
+        }
+    } else if (value != 0.0) {
+        // No existing value, insert new element if the value is non-zero
+        size_t insertPos = it - rowIdxs.get();
+
+        // Shift the elements in the values and rowIdxs arrays
+        for (size_t i = maxNumNonZeros; i > insertPos; --i) {
+            values.get()[i] = values.get()[i - 1];
+            rowIdxs.get()[i] = rowIdxs.get()[i - 1];
+        }
+
+        // Insert the new value and row index
+        values.get()[insertPos] = value;
+        rowIdxs.get()[insertPos] = rowIdx;
+
+        // Update column pointers
+        for (size_t i = colIdx + 1; i <= numCols; ++i) {
+            columnOffsets.get()[i]++;
+        }
+        //maxNumNonZeros++;
+    }
   }
 
   void prepareAppend() override {

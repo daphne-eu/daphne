@@ -64,11 +64,21 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
 
      std::cout <<'\n';
 
+     size_t * rowIdxs2 = m -> getRowIdxs(5);
+     std::cout << "Pointer to first non-zero row in column 5: "<< rowIdxs2[0] << '\n';
 
+     size_t * columnOffsets = m -> getColumnOffsets();
 
+     for(size_t i = 0; i<numCols+1; i++){
+       std::cout << columnOffsets[i]<<" ";
+     }
+     std::cout <<'\n';
 
+     ValueType  matrixCell = m -> get(2,3);
+     std::cout << "Matrix cell at position (2,3): "<< matrixCell << '\n';
 
-
+     m -> set(1,0, 15);
+     std::cout << "Matrix value after setting position (1,0): "<<m->getValues()[1] << '\n';
 
 
 
