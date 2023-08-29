@@ -34,6 +34,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
             ${PREFIX}/CreateCUDAContext.cpp
+            ${PREFIX}/AggAll.cu
             ${PREFIX}/AggCol.cu
             ${PREFIX}/AggRow.cu
             ${PREFIX}/Activation.cpp
