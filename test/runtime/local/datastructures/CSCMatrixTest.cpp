@@ -47,6 +47,25 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
      std::cout << "Maximum number of non-zeros: " << maxNumNonZerosNew <<'\n';
      std::cout << "Number of non-zeros: " << numNonZeros <<'\n';
 
+
+     m -> prepareAppend();
+     m -> append(0,0,10);
+     //Second column
+     m -> append(0,1,20);
+     m -> append(1,1,30);
+     //Third column
+     m -> append(2,2,50);
+     //Fourth column
+     m -> append(1,3,40);
+     m -> append(2,3,60);
+     //Fith column
+     m -> append(2,4,70);
+     //Sixth column
+     m -> append(3,5,80);
+     m -> finishAppend();
+
+
+
      ValueType * values = m->getValues();
 
      for(size_t i = 0; i<maxNumNonZeros; i++){

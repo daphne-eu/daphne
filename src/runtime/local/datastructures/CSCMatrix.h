@@ -60,7 +60,7 @@ public:
       lastAppendedColumnIdx(0)
     {
 
-      values.get()[0] = 10; values.get()[1] = 20; values.get()[2] = 30;
+      /*values.get()[0] = 10; values.get()[1] = 20; values.get()[2] = 30;
       values.get()[3] = 50; values.get()[4] = 40; values.get()[5] = 60;
       values.get()[6] = 70; values.get()[7] = 80;
 
@@ -70,7 +70,7 @@ public:
 
       columnOffsets.get()[0] = 0; columnOffsets.get()[1] = 1; columnOffsets.get()[2] = 3;
       columnOffsets.get()[3] = 4; columnOffsets.get()[4] = 6; columnOffsets.get()[5] = 7;
-      columnOffsets.get()[6] = 8;
+      columnOffsets.get()[6] = 8;*/
 
       if(zero) {
           memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
@@ -90,6 +90,16 @@ public:
     virtual ~CSCMatrix() {
         // nothing to do
     }
+
+    void fillNextPosUntil(size_t nextPos, size_t colIdx) {
+      if(colIdx>lastAppendedColumnIdx){
+        for(size_t i = lastAppendedColumnIdx+2; i<=colIdx+1; i++) {
+          columnOffsets.get()[i] = nextPos;
+        }
+        lastAppendedColumnIdx = colIdx;
+      }
+    }
+
 public:
 
   size_t getNumRows() const{
@@ -163,7 +173,7 @@ public:
 
 
 
-
+  // get matrix cell by coordinates
   ValueType get(size_t rowIdx, size_t colIdx) const override {
     // Get the starting and ending pointers for the specified column
     size_t start = columnOffsets.get()[colIdx];
@@ -180,7 +190,7 @@ public:
   }
 
 
-
+  // set value in existing matrix
   void set(size_t rowIdx, size_t colIdx, ValueType value) override {
     assert(rowIdx < numRows && "rowIdx is out of bounds");
     assert(colIdx < numCols && "colIdx is out of bounds");
@@ -227,23 +237,53 @@ public:
         for (size_t i = colIdx + 1; i <= numCols; ++i) {
             columnOffsets.get()[i]++;
         }
-        //maxNumNonZeros++;
+
     }
   }
 
+  // Process of appending new values in matrix:
+  // prepareAppend() -> append()...append() -> finishAppend()
+  //**************************************************
   void prepareAppend() override {
-
+    if(isColumnAllocatedBefore)
+        // In this case, we assume that the matrix has been populated up to
+        // just before this view.
+        columnOffsets.get()[1] = columnOffsets.get()[0];
+    else
+        columnOffsets.get()[1] = columnOffsets.get()[0] = 0;
+    lastAppendedColumnIdx = 0;
   }
 
   // Note that if this matrix is a view on a larger `CSCMatrix`, then
   // `prepareAppend`/`append`/`finishAppend` assume that the larger matrix
   // has been populated up to just before the row range of this view.
   void append(size_t rowIdx, size_t colIdx, ValueType value) override {
+    assert(colIdx>=0 && "column index is out of bounds.");
+    assert(colIdx<numCols && "column index is out of bounds.");
+    assert(rowIdx<numRows && "row index is out of bounds.");
 
+    //Skip zero values
+    if(value==0){
+      return;
+    }
+
+    const size_t nextPos = columnOffsets.get()[lastAppendedColumnIdx+1];
+    if(colIdx != lastAppendedColumnIdx){
+      fillNextPosUntil(nextPos, colIdx);
+    }
+
+    //Append the value and row index
+    values.get()[nextPos] = value;
+    rowIdxs.get()[nextPos] = rowIdx;
+
+    //Increment the next column pointer
+    columnOffsets.get()[colIdx+1]++;
   }
 
   void finishAppend() override {
+    fillNextPosUntil(columnOffsets.get()[lastAppendedColumnIdx + 1], numCols - 1);
   }
+  //**************************************************
 
 
 
