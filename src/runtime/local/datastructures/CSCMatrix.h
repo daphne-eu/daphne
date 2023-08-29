@@ -118,6 +118,11 @@ public:
       return columnOffsets.get()[numCols] - columnOffsets.get()[0];
   }
 
+  size_t getNumNonZeros(size_t columnIdx) const {
+      //assert((rowIdx < numRows) && "rowIdx is out of bounds");
+      return columnOffsets.get()[columnIdx + 1] - columnOffsets.get()[columnIdx];
+  }
+
   // return values array
   //**************************************************
   ValueType * getValues() {
@@ -285,12 +290,53 @@ public:
   }
   //**************************************************
 
+  bool isView() const {
+      return (numColumnsAllocated > numCols || isColumnAllocatedBefore);
+  }
+
+  void printValue(std::ostream & os, ValueType val) const {
+    switch (ValueTypeUtils::codeFor<ValueType>) {
+      case ValueTypeCode::SI8 : os << static_cast<int32_t>(val); break;
+      case ValueTypeCode::UI8 : os << static_cast<uint32_t>(val); break;
+      default : os << val; break;
+    }
+  }
 
 
 
   void print(std::ostream & os) const override {
+    os << "CSCMatrix(" << numRows << 'x' << numCols << ", "
+       << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
 
+    // First, let's cache our column data, so we don't need to fetch it repeatedly
+    std::vector<ValueType *> allColumns(numCols);
+    for (size_t c = 0; c < numCols; c++) {
+        allColumns[c] = new ValueType[numRows];
+        memset(allColumns[c], 0, numRows * sizeof(ValueType));
+        const size_t colNumNonZeros = getNumNonZeros(c);
+        const size_t * colRowIdxs = getRowIdxs(c);
+        const ValueType * colValues = getValues(c);
+        for (size_t i = 0; i < colNumNonZeros; i++) {
+            allColumns[c][colRowIdxs[i]] = colValues[i];
+        }
+    }
+
+    // Now we print the matrix row by row
+    for (size_t r = 0; r < numRows; r++) {
+        for (size_t c = 0; c < numCols; c++) {
+            printValue(os, allColumns[c][r]);
+            if (c < numCols - 1)
+                os << ' ';
+        }
+        os << std::endl;
+    }
+
+    // Cleanup memory
+    for (size_t c = 0; c < numCols; c++) {
+        delete[] allColumns[c];
+    }
   }
+
 
 
 
@@ -315,3 +361,10 @@ public:
 
 
 };
+
+template <typename ValueType>
+std::ostream & operator<<(std::ostream & os, const CSCMatrix<ValueType> & obj)
+{
+    obj.print(os);
+    return os;
+}

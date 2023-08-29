@@ -99,6 +99,8 @@ TEMPLATE_TEST_CASE("CSCMatrix", TAG_DATASTRUCTURES, ALL_VALUE_TYPES) {
      m -> set(1,0, 15);
      std::cout << "Matrix value after setting position (1,0): "<<m->getValues()[1] << '\n';
 
+     m -> print(std::cout);
+
 
 
 
