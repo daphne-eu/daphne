@@ -81,10 +81,23 @@ public:
       //std::cout << "CSC Matrix" << '\n';
     }
 
-    CSCMatrix(const CSCMatrix<ValueType>* orig, size_t cl, size_t cu):
-      Matrix<ValueType>(cu - cl, orig->numCols)
+    //cl: column-lower (included)
+    //cu: column-upper (excluded)
+    CSCMatrix(const CSCMatrix<ValueType>* src, size_t colLowerIncl, size_t colUpperExcl):
+      Matrix<ValueType>(src -> numRows, colUpperExcl - colLowerIncl),
+      numColumnsAllocated(src->numColumnsAllocated - colLowerIncl),
+      isColumnAllocatedBefore(colLowerIncl>0),
+      lastAppendedColumnIdx(0)
     {
+        assert(src && "src must not be null");
+        assert((colLowerIncl < src->numCols) && "colLowerIncl is out of bounds");
+        assert((colUpperExcl <= src->numCols) && "colUpperExcl is out of bounds");
+        assert((colLowerIncl < colUpperExcl) && "colLowerIncl must be lower than colUpperExcl");
 
+        maxNumNonZeros = src->maxNumNonZeros;
+        values = src->values;
+        rowIdxs = src->rowIdxs;  // In CSC, we store row indices
+        columnOffsets = std::shared_ptr<size_t>(src->columnOffsets, src->columnOffsets.get() + colLowerIncl);
     }
 
     virtual ~CSCMatrix() {
@@ -302,8 +315,6 @@ public:
     }
   }
 
-
-
   void print(std::ostream & os) const override {
     os << "CSCMatrix(" << numRows << 'x' << numCols << ", "
        << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
@@ -340,13 +351,14 @@ public:
 
 
 
-  CSCMatrix* sliceRow(size_t rl, size_t ru) const override {
-      return DataObjectFactory::create<CSCMatrix>(this, rl, ru);
-      //throw std::runtime_error("CSCMatrix does not support sliceCol yet");
+  CSCMatrix* sliceRow(size_t cl, size_t cu) const override {
+      //return DataObjectFactory::create<CSCMatrix>(this, rl, ru);
+      throw std::runtime_error("CSCMatrix does not support sliceRow yet");
   }
 
   CSCMatrix* sliceCol(size_t cl, size_t cu) const override {
-      throw std::runtime_error("CSCMatrix does not support sliceCol yet");
+      //throw std::runtime_error("CSCMatrix does not support sliceCol yet");
+      return DataObjectFactory::create<CSCMatrix>(this, cl, cu);
   }
 
   CSCMatrix* slice(size_t rl, size_t ru, size_t cl, size_t cu) const override {
