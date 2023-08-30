@@ -87,16 +87,22 @@ namespace
                 comparisons.push_back(currentBitmap); 
 
                 //update sources of the comparisons
+                std::vector<Operation *> lhsComparisons;
+                std::vector<Operation *> rhsComparisons;
                 for (Operation * comparison : comparisons) {
                     Operation * compareFunctionExtractColOp = getCompareFunctionExtractColOp(comparison);
                     if (compareFunctionExtractColOp) {
                         std::string currentFrameName = getFrameName(compareFunctionExtractColOp->getOperand(1).getDefiningOp());
                         if (currentFrameName == inputFrameNameLhs) {
                             compareFunctionExtractColOp->setOperand(0, inputFrameOpLhs->getResult(0));
+                            lhsComparisons.push_back(comparison);
+
                             op->setOperand(0, inputFrameOpLhs->getResult(0));
                             lhsFrameJoin = op->getResult(0);
                         } else if (currentFrameName == inputFrameNameRhs) {
                             compareFunctionExtractColOp->setOperand(0, inputFrameOpRhs->getResult(0));
+                            rhsComparisons.push_back(comparison);
+
                             op->setOperand(0, inputFrameOpRhs->getResult(0));
                             rhsFrameJoin = op->getResult(0);
                         } else {
@@ -104,6 +110,8 @@ namespace
                         }
                     }
                 }
+                //Iterate through lhs and rhs Comparisons, create new EwAndOp and FilterRowOp and replace uses in joinSourceOp
+
                 //rewire filterRowOp and InnerJoinOp
                 rewriter.startRootUpdate(op);
                 op->getResult(0).replaceAllUsesWith(joinSourceOp->getResult(0));
