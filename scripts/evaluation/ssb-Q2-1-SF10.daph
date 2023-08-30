@@ -1,12 +1,12 @@
 # SSB Query 2.1 SF10
 
-lineorder = readFrame("../../ssb-data/sf10/lineorder.csv");
+lineorder = readFrame("../ssb-data/sf10/lineorder.csv");
 
-date = readFrame("../../ssb-data/sf10/date.csv");
+date = readFrame("../ssb-data/sf10/date.csv");
 
-part = readFrame("../../ssb-data/sf10/part.csv");
+part = readFrame("../ssb-data/sf10/part.csv");
 
-supplier = readFrame("../../ssb-data/sf10/supplier.csv");
+supplier = readFrame("../ssb-data/sf10/supplier.csv");
 
 registerView("lineorder", lineorder);
 

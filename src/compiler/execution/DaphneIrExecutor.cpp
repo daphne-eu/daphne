@@ -85,9 +85,10 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass(userConfig_));
             if(userConfig_.explain_property_inference)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
-
+#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
             if(userConfig_.use_columnar_rewrite) {
                 pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
             }
 
             if(userConfig_.use_columnar_reduce) {
@@ -95,8 +96,9 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());
                 pm.addPass(mlir::createCanonicalizerPass());
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createReduceColumnarOpPass());
+                pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createMarkVectorExtensionOpsPass(userConfig_));
             }
-#if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
+
             if(userConfig_.use_columnar) {
                 pm.addPass(mlir::daphne::createRewriteColumnarOpPass());
                 pm.addNestedPass<mlir::func::FuncOp>(mlir::daphne::createInferencePass());

@@ -1,8 +1,8 @@
 # SSB Query 1.1 SF1
 
-lineorder = readFrame("../../ssb-data/sf1/lineorder.csv");
+lineorder = readFrame("../ssb-data/sf1/lineorder.csv");
 
-date = readFrame("../../ssb-data/sf1/date.csv");
+date = readFrame("../ssb-data/sf1/date.csv");
 
 registerView("lineorder", lineorder);
 
