@@ -23,6 +23,6 @@ JOIN part ON lineorder.lo_partkey = part.p_partkey
 JOIN supplier ON lineorder.lo_suppkey = supplier.s_suppkey
 WHERE part.p_category = 1
 and supplier.s_region = 1
-group by date.d_year, part.p_brand1 order by date.d_year, part.p_brand1;");
+group by date.d_year, part.p_brand1 order by date.d_year DESC, part.p_brand1 DESC;");
 
 print(res);
