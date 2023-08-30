@@ -251,28 +251,28 @@ std::unique_ptr<mlir::ExecutionEngine> DaphneIrExecutor::createExecutionEngine(m
 #endif
 
 #ifdef USE_AVX512
-        if(userConfig_.use_columnar) {
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
             sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libAVX512Kernels.so"));
             sharedLibRefs.emplace_back(sharedLibRefPaths.back());
         }
 #endif
 
 #ifdef USE_AVX2
-        if(userConfig_.use_columnar) {
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
             sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libAVX2Kernels.so"));
             sharedLibRefs.emplace_back(sharedLibRefPaths.back());
         }
 #endif
 
 #ifdef USE_SSE
-        if(userConfig_.use_columnar) {
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
             sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libSSEKernels.so"));
             sharedLibRefs.emplace_back(sharedLibRefPaths.back());
         }
 #endif
 
 #ifdef USE_SCALAR
-        if(userConfig_.use_columnar) {
+        if(userConfig_.use_columnar || userConfig_.use_columnar_reduce || userConfig_.use_columnar_rewrite) {
             sharedLibRefPaths.push_back(std::string(daphne_executable_dir + "/../lib/libSCALARKernels.so"));
             sharedLibRefs.emplace_back(sharedLibRefPaths.back());
         }
