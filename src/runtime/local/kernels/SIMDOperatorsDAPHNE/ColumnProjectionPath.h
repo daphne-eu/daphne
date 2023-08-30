@@ -52,15 +52,20 @@ void columnProjectionPath(DTRes *& res, const DTData * data, const DTPos ** pos,
 // Column <- Column
 // ----------------------------------------------------------------------------
 
-template<typename VT, typename VE>
-struct ColumnProjectionPath<tuddbs::Column<VT>, tuddbs::Column<VT>, tuddbs::Column<VT>, VE> {
-    static void apply(tuddbs::Column<VT> *& res, const tuddbs::Column<VT> * data, const tuddbs::Column<VT> ** pos, const size_t number_cols, DCTX(ctx)) {
-        using ps = typename tsl::simd<VT, VE>;
+template<typename VTData, typename VTPos, typename VE>
+struct ColumnProjectionPath<tuddbs::Column<VTData>, tuddbs::Column<VTData>, tuddbs::Column<VTPos>, VE> {
+    static void apply(tuddbs::Column<VTData> *& res, const tuddbs::Column<VTData> * data, const tuddbs::Column<VTPos> ** pos, const size_t number_cols, DCTX(ctx)) {
+        using ps = typename tsl::simd<VTData, VE>;
         tuddbs::daphne_projection_path<ps> project;
         if (number_cols == 2) {
-            res = project(data, pos[0], pos[1]);
+            const tuddbs::Column<VTData> * pos_cast0 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[0]);
+            const tuddbs::Column<VTData> * pos_cast1 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[1]);
+            res = project(data, pos_cast0, pos_cast1);
         } else if (number_cols == 3) {
-            res = project(data, pos[0], pos[1], pos[2]);
+            const tuddbs::Column<VTData> * pos_cast0 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[0]);
+            const tuddbs::Column<VTData> * pos_cast1 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[1]);
+            const tuddbs::Column<VTData> * pos_cast2 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[2]);
+            res = project(data, pos_cast0, pos_cast1, pos_cast2);
         }
         //res = tuddbs::daphne_projection_path<ps>(data, pos);   
     }

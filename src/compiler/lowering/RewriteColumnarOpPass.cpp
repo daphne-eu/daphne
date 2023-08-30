@@ -245,6 +245,11 @@ namespace
                 columnNamesPerSuccessor[parent].insert(label);
                 distinctColumnNames.insert(label);
             }
+        } else if(llvm::dyn_cast<mlir::daphne::InnerJoinOp>(op)) {
+            columnNamesPerSuccessor[parent].insert(op->getOperand(2).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str());
+            distinctColumnNames.insert(op->getOperand(2).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str());
+            columnNamesPerSuccessor[parent].insert(op->getOperand(3).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str());
+            distinctColumnNames.insert(op->getOperand(3).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str());
         }
         for (auto indexedResult : llvm::enumerate(op->getResults())) {
             Value result = indexedResult.value();

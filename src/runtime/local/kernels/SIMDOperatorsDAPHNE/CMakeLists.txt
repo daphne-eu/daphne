@@ -28,3 +28,8 @@ set(PREFIX ${PROJECT_BINARY_DIR}/src/runtime/local/kernels/SIMDOperators)
 target_compile_options(AllKernels PUBLIC "-mfma")
 target_link_libraries(AllKernels PUBLIC SIMDOperators)
 #target_link_libraries(SIMDOperatorsKernels PUBLIC ${LIBS})
+
+add_executable(microbenchmarks ./MicrobenchmarkSIMDOpsSSBQ11.cpp)
+target_link_libraries(microbenchmarks PUBLIC SIMDOperators ${LIBS} )
+target_compile_options(microbenchmarks PUBLIC -g -O0)
+set_target_properties(microbenchmarks PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)

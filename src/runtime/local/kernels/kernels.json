@@ -4230,6 +4230,7 @@
                 "instantiations": [
                     [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"]],
                     [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"]],
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], ["tuddbs::Column", "size_t"]],
                     [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"]]
                 ]
             }
