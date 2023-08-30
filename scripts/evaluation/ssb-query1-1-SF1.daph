@@ -1,0 +1,14 @@
+# SSB Query 1.1 SF1
+
+lineorder = readFrame("../../ssb-data/sf1/lineorder.csv");
+
+date = readFrame("../../ssb-data/sf1/date.csv");
+
+registerView("lineorder", lineorder);
+
+registerView("date", date);
+
+res = sql("select sum(lineorder.lo_discount*lineorder.lo_extendedprice) from lineorder JOIN date on lineorder.lo_orderdate = date.d_datekey
+where date.d_year = 1993  and lineorder.lo_discount >= 1 and lineorder.lo_discount <= 3 and lineorder.lo_quantity < 25;");
+
+print(res);
