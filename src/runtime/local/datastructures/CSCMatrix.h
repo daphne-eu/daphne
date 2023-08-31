@@ -23,7 +23,7 @@
 #include <algorithm>
 #include <iostream>
 #include <memory>
-#include <stdio.h>
+//#include <stdio.h>
 #include <cassert>
 #include <cstddef>
 #include <cstring>
@@ -369,7 +369,7 @@ public:
 
   size_t serialize(std::vector<char> &buf) const override{
     return 0;
-  }
+  };
 
 
 };
