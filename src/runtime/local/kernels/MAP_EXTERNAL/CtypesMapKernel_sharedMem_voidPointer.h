@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_NUMPY_NUMPYMAPKERNEL_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_NUMPY_NUMPYMAPKERNEL_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_NUMPYMAPKERNEL_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_NUMPYMAPKERNEL_H
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #pragma once
-#include <runtime/local/kernels/MAP_NUMPY/NumpyTypeString.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/NumpyTypeString.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
 
@@ -27,7 +27,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 template<typename DTRes, typename DTArg>
-struct NumpyMapKernel
+struct Ctypes_SharedMem_VoidPtr
 {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char * varName) = delete;
 };
@@ -36,15 +36,15 @@ struct NumpyMapKernel
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg>
-void numpyMapKernel(DTRes *& res, const DTArg * arg, const char* func, const char * varName) {
-    NumpyMapKernel<DTRes,DTArg>::apply(res, arg, func, varName);
+void ctypes_SharedMem_VoidPtr(DTRes *& res, const DTArg * arg, const char* func, const char * varName) {
+    Ctypes_SharedMem_VoidPtr<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
 template <typename VTRes, typename VTArg>
-struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct Ctypes_SharedMem_VoidPtr<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char * func, const char * varName)
     {
         PythonInterpreter::getInstance();
@@ -52,8 +52,7 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        // Get the map_function from your Python script
-        PyObject* pName = PyUnicode_DecodeFSDefault("NumpyMapKernel");
+        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_sharedMem_voidPointer");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
 
@@ -123,4 +122,4 @@ struct NumpyMapKernel<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_NUMPY_NUMPYMAPKERNEL_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_NUMPYMAPKERNEL_H

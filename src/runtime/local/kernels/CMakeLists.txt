@@ -83,14 +83,14 @@ list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
     ${PREFIX}/MatMul.h
-    ${PREFIX}/MAP_NUMPY/NumpyTypeString.h
-    ${PREFIX}/MAP_NUMPY/NumpyMapKernel.h
-    ${PREFIX}/MAP_CTYPES/CtypesMapKernel.h
-    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_csv.h
-    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_sharedPointer.h
-    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_binaryData.h
-    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_copy.h
-    ${PREFIX}/MAP_CTYPES/CtypesMapKernel_SysArg.h
+    ${PREFIX}/MAP_EXTERNAL/NumpyTypeString.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_sharedMem_voidPointer.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_sharedMem_address.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_sharedMem_Pointer.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_csv.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_binaryData.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_copy.h
+    ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_SysArg.h
 )
 set(SOURCES_cpp_kernels
         ${PREFIX}/MatMul.cpp

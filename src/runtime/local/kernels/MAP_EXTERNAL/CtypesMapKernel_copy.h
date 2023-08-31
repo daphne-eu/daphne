@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_COPY_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_COPY_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_COPY_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_COPY_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
@@ -247,4 +247,4 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_COPY_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_COPY_H

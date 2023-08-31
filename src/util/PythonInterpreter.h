@@ -73,11 +73,8 @@ private:
         if (!Py_IsInitialized()) {
             Py_Initialize();
 
-            std::string kernelPath_map_ctypes = std::string(PROJECT_SOURCE_DIR) + "/src/runtime/local/kernels/MAP_CTYPES";          
-            addPath(kernelPath_map_ctypes.c_str());
-
-            std::string kernelPath_map_numpy = std::string(PROJECT_SOURCE_DIR) + "/src/runtime/local/kernels/MAP_NUMPY";          
-            addPath(kernelPath_map_numpy.c_str());
+            std::string kernelPath_map_external = std::string(PROJECT_SOURCE_DIR) + "/src/runtime/local/kernels/MAP_EXTERNAL";          
+            addPath(kernelPath_map_external.c_str());
 
             PyEval_InitThreads(); // Initializes the GIL
         }

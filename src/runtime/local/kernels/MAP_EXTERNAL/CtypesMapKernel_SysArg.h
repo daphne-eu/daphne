@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SYSARG_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SYSARG_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SYSARG_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SYSARG_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
 #include <memory>
 #include <util/PythonInterpreter.h>
-#include <runtime/local/kernels/MAP_CTYPES/CtypesMapKernel_copy.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_copy.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -127,4 +127,4 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     PyGILState_Release(gstate);
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SYSARG_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SYSARG_H

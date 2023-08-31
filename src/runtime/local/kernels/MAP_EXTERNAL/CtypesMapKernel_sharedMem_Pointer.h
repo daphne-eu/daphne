@@ -1,5 +1,5 @@
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SHAREDPOINTER_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SHAREDPOINTER_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SHAREDPOINTER_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SHAREDPOINTER_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
@@ -10,7 +10,7 @@
 // Struct for partial template specialization
 // ****************************************************************************
 template<typename DTRes, typename DTArg>
-struct CtypesMapKernel_SharedPointer
+struct CtypesMapKernel_SharedMem_Pointer
 {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
@@ -19,15 +19,15 @@ struct CtypesMapKernel_SharedPointer
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg>
-void ctypesMapKernel_SharedPointer(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
-    CtypesMapKernel_SharedPointer<DTRes,DTArg>::apply(res, arg, func, varName);
+void ctypesMapKernel_SharedMem_Pointer(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    CtypesMapKernel_SharedMem_Pointer<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
 template<typename VTRes, typename VTArg>
-struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct CtypesMapKernel_SharedMem_Pointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
@@ -36,7 +36,7 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_sharedPointer");
+        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_sharedMem_Pointer");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
 
@@ -111,4 +111,4 @@ struct CtypesMapKernel_SharedPointer<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_CTYPES_CTYPESMAPKERNEL_SHAREDPOINTER_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SHAREDPOINTER_H
