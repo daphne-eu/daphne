@@ -118,7 +118,8 @@ TEMPLATE_TEST_CASE("CSCMatrix sub-matrix works properly", TAG_DATASTRUCTURES, AL
   const size_t colUpperExcl = 5;
 
   CSCMatrix<ValueType> * mOrig = DataObjectFactory::create<CSCMatrix<ValueType>>(numRowsOrig, numColsOrig, maxNumNonZeros, true);
-  CSCMatrix<ValueType> * mSub = DataObjectFactory::create<CSCMatrix<ValueType>>(mOrig, colLowerIncl, colUpperExcl);
+  // Create sub-matrix from original matrix 
+  CSCMatrix<ValueType> * mSub = mOrig -> sliceCol(colLowerIncl, colUpperExcl);
 
   // Sub-matrix dimensions are as expected.
   CHECK(mSub->getNumCols() == 2);
