@@ -190,9 +190,12 @@ namespace {
         std::set<func::FuncOp> called;
 
         const DaphneUserConfig& userConfig;
+        std::shared_ptr<spdlog::logger> logger;
 
     public:
-        explicit SpecializeGenericFunctionsPass(const DaphneUserConfig& cfg) : userConfig(cfg) {}
+        explicit SpecializeGenericFunctionsPass(const DaphneUserConfig& cfg) : userConfig(cfg) {
+            logger = spdlog::get("compiler");
+        }
 
     private:
         /**
@@ -294,6 +297,12 @@ namespace {
                 auto specializedTypes =
                     getSpecializedFuncArgTypes(calledFunction.getFunctionType(), operandTypes);
                 specializedFunc = createSpecializedFunction(calledFunction, specializedTypes, operands);
+            }
+            if(logger->should_log(spdlog::level::debug)) {
+                std::string s;
+                llvm::raw_string_ostream stream(s);
+                calledFunction->getLoc().print(stream);
+                logger->debug("calledFunction\n\tname: {}\n\tlocation: {}", calledFunction.getSymName().str(), s);
             }
             return specializedFunc;
         }

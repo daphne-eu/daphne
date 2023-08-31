@@ -34,7 +34,27 @@
             "level": "INFO",
             "filename": "compiler-debug-cuda.txt",
             "format": "%^[%L %n]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE compiler logs",
+            "name": "compiler",
+            "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE default",
+            "name": "default",
+            "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
+        },
+        {
+            "comment": "DAPHNE default",
+            "name": "parser",
+            "level": "INFO",
+            "filename": "",
+            "format": "%^[%n %L]:%$ %v"
         }
-
     ]
 }
