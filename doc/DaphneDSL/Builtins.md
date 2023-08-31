@@ -549,3 +549,16 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 - **`now`**`()`
 
     Returns the current time since the epoch in nano seconds.
+
+## Second-order Functions
+
+DaphneDSL offers a map function, which can be invoked in several ways. 
+
+- **`Built-In map function`** `map(arg:matrix, func:udf)`
+
+The built-in map function takes a matrix and a user-defined function as arguments. The syntax of the map function is defined as follows.
+
+- **`Invoking the map function of an external programming language (experimental)`** `map(arg:matrix, func:str, varName:str, plName:str)`
+
+The python map function takes a matrix, a user-defined function, the variable of the user-defined function and 
+the name of an external programming language. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
