@@ -38,7 +38,7 @@ def run_experiment(matrix_sizes, function_complexities, matrix_type, test_type=N
             #total_runs +=1
 
             map_function1_command = ["bin/daphne", f"scripts/examples/map/mapTest_{matrix_type}.daph", f"matrix_size={size}", f"minValue=1", f"maxValue=9", f"exponent={complexity}"]
-            map_function2_command = ["bin/daphne", f"scripts/examples/map/mapExternal1_{matrix_type}.daph", f"matrix_size={size}", f"minValue=1", f"maxValue=9", f"exponent={complexity}"]
+            map_function2_command = ["bin/daphne", f"scripts/examples/map/mapExternalPLTest_{matrix_type}.daph", f"matrix_size={size}", f"minValue=1", f"maxValue=9", f"exponent={complexity}"]
 
             time1, memory1 = measure_performance(map_function1_command)
             time2, memory2 = measure_performance(map_function2_command)
