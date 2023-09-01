@@ -324,14 +324,14 @@ void innerJoin(
     size_t *hit_list_l = new size_t[totalRows];
     size_t *hit_list_r = new size_t[totalRows];
 
-    std::cout << "start Probe\n";
+    //std::cout << "start Probe\n";
     row_result_size = innerJoinProbe(lhs, rhs, hit_list_l, hit_list_r, lhsOn, rhsOn, ctx);
 
     //std::cout << "creat result\n";
     // Creating Result Frame
     res = DataObjectFactory::create<Frame>(row_result_size, totalCols, schema, newlabels, false);
 
-    std::cout << "start copy\n";
+    //std::cout << "start copy\n";
 
     innerJoinSetColumnWise(
         res,
