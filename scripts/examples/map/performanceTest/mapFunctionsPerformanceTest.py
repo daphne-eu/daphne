@@ -14,7 +14,7 @@ def measure_performance(command):
     max_memory = max(mem_usage)
     return elapsed_time, max_memory
 
-def run_experiment(matrix_sizes, function_complexities, matrix_type, min_Value, max_Value, test_type=None):
+def run_experiment(matrix_value_type, matrix_sizes, function_complexities, min_Value, max_Value, test_type=None):
     '''
     function which runs the experiments of calling the DAPHNE map function and the DAPHNE/Python map function
     with the UDF x->x^(function_complexity) and Random matrix int the shape of matrix_sizes x matrix_sizes, 
@@ -37,8 +37,8 @@ def run_experiment(matrix_sizes, function_complexities, matrix_type, min_Value, 
         for complexity in function_complexities:
             #total_runs +=1
 
-            map_function1_command = ["bin/daphne", f"scripts/examples/map/mapTest_{matrix_type}.daph", f"matrix_size={size}", f"minValue={min_Value}", f"maxValue={max_Value}", f"exponent={complexity}"]
-            map_function2_command = ["bin/daphne", f"scripts/examples/map/mapExternalPLTest_{matrix_type}.daph", f"matrix_size={size}", f"minValue={min_Value}", f"maxValue={max_Value}", f"exponent={complexity}"]
+            map_function1_command = ["bin/daphne", f"scripts/examples/map/performanceTest/mapTest_{matrix_value_type}.daph", f"matrix_size={size}", f"minValue={min_Value}", f"maxValue={max_Value}", f"exponent={complexity}"]
+            map_function2_command = ["bin/daphne", f"scripts/examples/map/performanceTest/mapExternalPLTest_{matrix_value_type}.daph", f"matrix_size={size}", f"minValue={min_Value}", f"maxValue={max_Value}", f"exponent={complexity}"]
 
             time1, memory1 = measure_performance(map_function1_command)
             time2, memory2 = measure_performance(map_function2_command)
@@ -114,23 +114,21 @@ def run_experiment(matrix_sizes, function_complexities, matrix_type, min_Value, 
     plt.annotate(f"Max Memory Difference: {max_diff_memory:.4f} MiB", xy=(0, 1.01), xycoords='axes fraction')
 
     if(test_type != None):
-        plt.savefig(f"scripts/examples/map/figures/MapPerformanceTest_{matrix_type}_{test_type}.png")
+        plt.savefig(f"scripts/examples/map/performanceTest/figures/MapPerformanceTest_{matrix_value_type}_{test_type}.png")
     else:
-        plt.savefig(f"scripts/examples/map/figures/MapPerformanceTest_{matrix_type}.png")
+        plt.savefig(f"scripts/examples/map/performanceTest/figures/MapPerformanceTest_{matrix_value_type}.png")
 
-def run_exponential_experiment_for_diff_types(matrix_types, matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, min_Value, max_Value):
-    '''
-    The Experiments can be executed for different types.
-    '''
-    for type in matrix_types:
-        'single Matrix with different function complexities'
-        run_experiment(matrix_sizes_single, function_complexities, type, min_Value[0], max_Value[0], "single_matrix")
+def run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, min_Value, max_Value, value_type):
+    'Executes the tests for a matrix in 3 combinations'
 
-        'different matrix sizes with one function complexity'
-        run_experiment(matrix_sizes, function_complexities_single, type, min_Value[1], max_Value[1], "single_function_complexity")
+    'single Matrix with different function complexities'
+    run_experiment(value_type, matrix_sizes_single, function_complexities, min_Value[0], max_Value[0], "single_matrix")
+
+    'different matrix sizes with one function complexity'
+    run_experiment(value_type, matrix_sizes, function_complexities_single, min_Value[1], max_Value[1], "single_function_complexity")
     
-        'different matrix sizes with different function complexities'
-        run_experiment(matrix_sizes, function_complexities, type, min_Value[2], max_Value[2])
+    'different matrix sizes with different function complexities'
+    run_experiment(value_type, matrix_sizes, function_complexities, min_Value[2], max_Value[2])
 
 if __name__ == "__main__":
     matrix_sizes = [5, 10, 100]
@@ -142,14 +140,16 @@ if __name__ == "__main__":
     function_complexities_int8 = list(range(2, 5))
     function_complexities_int8_single = [3]
 
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [0, 0, 0], [9, 9, 9], "f64")
+
     'Float and Double Types'
-    run_exponential_experiment_for_diff_types("f32", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9])
-    run_exponential_experiment_for_diff_types("f32", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, -[-9, -9, -9], [9, 9, 9])
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9], "f32")
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9], "f64")
     'Signed Integers'
-    run_exponential_experiment_for_diff_types("int64_t", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9]) 
-    run_exponential_experiment_for_diff_types("int32_t", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9])
-    run_exponential_experiment_for_diff_types("int8_t", matrix_sizes, matrix_sizes_single, function_complexities_int8, function_complexities_int8_single, [-9, -9, -9], [9, 9, 9])
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9], "int64_t") 
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-9, -9, -9], [9, 9, 9], "int32_t")
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities_int8, function_complexities_int8_single, [-9, -9, -9], [9, 9, 9], "int8_t")
     'Unsigned Integers'
-    run_exponential_experiment_for_diff_types("uint64_t", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [0,0,0], [9, 9, 9])
-    run_exponential_experiment_for_diff_types("uint32_t", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-2,-5,-2], [2, 5, 2])
-    run_exponential_experiment_for_diff_types("uint8_t", matrix_sizes, matrix_sizes_single, function_complexities_uint8, function_complexities_uint8_single, [0,0,0], [3,6,3])
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [0,0,0], [9, 9, 9], "uint64_t")
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single, [-2,-5,-2], [2, 5, 2], "uint32_t")
+    run_exponential_experiment_for_diff_combinations(matrix_sizes, matrix_sizes_single, function_complexities_uint8, function_complexities_uint8_single, [0,0,0], [3,6,3], "uint8_t")
