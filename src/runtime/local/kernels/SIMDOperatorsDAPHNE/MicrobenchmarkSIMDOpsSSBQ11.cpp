@@ -195,7 +195,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/scalar_sf1_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/scalar_sf1_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -216,7 +216,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/avx512_sf1_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/avx512_sf1_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -237,7 +237,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/avx512_sf1_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/avx512_sf1_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -258,7 +258,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/scalar_sf1_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/scalar_sf1_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -325,7 +325,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/scalar_sf10_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/scalar_sf10_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -346,7 +346,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/avx512_sf10_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/avx512_sf10_q11_wo_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -367,7 +367,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/scalar_sf10_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/scalar_sf10_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -388,7 +388,7 @@ int main() {
                 lineorder_lo_extendedprice_cast
             );
 
-            outfile.open("evaluation/avx512_sf10_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
+            outfile.open("../evaluation/avx512_sf10_q11_with_selection_pushdown_wo_daphne.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 

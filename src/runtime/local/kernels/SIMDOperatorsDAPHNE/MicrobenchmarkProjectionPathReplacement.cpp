@@ -99,7 +99,7 @@ int main() {
                 pos_list_2
             );
 
-            outfile.open("evaluation/scalar_project_project.csv", std::ios_base::app);
+            outfile.open("../evaluation/scalar_project_project.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -117,7 +117,7 @@ int main() {
                 pos_list_2
             );
 
-            outfile.open("evaluation/avx512_project_project.csv", std::ios_base::app);
+            outfile.open("../evaluation/avx512_project_project.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -135,7 +135,7 @@ int main() {
                 pos_list_2
             );
 
-            outfile.open("evaluation/scalar_project_projectionpath.csv", std::ios_base::app);
+            outfile.open("../evaluation/scalar_project_projectionpath.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
@@ -153,7 +153,7 @@ int main() {
                 pos_list_2
             );
 
-            outfile.open("evaluation/avx512_project_projectionpath.csv", std::ios_base::app);
+            outfile.open("../evaluation/avx512_project_projectionpath.csv", std::ios_base::app);
 
             std::string time = getCurrentTimeFormatted();
 
