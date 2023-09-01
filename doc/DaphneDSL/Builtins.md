@@ -554,12 +554,12 @@ These must be provided in a separate [`.meta`-file](/doc/FileMetaDataFormat.md).
 
 DaphneDSL offers a map function, which can be invoked in several ways. 
 
-- **`Built-In map function`** `map(arg:matrix, udf:func)`
+- **`map`**`(arg:matrix, udf:func)`
 
 The built-in map function takes a matrix and a user-defined function (UDF) as arguments.
 The given UDF must have a single scalar argument and return a single scalar value.
 `map()` applies the given UDF to each value in the given matrix.
 
-- **`Invoking the map function of an external programming language (experimental)`** `map(arg:matrix, func:str, varName:str, plName:str)`
+- **`map`**`(arg:matrix, func:str, varName:str, plName:str)`
 
-TO use a map-Kernel of an external porgramming language, `map()` can be invoked with a matrix, an user-defined function, the variable of the user-defined function and the name of an external programming language as arguments. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
+To use a map-kernel of an external porgramming language, `map()` can be invoked with a matrix, an user-defined function, the variable of the user-defined function and the name of an external programming language as arguments. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
