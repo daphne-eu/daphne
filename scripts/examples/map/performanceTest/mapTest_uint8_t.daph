@@ -17,26 +17,26 @@
  /*
 Generate random Matrix
  */
-X = rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42);
+X = as.matrix<ui8>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
 /*
 Function Definitions
 */
-def square(x) {return x^2;}
-def cubic(x) {return x^3;}
-def quartic(x) {return x^4;}
-def quintic(x) {return x^5;}
-def sextic(x) {return x^6;}
-def septic(x) {return x^7;}
-def octic(x) {return x^8;}
-def nonic(x) {return x^9;}
-def decic(x) {return x^10;}
-def undecic(x) {return x^11;}
-def duodecic(x) {return x^12;}
-def tridecic(x) {return x^13;}
-def tetradecic(x) {return x^14;}
-def pentadecic(x) {return x^15;}
-def hexadecic(x) {return x^16;}
-def heptadecic(x) {return x^17;}
+def square(x: ui8) -> ui8 {return x^2;}
+def cubic(x: ui8) -> ui8 {return x^3;}
+def quartic(x: ui8) -> ui8 {return x^4;}
+def quintic(x: ui8) -> ui8 {return x^5;}
+def sextic(x: ui8) -> ui8 {return x^6;}
+def septic(x: ui8) -> ui8 {return x^7;}
+def octic(x: ui8) -> ui8 {return x^8;}
+def nonic(x: ui8) -> ui8 {return x^9;}
+def decic(x: ui8) -> ui8 {return x^10;}
+def undecic(x: ui8) -> ui8 {return x^11;}
+def duodecic(x: ui8) -> ui8 {return x^12;}
+def tridecic(x: ui8) -> ui8 {return x^13;}
+def tetradecic(x: ui8) -> ui8 {return x^14;}
+def pentadecic(x: ui8) -> ui8 {return x^15;}
+def hexadecic(x: ui8) -> ui8 {return x^16;}
+def heptadecic(x: ui8) -> ui8 {return x^17;}
 
 /*
 Execute the function
@@ -44,7 +44,7 @@ Execute the function
 
 if($exponent == 2)
 {
-    print(map(X, square));
+    map(X, square);
 }
 else if($exponent == 3)
 {

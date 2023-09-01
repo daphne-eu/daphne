@@ -1,0 +1,100 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+X = as.matrix<ui32>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+
+choosen_function = "-1";
+
+if($exponent == 2)
+{
+    choosen_function = "def doubleValue(x): return x**2";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 3)
+{
+    choosen_function = "def cubic(x): return x**3";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 4)
+{
+    choosen_function = "def quartic(x): return x**4";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 5)
+{
+    choosen_function = "def quintic(x): return x**5";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 6)
+{
+    choosen_function = "def sextic(x): return x**6";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 7)
+{
+    choosen_function = "def septic(x): return x**7";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 8)
+{
+    choosen_function = "def octic(x): return x**8";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 9)
+{
+    choosen_function = "def nonic(x): return x**9";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 10)
+{
+    choosen_function = "def decic(x): return x**10";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 11)
+{
+    choosen_function = "def undecic(x): return x**11";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 12)
+{
+    choosen_function = "def duodecic(x): return x**12";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 13)
+{
+    choosen_function = "def tridecic(x): return x**13";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 14)
+{
+    choosen_function = "def tetradecic(x): return x**14";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 15)
+{
+    choosen_function = "def pentadecic(x): return x**15";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 16)
+{
+    choosen_function = "def hexadecic(x): return x**16";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}
+else if($exponent == 17)
+{
+    choosen_function = "def heptadecic(x): return x**17";
+    map(X, choosen_function, "x", "Python_Ctypes");
+}

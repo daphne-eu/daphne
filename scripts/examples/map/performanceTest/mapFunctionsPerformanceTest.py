@@ -118,14 +118,26 @@ def run_experiment(matrix_sizes, function_complexities, matrix_type, test_type=N
     else:
         plt.savefig(f"scripts/examples/map/figures/MapPerformanceTest_{matrix_type}.png")
 
-def run_experiments_for_diff_types(matrix_sizes, function_complexities, matrix_types):
+def run_exponential_experiment_for_diff_types(matrix_types, matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single):
     '''
-    The Experiments (determined by matrix size and function complexities) can be executed for different types.
+    The Experiments can be executed for different types.
     '''
     for type in matrix_types:
-        run_experiment(matrix_sizes,function_complexities,type)
+        'single Matrix with different function complexities'
+        run_experiment(matrix_sizes_single, function_complexities,type, "single_matrix")
+
+        'different matrix sizes with one function complexity'
+        run_experiment(matrix_sizes, function_complexities_single,type, "single_function_complexity")
+    
+        'different matrix sizes with different function complexities'
+        run_experiment(matrix_sizes, function_complexities,type)
 
 if __name__ == "__main__":
+
     matrix_sizes = [5, 10, 100]
+    matrix_sizes_single = [10]
     function_complexities = list(range(2, 18))
-    run_experiment(matrix_sizes, function_complexities,"int64_t")
+    function_complexities_single = [3]
+
+    run_exponential_experiment_for_diff_types("int64_t", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single)
+    run_exponential_experiment_for_diff_types("int32_t", matrix_sizes, matrix_sizes_single, function_complexities, function_complexities_single)
