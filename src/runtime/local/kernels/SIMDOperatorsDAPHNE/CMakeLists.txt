@@ -31,10 +31,10 @@ target_link_libraries(AllKernels PUBLIC SIMDOperators)
 
 add_executable(microbenchmark_ssb ./MicrobenchmarkSIMDOpsSSBQ11.cpp)
 target_link_libraries(microbenchmark_ssb PUBLIC SIMDOperators ${LIBS} )
-target_compile_options(microbenchmark_ssb PUBLIC -g -O0)
+#target_compile_options(microbenchmark_ssb PUBLIC -g -O0)
 set_target_properties(microbenchmark_ssb PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 add_executable(microbenchmark_proj ./MicrobenchmarkProjectionPathReplacement.cpp)
 target_link_libraries(microbenchmark_proj PUBLIC SIMDOperators ${LIBS} )
-target_compile_options(microbenchmark_proj PUBLIC -g -O0)
+#target_compile_options(microbenchmark_proj PUBLIC -g -O0)
 set_target_properties(microbenchmark_proj PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
