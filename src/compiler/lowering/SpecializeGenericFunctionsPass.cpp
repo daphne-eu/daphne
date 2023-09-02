@@ -322,7 +322,7 @@ namespace {
                 bool hasConstantInput = llvm::any_of(
                         callOp.getOperands(),
                         [&](Value v) {
-                            return CompilerUtils::constantOfAnyType != nullptr;
+                            return CompilerUtils::constantOfAnyType(v) != nullptr;
                         }
                 );
                 if(isFunctionTemplate(calledFunction) || hasConstantInput) {
