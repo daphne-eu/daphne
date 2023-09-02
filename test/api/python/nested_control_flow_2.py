@@ -8,12 +8,16 @@ X = dctx.fill(param, 5, 5)
 
 def true_fn(x): 
     return x - 1
-    
+
 def false_fn(x):
     return x + 1
 
 def pred():
-    return dctx.logical_and(X.sum() < 10, X.sum() > 200)
-    
-cond_statement = dctx.cond([X], pred, true_fn, false_fn)
-(cond_statement[0].print().compute())
+    return X.sum() < 10
+
+def for_body(x, i):
+    return dctx.cond([x], pred, true_fn, false_fn)
+
+for_loop = dctx.for_loop([X], for_body, 1, 10)
+
+daphne_output = for_loop[0].print().compute()

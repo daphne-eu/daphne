@@ -7,13 +7,13 @@ dctx = DaphneContext()
 X = dctx.fill(param, 5, 5)
 
 def true_fn(x): 
-    return x - 1
-    
+    return dctx.for_loop([x], lambda n, i: n - 1, 1, 10)
+
 def false_fn(x):
-    return x + 1
+    return dctx.for_loop([x], lambda n, i: n + 1, 1, 10)
 
 def pred():
-    return dctx.logical_and(X.sum() < 10, X.sum() > 200)
-    
+    return X.sum() < 10
+
 cond_statement = dctx.cond([X], pred, true_fn, false_fn)
-(cond_statement[0].print().compute())
+daphne_output = cond_statement[0].print().compute()

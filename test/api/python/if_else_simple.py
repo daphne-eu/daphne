@@ -1,10 +1,10 @@
 import sys
-import numpy as np
 from api.python.context.daphne_context import DaphneContext
+# parsing a daphne-like (key-value) script argument
+param = float(sys.argv[1].split("=")[1]) 
 
-number = sys.argv[1].split("=")[1]
 dctx = DaphneContext()
-X = dctx.fill(number, 5, 5)
+X = dctx.fill(param, 5, 5)
 
 def true_fn(x): 
     return x - 1
