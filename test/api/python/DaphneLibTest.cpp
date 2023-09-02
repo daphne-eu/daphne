@@ -39,6 +39,13 @@ const std::string dirPath = "test/api/python/";
             compareDaphneToDaphneLibScalar(prefix+".py", prefix+".daphne"); \
         } \
     }
+#define MAKE_TEST_CASE_PARAMETRIZED(name, argument) \
+    TEST_CASE((std::string(name)+"_"+std::string(argument)).c_str(), TAG_DAPHNELIB) { \
+        DYNAMIC_SECTION(name << ".py") { \
+            const std::string prefix = dirPath+name; \
+            compareDaphneToDaphneLib(prefix+".py", prefix+".daphne", argument); \
+        } \
+    }
 
 MAKE_TEST_CASE("data_transfer_numpy_1")
 MAKE_TEST_CASE("data_transfer_numpy_2")
@@ -54,3 +61,12 @@ MAKE_TEST_CASE("scalar_ops")
 MAKE_TEST_CASE("frame_cartesian")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops")
 MAKE_TEST_CASE_SCALAR("numpy_matrix_ops_extended")
+// Test for DaphneLib complex control flow and lazy evaluated functions
+MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "number=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_simple", "number=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("if_only_simple", "number=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_only_simple", "number=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_2_outputs", "number=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_2_outputs", "number=0.1")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_complex", "number=3.8")
+MAKE_TEST_CASE_PARAMETRIZED("if_else_complex", "number=10.0")

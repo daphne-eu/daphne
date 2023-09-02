@@ -138,8 +138,6 @@ class Cond(OperationNode):
         multiline_str += "}"
 
         if self.false_fn:
-            print("FUCK")
-            print(self.false_fn)
             # get tuple of output operation nodes for the 'false_fn'
             false_fn_outputs = self.false_fn()
             if not isinstance(false_fn_outputs, tuple):
