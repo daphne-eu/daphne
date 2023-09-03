@@ -168,8 +168,7 @@ class DaphneContext(object):
             "end": end,
             "step": step
         }
-        node = ForLoop(self, callback, input_nodes, named_input_nodes)
-        return node.get_output()
+        return ForLoop(self, callback, input_nodes, named_input_nodes)
 
     def cond(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable = None) -> Tuple['Matrix']:
         """
@@ -182,8 +181,7 @@ class DaphneContext(object):
         :param false_fn: callable to be performed if pred evaluates to false (n arguments, n return values)
         :return: manipulated matrices (length n)
         """
-        node = Cond(self, pred, true_fn, false_fn, input_nodes)
-        return node.get_output()
+        return Cond(self, pred, true_fn, false_fn, input_nodes)
     
     def while_loop(self, input_nodes: List['Matrix'], cond: Callable, callback: Callable) -> Tuple['Matrix']:
         """
@@ -195,8 +193,7 @@ class DaphneContext(object):
         :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
         :return: manipulated matrices (length n)
         """
-        node = WhileLoop(self, cond, callback, input_nodes)
-        return node.get_output()
+        return WhileLoop(self, cond, callback, input_nodes)
     
     def do_while_loop(self, input_nodes: List['Matrix'], cond: Callable, callback: Callable) -> Tuple['Matrix']:
         """
@@ -208,8 +205,7 @@ class DaphneContext(object):
         :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
         :return: manipulated matrices (length n)
         """
-        node = DoWhileLoop(self, cond, callback, input_nodes)
-        return node.get_output()
+        return DoWhileLoop(self, cond, callback, input_nodes)
 
     def logical_and(self, left_operand: 'Scalar', right_operand: 'Scalar'):
         """

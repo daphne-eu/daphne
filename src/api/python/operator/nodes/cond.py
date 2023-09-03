@@ -23,6 +23,8 @@
 
 from api.python.operator.operation_node import OperationNode
 from api.python.operator.nodes.matrix import Matrix
+from api.python.operator.nodes.frame import Frame
+from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES
 from api.python.script_building.nested_script import NestedDaphneDSLScript
@@ -38,6 +40,8 @@ if TYPE_CHECKING:
 
 
 class Cond(OperationNode):
+    _outputs: Iterable['OperationNode']
+
     def __init__(self, daphne_context: 'DaphneContext', pred: Callable, true_fn: Callable, false_fn: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'Cond':
         """
@@ -90,20 +94,25 @@ class Cond(OperationNode):
         _named_input_nodes.update({'pred': pred()})
         # ToDo: decide if here is the best place for this piece of code: maybe just after the fist analysis
         # initiate the output operation nodes
-        self._output = list()
+        self._outputs = list()
         for node in unnamed_input_nodes:
-            new_matrix_node = Matrix(daphne_context, None, [node], copy=True)
+            new_matrix_node = None
+            if isinstance(node, Matrix):
+                new_matrix_node = Matrix(daphne_context, None, [node], copy=True)
+            elif isinstance(node, Frame):
+                new_matrix_node =  Frame(daphne_context, None, [node], copy=True)
+            elif isinstance(node, Scalar):  
+                new_matrix_node = Scalar(daphne_context, None, node, copy=True)
+            else:
+                raise ValueError(f"Unsupported input node type {type(node)}")
             new_matrix_node._source_node = self
-            self._output.append(new_matrix_node)
+            self._outputs.append(new_matrix_node)
         
         super().__init__(daphne_context, 'cond', unnamed_input_nodes=_unnamed_input_nodes, named_input_nodes=_named_input_nodes,
                          output_type=OutputType.NONE)
 
-    def get_output(self) -> Tuple['Matrix']:
-        """
-        :return: output operation nodes
-        """
-        return tuple(self._output)
+    def __getitem__(self, index) -> Tuple['Matrix']:
+        return self._outputs[index]
         
     def code_line(self, var_name: str, unnamed_input_vars: Sequence[str],
                   named_input_vars: Dict[str, str]) -> str:

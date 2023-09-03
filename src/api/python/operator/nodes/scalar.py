@@ -35,13 +35,15 @@ if TYPE_CHECKING:
 
 class Scalar(OperationNode):
     __assign: bool
+    __copy: bool
 
     def __init__(self, daphne_context: 'DaphneContext', operation: str,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
                  named_input_nodes: Dict[str, VALID_INPUT_TYPES] = None,
                  output_type: OutputType = OutputType.SCALAR,
-                 assign: bool = False) -> 'Scalar':
+                 assign: bool = False, copy: bool = False) -> 'Scalar':
         self.__assign = assign
+        self.__copy = copy
         super().__init__(daphne_context, operation, unnamed_input_nodes=unnamed_input_nodes,
                          named_input_nodes=named_input_nodes, output_type=output_type)
 
@@ -49,6 +51,8 @@ class Scalar(OperationNode):
                   named_input_vars: Dict[str, str]) -> str:
         if self.__assign:
             return f'{var_name}={self.operation};'
+        if self.__copy:
+            return f'{var_name}={unnamed_input_vars[0]};'
         else:
             return super().code_line(var_name, unnamed_input_vars, named_input_vars)
 
