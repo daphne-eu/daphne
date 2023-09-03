@@ -50,11 +50,22 @@ FileMetaData MetaDataParser::readMetaData(const std::string& filename_) {
     }
     else {
         if (keyExists(jf, JsonKeys::SCHEMA)) {
+            ValueTypeCode default_vtc = ValueTypeCode::INVALID;
+            if (keyExists(jf, JsonKeys::VALUE_TYPE)) {
+                default_vtc = jf.at(JsonKeys::VALUE_TYPE).get<ValueTypeCode>();
+            }
             std::vector<ValueTypeCode> schema;
             std::vector<std::string> labels;
             auto schemaColumn = jf.at(JsonKeys::SCHEMA).get<std::vector<SchemaColumn>>();
             for (const auto& column: schemaColumn) {
-                schema.emplace_back(column.getValueType());
+                auto vtc = column.getValueType();
+                if (vtc == ValueTypeCode::INVALID) {
+                    vtc = default_vtc;
+                    if (default_vtc == ValueTypeCode::INVALID)
+                        throw std::invalid_argument("While reading a frame's meta data, a column without value type was "
+                                                    "found while not providing a default value type.");
+                }
+                schema.emplace_back(vtc);
                 labels.emplace_back(column.getLabel());
             }
             return {numRows, numCols, isSingleValueType, schema, labels, numNonZeros};

@@ -928,13 +928,19 @@ antlrcpp::Any DaphneDSLVisitor::visitCallExpr(DaphneDSLGrammarParser::CallExprCo
     auto maybeUDF = findMatchingUDF(func, args_vec);
 
     if (maybeUDF) {
-        // TODO: variable results
-        return builder
+        auto funcTy = maybeUDF->getFunctionType();
+        auto co = builder
             .create<mlir::daphne::GenericCallOp>(loc,
                 maybeUDF->getSymName(),
                 args_vec,
-                maybeUDF->getFunctionType().getResults())
-            .getResult(0);
+                funcTy.getResults());
+        if(funcTy.getNumResults() > 1)
+            return co.getResults();
+        else
+            // If the UDF has no return values, the value returned here
+            // is invalid. But that seems to be okay, since it is never
+            // used as a mlir::Value in that case.
+            return co.getResult(0);
     }
 
     // Create DaphneIR operation for the built-in function.
@@ -1642,13 +1648,13 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
         handleAssignmentPart(std::get<0>(it), nullptr, symbolTable, blockArg);
     }
 
-    mlir::Type returnType;
+    std::vector<mlir::Type> returnTypes;
     mlir::func::FuncOp functionOperation;
-    if(ctx->retTy) {
+    if(ctx->retTys) {
         // early creation of FuncOp for recursion
-        returnType = utils.typeOrError(visit(ctx->retTy));
+        returnTypes = visit(ctx->retTys).as<std::vector<mlir::Type>>();
         functionOperation = createUserDefinedFuncOp(loc,
-            builder.getFunctionType(funcArgTypes, {returnType}),
+            builder.getFunctionType(funcArgTypes, returnTypes),
             functionName);
     }
 
@@ -1669,7 +1675,8 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionStatement(DaphneDSLGrammarParser::F
             builder.getFunctionType(funcArgTypes, returnOpTypes),
             functionName);
     }
-    else if(returnOpTypes != mlir::TypeRange({returnType})) {
+    // TODO Allow unknown type in return (could be subject to type inference).
+    else if(returnOpTypes != returnTypes) {
         throw std::runtime_error(
             "Function `" + functionName + "` returns different type than specified in the definition");
     }
@@ -1706,6 +1713,13 @@ antlrcpp::Any DaphneDSLVisitor::visitFunctionArg(DaphneDSLGrammarParser::Functio
         ty = utils.typeOrError(visitFuncTypeDef(ctx->ty));
     }
     return std::make_pair(ctx->var->getText(), ty);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitFunctionRetTypes(DaphneDSLGrammarParser::FunctionRetTypesContext *ctx) {
+    std::vector<mlir::Type> retTys;
+    for(auto ftdCtx : ctx->funcTypeDef())
+        retTys.push_back(visitFuncTypeDef(ftdCtx).as<mlir::Type>());
+    return retTys;
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) {

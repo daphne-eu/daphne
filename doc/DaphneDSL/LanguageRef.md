@@ -677,7 +677,7 @@ DaphneDSL allows users to define their own functions.
 The syntax of a function definition looks as follows:
 
 ```csharp
-def funcName(paramName1[:paramType1], paramName2[:paramType2], ...) [-> returnType] {
+def funcName(paramName1[:paramType1], paramName2[:paramType2], ...) [-> returnType1, returnType2, ...] {
     statement1
     statement2
     ...
@@ -685,9 +685,12 @@ def funcName(paramName1[:paramType1], paramName2[:paramType2], ...) [-> returnTy
 ```
 
 The function name must be a valid and unique identifier.
-A function can have zero or more parameters, and their names must be valid and unique identifiers.
-Furthermore, a function may return zero or more values.
-Specifying the types of parameters and return values is optional (see *typed and untyped functions* below).
+A function can have zero, one, or more parameters, and their names must be valid and unique identifiers.
+Furthermore, a function may return zero, one, or more values.
+The types of parameters are optional and can be provided or omitted for each parameter individually.
+The types of the return values are optional, but if omitted, exactly one return value is implicitly assumed.
+Functions with multiple return values must specify the types of all return values.
+See also *typed and untyped functions* below.
 The body of a function definition is always a block statement, i.e., it must be enclosed in curly braces `{}` even if it is just a single statement.
 <!--TODO Overloading is allowed-->
 
@@ -697,16 +700,18 @@ Functions must be defined in the top-level scope of a DaphneDSL script, i.e., a 
 
 ### Returning Values
 
-User-defined functions can return zero or more values.
-Values are returned by a `return`-statement with the following syntax:
+User-defined functions can return zero, one, or more (comma-separated) values using the `return`-statement.
+The number of returned values must match the function signature.
 
+*Examples:*
 ```csharp
-return x;
+return;       # don't return any values
+return x;     # return exactly one value
+return x, y;  # return two values
 ```
 
 Currently, the return statement must be the last statement of a function.
 Alternatively, it can be nested into if-then-else (early return), as long as it is ensured that there is exactly one return statement at the end of each path through the function (experimental).
-Note that multi-value returns are not fully supported yet.
 
 *Examples:*
 
@@ -719,16 +724,21 @@ def fib(n: si64) -> si64 {
     return fib(n - 1) + fib(n - 2);
 }
 ```
+```
+def nextTwo(a: si64) -> si64, si64 {
+    return a + 1, a + 2;
+}
+```
 
 ### Calling User-defined Functions
 
 A user-defined function can be called like any other (built-in) function (see *function-call expressions* above).
-Note that user-defined functions returning multiple values are not fully supported yet.
 
 *Examples:*
 
 ```r
-fib(5);
+x = 2 * fib(5) + 123;
+y, z = nextTwo(123);
 ```
 
 ### Typed and Untyped Functions (experimental)
@@ -736,7 +746,7 @@ fib(5);
 DaphneDSL supports both typed and untyped functions.
 
 The definition of a *typed function* specifies the data and value types of all parameters and return values.
-Hence, a typed function can only be called with inputs of the specified types (if a provided input has an unexpected type, it is automatically casted to the expected type, if possible), and always return outputs of the specified types.
+Hence, a typed function can only be called with inputs of the specified types (if a provided input has an unexpected type, it is automatically casted to the expected type, if possible), and always returns outputs of the specified types.
 A typed function is compiled exactly once and specialized to the specified parameter and return types.
 
 In contrast to that, the definition of an *untyped function* leaves the data and value type, or just the value type, of one or more parameters and/or return values unspecified.

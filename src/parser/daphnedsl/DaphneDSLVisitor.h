@@ -178,6 +178,8 @@ public:
 
     antlrcpp::Any visitFunctionArg(DaphneDSLGrammarParser::FunctionArgContext *ctx) override;
 
+    antlrcpp::Any visitFunctionRetTypes(DaphneDSLGrammarParser::FunctionRetTypesContext *ctx) override;
+
     antlrcpp::Any visitFuncTypeDef(DaphneDSLGrammarParser::FuncTypeDefContext *ctx) override;
 
     antlrcpp::Any visitLiteralExpr(DaphneDSLGrammarParser::LiteralExprContext * ctx) override;

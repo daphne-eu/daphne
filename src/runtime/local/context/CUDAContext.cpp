@@ -144,3 +144,7 @@ void CUDAContext::free(size_t id) {
     CHECK_CUDART(cudaFree(allocations.at(id).get()));
     allocations.erase(id);
 }
+
+int CUDAContext::getMaxNumThreads() {
+    return device_properties.maxThreadsPerBlock;
+}
