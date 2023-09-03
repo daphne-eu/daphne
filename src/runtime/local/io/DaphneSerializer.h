@@ -528,7 +528,7 @@ struct DaphneSerializer<CSRMatrix<VT>, false> {
 
         const size_t * rowOffsets = arg->getRowOffsets();
         const size_t offset_diff = *arg->getRowOffsets();
-        std::unique_ptr<size_t> new_rows(new size_t[arg->getNumRows() + 1]);
+        auto new_rows = std::make_unique<size_t[]>(arg->getNumRows() + 1);
         for (size_t r = 0; r < arg->getNumRows() + 1; r++){
             auto newVal = *(rowOffsets + r) - offset_diff;                        
             new_rows.get()[r] = newVal;
