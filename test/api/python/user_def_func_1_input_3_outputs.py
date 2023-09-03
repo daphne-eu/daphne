@@ -8,7 +8,7 @@ X = dctx.fill(3.8, 5, 5)
 
 @dctx.function
 def increment(x):
-    return x, x + 1, x + 2
+    return x + 1, x + 2, x + 3
 output = increment(X)
 
 daphne_output = output[param].print().compute() 

@@ -10,5 +10,5 @@ Y = dctx.fill(1.0, 5, 5)
 def body(x, y):
     return x - 1, y + 1
 
-output = dctx.do_while_loop([X], X.sum() > 0.0, body)
+output = dctx.do_while_loop([X,Y], lambda x, y: x.sum() > 0.0, body)
 output[param].print().compute()

@@ -6,7 +6,7 @@ do {
     Y = Y + 1;
 } while (sum(X) > 0);
 
-if ($param) {
+if ($param == 0) {
     print(X);
 } else {
     print(Y);

@@ -5,7 +5,7 @@ def increment(x) {
 X = fill(3.8, 5, 5);
 X1, X2, X3 = increment(X);
 
-index = param;
+index = $param;
 if (index == 0) {
     print(X1);
 } else if (index == 1) {

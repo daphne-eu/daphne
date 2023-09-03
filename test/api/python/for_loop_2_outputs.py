@@ -10,5 +10,5 @@ Y = dctx.fill(1.0, 5, 5)
 def body(x, y, i):
         return x + 1, y + 1
 
-output = dctx.for_loop([X], body, 0, 10)
+output = dctx.for_loop([X, Y], body, 0, 10)
 output[param].print().compute()
