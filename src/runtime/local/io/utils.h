@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_IO_UTILS_H
-#define SRC_RUNTIME_LOCAL_IO_UTILS_H
+#pragma once
 
-#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <string>
 
-#include <cstdint>
+#include <spdlog/spdlog.h>
 
 // Conversion of std::string.
 
@@ -43,9 +41,7 @@ inline void convertStr(std::string const &x, float *v) {
   catch (const std::out_of_range& e) {
       // handling subnormal values (too small)
       *v = std::numeric_limits<float>::min();
-#ifndef NDEBUG
-      std::cerr << "Warning: setting subnormal float value " << x << " to std::numeric_limits<float>::min() -> " << std::numeric_limits<float>::min() << std::endl;
-#endif
+      spdlog::warn("setting subnormal float value {} to std::numeric_limits<float>::min() -> {}", x, std::numeric_limits<float>::min());
   }
 }
 inline void convertStr(std::string const &x, int8_t *v) { *v = stoi(x); }
@@ -75,6 +71,4 @@ inline void convertCstr(const char * x, int64_t *v) { *v = atoi(x); }
 inline void convertCstr(const char * x, uint8_t *v) { *v = atoi(x); }
 inline void convertCstr(const char * x, uint32_t *v) { *v = atoi(x); }
 inline void convertCstr(const char * x, uint64_t *v) { *v = atoi(x); }
-
-#endif // SRC_RUNTIME_LOCAL_IO_UTILS_H
 

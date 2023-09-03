@@ -86,12 +86,15 @@
                     [["DenseMatrix", "int64_t"], ["DenseMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
                     [["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
+                    [["DenseMatrix", "size_t"], ["DenseMatrix", "double"]],
+                    [["DenseMatrix", "size_t"], ["DenseMatrix", "float"]],
+                    [["DenseMatrix", "size_t"], ["DenseMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
                     [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],
                     [["DenseMatrix", "double"], ["CSRMatrix", "int64_t"]],
                     [["DenseMatrix", "float"], ["CSRMatrix", "int64_t"]]
                 ],
-                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV"]
+                "opCodes": ["SUM", "MIN", "MAX", "MEAN", "STDDEV", "IDXMIN", "IDXMAX"]
             }
         ]
     },
@@ -169,7 +172,9 @@
             [["DenseMatrix", "float"], ["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "double"], ["DenseMatrix", "int64_t"]],
             [["DenseMatrix", "uint8_t"], ["DenseMatrix", "uint8_t"]],
-            [["DenseMatrix", "size_t"], ["DenseMatrix", "size_t"]],
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "float"]],
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "double"]],
+            [["DenseMatrix", "size_t"], ["DenseMatrix", "int64_t"]],
 
             [["DenseMatrix", "double"], ["CSRMatrix", "double"]],
             [["DenseMatrix", "int64_t"], ["CSRMatrix", "int64_t"]],

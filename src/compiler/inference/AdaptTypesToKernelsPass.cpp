@@ -37,8 +37,6 @@ using namespace mlir;
  * In the future, this pass should take the kernel registry and/or extension catalog into account to find
  * out for which type combinations there are available kernels.
  */
-// TODO This is not always correct for idxMin() and idxMax(): while their output always has an integer value
-// type, it is not always safe to cast their input to integers.
 struct AdaptTypesToKernelsPass : public PassWrapper<AdaptTypesToKernelsPass, OperationPass<func::FuncOp>>
 {
     void runOnOperation() final;
@@ -58,6 +56,7 @@ void AdaptTypesToKernelsPass::runOnOperation()
                 operandIdxs.push_back(i);
         else if(op->hasTrait<OpTrait::CastFirstTwoArgsToResType>()) // inputs 0 and 1
             operandIdxs = {0, 1};
+        // TODO Instead of such a non-reusable op-specific trait, we should rather check for the concrete op here.
         else if(op->hasTrait<OpTrait::CastArgsToResTypeRandMatrixOp>()) // inputs 2 and 3
             operandIdxs = {2, 3};
 

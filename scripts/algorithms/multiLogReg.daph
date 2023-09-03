@@ -181,8 +181,6 @@ while ( converge != 1 ) #TODO !converge
         Snew = S + V * alpha;
         norm_Snew2 = sum(Snew ^ 2.0);
 
-        R = R; S = S; # TODO remove forward refs
-        innerconverge = innerconverge; norm_R2 = norm_R2;
         // TODO Why self-assignment?
         is_trust_boundary_reached =  is_trust_boundary_reached;
 
@@ -267,8 +265,6 @@ while ( converge != 1 ) #TODO !converge
               "  (A/P: " + (round (10000.0 * rho) / 10000.0) + "),  Trust Delta = " + delta);
     }
 
-    B = B; Grad = Grad; P = P; # TODO avoid forward ref
-    norm_Grad = norm_Grad; 
     if (is_rho_accepted) {
         B = B_new;
         P = P_new;

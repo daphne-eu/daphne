@@ -35,35 +35,43 @@
  * off = 6,
  *
  * fallback_loggers takes {str:name, str:filename, int:level, str:pattern} initializers
+ *
+ * special loggers:
+ *   - default: used if no named logger is fetched with spdlog::get("name")
  */
 const std::vector<LogConfig> DaphneLogger::fallback_loggers = {
-        {"default","", 6,"%^%L %H:%M:%S [%n]%$ %v"},
-        {"compiler::cuda", "", 6, "%^[%n %L]:%$ %v" },
-        {"runtime::cuda", "", 6, "%^[%n %L]:%$ %v" }
+        {"default","", 4,"%^[%l]:%$ %v"},
+        {"compiler::cuda", "", 4, "%^[%n %L]:%$ %v" },
+        {"runtime::cuda", "", 4, "%^[%n %L]:%$ %v" },
+        {"runtime", "", 4, "%^[%n %L]:%$ %v" }
 };
 
 void DaphneLogger::createLoggers(const LogConfig& config) {
+    auto logger = spdlog::get(config.name);
+    if(not logger) {
+        std::vector<spdlog::sink_ptr> sinks;
+        if (!config.filename.empty())
+            sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.filename, true));
 
-            auto logger = spdlog::get(config.name);
-            if(not logger) {
-                std::vector<spdlog::sink_ptr> sinks;
-                if (!config.filename.empty()) {
-                    sinks.push_back(std::make_shared<spdlog::sinks::basic_file_sink_mt>(config.filename, true));
-                }
-                sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+        sinks.push_back(std::make_shared<spdlog::sinks::stdout_color_sink_mt>());
+        logger = std::make_shared<spdlog::async_logger>(config.name, sinks.begin(), sinks.end(), spdlog::thread_pool());
 
-                logger = std::make_shared<spdlog::async_logger>(config.name, sinks.begin(), sinks.end(),
-                                                                spdlog::thread_pool());
-                auto level = static_cast<spdlog::level::level_enum>(config.level);
-                logger->set_level(config.level >= level_limit ? level : spdlog::level::off);
-                logger->set_pattern(config.format);
-                loggers.push_back(logger);
-                spdlog::register_logger(loggers.back());
-                if (config.name == "default") {
-                    default_logger = loggers.back();
-                    spdlog::set_default_logger(loggers.back());
-                }
-            }
+        auto level = static_cast<spdlog::level::level_enum>(config.level);
+        logger->set_level(config.level >= level_limit ? level : spdlog::level::off);
+        logger->set_pattern(config.format);
+        spdlog::register_logger(logger);
+        loggers.push_back(logger);
+
+        // special treatment for the default logger
+        if (config.name == "default") {
+            // make sure errors will always be displayed
+            if (logger->level() > spdlog::level::err)
+                logger->set_level(spdlog::level::err);
+
+            default_logger = logger;
+            spdlog::set_default_logger(logger);
+        }
+    }
 }
 
 DaphneLogger::DaphneLogger(DaphneUserConfig& _config) : n_threads(1), queue_size(8192) {
@@ -81,7 +89,7 @@ DaphneLogger::DaphneLogger(DaphneUserConfig& _config) : n_threads(1), queue_size
         }
     }
     catch (const spdlog::spdlog_ex &ex) {
-        std::cout << "Log initialization failed: " << ex.what() << std::endl;
+        throw std::runtime_error(fmt::format("Log initialization failed: {}", + ex.what()));
     }
     _config.log_ptr = this;
 }

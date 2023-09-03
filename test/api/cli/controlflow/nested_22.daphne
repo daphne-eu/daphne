@@ -1,0 +1,8 @@
+// var defined at depth 0, update at depth 3, if-for-if
+
+k = 1;
+if(true)
+    for(i in 1:3)
+        if(true)
+            k = k + 1;
+print(k);

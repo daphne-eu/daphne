@@ -37,36 +37,30 @@ using namespace aocl_utils;
 
 #define CHECK(status)                                       \
     if (status != CL_SUCCESS) {                             \
-        printf("error %d in line %d.\n", status, __LINE__); \
-        exit(1);                                            \
+        throw std::runtime_error(fmt::format("error {} in line {}", status, __LINE__)); \
     }
 
 void FPGAContext::destroy() {
-#ifndef NDEBUG
-    std::cout << "Destroying FPGA context..." << std::endl;
-#endif
+    spdlog::debug("Destroying FPGA context...");
 }
 
 void FPGAContext::init() {
-#ifndef NDEBUG
-    std::cout << "creating FPGA context..." << std::endl;
-    DPRINTF("\n===== Host-CPU setting up the OpenCL platform and device ======\n\n");
+    spdlog::debug("creating FPGA context...");
+    spdlog::debug("\n===== Host-CPU setting up the OpenCL platform and device ======\n\n");
     unsigned int buf_uint;
-#endif
     cl_int status;
     char buffer[4096];
     int device_found = 0;
 
     // Use clGetPlatformIDs() to retrieve the  number of platforms
     status = clGetPlatformIDs(0, NULL, &numPlatforms);
-#ifndef NDEBUG
-    DPRINTF("Number of platforms = %d\n", numPlatforms);
-#endif
+    spdlog::debug("Number of platforms = {}\n", numPlatforms);
+
     // Allocate enough space for each platform
     platforms = (cl_platform_id *)malloc(numPlatforms * sizeof(cl_platform_id));
-#ifndef NDEBUG
-    DPRINTF("Allocated space for Platform\n");
-#endif
+
+    spdlog::debug("Allocated space for Platform\n");
+
     status = clGetPlatformIDs(numPlatforms, platforms, NULL);
     CHECK(status);
 #ifndef NDEBUG

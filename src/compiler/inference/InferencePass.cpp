@@ -164,7 +164,7 @@ class InferencePass : public PassWrapper<InferencePass, OperationPass<func::Func
                 daphne::setInferedTypes(op, cfg.partialInferenceAllowed);
         }
         catch (std::runtime_error& re) {
-            spdlog::error("Final catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+            spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
             signalPassFailure();
         }
         // Inference of interesting properties.
@@ -468,7 +468,7 @@ public:
             f.walk<WalkOrder::PreOrder>(walkOp);
         }
         catch (std::runtime_error& re) {
-            spdlog::error("Final catch std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+            spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
             return;
         }
         // infer function return types

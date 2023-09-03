@@ -76,8 +76,8 @@ struct DaphneUserConfig {
     VectorExtensions vector_extension = VectorExtensions::SCALAR;
     int numberOfThreads = -1;
     int minimumTaskSize = 1;
-    // minimum considered log level (e.g., no logging below INFO (essentially suppressing DEBUG and TRACE)
-    spdlog::level::level_enum log_level_limit = spdlog::level::off;
+    // minimum considered log level (e.g., no logging below ERROR (essentially suppressing WARN, INFO, DEBUG and TRACE)
+    spdlog::level::level_enum log_level_limit = spdlog::level::err;
     std::vector<LogConfig> loggers;
     DaphneLogger* log_ptr{};
     

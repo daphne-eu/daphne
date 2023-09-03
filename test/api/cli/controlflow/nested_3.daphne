@@ -1,0 +1,7 @@
+// var defined at depth 0, update at depth 2, if-while
+
+k = 1;
+if(true)
+    while(k < 3)
+        k = k + 1;
+print(k);

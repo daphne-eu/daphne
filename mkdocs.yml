@@ -59,6 +59,7 @@ nav:
       - tutorial/sqlTutorial.md
     - FPGAconfiguration.md
     - MPI-Usage.md
+    - Profiling.md
   - 'Developers':
     - development/Contributing.md
     - development/BuildingDaphne.md
@@ -70,4 +71,5 @@ nav:
     - development/ExtendingSchedulingKnobs.md
     - development/HandlingPRs.md
     - development/ImplementBuiltinKernel.md
+    - development/Profiling.md
     - development/WriteDocs.md

@@ -73,8 +73,7 @@ namespace CUDA {
         }
 
         else {
-            std::cerr << "opCode=" << static_cast<uint32_t>(opCode) << std::endl;
-            throw std::runtime_error("unknown operator for EwBinaryObjSca");
+            throw std::runtime_error(fmt::format("Unknown opCode {} for EwBinaryObjSca", static_cast<uint32_t>(opCode)));
         }
     }
     template struct EwBinaryObjSca<DenseMatrix<double>, DenseMatrix<double>, double>;
