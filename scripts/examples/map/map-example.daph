@@ -16,13 +16,13 @@
 
 // General Map Functions
 def timesTwo(x) {return 2*x;}
-X = [1.1, 2.2, 3.3];
+X = reshape([1,2,3,4,5,6,7,8,9],3,3);
 print(map(X, timesTwo));
 
 // Python Lambda Expression
-choosen_function = "x*2"
-map(X, choosen_function, "x", "Python_Ctypes");
+choosen_function = "x*2";
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_address"));
 
 //Python Function
-choosen_function = "def longPythonTestScript(x): return 2*x "
-map(X, choosen_function, "x", "Python_Ctypes");
+choosen_function = "def longPythonTestScript(x): return 2*x ";
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_address"));
