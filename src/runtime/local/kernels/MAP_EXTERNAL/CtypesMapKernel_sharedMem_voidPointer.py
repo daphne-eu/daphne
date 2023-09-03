@@ -1,6 +1,6 @@
 import numpy as np
 import ctypes
-from sympy import symbols, sympify, lambdify
+from sympy import symbols, sympify, lambdify, Symbol
 import re
 
 def apply_map_function(arg_matrix_ptr, res_matrix_ptr, arg_shape, res_shape, func, varName, dtype):
@@ -15,9 +15,12 @@ def apply_map_function(arg_matrix_ptr, res_matrix_ptr, arg_shape, res_shape, fun
     match = re.search(r'def (\w+)', func)
     if match:
         try:
-            exec(func)
+            context = {}
+            context[varName] = Symbol(varName)
+
+            exec(func, context)
             func_name = match.groups()[0]
-            func_obj = locals().get(func_name)
+            func_obj = context.get(func_name)
             if func_obj:
                 res_matrix[:] = np.vectorize(func_obj)(arg_matrix)
             else:
@@ -54,14 +57,19 @@ def get_type(dtype_str):
     
 def get_ctypes_type(dtype_str):
     """Get the corresponding ctypes type for a dtype represented by a string."""
-    dtype_mapping = {
-        "float32": ctypes.c_float,
-        "float64": ctypes.c_double,
-        "int32": ctypes.c_int32,
-        "int64": ctypes.c_int64,
-        "int8": ctypes.c_int8,
-        "uint64": ctypes.c_uint64,
-        "uint8": ctypes.c_uint8,
-        # Add other type mappings if necessary
-    }
-    return dtype_mapping.get(dtype_str)
+    if dtype_str == "float32":
+        return ctypes.c_float
+    elif dtype_str == "float64":
+        return ctypes.c_double
+    elif dtype_str == "int32":
+        return ctypes.c_int32
+    elif dtype_str == "int64":
+        return ctypes.c_int64
+    elif dtype_str == "int8":
+        return ctypes.c_int8
+    elif dtype_str == "uint64":
+        return ctypes.c_uint64
+    elif dtype_str == "uint8":
+        return ctypes.c_uint8
+    else:
+        raise ValueError(f"Unsupported dtype: {dtype_str}")

@@ -23,7 +23,7 @@
 
 import numpy as np
 import ctypes
-from sympy import symbols, lambdify, sympify
+from sympy import symbols, lambdify, sympify, Symbol
 import re
 
 def apply_map_function(upper_res, lower_res, upper_arg, lower_arg, rows, cols, func, varName, dtype_arg, dtype_res):
@@ -42,9 +42,12 @@ def apply_map_function(upper_res, lower_res, upper_arg, lower_arg, rows, cols, f
     match = re.search(r'def (\w+)', func)
     if match:
         try:
-            exec(func)
+            context = {}
+            context[varName] = Symbol(varName)
+
+            exec(func, context)
             func_name = match.groups()[0]
-            func_obj = locals().get(func_name)
+            func_obj = context.get(func_name)
             if func_obj:
                 res_array[:] = np.vectorize(func_obj)(arg_array)
             else:

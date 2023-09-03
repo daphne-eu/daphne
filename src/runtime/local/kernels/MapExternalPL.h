@@ -99,12 +99,14 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             }
             else
             {
+                std::cerr << "Programming language " << plName << " can't be used" <<std::endl;
                 throw std::runtime_error("Programming Language can't be used");
             }
 
         }
         else
         {
+            
             throw std::runtime_error("Programming Language field is NULL");
         }
     }

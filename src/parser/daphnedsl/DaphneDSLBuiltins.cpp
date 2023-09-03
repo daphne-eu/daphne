@@ -1194,6 +1194,22 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
             checkNumArgsExact(func, numArgs, 4);
             mlir::Value source = args[0];
 
+            // Check for conditional control flow for function string definition
+            auto defOp1 = args[1].getDefiningOp();
+            if (defOp1 && defOp1->getName().getStringRef() == "scf.if") {
+                throw std::runtime_error("Definition of function string in conditional Control Flow is not supported yet!");
+            }
+            // Check for conditional control flow for variable string definition
+            auto defOp2 = args[2].getDefiningOp();
+            if (defOp2 && defOp2->getName().getStringRef() == "scf.if") {
+                throw std::runtime_error("Definition of variable string in conditional Control Flow is not supported yet!");
+            }
+            // Check for conditional control flow for programming language name string definition
+            auto defOp3 = args[3].getDefiningOp();
+            if (defOp3 && defOp3->getName().getStringRef() == "scf.if") {
+                throw std::runtime_error("Definition of programming language name string in conditional Control Flow is not supported yet!");
+            }
+
             auto func_co = args[1].getDefiningOp<mlir::daphne::ConstantOp>();
             mlir::Attribute func = func_co.getValue();
         
@@ -1202,7 +1218,7 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
 
             auto pl_co = args[3].getDefiningOp<mlir::daphne::ConstantOp>();
             mlir::Attribute pl = pl_co.getValue();
-            
+
             return static_cast<mlir::Value>(builder.create<MapOpExternalPL>(
                 loc, source.getType(), source, func.dyn_cast<mlir::StringAttr>(), 
                 varName.dyn_cast<mlir::StringAttr>(), pl.dyn_cast<mlir::StringAttr>()
