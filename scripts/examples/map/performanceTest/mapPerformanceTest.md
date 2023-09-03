@@ -44,4 +44,7 @@ Note that testcases for the general functionality and edge cases (Buffer overflo
 
 ### General Utility Test
 
-## Limitations
+## Known Limitations in the General Approach
+
+### Conditional Function Definitions (scf.if)
+As of the current version, the map function does not support function definitions that depend on conditional control flow (via scf.if operations). Attempting to define a function string conditionally will result in a runtime error.
