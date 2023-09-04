@@ -1009,47 +1009,19 @@ antlrcpp::Any DaphneDSLBuiltins::build(mlir::Location loc, const std::string & f
                 loc, arg, newline, err
         );
     }
-    if(func == "readFrame" || func == "readMatrix") {
+
+    if (func == "readMatrix") {
         checkNumArgsExact(func, numArgs, 1);
-
-        mlir::Value filename = args[0];
-        FileMetaData fmd = CompilerUtils::getFileMetaData(filename);
-
-        mlir::Type resType;
-
-        if(func == "readFrame") {
-            std::vector<mlir::Type> cts;
-            if(fmd.isSingleValueType)
-                for(size_t i = 0; i < fmd.numCols; i++)
-                    cts.push_back(utils.mlirTypeForCode(fmd.schema[0]));
-            else
-                for(ValueTypeCode vtc : fmd.schema)
-                    cts.push_back(utils.mlirTypeForCode(vtc));
-
-            std::vector<std::string> * labels;
-            if(fmd.labels.empty())
-                labels = nullptr;
-            else
-                labels = new std::vector<std::string>(fmd.labels);
-
-            resType = mlir::daphne::FrameType::get(
-                    // TODO Inserting #rows/#cols here could cause problems, if
-                    // the frame is involved in any SCF ops (if/while/for).
-                    builder.getContext(), cts, fmd.numRows, fmd.numCols, labels
-            );
-        }
-        else // func == "read.matrix"
-            // If an individual value type was specified per column
-            // (fmd.isSingleValueType == false), then this silently uses the
-            // type of the first column.
-            // TODO: add sparsity information here already (if present), currently not possible as many other ops
-            //  just take input types as output types, which is incorrect for sparsity
-            resType = utils.matrixOf(utils.mlirTypeForCode(fmd.schema[0]));
-
-        return static_cast<mlir::Value>(builder.create<ReadOp>(
-                loc, resType, filename
-        ));
+        mlir::Type resType = mlir::daphne::MatrixType::get(builder.getContext(), utils.unknownType);
+        return static_cast<mlir::Value>(builder.create<ReadOp>(loc, resType, /*filename = */ args[0]));
     }
+
+    if (func == "readFrame") {
+        checkNumArgsExact(func, numArgs, 1);
+        mlir::Type resType = mlir::daphne::FrameType::get(builder.getContext(), {utils.unknownType});
+        return static_cast<mlir::Value>(builder.create<ReadOp>(loc, resType, /*filename = */ args[0]));
+    }
+
     if(func == "writeFrame" || func == "writeMatrix" || func == "write") {
         // Note that the type of arg already indicates if it is a frame or a
         // matrix.

@@ -188,6 +188,7 @@ namespace {
         std::multimap<std::string, func::FuncOp> specializedVersions;
         std::set<func::FuncOp> visited;
         std::set<func::FuncOp> called;
+        std::set<func::FuncOp> templateFunctions;
 
         const DaphneUserConfig& userConfig;
         std::shared_ptr<spdlog::logger> logger;
@@ -304,6 +305,7 @@ namespace {
                 calledFunction->getLoc().print(stream);
                 logger->debug("calledFunction\n\tname: {}\n\tlocation: {}", calledFunction.getSymName().str(), s);
             }
+            templateFunctions.insert(calledFunction);
             return specializedFunc;
         }
 
@@ -417,7 +419,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
         entryFunctions.push_back(entry.second);
     }
     for(const auto &function : entryFunctions) {
-        if(isFunctionTemplate(function) || visited.count(function))
+        if(isFunctionTemplate(function) || visited.count(function) || templateFunctions.count(function))
             continue;
         if(!inferTypesInFunction(function)) {
             return signalPassFailure();
@@ -431,7 +433,7 @@ void SpecializeGenericFunctionsPass::runOnOperation() {
             continue;
         // Remove a function that was present before creating specializations,
         // if it is never called.
-        if(!called.count(f.second))
+        if(!called.count(f.second) || templateFunctions.count(f.second))
             f.second.erase();
     }
 }

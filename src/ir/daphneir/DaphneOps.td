@@ -1293,7 +1293,9 @@ def Daphne_PrintOp : Daphne_Op<"print"> {
 
 // TODO Take asynchronous read into account.
 def Daphne_ReadOp : Daphne_Op<"read", [
+    DeclareOpInterfaceMethods<InferTypesOpInterface>,
     DeclareOpInterfaceMethods<InferShapeOpInterface>,
+    DeclareOpInterfaceMethods<InferFrameLabelsOpInterface>,
     DeclareOpInterfaceMethods<InferSparsityOpInterface>
 ]> {
     // TODO We might add arguments for a UDF later.
