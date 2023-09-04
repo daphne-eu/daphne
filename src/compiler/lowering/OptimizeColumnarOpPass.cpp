@@ -116,8 +116,18 @@ void OptimizeColumnarOpPass::runOnOperation() {
     target.addDynamicallyLegalOp<mlir::daphne::ColumnProjectOp>([&](Operation *op) {
         Operation * prevOp = op->getOperand(0).getDefiningOp();
         if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOp)) {
+            for (Operation * prevOpUser : prevOp->getResult(0).getUsers()) {
+                if (!llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOpUser)) {
+                    return true;
+                }
+            }
             return false;
         } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectionPathOp>(op)) {
+            for (Operation * prevOpUser : prevOp->getResult(0).getUsers()) {
+                if (!llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOpUser)) {
+                    return true;
+                }
+            }
             return false;
         }
         return true;
