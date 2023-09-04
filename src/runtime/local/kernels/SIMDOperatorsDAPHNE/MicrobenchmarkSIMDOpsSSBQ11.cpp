@@ -73,7 +73,8 @@ long runSSBQuery11WOSelPushdown(
 
     tuddbs::daphne_projection_path<ps> projection_path;
     auto proj_final_extended_price = projection_path(lineorder_lo_extendedprice_cast, pos, lo_pos);
-    auto proj_final_discount = projection_path(lineorder_lo_discount_cast, pos, lo_pos);
+
+    auto proj_final_discount = project(project_discount, pos);
 
     tuddbs::daphne_calc<ps, tsl::functors::mul> calc;
     auto final_extended_price = calc(proj_final_extended_price, proj_final_discount);
