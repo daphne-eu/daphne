@@ -261,7 +261,61 @@ namespace CUDA {
                 binary_op_codes[static_cast<int>(opCode)], gridSize, blockSize, gridSize*blockSize, N);
     }
 
+    // ----------------------------------------------------------------------------
+    // ToDo: this is not a general solution for sparse ew bin mat
+    // ----------------------------------------------------------------------------
+    template<typename VTres, typename VTlhs, typename VTrhs>
+    void EwBinaryMat<CSRMatrix<VTres>, CSRMatrix<VTlhs>, CSRMatrix<VTrhs>>::apply(BinaryOpCode opCode,
+            CSRMatrix<VTres> *&res, const CSRMatrix<VTlhs> *lhs, const CSRMatrix<VTrhs> *rhs, DCTX(dctx)) {
+
+        // only multiplication for now
+        if(opCode != BinaryOpCode::MUL)
+            throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
+
+        if((lhs->getNumRows() != rhs->getNumRows() &&  rhs->getNumRows() != 1)
+                || (lhs->getNumCols() != rhs->getNumCols() && rhs->getNumCols() != 1 ))
+            throw std::runtime_error("CUDA::EwBinaryMat(CSR) - lhs and rhs must have the same dimensions (or broadcast)");
+
+        const size_t deviceID = 0; //ToDo: multi device support
+        auto ctx = CUDAContext::get(dctx, deviceID);
+        AllocationDescriptorCUDA alloc_desc(dctx, deviceID);
+
+        // output will be n x m because of column major format of cublas
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(), false, &alloc_desc);
+
+
+//        for(size_t rowIdx = 0; rowIdx < lhs->getNumRows(); rowIdx++) {
+//            size_t nnzRowLhs = lhs->getNumNonZeros(rowIdx);
+//            if(nnzRowLhs) {
+//                // intersect within row
+//                auto valuesRowLhs = lhs->getValues(rowIdx, alloc_desc);
+//                auto valuesRowRes = res->getValues(rowIdx, alloc_desc);
+//                const size_t * colIdxsRowLhs = lhs->getColIdxs(rowIdx);
+//                size_t * colIdxsRowRes = res->getColIdxs(rowIdx);
+//                auto rhsRow = (rhs->getNumRows() == 1 ? 0 : rowIdx);
+//                size_t posRes = 0;
+//                for (size_t posLhs = 0; posLhs < nnzRowLhs; ++posLhs) {
+//                    auto rhsCol = (rhs->getNumCols() == 1 ? 0 : colIdxsRowLhs[posLhs]);
+//                    auto rVal = rhs->get(rhsRow, rhsCol);
+//                    if(rVal != 0) {
+//                        valuesRowRes[posRes] = func(valuesRowLhs[posLhs], rVal, ctx);
+//                        colIdxsRowRes[posRes] = colIdxsRowLhs[posLhs];
+//                        posRes++;
+//                    }
+//                }
+//                rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes;
+//            }
+//            else
+//                // empty row in result
+//                rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx];
+//        }
+
+    }
     template struct EwBinaryMat<DenseMatrix<long>, DenseMatrix<long>, DenseMatrix<long>>;
     template struct EwBinaryMat<DenseMatrix<float>, DenseMatrix<float>, DenseMatrix<float>>;
     template struct EwBinaryMat<DenseMatrix<double>, DenseMatrix<double>, DenseMatrix<double>>;
+
+    template struct EwBinaryMat<CSRMatrix<double>, CSRMatrix<double>, DenseMatrix<double>>;
+    template struct EwBinaryMat<CSRMatrix<float>, CSRMatrix<float>, DenseMatrix<float>>;
 }

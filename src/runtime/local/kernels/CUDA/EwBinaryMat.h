@@ -40,6 +40,12 @@ namespace CUDA {
                           const DenseMatrix<VTrhs> *rhs, DCTX(ctx));
     };
 
+    template<typename VTres, typename VTlhs, typename VTrhs>
+    struct EwBinaryMat<CSRMatrix<VTres>, CSRMatrix<VTlhs>, CSRMatrix<VTrhs>> {
+        static void apply(BinaryOpCode opCode, CSRMatrix<VTres> *&res, const CSRMatrix<VTlhs> *lhs,
+                          const CSRMatrix<VTrhs> *rhs, DCTX(ctx));
+    };
+
 // ****************************************************************************
 // Convenience function
 // ****************************************************************************
