@@ -4032,9 +4032,7 @@
             {
                 "name":  ["AVX512", "SCALAR", "SSE", "AVX2"],
                 "instantiations": [
-                    [["tuddbs::Column", "uint64_t"], ["tuddbs::Column", "uint64_t"], "uint64_t", "uint64_t"],
-                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t", "int64_t"],
-                    [["tuddbs::Column", "size_t"], ["tuddbs::Column", "size_t"], "size_t", "size_t"]
+                    [["tuddbs::Column", "int64_t"], ["tuddbs::Column", "int64_t"], "int64_t", "int64_t"]
                 ]
             }
         ]
