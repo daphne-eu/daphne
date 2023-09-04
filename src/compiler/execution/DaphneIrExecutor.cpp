@@ -85,6 +85,13 @@ bool DaphneIrExecutor::runPasses(mlir::ModuleOp module)
             pm.addPass(mlir::daphne::createSpecializeGenericFunctionsPass(userConfig_));
             if(userConfig_.explain_property_inference)
                 pm.addPass(mlir::daphne::createPrintIRPass("IR after inference:"));
+
+            if(userConfig_.use_selection_pushdown) {
+                pm.addPass(mlir::daphne::createSelectionPushdownPass());
+                pm.addPass(mlir::createCanonicalizerPass());
+                pm.addPass(mlir::createCSEPass());
+            }
+
 #if defined USE_AVX512 || defined USE_AVX2 || defined USE_SSE || defined USE_SCALAR
             if(userConfig_.use_columnar_rewrite) {
                 pm.addPass(mlir::daphne::createRewriteColumnarOpPass());

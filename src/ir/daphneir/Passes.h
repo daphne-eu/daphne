@@ -55,6 +55,7 @@ namespace mlir::daphne {
     std::unique_ptr<Pass> createRewriteColumnarOpPass();
     std::unique_ptr<Pass> createRewriteSqlOpPass();
     std::unique_ptr<Pass> createRewriteToCallKernelOpPass();
+    std::unique_ptr<Pass> createSelectionPushdownPass();
     std::unique_ptr<Pass> createSelectMatrixRepresentationsPass();
     std::unique_ptr<Pass> createSpecializeGenericFunctionsPass(const DaphneUserConfig& cfg);
     std::unique_ptr<Pass> createVectorizeComputationsPass();

@@ -251,6 +251,11 @@ namespace
             columnNamesPerSuccessor[parent].insert(op->getOperand(3).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str());
             distinctColumnNames.insert(op->getOperand(3).getDefiningOp()->getAttr("value").cast<mlir::StringAttr>().getValue().str());
         }
+
+        if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(op)) {
+            return;
+        }
+
         for (auto indexedResult : llvm::enumerate(op->getResults())) {
             Value result = indexedResult.value();
             for (Operation *userOp : result.getUsers()) {

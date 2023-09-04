@@ -31,6 +31,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     OptimizeColumnarOpPass.cpp
     ReduceColumnarOpPass.cpp
     MarkVectorExtensionOpsPass.cpp
+    SelectionPushdownPass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen
