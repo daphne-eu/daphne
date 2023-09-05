@@ -22,7 +22,6 @@
 # -------------------------------------------------------------
 
 from api.python.script_building.dag import DAGNode, OutputType
-from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.operation_node import OperationNode
 from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, PROTOTYPE_PATH
 from api.python.utils.daphnelib import DaphneLib

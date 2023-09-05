@@ -22,16 +22,26 @@
 # -------------------------------------------------------------
 
 from api.python.operator.operation_node import OperationNode
+from api.python.operator.nodes.frame import Frame
+from api.python.operator.nodes.matrix import Matrix
+from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
+from api.python.utils.consts import VALID_INPUT_TYPES, VALID_CUMPUTED_TYPES
 from api.python.utils.helpers import create_params_string
+from api.python.utils.analyzer import get_number_argument
+from api.python.script_building.nested_script import NestedDaphneDSLScript
 
-from typing import Union, Dict, Iterable, Sequence
+import textwrap
+from typing import TYPE_CHECKING, Union, Dict, Iterable, Sequence, Callable, Tuple
+
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
 
 class MultiReturn(OperationNode):
     _outputs: Iterable['OperationNode']
 
-    def __init__(self, daphne_context, operation:str, output_nodes: Iterable[VALID_INPUT_TYPES], unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
+    def __init__(self, daphne_context: 'DaphneContext', operation:str, output_nodes: Iterable[VALID_INPUT_TYPES], unnamed_input_nodes: Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes: Dict[str, VALID_INPUT_TYPES]=None):
         """
         Operational node that represents calling a function with potentially multiple return values.
@@ -72,4 +82,47 @@ class MultiReturn(OperationNode):
             output_list.append(name)
         output_str = ",".join(output_list)
         return f'{output_str}={self.operation}({inputs_comma_sep});'
+    
+    def compute(self) -> None:
+        raise NotImplementedError("'MultiReturn' node is not intended to be computed")
+
+    @staticmethod
+    def define_function(context: 'DaphneContext', callback: Callable[..., Iterable[VALID_CUMPUTED_TYPES]]) -> Tuple[str, Iterable[VALID_CUMPUTED_TYPES]]:
+        """
+        Generate DaphneDSL function defintion.
+
+        :param context : 'DaphneContext' for storing the function definition
+        :param callback : function for lazy evaluation
+        :return : a tuple containing:
+            - generated function name
+            - tuple of operation nodes for the outputs
+        """
+        # intiate input nodes (arguments) for generating the function definition
+        input_nodes = list()
+        num_args = get_number_argument(callback)
+        function_name = f"function_{len(context._functions.keys())}"
+        for i in range(num_args):
+            new_matrix = Matrix(context, None)
+            new_matrix.daphnedsl_name = f"ARG_{i}"
+            input_nodes.append(new_matrix)
+        # initiate return/output nodes to represent the return values for generating the function definition
+        callback_outputs = callback(*input_nodes)        
+        if (not isinstance(callback_outputs, tuple)):
+            callback_outputs = (callback_outputs, )
+        # check if all return values are valid types
+        for node in callback_outputs:
+            if not(isinstance(node, Matrix) or isinstance(node, Frame) or isinstance(node, Scalar)):
+                raise ValueError(f"Not valid output node type {type(node)}")
+        # generate the script witht the function definition
+        script = NestedDaphneDSLScript(context, 1, 'F')
+        names = script.build_code(callback_outputs)
+        function_definition = str()
+        function_definition += f"def {function_name}({','.join(map(lambda x: x.daphnedsl_name, input_nodes))}) {{\n"
+        function_definition += textwrap.indent(script.daphnedsl_script, prefix="    ")
+        function_definition += f"    return {','.join(names)};\n"
+        function_definition += "}\n"
+        # store the definition at the context
+        context._functions[function_name] = function_definition
+        return function_name, callback_outputs
+
 

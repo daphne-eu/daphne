@@ -31,16 +31,13 @@ from api.python.operator.nodes.cond import Cond
 from api.python.operator.nodes.while_loop import WhileLoop
 from api.python.operator.nodes.do_while_loop import DoWhileLoop
 from api.python.operator.nodes.multi_return import MultiReturn
-from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
-from api.python.utils.analyzer import get_number_argument
+from api.python.utils.consts import VALID_CUMPUTED_TYPES, TMP_PATH, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
 from api.python.operator.nodes.matrix import Matrix
-from api.python.script_building.nested_script import NestedDaphneDSLScript
 
-import textwrap
 import numpy as np
 import pandas as pd
 
-from typing import Union, Callable, List, Tuple, Optional
+from typing import Union, Callable, List, Tuple, Optional, Iterable
 
 class DaphneContext(object):
     _functions: dict
@@ -151,7 +148,7 @@ class DaphneContext(object):
 
         return Matrix(self,'rand', [], named_input_nodes=named_input_nodes)
 
-    def for_loop(self, input_nodes: List['Matrix'], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple['Matrix']:
+    def for_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], callback: Callable, start: int, end: int, step: Optional[int] = None) -> Tuple[VALID_CUMPUTED_TYPES]:
         """
         Generates a for-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -168,9 +165,9 @@ class DaphneContext(object):
             "end": end,
             "step": step
         }
-        return ForLoop(self, callback, input_nodes, named_input_nodes)
+        return tuple(ForLoop(self, callback, input_nodes, named_input_nodes))
 
-    def cond(self, input_nodes: List['Matrix'], pred: Callable, true_fn: Callable, false_fn: Callable = None) -> Tuple['Matrix']:
+    def cond(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], pred: Callable, true_fn: Callable, false_fn: Callable = None) -> Tuple[VALID_CUMPUTED_TYPES]:
         """
         Generates a if-else statement block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -181,9 +178,9 @@ class DaphneContext(object):
         :param false_fn: callable to be performed if pred evaluates to false (n arguments, n return values)
         :return: manipulated matrices (length n)
         """
-        return Cond(self, pred, true_fn, false_fn, input_nodes)
+        return tuple(Cond(self, pred, true_fn, false_fn, input_nodes))
     
-    def while_loop(self, input_nodes: List['Matrix'], cond: Callable, callback: Callable) -> Tuple['Matrix']:
+    def while_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_CUMPUTED_TYPES]:
         """
         Generates a while-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -193,9 +190,9 @@ class DaphneContext(object):
         :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
         :return: manipulated matrices (length n)
         """
-        return WhileLoop(self, cond, callback, input_nodes)
+        return tuple(WhileLoop(self, cond, callback, input_nodes))
     
-    def do_while_loop(self, input_nodes: List['Matrix'], cond: Callable, callback: Callable) -> Tuple['Matrix']:
+    def do_while_loop(self, input_nodes: Iterable[VALID_CUMPUTED_TYPES], cond: Callable, callback: Callable) -> Tuple[VALID_CUMPUTED_TYPES]:
         """
         Generates a do-while-loop block for lazy evaluation.
         The generated block/operation cannot be directly computed
@@ -205,7 +202,7 @@ class DaphneContext(object):
         :param callback: callable to be performed as long as cond evaluates to true (n arguments, n return values, n=[1, ...])
         :return: manipulated matrices (length n)
         """
-        return DoWhileLoop(self, cond, callback, input_nodes)
+        return tuple(DoWhileLoop(self, cond, callback, input_nodes))
 
     def logical_and(self, left_operand: 'Scalar', right_operand: 'Scalar'):
         """
@@ -234,30 +231,18 @@ class DaphneContext(object):
         :param callback: callable with user-defined instructions
         :return: output nodes (matrices, scalars or frames)
         """
-        # intiate input nodes (arguments) for generating the function definition
-        input_nodes = list()
-        num_args = get_number_argument(callback)
-        function_name = f"function_{len(self._functions.keys())}"
-        for i in range(num_args):
-            new_matrix = Matrix(self, None)
-            new_matrix.daphnedsl_name = f"ARG_{i}"
-            input_nodes.append(new_matrix)
-        # initiate return/output nodes to represent the return values for generating the function definition
-        callback_outputs = callback(*input_nodes)
-        if (not isinstance(callback_outputs, tuple)):
-            callback_outputs = (callback_outputs, )
-        # generate the script witht the function definition
-        script = NestedDaphneDSLScript(self, 1, 'F')
-        names = script.build_code(callback_outputs)
-        function_definition = str()
-        function_definition += f"def {function_name}({','.join(map(lambda x: x.daphnedsl_name, input_nodes))}) {{\n"
-        function_definition += textwrap.indent(script.daphnedsl_script, prefix="    ")
-        function_definition += f"    return {','.join(names)};\n"
-        function_definition += "}\n"
-        # store the definition at the context
-        self._functions[function_name] = function_definition
+        # generate function definition
+        function_name, callback_outputs = MultiReturn.define_function(self, callback)
         # generate function for calling
         def dctx_function(*args):
-            return MultiReturn(self, function_name, [Matrix(self, '') for _ in range(len(callback_outputs))], args)
+            output_nodes = list()
+            for node in callback_outputs:
+                if isinstance(node, Matrix):
+                    output_nodes.append(Matrix(self, ''))
+                elif isinstance(node, Frame):
+                    output_nodes.append(Frame(self, ''))
+                elif isinstance(node, Scalar):
+                    output_nodes.append(Scalar(self, ''))
+            return tuple(MultiReturn(self, function_name, output_nodes, args))
         
         return dctx_function

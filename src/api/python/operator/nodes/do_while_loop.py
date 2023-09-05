@@ -84,7 +84,7 @@ class DoWhileLoop(OperationNode):
             elif isinstance(node, Frame):
                 new_matrix_node =  Frame(daphne_context, None, [node], copy=True)
             elif isinstance(node, Scalar):  
-                new_matrix_node = Scalar(daphne_context, None, node, copy=True)
+                new_matrix_node = Scalar(daphne_context, None, [node], copy=True)
             else:
                 raise ValueError(f"Unsupported input node type {type(node)}")
             new_matrix_node._source_node = self

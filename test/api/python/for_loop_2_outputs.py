@@ -6,9 +6,10 @@ param = int(sys.argv[1].split("=")[1])
 dctx = DaphneContext()
 X = dctx.fill(3.8, 5, 5)
 Y = dctx.fill(1.0, 5, 5)
+sumY = Y.sum()
 
 def body(x, y, i):
         return x + 1, y + 1
 
-output = dctx.for_loop([X, Y], body, 0, 10)
+output = dctx.for_loop([X, sumY], body, 0, 10)
 output[param].print().compute()

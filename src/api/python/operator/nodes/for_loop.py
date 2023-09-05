@@ -26,7 +26,7 @@ from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES
+from api.python.utils.consts import VALID_INPUT_TYPES, TMP_PATH
 from api.python.script_building.nested_script import NestedDaphneDSLScript
 from api.python.utils import analyzer
 
@@ -75,7 +75,7 @@ class ForLoop(OperationNode):
 
         # ToDo: decide if here is the best place for this piece of code: maybe just after the fist analysis
         # initiate the output operation nodes
-        self.named_output_nodes = list()
+        self._outputs = list()
         for node in unnamed_input_nodes:
             new_matrix_node = None
             if isinstance(node, Matrix):
@@ -83,7 +83,7 @@ class ForLoop(OperationNode):
             elif isinstance(node, Frame):
                 new_matrix_node =  Frame(daphne_context, None, [node], copy=True)
             elif isinstance(node, Scalar):  
-                new_matrix_node = Scalar(daphne_context, None, node, copy=True)
+                new_matrix_node = Scalar(daphne_context, None, [node], copy=True)
             else:
                 raise ValueError(f"Unsupported input node type {type(node)}")
             new_matrix_node._source_node = self
@@ -120,7 +120,11 @@ class ForLoop(OperationNode):
         
         body = script.daphnedsl_script
         for i, name in enumerate(names):
-            body += f"{unnamed_input_vars[i]}={name};\n"
+            if isinstance(callback_outputs[i], Frame):
+                body += f'writeFrame({name},"src/api/python/tmp/{name}.csv");\n'
+                body += f'{unnamed_input_vars[i]}=readFrame("src/api/python/tmp/{name}.csv");\n'
+            else:
+                body += f"{unnamed_input_vars[i]}={name};\n"
 
         # pack all code lines in the while-loop structure
         multiline_str = str()

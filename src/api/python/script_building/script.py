@@ -110,7 +110,6 @@ class DaphneDSLScript:
             self._dfs_dag_nodes(dag_node._source_node)
         # For each node do the dfs operation and save the variable names in `input_var_names`.
         # Get variable names of unnamed parameters.
-
         unnamed_input_vars = [self._dfs_dag_nodes(input_node) for input_node in dag_node.unnamed_input_nodes]
 
         named_input_vars = {}
