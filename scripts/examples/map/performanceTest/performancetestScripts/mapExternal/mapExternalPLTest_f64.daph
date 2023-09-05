@@ -16,21 +16,21 @@
 
 X = as.matrix<f64>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
 
-if($arithmeticIntensity == 1){
+if($operation == 1){
     multiplication_str = "
     def multiplication(x):
         return x * 2
     ";
     map(X, multiplication_str, "x", $pl);
 }
-else if($arithmeticIntensity == 2){
+else if($operation == 2){
     power_str = "
     def power(x):
         return x**3
     ";
     map(X, power_str, "x", $pl);
 }
-else if($arithmeticIntensity == 3){
+else if($operation == 3){
     sinus_str = "
     def sinus(x):
         import math
@@ -38,7 +38,7 @@ else if($arithmeticIntensity == 3){
     ";
     map(X, sinus_str, "x", $pl);
 }
-else if($arithmeticIntensity == 4){
+else if($operation == 4){
     cosinus_str = "
     def cosinus(x):
         import math
@@ -46,7 +46,7 @@ else if($arithmeticIntensity == 4){
     ";
     map(X, cosinus_str, "x", $pl);
 }
-else if($arithmeticIntensity == 5){
+else if($operation == 5){
     natural_logarithm_str = "
     def natural_logarithm(x):
         import math
@@ -54,7 +54,7 @@ else if($arithmeticIntensity == 5){
     ";
     map(X, natural_logarithm_str, "x", $pl);
 }
-else if($arithmeticIntensity == 6){
+else if($operation == 6){
     exponential_str = "
     def exponential(x):
         import math
@@ -62,21 +62,21 @@ else if($arithmeticIntensity == 6){
     ";
     map(X, exponential_str, "x", $pl);
 }
-else if($arithmeticIntensity == 7){
+else if($operation == 7){
     polynomial_str = "
     def polynomial(x):
         return 5*x**5 + 4*x**4 + 3*x**3 + 2*x**2 + 1*x
     ";
     map(X, polynomial_str, "x", $pl);
 }
-else if($arithmeticIntensity == 8){
+else if($operation == 8){
     relu_str = "
     def relu(x):
         return max(0, x)
     ";
     map(X, relu_str, "x", $pl);
 }
-else if($arithmeticIntensity == 9){
+else if($operation == 9){
     sigmoid_str = "
     def sigmoid(x):
         import math
@@ -84,7 +84,7 @@ else if($arithmeticIntensity == 9){
     ";
     map(X, sigmoid_str, "x", $pl);
 }
-else if($arithmeticIntensity == 10){
+else if($operation == 10){
     hyperbolic_tangent_str = "
     def hyperbolic_tangent(x):
         import math
@@ -92,7 +92,7 @@ else if($arithmeticIntensity == 10){
     ";
     map(X, hyperbolic_tangent_str, "x", $pl);
 }
-else if($arithmeticIntensity == 11){
+else if($operation == 11){
     thresholding_str = "
     def thresholding(x):
         return 10 if x > 40 else 0

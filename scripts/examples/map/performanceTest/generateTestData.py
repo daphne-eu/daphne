@@ -64,14 +64,16 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
     '''
     Generates the command to invoke a script based on the implementation type
     '''
-    if(implementation == "daphne"):
-        result = ["bin/daphne", f"scripts/examples/map/performanceTest/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
-    elif(implementation.startsWith("Python_ctypes")):
-        result = ["bin/daphne", f"scripts/examples/map/performanceTest/mapExternalPLTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
+    if(implementation == "daphneMap"):
+        result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneMap/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
+    elif(implementation == "daphneInternal"):
+        result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneInternal/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
+    elif(implementation.startswith("Python_ctypes")):
+        result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/mapExternal/mapExternalPLTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
         programming_language_arg = 'pl=\"' + implementation + '\"'
         result.append(programming_language_arg)
     elif(implementation == "Python_Numpy_Approach"):
-        result = ["python3", f"scripts/examples/map/performanceTest/numpyApproach.py",f"datatype={datatype}" ,f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
+        result = ["python3", f"scripts/examples/map/performanceTest/performancetestScripts/python_numpy_testscript.py",f"{datatype}" ,f"{operation}", f"{matrix_size}", f"{min_value}", f"{max_value}"]
     else:
         print(f"operation: {operation}, implementation: {implementation}, datatype: {datatype}, matrix_size: {matrix_size}, min_value: {min_value}, max_value: {max_value}")
         RuntimeError("Wrong command")

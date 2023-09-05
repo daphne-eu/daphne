@@ -65,7 +65,7 @@ def generate_matrix(dtype, matrix_size, min_value, max_value):
 
 def main():
     if len(sys.argv) != 6:
-        print("Usage: script.py <dtype> <arithmeticIntensity> <matrix_size> <min_value> <max_value>")
+        print("Usage: script.py <dtype> <operation> <matrix_size> <min_value> <max_value>")
         sys.exit(1)
 
     type_mapping = {
@@ -83,7 +83,7 @@ def main():
         print("Invalid dtype. Choose from: double, float, int64_t, int32_t, int8_t, uint64_t, uint8_t.")
         sys.exit(1)
 
-    arithmeticIntensity = int(sys.argv[2])
+    operation = int(sys.argv[2])
     matrix_size = int(sys.argv[3])
     min_value = float(sys.argv[4])
     max_value = float(sys.argv[5])
@@ -91,35 +91,35 @@ def main():
     np.random.seed(42)
     matrix = generate_matrix(dtype, matrix_size, min_value, max_value)
 
-    print("Generated matrix:\n", matrix)
+    #print("Generated matrix:\n", matrix)
     
-    if arithmeticIntensity == 1:
+    if operation == 1:
         result = multiplication(matrix)
-    elif arithmeticIntensity == 2:
+    elif operation == 2:
         result = power(matrix)
-    elif arithmeticIntensity == 3:
+    elif operation == 3:
         result = sinus(matrix)
-    elif arithmeticIntensity == 4:
+    elif operation == 4:
         result = cosinus(matrix)
-    elif arithmeticIntensity == 5:
+    elif operation == 5:
         result = natural_logarithm(matrix)
-    elif arithmeticIntensity == 6:
+    elif operation == 6:
         result = exponential(matrix)
-    elif arithmeticIntensity == 7:
+    elif operation == 7:
         result = polynomial(matrix)
-    elif arithmeticIntensity == 8:
+    elif operation == 8:
         result = relu(matrix)
-    elif arithmeticIntensity == 9:
+    elif operation == 9:
         result = sigmoid(matrix)
-    elif arithmeticIntensity == 10:
+    elif operation == 10:
         result = hyperbolic_tangent(matrix)
-    elif arithmeticIntensity == 11:
+    elif operation == 11:
         result = thresholding(matrix)
     else:
-        print("Invalid arithmeticIntensity value")
+        print("Invalid operation value")
         sys.exit(1)
 
-    print("\nResultant matrix after operation:\n", result)
+    #print("\nResultant matrix after operation:\n", result)
 
 if __name__ == '__main__':
     main()
