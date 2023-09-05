@@ -149,6 +149,8 @@ export PATH=$DAPHNE_ROOT/bin:$PATH
 If you're running/compiling DAPHNE from a container you'll most probably **_*_**not**_*_** need to set these environment
 variables (unless you have reason to customize your setup - then it is assumed that you know what you are doing).
 
+When using a Python virtual environment (venv), it utilizes its own specific Python version and doesn't rely on the system's global Python. For everything to run properly in the virutal environment, both 'numpy' and 'sympy' modules need to be installed within it.
+
 ### Running the Tests
 
 ```bash
