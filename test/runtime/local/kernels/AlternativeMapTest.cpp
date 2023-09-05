@@ -24,7 +24,6 @@
 #include <tags.h>
 
 #define TYPES double, float, int64_t, int32_t, int8_t, uint64_t, uint8_t
-/* C++ like functions in a String */
 
 const char *squareFunc = R"(
 # Square function: Computes the square of a value.

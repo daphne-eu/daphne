@@ -1,0 +1,43 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+// General Example of the Map function and how to invoke it.
+
+//Matrix rand Generation
+X = reshape([1,2,3,4,5,6,7,8,9],3,3);
+
+// General Map Functions
+def timesTwo(x) {return 2*x;}
+print(map(X, timesTwo));
+
+// Python Lambda Expression
+choosen_function = "x*2";
+print(map(X, choosen_function, "x", "Python_Ctypes_SysArg"));
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_address"));
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_voidPointer"));
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_Pointer"));
+print(map(X, choosen_function, "x", "Python_Ctypes_copy"));
+print(map(X, choosen_function, "x", "Python_Ctypes_binaryData"));
+print(map(X, choosen_function, "x", "Python_Ctypes_csv"));
+
+//Python Function
+choosen_function = "def double(x): return x*2";
+print(map(X, choosen_function, "x", "Python_Ctypes_SysArg"));
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_address"));
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_voidPointer"));
+print(map(X, choosen_function, "x", "Python_Ctypes_sharedMem_Pointer"));
+print(map(X, choosen_function, "x", "Python_Ctypes_copy"));
+print(map(X, choosen_function, "x", "Python_Ctypes_binaryData"));
+print(map(X, choosen_function, "x", "Python_Ctypes_csv"));

@@ -484,9 +484,6 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
 
     clock::time_point tpBegPars = clock::now();
 
-    // Start the PythonInterpreter
-    PythonInterpreter::initializeInterpreter();
-
     // Creates an MLIR context and loads the required MLIR dialects.
     DaphneIrExecutor executor(selectMatrixRepr, user_config);
 

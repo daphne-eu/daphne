@@ -1,0 +1,104 @@
+/*
+ * Copyright 2021 The DAPHNE Consortium
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+X = as.matrix<si8>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+
+if($arithmeticIntensity == 1){
+    multiplication_str = "
+    def multiplication(x):
+        return x * 2
+    ";
+    map(X, multiplication_str, "x", $pl);
+}
+else if($arithmeticIntensity == 2){
+    power_str = "
+    def power(x):
+        return x**3
+    ";
+    map(X, power_str, "x", $pl);
+}
+else if($arithmeticIntensity == 3){
+    sinus_str = "
+    def sinus(x):
+        import math
+        return math.sin(x)
+    ";
+    map(X, sinus_str, "x", $pl);
+}
+else if($arithmeticIntensity == 4){
+    cosinus_str = "
+    def cosinus(x):
+        import math
+        return math.cos(x)
+    ";
+    map(X, cosinus_str, "x", $pl);
+}
+else if($arithmeticIntensity == 5){
+    natural_logarithm_str = "
+    def natural_logarithm(x):
+        import math
+        return math.log(x)
+    ";
+    map(X, natural_logarithm_str, "x", $pl);
+}
+else if($arithmeticIntensity == 6){
+    exponential_str = "
+    def exponential(x):
+        import math
+        return math.exp(x)
+    ";
+    map(X, exponential_str, "x", $pl);
+}
+else if($arithmeticIntensity == 7){
+    polynomial_str = "
+    def polynomial(x):
+        return 5*x**5 + 4*x**4 + 3*x**3 + 2*x**2 + 1*x
+    ";
+    map(X, polynomial_str, "x", $pl);
+}
+else if($arithmeticIntensity == 8){
+    relu_str = "
+    def relu(x):
+        return max(0, x)
+    ";
+    map(X, relu_str, "x", $pl);
+}
+else if($arithmeticIntensity == 9){
+    sigmoid_str = "
+    def sigmoid(x):
+        import math
+        return 1 / (1 + math.exp(-x))
+    ";
+    map(X, sigmoid_str, "x", $pl);
+}
+else if($arithmeticIntensity == 10){
+    hyperbolic_tangent_str = "
+    def hyperbolic_tangent(x):
+        import math
+        return math.tanh(x)
+    ";
+    map(X, hyperbolic_tangent_str, "x", $pl);
+}
+else if($arithmeticIntensity == 11){
+    thresholding_str = "
+    def thresholding(x):
+        return 10 if x > 40 else 0
+    ";
+    map(X, thresholding_str, "x", $pl);
+}
+else {
+    print("Invalid operation selected.");
+}
