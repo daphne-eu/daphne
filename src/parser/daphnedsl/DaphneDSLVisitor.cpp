@@ -803,8 +803,8 @@ antlrcpp::Any DaphneDSLVisitor::visitArgExpr(DaphneDSLGrammarParser::ArgExprCont
     DaphneDSLGrammarLexer lexer(&input);
     antlr4::CommonTokenStream tokens(&lexer);
     DaphneDSLGrammarParser parser(&tokens);
-    DaphneDSLGrammarParser::LiteralContext * literalCtx = parser.literal();
-    return visitLiteral(literalCtx);
+
+    return visit(parser.expr());
 }
 
 antlrcpp::Any DaphneDSLVisitor::visitIdentifierExpr(DaphneDSLGrammarParser::IdentifierExprContext * ctx) {
@@ -1757,8 +1757,13 @@ antlrcpp::Any DaphneDSLVisitor::visitLiteral(DaphneDSLGrammarParser::LiteralCont
                     static_cast<std::size_t>(std::stoll(litStr))));
         }
         else {
-            return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
-                    static_cast<int64_t>(std::stoll(litStr))));
+                if(std::stoull(litStr) == (std::numeric_limits<int64_t>::max() + 1ull))
+                // handle edge case int64::min which is 1 bigger than int64::max
+                    return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                            static_cast<int64_t>(std::numeric_limits<int64_t>::min())));
+                else
+                    return static_cast<mlir::Value>(builder.create<mlir::daphne::ConstantOp>(loc,
+                            static_cast<int64_t>(std::stoll(litStr))));
         }
     }
     if(auto lit = ctx->FLOAT_LITERAL()) {
@@ -2198,4 +2203,32 @@ antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::Ret
         returns.push_back(utils.valueOrError(visit(expr)));
     }
     return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
+}
+
+antlrcpp::Any DaphneDSLVisitor::visitUnaryPlusMinusExpr(DaphneDSLGrammarParser::UnaryPlusMinusExprContext *ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = utils.getLoc(ctx->op);
+
+    if(op == "-") {
+        auto v = utils.valueOrError(visit(ctx->rhs));
+        if(v.getType().isInteger(32) || v.getType().isInteger(64)) {
+            return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc,
+            builder.create<mlir::daphne::ConstantOp>(loc, v.getType(),builder.getIntegerAttr(v.getType(),-1)),
+                    utils.valueOrError(visit(ctx->rhs))));
+        }
+        else if (v.getType().isF32()) {
+            return utils.retValWithInferedType(
+                    builder.create<mlir::daphne::EwMulOp>(loc, builder.create<mlir::daphne::ConstantOp>(
+                    loc, v.getType(),builder.getF32FloatAttr(-1)), utils.valueOrError(visit(ctx->rhs))));
+        }
+        else {
+            return utils.retValWithInferedType(
+                    builder.create<mlir::daphne::EwMulOp>(loc, builder.create<mlir::daphne::ConstantOp>(
+                            loc, v.getType(),builder.getF64FloatAttr(-1)), utils.valueOrError(visit(ctx->rhs))));
+        }
+    }
+    else if(op == "+")
+        return utils.valueOrError(visit(ctx->rhs));
+    else
+        throw std::runtime_error("visitUnaryPlusMinusExpr accepts only + or - as prefix to a numeric literal");
 }
