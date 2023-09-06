@@ -573,53 +573,6 @@ public:
     }
 };
 
-class MapOpExternalPLLowering : public OpConversionPattern<daphne::MapOpExternalPL>
-{
-public:
-    using OpConversionPattern::OpConversionPattern;
-
-    LogicalResult
-    matchAndRewrite(daphne::MapOpExternalPL op, OpAdaptor adaptor,
-                    ConversionPatternRewriter &rewriter) const override
-    {
-        auto loc = op->getLoc();
-
-        std::stringstream callee;
-        callee << '_' << op->getName().stripDialect().str();
-
-        // Result Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getType());
-
-        // Input Matrix
-        callee << "__" << CompilerUtils::mlirTypeToCppTypeName(op.getArg().getType());
-
-        //func
-        callee << "__char";
-
-        //varName
-        callee << "__char";
-
-        //PlName
-        callee << "__char";
-
-        Value funcStr = rewriter.create<daphne::ConstantOp>(loc, op.getFunc().str()).getResult();
-        Value varNameStr = rewriter.create<daphne::ConstantOp>(loc, op.getVarName().str()).getResult();
-        Value plStr = rewriter.create<daphne::ConstantOp>(loc, op.getPl().str()).getResult();
-
-        std::vector<Value> kernelOperands{op.getArg(), funcStr, varNameStr, plStr};
-
-        auto kernel = rewriter.create<daphne::CallKernelOp>(
-            loc,
-            callee.str(),
-            kernelOperands,
-            op->getResultTypes()
-        );
-        rewriter.replaceOp(op, kernel.getResults());
-
-        return success();
-    }
-};
-
 class VectorizedPipelineOpLowering : public OpConversionPattern<daphne::VectorizedPipelineOp>
 {
     const DaphneUserConfig& cfg;
@@ -1052,9 +1005,7 @@ void DaphneLowerToLLVMPass::runOnOperation()
             ReturnOpLowering,
             StoreVariadicPackOpLowering,
             GenericCallOpLowering,
-            MapOpLowering,
-            MapOpExternalPLLowering
-
+            MapOpLowering
     >(&getContext());
 
     if (failed(applyFullConversion(module, target, std::move(patterns))))
