@@ -20,7 +20,6 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-
 import subprocess
 import time
 from memory_profiler import memory_usage
@@ -284,7 +283,6 @@ def getMinMaxValueRangeForOp(op):
 
 if __name__ == "__main__":
 
-    datatypes = ['double', 'float', 'int64_t', 'int32_t', 'int8_t', 'uint64_t', 'uint8_t']
     matrix_sizes = {
         'double': 16000,   # 2 GB size
         'float': 23000,    # 2 GB size
@@ -294,8 +292,8 @@ if __name__ == "__main__":
         'uint64_t': 16000, # 2 GB size
         'uint8_t': 51000   # 2 GB size
     }
+    datatypes = ['double', 'float', 'int64_t', 'int32_t', 'int8_t', 'uint64_t', 'uint8_t']
+    implementations = ["daphneMap", "daphneInternal", "Python_ctypes", "Python_Numpy_Approach"]
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
-    implementations = []
-    
     run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations)
