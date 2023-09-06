@@ -293,7 +293,10 @@ if __name__ == "__main__":
         'uint8_t': 51000   # 2 GB size
     }
     datatypes = ['double', 'float', 'int64_t', 'int32_t', 'int8_t', 'uint64_t', 'uint8_t']
-    implementations = ["daphneMap", "daphneInternal", "Python_ctypes", "Python_Numpy_Approach"]
+    implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
+                       "Python_ctypes_SysArg","Python_Ctypes_sharedMem_address", 
+                       "Python_Ctypes_sharedMem_voidPointer", "Python_Ctypes_sharedMem_Pointer",
+                        "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 
     run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations)
