@@ -15,7 +15,7 @@
  */
 
 
-#include "WorkerImplGRPC.h"
+#include "WorkerImplGRPCAsync.h"
 
 #include <runtime/distributed/proto/CallData.h>
 #include <runtime/local/io/DaphneSerializer.h>
@@ -24,7 +24,7 @@
 #include <grpcpp/grpcpp.h>
 #include <grpcpp/server_builder.h>
 
-WorkerImplGRPC::WorkerImplGRPC(const std::string& addr, DaphneUserConfig& _cfg) : WorkerImpl(_cfg)
+WorkerImplGRPCAsync::WorkerImplGRPCAsync(const std::string& addr, DaphneUserConfig& _cfg) : WorkerImpl(_cfg)
 {
     builder.AddListeningPort(addr, grpc::InsecureServerCredentials());
     cq_ = builder.AddCompletionQueue();
@@ -34,7 +34,7 @@ WorkerImplGRPC::WorkerImplGRPC(const std::string& addr, DaphneUserConfig& _cfg) 
     server = builder.BuildAndStart();
 }
 
-void WorkerImplGRPC::Wait() {
+void WorkerImplGRPCAsync::Wait() {
     // Spawn a new CallData instance to serve new clients.
     new StoreCallData(this, cq_.get());
     new ComputeCallData(this, cq_.get());
@@ -59,7 +59,7 @@ void WorkerImplGRPC::Wait() {
     }
 }
 
-grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
+grpc::Status WorkerImplGRPCAsync::StoreGRPC(::grpc::ServerContext *context,
                          const ::distributed::Data *request,
                          ::distributed::StoredData *response) 
 {
@@ -79,8 +79,10 @@ grpc::Status WorkerImplGRPC::StoreGRPC(::grpc::ServerContext *context,
     return ::grpc::Status::OK;
 }
 
-grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context, const ::distributed::Task *request,
-        ::distributed::ComputeResult *response) {
+grpc::Status WorkerImplGRPCAsync::ComputeGRPC(::grpc::ServerContext *context,
+                         const ::distributed::Task *request,
+                         ::distributed::ComputeResult *response)
+{
     std::vector<StoredInfo> inputs;
     inputs.reserve(request->inputs().size());
 
@@ -103,7 +105,7 @@ grpc::Status WorkerImplGRPC::ComputeGRPC(::grpc::ServerContext *context, const :
         return ::grpc::Status(grpc::StatusCode::ABORTED, respMsg.error_message());        
 }
 
-grpc::Status WorkerImplGRPC::TransferGRPC(::grpc::ServerContext *context,
+grpc::Status WorkerImplGRPCAsync::TransferGRPC(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
                          ::distributed::Data *response)
 {

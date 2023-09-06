@@ -17,6 +17,7 @@
 #pragma once
 
 #include <runtime/local/context/DaphneContext.h>
+#include <runtime/local/context/DistributedContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 
@@ -113,11 +114,11 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_MPI, DT>
 #endif
 
 // ----------------------------------------------------------------------------
-// GRPC
+// Asynchronous GRPC
 // ----------------------------------------------------------------------------
 
 template<class DT>
-struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
+struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
 {
     static void apply(DT *&mat, DCTX(dctx)) 
     {
@@ -126,7 +127,7 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         struct StoredInfo{
             size_t dp_id;
         };
-        DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Data> caller;
+        DistributedGRPCCaller<StoredInfo, distributed::StoredData, distributed::Data> caller(dctx);
 
 
         auto dpVector = mat->getMetaDataObject()->getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
@@ -173,3 +174,62 @@ struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC, DT>
         } 
     };
 };
+
+
+// ----------------------------------------------------------------------------
+// Synchronous GRPC
+// ----------------------------------------------------------------------------
+
+template<class DT>
+struct DistributedCollect<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
+{
+    static void apply(DT *&mat, DCTX(dctx)) 
+    {
+        assert (mat != nullptr && "result matrix must be already allocated by wrapper since only there exists information regarding size");        
+
+        auto ctx = DistributedContext::get(dctx);
+        std::vector<std::thread> threads_vector;
+
+        auto dpVector = mat->getMetaDataObject()->getDataPlacementByType(ALLOCATION_TYPE::DIST_GRPC);
+        for (auto &dp : *dpVector) {
+            auto address = dp->allocation->getLocation();
+            
+            auto distributedData = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData();            
+            distributed::StoredData protoData;
+            protoData.set_identifier(distributedData.identifier);
+            protoData.set_num_rows(distributedData.numRows);
+            protoData.set_num_cols(distributedData.numCols);                       
+
+            std::thread t([address, dp = dp.get(), protoData, distributedData, &mat, &ctx]() mutable
+            {
+                auto stub = ctx->stubs[address].get();
+
+                distributed::Data matProto;
+                grpc::ClientContext grpc_ctx;
+                stub->Transfer(&grpc_ctx, protoData, &matProto);
+            
+                // TODO: We need to handle different data types 
+                auto denseMat = dynamic_cast<DenseMatrix<double>*>(mat);
+                if (!denseMat){
+                    throw std::runtime_error("Distribute grpc only supports DenseMatrix<double> for now");
+                }
+                // Zero copy buffer
+                std::vector<char> buf(static_cast<const char*>(matProto.bytes().data()), static_cast<const char*>(matProto.bytes().data()) + matProto.bytes().size()); 
+                auto slicedMat = dynamic_cast<DenseMatrix<double>*>(DF_deserialize(buf));
+                auto resValues = denseMat->getValues() + (dp->range->r_start * denseMat->getRowSkip());
+                auto slicedMatValues = slicedMat->getValues();
+                for (size_t r = 0; r < dp->range->r_len; r++){
+                    memcpy(resValues + dp->range->c_start, slicedMatValues, dp->range->c_len * sizeof(double));
+                    resValues += denseMat->getRowSkip();                    
+                    slicedMatValues += slicedMat->getRowSkip();
+                }               
+                distributedData.isPlacedAtWorker = false;
+                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(distributedData);
+            });
+            threads_vector.push_back(move(t));        
+        }
+        for (auto &thread : threads_vector)
+            thread.join();
+    };
+};
+
