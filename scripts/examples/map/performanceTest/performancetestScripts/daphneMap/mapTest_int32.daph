@@ -43,7 +43,7 @@ def sigmoid(x: si32) -> si32 {return 1/(1+exp(-x));}
 def hyperbolic_tangent(x: si32) -> si32 {return tanh(x);}
 
 //Image processing options
-def thresholding(x: si32) -> si32 {(x > 40) ? 10 : 0 }
+def thresholding(x: si32) -> si32 {(x > 42) ? 10 : 0 }
 
 /*
 Execute the function

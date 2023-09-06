@@ -43,7 +43,7 @@ def sigmoid(x: ui8) -> ui8 {return 1/(1+exp(-x));}
 def hyperbolic_tangent(x: ui8) -> ui8 {return tanh(x);}
 
 //Image processing options
-def thresholding(x: ui8) -> ui8 {(x > 40) ? 10 : 0 }
+def thresholding(x: ui8) -> ui8 {(x > 42) ? 10 : 0 }
 
 /*
 Execute the function

@@ -55,7 +55,7 @@ def hyperbolic_tangent(matrix):
     return np.tanh(matrix)
 
 def thresholding(matrix):
-    return np.where(matrix > 40, 10, 0)
+    return np.where(matrix > 42, 10, 0)
 
 def generate_matrix(dtype, matrix_size, min_value, max_value):
     if dtype in ["float64", "float32"]:

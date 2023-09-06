@@ -53,7 +53,7 @@ else if($operation == 10) {
     tanh(X);
 }
 else if($operation == 11) {
-    (X > 40 ? 10 : 0);
+    (X > 42 ? 10 : 0);
 }
 else {
     print("Invalid operation selected.");
