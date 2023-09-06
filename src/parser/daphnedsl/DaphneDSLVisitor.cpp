@@ -1755,3 +1755,31 @@ antlrcpp::Any DaphneDSLVisitor::visitReturnStatement(DaphneDSLGrammarParser::Ret
     }
     return builder.create<mlir::daphne::ReturnOp>(utils.getLoc(ctx->start), returns);
 }
+
+antlrcpp::Any DaphneDSLVisitor::visitUnaryPlusMinusExpr(DaphneDSLGrammarParser::UnaryPlusMinusExprContext *ctx) {
+    std::string op = ctx->op->getText();
+    mlir::Location loc = utils.getLoc(ctx->op);
+
+    if(op == "-") {
+        auto v = utils.valueOrError(visit(ctx->rhs));
+        if(v.getType().isInteger(32) || v.getType().isInteger(64)) {
+            return utils.retValWithInferedType(builder.create<mlir::daphne::EwMulOp>(loc,
+            builder.create<mlir::daphne::ConstantOp>(loc, v.getType(),builder.getIntegerAttr(v.getType(),-1)),
+                    utils.valueOrError(visit(ctx->rhs))));
+        }
+        else if (v.getType().isF32()) {
+            return utils.retValWithInferedType(
+                    builder.create<mlir::daphne::EwMulOp>(loc, builder.create<mlir::daphne::ConstantOp>(
+                    loc, v.getType(),builder.getF32FloatAttr(-1)), utils.valueOrError(visit(ctx->rhs))));
+        }
+        else {
+            return utils.retValWithInferedType(
+                    builder.create<mlir::daphne::EwMulOp>(loc, builder.create<mlir::daphne::ConstantOp>(
+                            loc, v.getType(),builder.getF64FloatAttr(-1)), utils.valueOrError(visit(ctx->rhs))));
+        }
+    }
+    else if(op == "+")
+        return utils.valueOrError(visit(ctx->rhs));
+    else
+        throw std::runtime_error("visitUnaryPlusMinusExpr accepts only + or - as prefix to a numeric literal");
+}
