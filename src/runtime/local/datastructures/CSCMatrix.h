@@ -370,7 +370,7 @@ public:
   size_t serialize(std::vector<char> &buf) const override{
     // CSCMatrix is not yet integrated into DaphneSerializer
     return 0;
-  };
+  }
 
 
 };
