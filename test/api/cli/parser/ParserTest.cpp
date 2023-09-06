@@ -16,6 +16,8 @@
 
 #include "run_tests.h"
 
+#include <api/cli/Utils.h>
+
 #include <tags.h>
 
 #include <catch.hpp>
@@ -105,4 +107,10 @@ TEST_CASE("Parse file in DML, write and re-read as DaphneIR", TAG_PARSER)
     moduleMatReprPass->print(streamMatRepr);
 
     REQUIRE(daphneIRCodeMatRepr == newCodeMatRepr);
+}
+
+/// This test case checks a few special cases of unary minus usage in DaphneDSL
+/// that should be fixed with completion of GitHub issue DAPHNE-#560
+TEST_CASE("Unary minus in DaphneDSL", TAG_PARSER) {
+    compareDaphneToRef(dirPath + "testUnaryMinus.txt", dirPath + "testUnaryMinus.daph", "--args", R"(a=-5,b=6+3,input="string_input")");
 }

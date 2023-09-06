@@ -262,6 +262,8 @@ public:
     antlrcpp::Any visitLiteral(DaphneDSLGrammarParser::LiteralContext * ctx) override;
 
     antlrcpp::Any visitBoolLiteral(DaphneDSLGrammarParser::BoolLiteralContext * ctx) override;
+
+     antlrcpp::Any visitUnaryPlusMinusExpr(DaphneDSLGrammarParser::UnaryPlusMinusExprContext *ctx) override;
 };
 
 #endif //SRC_PARSER_DAPHNEDSL_DAPHNEDSLVISITOR_H
