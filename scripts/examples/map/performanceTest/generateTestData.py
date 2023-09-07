@@ -84,11 +84,11 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
     print(result)
     return result
 
-
 def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations):
     '''
     Warm-up logic to prepare the system for benchmarking.
     '''
+    print("Warm Up System for Benchmarks")
     for _ in range(10):
         for impl in implementations:
             for dtype in datatypes:
@@ -101,12 +101,12 @@ def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, opera
                             subprocess.run(command, timeout=120)
                         except subprocess.TimeoutExpired:
                             print(f"Warning: Warm-up command '{command}' exceeded the timeout.")
-
+    print("System Warm Up finish")
 
 def run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations, runs=10, batch_size=1000):
     
     def write_to_csv(batch_results):
-        with open(f"scripts/examples/map/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'a', newline='') as csvfile:
+        with open(f"scripts/examples/map/performanceTest/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'a', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerows(batch_results)
 
@@ -115,12 +115,13 @@ def run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations, r
     formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
     # Open the file initially to write headers
-    with open(f"scripts/examples/map/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'w', newline='') as csvfile:
+    with open(f"scripts/examples/map/performanceTest/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Operation", "Implementation", "Datatype", "Matrix Size", "MetricType", "Value"])
 
     batch_results = []
-
+    print("Start Test runs")
+    timestamp_starting_benchmarks = time.time()
     for _ in range(runs):
         for impl in implementations:
             for dtype in datatypes:
@@ -128,10 +129,11 @@ def run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations, r
                     matrix_sizes_for_dtype = matrix_sizes.get(dtype)
                     for size in matrix_sizes_for_dtype:
                         min_value_for_command, max_value_for_command = getMinMaxValueRangeForOp(op)
-                        command = generate_command(op, impl, dtype, size.get(dtype), min_value_for_command.get(dtype), max_value_for_command.get(dtype))
+                        command = generate_command(op, impl, dtype, size, min_value_for_command.get(dtype), max_value_for_command.get(dtype))
+                        print(f"run the command: {command}", command)
                         try:
                             elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
-
+                            print(f"Ran command with elapsed_time: {elapsed_time}, max_memory: {max_memory}, avg_cpu_load: {avg_cpu_load}", elapsed_time, max_memory, avg_cpu_load)
                             batch_results.extend([
                                 (op, impl, dtype, size, "Execution Time", elapsed_time),
                                 (op, impl, dtype, size, "Memory Consumption", max_memory),
@@ -148,7 +150,17 @@ def run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations, r
     # After all loops, write any remaining results to the CSV
     if batch_results:
         write_to_csv(batch_results)
+    timestamp_finish_benchmarks = time.time()
+    end_time = timestamp_finish_benchmarks - timestamp_starting_benchmarks
+    hours, minutes, secs = seconds_to_hms(end_time)
+    print(f"Finished Benchmark in: {hours} hours, {minutes} minutes, {secs} seconds")
 
+def seconds_to_hms(seconds):
+    hours = seconds // 3600
+    seconds %= 3600
+    minutes = seconds // 60
+    seconds %= 60
+    return int(hours), int(minutes), int(seconds)
 
 def run_benchmarks_normal(matrix_sizes, datatypes, implementations, operations, runs=10):
 
@@ -170,12 +182,12 @@ def run_benchmarks_normal(matrix_sizes, datatypes, implementations, operations, 
                         results.append((op, impl, dtype, size, "Memory Consumption", max_memory))
                         results.append((op, impl, dtype, size, "Average CPU Load", avg_cpu_load))
 
-    with open(f"scripts/examples/map/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'w', newline='') as csvfile:
+    with open(f"scripts/examples/map/performanceTest/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(["Operation", "Implementation", "Datatype", "Matrix Size", "MetricType", "Value"])
         writer.writerows(results)
 
-'Common min/max value range for multiplication, trigonometrical, relu, hyperbolic tangent, thresholing, sigmoid'
+'Common min/max value range'
 min_value = {
         'f64': -10.0,
         'f32': -10.0,

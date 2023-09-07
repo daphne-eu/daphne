@@ -54,7 +54,7 @@ def fibonacci(matrix):
     return np.round((phi**matrix - psi**matrix) / np.sqrt(5))
 
 def generate_matrix(dtype, matrix_size, min_value, max_value):
-    if dtype in ["float64", "float32"]:
+    if(dtype == np.float64 or dtype == np.float32):
         return np.random.uniform(min_value, max_value, (matrix_size, matrix_size)).astype(dtype)
     else:
         return np.random.randint(min_value, max_value + 1, (matrix_size, matrix_size), dtype=dtype)
@@ -63,8 +63,18 @@ def main():
     if len(sys.argv) != 6:
         print("Usage: script.py <dtype> <operation> <matrix_size> <min_value> <max_value>")
         sys.exit(1)
+
+    numpy_type_map = {
+    'f64': np.float64,
+    'f32': np.float32,
+    'int64': np.int64,
+    'int32': np.int32,
+    'int8': np.int8,
+    'uint64': np.uint64,
+    'uint8': np.uint8
+    }
     
-    dtype = sys.argv[1]
+    dtype = numpy_type_map[sys.argv[1]]
     operation = int(sys.argv[2])
     matrix_size = int(sys.argv[3])
     min_value = float(sys.argv[4])
