@@ -98,7 +98,7 @@ def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, opera
                         min_for_op, max_for_op = getMinMaxValueRangeForOp(op)
                         command = generate_command(op, impl, dtype, size, min_for_op.get(dtype), max_for_op.get(dtype))
                         try:
-                            subprocess.run(command, timeout=120)
+                            subprocess.run(command, timeout=900)
                         except subprocess.TimeoutExpired:
                             print(f"Warning: Warm-up command '{command}' exceeded the timeout.")
     print("System Warm Up finish")
