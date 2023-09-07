@@ -17,7 +17,7 @@
  /*
 Generate random Matrix
  */
-X = as.matrix<si8>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+X = as.matrix<si8>(rand($matrix_size, $matrix_size, as.si8($minValue), as.si8($maxValue), 1.0, 42));
 
 /*
 Function Definitions

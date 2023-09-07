@@ -17,7 +17,7 @@
   /*
 Generate random Matrix
  */
-X = as.matrix<ui64>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+X = as.matrix<ui64>(rand($matrix_size, $matrix_size, as.ui8($minValue), as.ui8($maxValue), 1.0, 42));
 
 def fibonacci(x: ui64) -> ui64 {
     x = as.ui64(x);

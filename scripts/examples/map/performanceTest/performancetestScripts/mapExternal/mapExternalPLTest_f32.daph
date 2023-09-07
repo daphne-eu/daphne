@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-X = as.matrix<f32>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+X = as.matrix<f32>(rand($matrix_size, $matrix_size, as.f32($minValue), as.f32($maxValue), 1.0, 42));
 
 if($operation == 1){
     multiplication_str = "
