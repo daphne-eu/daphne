@@ -39,8 +39,9 @@
    size_t maxNumNonZeros;
    std::shared_ptr<std::shared_ptr<ValueType>[]> values;
    std::shared_ptr<std::shared_ptr<size_t>[]> colIdxs;
-   std::shared_ptr<size_t> valueSizes;
-   size_t allocatedRowSizes;
+   std::shared_ptr<size_t[]> valueSizes;
+   std::shared_ptr<size_t[]> allocatedRowSizes;
+
 
 
 
@@ -59,38 +60,37 @@
         maxNumNonZeros(maxNumNonZeros),
         values(new std::shared_ptr<ValueType>[numRows], std::default_delete<std::shared_ptr<ValueType>[]>()),
         colIdxs(new std::shared_ptr<size_t>[numRows], std::default_delete<std::shared_ptr<size_t>[]>()),
-        valueSizes(new size_t[numRows], std::default_delete<size_t[]>())
+        valueSizes(new size_t[numRows], std::default_delete<size_t[]>()),
+        allocatedRowSizes(new size_t[numRows], std::default_delete<size_t[]>())
     {
-        allocatedRowSizes = std::ceil(1.1 * maxNumNonZeros / numRows);
+        assert(numRows != 0 && "Number of rows must not be zero.");
+        size_t baselineRowSize = std::ceil(1.1 * maxNumNonZeros / numRows);
         for(size_t i = 0; i<numRows; i++){
-          values.get()[i] = std::shared_ptr<ValueType>(new ValueType[allocatedRowSizes], std::default_delete<ValueType[]>());
-          colIdxs.get()[i] = std::shared_ptr<size_t>(new size_t[allocatedRowSizes], std::default_delete<size_t[]>());
+          values.get()[i] = std::shared_ptr<ValueType>(new ValueType[baselineRowSize], std::default_delete<ValueType[]>());
+          colIdxs.get()[i] = std::shared_ptr<size_t>(new size_t[baselineRowSize], std::default_delete<size_t[]>());
           if(zero){
-            memset(values.get()[i].get(), 0, allocatedRowSizes * sizeof(ValueType));
-            memset(colIdxs.get()[i].get(), 0, allocatedRowSizes * sizeof(size_t));
+            memset(values.get()[i].get(), 0, baselineRowSize * sizeof(ValueType));
+            memset(colIdxs.get()[i].get(), 0, baselineRowSize * sizeof(size_t));
           }
+          allocatedRowSizes.get()[i] = baselineRowSize;
         }
         if(zero){
           memset(valueSizes.get(), 0, numRows * sizeof(size_t));
         }
 
-        /*values.get()[0].get()[0] = 10; values.get()[0].get()[1] = 20; values.get()[0].get()[2] = 0;
-        values.get()[1].get()[0] = 30; values.get()[1].get()[1] = 40; values.get()[1].get()[2] = 0;
-        values.get()[2].get()[0] = 50; values.get()[2].get()[1] = 60; values.get()[2].get()[2] = 70;
-        values.get()[3].get()[0] = 80; values.get()[3].get()[1] = 0;  values.get()[3].get()[2] = 0;
-
-        colIdxs.get()[0].get()[0] = 0; colIdxs.get()[0].get()[1] = 1; colIdxs.get()[0].get()[2] = 0;
-        colIdxs.get()[1].get()[0] = 1; colIdxs.get()[1].get()[1] = 3; colIdxs.get()[1].get()[2] = 0;
-        colIdxs.get()[2].get()[0] = 2; colIdxs.get()[2].get()[1] = 3; colIdxs.get()[2].get()[2] = 4;
-        colIdxs.get()[3].get()[0] = 5; colIdxs.get()[3].get()[1] = 0; colIdxs.get()[3].get()[2] = 0;
-
-        valueSizes.get()[0] = 2; valueSizes.get()[1] = 2; valueSizes.get()[2] = 3; valueSizes.get()[3] = 1;*/
     }
 
 
     MCSRMatrix(const MCSRMatrix<ValueType> * src, size_t rowLowerIncl, size_t rowUpperExcl) :
-        Matrix<ValueType>(rowUpperExcl - rowLowerIncl, src->numCols)
+        Matrix<ValueType>(rowUpperExcl - rowLowerIncl, src->numCols),
+        numRowsAllocated(src->numRowsAllocated - rowLowerIncl),
+        isRowAllocatedBefore(rowLowerIncl > 0)
     {
+      maxNumNonZeros = src->maxNumNonZeros;
+      values = std::shared_ptr<std::shared_ptr<ValueType>[]>(src->values, src->values.get() + rowLowerIncl);
+      colIdxs = std::shared_ptr<std::shared_ptr<size_t>[]>(src->colIdxs, src->colIdxs.get() + rowLowerIncl);
+      valueSizes = std::shared_ptr<size_t[]>(src->valueSizes, src->valueSizes.get() + rowLowerIncl);
+      allocatedRowSizes = std::shared_ptr<size_t[]>(src->allocatedRowSizes, src->allocatedRowSizes.get() + rowLowerIncl);
 
     }
 
@@ -98,12 +98,39 @@
         // nothing to do
     }
 
+    void reallocateRow(size_t rowIdx) {
+      // 1. Determine the new size for the row.
+      const float growthFactor = 1.5;
+      size_t currentSize = allocatedRowSizes.get()[rowIdx];
+      size_t newSize = static_cast<size_t>(currentSize * growthFactor);
+
+      // 2. Allocate new arrays.
+      std::shared_ptr<ValueType> newRowValues(new ValueType[newSize], std::default_delete<ValueType[]>());
+      std::shared_ptr<size_t> newRowColIdxs(new size_t[newSize], std::default_delete<size_t[]>());
+
+      // 3. Copy old data.
+      memcpy(newRowValues.get(), values.get()[rowIdx].get(), currentSize * sizeof(ValueType));
+      memcpy(newRowColIdxs.get(), colIdxs.get()[rowIdx].get(), currentSize * sizeof(size_t));
+
+      // Initialize the rest of the new space with zeros.
+      memset(newRowValues.get() + currentSize, 0, (newSize - currentSize) * sizeof(ValueType));
+      memset(newRowColIdxs.get() + currentSize, 0, (newSize - currentSize) * sizeof(size_t));
+
+      // 4. Update the pointers.
+      values.get()[rowIdx] = newRowValues;
+      colIdxs.get()[rowIdx] = newRowColIdxs;
+
+      // 5. Update the allocatedRowSizes.
+      allocatedRowSizes.get()[rowIdx] = newSize;
+    }
+
+
 
 
 public:
 
-  size_t getAllocatedRowSizes() const {
-    return allocatedRowSizes;
+  size_t * getAllocatedRowSizes() const {
+    return allocatedRowSizes.get();
   }
 
   size_t getMaxNumNonZeros() const {
@@ -211,11 +238,10 @@ public:
 
         if (!updated) {
             // The value is new, ensure we have space to add it.
-            if (rowSize >= allocatedRowSizes) {
+            if (rowSize >= allocatedRowSizes.get()[rowIdx]) {
                 // Reallocation logic...
                 // (Increase the allocated space and copy the old values)
-                // TODO...
-
+                reallocateRow(rowIdx);
                 // Also adjust the row pointers after reallocation.
                 rowValues = values.get()[rowIdx].get();
                 rowColIdxs = colIdxs.get()[rowIdx].get();
@@ -245,9 +271,9 @@ public:
     size_t rowSize = valueSizes.get()[rowIdx];
 
     // If we've used up all the allocated space, reallocate more memory.
-    if (rowSize >= allocatedRowSizes) {
+    if (rowSize >= allocatedRowSizes.get()[rowIdx]) {
         // Reallocation logic...
-        // TODO...
+        reallocateRow(rowIdx);
 
         // Also adjust the row pointers after reallocation.
         rowValues = values.get()[rowIdx].get();
@@ -280,13 +306,43 @@ public:
     // Not needed for MCSR
   }
 
-  void print(std::ostream & os) const override {
-
+  void printValue(std::ostream & os, ValueType val) const {
+    switch (ValueTypeUtils::codeFor<ValueType>) {
+        case ValueTypeCode::SI8 : os << static_cast<int32_t>(val); break;
+        case ValueTypeCode::UI8 : os << static_cast<uint32_t>(val); break;
+        default : os << val; break;
+    }
   }
 
-  MCSRMatrix* sliceRow(size_t rl, size_t ru) const override {
-      //return DataObjectFactory::create<CSRMatrix>(this, rl, ru);
-      throw std::runtime_error("TODO");
+  void print(std::ostream & os) const override {
+      os << "MCSRMatrix(" << numRows << 'x' << numCols << ", "
+         << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
+
+      ValueType * oneRow = new ValueType[numCols];
+      for (size_t r = 0; r < numRows; r++) {
+          memset(oneRow, 0, numCols * sizeof(ValueType));
+
+          const size_t rowNumNonZeros = valueSizes.get()[r];
+          const size_t * rowColIdxs = colIdxs.get()[r].get();
+          const ValueType * rowValues = values.get()[r].get();
+
+          for(size_t i = 0; i < rowNumNonZeros; i++)
+              oneRow[rowColIdxs[i]] = rowValues[i];
+
+          for(size_t c = 0; c < numCols; c++) {
+              printValue(os, oneRow[c]);
+              if (c < numCols - 1)
+                  os << ' ';
+          }
+          os << std::endl;
+      }
+      delete[] oneRow;
+  }
+
+  MCSRMatrix* sliceRow( size_t rowLowerIncl, size_t rowUpperExcl) const override {
+    assert(rowUpperExcl<numRows && "Indices out of bounds");
+    return DataObjectFactory::create<MCSRMatrix>(this, rowLowerIncl, rowUpperExcl);
+      //throw std::runtime_error("TODO");
   }
 
   MCSRMatrix* sliceCol(size_t cl, size_t cu) const override {
@@ -303,5 +359,12 @@ public:
   }
 
 
-
  };
+
+
+ template <typename ValueType>
+ std::ostream & operator<<(std::ostream & os, const MCSRMatrix<ValueType> & obj)
+ {
+     obj.print(os);
+     return os;
+ }

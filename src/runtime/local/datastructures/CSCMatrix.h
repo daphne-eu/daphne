@@ -36,9 +36,9 @@ class CSCMatrix : public Matrix<ValueType>{
   size_t maxNumNonZeros;
   size_t numColumnsAllocated;
   bool isColumnAllocatedBefore;
-  std::shared_ptr<ValueType> values;
-  std::shared_ptr<size_t> rowIdxs;
-  std::shared_ptr<size_t> columnOffsets;
+  std::shared_ptr<ValueType[]> values;
+  std::shared_ptr<size_t[]> rowIdxs;
+  std::shared_ptr<size_t[]> columnOffsets;
   size_t lastAppendedColumnIdx;
 
   // Grant DataObjectFactory access to the private constructors and
@@ -97,7 +97,7 @@ public:
         maxNumNonZeros = src->maxNumNonZeros;
         values = src->values;
         rowIdxs = src->rowIdxs;  // In CSC, we store row indices
-        columnOffsets = std::shared_ptr<size_t>(src->columnOffsets, src->columnOffsets.get() + colLowerIncl);
+        columnOffsets = std::shared_ptr<size_t[]>(src->columnOffsets, src->columnOffsets.get() + colLowerIncl);
     }
 
     virtual ~CSCMatrix() {

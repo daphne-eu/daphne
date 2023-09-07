@@ -32,7 +32,7 @@
 
    //using ValueType = uint32_t;
    using ValueType = TestType;
-   std::cout << typeid(ValueType).name() << std::endl;
+   //std::cout << typeid(ValueType).name() << std::endl;
 
 
    const size_t numRows = 4;
@@ -41,7 +41,7 @@
 
    MCSRMatrix<ValueType> * m = DataObjectFactory::create<MCSRMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
 
-   size_t rowSize = m -> getAllocatedRowSizes();
+   //size_t * rowSize = m -> getAllocatedRowSizes();
    /*std::cout << "rowSize: "<< rowSize << '\n';
    ValueType * row = m -> getValues(0);*/
 
@@ -92,10 +92,11 @@
    m -> append(2,3,60);
    //Fith column
    m -> append(2,4,70);
+   m -> append(2,5,75);
    //Sixth column
    m -> append(3,5,80);
 
-   ValueType * values = m -> getValues(0);
+   /*ValueType * values = m -> getValues(0);
    CHECK(values[0] == 10);
 
    size_t * sizes = m -> getAllNumNonZeros();
@@ -103,7 +104,22 @@
    std::cout << sizes[0] << '\n';
    std::cout << sizes[1] << '\n';
    std::cout << sizes[2] << '\n';
-   std::cout << sizes[3] << '\n';
+   std::cout << sizes[3] << '\n';*/
+
+   MCSRMatrix<ValueType> * view = m ->sliceRow(1,3);
+   //ValueType * viewVals1 = view -> getValues(0);
+   //ValueType * viewVals2 = view -> getValues(1);
+
+   //std::cout << viewVals1[0] << '\n';
+   std::cout << "******************" << '\n';
+   m -> print(std::cout);
+   std::cout << "******************" << '\n';
+   view -> print(std::cout);
+   std::cout << "******************" << '\n';
+
+
+
+
 
 
 
