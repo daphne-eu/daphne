@@ -19,6 +19,19 @@ Generate random Matrix
  */
 X = as.matrix<f32>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
 
+def fibonacci(x: f32) -> f32 {
+    x = as.f32(x);
+    a = as.f32(0);
+    b = as.f32(1);
+    for( _ in 1:x)
+    {
+        next = a + b;
+        a = b;
+        b = next;
+    }
+    return as.f32(x<=1?x:a);
+}
+
 /*
 Execute the function
 */
@@ -29,31 +42,26 @@ else if($operation == 2) {
     X^2;
 }
 else if($operation == 3) {
-    sin(X);
+    log(X, 10);
 }
 else if($operation == 4) {
-    cos(X);
+    2*exp(X^2);
 }
 else if($operation == 5) {
-    ln(X);
-}
-else if($operation == 6) {
-    exp(X);
-}
-else if($operation == 7) {
     (5*X^5 + 4*X^4 + 3*X^3 + 2*X^2 + 1*X^1);
 }
-else if($operation == 8) {
+else if($operation == 6) {
     max(0,X);
 }
-else if($operation == 9) {
-    1/(1+exp(-X));
+else if($operation == 7) {
+    1/(1+exp(-1*X));
 }
-else if($operation == 10) {
-    tanh(X);
-}
-else if($operation == 11) {
+else if($operation == 8) {
     (X > 42 ? 10 : 0);
+}
+else if($operation == 9)
+{
+    map(X, fibonacci);
 }
 else {
     print("Invalid operation selected.");

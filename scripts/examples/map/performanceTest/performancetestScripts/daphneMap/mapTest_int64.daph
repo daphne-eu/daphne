@@ -26,24 +26,33 @@ Function Definitions
 def multiplication(x: si64) -> si64 {return x*2;}
 def power(x: si64) -> si64 {return x^3;}
 
-//trigonometrical
-def sinus(x: si64) -> si64 {return sin(x);}
-def cosinus(x: si64) -> si64 {return cos(x);}
-
 //logarithmic
-def natural_logarithm(x: si64) -> si64 {return ln(x);}
+def logarithm_base_10(x: si64) -> si64 {return log(x,10);}
 def exponential(x: si64) -> si64 {return exp(x);}
 
 //polynomial
-def polynomial(x: si64) -> si64 {return (5*x**5 + 4*x**4 + 3*x**3 + 2*x**2 + 1*x**1);}
+def polynomial(x: si64) -> si64 {return (5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
 
 //Activation Functions
 def relu(x: si64) -> si64 {return max(0,x);}
-def sigmoid(x: si64) -> si64 {return 1/(1+exp(-x));}
-def hyperbolic_tangent(x: si64) -> si64 {return tanh(x);}
+def sigmoid(x: si64) -> si64 {return 1/(1+exp(-1*x));}
 
 //Image processing options
-def thresholding(x: si64) -> si64 {(x > 42) ? 10 : 0 }
+def thresholding(x) {return as.si64((x > 42) ? 10 : 0);}
+
+//Algorithms
+def fibonacci(x: si64) -> si64 {
+    x = as.si64(x);
+    a = as.si64(0);
+    b = as.si64(1);
+    for( _ in 1:x)
+    {
+        next = a + b;
+        a = b;
+        b = next;
+    }
+    return as.si64(x<=1?x:a);
+}
 
 /*
 Execute the function
@@ -56,31 +65,26 @@ else if($operation == 2) {
     map(X, power);
 }
 else if($operation == 3) {
-    map(X, sinus);
+    map(X, logarithm_base_10);
 }
 else if($operation == 4) {
-    map(X, cosinus);
-}
-else if($operation == 5) {
-    map(X, natural_logarithm);
-}
-else if($operation == 6) {
     map(X, exponential);
 }
-else if($operation == 7) {
+else if($operation == 5) {
     map(X, polynomial);
 }
-else if($operation == 8) {
+else if($operation == 6) {
     map(X, relu);
 }
-else if($operation == 9) {
+else if($operation == 7) {
     map(X, sigmoid);
 }
-else if($operation == 10) {
-    map(X, hyperbolic_tangent);
-}
-else if($operation == 11) {
+else if($operation == 8) {
     map(X, thresholding);
+}
+else if ($operation == 9)
+{
+    map(X,fibonacci);
 }
 else {
     print("Invalid operation selected.");

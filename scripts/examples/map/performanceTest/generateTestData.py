@@ -71,7 +71,7 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
     if(implementation == "daphneMap"):
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneMap/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
     elif(implementation == "daphneInternal"):
-        result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneInternal/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
+        result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneInternal/daphneInternal_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
     elif(implementation.startswith("Python_ctypes")):
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/mapExternal/mapExternalPLTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
         programming_language_arg = 'pl=\"' + implementation + '\"'
@@ -81,6 +81,7 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
     else:
         print(f"operation: {operation}, implementation: {implementation}, datatype: {datatype}, matrix_size: {matrix_size}, min_value: {min_value}, max_value: {max_value}")
         raise RuntimeError("Wrong command")
+    print(result)
     return result
 
 
@@ -89,12 +90,13 @@ def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, opera
     Warm-up logic to prepare the system for benchmarking.
     '''
     for _ in range(10):
-        for size in matrix_sizes:
+        for impl in implementations:
             for dtype in datatypes:
-                for impl in implementations:
-                    for op in operations:
+                for op in operations:
+                    matrix_sizes_for_dtype = matrix_sizes.get(dtype)
+                    for size in matrix_sizes_for_dtype:
                         min_for_op, max_for_op = getMinMaxValueRangeForOp(op)
-                        command = generate_command(op, impl, dtype, size, min_for_op, max_for_op)
+                        command = generate_command(op, impl, dtype, size, min_for_op.get(dtype), max_for_op.get(dtype))
                         try:
                             subprocess.run(command, timeout=120)
                         except subprocess.TimeoutExpired:
@@ -120,12 +122,13 @@ def run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations, r
     batch_results = []
 
     for _ in range(runs):
-        for size in matrix_sizes:
+        for impl in implementations:
             for dtype in datatypes:
-                for impl in implementations:
-                    for op in operations:
+                for op in operations:
+                    matrix_sizes_for_dtype = matrix_sizes.get(dtype)
+                    for size in matrix_sizes_for_dtype:
                         min_value_for_command, max_value_for_command = getMinMaxValueRangeForOp(op)
-                        command = generate_command(op, impl, dtype, size, min_value_for_command, max_value_for_command)
+                        command = generate_command(op, impl, dtype, size.get(dtype), min_value_for_command.get(dtype), max_value_for_command.get(dtype))
                         try:
                             elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
 
@@ -154,12 +157,13 @@ def run_benchmarks_normal(matrix_sizes, datatypes, implementations, operations, 
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
     for _ in range(runs):
-        for size in matrix_sizes:
+        for impl in implementations:
             for dtype in datatypes:
-                for impl in implementations:
-                    for op in operations:
+                for op in operations:
+                    matrix_sizes_for_dtype = matrix_sizes.get(dtype)
+                    for size in matrix_sizes_for_dtype:
                         min_value_for_command, max_value_for_command = getMinMaxValueRangeForOp(op)
-                        command = generate_command(op, impl, dtype, size, min_value_for_command, max_value_for_command)
+                        command = generate_command(op, impl, dtype, size, min_value_for_command.get(dtype), max_value_for_command.get(dtype))
                         elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
 
                         results.append((op, impl, dtype, size, "Execution Time", elapsed_time))
@@ -173,130 +177,136 @@ def run_benchmarks_normal(matrix_sizes, datatypes, implementations, operations, 
 
 'Common min/max value range for multiplication, trigonometrical, relu, hyperbolic tangent, thresholing, sigmoid'
 min_value = {
-        'double': -10.0,
-        'float': -10.0,
-        'int64_t': -10,
-        'int32_t': -10,
-        'int8_t': -10,
-        'uint64_t': 0,
-        'uint8_t': 0
+        'f64': -10.0,
+        'f32': -10.0,
+        'int64': -10,
+        'int32': -10,
+        'int8': -10,
+        'uint64': 0,
+        'uint8': 0
     }
 
 max_value = {
-        'double': 10.0,
-        'float': 10.0,
-        'int64_t': 10,
-        'int32_t': 10,
-        'int8_t': 10,
-        'uint64_t': 10,
-        'uint8_t': 10
+        'f64': 10.0,
+        'f32': 10.0,
+        'int64': 10,
+        'int32': 10,
+        'int8': 10,
+        'uint64': 10,
+        'uint8': 10
     }
 
 'Special Values for log'
 min_value_for_log = {
-        'double': 1,
-        'float': 1,
-        'int64_t': 1,
-        'int32_t': 1,
-        'int8_t': 1,
-        'uint64_t': 1,
-        'uint8_t': 1
+        'f64': 1,
+        'f32': 1,
+        'int64': 1,
+        'int32': 1,
+        'int8': 1,
+        'uint64': 1,
+        'uint8': 1
 }
 
 # For exponential function, we might need to further limit the input for int types to avoid quick overflows.
 max_value_for_exp = {
-        'double': 10.0,
-        'float': 10.0,
-        'int64_t': 5,
-        'int32_t': 4,
-        'int8_t': 2,
-        'uint64_t': 5,
-        'uint8_t': 2
+        'f64': 10.0,
+        'f32': 10.0,
+        'int64': 5,
+        'int32': 4,
+        'int8': 2,
+        'uint64': 5,
+        'uint8': 2
 }
 
 'Polynomial'
 min_value_polynomial = {
-        'double': -10.0,
-        'float': -10.0,
-        'int64_t': -10,
-        'int32_t': -10,
-        'int8_t': -2,
-        'uint64_t': 0,
-        'uint8_t': 0
+        'f64': -10.0,
+        'f32': -10.0,
+        'int64': -10,
+        'int32': -10,
+        'int8': -2,
+        'uint64': 0,
+        'uint8': 0
     }
 
 max_value_polynomial = {
-        'double': 10.0,
-        'float': 10.0,
-        'int64_t': 10,
-        'int32_t': 10,
-        'int8_t': 2,
-        'uint64_t': 10,
-        'uint8_t': 10
+        'f64': 10.0,
+        'f32': 10.0,
+        'int64': 10,
+        'int32': 10,
+        'int8': 2,
+        'uint64': 10,
+        'uint8': 10
 }
 
 'Power'
 min_value_power = {
-        'double': -10.0,
-        'float': -10.0,
-        'int64_t': -10,
-        'int32_t': -10,
-        'int8_t': -5,
-        'uint64_t': 0,
-        'uint8_t': 0
+        'f64': -10.0,
+        'f32': -10.0,
+        'int64': -10,
+        'int32': -10,
+        'int8': -5,
+        'uint64': 0,
+        'uint8': 0
     }
 
 max_value_power = {
-        'double': 10.0,
-        'float': 10.0,
-        'int64_t': 10,
-        'int32_t': 10,
-        'int8_t': 5,
-        'uint64_t': 10,
-        'uint8_t': 6
+        'f64': 10.0,
+        'f32': 10.0,
+        'int64': 10,
+        'int32': 10,
+        'int8': 5,
+        'uint64': 10,
+        'uint8': 6
 }
 
 def getMinMaxValueRangeForOp(op):
     '''
     op1: multiplication
     op2: power
-    op3: sinus
-    op4: cosinus
-    op5: logarithm
-    op6: exponential
-    op7: polynomial
-    op8: relu
-    op9: sigmoid
-    op10: hyperbolic tangent
-    op11: thresholding
+    op3: logarithm_base_10
+    op4: 2*e**(x**2)
+    op5: polynomial
+    op6: relu
+    op7: sigmoid
+    op8: thresholding
     '''
-    if((op == 1) or (op == 3) or (op == 4) or (op == 8) or (op == 9) or (op == 10) or (op == 11)):
-        return min_value,max_value
-    elif (op == 2):
-        return min_value_power,max_value_power
-    elif(op == 5):
+    if op == 1:  # multiplication
+        return min_value, max_value
+    elif op == 2:  # power
+        return min_value_power, max_value_power
+    elif op == 3:  # logarithm_base_10
         return min_value_for_log, max_value
-    elif(op == 6):
+    elif op == 4:  # 2*e**(x**2)
         return min_value, max_value_for_exp
-    elif( op == 7):
+    elif op == 5:  # polynomial
         return min_value_polynomial, max_value_polynomial
+    elif op == 6:  # relu
+        return min_value, max_value  # No change since relu outputs the input for positive values and 0 otherwise.
+    elif op == 7:  # sigmoid
+        return min_value, max_value  # No extreme restriction since output is bounded between 0 and 1.
+    elif op == 8:  # thresholding
+        return min_value, max_value  # No extreme restriction since it's a step function.
+    else:
+        raise ValueError("Invalid operation")
+
 
 if __name__ == "__main__":
 
-    matrix_sizes = {
-        'double': 16000,   # 2 GB size
-        'float': 23000,    # 2 GB size
-        'int64_t': 16000,  # 2 GB size
-        'int32_t': 23000,  # 2 GB size
-        'int8_t': 51000,   # 2 GB size
-        'uint64_t': 16000, # 2 GB size
-        'uint8_t': 51000   # 2 GB size
+    matrix_sizes = {   
+    'f32': [16384, 23000, 28377],
+    'f64': [11585, 16000, 20066],
+    'int32': [16384, 23000, 28377],
+    'int64': [11585, 16000, 20066],
+    'int8': [32768, 51000, 56755],
+    'uint64': [11585, 16000, 20066],
+    'uint8': [32768, 51000, 56755]
     }
-    datatypes = ['double', 'float', 'int64_t', 'int32_t', 'int8_t', 'uint64_t', 'uint8_t']
+    datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
                        "Python_ctypes_SysArg","Python_Ctypes_sharedMem_address", 
                        "Python_Ctypes_sharedMem_voidPointer", "Python_Ctypes_sharedMem_Pointer",
                         "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
-    operations = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+    operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations)

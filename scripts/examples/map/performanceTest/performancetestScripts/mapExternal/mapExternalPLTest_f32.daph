@@ -31,52 +31,36 @@ else if($operation == 2){
     map(X, power_str, "x", $pl);
 }
 else if($operation == 3){
-    sinus_str = "
-    def sinus(x):
+    logarithm_base_10_str = "
+    def logarithm_base_10(x):
         import math
-        return math.sin(x)
+        return math.log(x,10)
     ";
-    map(X, sinus_str, "x", $pl);
+    map(X, logarithm_base_10_str, "x", $pl);
 }
 else if($operation == 4){
-    cosinus_str = "
-    def cosinus(x):
-        import math
-        return math.cos(x)
-    ";
-    map(X, cosinus_str, "x", $pl);
-}
-else if($operation == 5){
-    natural_logarithm_str = "
-    def natural_logarithm(x):
-        import math
-        return math.log(x)
-    ";
-    map(X, natural_logarithm_str, "x", $pl);
-}
-else if($operation == 6){
     exponential_str = "
     def exponential(x):
         import math
-        return math.exp(x)
+        return 2*math.exp(x**2)
     ";
     map(X, exponential_str, "x", $pl);
 }
-else if($operation == 7){
+else if($operation == 5){
     polynomial_str = "
     def polynomial(x):
         return 5*x**5 + 4*x**4 + 3*x**3 + 2*x**2 + 1*x
     ";
     map(X, polynomial_str, "x", $pl);
 }
-else if($operation == 8){
+else if($operation == 6){
     relu_str = "
     def relu(x):
         return max(0, x)
     ";
     map(X, relu_str, "x", $pl);
 }
-else if($operation == 9){
+else if($operation == 7){
     sigmoid_str = "
     def sigmoid(x):
         import math
@@ -84,20 +68,25 @@ else if($operation == 9){
     ";
     map(X, sigmoid_str, "x", $pl);
 }
-else if($operation == 10){
-    hyperbolic_tangent_str = "
-    def hyperbolic_tangent(x):
-        import math
-        return math.tanh(x)
-    ";
-    map(X, hyperbolic_tangent_str, "x", $pl);
-}
-else if($operation == 11){
+else if($operation == 8){
     thresholding_str = "
     def thresholding(x):
         return 10 if x > 42 else 0
     ";
     map(X, thresholding_str, "x", $pl);
+}
+else if($operation == 9){
+    fibonacci_str="
+        def fibonacci(n):
+        if n <= 1:
+            return n
+
+        a, b = 0, 1
+        for _ in range(2, n + 1):
+            a, b = b, a + b
+
+        return b";
+    map(X,fibonacci_str, "n", $pl);
 }
 else {
     print("Invalid operation selected.");
