@@ -23,19 +23,19 @@ X = as.matrix<ui8>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 4
 Function Definitions
 */
 //Single Arithmetic
-def multiplication(x: ui8) -> ui8 {return x*2;}
-def power(x: ui8) -> ui8 {return x^3;}
+def multiplication(x: ui8) -> ui8 {return as.ui8(x*2);}
+def power(x: ui8) -> ui8 {return as.ui8(x^3);}
 
 //logarithmic
-def logarithm_base_10(x: ui8) -> ui8 {return log(x,10);}
-def exponential(x: ui8) -> ui8 {return exp(x);}
+def logarithm_base_10(x: ui8) -> ui8 {return as.ui8(log(x,10));}
+def exponential(x: ui8) -> ui8 {return as.ui8(2*exp(x^2));}
 
 //polynomial
-def polynomial(x: ui8) -> ui8 {return (5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
+def polynomial(x: ui8) -> ui8 {return as.ui8(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
 
 //Activation Functions
-def relu(x: ui8) -> ui8 {return max(0,x);}
-def sigmoid(x: ui8) -> ui8 {return 1/(1+exp(-1*x));}
+def relu(x: ui8) -> ui8 {return as.ui8(max(0,x));}
+def sigmoid(x: ui8) -> ui8 {return as.ui8(1/(1+exp(-1*x)));}
 
 //Image processing options
 def thresholding(x) {return as.ui8((x > 42) ? 10 : 0);}

@@ -23,19 +23,19 @@ X = as.matrix<ui64>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 
 Function Definitions
 */
 //Single Arithmetic
-def multiplication(x: ui64) -> ui64 {return x*2;}
-def power(x: ui64) -> ui64 {return x^3;}
+def multiplication(x: ui64) -> ui64 {return as.ui64(x*2);}
+def power(x: ui64) -> ui64 {return as.ui64(x^3);}
 
 //logarithmic
-def logarithm_base_10(x: ui64) -> ui64 {return log(x,10);}
-def exponential(x: ui64) -> ui64 {return exp(x);}
+def logarithm_base_10(x: ui64) -> ui64 {return as.ui64(log(x,10));}
+def exponential(x: ui64) -> ui64 {return as.ui64(2*exp(x^2));}
 
 //polynomial
-def polynomial(x: ui64) -> ui64 {return (5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
+def polynomial(x: ui64) -> ui64 {return as.ui64(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
 
 //Activation Functions
-def relu(x: ui64) -> ui64 {return max(0,x);}
-def sigmoid(x: ui64) -> ui64 {return 1/(1+exp(-1*x));}
+def relu(x: ui64) -> ui64 {return as.ui64(max(0,x));}
+def sigmoid(x: ui64) -> ui64 {return as.ui64(1/(1+exp(-1*x)));}
 
 //Image processing options
 def thresholding(x) {return as.ui64((x > 42) ? 10 : 0);}

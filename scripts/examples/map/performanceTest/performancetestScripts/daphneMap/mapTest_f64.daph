@@ -23,19 +23,19 @@ X = as.matrix<f64>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 4
 Function Definitions
 */
 //Single Arithmetic
-def multiplication(x: f64) -> f64 {return x*2;}
-def power(x: f64) -> f64 {return x^3;}
+def multiplication(x: f64) -> f64 {return as.f64(x*2);}
+def power(x: f64) -> f64 {return as.f64(x^3);}
 
 //logarithmic
-def logarithm_base_10(x: f64) -> f64 {return log(x,10);}
-def exponential(x: f64) -> f64 {return 2*exp(x^2);}
+def logarithm_base_10(x: f64) -> f64 {return as.f64(log(x,10));}
+def exponential(x: f64) -> f64 {return as.f64(2*exp(x^2));}
 
 //polynomial
-def polynomial(x: f64) -> f64 {return (5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
+def polynomial(x: f64) -> f64 {return as.f64(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
 
 //Activation Functions
-def relu(x: f64) -> f64 {return max(0,x);}
-def sigmoid(x: f64) -> f64 {return 1/(1+exp(-1*x));}
+def relu(x: f64) -> f64 {return as.f64(max(0,x));}
+def sigmoid(x: f64) -> f64 {return as.f64(1/(1+exp(-1*x)));}
 
 //Image processing options
 def thresholding(x) {return as.f64((x > 42) ? 10 : 0);}
