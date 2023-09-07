@@ -51,8 +51,8 @@ class DoWhileLoop(OperationNode):
         :param unnamed_input_nodes: operation nodes that are up for manipulation
         """
         self.nested_level = 0  # default value
-        _named_input_nodes = dict()
-        _unnamed_input_nodes = copy(unnamed_input_nodes)
+        # cast the iterable to list for consistensy and to avoid addiotnal coping
+        _unnamed_input_nodes = list(unnamed_input_nodes)
         # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(cond) != analyzer.get_number_argument(callback):
             raise ValueError(f"{cond} and {callback} do not have the same number of arguments")
@@ -91,7 +91,7 @@ class DoWhileLoop(OperationNode):
             self._outputs.append(new_matrix_node)
 
         super().__init__(daphne_context, 'do_while_loop', unnamed_input_nodes=_unnamed_input_nodes,
-            named_input_nodes=_named_input_nodes, output_type=OutputType.NONE)
+                         output_type=OutputType.NONE)
 
     def __getitem__(self, index) -> Tuple['Matrix']:
         return self._outputs[index]  

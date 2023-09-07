@@ -100,6 +100,8 @@ MAKE_TEST_CASE_PARAMETRIZED("user_def_func_1_input_3_outputs", "param=1")
 MAKE_TEST_CASE_PARAMETRIZED("user_def_func_1_input_3_outputs", "param=2")
 MAKE_TEST_CASE("user_def_func_multiple_functions")
 MAKE_TEST_CASE("user_def_func_multiple_calls")
+MAKE_TEST_CASE("user_def_func_with_scalar")
+MAKE_TEST_CASE("user_def_func_3_inputs")
 // skipping the next test for now as it is not supported by Daphne
 // (manupulating variables in a nested block inside a function)
 // MAKE_TEST_CASE_PARAMETRIZED("user_def_func_with_condition", "param=0.1")

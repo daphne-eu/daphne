@@ -26,13 +26,12 @@ from api.python.operator.nodes.matrix import Matrix
 from api.python.operator.nodes.scalar import Scalar
 from api.python.operator.nodes.frame import Frame
 from api.python.script_building.dag import OutputType
-from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES
+from api.python.utils.consts import VALID_INPUT_TYPES
 from api.python.script_building.nested_script import NestedDaphneDSLScript
 from api.python.utils import analyzer
 
 from typing import TYPE_CHECKING, Dict, Iterable, Sequence, Tuple, Callable
 import textwrap
-from copy import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -52,8 +51,8 @@ class WhileLoop(OperationNode):
         :param unnamed_input_nodes: operation nodes that are up for manipulation
         """
         self.nested_level = 0  # default value
-        _named_input_nodes = dict()
-        _unnamed_input_nodes = copy(unnamed_input_nodes)
+        # cast the iterable to list for consistensy and to avoid addiotnal coping
+        _unnamed_input_nodes = list(unnamed_input_nodes)
         # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(cond) != analyzer.get_number_argument(callback):
             raise ValueError(f"{cond} and {callback} do not have the same number of arguments")
@@ -91,7 +90,7 @@ class WhileLoop(OperationNode):
             self._outputs.append(new_matrix_node)
 
         super().__init__(daphne_context, 'while_loop', unnamed_input_nodes=_unnamed_input_nodes,
-                         named_input_nodes=_named_input_nodes, output_type=OutputType.NONE)
+                         output_type=OutputType.NONE)
 
     def __getitem__(self, index) -> Tuple['Matrix']:
         return self._outputs[index] 

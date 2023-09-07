@@ -32,7 +32,6 @@ from api.python.utils import analyzer
 
 from typing import TYPE_CHECKING, Dict, Iterable, Sequence, Tuple, Callable
 import textwrap
-from copy import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -41,7 +40,7 @@ if TYPE_CHECKING:
 class ForLoop(OperationNode):
     def __init__(self, daphne_context: 'DaphneContext', callback: Callable,
                  unnamed_input_nodes: Iterable[VALID_INPUT_TYPES] = None,
-                 named_input_nodes: Iterable[VALID_INPUT_TYPES] = None) -> 'ForLoop':
+                 named_input_nodes: Dict[str,VALID_INPUT_TYPES] = None) -> 'ForLoop':
         """
         Operational node that represents for-loop functionality.
         Its reserved variable is left unused and is not added ot the generated script.
@@ -54,8 +53,10 @@ class ForLoop(OperationNode):
         :param named_input_nodes:
         """
         self.nested_level = 0  # default value
-        _named_input_nodes = copy(named_input_nodes)
-        _unnamed_input_nodes = copy(unnamed_input_nodes)
+        # cast to dict to ensure it is a dict and to avoid additional coping
+        _named_input_nodes = dict(named_input_nodes)
+        # cast the iterable to list for consistensy and to avoid addiotnal coping
+        _unnamed_input_nodes = list(unnamed_input_nodes)
         # analyze if the passed functions fulfill the requirements
         if analyzer.get_number_argument(callback) != (len(unnamed_input_nodes) + 1):
             raise ValueError(f"{callback} does not have the same number of arguments as input nodes + 1")

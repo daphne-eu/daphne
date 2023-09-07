@@ -28,11 +28,11 @@ from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_CUMPUTED_TYPES
 from api.python.utils.helpers import create_params_string
-from api.python.utils.analyzer import get_number_argument
+from api.python.utils.analyzer import get_argument_types
 from api.python.script_building.nested_script import NestedDaphneDSLScript
 
 import textwrap
-from typing import TYPE_CHECKING, Union, Dict, Iterable, Sequence, Callable, Tuple
+from typing import TYPE_CHECKING, Union, Dict, Iterable, Sequence, Callable, Tuple, get_type_hints
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -87,7 +87,7 @@ class MultiReturn(OperationNode):
         raise NotImplementedError("'MultiReturn' node is not intended to be computed")
 
     @staticmethod
-    def define_function(context: 'DaphneContext', callback: Callable[..., Iterable[VALID_CUMPUTED_TYPES]]) -> Tuple[str, Iterable[VALID_CUMPUTED_TYPES]]:
+    def define_function(context: 'DaphneContext', callback: Callable[..., Tuple[VALID_CUMPUTED_TYPES]]) -> Tuple[str, Iterable[VALID_CUMPUTED_TYPES]]:
         """
         Generate DaphneDSL function defintion.
 
@@ -99,10 +99,19 @@ class MultiReturn(OperationNode):
         """
         # intiate input nodes (arguments) for generating the function definition
         input_nodes = list()
-        num_args = get_number_argument(callback)
+        # dict with the same argument sequence as the callback signiture
+        arg_types = get_argument_types(callback)
         function_name = f"function_{len(context._functions.keys())}"
-        for i in range(num_args):
-            new_matrix = Matrix(context, None)
+        for i, arg_type in enumerate(arg_types.values()):
+            new_matrix = None
+            if arg_type is None or arg_type == Matrix:
+                new_matrix = Matrix(context, None)
+            elif arg_type == Frame:
+                new_matrix = Frame(context, None)
+            elif arg_type == Scalar:
+                new_matrix = Scalar(context, None)
+            else:
+                raise ValueError(f"Not allowed type hint {arg_type} for the 'dctx.function' signiture")
             new_matrix.daphnedsl_name = f"ARG_{i}"
             input_nodes.append(new_matrix)
         # initiate return/output nodes to represent the return values for generating the function definition
@@ -111,7 +120,7 @@ class MultiReturn(OperationNode):
             callback_outputs = (callback_outputs, )
         # check if all return values are valid types
         for node in callback_outputs:
-            if not(isinstance(node, Matrix) or isinstance(node, Frame) or isinstance(node, Scalar)):
+            if not isinstance(node, (Matrix, Frame, Scalar)):
                 raise ValueError(f"Not valid output node type {type(node)}")
         # generate the script witht the function definition
         script = NestedDaphneDSLScript(context, 1, 'F')

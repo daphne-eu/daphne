@@ -32,7 +32,6 @@ from api.python.utils import analyzer
 
 from typing import TYPE_CHECKING, Dict, Iterable, Sequence, Tuple, Callable
 import textwrap
-from copy import copy
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -56,7 +55,8 @@ class Cond(OperationNode):
         """
         self.nested_level = 0  # default value
         _named_input_nodes = dict()
-        _unnamed_input_nodes = copy(unnamed_input_nodes)
+        # cast the iterable to list for consistensy and to avoid addiotnal coping
+        _unnamed_input_nodes = list(unnamed_input_nodes)
         # analyze if the passed functions fulfill the requirements
         if false_fn is not None:
             if analyzer.get_number_argument(true_fn) != analyzer.get_number_argument(false_fn):

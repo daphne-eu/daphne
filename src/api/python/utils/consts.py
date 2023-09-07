@@ -20,14 +20,15 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-
+from __future__ import annotations
 import os
-from typing import Type, Union
+from typing import Union, TYPE_CHECKING
 
-DAGNode = Type['DAGNode']
-Matrix = Type['Matrix']
-Frame = Type['Frame']
-Scalar = Type['Scalar']
+if TYPE_CHECKING:
+    from api.python.script_building.dag import DAGNode
+    from api.python.operator.nodes.matrix import Matrix
+    from api.python.operator.nodes.frame import Frame
+    from api.python.operator.nodes.scalar import Scalar
 
 VALID_INPUT_TYPES = Union['DAGNode', str, int, float, bool]
 BINARY_OPERATIONS = ['+', ' - ', '/', '*', '<', '<=', '>', '>=', '==', '!=', '@', '&&', '||']

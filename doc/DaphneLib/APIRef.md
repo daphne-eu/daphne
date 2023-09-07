@@ -130,49 +130,54 @@ The following references assume that the required DAPHNE context object is initi
 ```python
 dctx = DaphneContext()
 ```
+\* `VALID_CUMPUTED_TYPES=Union['Matrix', 'Frame', 'Scalar']`
 
 ### **if-then-else**
 **`dctx.cond(input_nodes, pred, true_fn, false_fn)`**
 
-* input_nodes: List['Matrix']
+* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
 * pred: Callable  *(0 arguments, 1 return value)*
 * true_fn: Callable  *(n arguments, n return values, n=[1, ...])*
 * false_fn: Callable  *(n arguments, n return values, n=[1, ...])*
-* returns: Tuple['Matrix']  *(length n)*
+* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
 
 ### **for-loops**
 **`dctx.for_loop(input_nodes, callback, start, end, step)`**
 
-* input_nodes: List['Matrix']
+* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
 * callback: Callable  *(n+1 arguments, n return values, n=[1, ...])*
 * start: int
 * end: int
 * step: Union[int, None]
-* returns: Tuple['Matrix']  *(length n)*
+* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
 
 \* *callback* expects as last argument the interation variable and this is suppose to be used as a scalar.
 
 ### **while-loops**
 **`dctx.while_loop(input_nodes, cond, callback)`**
 
-* input_nodes: List['Matrix']
+* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
 * cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
 * callback: Callable  *(n arguments, n return values)*
-* returns: Tuple['Matrix']  *(length n)*
+* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
 
 ### **do-while-loops**
 **`dctx.d0_while_loop(input_nodes, cond, callback)`**
 
-* input_nodes: List['Matrix']
+* input_nodes: Iterable[VALID_CUMPUTED_TYPES]
 * cond: Callable  *(n arguments, 1 return value, n=[1, ...])*
 * callback: Callable  *(n arguments, n return values)*
-* returns: Tuple['Matrix']  *(length n)*
+* returns: Tuple[VALID_CUMPUTED_TYPES]  *(length n)*
 
 ### **user-defined functions**
 **`@dctx.function`** <-> **`dctx.function(callback)`**
 
 * callback: Callable
-* returns: Tuple['OperationNode']  *(length equals the return values of callback)*
+    - This function requires adding typing hints in case the arguments are suppossed 
+    to be handled as `Scalar` or `Frame`, all arguments without hints are handled as
+    `Matrix` objects. Hinting `Matrix` is optional. Wrong or missing typing hints can 
+    trigger errors before and during computing (lazy evaluation).
+* returns: Tuple[VALID_CUMPUTED_TYPE]  *(length equals the return values of callback)*
 
 \* if the decorator is used the *callback* is defined right below it like regular Python method
 

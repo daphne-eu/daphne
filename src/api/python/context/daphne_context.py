@@ -21,7 +21,7 @@
 #
 # -------------------------------------------------------------
 
-__all__ = ["DaphneContext"]
+__all__ = ["DaphneContext", "Matrix", "Frame", "Scalar"]
 
 from api.python.operator.nodes.frame import Frame
 from api.python.operator.nodes.matrix import Matrix
@@ -37,7 +37,7 @@ from api.python.operator.nodes.matrix import Matrix
 import numpy as np
 import pandas as pd
 
-from typing import Union, Callable, List, Tuple, Optional, Iterable
+from typing import Union, Callable, Tuple, Optional, Iterable
 
 class DaphneContext(object):
     _functions: dict
