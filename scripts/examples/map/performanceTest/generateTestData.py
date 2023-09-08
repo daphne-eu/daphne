@@ -28,7 +28,7 @@ import csv
 import datetime
 import threading
 
-def measure_performance(command, max_timeout=900): # 900 seconds = 15 minutes
+def measure_performance(command, max_timeout=600): # 600 seconds = 10 minutes
     '''
     Measure the execution time, memory consumption, and CPU load for an executed command (the execution of a DAPHNE script)
     '''
@@ -97,7 +97,7 @@ def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, opera
                         min_for_op, max_for_op = getMinMaxValueRangeForOp(op)
                         command = generate_command(op, impl, dtype, size, min_for_op.get(dtype), max_for_op.get(dtype))
                         try:
-                            subprocess.run(command, timeout=900)
+                            subprocess.run(command, timeout=600)
                         except subprocess.TimeoutExpired:
                             print(f"Warning: Warm-up command '{command}' exceeded the timeout.")
     print("System Warm Up finish")
@@ -326,6 +326,16 @@ if __name__ == "__main__":
     'uint64': [11585, 16000, 20066],
     'uint8': [32768, 51000, 56755]
     }
+
+    matrix_sizes_500mb_1gb = {   
+    'f32': [8192, 16384],
+    'f64': [5792, 11585],
+    'int32': [8192, 16384],
+    'int64': [5792, 11585],
+    'int8': [16384, 32768],
+    'uint64': [5792, 11585],
+    'uint8': [16384, 32768]
+    }
     
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
@@ -334,4 +344,4 @@ if __name__ == "__main__":
                         "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations)
+    run_benchmarks_batch(matrix_sizes_500mb_1gb, datatypes, implementations, operations)
