@@ -88,7 +88,7 @@ def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, opera
     Warm-up logic to prepare the system for benchmarking.
     '''
     print("Warm Up System for Benchmarks")
-    for _ in range(10):
+    for _ in range(2):
         for impl in implementations:
             for dtype in datatypes:
                 for op in operations:
