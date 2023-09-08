@@ -399,7 +399,7 @@ openBlasVersion=0.3.23
 abslVersion=20211102.0
 grpcVersion=1.38.0
 nlohmannjsonVersion=3.10.5
-arrowVersion=12.0.0
+arrowVersion=13.0.0
 openMPIVersion=4.1.5
 eigenVersion=3.4.0
 spdlogVersion=1.11.0
@@ -882,8 +882,10 @@ if [ $WITH_DEPS -gt 0 ]; then
 
     if ! is_dependency_installed "${dep_arrow[@]}"; then
         cmake -G Ninja -S "${sourcePrefix}/${arrowDirName}/cpp" -B "${buildPrefix}/${arrowDirName}" \
-            -DCMAKE_INSTALL_PREFIX="${installPrefix}" \
-            -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON
+            -DCMAKE_INSTALL_PREFIX="${installPrefix}" -DARROW_CSV=ON -DARROW_FILESYSTEM=ON -DARROW_PARQUET=ON \
+            -DARROW_WITH_BROTLI=ON -DARROW_WITH_BZ2=ON -DARROW_WITH_LZ4=ON -DARROW_WITH_SNAPPY=ON -DARROW_WITH_ZLIB=ON \
+            -DARROW_WITH_ZSTD=ON
+
         cmake --build "${buildPrefix}/${arrowDirName}" --target install/strip
         dependency_install_success "${dep_arrow[@]}"
     else
