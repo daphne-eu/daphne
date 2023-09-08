@@ -132,7 +132,7 @@ def run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations, r
                         print(f"run the command: {command}", command)
                         try:
                             elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
-                            print(f"Ran command with elapsed_time: {elapsed_time}, max_memory: {max_memory}, avg_cpu_load: {avg_cpu_load}", elapsed_time, max_memory, avg_cpu_load)
+                            print(f"Ran command with elapsed_time: {elapsed_time}, max_memory: {max_memory}, avg_cpu_load: {avg_cpu_load}")
                             batch_results.extend([
                                 (op, impl, dtype, size, "Execution Time", elapsed_time),
                                 (op, impl, dtype, size, "Memory Consumption", max_memory),
