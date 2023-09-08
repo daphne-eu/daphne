@@ -26,7 +26,6 @@
 
 template<>
 std::pair<bool, std::string> CompilerUtils::isConstantHelper<std::string, mlir::StringAttr>(mlir::Value v, std::function<std::string(const mlir::StringAttr&)> func) {
-    auto co = v.getDefiningOp<mlir::daphne::ConstantOp>();
     if(auto co = v.getDefiningOp<mlir::daphne::ConstantOp>()) {
         if(auto attr = co.getValue().dyn_cast<mlir::StringAttr>()) {
             return std::make_pair(true, func(attr));

@@ -309,8 +309,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
             return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};
         }
     }
-
-    if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
+    else if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
         if (p.first) {
             FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
             std::vector<mlir::Type> cts;
@@ -328,6 +327,7 @@ std::vector<Type> daphne::ReadOp::inferTypes() {
             return {mlir::daphne::FrameType::get(builder.getContext(), {daphne::UnknownType::get(getContext())})};
         }
     }
+    return {daphne::UnknownType::get(getContext())};
 }
 
 std::vector<Type> daphne::SliceColOp::inferTypes() {
