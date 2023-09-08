@@ -43,8 +43,6 @@
    std::shared_ptr<size_t[]> allocatedRowSizes;
 
 
-
-
    // Grant DataObjectFactory access to the private constructors and
    // destructors.
    template<class DataType, typename ... ArgTypes>
@@ -125,9 +123,15 @@
     }
 
 
-
-
 public:
+
+  size_t getNumRows() const{
+    return numRows;
+  }
+
+  size_t getNumCols() const{
+    return numCols;
+  }
 
   size_t * getAllocatedRowSizes() const {
     return allocatedRowSizes.get();
@@ -339,7 +343,7 @@ public:
       delete[] oneRow;
   }
 
-  MCSRMatrix* sliceRow( size_t rowLowerIncl, size_t rowUpperExcl) const override {
+  MCSRMatrix* sliceRow(size_t rowLowerIncl, size_t rowUpperExcl) const override {
     assert(rowUpperExcl<numRows && "Indices out of bounds");
     return DataObjectFactory::create<MCSRMatrix>(this, rowLowerIncl, rowUpperExcl);
       //throw std::runtime_error("TODO");
