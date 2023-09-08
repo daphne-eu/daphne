@@ -282,6 +282,7 @@ def getMinMaxValueRangeForOp(op):
     op6: relu
     op7: sigmoid
     op8: thresholding
+    op9: Fibonacci
     '''
     if op == 1:  # multiplication
         return min_value, max_value
@@ -298,7 +299,9 @@ def getMinMaxValueRangeForOp(op):
     elif op == 7:  # sigmoid
         return min_value, max_value  # No extreme restriction since output is bounded between 0 and 1.
     elif op == 8:  # thresholding
-        return min_value, max_value  # No extreme restriction since it's a step function.
+        return min_value, max_value
+    elif op == 9: # fibonacci
+        return min_value, max_value # No extreme restriction since it's a step function.
     else:
         raise ValueError("Invalid operation")
 
