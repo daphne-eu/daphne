@@ -326,16 +326,7 @@ if __name__ == "__main__":
     'uint64': [11585, 16000, 20066],
     'uint8': [32768, 51000, 56755]
     }
-
-    matrix_sizes_3 = {   
-    'f32': [3, 3, 3],
-    'f64': [3, 3, 3],
-    'int32': [3, 3, 3],
-    'int64': [3, 3, 3],
-    'int8': [3, 3, 3],
-    'uint64': [3, 3, 3],
-    'uint8': [3, 3, 3]
-    }
+    
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
                        "Python_Ctypes_SysArg","Python_Ctypes_sharedMem_address", 
@@ -343,4 +334,4 @@ if __name__ == "__main__":
                         "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks_batch(matrix_sizes_3, datatypes, implementations, operations)
+    run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations)
