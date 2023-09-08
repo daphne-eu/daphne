@@ -34,7 +34,7 @@ def logarithm_base_10(matrix):
     return np.log10(matrix)
 
 def exponential(matrix):
-    return 2 * np.exp(matrix**2)
+    return np.exp(matrix**2)
 
 def polynomial(matrix):
     return 5*np.power(matrix,5) + 4*np.power(matrix,4) + 3*np.power(matrix,3) + 2*np.power(matrix,2) + matrix

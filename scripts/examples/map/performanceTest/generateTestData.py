@@ -188,8 +188,8 @@ def run_benchmarks_normal(matrix_sizes, datatypes, implementations, operations, 
 
 'Common min/max value range'
 min_value = {
-        'f64': -10.0,
-        'f32': -10.0,
+        'f64': -10,
+        'f32': -10,
         'int64': -10,
         'int32': -10,
         'int8': -10,
@@ -198,8 +198,8 @@ min_value = {
     }
 
 max_value = {
-        'f64': 10.0,
-        'f32': 10.0,
+        'f64': 10,
+        'f32': 10,
         'int64': 10,
         'int32': 10,
         'int8': 10,
@@ -220,8 +220,8 @@ min_value_for_log = {
 
 # For exponential function, we might need to further limit the input for int types to avoid quick overflows.
 max_value_for_exp = {
-        'f64': 10.0,
-        'f32': 10.0,
+        'f64': 5,
+        'f32': 5,
         'int64': 5,
         'int32': 4,
         'int8': 2,
@@ -229,10 +229,20 @@ max_value_for_exp = {
         'uint8': 2
 }
 
+min_value_for_exp = {
+        'f64': -5,
+        'f32': -5,
+        'int64': -5,
+        'int32': -4,
+        'int8': -2,
+        'uint64': 0,
+        'uint8': 0
+    }
+
 'Polynomial'
 min_value_polynomial = {
-        'f64': -10.0,
-        'f32': -10.0,
+        'f64': -10,
+        'f32': -10,
         'int64': -10,
         'int32': -10,
         'int8': -2,
@@ -241,8 +251,8 @@ min_value_polynomial = {
     }
 
 max_value_polynomial = {
-        'f64': 10.0,
-        'f32': 10.0,
+        'f64': 10,
+        'f32': 10,
         'int64': 10,
         'int32': 10,
         'int8': 2,
@@ -252,8 +262,8 @@ max_value_polynomial = {
 
 'Power'
 min_value_power = {
-        'f64': -10.0,
-        'f32': -10.0,
+        'f64': -10,
+        'f32': -10,
         'int64': -10,
         'int32': -10,
         'int8': -5,
@@ -262,8 +272,8 @@ min_value_power = {
     }
 
 max_value_power = {
-        'f64': 10.0,
-        'f32': 10.0,
+        'f64': 10,
+        'f32': 10,
         'int64': 10,
         'int32': 10,
         'int8': 5,
@@ -290,7 +300,7 @@ def getMinMaxValueRangeForOp(op):
     elif op == 3:  # logarithm_base_10
         return min_value_for_log, max_value
     elif op == 4:  # 2*e**(x**2)
-        return min_value, max_value_for_exp
+        return min_value_for_exp, max_value_for_exp
     elif op == 5:  # polynomial
         return min_value_polynomial, max_value_polynomial
     elif op == 6:  # relu
