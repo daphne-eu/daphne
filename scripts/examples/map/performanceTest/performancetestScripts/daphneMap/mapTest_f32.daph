@@ -28,7 +28,7 @@ def power(x: f32) -> f32 {return as.f32(x^3);}
 
 //logarithmic
 def logarithm_base_10(x: f32) -> f32 {return as.f32(log(x,10));}
-def exponential(x: f32) -> f32 {return as.f32(2*exp(x^2));}
+def exponential(x: f32) -> f32 {return as.f32(exp(x^2));}
 
 //polynomial
 def polynomial(x: f32) -> f32 {return as.f32(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}

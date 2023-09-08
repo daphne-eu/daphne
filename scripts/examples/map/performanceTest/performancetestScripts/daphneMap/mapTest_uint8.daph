@@ -28,7 +28,7 @@ def power(x: ui8) -> ui8 {return as.ui8(x^3);}
 
 //logarithmic
 def logarithm_base_10(x: ui8) -> ui8 {return as.ui8(log(x,10));}
-def exponential(x: ui8) -> ui8 {return as.ui8(2*exp(x^2));}
+def exponential(x: ui8) -> ui8 {return as.ui8(exp(x^2));}
 
 //polynomial
 def polynomial(x: ui8) -> ui8 {return as.ui8(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}

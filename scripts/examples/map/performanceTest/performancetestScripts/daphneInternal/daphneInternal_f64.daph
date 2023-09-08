@@ -45,7 +45,7 @@ else if($operation == 3) {
     log(X, 10);
 }
 else if($operation == 4) {
-    2*exp(X^2);
+    exp(X^2);
 }
 else if($operation == 5) {
     (5*X^5 + 4*X^4 + 3*X^3 + 2*X^2 + 1*X^1);

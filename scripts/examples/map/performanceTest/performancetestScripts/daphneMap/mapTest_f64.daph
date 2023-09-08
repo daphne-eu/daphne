@@ -28,7 +28,7 @@ def power(x: f64) -> f64 {return as.f64(x^3);}
 
 //logarithmic
 def logarithm_base_10(x: f64) -> f64 {return as.f64(log(x,10));}
-def exponential(x: f64) -> f64 {return as.f64(2*exp(x^2));}
+def exponential(x: f64) -> f64 {return as.f64(exp(x^2));}
 
 //polynomial
 def polynomial(x: f64) -> f64 {return as.f64(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-X = as.matrix<si32>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
+X = as.matrix<ui8>(rand($matrix_size, $matrix_size, as.ui8($minValue), as.ui8($maxValue), 1.0, 42));
 
 if($operation == 1){
 
@@ -77,7 +77,7 @@ else if($operation == 7){
 sigmoid_str = "
 def sigmoid(x):
     import math
-    return 1 / (1 + math.exp(-x))
+    return 1/(1 + math.exp(-x))
 ";
 map(X, sigmoid_str, "x", $pl);
 

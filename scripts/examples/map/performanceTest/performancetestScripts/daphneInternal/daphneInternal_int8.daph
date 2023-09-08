@@ -17,7 +17,7 @@
   /*
 Generate random Matrix
  */
-X = as.matrix<si8>(rand($matrix_size, $matrix_size, as.si8($minValue), as.si8($maxValue), 1.0, 42));
+X = as.matrix<si8>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
 
 def fibonacci(x: si8) -> si8 {
     x = as.si8(x);
@@ -45,7 +45,7 @@ else if($operation == 3) {
     log(X, 10);
 }
 else if($operation == 4) {
-    2*exp(X^2);
+    exp(X^2);
 }
 else if($operation == 5) {
     (5*X^5 + 4*X^4 + 3*X^3 + 2*X^2 + 1*X^1);

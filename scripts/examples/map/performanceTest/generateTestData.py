@@ -72,7 +72,7 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneMap/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
     elif(implementation == "daphneInternal"):
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneInternal/daphneInternal_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
-    elif(implementation.startswith("Python_ctypes")):
+    elif(implementation.startswith("Python_Ctypes")):
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/mapExternal/mapExternalPLTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
         programming_language_arg = 'pl=\"' + implementation + '\"'
         result.append(programming_language_arg)
@@ -80,7 +80,6 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
         result = ["python3", f"scripts/examples/map/performanceTest/performancetestScripts/python_numpy_testscript.py",f"{datatype}" ,f"{operation}", f"{matrix_size}", f"{min_value}", f"{max_value}"]
     else:
         print(f"operation: {operation}, implementation: {implementation}, datatype: {datatype}, matrix_size: {matrix_size}, min_value: {min_value}, max_value: {max_value}")
-        raise RuntimeError("Wrong command")
     print(result)
     return result
 
@@ -317,11 +316,21 @@ if __name__ == "__main__":
     'uint64': [11585, 16000, 20066],
     'uint8': [32768, 51000, 56755]
     }
+
+    matrix_sizes_3 = {   
+    'f32': [3, 3, 3],
+    'f64': [3, 3, 3],
+    'int32': [3, 3, 3],
+    'int64': [3, 3, 3],
+    'int8': [3, 3, 3],
+    'uint64': [3, 3, 3],
+    'uint8': [3, 3, 3]
+    }
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
-                       "Python_ctypes_SysArg","Python_Ctypes_sharedMem_address", 
+                       "Python_Ctypes_SysArg","Python_Ctypes_sharedMem_address", 
                        "Python_Ctypes_sharedMem_voidPointer", "Python_Ctypes_sharedMem_Pointer",
                         "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks_batch(matrix_sizes, datatypes, implementations, operations)
+    run_benchmarks_batch(matrix_sizes_3, datatypes, implementations, operations)

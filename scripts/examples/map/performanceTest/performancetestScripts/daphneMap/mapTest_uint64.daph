@@ -17,7 +17,7 @@
  /*
 Generate random Matrix
  */
-X = as.matrix<ui64>(rand($matrix_size, $matrix_size, as.ui8($minValue), as.ui8($maxValue), 1.0, 42));
+X = as.matrix<ui64>(rand($matrix_size, $matrix_size, $minValue, $maxValue, 1.0, 42));
 
 /*
 Function Definitions
@@ -28,7 +28,7 @@ def power(x: ui64) -> ui64 {return as.ui64(x^3);}
 
 //logarithmic
 def logarithm_base_10(x: ui64) -> ui64 {return as.ui64(log(x,10));}
-def exponential(x: ui64) -> ui64 {return as.ui64(2*exp(x^2));}
+def exponential(x: ui64) -> ui64 {return as.ui64(exp(x^2));}
 
 //polynomial
 def polynomial(x: ui64) -> ui64 {return as.ui64(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
