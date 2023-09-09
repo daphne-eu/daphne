@@ -25,40 +25,59 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 import matplotlib.pyplot as plt
-import json
+import plotly.io as pio
 
+def visualize_performance_metrics_datatypes_summarized(csv_file_name):
+    df = pd.read_csv(csv_file_name)
+    
+    for metric in df['MetricType'].unique():
+        for size in df['MatrixSize'].unique():
+            subset_data = df[(df['MetricType'] == metric) & (df['MatrixSize'] == size)]
+            
+            if not subset_data.empty:
+                plt.figure(figsize=(12, 8))
+                sns.boxplot(data=subset_data, x='Operation', y='Value', hue='Implementation', palette="Set3", width=0.6)
+                
+                sns.swarmplot(data=subset_data, x='Operation', y='Value', hue='Implementation', size=2, dodge=True, linewidth=0.5, edgecolor='gray', palette="dark")
+                
+                plt.title(f'Boxplot of {metric} by Implementation (Matrix Size: {size})')
+                plt.ylabel(metric)
+                plt.xlabel('Operation')
+                plt.legend(title='Implementation')
+                plt.tight_layout()
+                    
+                # Construct save file name
+                save_file_name = f"{csv_file_name.split('.')[0]}_{metric}_{size}.png"
+                plt.savefig(save_file_name)
+                plt.close()
 
 def createBoxplotsWithSeaborn(csv_file_name):
-
     data = pd.read_csv(csv_file_name)
 
-    # Unique metric types
     metrics = data['MetricType'].unique()
 
-    # Create a grid of plots
     for metric in metrics:
-        g = sns.FacetGrid(data[data['MetricType'] == metric], 
-                        row="MatrixSize", 
-                        col="Datatype", 
-                        hue="Implementation", 
-                        height=4, 
-                        aspect=2, 
-                        margin_titles=True)
-    
-        # Boxplots for each combination of MatrixSize and Datatype
-        g = (g.map(sns.boxplot, "Operation", "Value", order=None)
-            .add_legend()
-            .fig.suptitle(f'Performance Metrics for {metric} by Matrix Size and Datatype'))
-    
-        plt.subplots_adjust(top=0.9, hspace=0.3)
-        plt.savefig(f"scripts/examples/map/testdata/plots/{csv_file_name}")
+        subset_data = data[data['MetricType'] == metric]
+        
+        unique_sizes = subset_data['MatrixSize'].unique()
+        unique_dtypes = subset_data['Datatype'].unique()
 
+        for size in unique_sizes:
+            for dtype in unique_dtypes:
+                plt.figure(figsize=(8, 6))
+                specific_data = subset_data[(subset_data['MatrixSize'] == size) & (subset_data['Datatype'] == dtype)]
+                sns.boxplot(data=specific_data, x='Operation', y='Value', hue='Implementation')
+                
+                plt.title(f'Metric: {metric}, Matrix Size: {size}, Datatype: {dtype}')
+                
+                save_file_name = f"{csv_file_name.split('.')[0]}_{metric}_{size}_{dtype}.png"
+                plt.savefig(save_file_name)
+                plt.close()
 
 def createInteractiveBoxplot(csv_file_name):
 
     data = pd.read_csv(csv_file_name)
     
-    # Interactive Boxplots
     fig = px.box(data, 
                 x="Operation", 
                 y="Value", 
@@ -66,7 +85,6 @@ def createInteractiveBoxplot(csv_file_name):
                 facet_row="Datatype",
                 title="Performance Metrics by Operation and Implementation")
 
-    # Add dropdown for metric selection
     metric_dropdown = [
         {
             "label": metric,
@@ -81,7 +99,6 @@ def createInteractiveBoxplot(csv_file_name):
         for metric in data["MetricType"].unique()
     ]
 
-    # Add slider for matrix size selection
     matrix_sizes = sorted(data['MatrixSize'].unique())
     fig.update_layout(
         updatemenus=[
@@ -129,5 +146,8 @@ def createInteractiveBoxplot(csv_file_name):
         }]
     )
     fig.show()
-    with open(f"scripts/examples/map/testdata/plots/{csv_file_name}.json", 'w') as f:
-        json.dump(fig.to_dict(), f)
+    pio.write_html(fig, file=f"{csv_file_name}.html")
+
+if __name__ == "__main__":
+    createInteractiveBoxplot("scripts/examples/map/performanceTest/testdata/csv_files/performance_results_2023-09-08 12:04:23.csv")
+    #visualize_performance_metrics_datatypes_summarized("scripts/examples/map/performanceTest/testdata/csv_files/performance_results_2023-09-08 12:04:23.csv")
