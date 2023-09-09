@@ -123,8 +123,8 @@ namespace
         mlir::daphne::CastOp cast;
         replaceIfCastOp(rewriter, cast, getColumnType(rewriter), prevOp);
 
-        auto columnGe = rewriter.create<ColumnCmp>(prevOp->getLoc(), cast, cmpOp->getOperand(1));
-        auto finalCast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), getMatrixType(rewriter), columnGe->getResult(0));
+        auto columnCmp = rewriter.create<ColumnCmp>(prevOp->getLoc(), cast, cmpOp->getOperand(1));
+        auto finalCast = rewriter.create<mlir::daphne::CastOp>(prevOp->getLoc(), getMatrixType(rewriter), columnCmp->getResult(0));
         auto numRows = rewriter.create<mlir::daphne::NumRowsOp>(prevOp->getLoc(), rewriter.getIndexType(), cast->getOperand(0));
         auto res = rewriter.replaceOpWithNewOp<mlir::daphne::PositionListBitmapConverterOp>(cmpOp, getMatrixType(rewriter), finalCast->getResult(0), numRows);
         cmpOp->getResult(0).replaceAllUsesWith(res->getResult(0));
@@ -230,7 +230,7 @@ namespace
             ).withLabels(labelStrings);
 
             mlir::daphne::CreateFrameOp res;
-            // We need to replace the innerJoinOp with the CreateFrameOp of the final successor to create a valid IR
+            // We need to replace the SourceOp with the CreateFrameOp of the final successor to create a valid IR
             if(it == std::prev(columnNamesPerSuccessor.end())) {
                 res = rewriter.replaceOpWithNewOp<mlir::daphne::CreateFrameOp>(sourceOp, resTypeFrame, cols, labels);
             } else {
