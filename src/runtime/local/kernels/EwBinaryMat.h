@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datastructures/Matrix.h>
@@ -63,13 +64,13 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
 
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
-        
+
         const VTlhs * valuesLhs = lhs->getValues();
         const VTrhs * valuesRhs = rhs->getValues();
         VTres * valuesRes = res->getValues();
-        
+
         EwBinaryScaFuncPtr<VTres, VTlhs, VTrhs> func = getEwBinaryScaFuncPtr<VTres, VTlhs, VTrhs>(opCode);
-        
+
         if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
             // matrix op matrix (same size)
             for(size_t r = 0; r < numRowsLhs; r++) {
@@ -118,7 +119,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
         const size_t numCols = lhs->getNumCols();
         if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
             throw std::runtime_error("EwBinaryMat(CSR) - lhs and rhs must have the same dimensions.");
-        
+
         size_t maxNnz;
         switch(opCode) {
             case BinaryOpCode::ADD: // merge
@@ -130,16 +131,16 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
             default:
                 throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<CSRMatrix<VT>>(numRows, numCols, maxNnz, false);
-        
+
         size_t * rowOffsetsRes = res->getRowOffsets();
-        
+
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-        
+
         rowOffsetsRes[0] = 0;
-        
+
         switch(opCode) {
             case BinaryOpCode::ADD: { // merge non-zero cells
                 for(size_t rowIdx = 0; rowIdx < numRows; rowIdx++) {
@@ -183,7 +184,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
                         const size_t restRowRhs = nnzRowRhs - posRhs;
                         memcpy(valuesRowRes + posRes, valuesRowRhs + posRhs, restRowRhs * sizeof(VT));
                         memcpy(colIdxsRowRes + posRes, colIdxsRowRhs + posRhs, restRowRhs * sizeof(size_t));
-                        
+
                         rowOffsetsRes[rowIdx + 1] = rowOffsetsRes[rowIdx] + posRes + restRowLhs + restRowRhs;
                     }
                     else if(nnzRowLhs) {
@@ -243,7 +244,7 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
             default:
                 throw std::runtime_error("EwBinaryMat(CSR) - unknown BinaryOpCode");
         }
-        
+
         // TODO Update number of non-zeros in result in the end.
     }
 };
@@ -328,17 +329,113 @@ struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
         const size_t numCols = lhs->getNumCols();
         if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
             throw std::runtime_error("EwBinaryMat - lhs and rhs must have the same dimensions.");
-        
+
         // TODO Choose matrix implementation depending on expected number of non-zeros.
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
+
         EwBinaryScaFuncPtr<VT, VT, VT> func = getEwBinaryScaFuncPtr<VT, VT, VT>(opCode);
-        
+
         res->prepareAppend();
         for(size_t r = 0; r < numRows; r++)
             for(size_t c = 0; c < numCols; c++)
                 res->append(r, c) = func(lhs->get(r, c), rhs->get(r, c), ctx);
         res->finishAppend();
+    }
+};
+
+
+// ----------------------------------------------------------------------------
+// MCSRMatrix <- MCSRMatrix, MCSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VTres, typename VTlhs, typename VTrhs>
+struct EwBinaryMat<MCSRMatrix<VTres>, MCSRMatrix<VTlhs>, MCSRMatrix<VTrhs>> {
+    static void apply(BinaryOpCode opCode, MCSRMatrix<VTres> *& res, const MCSRMatrix<VTlhs> * lhs, const MCSRMatrix<VTrhs> * rhs, DCTX(ctx)) {
+        assert(lhs->getNumRows() == rhs->getNumRows() && lhs->getNumCols() == rhs->getNumCols() && "Mismatched matrix dimensions");
+
+        size_t maxNnz;
+        switch(opCode) {
+            // Operations where the result can be non-zero even if just one matrix has a non-zero entry
+            case BinaryOpCode::ADD:
+            //case BinaryOpCode::SUB:
+            //case BinaryOpCode::OR:
+            //case BinaryOpCode::EQ:
+            //case BinaryOpCode::NEQ:
+            //case BinaryOpCode::MIN:
+            //case BinaryOpCode::MAX:
+            //case BinaryOpCode::ISSYM:
+                maxNnz = lhs->getMaxNumNonZeros() + rhs->getMaxNumNonZeros();
+                break;
+
+            // Operations where both matrices need to have a non-zero entry for the result to be non-zero
+            case BinaryOpCode::MUL:
+            //case BinaryOpCode::DIV:
+            //case BinaryOpCode::AND:
+                maxNnz = std::min(lhs->getMaxNumNonZeros(), rhs->getMaxNumNonZeros());
+                break;
+
+            default:
+                throw std::runtime_error("Unknown BinaryOpCode");
+        }
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<MCSRMatrix<VTres>>(lhs->getNumRows(), lhs->getNumCols(),maxNnz, true);
+
+        EwBinaryScaFuncPtr<VTres, VTlhs, VTrhs> func = getEwBinaryScaFuncPtr<VTres, VTlhs, VTrhs>(opCode);
+
+        for(size_t r = 0; r < lhs->getNumRows(); r++) {
+            size_t lhsIdx = 0;
+            size_t rhsIdx = 0;
+
+            const VTlhs* rowValuesLhs = lhs->getValues(r);
+            const size_t* colIdxsLhs = lhs->getColIdxs(r);
+            size_t lhsRowSize = lhs->getNumNonZeros(r);
+
+            const VTrhs* rowValuesRhs = rhs->getValues(r);
+            const size_t* colIdxsRhs = rhs->getColIdxs(r);
+            size_t rhsRowSize = rhs->getNumNonZeros(r);
+
+            while (lhsIdx < lhsRowSize && rhsIdx < rhsRowSize) {
+                if (colIdxsLhs[lhsIdx] == colIdxsRhs[rhsIdx]) {
+                    res->set(r, colIdxsLhs[lhsIdx], func(rowValuesLhs[lhsIdx], rowValuesRhs[rhsIdx], ctx));
+                    lhsIdx++;
+                    rhsIdx++;
+                } else if (colIdxsLhs[lhsIdx] < colIdxsRhs[rhsIdx]) {
+                    if(opCode == BinaryOpCode::ADD) {
+                        res->set(r, colIdxsLhs[lhsIdx], rowValuesLhs[lhsIdx]);
+                    } else if(opCode == BinaryOpCode::MUL) {
+                        // Multiplication with implicit zero.
+                        // Do not set anything (unless your matrix format explicitly stores zeros).
+                    }
+                    lhsIdx++;
+                } else {
+                    if(opCode == BinaryOpCode::ADD) {
+                        res->set(r, colIdxsRhs[rhsIdx], rowValuesRhs[rhsIdx]);
+                    } else if(opCode == BinaryOpCode::MUL) {
+                        // Multiplication with implicit zero.
+                        // Do not set anything (unless your matrix format explicitly stores zeros).
+                    }
+                    rhsIdx++;
+                }
+            }
+
+            // Handle remaining elements, if any
+            // Handle remaining elements, if any
+            while (lhsIdx < lhsRowSize) {
+                if(opCode == BinaryOpCode::ADD) {
+                    res->set(r, colIdxsLhs[lhsIdx], rowValuesLhs[lhsIdx]);
+                }
+                // No need to handle multiplication since it will be multiplication with implicit zero.
+                lhsIdx++;
+            }
+            while (rhsIdx < rhsRowSize) {
+                if(opCode == BinaryOpCode::ADD) {
+                    res->set(r, colIdxsRhs[rhsIdx], rowValuesRhs[rhsIdx]);
+                }
+                // No need to handle multiplication since it will be multiplication with implicit zero.
+                rhsIdx++;
+            }
+        }
     }
 };

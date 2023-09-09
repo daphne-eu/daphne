@@ -15,6 +15,11 @@
  */
 
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/MCSRMatrix.h>
+#include <runtime/local/context/DaphneContext.h>
+#include <api/cli/DaphneUserConfig.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -52,7 +57,7 @@ void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, cons
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m0 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
@@ -77,11 +82,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
             0, 0, 0, 0, 0, 0,
             0, 0, 3, 1, 0, 2,
     });
-    
+
     checkEwBinaryMat(BinaryOpCode::ADD, m0, m0, m0);
     checkEwBinaryMat(BinaryOpCode::ADD, m1, m0, m1);
     checkEwBinaryMat(BinaryOpCode::ADD, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
@@ -90,7 +95,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("add"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m0 = genGivenVals<DT>(4, {
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
@@ -115,11 +120,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("mul"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
             0, 0, 0, 0, 0, 0,
             0, 0, 0, 0, 0, 0,
     });
-    
+
     checkEwBinaryMat(BinaryOpCode::MUL, m0, m0, m0);
     checkEwBinaryMat(BinaryOpCode::MUL, m1, m0, m0);
     checkEwBinaryMat(BinaryOpCode::MUL, m1, m2, m3);
-        
+
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
@@ -184,7 +189,7 @@ TEMPLATE_TEST_CASE(TEST_NAME("mul_sparse_dense"), TAG_KERNELS, VALUE_TYPES) {
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m0 = genGivenVals<DT>(2, {
             0, 0, 0,
             0, 0, 0,
@@ -201,10 +206,10 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_
             1, 1, 2,
             3, 2, 3,
     });
-    
+
     checkEwBinaryMat(BinaryOpCode::DIV, m0, m1, m0);
     checkEwBinaryMat(BinaryOpCode::DIV, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
@@ -217,13 +222,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("div"), TAG_KERNELS, (DenseMatrix), (VALUE_
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 3,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {1, 0, 1,  1, 0, 0,});
-    
+
     checkEwBinaryMat(BinaryOpCode::EQ, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -231,13 +236,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("eq"), TAG_KERNELS, (DenseMatrix), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 3,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {0, 1, 0,  0, 1, 1,});
-    
+
     checkEwBinaryMat(BinaryOpCode::NEQ, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -245,13 +250,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("neq"), TAG_KERNELS, (DenseMatrix), (VALUE_
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {0, 0, 1,  0, 0, 1,});
-    
+
     checkEwBinaryMat(BinaryOpCode::LT, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -259,13 +264,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("lt"), TAG_KERNELS, (DenseMatrix), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {1, 0, 1,  1, 0, 1,});
-    
+
     checkEwBinaryMat(BinaryOpCode::LE, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -273,13 +278,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("le"), TAG_KERNELS, (DenseMatrix), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {0, 1, 0,  0, 1, 0,});
-    
+
     checkEwBinaryMat(BinaryOpCode::GT, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -287,13 +292,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("gt"), TAG_KERNELS, (DenseMatrix), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {1, 1, 0,  1, 1, 0,});
-    
+
     checkEwBinaryMat(BinaryOpCode::GE, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -305,13 +310,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("ge"), TAG_KERNELS, (DenseMatrix), (VALUE_T
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {1, 0, 3,  4, 4, 6,});
-    
+
     checkEwBinaryMat(BinaryOpCode::MIN, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -319,13 +324,13 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DenseMatrix), (VALUE_
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
-    
+
     auto m1 = genGivenVals<DT>(2, {1, 2, 3,  4, 5, 6,});
     auto m2 = genGivenVals<DT>(2, {1, 0, 4,  4, 4, 9,});
     auto m3 = genGivenVals<DT>(2, {1, 2, 4,  4, 5, 9,});
-    
+
     checkEwBinaryMat(BinaryOpCode::MAX, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1);
     DataObjectFactory::destroy(m2);
     DataObjectFactory::destroy(m3);
@@ -338,26 +343,26 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DenseMatrix), (VALUE_
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("and"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
+
     auto m1 = genGivenVals<DT>(1, {0, 0, 1, 1, 0, 2, 2,     0, VT(-2), VT(-2)});
     auto m2 = genGivenVals<DT>(1, {0, 1, 0, 1, 2, 0, 2, VT(-2),    0 , VT(-2)});
     auto m3 = genGivenVals<DT>(1, {0, 0, 0, 1, 0, 0, 1,     0 ,    0 ,     1 });
-    
+
     checkEwBinaryMat(BinaryOpCode::AND, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("or"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DT = TestType;
     using VT = typename DT::VT;
-    
+
     auto m1 = genGivenVals<DT>(1, {0, 0, 1, 1, 0, 2, 2,     0 , VT(-2), VT(-2)});
     auto m2 = genGivenVals<DT>(1, {0, 1, 0, 1, 2, 0, 2, VT(-2),     0 , VT(-2)});
     auto m3 = genGivenVals<DT>(1, {0, 1, 1, 1, 1, 1, 1,     1,      1 ,     1 });
-    
+
     checkEwBinaryMat(BinaryOpCode::OR, m1, m2, m3);
-    
+
     DataObjectFactory::destroy(m1, m2, m3);
 }
 
@@ -370,4 +375,119 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     DT * res = nullptr;
     auto m = genGivenVals<DT>(1, {1});
     CHECK_THROWS(ewBinaryMat<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m, nullptr));
+}
+
+
+
+
+
+// ****************************************************************************
+// MCSR Matrix
+// ****************************************************************************
+
+
+
+TEMPLATE_TEST_CASE("Element-wise binary with MCSR and ADD", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros1 = 8;
+  const size_t maxNumNonZeros2 = 5;
+
+  MCSRMatrix<ValueType> * lhs = DataObjectFactory::create<MCSRMatrix<ValueType>>(numRows, numCols, maxNumNonZeros1, true);
+  MCSRMatrix<ValueType> * rhs = DataObjectFactory::create<MCSRMatrix<ValueType>>(numRows, numCols, maxNumNonZeros2, true);
+  MCSRMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+  //Append source matrix
+  //First row
+  lhs -> append(0,0,10);    rhs -> append(0,2,20);
+  lhs -> append(0,1,20);    rhs -> append(0,5,10);
+  //Second row
+  lhs -> append(1,1,30);    rhs -> append(1,1,5);
+  lhs -> append(1,3,40);    rhs -> append(1,2,5);
+  //Third column
+  lhs -> append(2,2,50);
+  lhs -> append(2,3,60);
+  lhs -> append(2,4,70);
+  //Fourth row
+  lhs -> append(3,5,80);    rhs -> append(3,2,10);
+
+  EwBinaryMat<MCSRMatrix<ValueType>,MCSRMatrix<ValueType>, MCSRMatrix<ValueType>>::apply(BinaryOpCode::ADD, resultMatrix, lhs, rhs, context);
+
+  CHECK(resultMatrix -> get(0,0) == 10);
+  CHECK(resultMatrix -> get(0,1) == 20);
+  CHECK(resultMatrix -> get(0,2) == 20);
+  CHECK(resultMatrix -> get(0,5) == 10);
+  CHECK(resultMatrix -> get(1,1) == 35);
+  CHECK(resultMatrix -> get(1,2) == 5);
+  CHECK(resultMatrix -> get(1,3) == 40);
+  CHECK(resultMatrix -> get(2,2) == 50);
+  CHECK(resultMatrix -> get(2,3) == 60);
+  CHECK(resultMatrix -> get(2,4) == 70);
+  CHECK(resultMatrix -> get(3,2) == 10);
+  CHECK(resultMatrix -> get(3,5) == 80);
+
+  DataObjectFactory::destroy(lhs);
+  DataObjectFactory::destroy(rhs);
+  DataObjectFactory::destroy(resultMatrix);
+
+
+}
+
+
+TEMPLATE_TEST_CASE("Element-wise binary with MCSR and MUL", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros1 = 8;
+  const size_t maxNumNonZeros2 = 5;
+
+  MCSRMatrix<ValueType> * lhs = DataObjectFactory::create<MCSRMatrix<ValueType>>(numRows, numCols, maxNumNonZeros1, true);
+  MCSRMatrix<ValueType> * rhs = DataObjectFactory::create<MCSRMatrix<ValueType>>(numRows, numCols, maxNumNonZeros2, true);
+  MCSRMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+  //Append source matrix
+  //First row
+  lhs -> append(0,0,10);    rhs -> append(0,2,1);
+  lhs -> append(0,1,20);    rhs -> append(0,5,1);
+  //Second row
+  lhs -> append(1,1,30);    rhs -> append(1,1,1);
+  lhs -> append(1,3,40);    rhs -> append(1,2,1);
+  //Third column
+  lhs -> append(2,2,50);
+  lhs -> append(2,3,60);    rhs -> append(2,3,1);
+  lhs -> append(2,4,70);
+  //Fourth row
+  lhs -> append(3,5,80);    rhs -> append(3,2,1);
+
+  EwBinaryMat<MCSRMatrix<ValueType>,MCSRMatrix<ValueType>, MCSRMatrix<ValueType>>::apply(BinaryOpCode::MUL, resultMatrix, lhs, rhs, context);
+
+  CHECK(resultMatrix -> get(0,0) == 0);
+  CHECK(resultMatrix -> get(0,1) == 0);
+  CHECK(resultMatrix -> get(0,2) == 0);
+  CHECK(resultMatrix -> get(0,5) == 0);
+  CHECK(resultMatrix -> get(1,1) == 30);
+  CHECK(resultMatrix -> get(2,3) == 60);
+  CHECK(resultMatrix -> get(3,5) == 0);
+
+  /*std::cout << "*******************************" << '\n';
+  resultMatrix->print(std::cout);
+  std::cout << "*******************************" << '\n';*/
+
+
+  DataObjectFactory::destroy(lhs);
+  DataObjectFactory::destroy(rhs);
+  DataObjectFactory::destroy(resultMatrix);
+
+
 }

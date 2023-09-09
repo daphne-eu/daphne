@@ -19,6 +19,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
+#include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
 #include <runtime/local/kernels/EwUnarySca.h>
@@ -57,15 +58,15 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
     static void apply(UnaryOpCode opCode, DenseMatrix<VT> *& res, const DenseMatrix<VT> * arg, DCTX(ctx)) {
         const size_t numRows = arg->getNumRows();
         const size_t numCols = arg->getNumCols();
-        
+
         if(res == nullptr)
             res = DataObjectFactory::create<DenseMatrix<VT>>(numRows, numCols, false);
-        
+
         const VT * valuesArg = arg->getValues();
         VT * valuesRes = res->getValues();
-        
+
         EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
-        
+
         for(size_t r = 0; r < numRows; r++) {
             for(size_t c = 0; c < numCols; c++)
                 valuesRes[c] = func(valuesArg[c], ctx);
@@ -74,5 +75,38 @@ struct EwUnaryMat<DenseMatrix<VT>, DenseMatrix<VT>> {
         }
     }
 };
+
+
+// ----------------------------------------------------------------------------
+// MCSRMatrix <- MCSRMatrix
+// ----------------------------------------------------------------------------
+
+template<typename VT>
+struct EwUnaryMat<MCSRMatrix<VT>, MCSRMatrix<VT>> {
+    static void apply(UnaryOpCode opCode, MCSRMatrix<VT> *& res, const MCSRMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+        const size_t maxNumNonZeros = arg->getMaxNumNonZeros();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<MCSRMatrix<VT>>(numRows, numCols, maxNumNonZeros, true);
+
+        EwUnaryScaFuncPtr<VT, VT> func = getEwUnaryScaFuncPtr<VT, VT>(opCode);
+
+        for(size_t r = 0; r < numRows; r++) {
+            const VT * rowValuesArg = arg->getValues(r);
+            const size_t * colIdxsArg = arg->getColIdxs(r);
+            size_t rowSize = arg->getNumNonZeros(r);
+
+            for(size_t i = 0; i < rowSize; i++) {
+                VT resultValue = func(rowValuesArg[i], ctx);
+                if(resultValue != 0) { // Only store non-zero results
+                    res->set(r, colIdxsArg[i], resultValue);
+                }
+            }
+        }
+    }
+};
+
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_EWUNARYMAT_H
