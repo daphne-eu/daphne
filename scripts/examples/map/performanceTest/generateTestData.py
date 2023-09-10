@@ -113,7 +113,7 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
             writer = csv.writer(csvfile)
             writer.writerows(batch_results)
 
-    warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
+    #warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -129,9 +129,11 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
         for impl in implementations:
             for dtype in datatypes:
                 for op in operations:
-                    if(op == 9 and dtype.startswith("f")): # Fibonacci function is not possible with floats
+                    # Fibonacci function is not possible with floats
+                    if(op == 9 and dtype.startswith("f")): 
                         break
-                    if((op == 8 or op == 4) and impl == "daphneInternal" and dtype.startswith("f")): # no cond and exp operations on float matrices
+                    # no conditional and exp operations on float matrices possible in daphne Internals
+                    if((op == 8 or op == 4) and impl == "daphneInternal" and dtype.startswith("f")): 
                         break
                     matrix_sizes_for_dtype = matrix_sizes.get(dtype)
                     for size in matrix_sizes_for_dtype:
