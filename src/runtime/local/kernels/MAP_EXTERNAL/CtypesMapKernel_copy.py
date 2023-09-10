@@ -20,13 +20,13 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-
+import MapKernelUtils
 import numpy as np
 from sympy import symbols, lambdify, sympify, Symbol
 import re
 
 def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
-    arg_array = np.array(arg_list, dtype=get_type(dtype_arg)).reshape(rows, cols)
+    arg_array = np.array(arg_list, dtype=MapKernelUtils.get_numpy_type(dtype_arg)).reshape(rows, cols)
     
     match = re.search(r'def (\w+)', func)
     if match:
@@ -38,7 +38,7 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             func_name = match.groups()[0]
             func_obj = context.get(func_name)
             if func_obj:
-                res_array = np.vectorize(func_obj, otypes=[get_type(dtype_arg)])(arg_array)
+                res_array = np.vectorize(func_obj, otypes=[MapKernelUtils.get_numpy_type(dtype_arg)])(arg_array)
                 return res_array.flatten().tolist()
             else:
                 print(f"Function '{func_name}' not found.")
@@ -49,28 +49,8 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             x = symbols(varName)
             func_expr = sympify(func.strip())
             func_lambda = lambdify(x, func_expr, modules=["numpy"])
-            res_array = np.array(func_lambda(arg_array), dtype=get_type(dtype_arg))
+            res_array = np.array(func_lambda(arg_array), dtype=MapKernelUtils.get_numpy_type(dtype_arg))
             return res_array.flatten().tolist()
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")
-    return []  # Return an empty list if there's an error
-
-
-def get_type(dtype_str):
-    """Get the corresponding numpy type for a dtype represented by a string."""
-    if dtype_str == "float32":
-        return np.float32
-    elif dtype_str == "float64":
-        return np.double
-    elif dtype_str == "int32":
-        return np.int32
-    elif dtype_str == "int64":
-        return np.int64
-    elif dtype_str == "int8":
-        return np.int8
-    elif dtype_str == "uint64":
-        return np.uint64
-    elif dtype_str == "uint8":
-        return np.uint8
-    else:
-        raise ValueError(f"Unsupported dtype: {dtype_str}")
+    return []

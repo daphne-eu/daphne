@@ -83,7 +83,6 @@ list(APPEND LIBS DataStructures IO BLAS::BLAS MLIRParser)
 set(PREFIX ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/)
 set(HEADERS_cpp_kernels
     ${PREFIX}/MatMul.h
-    ${PREFIX}/MAP_EXTERNAL/NumpyTypeString.h
     ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_sharedMem_voidPointer.h
     ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_sharedMem_address.h
     ${PREFIX}/MAP_EXTERNAL/CtypesMapKernel_sharedMem_Pointer.h

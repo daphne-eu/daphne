@@ -21,13 +21,14 @@
 #
 # -------------------------------------------------------------
 
+import MapKernelUtils
 import numpy as np
 import pandas as pd
 from sympy import symbols, lambdify, sympify, Symbol
 import re
 
 def apply_map_function(input_file, rows, cols, func, varName, dtype):
-    arg_array = pd.read_csv(input_file, header=None,dtype = get_type(dtype)).values.reshape(rows, cols)
+    arg_array = pd.read_csv(input_file, header=None,dtype = MapKernelUtils.get_numpy_type(dtype)).values.reshape(rows, cols)
 
     match = re.search(r'def (\w+)', func)
     if match:
@@ -54,22 +55,3 @@ def apply_map_function(input_file, rows, cols, func, varName, dtype):
             print(f"Failed to execute lambda expression: {str(e)}")
 
     pd.DataFrame(res_array).to_csv("output.csv", index=False, header=False)
-
-def get_type(dtype_str):
-    """Get the corresponding numpy type for a dtype represented by a string."""
-    if dtype_str == "float32":
-        return np.float32
-    elif dtype_str == "float64":
-        return np.double
-    elif dtype_str == "int32":
-        return np.int32
-    elif dtype_str == "int64":
-        return np.int64
-    elif dtype_str == "int8":
-        return np.int8
-    elif dtype_str == "uint64":
-        return np.uint64
-    elif dtype_str == "uint8":
-        return np.uint8
-    else:
-        raise ValueError(f"Unsupported dtype: {dtype_str}")

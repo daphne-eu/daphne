@@ -20,13 +20,13 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-
+import MapKernelUtils
 import numpy as np
 from sympy import symbols, lambdify, sympify, Symbol
 import re
 
 def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype):
-    arg_array = np.fromfile(input_file, dtype=get_dtype_type(dtype)).reshape(rows, cols)    
+    arg_array = np.fromfile(input_file, dtype=MapKernelUtils.get_numpy_type(dtype)).reshape(rows, cols)    
     match = re.search(r'def (\w+)', func)
     if match:
         try:
@@ -52,22 +52,3 @@ def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype
             print(f"Failed to execute lambda expression: {str(e)}")
 
     res_array.tofile(output_file)
-
-def get_dtype_type(dtype_str):
-    """Get the corresponding numpy type for a dtype represented by a string."""
-    if dtype_str == "float32":
-        return np.float32
-    elif dtype_str == "float64":
-        return np.double
-    elif dtype_str == "int32":
-        return np.int32
-    elif dtype_str == "int64":
-        return np.int64
-    elif dtype_str == "int8":
-        return np.int8
-    elif dtype_str == "uint64":
-        return np.uint64
-    elif dtype_str == "uint8":
-        return np.uint8
-    else:
-        raise ValueError(f"Unsupported dtype: {dtype_str}")

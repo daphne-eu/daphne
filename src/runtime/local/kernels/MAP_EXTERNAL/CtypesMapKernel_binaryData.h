@@ -49,13 +49,10 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         const std::string inputFile = "input_data.bin";
         const std::string outputFile = "output_data.bin";
 
-        // Serialize data to a binary file
         std::ofstream output(inputFile, std::ios::binary);
         output.write(reinterpret_cast<const char *>(arg->getValues()), arg->getNumRows() * arg->getNumCols() * sizeof(VTArg));
         output.close();
 
-        // Call Python function to process the data
-        PythonInterpreter::getInstance();
         PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_binaryData");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);

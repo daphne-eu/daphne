@@ -19,7 +19,6 @@
 
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #pragma once
-#include <runtime/local/kernels/MAP_EXTERNAL/NumpyTypeString.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
 
@@ -73,10 +72,8 @@ struct Ctypes_SharedMem_VoidPtr<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             return;
         }
 
-        //std::cout << "Dtype in C++ " << NumpyTypeString<VTArg>::value << std::end;
         std::string dtype = get_dtype_name();
 
-        // Call the map_function with the appropriate arguments
         PyObject* pArgs = PyTuple_Pack(7,
                                         PyLong_FromVoidPtr(arg->getValuesSharedPtr().get()),
                                         PyLong_FromVoidPtr(res->getValuesSharedPtr().get()),

@@ -74,7 +74,6 @@ PyObject* to_python_object(const unsigned int& value)
     return PyLong_FromUnsignedLong(value);
 }
 
-//Helper Methods to transfer to Python Objects
 template <typename VTRes>
 VTRes from_python_object(PyObject* pValue);
 
