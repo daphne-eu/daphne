@@ -369,6 +369,3 @@ if __name__ == "__main__":
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
     run_benchmarks(matrix_sizes_3, datatypes_small_test, implementations_small_evaluation, operations)
-
-    #no cond, exp DaphneInteral with float matrix
-    #op 9 not with floats
