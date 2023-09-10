@@ -19,11 +19,8 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/MCSRMatrix.h>
-//#include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/UnaryOpCode.h>
-//#include <runtime/local/kernels/EwUnarySca.h>
 #include <runtime/local/kernels/EwUnaryMat.h>
-//#include <runtime/local/kernels/EwUnarySca.h>
 
 
 
@@ -178,6 +175,60 @@ TEMPLATE_TEST_CASE("Element-wise unary with MCSR and SIGN", TAG_KERNELS, ALL_VAL
   CHECK(resultMatrix -> get(2,3) == 1);
   CHECK(resultMatrix -> get(2,4) == -1);
   CHECK(resultMatrix -> get(3,5) == 1);
+
+  DataObjectFactory::destroy(sourceMatrix);
+  DataObjectFactory::destroy(resultMatrix);
+
+
+}
+
+
+TEMPLATE_TEST_CASE("Element-wise unary with CSC and SQRT", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros = 8;
+
+  CSCMatrix<ValueType> * sourceMatrix = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
+  CSCMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+
+  //Append source matrix
+  //First row
+  sourceMatrix -> prepareAppend();
+  sourceMatrix -> append(0,0,4);
+  //Second column
+  sourceMatrix -> append(0,1,4);
+  sourceMatrix -> append(1,1,4);
+  //Third column
+  sourceMatrix -> append(2,2,4);
+  //Fourth column
+  sourceMatrix -> append(1,3,4);
+  sourceMatrix -> append(2,3,4);
+  //Fith column
+  sourceMatrix -> append(2,4,4);
+  //Sixth column
+  sourceMatrix -> append(3,5,4);
+  sourceMatrix -> finishAppend();
+
+
+
+  EwUnaryMat<CSCMatrix<ValueType>, CSCMatrix<ValueType>>::apply(UnaryOpCode::SQRT, resultMatrix, sourceMatrix, context);
+
+  CHECK(resultMatrix -> get(0,0) == 2);
+  CHECK(resultMatrix -> get(0,1) == 2);
+  CHECK(resultMatrix -> get(1,1) == 2);
+  CHECK(resultMatrix -> get(1,3) == 2);
+  CHECK(resultMatrix -> get(2,2) == 2);
+  CHECK(resultMatrix -> get(2,3) == 2);
+  CHECK(resultMatrix -> get(2,4) == 2);
+  CHECK(resultMatrix -> get(3,5) == 2);
+
 
   DataObjectFactory::destroy(sourceMatrix);
   DataObjectFactory::destroy(resultMatrix);

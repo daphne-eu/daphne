@@ -60,25 +60,12 @@ public:
       lastAppendedColumnIdx(0)
     {
 
-      /*values.get()[0] = 10; values.get()[1] = 20; values.get()[2] = 30;
-      values.get()[3] = 50; values.get()[4] = 40; values.get()[5] = 60;
-      values.get()[6] = 70; values.get()[7] = 80;
-
-      rowIdxs.get()[0] = 0; rowIdxs.get()[1] = 0; rowIdxs.get()[2] = 1;
-      rowIdxs.get()[3] = 2; rowIdxs.get()[4] = 1; rowIdxs.get()[5] = 2;
-      rowIdxs.get()[6] = 2; rowIdxs.get()[7] = 3;
-
-      columnOffsets.get()[0] = 0; columnOffsets.get()[1] = 1; columnOffsets.get()[2] = 3;
-      columnOffsets.get()[3] = 4; columnOffsets.get()[4] = 6; columnOffsets.get()[5] = 7;
-      columnOffsets.get()[6] = 8;*/
-
       if(zero) {
           memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
           memset(rowIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
           memset(columnOffsets.get(), 0, (numCols + 1) * sizeof(size_t));
       }
 
-      //std::cout << "CSC Matrix" << '\n';
     }
 
     //cl: column-lower (included)
