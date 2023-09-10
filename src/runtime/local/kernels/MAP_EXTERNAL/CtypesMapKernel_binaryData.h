@@ -46,8 +46,9 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        const std::string inputFile = "input_data.bin";
-        const std::string outputFile = "output_data.bin";
+        std::string pid = std::to_string(getpid());
+        const std::string inputFile = "input_data_" + pid + ".bin";
+        const std::string outputFile = "output_data" + pid + ".bin";
 
         std::ofstream output(inputFile, std::ios::binary);
         output.write(reinterpret_cast<const char *>(arg->getValues()), arg->getNumRows() * arg->getNumCols() * sizeof(VTArg));

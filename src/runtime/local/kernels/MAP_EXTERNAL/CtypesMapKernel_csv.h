@@ -76,7 +76,11 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             return;
         }
 
-        std::ofstream ofs("input.csv");
+        std::string pid = std::to_string(getpid());
+        const std::string inputFile = "input_data_" + pid + ".csv";
+        const std::string outputFile = "output_data" + pid + ".csv";
+
+        std::ofstream ofs(inputFile);
         for (size_t i = 0; i < arg->getNumRows(); ++i) {
             for (size_t j = 0; j < arg->getNumCols(); ++j) {
                 std::string valueStr = std::to_string(arg->get(i, j));
@@ -89,8 +93,9 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         std::string dtype = get_dtype_name();
 
-        PyObject* pArgs = Py_BuildValue("siisss",
-                                        "input.csv",
+        PyObject* pArgs = Py_BuildValue("ssiisss",
+                                        inputFile.c_str(),
+                                        outputFile.c_str(),
                                         res->getNumRows(),
                                         res->getNumCols(),
                                         func,
@@ -107,8 +112,8 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         } else {
             Py_XDECREF(pResult);
         }
-
-        std::ifstream ifs("output.csv");
+        
+        std::ifstream ifs(outputFile);
         for (size_t i = 0; i < res->getNumRows(); ++i) {
             for (size_t j = 0; j < res->getNumCols(); ++j) {
                 VTRes value = readValue(ifs);
@@ -125,10 +130,10 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
         ifs.close();
 
-        if (std::remove("input.csv") != 0) {
+        if (std::remove(inputFile.c_str()) != 0) {
             perror("Error deleting input.csv");
         }
-        if (std::remove("output.csv") != 0) {
+        if (std::remove(outputFile.c_str()) != 0) {
             perror("Error deleting output.csv");
         }
 

@@ -27,7 +27,8 @@ import pandas as pd
 from sympy import symbols, lambdify, sympify, Symbol
 import re
 
-def apply_map_function(input_file, rows, cols, func, varName, dtype):
+def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype):
+
     arg_array = pd.read_csv(input_file, header=None,dtype = MapKernelUtils.get_numpy_type(dtype)).values.reshape(rows, cols)
 
     match = re.search(r'def (\w+)', func)
@@ -54,4 +55,4 @@ def apply_map_function(input_file, rows, cols, func, varName, dtype):
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")
 
-    pd.DataFrame(res_array).to_csv("output.csv", index=False, header=False)
+    pd.DataFrame(res_array).to_csv(output_file, index=False, header=False)
