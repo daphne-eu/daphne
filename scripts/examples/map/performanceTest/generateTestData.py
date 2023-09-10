@@ -113,7 +113,7 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
             writer = csv.writer(csvfile)
             writer.writerows(batch_results)
 
-    #warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
+    warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations)
     current_datetime = datetime.datetime.now()
     formatted_datetime = current_datetime.strftime('%Y-%m-%d %H:%M:%S')
 
@@ -335,16 +335,6 @@ if __name__ == "__main__":
     'uint8': [8192, 16384]
     }
 
-    matrix_sizes_250mb_500mb = {
-    'f32': [4096, 8192],
-    'f64': [2896, 5792],
-    'int32': [4096, 8192],
-    'int64': [2896, 5792],
-    'int8': [8192, 16384],
-    'uint64': [2896, 5792],
-    'uint8': [8192, 16384]
-    }
-
     matrix_sizes_3 = {
     'f32': [3],
     'f64': [3],
@@ -368,4 +358,4 @@ if __name__ == "__main__":
 
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks(matrix_sizes_3, datatypes_small_test, implementations_small_evaluation, operations)
+    run_benchmarks(matrix_sizes_250mb_500mb, datatypes_small_test, implementations_small_evaluation, operations)
