@@ -30,20 +30,14 @@ The tests should show the effectiveness and efficiency of the extended `map()`-k
 
 - The utility test showcases the effectiveness by executing functions in the python map kernel, which would not possible in pure DaphneDSL.
 
-- The performance test showcases the detoritation of efficiency of the extended `map()`-kernel in comparison to DaphneDSLs `map()`-kernel, a Numpy approach in Python and Daphnes Internal elementwise matrix operations. This is fulfilled by comparing the memory consumption, execution time and CPU load of the different implementations for different arithmetic operations as UDFs and random generated matrices with no sparsity, a seed of 42 and different sizes.
+- The performance test showcases the detoritation of efficiency of the extended `map()`-kernel in comparison to DaphneDSLs `map()`-kernel, a Numpy approach in Python and Daphnes nternal elementwise matrix operations. This is fulfilled by comparing the memory consumption, execution time and CPU load of the different implementations for different arithmetic operations as UDFs and random generated matrices with no sparsity, a seed of 42 and different sizes. 
+The performance test consists of 2 python scripts. The `generateTestData` scripts generates the data for the different metrics and saves them in .csv-file with the headers `Operation,Implementation,Datatype,MatrixSize,MetricType,Value`. The `visualizeData` script visualizes the data in different Boxplots. You have the options of visualizing it in different .png images or generate an interactive .html file, where you can more easily display the boxplots in a browser.
 
-Note that testcases for the general functionality and edge cases (Buffer overflow and underflow, Rounding) are incorporated in the C++ kernel tests in the test file [AlternativeMapTest.cpp](/test/runtime/local/kernels/AlternativeMapTest.cpp).
+Note that testcases for the general functionality are incorporated in the C++ kernel tests in the test file [AlternativeMapTest.cpp](/test/runtime/local/kernels/AlternativeMapTest.cpp).
 
 ## Results
 
 ## Known Limitations in the General Approach
-
-### Conditional Function Definitions (scf.if)
-#### Problem:
-As of the current version, the map function does not support function definitions that depend on conditional control flow (via scf.if operations). Attempting to define a function string conditionally will result in a runtime error.
-
-#### Mitigation through proper Lowering Op implementation 
-Implement a proper handling for the lowering of Strings for the map function or try to integrate it into the GeneralCallOp infrastructure.
 
 ### Safety Concerns of using exec in the Python map kernel
 #### Problem:
