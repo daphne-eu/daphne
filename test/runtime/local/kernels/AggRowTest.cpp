@@ -14,8 +14,14 @@
  * limitations under the License.
  */
 
+
+
+#include <runtime/local/context/DaphneContext.h>
+#include <api/cli/DaphneUserConfig.h>
+#include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
 #include <runtime/local/kernels/AggRow.h>
@@ -72,7 +78,7 @@ SUM_TEST_CASE(double)
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<typename DTArg::VT>;
-    
+
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -91,11 +97,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {0, 0, 0});
-    
+
     checkAggRow(AggOpCode::MIN, m0, m0exp);
     checkAggRow(AggOpCode::MIN, m1, m1exp);
     checkAggRow(AggOpCode::MIN, m2, m2exp);
-    
+
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m0exp);
     DataObjectFactory::destroy(m1);
@@ -108,7 +114,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("min"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<typename DTArg::VT>;
-    
+
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -127,11 +133,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {9, 2, 5});
-    
+
     checkAggRow(AggOpCode::MAX, m0, m0exp);
     checkAggRow(AggOpCode::MAX, m1, m1exp);
     checkAggRow(AggOpCode::MAX, m2, m2exp);
-    
+
     DataObjectFactory::destroy(m0);
     DataObjectFactory::destroy(m0exp);
     DataObjectFactory::destroy(m1);
@@ -144,7 +150,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("max"), TAG_KERNELS, (DATA_TYPES), (VALUE_T
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<size_t>;
-    
+
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -163,11 +169,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VAL
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {1, 0, 0});
-    
+
     checkAggRow(AggOpCode::IDXMIN, m0, m0exp);
     checkAggRow(AggOpCode::IDXMIN, m1, m1exp);
     checkAggRow(AggOpCode::IDXMIN, m2, m2exp);
-    
+
     DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
@@ -175,7 +181,7 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmin"), TAG_KERNELS, (DenseMatrix), (VAL
 TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VALUE_TYPES)) {
     using DTArg = TestType;
     using DTRes = DenseMatrix<size_t>;
-    
+
     auto m0 = genGivenVals<DTArg>(3, {
         0, 0, 0, 0,
         0, 0, 0, 0,
@@ -194,11 +200,11 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
         0, 0, 5, 0,
     });
     auto m2exp = genGivenVals<DTRes>(3, {3, 1, 2});
-    
+
     checkAggRow(AggOpCode::IDXMAX, m0, m0exp);
     checkAggRow(AggOpCode::IDXMAX, m1, m1exp);
     checkAggRow(AggOpCode::IDXMAX, m2, m2exp);
-    
+
     DataObjectFactory::destroy(m0, m0exp, m1, m1exp, m2, m2exp);
 }
 
@@ -243,3 +249,50 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("idxmax"), TAG_KERNELS, (DenseMatrix), (VAL
 }
 MEAN_TEST_CASE(int64_t);
 MEAN_TEST_CASE(double);
+
+
+
+
+
+TEMPLATE_TEST_CASE("Row aggregation of MCSR works", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros = 8;
+
+  MCSRMatrix<ValueType> * sourceMatrix = DataObjectFactory::create<MCSRMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
+  DenseMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+
+  //Append source matrix
+  //First row
+  sourceMatrix -> append(0,0,4);
+  sourceMatrix -> append(0,1,4);
+  //Second row
+  sourceMatrix -> append(1,1,4);
+  sourceMatrix -> append(1,3,4);
+  //Third column
+  sourceMatrix -> append(2,2,4);
+  sourceMatrix -> append(2,3,4);
+  sourceMatrix -> append(2,4,4);
+  //Fourth row
+  sourceMatrix -> append(3,5,4);
+
+  AggRow<DenseMatrix<ValueType>, MCSRMatrix<ValueType>>::apply(AggOpCode::SUM, resultMatrix, sourceMatrix, context);
+
+  CHECK(resultMatrix -> get(0,0) == 8);
+  CHECK(resultMatrix -> get(1,0) == 8);
+  CHECK(resultMatrix -> get(2,0) == 12);
+  CHECK(resultMatrix -> get(3,0) == 4);
+
+
+  DataObjectFactory::destroy(sourceMatrix);
+  DataObjectFactory::destroy(resultMatrix);
+
+
+}
