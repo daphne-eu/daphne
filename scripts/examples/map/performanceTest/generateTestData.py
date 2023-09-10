@@ -120,7 +120,7 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
     # Open the file initially to write headers
     with open(f"scripts/examples/map/performanceTest/testdata/csv_files/performance_results_{formatted_datetime}.csv", 'w', newline='') as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(["Operation", "Implementation", "Datatype", "Matrix Size", "MetricType", "Value"])
+        writer.writerow(["Run", "Operation", "Implementation", "Datatype", "Matrix Size", "MetricType", "Value"])
 
     batch_results = []
     print("Start Test runs")
@@ -144,9 +144,9 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
                             elapsed_time, max_memory, avg_cpu_load = measure_performance(command)
                             print(f"SUCCESS: elapsed_time: {elapsed_time}, max_memory: {max_memory}, avg_cpu_load: {avg_cpu_load}")
                             batch_results.extend([
-                                (op, impl, dtype, size, "Execution Time", elapsed_time),
-                                (op, impl, dtype, size, "Memory Consumption", max_memory),
-                                (op, impl, dtype, size, "Average CPU Load", avg_cpu_load)
+                                (run, op, impl, dtype, size, "Execution Time", elapsed_time),
+                                (run, op, impl, dtype, size, "Memory Consumption", max_memory),
+                                (run, op, impl, dtype, size, "Average CPU Load", avg_cpu_load)
                             ])
                         except subprocess.TimeoutExpired:
                             print(f"Warning: Benchmark command '{command}' exceeded the timeout.")
