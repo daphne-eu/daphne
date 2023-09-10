@@ -14,6 +14,8 @@
  * limitations under the License.
  */
 
+
+#include <runtime/local/datastructures/CSCMatrix.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
 #include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/context/DaphneContext.h>
@@ -480,14 +482,168 @@ TEMPLATE_TEST_CASE("Element-wise binary with MCSR and MUL", TAG_KERNELS, ALL_VAL
   CHECK(resultMatrix -> get(2,3) == 60);
   CHECK(resultMatrix -> get(3,5) == 0);
 
-  /*std::cout << "*******************************" << '\n';
-  resultMatrix->print(std::cout);
-  std::cout << "*******************************" << '\n';*/
 
 
   DataObjectFactory::destroy(lhs);
   DataObjectFactory::destroy(rhs);
   DataObjectFactory::destroy(resultMatrix);
 
+
+}
+
+
+// ****************************************************************************
+// CSCMatrix
+// ****************************************************************************
+
+TEMPLATE_TEST_CASE("Element-wise binary with CSC and ADD", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros1 = 14;
+  const size_t maxNumNonZeros2 = 9;
+
+  CSCMatrix<ValueType> * lhs = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros1, true);
+  CSCMatrix<ValueType> * rhs = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros2, true);
+  CSCMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+  //Append source matrices
+  lhs -> prepareAppend();
+  lhs -> append(0,0,1);
+  lhs -> append(3,0,1);
+  lhs -> append(0,1,1);
+  lhs -> append(2,1,1);
+  lhs -> append(3,1,1);
+  lhs -> append(1,2,1);
+  lhs -> append(3,2,1);
+  lhs -> append(0,3,1);
+  lhs -> append(2,3,1);
+  lhs -> append(3,3,1);
+  lhs -> append(0,4,1);
+  lhs -> append(3,4,1);
+  lhs -> append(2,5,1);
+  lhs -> append(3,5,1);
+  lhs -> finishAppend();
+
+  rhs -> prepareAppend();
+  rhs -> append(0,0,1);
+  rhs -> append(1,0,1);
+  rhs -> append(3,0,1);
+  rhs -> append(1,1,1);
+  rhs -> append(0,2,1);
+  rhs -> append(3,2,1);
+  rhs -> append(3,3,1);
+  rhs -> append(0,4,1);
+  rhs -> append(1,5,1);
+  rhs -> finishAppend();
+
+
+  EwBinaryMat<CSCMatrix<ValueType>,CSCMatrix<ValueType>, CSCMatrix<ValueType>>::apply(BinaryOpCode::ADD, resultMatrix, lhs, rhs, context);
+
+  CHECK(resultMatrix -> get(0,0) == 2);
+  CHECK(resultMatrix -> get(0,1) == 1);
+  CHECK(resultMatrix -> get(0,2) == 1);
+  CHECK(resultMatrix -> get(0,3) == 1);
+  CHECK(resultMatrix -> get(0,4) == 2);
+  CHECK(resultMatrix -> get(1,0) == 1);
+  CHECK(resultMatrix -> get(1,1) == 1);
+  CHECK(resultMatrix -> get(1,2) == 1);
+  CHECK(resultMatrix -> get(1,5) == 1);
+  CHECK(resultMatrix -> get(2,1) == 1);
+  CHECK(resultMatrix -> get(2,3) == 1);
+  CHECK(resultMatrix -> get(2,5) == 1);
+  CHECK(resultMatrix -> get(3,0) == 2);
+  CHECK(resultMatrix -> get(3,1) == 1);
+  CHECK(resultMatrix -> get(3,2) == 2);
+  CHECK(resultMatrix -> get(3,3) == 2);
+  CHECK(resultMatrix -> get(3,4) == 1);
+  CHECK(resultMatrix -> get(3,5) == 1);
+
+
+  DataObjectFactory::destroy(lhs);
+  DataObjectFactory::destroy(rhs);
+  DataObjectFactory::destroy(resultMatrix);
+
+}
+
+
+
+TEMPLATE_TEST_CASE("Element-wise binary with CSC and MUL", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros1 = 14;
+  const size_t maxNumNonZeros2 = 9;
+
+  CSCMatrix<ValueType> * lhs = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros1, true);
+  CSCMatrix<ValueType> * rhs = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros2, true);
+  CSCMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+  //Append source matrices
+  lhs -> prepareAppend();
+  lhs -> append(0,0,1);
+  lhs -> append(3,0,1);
+  lhs -> append(0,1,1);
+  lhs -> append(2,1,1);
+  lhs -> append(3,1,1);
+  lhs -> append(1,2,1);
+  lhs -> append(3,2,1);
+  lhs -> append(0,3,1);
+  lhs -> append(2,3,1);
+  lhs -> append(3,3,1);
+  lhs -> append(0,4,1);
+  lhs -> append(3,4,1);
+  lhs -> append(2,5,1);
+  lhs -> append(3,5,1);
+  lhs -> finishAppend();
+
+  rhs -> prepareAppend();
+  rhs -> append(0,0,1);
+  rhs -> append(1,0,1);
+  rhs -> append(3,0,1);
+  rhs -> append(1,1,1);
+  rhs -> append(0,2,1);
+  rhs -> append(3,2,1);
+  rhs -> append(3,3,1);
+  rhs -> append(0,4,1);
+  rhs -> append(1,5,1);
+  rhs -> finishAppend();
+
+
+  EwBinaryMat<CSCMatrix<ValueType>,CSCMatrix<ValueType>, CSCMatrix<ValueType>>::apply(BinaryOpCode::MUL, resultMatrix, lhs, rhs, context);
+
+  CHECK(resultMatrix -> get(0,0) == 1);
+  CHECK(resultMatrix -> get(0,1) == 0);
+  CHECK(resultMatrix -> get(0,2) == 0);
+  CHECK(resultMatrix -> get(0,3) == 0);
+  CHECK(resultMatrix -> get(0,4) == 1);
+  CHECK(resultMatrix -> get(1,0) == 0);
+  CHECK(resultMatrix -> get(1,1) == 0);
+  CHECK(resultMatrix -> get(1,2) == 0);
+  CHECK(resultMatrix -> get(1,5) == 0);
+  CHECK(resultMatrix -> get(2,1) == 0);
+  CHECK(resultMatrix -> get(2,3) == 0);
+  CHECK(resultMatrix -> get(2,5) == 0);
+  CHECK(resultMatrix -> get(3,0) == 1);
+  CHECK(resultMatrix -> get(3,1) == 0);
+  CHECK(resultMatrix -> get(3,2) == 1);
+  CHECK(resultMatrix -> get(3,3) == 1);
+  CHECK(resultMatrix -> get(3,4) == 0);
+  CHECK(resultMatrix -> get(3,5) == 0);
+
+
+  DataObjectFactory::destroy(lhs);
+  DataObjectFactory::destroy(rhs);
+  DataObjectFactory::destroy(resultMatrix);
 
 }
