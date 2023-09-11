@@ -583,7 +583,7 @@ To use a map-kernel of an external porgramming language, `map()` can be invoked 
 
 Although Python natively handles integers of arbitrary size, DAPHNE limits representation to specific bit-widths based on the datatype.
 
-Implementation Notes:
+Implementation Guidelines:
 
 `Native Python Processing:`
 Python can natively manage integers of arbitrary size. Developers must ensure the result returned to C++/DAPHNE is constrained to the least significant bits of the datatype. This limitation can be achieved by applying a modulo operation as resultmod  2<bits of datatype>resultmod2<bits of datatype> or bitwise AND operation as result&(2<bits of datatype>−1)result&(2<bits of datatype>−1). For signed integers or narrower integer types, adjustments should be made accordingly.
@@ -603,4 +603,6 @@ Developers have two primary options for integer calculations in Python:
 Element-wise with Python integers |	Individual calculations using native Python integers.|	Might be slower, but allows arbitrary precision for intermediate results.|
 |Batch-wise with Numpy	| Process arrays of numbers simultaneously.	| Likely fasterbut restricts calculations to the specified integer datatype.|
 
-As the computations in the Python Approaches (Python_Shared_Mem, Python_SysArg, Python_Copy, Python_Csv, Python_BinaryFile) are performend by using NumPy, the results are inherently restricted to the datatypes bit-width. If you intend to avoid the restriction, you can use the Python_SysArg approach which does not use NumPy directly for the conversion. Instead, it uses the Python C-API type conversion after the execution of the UDF on the Matrix element. If there is an Result too large (or too small) for a given DAPHNE datatype '-1' is returned. Therefore appropiate limitation has to be ensured.
+In the most Python-based approaches—namely Python_Shared_Mem, Python_SysArg, Python_Copy, Python_Csv, and Python_BinaryFile—computations are performed using NumPy.  As a result, the outcome is naturally limited by the bit-width of NumPy's datatypes. 
+
+However, if you aim to bypass this limitation, the Python_SysArg method is recommended. Unlike other methods, Python_SysArg does not rely on NumPy directly for the conversion process. Instead, it employs the Python C-API for type conversion after executing the UDF on the matrix element. If a result is too large (or too small) for a specific DAPHNE datatype, the value '-1' will be returned. Consequently, ensuring appropriate limitations is vital to avoid potential data loss or inaccuracies.
