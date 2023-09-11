@@ -562,7 +562,7 @@ The given UDF must have a single scalar argument and return a single scalar valu
 
 - **`map`**`(arg:matrix, func:str, varName:str, plName:str)`
 
-To use a map-kernel of an external porgramming language, `map()` can be invoked with a matrix, an user-defined function, the variable of the user-defined function and the name of an external programming language as arguments. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
+To use a map-kernel of an external porgramming language, `map()` can be invoked with a matrix, a user-defined function, the variable of the user-defined function and the name of an external programming language as arguments. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
 
 ### Available Python Map Kernels
 |Name|Description|
@@ -577,7 +577,7 @@ To use a map-kernel of an external porgramming language, `map()` can be invoked 
 
 `Native Python Environment`: If you're using DAPHNE with the system-wide Python installation, any Python code passed to `map()` will utilize the system's default Python version and its installed libraries.
 
-`Virtual Environments (venv)`: If you want to us the `map()` function within a virtual environment, you firstly have to run the `build.sh` script after starting the venv, as the Python Header files have to be compiled against the Daphne application, before using it.
+`Virtual Environments (venv)`: If you want to use the `map()` function within a virtual environment, you firstly have to run the `build.sh` script after starting the venv, as the Python Header files must be compiled with the Daphne application before you can use them.
 
 ### Processing of integers in Python UDFs for DAPHNE:
 
@@ -586,7 +586,7 @@ Although Python natively handles integers of arbitrary size, DAPHNE limits repre
 Implementation Guidelines:
 
 `Native Python Processing:`
-Python can natively manage integers of arbitrary size. Developers must ensure the result returned to C++/DAPHNE is constrained to the least significant bits of the datatype. This limitation can be achieved by applying a modulo operation as resultmod  2<bits of datatype>resultmod2<bits of datatype> or bitwise AND operation as result&(2<bits of datatype>−1)result&(2<bits of datatype>−1). For signed integers or narrower integer types, adjustments should be made accordingly.
+Python can natively manage integers of arbitrary size. Developers must ensure the result returned to C++/DAPHNE is constrained to the least significant bits of the datatype. This limitation can be achieved by applying a modulo operation as `result%2^<bits of datatype>` or bitwise AND operation as `result&(2^<bits of datatype>−1)`. For signed integers or narrower integer types, adjustments should be made accordingly.
 
 `NumPy Processing:`
 When using NumpPy, integer calculations are automatically bound by the datatype's bit-width. The result doesn't need further adjustment before returning it to DAPHNE.
