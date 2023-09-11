@@ -324,26 +324,34 @@ public:
       os << "MCSCMatrix(" << numRows << 'x' << numCols << ", "
          << ValueTypeUtils::cppNameFor<ValueType> << ')' << std::endl;
 
-      ValueType * oneCol = new ValueType[numRows];
-      for (size_t c = 0; c < numCols; c++) {
-          memset(oneCol, 0, numRows * sizeof(ValueType));
+      ValueType * oneRow = new ValueType[numCols];
 
-          const size_t colNumNonZeros = valueSizes.get()[c];
-          const size_t * colRowIdxs = colIdxs.get()[c].get();
-          const ValueType * colValues = values.get()[c].get();
+      for (size_t r = 0; r < numRows; r++) {
+          // Clear the row array to start with all zeros
+          memset(oneRow, 0, numCols * sizeof(ValueType));
+          // Iterate over each column to populate the values for the current row
+          for (size_t c = 0; c < numCols; c++) {
+              const size_t colNumNonZeros = valueSizes.get()[c];
+              const size_t * currentRowIdxs = rowIdxs.get()[c].get();
+              const ValueType * colValues = values.get()[c].get();
 
-          for(size_t i = 0; i < colNumNonZeros; i++)
-              oneCol[colRowIdxs[i]] = colValues[i];
-
-          for(size_t r = 0; r < numRows; r++) {
-              printValue(os, oneCol[r]);
-              if (r < numRows - 1)
+              for(size_t i = 0; i < colNumNonZeros; i++) {
+                  if (currentRowIdxs[i] == r) {
+                      oneRow[c] = colValues[i];
+                      break;
+                  }
+              }
+          }
+          for(size_t c = 0; c < numCols; c++) {
+              printValue(os, oneRow[c]);
+              if (c < numCols - 1)
                   os << ' ';
           }
           os << std::endl;
       }
-      delete[] oneCol;
+      delete[] oneRow;
   }
+
 
 
   MCSCMatrix* sliceRow(size_t colLowerIncl, size_t colUpperExcl) const override {
@@ -368,7 +376,7 @@ public:
  };
 
  template <typename ValueType>
- std::ostream & operator<<(std::ostream & os, const MCSRMatrix<ValueType> & obj)
+ std::ostream & operator<<(std::ostream & os, const MCSCMatrix<ValueType> & obj)
  {
      obj.print(os);
      return os;

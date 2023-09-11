@@ -63,6 +63,7 @@ set(TEST_SOURCES
         runtime/local/datastructures/TaskQueueTest.cpp
         runtime/local/datastructures/CSCMatrixTest.cpp
         runtime/local/datastructures/MCSRMatrixTest.cpp
+        runtime/local/datastructures/MCSCMatrixTest.cpp
 
         runtime/local/io/ReadCsvTest.cpp
 	runtime/local/io/ReadParquetTest.cpp
