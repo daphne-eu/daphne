@@ -20,13 +20,25 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-import MapKernelUtils
+
+import PythonMapKernelUtils
 import numpy as np
+import ctypes
 from sympy import symbols, lambdify, sympify, Symbol
 import re
 
-def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
-    arg_array = np.array(arg_list, dtype=MapKernelUtils.get_numpy_type(dtype_arg)).reshape(rows, cols)
+def apply_map_function(upper_res, lower_res, upper_arg, lower_arg, rows, cols, func, varName, dtype_arg, dtype_res):
+    res_ptr = ((upper_res << 32) | lower_res)
+    arg_ptr = ((upper_arg << 32) | lower_arg)
+
+    res_array = np.ctypeslib.as_array(
+        ctypes.cast(res_ptr, ctypes.POINTER(PythonMapKernelUtils.get_ctypes_type(dtype_res))),
+        shape=(rows, cols)
+    )
+    arg_array = np.ctypeslib.as_array(
+        ctypes.cast(arg_ptr, ctypes.POINTER(PythonMapKernelUtils.get_ctypes_type(dtype_arg))),
+        shape=(rows, cols)
+    )
     
     match = re.search(r'def (\w+)', func)
     if match:
@@ -38,8 +50,7 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             func_name = match.groups()[0]
             func_obj = context.get(func_name)
             if func_obj:
-                res_array = np.vectorize(func_obj, otypes=[MapKernelUtils.get_numpy_type(dtype_arg)])(arg_array)
-                return res_array.flatten().tolist()
+                res_array[:] = np.vectorize(func_obj)(arg_array)
             else:
                 print(f"Function '{func_name}' not found.")
         except Exception as e:
@@ -49,8 +60,6 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             x = symbols(varName)
             func_expr = sympify(func.strip())
             func_lambda = lambdify(x, func_expr, modules=["numpy"])
-            res_array = np.array(func_lambda(arg_array), dtype=MapKernelUtils.get_numpy_type(dtype_arg))
-            return res_array.flatten().tolist()
+            res_array[:] = func_lambda(arg_array)
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")
-    return []

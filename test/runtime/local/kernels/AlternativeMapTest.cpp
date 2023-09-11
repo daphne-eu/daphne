@@ -71,13 +71,11 @@ void checkMap(const DTArg * arg, const DTRes * exp, const char * func, const cha
 template<class DTRes, class DTArg>
 void checkMapForAllPL(const DTArg * arg, const DTRes * exp, const char * func)
 {
-    checkMap(arg, exp, func, "Python_Ctypes_sharedMem_address");
-    checkMap(arg, exp, func, "Python_Ctypes_sharedMem_voidPointer");
-    checkMap(arg, exp, func, "Python_Ctypes_sharedMem_Pointer");
-    checkMap(arg, exp, func, "Python_Ctypes_copy");
-    checkMap(arg, exp, func, "Python_Ctypes_binaryData");
-    checkMap(arg, exp, func, "Python_Ctypes_csv");
-    checkMap(arg, exp, func, "Python_Ctypes_SysArg");
+    checkMap(arg, exp, func, "Python_Shared_Mem");
+    checkMap(arg, exp, func, "Python_Copy");
+    checkMap(arg, exp, func, "Python_BinaryFile");
+    checkMap(arg, exp, func, "Python_CsvFile");
+    checkMap(arg, exp, func, "Python_SysArg");
 }
 
 template<template<typename VT> class DT, class VTArg, class VTRes>

@@ -20,13 +20,11 @@
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_sharedMem_address.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_sharedMem_Pointer.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_sharedMem_voidPointer.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_csv.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_binaryData.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_copy.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_SysArg.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_shared_mem.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_csv.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_binaryData.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_copy.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernel_SysArg.h>
 #include <memory>
 #include <algorithm>
 #include <cassert>
@@ -68,34 +66,25 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         
         if(plName != NULL)
         {
-
-            if (strcmp(plName, "Python_Ctypes_sharedMem_voidPointer") == 0)
+            if (strcmp(plName, "Python_Shared_Mem") == 0)
             {
-                applyCTypes_SharedMem_VoidPtr(res, arg, func, varName);
+                applyPythonKernel_Shared_Mem(res, arg, func, varName);
             }
-            else if (strcmp(plName, "Python_Ctypes_sharedMem_address") == 0)
+            else if(strcmp(plName, "Python_Copy") == 0)
             {
-                applyCTypesKernel_SharedMem_Adress(res, arg, func, varName);
+                applyPythonMapKernel_copy(res, arg, func, varName);
             }
-            else if(strcmp(plName, "Python_Ctypes_sharedMem_Pointer") == 0)
+            else if(strcmp(plName, "Python_CsvFile") == 0)
             {
-                applyCTypesMapKernel_SharedMem_Pointer(res, arg, func, varName);
+                applyPythonMapKernel_csv(res, arg, func, varName);
             }
-            else if(strcmp(plName, "Python_Ctypes_copy") == 0)
+            else if(strcmp(plName, "Python_BinaryFile") == 0)
             {
-                applyCTypesMapKernel_copy(res, arg, func, varName);
+                applyPythonMapKernel_binaryData(res, arg, func, varName);
             }
-            else if(strcmp(plName, "Python_Ctypes_csv") == 0)
+            else if(strcmp(plName, "Python_SysArg") == 0)
             {
-                applyCTypesMapKernel_csv(res, arg, func, varName);
-            }
-            else if(strcmp(plName, "Python_Ctypes_binaryData") == 0)
-            {
-                applyCTypesMapKernel_binaryData(res, arg, func, varName);
-            }
-            else if(strcmp(plName, "Python_Ctypes_SysArg") == 0)
-            {
-                applyCtypesMapKernel_SysArg(res, arg, func, varName);
+                applyPythonMapKernel_SysArg(res, arg, func, varName);
             }
             else
             {
@@ -111,33 +100,24 @@ struct MapExternalPL<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
     }
 
-    static void applyCTypesKernel_SharedMem_Adress(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypesKernel_SharedMem_Adress(res, arg, func, varName);
+    static void applyPythonKernel_Shared_Mem(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_Shared_Mem(res, arg, func, varName);
     }
 
-    static void applyCTypesMapKernel_SharedMem_Pointer(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypesMapKernel_SharedMem_Pointer(res, arg, func, varName);
+    static void applyPythonMapKernel_csv(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_csv(res, arg, func, varName);
     }
 
-    static void applyCTypesMapKernel_csv(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypesMapKernel_csv(res, arg, func, varName);
+    static void applyPythonMapKernel_binaryData(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_binaryData(res, arg, func, varName);
     }
 
-    static void applyCTypesMapKernel_binaryData(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypesMapKernel_binaryData(res, arg, func, varName);
+    static void applyPythonMapKernel_copy(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_copy(res, arg, func, varName);
     }
 
-    static void applyCTypesMapKernel_copy(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypesMapKernel_copy(res, arg, func, varName);
+    static void applyPythonMapKernel_SysArg(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
+        pythonMapKernel_SysArg(res, arg, func, varName);
     }
-
-    static void applyCtypesMapKernel_SysArg(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypesMapKernel_SysArg(res, arg, func, varName);
-    }
-
-    static void applyCTypes_SharedMem_VoidPtr(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
-        ctypes_SharedMem_VoidPtr(res, arg, func, varName);
-    }
-
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAPEXTERNALPL_H

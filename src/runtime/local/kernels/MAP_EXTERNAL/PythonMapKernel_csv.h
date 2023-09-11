@@ -13,20 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SHAREDMEM_ADDRESS_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SHAREDMEM_ADDRESS_H
+
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_CSV_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_CSV_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/MapKernelUtils.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernelUtils.h>
 #include <Python.h>
-#include <memory>
+#include <fstream>
 #include <util/PythonInterpreter.h>
+#include <cstdio>
+#include <sstream>
+#include <string>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 template<typename DTRes, typename DTArg>
-struct CtypesMapKernelSharedMemAddress
+struct PythonMapKernel_csv
 {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
@@ -35,15 +39,15 @@ struct CtypesMapKernelSharedMemAddress
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg>
-void ctypesKernel_SharedMem_Adress(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
-    CtypesMapKernelSharedMemAddress<DTRes,DTArg>::apply(res, arg, func, varName);
+void pythonMapKernel_csv(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    PythonMapKernel_csv<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
 template<typename VTRes, typename VTArg>
-struct CtypesMapKernelSharedMemAddress<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
@@ -52,7 +56,7 @@ struct CtypesMapKernelSharedMemAddress<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_sharedMem_address");
+        PyObject* pName = PyUnicode_DecodeFSDefault("PythonMapKernel_csv");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
 
@@ -73,32 +77,31 @@ struct CtypesMapKernelSharedMemAddress<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             return;
         }
 
-        const VTRes* res_data = res->getValues();
-        const VTArg* arg_data = arg->getValues();
+        std::string pid = std::to_string(getpid());
+        const std::string inputFile = "input_data_" + pid + ".csv";
+        const std::string outputFile = "output_data" + pid + ".csv";
 
-        if (!res_data || !arg_data) {
-            std::cerr << "Null pointer returned from getValues()!" << std::endl;
-            return;
+        std::ofstream ofs(inputFile);
+        for (size_t i = 0; i < arg->getNumRows(); ++i) {
+            for (size_t j = 0; j < arg->getNumCols(); ++j) {
+                std::string valueStr = std::to_string(arg->get(i, j));
+        
+                ofs << valueStr << (j == arg->getNumCols() - 1 ? "\n" : ",");
+            }
         }
 
-        uint64_t data_address_res = reinterpret_cast<uint64_t>(res_data);
-        uint64_t data_address_arg = reinterpret_cast<uint64_t>(arg_data);
+        ofs.close();
 
-        std::string orig_dtype_arg = get_dtype_name<VTArg>();
-        std::string orig_dtype_res = orig_dtype_arg; // Assuming VTArg and VTRes have the same data type
+        std::string dtype = get_dtype_name<VTArg>();
 
-        PyObject* pArgs = Py_BuildValue("KKKKiissss",
-                                        address_upper(data_address_res),
-                                        address_lower(data_address_res),
-                                        address_upper(data_address_arg),
-                                        address_lower(data_address_arg),
+        PyObject* pArgs = Py_BuildValue("ssiisss",
+                                        inputFile.c_str(),
+                                        outputFile.c_str(),
                                         res->getNumRows(),
                                         res->getNumCols(),
                                         func,
                                         varName,
-                                        orig_dtype_arg.c_str(),
-                                        orig_dtype_res.c_str()
-                                        );
+                                        dtype.c_str());
 
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         Py_XDECREF(pFunc);
@@ -110,16 +113,46 @@ struct CtypesMapKernelSharedMemAddress<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         } else {
             Py_XDECREF(pResult);
         }
+        
+        std::ifstream ifs(outputFile);
+        for (size_t i = 0; i < res->getNumRows(); ++i) {
+            for (size_t j = 0; j < res->getNumCols(); ++j) {
+                VTRes value = readValue(ifs);
+        
+                // If not on the last column, skip the comma
+                if (j < res->getNumCols() - 1) {
+                    ifs.ignore(); // Ignore the comma (',')
+                }
+
+                res->set(i, j, value);
+            }
+            // This will consume the newline at the end of each row.
+            ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+        ifs.close();
+
+        if (std::remove(inputFile.c_str()) != 0) {
+            perror("Error deleting input csv file");
+        }
+        if (std::remove(outputFile.c_str()) != 0) {
+            perror("Error deleting output csv file");
+        }
 
         PyGILState_Release(gstate);
     }
 
-    static constexpr uint32_t address_upper(uint64_t data_address) {
-        return static_cast<uint32_t>((data_address & 0xFFFFFFFF00000000) >> 32);
+    static VTRes readValue(std::ifstream& ifs)
+    {
+        VTRes value;
+        if (std::is_same<VTRes, uint8_t>::value || std::is_same<VTRes, int8_t>::value) {
+            int temp; // Use a temp int to store the parsed value
+            ifs >> temp;
+            value = static_cast<VTRes>(temp); // Cast back to uint8_t
+        } else {
+            ifs >> value;
+        }
+        return value;
     }
 
-    static constexpr uint32_t address_lower(uint64_t data_address) {
-        return static_cast<uint32_t>(data_address & 0xFFFFFFFF);
-    }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SHAREDMEM_ADDRESS_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_CSV_H

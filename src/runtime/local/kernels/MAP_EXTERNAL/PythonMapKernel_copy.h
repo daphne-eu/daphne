@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_COPY_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_COPY_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
 #include <vector>
 #include <util/PythonInterpreter.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/MapKernelUtils.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernelUtils.h>
 
 template<typename DTRes, typename DTArg>
-struct CtypesMapKernel_copy
+struct PythonMapKernel_copy
 {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
 
 template<class DTRes, class DTArg>
-void ctypesMapKernel_copy(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
-    CtypesMapKernel_copy<DTRes,DTArg>::apply(res, arg, func, varName);
+void pythonMapKernel_copy(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    PythonMapKernel_copy<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 template<typename VTRes, typename VTArg>
-struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct PythonMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName)
     {
@@ -43,7 +43,7 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        PyObject* pName = PyUnicode_DecodeFSDefault("CtypesMapKernel_copy");
+        PyObject* pName = PyUnicode_DecodeFSDefault("PythonMapKernel_copy");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
 
@@ -120,4 +120,4 @@ struct CtypesMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     }
 };
 
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_COPY_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H

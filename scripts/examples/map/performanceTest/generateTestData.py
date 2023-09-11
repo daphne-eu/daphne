@@ -268,12 +268,12 @@ def generate_command(operation, implementation, datatype, matrix_size, min_value
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneMap/mapTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
     elif(implementation == "daphneInternal"):
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/daphneInternal/daphneInternal_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
-    elif(implementation.startswith("Python_Ctypes")):
+    elif(implementation == "Python_Numpy_Approach"):
+        result = ["python3", f"scripts/examples/map/performanceTest/performancetestScripts/python_numpy_testscript.py",f"{datatype}" ,f"{operation}", f"{matrix_size}", f"{min_value}", f"{max_value}"]
+    elif(implementation.startswith("Python_")):
         result = ["bin/daphne", f"scripts/examples/map/performanceTest/performancetestScripts/mapExternal/mapExternalPLTest_{datatype}.daph", f"matrix_size={matrix_size}", f"minValue={min_value}", f"maxValue={max_value}", f"operation={operation}"]
         programming_language_arg = 'pl=\"' + implementation + '\"'
         result.append(programming_language_arg)
-    elif(implementation == "Python_Numpy_Approach"):
-        result = ["python3", f"scripts/examples/map/performanceTest/performancetestScripts/python_numpy_testscript.py",f"{datatype}" ,f"{operation}", f"{matrix_size}", f"{min_value}", f"{max_value}"]
     else:
         print(f"operation: {operation}, implementation: {implementation}, datatype: {datatype}, matrix_size: {matrix_size}, min_value: {min_value}, max_value: {max_value}")
     return result
@@ -455,13 +455,9 @@ if __name__ == "__main__":
     datatypes_small_test = ['f64', 'f32', 'int64']
 
     implementations = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
-                       "Python_Ctypes_SysArg","Python_Ctypes_sharedMem_address", 
-                       "Python_Ctypes_sharedMem_voidPointer", "Python_Ctypes_sharedMem_Pointer",
-                        "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
-    implementations_small_evaluation = ["daphneMap", "daphneInternal", "Python_Numpy_Approach", 
-                       "Python_Ctypes_SysArg","Python_Ctypes_sharedMem_address", 
-                        "Python_Ctypes_copy", "Python_Ctypes_binaryData", "Python_Ctypes_csv"]
+                       "Python_SysArg","Python_Shared_Mem", "Python_Copy", 
+                       "Python_BinaryFile", "Python_CsvFile"]
 
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks_task_parallelized(matrix_sizes_250mb_500mb, datatypes_small_test, implementations_small_evaluation, operations)
+    run_benchmarks_task_parallelized(matrix_sizes_250mb_500mb, datatypes_small_test, implementations, operations)

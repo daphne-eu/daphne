@@ -569,7 +569,7 @@ To use a map-kernel of an external porgramming language, `map()` can be invoked 
 |---|---|
 |`Python_Shared_Mem`| Uses Shared Memory for the Data Transfer (works directly on the memory)|
 |`Python_Copy`| Transfers a Copy of the Matrix to Python, gets back the Result matrix from Python| 
-|`Python_Csv`| Data Transfer per temporary csv file|
+|`Python_CsvFile`| Data Transfer per temporary csv file|
 |`Python_BinaryFile`| Data Transfer per temporary binary file|
 |`Python_SysArg`| For every element in the matrix the Python function will be invoked on the element per Python Interpreter call|
 
@@ -603,6 +603,6 @@ Developers have two primary options for integer calculations in Python:
 Element-wise with Python integers |	Individual calculations using native Python integers.|	Might be slower, but allows arbitrary precision for intermediate results.|
 |Batch-wise with Numpy	| Process arrays of numbers simultaneously.	| Likely fasterbut restricts calculations to the specified integer datatype.|
 
-In the most Python-based approaches—namely Python_Shared_Mem, Python_SysArg, Python_Copy, Python_Csv, and Python_BinaryFile—computations are performed using NumPy.  As a result, the outcome is naturally limited by the bit-width of NumPy's datatypes. 
+In the most Python-based approaches—namely Python_Shared_Mem, Python_SysArg, Python_Copy, Python_CsvFile, and Python_BinaryFile—computations are performed using NumPy.  As a result, the outcome is naturally limited by the bit-width of NumPy's datatypes. 
 
 However, if you aim to bypass this limitation, the Python_SysArg method is recommended. Unlike other methods, Python_SysArg does not rely on NumPy directly for the conversion process. Instead, it employs the Python C-API for type conversion after executing the UDF on the matrix element. If a result is too large (or too small) for a specific DAPHNE datatype, the value '-1' will be returned. Consequently, ensuring appropriate limitations is vital to avoid potential data loss or inaccuracies.

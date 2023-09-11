@@ -20,21 +20,16 @@
 # Modifications Copyright 2022 The DAPHNE Consortium
 #
 # -------------------------------------------------------------
-import MapKernelUtils
+
+import PythonMapKernelUtils
 import numpy as np
-import ctypes
+import pandas as pd
 from sympy import symbols, lambdify, sympify, Symbol
 import re
 
-def apply_map_function(res_ptr, arg_ptr, rows, cols, func, varName, dtype_arg, dtype_res):
-    res_array = np.ctypeslib.as_array(
-        ctypes.cast(res_ptr, ctypes.POINTER(MapKernelUtils.get_ctypes_type(dtype_res))),
-        shape=(rows, cols)
-    )
-    arg_array = np.ctypeslib.as_array(
-        ctypes.cast(arg_ptr, ctypes.POINTER(MapKernelUtils.get_ctypes_type(dtype_arg))),
-        shape=(rows, cols)
-    )
+def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype):
+
+    arg_array = pd.read_csv(input_file, header=None,dtype = PythonMapKernelUtils.get_numpy_type(dtype)).values.reshape(rows, cols)
 
     match = re.search(r'def (\w+)', func)
     if match:
@@ -46,7 +41,7 @@ def apply_map_function(res_ptr, arg_ptr, rows, cols, func, varName, dtype_arg, d
             func_name = match.groups()[0]
             func_obj = context.get(func_name)
             if func_obj:
-                res_array[:] = np.vectorize(func_obj)(arg_array)
+                res_array = np.vectorize(func_obj, otypes=[dtype])(arg_array)
             else:
                 print(f"Function '{func_name}' not found.")
         except Exception as e:
@@ -56,6 +51,8 @@ def apply_map_function(res_ptr, arg_ptr, rows, cols, func, varName, dtype_arg, d
             x = symbols(varName)
             func_expr = sympify(func.strip())
             func_lambda = lambdify(x, func_expr, modules=["numpy"])
-            res_array[:] = func_lambda(arg_array)
+            res_array = np.array(func_lambda(arg_array), dtype=dtype)
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")
+
+    pd.DataFrame(res_array).to_csv(output_file, index=False, header=False)

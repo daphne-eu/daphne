@@ -47,7 +47,7 @@ def is_valid_isbn(x):
         return 0
 ";
 print("\nMatrix ISBN Validation Matrix\n");
-//print(map(X, isbn_validator_udf ,"x" , "Python_Ctypes_sharedMem_address"));
+print(map(X, isbn_validator_udf ,"x" , "Python_Shared_Mem"));
 
 //Date Example
 unix_timestamp_converter_udf = "
@@ -64,7 +64,7 @@ Y = reshape([1370841550, 1403689208, 1322621584,
 print("\nRandom UNIX Timestamps as Matrix\n");
 print(Y);
 print("\nConverted UNIX Timestamps to Dates as Matrix\n");
-print(map(Y, unix_timestamp_converter_udf ,"x" , "Python_Ctypes_sharedMem_address"));
+print(map(Y, unix_timestamp_converter_udf ,"x" , "Python_Shared_Mem"));
 
 
 //Server Example (USE CAREFULLY AS TO EXCESSIVE PINGING IS NOT GOOD)
@@ -84,4 +84,4 @@ def ping_server(x):
 ";
 
 print("\nResponse Matrix after Pinging IP Adresses\n");
-print(map(Z, ip_ping_udf ,"x" , "Python_Ctypes_sharedMem_address"));
+print(map(Z, ip_ping_udf ,"x" , "Python_Shared_Mem"));

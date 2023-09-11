@@ -14,20 +14,20 @@
  * limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SYSARG_H
-#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SYSARG_H
+#ifndef SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_SYSARG_H
+#define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_SYSARG_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <Python.h>
 #include <memory>
 #include <util/PythonInterpreter.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/MapKernelUtils.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernelUtils.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
 // ****************************************************************************
 template<typename DTRes, typename DTArg>
-struct CtypesMapKernel_SysArg {
+struct PythonMapKernel_SysArg {
     static void apply(DTRes *& res, const DTArg * arg, const char* func, const char* varName) = delete;
 };
 
@@ -35,15 +35,15 @@ struct CtypesMapKernel_SysArg {
 // Convenience function
 // ****************************************************************************
 template<class DTRes, class DTArg>
-void ctypesMapKernel_SysArg(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
-    CtypesMapKernel_SysArg<DTRes,DTArg>::apply(res, arg, func, varName);
+void pythonMapKernel_SysArg(DTRes *& res, const DTArg * arg, const char* func, const char* varName) {
+    PythonMapKernel_SysArg<DTRes,DTArg>::apply(res, arg, func, varName);
 }
 
 // ----------------------------------------------------------------------------
 // DenseMatrix
 // ----------------------------------------------------------------------------
 template<typename VTRes, typename VTArg>
-struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
+struct PythonMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     static void apply(DenseMatrix<VTRes> *& res, const DenseMatrix<VTArg> * arg, const char* func, const char* varName) {
     
     PythonInterpreter::getInstance();
@@ -127,4 +127,4 @@ struct CtypesMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
     PyGILState_Release(gstate);
     }
 };
-#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CTYPESMAPKERNEL_SYSARG_H
+#endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_SYSARG_H
