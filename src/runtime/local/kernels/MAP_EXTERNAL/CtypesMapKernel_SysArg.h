@@ -21,7 +21,7 @@
 #include <Python.h>
 #include <memory>
 #include <util/PythonInterpreter.h>
-#include <runtime/local/kernels/MAP_EXTERNAL/CtypesMapKernel_copy.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/MapKernelUtils.h>
 
 // ****************************************************************************
 // Struct for partial template specialization

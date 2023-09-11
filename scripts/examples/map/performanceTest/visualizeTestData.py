@@ -31,8 +31,8 @@ def visualize_performance_metrics_datatypes_summarized(csv_file_name):
     df = pd.read_csv(csv_file_name)
     
     for metric in df['MetricType'].unique():
-        for size in df['MatrixSize'].unique():
-            subset_data = df[(df['MetricType'] == metric) & (df['MatrixSize'] == size)]
+        for size in df['Matrix Size'].unique():
+            subset_data = df[(df['MetricType'] == metric) & (df['Matrix Size'] == size)]
             
             if not subset_data.empty:
                 plt.figure(figsize=(12, 8))
@@ -59,13 +59,21 @@ def createBoxplotsWithSeaborn(csv_file_name):
     for metric in metrics:
         subset_data = data[data['MetricType'] == metric]
         
-        unique_sizes = subset_data['MatrixSize'].unique()
+        unique_sizes = subset_data['Matrix Size'].unique()
         unique_dtypes = subset_data['Datatype'].unique()
 
         for size in unique_sizes:
             for dtype in unique_dtypes:
                 plt.figure(figsize=(8, 6))
-                specific_data = subset_data[(subset_data['MatrixSize'] == size) & (subset_data['Datatype'] == dtype)]
+                specific_data = subset_data[(subset_data['Matrix Size'] == size) & (subset_data['Datatype'] == dtype)]
+                
+                if specific_data.empty:
+                    print(f"No data for Metric: {metric}, Matrix Size: {size}, Datatype: {dtype}")
+                    continue
+                if len(specific_data['Implementation'].unique()) <= 1:
+                    print(f"Only one unique hue for Metric: {metric}, Matrix Size: {size}, Datatype: {dtype}")
+                    continue
+                specific_data = specific_data.dropna()
                 sns.boxplot(data=specific_data, x='Operation', y='Value', hue='Implementation')
                 
                 plt.title(f'Metric: {metric}, Matrix Size: {size}, Datatype: {dtype}')
@@ -99,7 +107,7 @@ def createInteractiveBoxplot(csv_file_name):
         for metric in data["MetricType"].unique()
     ]
 
-    matrix_sizes = sorted(data['MatrixSize'].unique())
+    matrix_sizes = sorted(data['Matrix Size'].unique())
     fig.update_layout(
         updatemenus=[
             {
@@ -118,7 +126,7 @@ def createInteractiveBoxplot(csv_file_name):
             "xanchor": "left",
             "currentvalue": {
                 "font": {"size": 16},
-                "prefix": "MatrixSize:",
+                "prefix": "Matrix Size:",
                 "visible": True,
                 "xanchor": "right"
             },
@@ -149,5 +157,5 @@ def createInteractiveBoxplot(csv_file_name):
     pio.write_html(fig, file=f"{csv_file_name}.html")
 
 if __name__ == "__main__":
-    createInteractiveBoxplot("scripts/examples/map/performanceTest/testdata/csv_files/performance_results_2023-09-08 12:04:23.csv")
-    #visualize_performance_metrics_datatypes_summarized("scripts/examples/map/performanceTest/testdata/csv_files/performance_results_2023-09-08 12:04:23.csv")
+    #createInteractiveBoxplot("scripts/examples/map/performanceTest/testdata/csv_files/performance_results_2023-09-11 01:07:39.csv")
+    createBoxplotsWithSeaborn("scripts/examples/map/performanceTest/testdata/csv_files/performance_results_2023-09-11 01:07:39.csv")

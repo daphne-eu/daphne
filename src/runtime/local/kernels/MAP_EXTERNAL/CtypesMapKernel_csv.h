@@ -18,6 +18,7 @@
 #define SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_CSVMAPKERNEL_H
 
 #include <runtime/local/datastructures/DenseMatrix.h>
+#include <runtime/local/kernels/MAP_EXTERNAL/MapKernelUtils.h>
 #include <Python.h>
 #include <fstream>
 #include <util/PythonInterpreter.h>
@@ -91,7 +92,7 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         ofs.close();
 
-        std::string dtype = get_dtype_name();
+        std::string dtype = get_dtype_name<VTArg>();
 
         PyObject* pArgs = Py_BuildValue("ssiisss",
                                         inputFile.c_str(),
@@ -138,26 +139,6 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         }
 
         PyGILState_Release(gstate);
-    }
-
-    static std::string get_dtype_name() {
-        if (std::is_same<VTArg, float>::value) {
-            return "float32";
-        } else if (std::is_same<VTArg, double>::value) {
-            return "float64";
-        } else if (std::is_same<VTArg, int32_t>::value) {
-            return "int32";
-        } else if (std::is_same<VTArg, int64_t>::value) {
-            return "int64";
-        } else if (std::is_same<VTArg, int8_t>::value) {
-            return "int8";
-        } else if (std::is_same<VTArg, uint64_t>::value) {
-            return "uint64";
-        } else if (std::is_same<VTArg, uint8_t>::value) {
-            return "uint8";
-        } else {
-            throw std::runtime_error("Unsupported data type!");
-        }
     }
 
     static VTRes readValue(std::ifstream& ifs)
