@@ -19,6 +19,7 @@
 #include <api/cli/DaphneUserConfig.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/CSCMatrix.h>
 #include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/datagen/GenGivenVals.h>
@@ -125,6 +126,61 @@ TEMPLATE_TEST_CASE("Transpose for MCSR works", TAG_KERNELS, ALL_VALUE_TYPES){
   sourceMatrix -> append(3,5,80);
 
   Transpose<MCSRMatrix<ValueType>, MCSRMatrix<ValueType>>::apply(resultMatrix, sourceMatrix, context);
+
+  CHECK(resultMatrix->getNumRows() == sourceMatrix->getNumCols());
+  CHECK(resultMatrix->getNumCols() == sourceMatrix->getNumRows());
+
+  CHECK(resultMatrix -> get(0,0) == 10);
+  CHECK(resultMatrix -> get(1,0) == 20);
+  CHECK(resultMatrix -> get(1,1) == 30);
+  CHECK(resultMatrix -> get(2,2) == 50);
+  CHECK(resultMatrix -> get(3,1) == 40);
+  CHECK(resultMatrix -> get(3,2) == 60);
+  CHECK(resultMatrix -> get(4,2) == 70);
+  CHECK(resultMatrix -> get(5,3) == 80);
+
+
+  DataObjectFactory::destroy(sourceMatrix);
+  DataObjectFactory::destroy(resultMatrix);
+
+
+}
+
+
+
+TEMPLATE_TEST_CASE("Transpose for CSC works", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros = 8;
+
+  CSCMatrix<ValueType> * sourceMatrix = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
+  CSCMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+
+  sourceMatrix -> prepareAppend();
+  //First column
+  sourceMatrix -> append(0,0,10);
+  //Second column
+  sourceMatrix -> append(0,1,20);
+  sourceMatrix -> append(1,1,30);
+  //Third column
+  sourceMatrix -> append(2,2,50);
+  //Fourth column
+  sourceMatrix -> append(1,3,40);
+  sourceMatrix -> append(2,3,60);
+  //Fith column
+  sourceMatrix -> append(2,4,70);
+  //Sixth column
+  sourceMatrix -> append(3,5,80);
+  sourceMatrix -> finishAppend();
+
+  Transpose<CSCMatrix<ValueType>, CSCMatrix<ValueType>>::apply(resultMatrix, sourceMatrix, context);
 
   CHECK(resultMatrix->getNumRows() == sourceMatrix->getNumCols());
   CHECK(resultMatrix->getNumCols() == sourceMatrix->getNumRows());

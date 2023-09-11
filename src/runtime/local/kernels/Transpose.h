@@ -18,6 +18,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/CSCMatrix.h>
 #include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -136,7 +137,7 @@ struct Transpose<MCSRMatrix<VT>, MCSRMatrix<VT>> {
         if(res == nullptr){
             res = DataObjectFactory::create<MCSRMatrix<VT>>(numCols, numRows, arg->getMaxNumNonZeros(), true);
         }
-        
+
         for(size_t c = 0; c < numCols; c++) {
             for(size_t r = 0; r < numRows; r++) {
                 // Retrieve values and column indices for the current row
@@ -153,5 +154,48 @@ struct Transpose<MCSRMatrix<VT>, MCSRMatrix<VT>> {
                 }
             }
         }
+    }
+};
+
+
+
+// ----------------------------------------------------------------------------
+// CSCMatrix <- CSCMatrix
+// ---------------------------------------------------------------------------
+
+
+template<typename VT>
+struct Transpose<CSCMatrix<VT>, CSCMatrix<VT>> {
+    static void apply(CSCMatrix<VT> *& res, const CSCMatrix<VT> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<CSCMatrix<VT>>(numCols, numRows, arg->getNumNonZeros(), false);
+
+        const VT * valuesArg = arg->getValues();
+        const size_t * rowIdxsArg = arg->getRowIdxs();
+        const size_t * colOffsetsArg = arg->getColumnOffsets();
+
+        VT * valuesRes = res->getValues();
+        VT * const valuesResInit = valuesRes;
+        size_t * rowIdxsRes = res->getRowIdxs();
+        size_t * colOffsetsRes = res->getColumnOffsets();
+
+        auto* curColOffsets = new size_t[numCols + 1];
+        memcpy(curColOffsets, colOffsetsArg, (numCols + 1) * sizeof(size_t));
+
+        colOffsetsRes[0] = 0;
+        for(size_t r = 0; r < numRows; r++) {
+            for(size_t c = 0; c < numCols; c++)
+                if(curColOffsets[c] < colOffsetsArg[c + 1] && rowIdxsArg[curColOffsets[c]] == r) {
+                    *valuesRes++ = valuesArg[curColOffsets[c]];
+                    *rowIdxsRes++ = c;
+                    curColOffsets[c]++;
+                }
+            colOffsetsRes[r + 1] = valuesRes - valuesResInit;
+        }
+
+        delete[] curColOffsets;
     }
 };
