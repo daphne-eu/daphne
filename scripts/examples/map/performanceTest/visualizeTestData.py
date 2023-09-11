@@ -27,30 +27,6 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import plotly.io as pio
 
-def visualize_performance_metrics_datatypes_summarized(csv_file_name):
-    df = pd.read_csv(csv_file_name)
-    
-    for metric in df['MetricType'].unique():
-        for size in df['Matrix Size'].unique():
-            subset_data = df[(df['MetricType'] == metric) & (df['Matrix Size'] == size)]
-            
-            if not subset_data.empty:
-                plt.figure(figsize=(12, 8))
-                sns.boxplot(data=subset_data, x='Operation', y='Value', hue='Implementation', palette="Set3", width=0.6)
-                
-                sns.swarmplot(data=subset_data, x='Operation', y='Value', hue='Implementation', size=2, dodge=True, linewidth=0.5, edgecolor='gray', palette="dark")
-                
-                plt.title(f'Boxplot of {metric} by Implementation (Matrix Size: {size})')
-                plt.ylabel(metric)
-                plt.xlabel('Operation')
-                plt.legend(title='Implementation')
-                plt.tight_layout()
-                    
-                # Construct save file name
-                save_file_name = f"{csv_file_name.split('.')[0]}_{metric}_{size}.png"
-                plt.savefig(save_file_name)
-                plt.close()
-
 def createBoxplotsWithSeaborn(csv_file_name):
     data = pd.read_csv(csv_file_name)
 

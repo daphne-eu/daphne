@@ -30,7 +30,7 @@ import threading
 import os
 from concurrent.futures import ProcessPoolExecutor
 
-'Sequential Approach'
+'''Sequential Approach'''
 def warmup_system_for_benchmarks(matrix_sizes, datatypes, implementations, operations):
     '''
     Warm-up logic to prepare the system for benchmarking.
@@ -115,7 +115,10 @@ def run_benchmarks(matrix_sizes, datatypes, implementations, operations, runs=10
     hours, minutes, secs = seconds_to_hms(end_time)
     print(f"Finished Benchmark in: {hours} hours, {minutes} minutes, {secs} seconds")
 
-'Task-parallelized Benchmark'
+'''
+Task-parallelized Benchmark
+ATTENTION: experimental feature, still in development, maybe not useful at all
+'''
 def warmup_command(impl, dtype, op, size):
     min_for_op, max_for_op = getMinMaxValueRangeForOp(op)
     command = generate_command(op, impl, dtype, size, min_for_op.get(dtype), max_for_op.get(dtype))
@@ -451,6 +454,16 @@ if __name__ == "__main__":
     'uint8': [8192, 16384]
     }
 
+    matrix_sizes_250mb_500mb = {
+    'f32': [3],
+    'f64': [3],
+    'int32': [3],
+    'int64': [3],
+    'int8': [3],
+    'uint64': [3],
+    'uint8': [3]
+    }
+
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     datatypes_small_test = ['f64', 'f32', 'int64']
 
@@ -460,4 +473,4 @@ if __name__ == "__main__":
 
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks_task_parallelized(matrix_sizes_250mb_500mb, datatypes_small_test, implementations, operations)
+    run_benchmarks(matrix_sizes_250mb_500mb, datatypes_small_test, implementations, operations)
