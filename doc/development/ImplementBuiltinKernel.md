@@ -184,12 +184,12 @@ For instance, the following kernels represent some interesting cases:
 
 ### Extending the Map Kernel with a new programming language
 
-The built-in map function leverages to core kernels:
+The built-in map function leverages two core kernels:
 
 1. ([Map Kernel](/src/runtime/local/kernels/Map.h)): This kernel is used to invoke DAPHNE's native `map` function.
 2. ([External Programming Language Map Kernel](/src/runtime/local/kernels/MapExternalPL.h)): This kernel is designed to invoke the map function from an external programming language. As of now, only Python is supported.
 
-Both of these can be called using the map() command. For a comprehensive list of built-in commands (see [Builtins](/doc/DaphneDSL/Builtins.md)).
+Both of these can be called using the map() command. For a comprehensive list of built-in commands see [Builtins](/doc/DaphneDSL/Builtins.md).
 
 If you're looking to extend the functionality of the ([MapExternalPL](/src/runtime/local/kernels/MapExternalPL.h)) kernel to support other programming languages, follow these steps:
 

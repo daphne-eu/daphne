@@ -17,7 +17,7 @@ limitations under the License.
 # Performance Test and Comparison of external Map Function
 
 ## Table of Contents
-This file explains the testing of the external map function, that can invoke map Kernels of different programming languages.
+This file explains the testing of the external map function, that can invoke map kernels of different programming languages.
 
 - Background
 - Testing
@@ -36,18 +36,18 @@ As DaphneDSL is a domain-specific, rather than a general-purpose language, imple
 ## Testing
 The tests should show the effectiveness and efficiency of the extended `map()`-kernel:
 
-1.The utility test examines the effectiveness by of the Pyton Map Kernel. It demonstates how this kernel can exeucte functions that are not feasible with pure DaphneDSL.
+1.The utility test examines the effectiveness of the Pyton map kernel. It demonstates how this kernel can execute functions that are not feasible with pure DaphneDSL.
 
-2.The performance test should show the (detoritation of) efficiency of the extended `map()`-kernel in comparison to DaphneDSLs map function, elementwise operations and a Numpy approach in Python:
+2.The performance test should show the efficiency of the extended `map()`-kernel in comparison to DaphneDSLs map function, elementwise operations and a Numpy approach in Python:
 
 Metrics:
-- `Memory Consumption`: Understand the footprint of our operation.
+- `Memory Consumption`: Understand the footprint of the map operation.
 - `Execution Time`: Gauge the responsiveness and speed.
 - `CPU Load`: Measure the strain on processing resources.
 
 Arithmetic operations of different complexity as UDFs are invoked on random generated matrices with no sparsity, a seed of 42 and different sizes.
 
-The performance test consists of 2 python scripts: The [generateTestData.py](/scripts/examples/map/performanceTest/generateTestData.py) scripts generates the data for the different metrics and saves them in .csv-file with the headers `Run,Operation,Implementation,Datatype,MatrixSize,MetricType,Value`. The [visualizeTestData.py](/scripts/examples/map/performanceTest/visualizeTestData.py) script visualizes the data in different Boxplots. You have the options of visualizing it in different .png images or generate an interactive .html file, where you can more easily display the boxplots in a browser.
+The performance test consists of 2 python scripts: The [generateTestData.py](/scripts/examples/map/performanceTest/generateTestData.py) scripts generates the data for the different metrics and saves them in .csv-file with the headers `Run,Operation,Implementation,Datatype,MatrixSize,MetricType,Value`. The [visualizeTestData.py](/scripts/examples/map/performanceTest/visualizeTestData.py) script visualizes the data in different boxplots. You have the options of visualizing it in different .png images or generate an interactive .html file, where you can more easily display the boxplots in a browser.
 
 Note that testcases for the general functionality are incorporated in the C++ kernel tests in the test file [AlternativeMapTest.cpp](/test/runtime/local/kernels/AlternativeMapTest.cpp).
 
@@ -55,7 +55,7 @@ Note that testcases for the general functionality are incorporated in the C++ ke
 
 ### Safety Concerns of using exec in the Python map kernel
 #### Problem:
-exec() can be a double-edged sword. While it allows the dynamic execution of Python program which can run a script dynamically, it also brings potential security risks when executing untrusted code. Using the exec() function to execute Python code can introduce significant security risks, especially when the code being executed is derived from untrusted sources. Malicious code can perform unintended actions, such as:
+Using the exec() function to execute Python code can introduce significant security risks, especially when the code being executed is derived from untrusted sources. Malicious code can perform unintended actions, such as:
 
 - Accessing or modifying files
 - Running system commands
