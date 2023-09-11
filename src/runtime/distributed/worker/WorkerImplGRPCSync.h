@@ -14,8 +14,8 @@
  *  limitations under the License.
  */
 
-#ifndef SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPC_H
-#define SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPC_H
+#ifndef SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCSYNC_H
+#define SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCSYNC_H
 
 #include "WorkerImpl.h"
 
@@ -25,28 +25,26 @@
 #include "runtime/distributed/proto/worker.grpc.pb.h"
 
 
-class WorkerImplGRPC : public WorkerImpl 
+class WorkerImplGRPCSync : public WorkerImpl, public distributed::Worker::Service
 {
 private:
-    std::unique_ptr<grpc::ServerCompletionQueue> cq_;
     grpc::ServerBuilder builder;
     std::unique_ptr<grpc::Server> server;
 public:
-    explicit WorkerImplGRPC(const std::string& addr, DaphneUserConfig& _cfg);
-
+    explicit WorkerImplGRPCSync(const std::string& addr, DaphneUserConfig& _cfg);
     void Wait() override;
-
-    grpc::Status StoreGRPC(::grpc::ServerContext *context,
+    grpc::Status Store(::grpc::ServerContext *context,
                          const ::distributed::Data *request,
-                         ::distributed::StoredData *response) ;
-    grpc::Status ComputeGRPC(::grpc::ServerContext *context,
+                         ::distributed::StoredData *response) override;
+    grpc::Status Compute(::grpc::ServerContext *context,
                          const ::distributed::Task *request,
-                         ::distributed::ComputeResult *response);
-    grpc::Status TransferGRPC(::grpc::ServerContext *context,
+                         ::distributed::ComputeResult *response) override;
+    grpc::Status Transfer(::grpc::ServerContext *context,
                           const ::distributed::StoredData *request,
-                         ::distributed::Data *response) ;
+                         ::distributed::Data *response) override;
 
-    distributed::Worker::AsyncService service_;
+    template<class DT>
+    DT* CreateMatrix(const ::distributed::Data *mat);
 };
 
-#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPC_H
+#endif //SRC_RUNTIME_DISTRIBUTED_WORKER_WORKERIMPLGRPCSYNC_H

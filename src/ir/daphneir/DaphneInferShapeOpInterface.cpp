@@ -206,8 +206,13 @@ std::vector<std::pair<ssize_t, ssize_t>> daphne::MatMulOp::inferShape() {
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::ReadOp::inferShape() {
-    FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
-    return {{fmd.numRows, fmd.numCols}};
+    auto p = CompilerUtils::isConstant<std::string>(getFileName());
+    if (p.first) {
+        FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
+        return {{fmd.numRows, fmd.numCols}};
+    } else {
+        return {{-1, -1}};
+    }
 }
 
 std::vector<std::pair<ssize_t, ssize_t>> daphne::OrderOp::inferShape() {

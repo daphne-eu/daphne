@@ -112,3 +112,20 @@ static inline uint32_t divup(unsigned n, unsigned div)
 {
     return (n + div - 1) / div;
 }
+
+template<typename VT>
+struct smem_calc /*: std::unary_function<int, int> */ {
+    int operator()(int i) const { return sizeof(VT) * i; }
+
+};
+
+
+static uint32_t nextPow2(uint32_t x) {
+    --x;
+    x |= x >> 1;
+    x |= x >> 2;
+    x |= x >> 4;
+    x |= x >> 8;
+    x |= x >> 16;
+    return ++x;
+}

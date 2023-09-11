@@ -18,7 +18,8 @@
 #include <iostream>
 
 #include "WorkerImpl.h"
-#include "WorkerImplGRPC.h"
+#include "WorkerImplGRPCAsync.h"
+#include "WorkerImplGRPCSync.h"
 
 
 int main(int argc, char *argv[])
@@ -33,7 +34,7 @@ int main(int argc, char *argv[])
     auto addr = argv[1];
 
     // TODO choose specific implementation based on arguments or config file
-    WorkerImpl *service = new WorkerImplGRPC(addr, user_config);
+    WorkerImpl *service = new WorkerImplGRPCSync(addr, user_config);
     
     std::cout << "Started Distributed Worker on `" << addr << "`\n";
     service->Wait();

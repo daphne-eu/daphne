@@ -94,9 +94,9 @@ struct SumOp {
 		return a + b;
 	}
 
-	__device__  __forceinline__ static T exec(T const & a, T const & b) {
-		return a + b;
-	}
+    __device__  __forceinline__ static T exec(T const & a, volatile T const & b) {
+        return a + b;
+    }
 
 	__device__  __forceinline__ static T init() {
 		return SumNeutralElement<T>::get();
@@ -130,7 +130,7 @@ struct MinOp {
 		return a < b ? a : b;
 	}
 
-	__device__  __forceinline__ static T exec(T const & a, T const & b) {
+	__device__  __forceinline__ static T exec(T const & a, T volatile const & b) {
 		return a < b ? a : b;
 	}
 
@@ -145,7 +145,7 @@ struct MinOp<double> {
 		return fmin(a, b);
 	}
 
-	__device__  __forceinline__ static double exec(double const & a, double const & b) {
+	__device__  __forceinline__ static double exec(double const & a, volatile double const & b) {
 		return fmin(a, b);
 	}
 
@@ -160,7 +160,7 @@ struct MinOp<float> {
 		return fminf(a, b);
 	}
 
-    __device__  __forceinline__ static float exec(float const & a, float const & b) {
+    __device__  __forceinline__ static float exec(float const & a, volatile float const & b) {
         return fminf(a, b);
     }
 
@@ -185,7 +185,7 @@ struct MaxOp<double> {
         return fmax(a, b);
     }
 
-    __device__  __forceinline__ static double exec(const double& a, const double& b) {
+    __device__  __forceinline__ static double exec(const double& a, volatile const double& b) {
         return fmax(a, b);
     }
 
@@ -200,7 +200,7 @@ struct MaxOp<float> {
 		return fmaxf(a, b);
 	}
 
-	__device__  __forceinline__ static float exec(const float& a, const float& b) {
+	__device__  __forceinline__ static float exec(const float& a, volatile const float& b) {
 		return fmaxf(a, b);
 	}
 
@@ -215,7 +215,7 @@ struct MaxOp<int64_t> {
         return max(a, b);
     }
 
-    __device__  __forceinline__ static int64_t exec(const int64_t& a, const int64_t& b) {
+    __device__  __forceinline__ static int64_t exec(const int64_t& a, volatile const int64_t& b) {
         return max(a, b);
     }
 
@@ -293,5 +293,19 @@ struct PowOp {
 
     __device__  __forceinline__ static T init() {
         return ProdNeutralElement<T>::get();
+    }
+};
+
+/**
+ * Relational operators
+ */
+template<typename T>
+struct NeqOp {
+    __device__  __forceinline__ bool operator()(T a, T b) const {
+        return a != b;
+    }
+
+    __device__  __forceinline__ static bool exec(T const & a, T const & b) {
+        return a + b;
     }
 };

@@ -46,7 +46,10 @@ class CUDAContext final : public IContext {
     
     std::map<size_t, std::shared_ptr<std::byte>> allocations;
     static size_t alloc_count;
-    explicit CUDAContext(int id) : device_id(id) { }
+
+    explicit CUDAContext(int id) : device_id(id) {
+        logger = spdlog::get("runtime::cuda");
+    }
     
     void init();
     
@@ -76,7 +79,7 @@ public:
     void* getCUDNNWorkspace(size_t size);
 
     [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
-
+    int getMaxNumThreads();
     static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
 
     std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);

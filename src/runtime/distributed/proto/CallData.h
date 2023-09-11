@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include <runtime/distributed/worker/WorkerImplGRPC.h>
+#include <runtime/distributed/worker/WorkerImplGRPCAsync.h>
 #include <runtime/distributed/proto/worker.pb.h>
 #include <runtime/distributed/proto/worker.grpc.pb.h>
 
@@ -30,7 +30,7 @@ public:
 class StoreCallData final : public CallData
 {
 public:
-    StoreCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
+    StoreCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
@@ -40,7 +40,7 @@ public:
     void Proceed() override;
 
 private:
-    WorkerImplGRPC *worker;
+    WorkerImplGRPCAsync *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -64,7 +64,7 @@ private:
 class ComputeCallData final : public CallData
 {
 public:
-    ComputeCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
+    ComputeCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
@@ -74,7 +74,7 @@ public:
     void Proceed() override;
 
 private:
-    WorkerImplGRPC *worker;
+    WorkerImplGRPCAsync *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -99,7 +99,7 @@ private:
 class TransferCallData final : public CallData
 {
 public:
-    TransferCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
+    TransferCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
         : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
     {
         // Invoke the serving logic right away.
@@ -107,7 +107,7 @@ public:
     }
     void Proceed() override;
 private:
-    WorkerImplGRPC *worker;
+    WorkerImplGRPCAsync *worker;
     distributed::Worker::AsyncService *service_;
     // The producer-consumer queue where for asynchronous server notifications.
     grpc::ServerCompletionQueue *cq_;
@@ -132,7 +132,7 @@ private:
 // class FreeMemCallData final : public CallData
 // {
 //     public:
-//         FreeMemCallData(WorkerImplGRPC *worker_, grpc::ServerCompletionQueue *cq)
+//         FreeMemCallData(WorkerImplGRPCAsync *worker_, grpc::ServerCompletionQueue *cq)
 //             : worker(worker_), service_(&worker_->service_), cq_(cq), responder_(&ctx_), status_(CREATE)
 //         {
 //             // Invoke the serving logic right away.
@@ -140,7 +140,7 @@ private:
 //         }
 //         void Proceed() override;
 //     private:
-//         WorkerImplGRPC *worker;
+//         WorkerImplGRPCAsync *worker;
 //         distributed::Worker::AsyncService *service_;
 //         // The producer-consumer queue where for asynchronous server notifications.
 //         grpc::ServerCompletionQueue *cq_;
