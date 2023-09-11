@@ -274,33 +274,33 @@ public:
     size_t* rowColIdxs = colIdxs.get()[rowIdx].get();
     size_t rowSize = valueSizes.get()[rowIdx];
 
-    // If we've used up all the allocated space, reallocate more memory.
+    // If we've used up all the allocated space, reallocate more memory
     if (rowSize >= allocatedRowSizes.get()[rowIdx]) {
         // Reallocation logic...
         reallocateRow(rowIdx);
 
-        // Also adjust the row pointers after reallocation.
+        // Also adjust the row pointers after reallocation
         rowValues = values.get()[rowIdx].get();
         rowColIdxs = colIdxs.get()[rowIdx].get();
     }
 
-    // Find the right position to insert the new value.
+    // Find the right position to insert the new value
     size_t position = 0;
     while (position < rowSize && rowColIdxs[position] < colIdx) {
         position++;
     }
 
-    // Shift the values and column indices to the right from the found position.
+    // Shift the values and column indices to the right from the found position
     for (size_t i = rowSize; i > position; i--) {
         rowValues[i] = rowValues[i - 1];
         rowColIdxs[i] = rowColIdxs[i - 1];
     }
 
-    // Insert the new value and its column index.
+    // Insert the new value and its column index
     rowValues[position] = value;
     rowColIdxs[position] = colIdx;
 
-    // Increase the size for this row.
+    // Increase the size for this row
     valueSizes.get()[rowIdx]++;
   }
 
@@ -308,6 +308,10 @@ public:
 
   void finishAppend() override {
     // Not needed for MCSR
+  }
+
+  bool isView() const {
+      return (numRowsAllocated > numRows || isRowAllocatedBefore);
   }
 
   void printValue(std::ostream & os, ValueType val) const {
