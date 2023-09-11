@@ -26,10 +26,71 @@ namespace
         if(llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(dataOp)) {
             return dataOp;
         } else {
-            return dataOp                                   //CastOp
+            return dataOp                                     //CastOp
                 ->getOperand(0).getDefiningOp();         //ExtractColOp
         }
     }
+
+    template<typename FirstOpType, typename SecondOpType>
+    void checkMatchingSourceAndCorrectTypes(
+        Operation *& firstOp,
+        Operation *& secondOp,
+        Operation * leftOp,
+        Operation * rightOp,
+        mlir::OpResult leftOpSource = nullptr,
+        mlir::OpResult rightOpSource = nullptr
+
+    ) {
+        if (llvm::dyn_cast<FirstOpType>(leftOp) && llvm::dyn_cast<SecondOpType>(rightOp) && leftOpSource == rightOpSource) {
+            firstOp = leftOp;
+            secondOp = rightOp;
+        }
+    }
+
+    // Get the ge and le operations and their corresponding intersect operation
+    void getLeAndGeOps(
+        Operation * intersectOp,
+        Operation *& geOp,
+        Operation *& leOp,
+        Operation *& leftPrevIntersectOp
+    ) {
+        Operation * leftOp = intersectOp->getOperand(0).getDefiningOp();
+        Operation * rightOp = intersectOp->getOperand(1).getDefiningOp();
+        Operation * rightOpSource = getCmpSourceOp(rightOp);
+        while (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(leftOp)) {
+            leftPrevIntersectOp = leftOp;
+            Operation * rightTempOp = leftOp->getOperand(1).getDefiningOp();
+            Operation * rightTempOpSource = getCmpSourceOp(rightTempOp);
+            if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightTempOpSource) && llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightOpSource) ) {
+                if (rightTempOpSource->getOperand(0) == rightOpSource->getOperand(0) && rightTempOpSource->getOperand(1) == rightOpSource->getOperand(1)) {
+                    checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnGeOp, mlir::daphne::ColumnLeOp>(geOp, leOp, rightTempOp, rightOp);
+                    checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnLeOp, mlir::daphne::ColumnGeOp>(leOp, geOp, rightTempOp, rightOp);
+                }
+            } else {
+                checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnGeOp, mlir::daphne::ColumnLeOp>(geOp, leOp, rightTempOp, rightOp, rightTempOpSource->getResult(0), rightOpSource->getResult(0));
+                checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnLeOp, mlir::daphne::ColumnGeOp>(leOp, geOp, rightTempOp, rightOp, rightTempOpSource->getResult(0), rightOpSource->getResult(0));
+            }
+
+            // If we have found our operations we can stop searching
+            if (leOp != nullptr && geOp != nullptr) {
+                break;
+            }
+
+            leftOp = leftOp->getOperand(0).getDefiningOp();
+        }
+        auto leftOpSource = getCmpSourceOp(leftOp);
+        if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(leftOpSource) && llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightOpSource) ) {
+            if (leftOpSource->getOperand(0) == rightOpSource->getOperand(0) && leftOpSource->getOperand(1) == rightOpSource->getOperand(1)) {
+                checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnGeOp, mlir::daphne::ColumnLeOp>(geOp, leOp, leftOp, rightOp);
+                checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnLeOp, mlir::daphne::ColumnGeOp>(leOp, geOp, leftOp, rightOp);
+            }
+        } else {
+            checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnGeOp, mlir::daphne::ColumnLeOp>(geOp, leOp, leftOp, rightOp, leftOpSource->getResult(0), rightOpSource->getResult(0));
+            checkMatchingSourceAndCorrectTypes<mlir::daphne::ColumnLeOp, mlir::daphne::ColumnGeOp>(leOp, geOp, leftOp, rightOp, leftOpSource->getResult(0), rightOpSource->getResult(0));
+        }
+
+    }
+
     struct ColumnarOpOptimization : public RewritePattern{
 
         ColumnarOpOptimization(MLIRContext * context, PatternBenefit benefit = 1)
@@ -43,80 +104,38 @@ namespace
         {
             if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(op)) {
                 Operation * prevOp = op->getOperand(0).getDefiningOp();
+                // Gather all position lists for the projection path
                 std::vector<mlir::Value> posLists{op->getOperand(1)};
                 for (mlir::Value posList : prevOp->getOperands().drop_front(1)) {
                     posLists.push_back(posList);
                 }
+                // Replae the source operation with a new projection path operation with the position lists and the data input of the previous operation
                 auto projectionPathOp = rewriter.replaceOpWithNewOp<daphne::ColumnProjectionPathOp>(op, op->getResult(0).getType(), prevOp->getOperand(0), posLists);
                 op->getResult(0).replaceAllUsesWith(projectionPathOp->getResult(0));
+
                 return success();
             } else if (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(op)) {
                 Operation * rightOp = op->getOperand(1).getDefiningOp();
-                Operation * rightOpSource = getCmpSourceOp(rightOp);
                 Operation * geOp = nullptr;
                 Operation * leOp = nullptr;
                 Operation * leftPrevIntersectOp = op;
                 
-                Operation * leftOp = op->getOperand(0).getDefiningOp();
-                while (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(leftOp)) {
-                    leftPrevIntersectOp = leftOp;
-                    Operation * rightTempOp = leftOp->getOperand(1).getDefiningOp();
-                    Operation * rightTempOpSource = getCmpSourceOp(rightTempOp);
-                    if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightTempOpSource) && llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightOpSource) ) {
-                        if (rightTempOpSource->getOperand(0) == rightOpSource->getOperand(0) && rightTempOpSource->getOperand(1) == rightOpSource->getOperand(1)) {
-                            if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp)) {
-                                geOp = rightTempOp;
-                                leOp = rightOp;
-                                break;
-                            } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
-                                leOp = rightTempOp;
-                                geOp = rightOp;
-                                break;
-                            }
-                        }
-                    }
-                    if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource->getResult(0) == rightTempOp->getOperand(0)) {
-                        geOp = rightTempOp;
-                        leOp = rightOp;
-                        break;
-                    } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource->getResult(0) == rightTempOp->getOperand(0)) {
-                        leOp = rightTempOp;
-                        geOp = rightOp;
-                        break;
-                    }
-                    leftOp = leftOp->getOperand(0).getDefiningOp();
-                }
-                auto leftOpSource = getCmpSourceOp(leftOp);
-                if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(leftOpSource) && llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightOpSource) ) {
-                    if (leftOpSource->getOperand(0) == rightOpSource->getOperand(0) && leftOpSource->getOperand(1) == rightOpSource->getOperand(1)) {
-                        if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp)) {
-                            geOp = leftOp;
-                            leOp = rightOp;
-                        } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
-                            leOp = leftOp;
-                            geOp = rightOp;
-                        }
-                    }
-                }
-                if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource->getResult(0) == leftOp->getOperand(0)) {
-                    geOp = leftOp;
-                    leOp = rightOp;
-                } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource->getResult(0) == leftOp->getOperand(0)) {
-                    leOp = leftOp;
-                    geOp = rightOp;
-                }
+                getLeAndGeOps(op, geOp, leOp, leftPrevIntersectOp);
 
+                // Sanity check, should never occur due to the definition if the dynamic legality check
                 if (geOp == nullptr || leOp == nullptr) {
                     return failure();
                 }
+
                 auto betweenOp = rewriter.create<daphne::ColumnBetweenOp>(rightOp->getLoc(), rightOp->getResult(0).getType(), leOp->getOperand(0), geOp->getOperand(1), leOp->getOperand(1));
                 betweenOp->moveBefore(op);
                 
                 rewriter.startRootUpdate(op);
-                //Both operations share the same intersect
                 if (op == leftPrevIntersectOp) {
+                    // Both operations share the same intersect and the intersect will be deleted in later passes
                     op->getResult(0).replaceAllUsesWith(betweenOp->getResult(0));
                 } else {
+                    // The operations do not share a intersect. We have to rewire one operation from a previous intersect that will be deleted later
                     op->replaceUsesOfWith(rightOp->getResult(0), betweenOp->getResult(0));
                     for (mlir::Value intersectOperands: leftPrevIntersectOp->getOperands()) {
                         auto intersectOperandsOp = intersectOperands.getDefiningOp();
@@ -148,8 +167,11 @@ void OptimizeColumnarOpPass::runOnOperation() {
     ConversionTarget target(getContext());
     target.addLegalDialect<arith::ArithDialect, LLVM::LLVMDialect, scf::SCFDialect, daphne::DaphneDialect>();
     target.addLegalOp<ModuleOp, func::FuncOp>();
+
     target.addDynamicallyLegalOp<mlir::daphne::ColumnProjectOp>([&](Operation *op) {
         Operation * prevOp = op->getOperand(0).getDefiningOp();
+        // According to benchmark results we only introduce a ProjectionPathOp if the result of the first projection 
+        // is not used by anything other than a projection
         if (llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOp)) {
             for (Operation * prevOpUser : prevOp->getResult(0).getUsers()) {
                 if (!llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOpUser)) {
@@ -157,7 +179,7 @@ void OptimizeColumnarOpPass::runOnOperation() {
                 }
             }
             return false;
-        } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectionPathOp>(op)) {
+        } else if (llvm::dyn_cast<mlir::daphne::ColumnProjectionPathOp>(prevOp)) {
             for (Operation * prevOpUser : prevOp->getResult(0).getUsers()) {
                 if (!llvm::dyn_cast<mlir::daphne::ColumnProjectOp>(prevOpUser)) {
                     return true;
@@ -169,55 +191,20 @@ void OptimizeColumnarOpPass::runOnOperation() {
     });
 
     target.addDynamicallyLegalOp<mlir::daphne::ColumnIntersectOp>([](Operation *op) {
+        // Between was introduced but operation will get deleted in later passes
         if (op->use_empty()) {
             return true;
         }
+
         Operation * rightOp = op->getOperand(1).getDefiningOp();
-        Operation * rightOpSource = getCmpSourceOp(rightOp);
-        Operation * partnerOp = nullptr;
+        Operation * geOp = nullptr;
+        Operation * leOp = nullptr;
+        Operation * leftPrevIntersectOp = op;
         if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) || llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
-            Operation * leftOp = op->getOperand(0).getDefiningOp();
-            while (llvm::dyn_cast<mlir::daphne::ColumnIntersectOp>(leftOp)) {
-                Operation * rightTempOp = leftOp->getOperand(1).getDefiningOp();
-                Operation * rightTempOpSource = getCmpSourceOp(rightTempOp);
-                if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightTempOpSource) && llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightOpSource) ) {
-                    if (rightTempOpSource->getOperand(0) == rightOpSource->getOperand(0) && rightTempOpSource->getOperand(1) == rightOpSource->getOperand(1)) {
-                        if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp)) {
-                            partnerOp = rightTempOp;
-                            break;
-                        } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
-                            partnerOp = rightTempOp;
-                            break;
-                        }
-                    }
-                }
-                if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp)) {
-                    partnerOp = rightTempOp;
-                    break;
-                } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightTempOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
-                    partnerOp = rightTempOp;
-                    break;
-                }
-                leftOp = leftOp->getOperand(0).getDefiningOp();
-            }
-            auto leftOpSource = getCmpSourceOp(leftOp);
-            if (llvm::dyn_cast<mlir::daphne::ExtractColOp>(leftOpSource) && llvm::dyn_cast<mlir::daphne::ExtractColOp>(rightOpSource) ) {
-                if (leftOpSource->getOperand(0) == rightOpSource->getOperand(0) && leftOpSource->getOperand(1) == rightOpSource->getOperand(1)) {
-                    if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp)) {
-                        partnerOp = leftOp;
-                    } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp)) {
-                        partnerOp = leftOp;
-                    }
-                }
-            }
-            if (llvm::dyn_cast<mlir::daphne::ColumnGeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnLeOp>(rightOp) && rightOpSource->getResult(0) == leftOp->getOperand(0)) {
-                partnerOp = leftOp;
-            } else if (llvm::dyn_cast<mlir::daphne::ColumnLeOp>(leftOp) && llvm::dyn_cast<mlir::daphne::ColumnGeOp>(rightOp) && rightOpSource->getResult(0) == leftOp->getOperand(0)) {
-                partnerOp = leftOp;
-            }
+            getLeAndGeOps(op, geOp, leOp, leftPrevIntersectOp);
         }
 
-        if (partnerOp != nullptr) {
+        if (leOp != nullptr && geOp != nullptr) {
             return false;
         } else {
             return true;
