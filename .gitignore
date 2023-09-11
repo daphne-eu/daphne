@@ -36,3 +36,11 @@ profiler/
 precompiled-dependencies/
 /cmake*/
 /data
+
+#Custom - niklas
+!containers/coder-daphne-env/build
+.cache
+.antlr
+bench/*.csv
+bench/*.csv.meta
+bench/results/archive/*

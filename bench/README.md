@@ -32,7 +32,7 @@ The tag `[inplace-bench]` is deactivated by default, we can run it by executing:
 $ ./test.sh [inplace-bench]
 ```
 
-The result of the run on the bench VM can be found in file: XXXX
+The result of the run on the bench VM can be found in file: [catch2_microbench.txt](/bench/results/catch2_microbench.txt).
 
 ## System Information
 
