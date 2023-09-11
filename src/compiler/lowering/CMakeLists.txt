@@ -27,6 +27,7 @@ add_mlir_dialect_library(MLIRDaphneTransforms
     SpecializeGenericFunctionsPass.cpp
     VectorizeComputationsPass.cpp
     WhileLoopInvariantCodeMotionPass.cpp
+    FlagUpdateInPlacePass.cpp
 
     DEPENDS
     MLIRDaphneOpsIncGen

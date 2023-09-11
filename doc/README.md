@@ -9,7 +9,7 @@
 - [Running DAPHNE in a Local Environment](/doc/RunningDaphneLocally.md)
 - [Running DAPHNE on the Distributed Runtime](/doc/DistributedRuntime.md)
 - [DAPHNE Packaging, Distributed Deployment, and Management](/doc/Deploy.md)
-- [DaphneLib: DAPHNE's Python API](/doc/DaphneLib/Overview.md)
+- [DaphneLib: DAPHNE&#39;s Python API](/doc/DaphneLib/Overview.md)
 - [DaphneLib API Reference](/doc/DaphneLib/APIRef.md)
 - [DaphneDSL Language Reference](/doc/DaphneDSL/LanguageRef.md)
 - [DaphneDSL Built-in Functions](/doc/DaphneDSL/Builtins.md)
@@ -31,6 +31,7 @@
 - [Building DAPHNE with the build.sh script](/doc/development/BuildingDaphne.md)
 - [Logging in DAPHNE](/doc/development/Logging.md)
 - [Profiling in DAPHNE](/doc/development/Profling.md)
+- [Enabling updating in-place of data objects in kernels](/doc/development/EnablingInPlaceUpdates.md)
 
 ### Source Code Documentation
 

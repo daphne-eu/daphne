@@ -33,16 +33,16 @@
 #define VALUE_TYPES double, uint32_t
 
 template<class DT>
-void checkEwBinaryMat(BinaryOpCode opCode, const DT * lhs, const DT * rhs, const DT * exp) {
+void checkEwBinaryMat(BinaryOpCode opCode, DT * lhs, DT * rhs, const DT * exp) {
     DT * res = nullptr;
-    ewBinaryMat<DT, DT, DT>(opCode, res, lhs, rhs, nullptr);
+    ewBinaryMat<DT, DT, DT>(opCode, res, lhs, rhs, true, true, nullptr);
     CHECK(*res == *exp);
 }
 
 template<class SparseDT, class DT>
-void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, const SparseDT * lhs, const DT * rhs, const SparseDT * exp) {
+void checkSparseDenseEwBinaryMat(BinaryOpCode opCode, SparseDT * lhs, DT * rhs, const SparseDT * exp) {
     SparseDT * res = nullptr;
-    ewBinaryMat<SparseDT, SparseDT, DT>(opCode, res, lhs, rhs, nullptr);
+    ewBinaryMat<SparseDT, SparseDT, DT>(opCode, res, lhs, rhs, true, true, nullptr);
     CHECK(*res == *exp);
 }
 
@@ -369,5 +369,5 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     using DT = TestType;
     DT * res = nullptr;
     auto m = genGivenVals<DT>(1, {1});
-    CHECK_THROWS(ewBinaryMat<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m, nullptr));
+    CHECK_THROWS(ewBinaryMat<DT, DT, DT>(static_cast<BinaryOpCode>(999), res, m, m, true, true, nullptr));
 }

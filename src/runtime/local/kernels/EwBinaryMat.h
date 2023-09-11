@@ -23,6 +23,8 @@
 #include <runtime/local/datastructures/Matrix.h>
 #include <runtime/local/kernels/BinaryOpCode.h>
 #include <runtime/local/kernels/EwBinarySca.h>
+#include <runtime/local/kernels/InPlaceUtils.h>
+#include <spdlog/spdlog.h>
 
 #include <cassert>
 #include <cstddef>
@@ -33,7 +35,7 @@
 
 template<class DTRes, class DTLhs, class DTRhs>
 struct EwBinaryMat {
-    static void apply(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) = delete;
+    static void apply(BinaryOpCode opCode, DTRes *& res, DTLhs * lhs, DTRhs * rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(ctx)) = delete;
 };
 
 // ****************************************************************************
@@ -41,9 +43,11 @@ struct EwBinaryMat {
 // ****************************************************************************
 
 template<class DTRes, class DTLhs, class DTRhs>
-void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTRhs * rhs, DCTX(ctx)) {
-    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, ctx);
+void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, DTLhs * lhs, DTRhs * rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(ctx)) {
+    EwBinaryMat<DTRes, DTLhs, DTRhs>::apply(opCode, res, lhs, rhs, hasFutureUseLhs, hasFutureUseRhs, ctx);
 }
+
+
 
 // ****************************************************************************
 // (Partial) template specializations for different data/value types
@@ -55,19 +59,47 @@ void ewBinaryMat(BinaryOpCode opCode, DTRes *& res, const DTLhs * lhs, const DTR
 
 template<typename VTres, typename VTlhs, typename VTrhs>
 struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
-    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *& res, const DenseMatrix<VTlhs> * lhs, const DenseMatrix<VTrhs> * rhs, DCTX(ctx)) {
+    static void apply(BinaryOpCode opCode, DenseMatrix<VTres> *& res, DenseMatrix<VTlhs> * lhs, DenseMatrix<VTrhs> * rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(ctx)) {
         const size_t numRowsLhs = lhs->getNumRows();
         const size_t numColsLhs = lhs->getNumCols();
         const size_t numRowsRhs = rhs->getNumRows();
         const size_t numColsRhs = rhs->getNumCols();
 
-        if(res == nullptr)
-            res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
-        
+        if(res == nullptr) {
+            // Check if we can utilize the allocated memory of the lhs matrix for the result.
+            // We assume that the result has the same type as lhs (no need to check isValidType).
+            if(InPlaceUtils::isInPlaceable(lhs, hasFutureUseLhs)) {
+                spdlog::debug("EwBinaryMat(Dense) - lhs is in-placeable");
+                res = lhs;
+                res->increaseRefCounter();
+            }
+            // Check if we can utilize the allocated memory of the rhs matrix for the result.
+            // Here we need to check if rhs has a valid type, as it could differ from the result type.
+            // E.g. lhs is rectangular and rhs is a column/row vector, the result will be rectangular (rhs cannot store the result).
+            else if(InPlaceUtils::isInPlaceable(rhs, hasFutureUseRhs) && InPlaceUtils::isValidTypeWeak(lhs, rhs)) {
+                // If the rhs has the same dimensions as the lhs, we can reuse the rhs matrix object.
+                if(InPlaceUtils::isValidType(lhs, rhs)) {
+                    spdlog::debug("EwBinaryMat(Dense) - rhs is in-placeable");
+                    res = rhs;
+                    res->increaseRefCounter();
+                }
+                // As it atleast weak, we can reuse the underlying data buffer of rhs.
+                else {
+                    spdlog::debug("EwBinaryMat(Dense) - data buffer of rhs is in-placeable");
+                    res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, rhs->getValues());
+                }
+            }
+            // Otherwise we create a new matrix based on the dimensions of the lhs matrix.
+            else {
+                spdlog::debug("EwBinaryMat(Dense) - create new matrix for result");
+                res = DataObjectFactory::create<DenseMatrix<VTres>>(numRowsLhs, numColsLhs, false);
+            }
+        }
+
         const VTlhs * valuesLhs = lhs->getValues();
         const VTrhs * valuesRhs = rhs->getValues();
         VTres * valuesRes = res->getValues();
-        
+
         EwBinaryScaFuncPtr<VTres, VTlhs, VTrhs> func = getEwBinaryScaFuncPtr<VTres, VTlhs, VTrhs>(opCode);
         
         if(numRowsLhs == numRowsRhs && numColsLhs == numColsRhs) {
@@ -113,9 +145,14 @@ struct EwBinaryMat<DenseMatrix<VTres>, DenseMatrix<VTlhs>, DenseMatrix<VTrhs>> {
 
 template<typename VT>
 struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const CSRMatrix<VT> * rhs, DCTX(ctx)) {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, CSRMatrix<VT> * lhs, CSRMatrix<VT> * rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
+
+        if(hasFutureUseLhs == false || hasFutureUseRhs == false) {
+            spdlog::debug("EwBinaryMat(CSR) - in-place execution of CSRMatrix is not supported");
+        }
+
         if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
             throw std::runtime_error("EwBinaryMat(CSR) - lhs and rhs must have the same dimensions.");
         
@@ -254,9 +291,14 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, CSRMatrix<VT>> {
 
 template<typename VT>
 struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
-    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, const CSRMatrix<VT> * lhs, const DenseMatrix<VT> * rhs, DCTX(ctx)) {
+    static void apply(BinaryOpCode opCode, CSRMatrix<VT> *& res, CSRMatrix<VT> * lhs, DenseMatrix<VT> * rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
+
+        if(hasFutureUseLhs == false || hasFutureUseRhs == false) {
+            spdlog::debug("EwBinaryMat(CSR) - in-place execution of CSRMatrix is not supported");
+        }
+
         // TODO: lhs broadcast
         if( (numRows != rhs->getNumRows() &&  rhs->getNumRows() != 1)
             || (numCols != rhs->getNumCols() && rhs->getNumCols() != 1 ) )
@@ -323,9 +365,14 @@ struct EwBinaryMat<CSRMatrix<VT>, CSRMatrix<VT>, DenseMatrix<VT>> {
 
 template<typename VT>
 struct EwBinaryMat<Matrix<VT>, Matrix<VT>, Matrix<VT>> {
-    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, const Matrix<VT> * lhs, const Matrix<VT> * rhs, DCTX(ctx)) {
+    static void apply(BinaryOpCode opCode, Matrix<VT> *& res, Matrix<VT> * lhs, Matrix<VT> * rhs, bool hasFutureUseLhs, bool hasFutureUseRhs, DCTX(ctx)) {
         const size_t numRows = lhs->getNumRows();
         const size_t numCols = lhs->getNumCols();
+
+        if(hasFutureUseLhs == false || hasFutureUseRhs == false) {
+            spdlog::debug("EwBinaryMat - in-place execution of abstract matrix class is not supported");
+        }
+
         if( numRows != rhs->getNumRows() || numCols != rhs->getNumCols() )
             throw std::runtime_error("EwBinaryMat - lhs and rhs must have the same dimensions.");
         

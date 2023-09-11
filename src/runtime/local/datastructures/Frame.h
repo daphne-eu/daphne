@@ -349,6 +349,10 @@ public:
                 )
         );
     }
+
+    size_t getColumnUseCount(size_t idx) const {
+        return columns[idx].use_count();
+    }
     
     template<typename ValueType>
     const DenseMatrix<ValueType> * getColumn(size_t idx) const {

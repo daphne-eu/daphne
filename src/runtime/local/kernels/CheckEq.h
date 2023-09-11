@@ -33,7 +33,7 @@
 
 template<class DT>
 struct CheckEq {
-    static bool apply(const DT * lhs, const DT * rhs, DCTX(ctx)) = delete;
+    static bool apply(const DT * lhs, const DT * rhs, DCTX(ctx));
 };
 
 // ****************************************************************************

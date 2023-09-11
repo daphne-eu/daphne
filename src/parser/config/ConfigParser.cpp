@@ -51,6 +51,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.use_ipa_const_propa = jf.at(DaphneConfigJsonParams::USE_IPA_CONST_PROPA).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::USE_PHY_OP_SELECTION))
         config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::USE_PHY_OP_SELECTION).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::UPDATE_IN_PLACE))
+        config.use_phy_op_selection = jf.at(DaphneConfigJsonParams::UPDATE_IN_PLACE).get<bool>(); 
     if (keyExists(jf, DaphneConfigJsonParams::CUDA_FUSE_ANY))
         config.cuda_fuse_any = jf.at(DaphneConfigJsonParams::CUDA_FUSE_ANY).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::VECTORIZED_SINGLE_QUEUE))
@@ -79,6 +81,8 @@ void ConfigParser::readUserConfig(const std::string& filename, DaphneUserConfig&
         config.explain_vectorized = jf.at(DaphneConfigJsonParams::EXPLAIN_VECTORIZED).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT))
         config.explain_obj_ref_mgnt = jf.at(DaphneConfigJsonParams::EXPLAIN_OBJ_REF_MGNT).get<bool>();
+    if (keyExists(jf, DaphneConfigJsonParams::EXPLAIN_UPDATE_IN_PLACE))
+        config.explain_update_in_place = jf.at(DaphneConfigJsonParams::EXPLAIN_UPDATE_IN_PLACE).get<bool>();
     if (keyExists(jf, DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME)) {
         config.taskPartitioningScheme = jf.at(DaphneConfigJsonParams::TASK_PARTITIONING_SCHEME).get<SelfSchedulingScheme>();
         if (config.taskPartitioningScheme == SelfSchedulingScheme::INVALID) {

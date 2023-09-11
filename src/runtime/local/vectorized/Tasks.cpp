@@ -56,7 +56,7 @@ void CompiledPipelineTask<DenseMatrix<VT>>::execute(uint32_t fid, uint32_t batch
                 _resLock.unlock();
             }
             else {
-                ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], _data._ctx);
+                ewBinaryMat(BinaryOpCode::ADD, result, result, localAddRes[o], true, true, _data._ctx);
                 _resLock.unlock();
                 //cleanup
                 DataObjectFactory::destroy(localAddRes[o]);
@@ -109,7 +109,7 @@ void CompiledPipelineTask<DenseMatrix<VT>>::accumulateOutputs(std::vector<DenseM
                     localResults[o] = nullptr;
                 }
                 else {
-                    ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], nullptr);
+                    ewBinaryMat(BinaryOpCode::ADD, localAddRes[o], localAddRes[o], localResults[o], true, true, nullptr);
                 }
                 break;
             }

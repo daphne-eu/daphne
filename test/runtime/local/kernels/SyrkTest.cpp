@@ -29,10 +29,10 @@
 #include <vector>
 
 template<class DT>
-void checkSyrk(const DT * arg, DCTX(dctx)) {
+void checkSyrk(DT * arg, DCTX(dctx)) {
     DT * resExp = nullptr;
     DT * argT = nullptr;
-    transpose(argT, arg, dctx);
+    transpose(argT, arg, true, dctx);
     matMul(resExp, argT, arg, false, false, dctx);
 
     DT * resAct = nullptr;

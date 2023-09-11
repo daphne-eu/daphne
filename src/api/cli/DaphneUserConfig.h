@@ -49,6 +49,7 @@ struct DaphneUserConfig {
     bool debugMultiThreading = false;
     bool use_fpgaopencl = false;
     bool enable_profiling = false;
+    bool enable_update_in_place = false;
 
     bool debug_llvm = false;
     bool explain_kernels = false;
@@ -62,6 +63,7 @@ struct DaphneUserConfig {
     bool explain_type_adaptation = false;
     bool explain_vectorized = false;
     bool explain_obj_ref_mgnt = false;
+    bool explain_update_in_place = false;
     SelfSchedulingScheme taskPartitioningScheme = STATIC;
     QueueTypeOption queueSetupScheme = CENTRALIZED;
 	VictimSelectionLogic victimSelection = SEQPRI;

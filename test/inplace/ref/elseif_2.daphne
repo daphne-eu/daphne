@@ -1,0 +1,17 @@
+// TODO: The evaluation of [true, false] for Y = X + C does not consider the possibility of inplace usage for X.
+
+X = fill(1.0, 10, 10);
+Y = fill(0.0, 10, 10);
+D1 = fill(0.0, 1, 1);
+
+if(sum(D1) != 0.5) {
+	C = fill(1.0, 10, 10);
+	if(sum(D1) == 0.0) {
+		Y = X + C;
+	}
+	else if(sum(D1) == 1.0) {
+		Y = X - 1.0;
+	}
+}
+
+print(Y);

@@ -21,9 +21,12 @@
 #include "mlir/Dialect/Arith/IR/Arith.h"
 #include "mlir/Dialect/LLVMIR/LLVMDialect.h"
 #include "mlir/Dialect/SCF/IR/SCF.h"
+#include "mlir/IR/Attributes.h"
+#include "mlir/IR/BuiltinAttributes.h"
 #include "mlir/Transforms/DialectConversion.h"
 #include "mlir/IR/IRMapping.h"
 
+#include <llvm/Support/Casting.h>
 #include <memory>
 #include <utility>
 #include <iostream>
@@ -360,6 +363,29 @@ namespace
                     rewriteStr = rewriter.create<daphne::ConstantOp>(loc, strTy, rewriter.getStringAttr(stream.str()));
                 callee << "__" << CompilerUtils::mlirTypeToCppTypeName(strTy, false);
                 newOperands.push_back(rewriteStr);
+            }
+
+            //Handling InPlaceable Operation
+            if(auto inPlaceOp = llvm::dyn_cast<daphne::InPlaceable>(op)) {
+
+                auto inPlaceOperands = inPlaceOp.getInPlaceOperands();
+                auto inPlaceFutureUse = op->getAttrOfType<ArrayAttr>("inPlaceFutureUse");
+
+                for (auto inPlaceOperand : inPlaceOperands) {
+                    if(op->getOperand(inPlaceOperand).getType().isa<daphne::MatrixType>() || 
+                       op->getOperand(inPlaceOperand).getType().isa<daphne::FrameType>()) {
+                        if (!inPlaceFutureUse || inPlaceFutureUse[inPlaceOperand].cast<BoolAttr>().getValue()) {
+                            callee << "__bool";
+                            newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                                    loc,  static_cast<bool>(true)));
+                        }
+                        else {
+                            callee << "__bool";
+                            newOperands.push_back(rewriter.create<daphne::ConstantOp>(
+                                    loc, static_cast<bool>(false)));
+                        }
+                    }
+                }
             }
 
             // Inject the current DaphneContext as the last input parameter to

@@ -1,0 +1,16 @@
+X = fill(1.0, 10, 10);
+Y = fill(0.0, 10, 10);
+D1 = fill(0.0, 1, 1);
+D = fill(1.0, 10, 10);
+
+for(i in 0:5) {
+	C = fill(1.0, 10, 10);
+	if(sum(D1) == 0.0) {
+		tmp = D - 1.0;
+	}
+	else if(sum(D1) == 1.0) {
+		Y = X + C;
+	}
+}
+
+print(Y);

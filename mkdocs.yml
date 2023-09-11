@@ -71,5 +71,6 @@ nav:
     - development/ExtendingSchedulingKnobs.md
     - development/HandlingPRs.md
     - development/ImplementBuiltinKernel.md
+    - development/EnablingInPlaceUpdates.md
     - development/Profiling.md
     - development/WriteDocs.md

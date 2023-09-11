@@ -37,17 +37,17 @@
 #define VALUE_TYPES double, uint32_t
 
 template<class DT>
-void checkEwBinaryMatSca(BinaryOpCode opCode, const DT * lhs, typename DT::VT rhs, const DT * exp) {
+void checkEwBinaryMatSca(BinaryOpCode opCode, DT * lhs, typename DT::VT rhs, const DT * exp) {
     DT * res = nullptr;
-    ewBinaryObjSca<DT, DT, typename DT::VT>(opCode, res, lhs, rhs, nullptr);
+    ewBinaryObjSca<DT, DT, typename DT::VT>(opCode, res, lhs, rhs, true, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
 
 template<class DT, typename VT>
-void checkEwBinaryFrameSca(BinaryOpCode opCode, const DT * lhs, VT rhs, const DT * exp) {
+void checkEwBinaryFrameSca(BinaryOpCode opCode, DT * lhs, VT rhs, const DT * exp) {
     DT * res = nullptr;
-    ewBinaryObjSca<DT, DT, VT>(opCode, res, lhs, rhs, nullptr);
+    ewBinaryObjSca<DT, DT, VT>(opCode, res, lhs, rhs, true, nullptr);
     CHECK(*res == *exp);
     DataObjectFactory::destroy(res);
 }
@@ -519,5 +519,5 @@ TEMPLATE_PRODUCT_TEST_CASE(TEST_NAME("some invalid op-code"), TAG_KERNELS, (DATA
     using DT = TestType;
     DT * res = nullptr;
     auto m = genGivenVals<DT>(1, {1});
-    CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(static_cast<BinaryOpCode>(999), res, m, 1, nullptr));
+    CHECK_THROWS(ewBinaryObjSca<DT, DT, typename DT::VT>(static_cast<BinaryOpCode>(999), res, m, 1,true,  nullptr));
 }

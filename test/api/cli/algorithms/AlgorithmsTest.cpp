@@ -28,6 +28,10 @@ const std::string dirPath = "test/api/cli/algorithms/";
 // For now, we just check if the algorithms terminate successfully, but we
 // don't check the results.
 
+// ----------------------------------------------------------------------------
+// Algorithms
+// ----------------------------------------------------------------------------
+
 TEST_CASE("components", TAG_ALGORITHMS) {
     checkDaphneStatusCode(
         StatusCode::SUCCESS, dirPath + "components.daphne",
@@ -55,6 +59,42 @@ TEST_CASE("lm", TAG_ALGORITHMS) {
     checkDaphneStatusCode(
             StatusCode::SUCCESS, dirPath + "lm.daphne",
             "--args", "r=100,c=20"
+    );
+}
+
+// ----------------------------------------------------------------------------
+// Algorithms with --update-in-place
+// ----------------------------------------------------------------------------
+
+TEST_CASE("components (inplace)", TAG_INPLACE) {
+    checkDaphneStatusCode(
+        StatusCode::SUCCESS, dirPath + "components.daphne",
+        "--update-in-place", "--args", "n=100,e=1000"
+    );
+}
+
+/*
+TEST_CASE("componentsSparse (inplace)", TAG_ALGORITHMS) {
+    // TODO: check against mode without `--select-matrix-representations` by reading file or when the sparse and dense
+    //  random kernels have the same values for same seed
+    checkDaphneStatusCode(
+        StatusCode::SUCCESS, dirPath + "components.daphne",
+        "--select-matrix-representations", "--update-in-place", "--args", "n=100,e=100"
+    );
+}
+*/
+
+TEST_CASE("kmeans (inplace)", TAG_INPLACE) {
+    checkDaphneStatusCode(
+            StatusCode::SUCCESS, dirPath + "kmeans.daphne",
+             "--update-in-place", "--args", "r=100,c=5,f=20,i=10"
+    );
+}
+
+TEST_CASE("lm (inplace)", TAG_INPLACE) {
+    checkDaphneStatusCode(
+            StatusCode::SUCCESS, dirPath + "lm.daphne",
+            "--update-in-place", "--args", "r=100,c=20"
     );
 }
 
