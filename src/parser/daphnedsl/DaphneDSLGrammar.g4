@@ -87,6 +87,7 @@ expr:
     | KW_AS (('.' DATA_TYPE) | ('.' VALUE_TYPE) | ('.' DATA_TYPE '<' VALUE_TYPE '>')) '(' expr ')' # castExpr
     | obj=expr '[[' (rows=expr)? ',' (cols=expr)? ']]' # rightIdxFilterExpr
     | obj=expr idx=indexing # rightIdxExtractExpr
+    | op=('+'|'-') rhs=expr # unaryPlusMinusExpr
     | lhs=expr op='@' rhs=expr # matmulExpr
     | lhs=expr op='^' rhs=expr # powExpr
     | lhs=expr op='%' rhs=expr # modExpr
@@ -153,10 +154,10 @@ VALUE_TYPE:
     ) ;
 
 INT_LITERAL:
-    ('0' | '-'? NON_ZERO_DIGIT DIGIT*) ;
+    (('0' | NON_ZERO_DIGIT DIGIT*) ('l' | 'u' | 'ull' | 'z')?) ;
 
 FLOAT_LITERAL:
-    ('nan' | '-'? 'inf' | '-'? ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ );
+    ('nan' | 'nanf' | ('inf' | 'inff') | ('0' | NON_ZERO_DIGIT DIGIT*) '.' DIGIT+ 'f'? );
 
 STRING_LITERAL:
     '"' (ESCAPE_SEQ | ~["\\])* '"';
