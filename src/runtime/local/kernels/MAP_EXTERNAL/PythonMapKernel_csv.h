@@ -77,9 +77,9 @@ struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             return;
         }
 
-        std::string pid = std::to_string(getpid());
-        const std::string inputFile = "input_data_" + pid + ".csv";
-        const std::string outputFile = "output_data" + pid + ".csv";
+        std::string id = generateUniqueID();
+        const std::string inputFile = "input_data_" + id + ".csv";
+        const std::string outputFile = "output_data" + id + ".csv";
 
         std::ofstream ofs(inputFile);
         for (size_t i = 0; i < arg->getNumRows(); ++i) {
@@ -109,6 +109,7 @@ struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!pResult) {
             PyErr_Print();
+            cleanupFiles(inputFile, outputFile);
             PyGILState_Release(gstate);
         } else {
             Py_XDECREF(pResult);
@@ -130,14 +131,7 @@ struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         }
         ifs.close();
-
-        if (std::remove(inputFile.c_str()) != 0) {
-            perror("Error deleting input csv file");
-        }
-        if (std::remove(outputFile.c_str()) != 0) {
-            perror("Error deleting output csv file");
-        }
-
+        cleanupFiles(inputFile, outputFile);
         PyGILState_Release(gstate);
     }
 
@@ -152,6 +146,15 @@ struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             ifs >> value;
         }
         return value;
+    }
+
+    static void cleanupFiles(const std::string& inputFile, const std::string& outputFile) {
+        if (std::remove(inputFile.c_str()) != 0) {
+            perror("Error deleting input csv file");
+        }
+        if (std::remove(outputFile.c_str()) != 0) {
+            perror("Error deleting output csv file");
+        }
     }
 
 };

@@ -20,6 +20,9 @@
 #include <string>
 #include <stdexcept>
 #include <type_traits>
+#include <thread>
+#include <sstream>
+#include <unistd.h>
 
  //Helper Method for extracting from Python Objects
 template <typename VTArg>
@@ -145,5 +148,11 @@ static std::string get_dtype_name()
             throw std::runtime_error("Unsupported data type!");
         }
     }
+
+static std::string generateUniqueID() {
+    std::stringstream ss;
+    ss << getpid() << "_" << std::this_thread::get_id();
+    return ss.str();
+}
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_MAP_KERNEL_UTILS_H

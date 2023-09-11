@@ -47,14 +47,6 @@ struct PythonMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyGILState_STATE gstate;
         gstate = PyGILState_Ensure();
 
-        std::string pid = std::to_string(getpid());
-        const std::string inputFile = "input_data_" + pid + ".bin";
-        const std::string outputFile = "output_data" + pid + ".bin";
-
-        std::ofstream output(inputFile, std::ios::binary);
-        output.write(reinterpret_cast<const char *>(arg->getValues()), arg->getNumRows() * arg->getNumCols() * sizeof(VTArg));
-        output.close();
-
         PyObject* pName = PyUnicode_DecodeFSDefault("PythonMapKernel_binaryData");
         PyObject* pModule = PyImport_Import(pName);
         Py_XDECREF(pName);
@@ -74,6 +66,14 @@ struct PythonMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             return;
         }
 
+        std::string id = generateUniqueID();
+        const std::string inputFile = "input_data_" + id + ".bin";
+        const std::string outputFile = "output_data" + id + ".bin";
+
+        std::ofstream output(inputFile, std::ios::binary);
+        output.write(reinterpret_cast<const char *>(arg->getValues()), arg->getNumRows() * arg->getNumCols() * sizeof(VTArg));
+        output.close();
+
         std::string dtype = get_dtype_name<VTArg>();
 
         PyObject* pArgs = Py_BuildValue("ssiisss", 
@@ -91,6 +91,7 @@ struct PythonMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         Py_XDECREF(pArgs);
         if (!pResult) {
             PyErr_Print();
+            cleanupFiles(inputFile, outputFile);
             PyGILState_Release(gstate);
         } else {
             Py_XDECREF(pResult);
@@ -100,14 +101,17 @@ struct PythonMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         input.read((char *)res->getValues(), res->getNumRows() * res->getNumCols() * sizeof(VTRes));
         input.close();
 
+        cleanupFiles(inputFile, outputFile);
+        PyGILState_Release(gstate);
+    }
+
+    static void cleanupFiles(const std::string& inputFile, const std::string& outputFile) {
         if (std::remove(inputFile.c_str()) != 0) {
-            perror("Error deleting binary input file");
+            perror(("Error deleting " + inputFile).c_str());
         }
         if (std::remove(outputFile.c_str()) != 0) {
-            perror("Error deleting binary output file");
-        }
-
-        PyGILState_Release(gstate);
+            perror(("Error deleting " + outputFile).c_str());
+        }   
     }
 };
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_BINARYDATA_H
