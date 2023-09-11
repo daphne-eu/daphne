@@ -453,17 +453,7 @@ if __name__ == "__main__":
     'uint64': [2896, 5792],
     'uint8': [8192, 16384]
     }
-
-    matrix_sizes_250mb_500mb = {
-    'f32': [3],
-    'f64': [3],
-    'int32': [3],
-    'int64': [3],
-    'int8': [3],
-    'uint64': [3],
-    'uint8': [3]
-    }
-
+    
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
     datatypes_small_test = ['f64', 'f32', 'int64']
 
