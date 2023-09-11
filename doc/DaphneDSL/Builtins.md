@@ -563,3 +563,44 @@ The given UDF must have a single scalar argument and return a single scalar valu
 - **`map`**`(arg:matrix, func:str, varName:str, plName:str)`
 
 To use a map-kernel of an external porgramming language, `map()` can be invoked with a matrix, an user-defined function, the variable of the user-defined function and the name of an external programming language as arguments. Currently only Python is supported as external programming language. In Python defined functions and Lambda Expressions are allowed, with exactly one input and one output value.
+
+### Available Python Map Kernels
+|Name|Description|
+|---|---|
+|`Python_Shared_Mem`| Uses Shared Memory for the Data Transfer (works directly on the memory)|
+|`Python_Copy`| Transfers a Copy of the Matrix to Python, gets back the Result matrix from Python| 
+|`Python_Csv`| Data Transfer per temporary csv file|
+|`Python_BinaryFile`| Data Transfer per temporary binary file|
+|`Python_SysArg`| For every element in the matrix the Python function will be invoked on the element per Python Interpreter call|
+
+### Python Environment Interaction with DAPHNE's map() Function:
+
+`Native Python Environment`: If you're using DAPHNE with the system-wide Python installation, any Python code passed to `map()` will utilize the system's default Python version and its installed libraries.
+
+`Virtual Environments (venv)`: If you want to us the `map()` function within a virtual environment, you firstly have to run the `build.sh` script after starting the venv, as the Python Header files have to be compiled against the Daphne application, before using it.
+
+### Processing of integers in Python UDFs for DAPHNE:
+
+Although Python natively handles integers of arbitrary size, DAPHNE limits representation to specific bit-widths based on the datatype.
+
+Implementation Notes:
+
+`Native Python Processing:`
+Python can natively manage integers of arbitrary size. Developers must ensure the result returned to C++/DAPHNE is constrained to the least significant bits of the datatype. This limitation can be achieved by applying a modulo operation as resultmod  2<bits of datatype>resultmod2<bits of datatype> or bitwise AND operation as result&(2<bits of datatype>−1)result&(2<bits of datatype>−1). For signed integers or narrower integer types, adjustments should be made accordingly.
+
+`NumPy Processing:`
+When using NumpPy, integer calculations are automatically bound by the datatype's bit-width. The result doesn't need further adjustment before returning it to DAPHNE.
+
+Note: Some calculations might yield different results between native Python and NumPy.
+
+Example: For the expression (x+bigNumber)<0(x+bigNumber)<0 where x=1x=1, native Python might evaluate it as false while NumPy could evaluate it as true, depending on the magnitude of "bigNumber".
+
+Recommendation:
+Developers have two primary options for integer calculations in Python:
+
+|Method	|Description |	Pros & Cons |
+|---|---|---|
+Element-wise with Python integers |	Individual calculations using native Python integers.|	Might be slower, but allows arbitrary precision for intermediate results.|
+|Batch-wise with Numpy	| Process arrays of numbers simultaneously.	| Likely fasterbut restricts calculations to the specified integer datatype.|
+
+As the computations in the Python Approaches (Python_Shared_Mem, Python_SysArg, Python_Copy, Python_Csv, Python_BinaryFile) are performend by using NumPy, the results are inherently restricted to the datatypes bit-width. If you intend to avoid the restriction, you can use the Python_SysArg approach which does not use NumPy directly for the conversion. Instead, it uses the Python C-API type conversion.
