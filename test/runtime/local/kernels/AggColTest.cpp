@@ -18,6 +18,7 @@
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datagen/GenGivenVals.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/CSCMatrix.h>
 #include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
 #include <runtime/local/kernels/CheckEq.h>
@@ -210,7 +211,7 @@ STDDEV_TEST_CASE(double);
 
 TEMPLATE_TEST_CASE("Column aggregation of MCSR works", TAG_KERNELS, ALL_VALUE_TYPES){
 
-  //Test column-wise aggregation with SUM 
+  //Test column-wise aggregation with SUM
   using ValueType = TestType;
 
   const size_t numRows = 4;
@@ -246,6 +247,49 @@ TEMPLATE_TEST_CASE("Column aggregation of MCSR works", TAG_KERNELS, ALL_VALUE_TY
   CHECK(resultMatrix -> get(0,3) == 8);
   CHECK(resultMatrix -> get(0,4) == 4);
   CHECK(resultMatrix -> get(0,5) == 4);
+
+  DataObjectFactory::destroy(sourceMatrix);
+  DataObjectFactory::destroy(resultMatrix);
+
+
+}
+
+TEMPLATE_TEST_CASE("Column aggregation of CSC works", TAG_KERNELS, ALL_VALUE_TYPES){
+
+  //Test column-wise aggregation with SUM
+  using ValueType = TestType;
+
+  const size_t numRows = 4;
+  const size_t numCols = 6;
+  const size_t maxNumNonZeros = 8;
+
+  CSCMatrix<ValueType> * sourceMatrix = DataObjectFactory::create<CSCMatrix<ValueType>>(numRows, numCols, maxNumNonZeros, true);
+  DenseMatrix<ValueType> * resultMatrix = nullptr;
+
+  DaphneUserConfig userConfig;
+  DaphneContext* context = new DaphneContext(userConfig);
+
+
+  //Append source matrix
+
+  sourceMatrix -> append(0,0,4);
+  sourceMatrix -> append(0,1,4);
+  sourceMatrix -> append(1,1,4);
+  sourceMatrix -> append(2,2,4);
+  sourceMatrix -> append(1,3,4);
+  sourceMatrix -> append(2,3,4);
+  sourceMatrix -> append(2,4,4);
+  sourceMatrix -> append(3,5,4);
+
+  AggCol<DenseMatrix<ValueType>, CSCMatrix<ValueType>>::apply(AggOpCode::SUM, resultMatrix, sourceMatrix, context);
+
+  CHECK(resultMatrix -> get(0,0) == 4);
+  CHECK(resultMatrix -> get(0,1) == 8);
+  CHECK(resultMatrix -> get(0,2) == 4);
+  CHECK(resultMatrix -> get(0,3) == 8);
+  CHECK(resultMatrix -> get(0,4) == 4);
+  CHECK(resultMatrix -> get(0,5) == 4);
+
 
   DataObjectFactory::destroy(sourceMatrix);
   DataObjectFactory::destroy(resultMatrix);

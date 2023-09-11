@@ -19,6 +19,7 @@
 
 #include <runtime/local/context/DaphneContext.h>
 #include <runtime/local/datastructures/CSRMatrix.h>
+#include <runtime/local/datastructures/CSCMatrix.h>
 #include <runtime/local/datastructures/MCSRMatrix.h>
 #include <runtime/local/datastructures/DataObjectFactory.h>
 #include <runtime/local/datastructures/DenseMatrix.h>
@@ -373,5 +374,76 @@ struct AggCol<DenseMatrix<VTRes>, MCSRMatrix<VTArg>> {
     }
 };
 
+
+
+// ----------------------------------------------------------------------------
+// DenseMatrix <- CSCMatrix
+// ----------------------------------------------------------------------------
+
+
+template<typename VTRes, typename VTArg>
+struct AggCol<DenseMatrix<VTRes>, CSCMatrix<VTArg>> {
+    static void apply(AggOpCode opCode, DenseMatrix<VTRes> *& res, const CSCMatrix<VTArg> * arg, DCTX(ctx)) {
+        const size_t numRows = arg->getNumRows();
+        const size_t numCols = arg->getNumCols();
+
+        if(res == nullptr)
+            res = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
+
+        VTRes * valuesRes = res->getValues();
+
+        EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func;
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
+        else
+            func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(AggOpCode::SUM));
+
+        if(AggOpCodeUtils::isSparseSafe(opCode)) {
+            for(size_t c = 0; c < numCols; c++) {
+                const VTArg * valuesCol = arg->getValues(c);
+                const size_t numNonZerosCol = arg->getNumNonZeros(c);
+                for(size_t i = 0; i < numNonZerosCol; i++) {
+                    valuesRes[c] = func(valuesRes[c], static_cast<VTRes>(valuesCol[i]), ctx);
+                }
+            }
+        }
+        else {
+            throw std::runtime_error("Non-sparse-safe column aggregation for CSCMatrix is not yet implemented.");
+        }
+
+        if(AggOpCodeUtils::isPureBinaryReduction(opCode))
+            return;
+
+        // The op-code is either MEAN or STDDEV.
+
+        for(size_t c = 0; c < numCols; c++)
+            valuesRes[c] /= numRows;
+
+        if(opCode != AggOpCode::STDDEV)
+            return;
+
+        auto tmp = DataObjectFactory::create<DenseMatrix<VTRes>>(1, numCols, true);
+        VTRes * valuesT = tmp->getValues();
+
+        for(size_t c = 0; c < numCols; c++) {
+            const VTArg * valuesCol = arg->getValues(c);
+            const size_t numNonZerosCol = arg->getNumNonZeros(c);
+            for(size_t i = 0; i < numNonZerosCol; i++) {
+                VTRes val = static_cast<VTRes>(valuesCol[i]) - valuesRes[c];
+                valuesT[c] = valuesT[c] + val * val;
+            }
+
+            // Take all zeros in the column into account.
+            valuesT[c] += (valuesRes[c] * valuesRes[c]) * (numRows - numNonZerosCol);
+            // Finish computation of stddev.
+            valuesT[c] /= numRows;
+            valuesT[c] = sqrt(valuesT[c]);
+        }
+
+
+        memcpy(valuesRes, valuesT, numCols * sizeof(VTRes));
+        DataObjectFactory::destroy<DenseMatrix<VTRes>>(tmp);
+    }
+};
 
 #endif //SRC_RUNTIME_LOCAL_KERNELS_AGGCOL_H
