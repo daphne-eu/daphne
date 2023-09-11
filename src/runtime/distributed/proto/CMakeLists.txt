@@ -21,7 +21,7 @@ set(PROTO_FILES
         worker.proto
         )
 
-add_library(Proto ${PROTO_FILES})
+add_library(Proto SHARED ${PROTO_FILES})
 target_link_libraries(Proto
         PUBLIC
         protobuf::libprotobuf

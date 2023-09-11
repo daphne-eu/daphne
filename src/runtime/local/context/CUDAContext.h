@@ -46,7 +46,10 @@ class CUDAContext final : public IContext {
     
     std::map<size_t, std::shared_ptr<std::byte>> allocations;
     static size_t alloc_count;
-    explicit CUDAContext(int id) : device_id(id) { }
+
+    explicit CUDAContext(int id) : device_id(id) {
+        logger = spdlog::get("runtime::cuda");
+    }
     
     void init();
     
@@ -76,12 +79,22 @@ public:
     void* getCUDNNWorkspace(size_t size);
 
     [[nodiscard]] size_t getMemBudget() const { return mem_budget; }
-
+    int getMaxNumThreads();
     static CUDAContext* get(DaphneContext* ctx, size_t id) { return dynamic_cast<CUDAContext*>(ctx->getCUDAContext(id)); }
 
     std::shared_ptr<std::byte> malloc(size_t size, bool zero, size_t& id);
 
     void free(size_t id);
+
+    template<typename T>
+    static void debugPrintCUDABuffer(const CUDAContext& ctx, std::string_view title, const T* data, size_t num_items) {
+        std::vector<T> tmp(num_items);
+        CHECK_CUDART(cudaMemcpy(tmp.data(), data, num_items * sizeof(T), cudaMemcpyDeviceToHost));
+        auto out = fmt::memory_buffer();
+        fmt::format_to(std::back_inserter(out),"{} \n", title);
+        fmt::format_to(std::back_inserter(out), fmt::join(tmp, ", "));
+        ctx.logger->debug(out);
+    }
 
     int conv_algorithm = -1;
     cudnnPoolingDescriptor_t pooling_desc{};
@@ -95,5 +108,7 @@ public:
     // A block size of 256 works well in many cases.
     // Putting it here to avoid hard coding things elsewhere.
     const uint32_t default_block_size = 256;
-    
+
+    // cuda runtime logger
+    std::shared_ptr<spdlog::logger> logger;
 };

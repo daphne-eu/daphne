@@ -276,6 +276,60 @@ std::vector<Type> daphne::OrderOp::inferTypes() {
     return {t};
 }
 
+
+mlir::Type mlirTypeForCode(ValueTypeCode type, Builder builder) {
+    switch(type) {
+        case ValueTypeCode::SI8:  return builder.getIntegerType(8, true);
+        case ValueTypeCode::SI32: return builder.getIntegerType(32, true);
+        case ValueTypeCode::SI64: return builder.getIntegerType(64, true);
+        case ValueTypeCode::UI8:  return builder.getIntegerType(8, false);
+        case ValueTypeCode::UI32: return builder.getIntegerType(32, false);
+        case ValueTypeCode::UI64: return builder.getIntegerType(64, false);
+        case ValueTypeCode::F32: return builder.getF32Type();
+        case ValueTypeCode::F64: return builder.getF64Type();
+        default: throw std::runtime_error("mlirTypeForCode: unknown value type code");
+    }
+}
+
+std::vector<Type> daphne::ReadOp::inferTypes() {
+
+    auto p = CompilerUtils::isConstant<std::string>(getFileName());
+    Builder builder(getContext());
+    if (auto resType = getRes().getType().dyn_cast<daphne::MatrixType>()) {
+        // If an individual value type was specified per column
+        // (fmd.isSingleValueType == false), then this silently uses the
+        // type of the first column.
+        // TODO: add sparsity information here already (if present), currently not possible as many other ops
+        //  just take input types as output types, which is incorrect for sparsity
+        if (p.first) {
+            FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
+            mlir::Type valType = mlirTypeForCode(fmd.schema[0], builder);
+            return {mlir::daphne::MatrixType::get(getContext(), valType)};
+        } else {
+            return {mlir::daphne::MatrixType::get(getContext(), daphne::UnknownType::get(getContext()))};
+        }
+    }
+    else if (auto resType = getRes().getType().dyn_cast<daphne::FrameType>()) {
+        if (p.first) {
+            FileMetaData fmd = CompilerUtils::getFileMetaData(getFileName());
+            std::vector<mlir::Type> cts;
+            if (fmd.isSingleValueType) {
+                for (size_t i = 0; i < fmd.numCols; i++) {
+                    cts.push_back(mlirTypeForCode(fmd.schema[0], builder));
+                }
+            } else {
+                for (ValueTypeCode vtc : fmd.schema) {
+                    cts.push_back(mlirTypeForCode(vtc, builder));
+                }
+            }
+            return {mlir::daphne::FrameType::get(builder.getContext(), cts)};
+        } else {
+            return {mlir::daphne::FrameType::get(builder.getContext(), {daphne::UnknownType::get(getContext())})};
+        }
+    }
+    return {daphne::UnknownType::get(getContext())};
+}
+
 std::vector<Type> daphne::SliceColOp::inferTypes() {
     Type u = daphne::UnknownType::get(getContext());
     Type srcTy = getSource().getType();
@@ -423,11 +477,11 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
         types = daphne::tryInferType(op);
     }
     catch (std::runtime_error& re) {
-        spdlog::error("Caught std::runtime_error in {}:{}: \n{}",__FILE__, __LINE__, re.what());
+        spdlog::error("Exception in {}:{}: \n{}",__FILE__, __LINE__, re.what());
         throw;
     }
     catch (...) {
-        spdlog::error("Caught an unspecified exception in {}:{}",__FILE__, __LINE__);
+        spdlog::error("Unknown exception in {}:{}",__FILE__, __LINE__);
         throw;
     }
     const size_t numRes = op->getNumResults();
@@ -438,7 +492,7 @@ void daphne::setInferedTypes(Operation* op, bool partialInferenceAllowed) {
                 std::to_string(types.size()) + " types, but the op has " +
                 std::to_string(numRes) + " results"
         );
-    // Set the infered types on all results of this operation.
+    // Set the inferred types on all results of this operation.
     for(size_t i = 0; i < numRes; i++) {
         if (types[i].isa<daphne::UnknownType>() && !partialInferenceAllowed)
             // TODO As soon as the run-time can handle unknown

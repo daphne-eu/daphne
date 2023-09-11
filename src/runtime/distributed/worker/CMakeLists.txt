@@ -20,7 +20,8 @@
 # FIXME: use DaphneIrExecutor target instead
 set(SOURCES 
         WorkerImpl.cpp 
-        WorkerImplGRPC.cpp
+        WorkerImplGRPCAsync.cpp
+        WorkerImplGRPCSync.cpp
         ../../../compiler/execution/DaphneIrExecutor.cpp)
 
 #source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR} FILES ${SOURCES})
@@ -41,7 +42,7 @@ set(LIBS
         DaphneMetaDataParser
         Arrow::arrow_shared
         Parquet::parquet_shared
-        )
+        Util)
 
 add_library(WorkerImpl ${SOURCES})
 #llvm_update_compile_flags(WorkerImpl)

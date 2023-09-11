@@ -142,9 +142,7 @@ namespace
         {
         }
 
-        LogicalResult matchAndRewrite(Operation *op,
-                                      PatternRewriter &rewriter) const override
-        {
+        LogicalResult matchAndRewrite(Operation *op, PatternRewriter &rewriter) const override {
             Location loc = op->getLoc();
 
             // Determine the name of the kernel function to call by convention
@@ -153,21 +151,12 @@ namespace
             std::stringstream callee;
 
             // check CUDA support and valid device ID
-//            auto attr = op->getAttr("cuda_device");
-//            if(attr && attr.dyn_cast<IntegerAttr>().getInt() > -1) {
             if(op->hasAttr("cuda_device")) {
-//                op->hasTrait<mlir::OpTrait::CUDASupport>() &&
-//                auto attr = op->getAttr("cuda_device");
-//                if(attr && attr.dyn_cast<IntegerAttr>().getInt() > -1) {
-//                if(attr.dyn_cast<IntegerAttr>().getInt() > -1)
-                    callee << "CUDA";
-//                else
-//                    std::cout << "attr = null: " << op->getName().getStringRef().str() << std::endl;
+                callee << "CUDA";
             }
-	    else if(op->hasAttr("fpgaopencl_device")) {
-		 callee << "FPGAOPENCL";
-	    }
-		    
+            else if(op->hasAttr("fpgaopencl_device")) {
+                callee << "FPGAOPENCL";
+            }
 
             callee << '_' << op->getName().stripDialect().data();
 

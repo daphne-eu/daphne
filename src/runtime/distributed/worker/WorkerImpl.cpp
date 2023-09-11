@@ -20,8 +20,6 @@
 #include <mlir/ExecutionEngine/ExecutionEngine.h>
 #include <mlir/IR/AsmState.h>
 #include <mlir/Parser/Parser.h>
-#include <mlir/Pass/PassManager.h>
-#include <mlir/Transforms/Passes.h>
 #include <llvm/Support/SourceMgr.h>
 
 #include <ir/daphneir/Daphne.h>
@@ -38,14 +36,7 @@
 
 const std::string WorkerImpl::DISTRIBUTED_FUNCTION_NAME = "dist";
 
-WorkerImpl::WorkerImpl() : tmp_file_counter_(0), localData_()
-{
-}
-
-WorkerImpl::~WorkerImpl(){
-
-}
-
+WorkerImpl::WorkerImpl(DaphneUserConfig& _cfg) : cfg(_cfg), tmp_file_counter_(0), localData_() {}
 
 template<>
 WorkerImpl::StoredInfo WorkerImpl::Store<Structure>(Structure *mat)
@@ -69,16 +60,14 @@ WorkerImpl::StoredInfo WorkerImpl::Store<double>(double *val)
     localData_[identifier] = valPtr;
     return StoredInfo({identifier, 0, 0});
 }
-    
-    
 
 
-WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs, const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode)
+WorkerImpl::Status WorkerImpl::Compute(std::vector<WorkerImpl::StoredInfo> *outputs,
+        const std::vector<WorkerImpl::StoredInfo> &inputs, const std::string &mlirCode)
 {
-    // ToDo: user config
-    DaphneUserConfig cfg;
     cfg.use_vectorized_exec = true;
     cfg.use_distributed = false;
+
     // TODO Decide if vectorized pipelines should be used on this worker.
     // TODO Decide if selectMatrixReprs should be used on this worker.
     // TODO Once we hand over longer pipelines to the workers, we might not

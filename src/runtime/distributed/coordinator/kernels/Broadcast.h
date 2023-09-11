@@ -136,18 +136,18 @@ struct Broadcast<ALLOCATION_TYPE::DIST_MPI, DT>
 };
 #endif
 // ----------------------------------------------------------------------------
-// GRPC
+// Asynchronous GRPC
 // ----------------------------------------------------------------------------
 
 template<class DT>
-struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
+struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_ASYNC, DT>
 {
     static void apply(DT *&mat, bool isScalar, DCTX(dctx)) 
     {
         struct StoredInfo {
             size_t dp_id;
         };
-        DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller;
+        DistributedGRPCCaller<StoredInfo, distributed::Data, distributed::StoredData> caller(dctx);
         
         auto ctx = DistributedContext::get(dctx);
         auto workers = ctx->getWorkers();
@@ -196,5 +196,71 @@ struct Broadcast<ALLOCATION_TYPE::DIST_GRPC, DT>
 
             dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(data);            
         }                
+    };           
+};
+
+// ----------------------------------------------------------------------------
+// Synchronous GRPC
+// ----------------------------------------------------------------------------
+
+template<class DT>
+struct Broadcast<ALLOCATION_TYPE::DIST_GRPC_SYNC, DT>
+{
+    static void apply(DT *&mat, bool isScalar, DCTX(dctx)) 
+    {
+        auto ctx = DistributedContext::get(dctx);
+        auto workers = ctx->getWorkers();
+
+        distributed::Data protoMsg;
+    
+        std::vector<std::thread> threads_vector;
+        std::vector<char> buffer;
+        if (isScalar) {
+            auto ptr = (double*)(&mat);        
+            double val = *ptr;
+            auto length = DaphneSerializer<double>::serialize(val, buffer);
+            protoMsg.set_bytes(buffer.data(), length);
+
+            // Need matrix for metadata, type of matrix does not really matter.
+            mat = DataObjectFactory::create<DenseMatrix<double>>(0, 0, false); 
+        } 
+        else { // Not scalar
+            // DT is const Structure, but we only provide template specialization for structure.
+            // TODO should we implement an additional specialization or remove constness from template parameter?
+            size_t length = DaphneSerializer<typename std::remove_const<DT>::type>::serialize(mat, buffer);
+            protoMsg.set_bytes(buffer.data(), length);            
+        }
+        LoadPartitioningDistributed<DT, AllocationDescriptorGRPC> partioner(DistributionSchema::BROADCAST, mat, dctx);
+
+        while(partioner.HasNextChunk()){
+            auto dp = partioner.GetNextChunk();
+            if (dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getDistributedData().isPlacedAtWorker)
+                continue;
+            
+            auto workerAddr = dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).getLocation();
+            std::thread t([=]() 
+            {
+                // TODO Consider saving channels inside DaphneContext
+                grpc::ChannelArguments ch_args;
+                ch_args.SetMaxSendMessageSize(-1);
+                ch_args.SetMaxReceiveMessageSize(-1);
+                auto channel = grpc::CreateCustomChannel(workerAddr, grpc::InsecureChannelCredentials(), ch_args);
+                auto stub = distributed::Worker::NewStub(channel);
+
+                distributed::StoredData storedData;
+                grpc::ClientContext grpc_ctx;
+                stub->Store(&grpc_ctx, protoMsg, &storedData);
+
+                DistributedData newData;
+                newData.identifier = storedData.identifier();
+                newData.numRows = storedData.num_rows();
+                newData.numCols = storedData.num_cols();
+                newData.isPlacedAtWorker = true;
+                dynamic_cast<AllocationDescriptorGRPC&>(*(dp->allocation)).updateDistributedData(newData);
+            });
+            threads_vector.push_back(move(t));
+        }
+        for (auto &thread : threads_vector)
+            thread.join();
     };           
 };

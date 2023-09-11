@@ -34,12 +34,15 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
     set(CUDAKernels_SRC
             ${PREFIX}/../../context/CUDAContext.cpp
             ${PREFIX}/CreateCUDAContext.cpp
+            ${PREFIX}/AggAll.cu
             ${PREFIX}/AggCol.cu
+            ${PREFIX}/AggRow.cu
             ${PREFIX}/Activation.cpp
             ${PREFIX}/Affine.cpp
             ${PREFIX}/BatchNorm.cpp
             ${PREFIX}/BiasAdd.cpp
             ${PREFIX}/Convolution.cpp
+            ${PREFIX}/DeviceUtils.cuh
             ${PREFIX}/Fill.cu
             ${PREFIX}/Pooling.cpp
             ${PREFIX}/Softmax.cpp
@@ -56,7 +59,7 @@ if(USE_CUDA AND CMAKE_CUDA_COMPILER)
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/TasksCUDA.cpp
             ${PROJECT_SOURCE_DIR}/src/runtime/local/kernels/VectorizedPipeline.h
             ${PROJECT_SOURCE_DIR}/src/runtime/local/vectorized/WorkerGPU.h
-        )
+    )
 
     add_library(CUDAKernels SHARED ${CUDAKernels_SRC})
 
