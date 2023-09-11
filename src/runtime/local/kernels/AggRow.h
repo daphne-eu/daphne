@@ -287,7 +287,6 @@ struct AggRow<DenseMatrix<VTRes>, CSCMatrix<VTArg>> {
         if (AggOpCodeUtils::isPureBinaryReduction(opCode)) {
 
             EwBinaryScaFuncPtr<VTRes, VTRes, VTRes> func = getEwBinaryScaFuncPtr<VTRes, VTRes, VTRes>(AggOpCodeUtils::getBinaryOpCode(opCode));
-
             //const bool isSparseSafe = AggOpCodeUtils::isSparseSafe(opCode);
             const VTRes neutral = AggOpCodeUtils::template getNeutral<VTRes>(opCode);
 

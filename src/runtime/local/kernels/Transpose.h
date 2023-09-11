@@ -137,14 +137,12 @@ struct Transpose<MCSRMatrix<VT>, MCSRMatrix<VT>> {
         if(res == nullptr){
             res = DataObjectFactory::create<MCSRMatrix<VT>>(numCols, numRows, arg->getMaxNumNonZeros(), true);
         }
-
         for(size_t c = 0; c < numCols; c++) {
             for(size_t r = 0; r < numRows; r++) {
                 // Retrieve values and column indices for the current row
                 const VT* rowValuesArg = arg->getValues(r);
                 const size_t* colIdxsArg = arg->getColIdxs(r);
 
-                // We'll find if column 'c' has a non-zero in row 'r'
                 size_t rowSize = arg->getNumNonZeros(r);
                 for(size_t idx = 0; idx < rowSize; idx++) {
                     if(colIdxsArg[idx] == c) {

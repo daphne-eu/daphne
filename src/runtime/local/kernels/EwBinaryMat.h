@@ -406,16 +406,16 @@ struct EwBinaryMat<MCSRMatrix<VTres>, MCSRMatrix<VTlhs>, MCSRMatrix<VTrhs>> {
                     if(opCode == BinaryOpCode::ADD) {
                         res->set(r, colIdxsLhs[lhsIdx], rowValuesLhs[lhsIdx]);
                     } else if(opCode == BinaryOpCode::MUL) {
-                        // Multiplication with implicit zero.
-                        // Do not set anything (unless your matrix format explicitly stores zeros).
+                        // Multiplication with implicit zero
+                        // Do not set anything (unless your matrix format explicitly stores zeros)
                     }
                     lhsIdx++;
                 } else {
                     if(opCode == BinaryOpCode::ADD) {
                         res->set(r, colIdxsRhs[rhsIdx], rowValuesRhs[rhsIdx]);
                     } else if(opCode == BinaryOpCode::MUL) {
-                        // Multiplication with implicit zero.
-                        // Do not set anything (unless your matrix format explicitly stores zeros).
+                        // Multiplication with implicit zero
+                        // Do not set anything (unless your matrix format explicitly stores zeros)
                     }
                     rhsIdx++;
                 }
@@ -427,14 +427,14 @@ struct EwBinaryMat<MCSRMatrix<VTres>, MCSRMatrix<VTlhs>, MCSRMatrix<VTrhs>> {
                 if(opCode == BinaryOpCode::ADD) {
                     res->set(r, colIdxsLhs[lhsIdx], rowValuesLhs[lhsIdx]);
                 }
-                // No need to handle multiplication since it will be multiplication with implicit zero.
+                // No need to handle multiplication since it will be multiplication with implicit zero
                 lhsIdx++;
             }
             while (rhsIdx < rhsRowSize) {
                 if(opCode == BinaryOpCode::ADD) {
                     res->set(r, colIdxsRhs[rhsIdx], rowValuesRhs[rhsIdx]);
                 }
-                // No need to handle multiplication since it will be multiplication with implicit zero.
+                // No need to handle multiplication since it will be multiplication with implicit zero
                 rhsIdx++;
             }
         }
@@ -458,10 +458,10 @@ struct EwBinaryMat<CSCMatrix<VT>, CSCMatrix<VT>, CSCMatrix<VT>> {
 
         size_t maxNnz;
         switch(opCode) {
-            case BinaryOpCode::ADD: // merge
+            case BinaryOpCode::ADD:
                 maxNnz = lhs->getMaxNumNonZeros() + rhs->getMaxNumNonZeros();
                 break;
-            case BinaryOpCode::MUL: // intersect
+            case BinaryOpCode::MUL:
                 maxNnz = std::min(lhs->getMaxNumNonZeros(), rhs->getMaxNumNonZeros());
                 break;
             default:

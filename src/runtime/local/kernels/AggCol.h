@@ -414,7 +414,7 @@ struct AggCol<DenseMatrix<VTRes>, CSCMatrix<VTArg>> {
         if(AggOpCodeUtils::isPureBinaryReduction(opCode))
             return;
 
-        // The op-code is either MEAN or STDDEV.
+        // The op-code is either MEAN or STDDEV
 
         for(size_t c = 0; c < numCols; c++)
             valuesRes[c] /= numRows;
@@ -432,10 +432,9 @@ struct AggCol<DenseMatrix<VTRes>, CSCMatrix<VTArg>> {
                 VTRes val = static_cast<VTRes>(valuesCol[i]) - valuesRes[c];
                 valuesT[c] = valuesT[c] + val * val;
             }
-
-            // Take all zeros in the column into account.
+            // Take all zeros in the column into account
             valuesT[c] += (valuesRes[c] * valuesRes[c]) * (numRows - numNonZerosCol);
-            // Finish computation of stddev.
+            // Finish computation of stddev
             valuesT[c] /= numRows;
             valuesT[c] = sqrt(valuesT[c]);
         }
