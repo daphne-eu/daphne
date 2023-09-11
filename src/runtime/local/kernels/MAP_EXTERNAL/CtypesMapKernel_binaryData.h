@@ -100,10 +100,10 @@ struct CtypesMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         input.close();
 
         if (std::remove(inputFile.c_str()) != 0) {
-            perror("Error deleting input file");
+            perror("Error deleting binary input file");
         }
         if (std::remove(outputFile.c_str()) != 0) {
-            perror("Error deleting output file");
+            perror("Error deleting binary output file");
         }
 
         PyGILState_Release(gstate);

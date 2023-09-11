@@ -131,10 +131,10 @@ struct CtypesMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         ifs.close();
 
         if (std::remove(inputFile.c_str()) != 0) {
-            perror("Error deleting input.csv");
+            perror("Error deleting input csv file");
         }
         if (std::remove(outputFile.c_str()) != 0) {
-            perror("Error deleting output.csv");
+            perror("Error deleting output csv file");
         }
 
         PyGILState_Release(gstate);
