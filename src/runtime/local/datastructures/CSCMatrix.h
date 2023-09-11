@@ -28,8 +28,41 @@
 #include <cstddef>
 #include <cstring>
 
+/**
+ * @brief A sparse matrix in Compressed Sparse Column (CSC) format.
+ *
+ * This matrix implementation is backed by three contiguous arrays. The
+ * `values` array contains all non-zero values in the matrix. For each of these
+ * non-zero values, the `rowIdxs` array contains the number of the row.
+ * Finally, the `colOffsets` array contains for each column in the matrix the
+ * offset at which the corresponding entries can be found in the `values` and
+ * `rowIdxs` arrays. Additionally, the `colOffsets` array ends with the offset
+ * to the first element after the valid elements in the `values` and `rowIdxs`
+ * arrays.
+ *
+ * Each instance of this class might represent a sub-matrix of another
+ * `CSCMatrix`. Thus, to traverse the matrix by column, you can safely go via the
+ * `colOffsets`, but for traversing the matrix by non-zero value, you must
+ * start at `values[colOffsets[0]`.
+ */
+
+
 template<typename ValueType>
 class CSCMatrix : public Matrix<ValueType>{
+
+  /**
+ * @brief Detailed description of the class variables in the CSCMatrix class.
+ *
+ * @param numRows Inherited from the Matrix class, representing the number of rows in the matrix.
+ * @param numCols Inherited from the Matrix class, representing the number of columns in the matrix.
+ * @param maxNumNonZeros The maximum number of non-zero values that the matrix can hold.
+ * @param numColumnsAllocated The number of columns for which memory has been allocated.
+ * @param isColumnAllocatedBefore A flag indicating whether a column has been allocated before.
+ * @param values A shared pointer to the array holding the non-zero values of the matrix.
+ * @param rowIdxs A shared pointer to the array holding the row indices corresponding to the non-zero values.
+ * @param columnOffsets A shared pointer to the array holding the offsets for each column in the values and rowIdxs arrays.
+ * @param lastAppendedColumnIdx The index of the last column to which a value was appended.
+ */
 
   using Matrix<ValueType>::numRows;
   using Matrix<ValueType>::numCols;
@@ -48,28 +81,49 @@ class CSCMatrix : public Matrix<ValueType>{
   template<class DataType>
   friend void DataObjectFactory::destroy(const DataType * obj);
 
-public:
-    CSCMatrix(size_t numRows, size_t numCols, size_t maxNumNonZeros, bool zero):
-      Matrix<ValueType>(numRows, numCols),
-      maxNumNonZeros(maxNumNonZeros),
-      numColumnsAllocated(numCols),
-      isColumnAllocatedBefore(false),
-      values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
-      rowIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
-      columnOffsets(new size_t[numCols + 1], std::default_delete<size_t[]>()),
-      lastAppendedColumnIdx(0)
-    {
+  /**
+ * @brief Constructs a CSCMatrix with specified dimensions and initializes memory.
+ *
+ * The constructor allocates memory for storing non-zero values, row indices, and column offsets.
+ * If the `zero` flag is set, it initializes all allocated memory to zero.
+ *
+ * @param numRows Number of rows in the matrix.
+ * @param numCols Number of columns in the matrix.
+ * @param maxNumNonZeros Maximum number of non-zero values the matrix can store.
+ * @param zero Flag indicating whether to initialize the memory to zero.
+ */
 
-      if(zero) {
-          memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
-          memset(rowIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
-          memset(columnOffsets.get(), 0, (numCols + 1) * sizeof(size_t));
-      }
+  CSCMatrix(size_t numRows, size_t numCols, size_t maxNumNonZeros, bool zero):
+    Matrix<ValueType>(numRows, numCols),
+    maxNumNonZeros(maxNumNonZeros),
+    numColumnsAllocated(numCols),
+    isColumnAllocatedBefore(false),
+    values(new ValueType[maxNumNonZeros], std::default_delete<ValueType[]>()),
+    rowIdxs(new size_t[maxNumNonZeros], std::default_delete<size_t[]>()),
+    columnOffsets(new size_t[numCols + 1], std::default_delete<size_t[]>()),
+    lastAppendedColumnIdx(0)
+  {
 
+    if(zero) {
+        memset(values.get(), 0, maxNumNonZeros * sizeof(ValueType));
+        memset(rowIdxs.get(), 0, maxNumNonZeros * sizeof(size_t));
+        memset(columnOffsets.get(), 0, (numCols + 1) * sizeof(size_t));
     }
 
-    //cl: column-lower (included)
-    //cu: column-upper (excluded)
+  }
+
+  /**
+ * @brief Constructs a view (sub-matrix) of the original CSCMatrix based on column boundaries.
+ *
+ * This constructor creates a view of the original matrix, using shared pointers to reference the
+ * original data without copying. It defines a sub-matrix spanning from `colLowerIncl` to `colUpperExcl`
+ * columns, inclusive of the lower boundary and exclusive of the upper boundary.
+ *
+ * @param src Pointer to the original CSCMatrix.
+ * @param colLowerIncl Lower column boundary (inclusive).
+ * @param colUpperExcl Upper column boundary (exclusive).
+ */
+
     CSCMatrix(const CSCMatrix<ValueType>* src, size_t colLowerIncl, size_t colUpperExcl):
       Matrix<ValueType>(src -> numRows, colUpperExcl - colLowerIncl),
       numColumnsAllocated(src->numColumnsAllocated - colLowerIncl),
@@ -261,7 +315,7 @@ public:
 
   // Note that if this matrix is a view on a larger `CSCMatrix`, then
   // `prepareAppend`/`append`/`finishAppend` assume that the larger matrix
-  // has been populated up to just before the row range of this view.
+  // has been populated up to just before the column range of this view.
   void append(size_t rowIdx, size_t colIdx, ValueType value) override {
     assert(colIdx>=0 && "column index is out of bounds.");
     assert(colIdx<numCols && "column index is out of bounds.");
