@@ -300,11 +300,12 @@ def getMinMaxValueRangeForOp(op):
     op2: power
     op3: logarithm_base_10
     op4: e**(x**2)
-    op5: polynomial
+    op5: polynomial (5)
     op6: relu
     op7: sigmoid
     op8: thresholding
     op9: Fibonacci
+    op10: polynomial (3)
     '''
     if op == 1:  # multiplication
         return min_value, max_value
@@ -314,7 +315,7 @@ def getMinMaxValueRangeForOp(op):
         return min_value_for_log, max_value
     elif op == 4:  # 2*e**(x**2)
         return min_value_for_exp, max_value_for_exp
-    elif op == 5:  # polynomial
+    elif op == 5:  # polynomial (5)
         return min_value_polynomial, max_value_polynomial
     elif op == 6:  # relu
         return min_value, max_value  # No change since relu outputs the input for positive values and 0 otherwise.
@@ -324,6 +325,8 @@ def getMinMaxValueRangeForOp(op):
         return min_value, max_value
     elif op == 9: # fibonacci
         return min_value, max_value # No extreme restriction since it's a step function.
+    elif op == 10: # polynomial (3)
+        return min_value_polynomial, max_value_polynomial
     else:
         raise ValueError("Invalid operation")
 
@@ -463,4 +466,21 @@ if __name__ == "__main__":
 
     operations = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-    run_benchmarks(matrix_sizes_250mb_500mb, datatypes_small_test, implementations, operations)
+    '''
+    First Benchmark: See which Implementation works best in 2 Datatypes, 2 matrix sizes, all implementations and 5 Operations.
+    '''
+    run_benchmarks(matrix_sizes=matrix_sizes_250mb_500mb,
+                   datatypes=['f64', 'int64'], 
+                   implementations=implementations, 
+                   operations=[1, 4, 5, 9, 10])
+
+    '''
+    Second Benchmark: See Influence on value type in 2 matrix sizes, all datatypes, all implementations, 3 operations.
+    '''
+    run_benchmarks(matrix_sizes=matrix_sizes_250mb_500mb,
+                   datatypes=datatypes, 
+                   implementations=implementations, 
+                   operations=[1, 10, 4])
+
+    # Big Benchmark
+    #run_benchmarks(matrix_sizes_250mb_500mb, datatypes_small_test, implementations, operations)

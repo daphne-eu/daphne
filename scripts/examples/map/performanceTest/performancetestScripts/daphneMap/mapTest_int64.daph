@@ -32,6 +32,7 @@ def exponential(x: si64) -> si64 {return as.si64(exp(x^2));}
 
 //polynomial
 def polynomial(x: si64) -> si64 {return as.si64(5*x^5 + 4*x^4 + 3*x^3 + 2*x^2 + 1*x^1);}
+def polynomial3(x: si64) -> si64 {return as.si64(3*x^3 + 2*x^2 + 1*x^1);}
 
 //Activation Functions
 def relu(x: si64) -> si64 {return as.si64(max(0,x));}
@@ -85,6 +86,10 @@ else if($operation == 8) {
 else if ($operation == 9)
 {
     map(X,fibonacci);
+}
+else if ($operation == 10)
+{
+    map(X,polynomial3);
 }
 else {
     print("Invalid operation selected.");

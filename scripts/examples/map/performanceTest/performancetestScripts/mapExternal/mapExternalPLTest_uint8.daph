@@ -107,6 +107,15 @@ def fibonacci(n):
 map(X,fibonacci_str, "n", $pl);
 
 }
+else if($operation == 10){
+    
+polynomial_str = "
+def polynomial3(x):
+    return 3*x**3 + 2*x**2 + 1*x
+";
+map(X, polynomial_str, "x", $pl);
+
+}
 else {
     print("Invalid operation selected.");
 }

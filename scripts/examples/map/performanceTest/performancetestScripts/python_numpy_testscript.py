@@ -39,6 +39,9 @@ def exponential(matrix):
 def polynomial(matrix):
     return 5*np.power(matrix,5) + 4*np.power(matrix,4) + 3*np.power(matrix,3) + 2*np.power(matrix,2) + matrix
 
+def polynomial3(matrix):
+    return 3*np.power(matrix,3) + 2*np.power(matrix,2) + matrix
+
 def relu(matrix):
     return np.maximum(0, matrix)
 
@@ -101,6 +104,8 @@ def main():
         result = thresholding(matrix)
     elif operation == 9:
         result = fibonacci(matrix)
+    elif operation == 10:
+        result = polynomial3(matrix)
     else:
         print("Invalid operation value")
         sys.exit(1)
