@@ -66,6 +66,12 @@ struct ColumnProjectionPath<tuddbs::Column<VTData>, tuddbs::Column<VTData>, tudd
             const tuddbs::Column<VTData> * pos_cast1 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[1]);
             const tuddbs::Column<VTData> * pos_cast2 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[2]);
             res = project(data, pos_cast0, pos_cast1, pos_cast2);
+        } else if (number_cols == 4) {
+            const tuddbs::Column<VTData> * pos_cast0 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[0]);
+            const tuddbs::Column<VTData> * pos_cast1 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[1]);
+            const tuddbs::Column<VTData> * pos_cast2 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[2]);
+            const tuddbs::Column<VTData> * pos_cast3 = reinterpret_cast<const tuddbs::Column<VTData> *>(pos[3]);
+            res = project(data, pos_cast0, pos_cast1, pos_cast2, pos_cast3);
         }
         //res = tuddbs::daphne_projection_path<ps>(data, pos);   
     }
