@@ -366,7 +366,14 @@ int startDAPHNE(int argc, const char** argv, DaphneLibResult* daphneLibRes, int 
     user_config.taskPartitioningScheme = taskPartitioningScheme;
     user_config.queueSetupScheme = queueSetupScheme;
 	user_config.victimSelection = victimSelection;
-    user_config.numberOfThreads = numberOfThreads; 
+
+    // only overwrite with non-defaults
+    if(numberOfThreads != 0) {
+        spdlog::trace("Overwriting config file supplied numberOfThreads={} with command line argument --num-threads={}",
+                      user_config.numberOfThreads, numberOfThreads);
+        user_config.numberOfThreads = numberOfThreads;
+    }
+
     user_config.minimumTaskSize = minimumTaskSize; 
     user_config.pinWorkers = pinWorkers;
     user_config.hyperthreadingEnabled = hyperthreadingEnabled;
