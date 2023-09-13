@@ -21,6 +21,8 @@
 #
 # -------------------------------------------------------------
 
+import torch as torch 
+
 from api.python.script_building.dag import DAGNode, OutputType
 from api.python.script_building.script import DaphneDSLScript
 from api.python.utils.consts import BINARY_OPERATIONS, TMP_PATH, VALID_INPUT_TYPES, F64, F32, SI64, SI32, SI8, UI64, UI32, UI8
@@ -29,11 +31,17 @@ from api.python.utils.helpers import create_params_string
 
 import numpy as np
 import pandas as pd
+import tensorflow as tf
+
+import time
 
 import ctypes
 import json
 import os
 from typing import Dict, Iterable, Optional, Sequence, Union, TYPE_CHECKING
+
+libc = ctypes.CDLL(None)
+free = libc.free
 
 if TYPE_CHECKING:
     # to avoid cyclic dependencies during runtime
@@ -68,14 +76,138 @@ class OperationNode(DAGNode):
         self._is_python_local_data = is_python_local_data
         self._brackets = brackets
         self._output_type = output_type
+        self._deleted = False
 
-    def compute(self, type="shared memory"):
+    """ 
+    Todo: 
+    A __del__ Function could be added that would allow an automatic deletion of Daphne Objects 
+    through the Python Garbage Collector. At the moment this does not work, 
+    as it deletes objects, still needed (like Matrixes used as Columns for Frames). 
+
+    A logic to make __del__ work would make the use of this extension much more convenient.
+    
+
+    def __del__(self):
+        self.delete()
+    """
+
+    def delete(self):
+        """
+        Function to manually delete Daphne Objects
+        """
+        if self._deleted:
+            return
+
+        #print(f"Object '{self}' deleted")
+        
+        self._script = DaphneDSLScript(self.daphne_context)
+        self._script.build_code(self, type="free memory")
+
+        self._script.execute()
+        self._script.clear(self)
+        
+        # Fetch the current result from DAPHNE
+        daphneLibResult = DaphneLib.getResult()
+
+        # Call the newly bound C++ function to free memory
+        DaphneLib.freeDaphneMemory(daphneLibResult)
+
+        # Mark as deleted to avoid duplicate frees
+        self._deleted = True
+
+    def compute(self, type="shared memory", verbose=False, isTensorflow=False, isPytorch=False, shape=None, useIndexColumn=False):
+        """
+        Compute function for processing the Daphne Object or operation node and returning the results.
+        The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
+        to produce a pandas DataFrame, numpy array, or tensors.
+
+        :param type: Execution type, either "shared memory" for in-memory data transfer or "files" for file-based data transfer.
+        :param verbose: If True, outputs verbose logs, including timing information for each step.
+        :param isTensorflow: If True and the result is a matrix, the output will be converted to a TensorFlow tensor.
+        :param isPytorch: If True and the result is a matrix, the output will be converted to a PyTorch tensor.
+        :param shape: If provided and the result is a matrix, it defines the shape to reshape the resulting tensor (either TensorFlow or PyTorch).
+        :param useIndexColumn: If True and the result is a DataFrame, uses the 'index' column as the DataFrame's index.
+
+        :return: Depending on the parameters and the operation's output type, this function can return:
+            - A pandas DataFrame for frame outputs.
+            - A numpy array for matrix outputs.
+            - A scalar value for scalar outputs.
+            - TensorFlow or PyTorch tensors if `isTensorflow` or `isPytorch` is set to True respectively.
+        """
         if self._result_var is None:
+
+            if(verbose):
+                # Time the execution for the whole processing
+                start_time = time.time()
+
             self._script = DaphneDSLScript(self.daphne_context)
             result = self._script.build_code(self, type)
+
+            if(verbose):
+                # Time the execution for the execute function
+                exec_start_time = time.time()
+
+            # Still a hard copy function that creates tmp files to execute
             self._script.execute()
             self._script.clear(self)
-            if self._output_type == OutputType.FRAME:
+
+            if(verbose):
+                # Print the overall timing
+                exec_end_time = time.time()
+                print(f"Execute Function execution time: \n{(exec_end_time - exec_start_time):.10f} seconds\n")
+            
+            if self._output_type == OutputType.FRAME and type=="shared memory":
+
+                if(verbose):
+                    # Time the execution for the compute function
+                    comp_start_time = time.time()
+
+                daphneLibResult = DaphneLib.getResult()
+                
+                # Read the frame's address into a numpy array
+                if daphneLibResult.columns is not None:
+
+                    # Read the column labels and dtypes from the Frame's labels and dtypes directly
+                    labels = [ctypes.cast(daphneLibResult.labels[i], ctypes.c_char_p).value.decode() for i in range(daphneLibResult.cols)]
+                    
+                    VTArray = ctypes.c_int64 * daphneLibResult.cols  # create a new type representing an array of data type codes
+                    vtcs_array = ctypes.cast(daphneLibResult.vtcs, ctypes.POINTER(VTArray)).contents  # cast the pointer to this type and access its contents
+                    dtypes = [self.getNumpyType(vtc) for vtc in vtcs_array]  # Convert the Data Types into Numpy Data Types
+
+                    data = {label: None for label in labels}
+
+                    # Using ctypes cast and NumPy array view to create dictionary directly
+                    for idx in range(daphneLibResult.cols):
+                        c_data_type = self.getType(daphneLibResult.vtcs[idx])
+                        array_view = np.ctypeslib.as_array(
+                            ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(c_data_type)),
+                            shape=[daphneLibResult.rows]
+                        )
+                        label = labels[idx]
+                        data[label] = array_view
+
+                    # Create DataFrame from dictionary
+                    df = pd.DataFrame(data, copy=False)
+
+                    # If useIndexColumn is true, set 'index' column as the DataFrame's index
+                    if  useIndexColumn and 'index' in df.columns:
+                        df.set_index('index', inplace=True, drop=True)
+
+                else:
+                    print("Error: NULL pointer access")
+                    labels = []
+                    dtypes = []
+                    df = pd.DataFrame()
+                
+                result = df
+                self.clear_tmp()
+
+                if(verbose):
+                    # Print the compute function timing
+                    comp_end_time = time.time()
+                    print(f"Computing Operation execution time: \n{(comp_end_time - comp_start_time):.10f} seconds\n")
+
+            elif self._output_type == OutputType.FRAME and type=="files":
                 df = pd.read_csv(result)
                 with open(result + ".meta", "r") as f:
                     fmd = json.load(f)
@@ -101,10 +233,160 @@ class OperationNode(DAGNode):
                     shape=[daphneLibResult.rows, daphneLibResult.cols]
                 )[0, 0]
                 self.clear_tmp()
-               
+            
+            if isTensorflow and self._output_type == OutputType.MATRIX:
+                if(verbose):
+                    # Time the execution for the whole processing
+                    tensor_start_time = time.time()
+
+                # Convert the Matrix to a TF Tensor
+                result = tf.convert_to_tensor(result)
+
+                # If a shape is provided, reshape the TF Tensor
+                if shape is not None:
+                    result = tf.reshape(result, shape)
+
+                if(verbose):
+                    # Print the tensor timing
+                    tensor_end_time = time.time()
+                    print(f"TensorFlow Tensor Transformation Execution time: \n{(tensor_end_time - tensor_start_time):.10f} seconds\n")
+
+            if isPytorch and self._output_type == OutputType.MATRIX:
+                if(verbose):
+                    # Time the execution for the whole processing
+                    tensor_start_time = time.time()
+
+                # Convert the Matrix to a Torch Tensor
+                result = torch.from_numpy(result)
+
+                # If a shape is provided, reshape the Torch Tensor               
+                if shape is not None:
+                    result = torch.reshape(result, shape)
+
+                if(verbose):
+                    # Print the tensor timing
+                    tensor_end_time = time.time()
+                    print(f"PyTorch Tensor Transformation Execution time: \n{(tensor_end_time - tensor_start_time):.10f} seconds\n")
+            
+            if(verbose):
+                # Print the overall timing
+                end_time = time.time()
+                print(f"Overall Compute Function execution time: \n{(end_time - start_time):.10f} seconds\n")    
+
             if result is None:
                 return
             return result
+        
+    def compute_sql(self, tables: list, type="shared memory", verbose=False, useIndexColumn=False):
+        """
+        Compute Function for the creation of Daphne SQL Code. 
+        Builds the tmpdaphne execution script with all the code from passed registerView - Tables and the SQL Operation
+        :param tables: An Array of OperationNode-Objects with all the registerViews needed for the SQL Query 
+        :param type: Execution Type for the computation
+        :param verbose: Print out Execution Times and further information if True
+        :param useIndexColum: Use the column named index as index for the Dataframe
+        :return: A Pandas DataFrame with the result of the SQL Query
+        """
+
+        if(verbose):
+            # Time the execution for the whole processing
+            start_time = time.time()
+
+        if(verbose):
+            # Time the execution for the execute function
+            exec_start_time = time.time()
+
+        var_counter = 0
+
+        for idx, table in enumerate(tables): 
+            if idx == 0:
+                table._script = DaphneDSLScript(table.daphne_context, var_counter=var_counter)
+                table._script.build_code(table, type)
+                var_counter = table._script.executeSQL(writeOnly=True)
+            else: 
+                table._script = DaphneDSLScript(table.daphne_context, var_counter=var_counter)
+                table._script.build_code(table, type)
+                var_counter = table._script.executeSQL(multiText=True, writeOnly=True)
+
+
+        self._script = DaphneDSLScript(self.daphne_context, var_counter=var_counter)
+        result = self._script.build_code(self, type)
+        self._script.executeSQL(multiText=True)
+        self._script.clear(self)
+
+        if(verbose):
+            # Print the overall timing
+            exec_end_time = time.time()
+            print(f"Execute Function execution time: \n{(exec_end_time - exec_start_time):.10f} seconds\n")
+        
+        if(verbose):
+            # Print the overall timing
+            end_time = time.time()
+            print(f"Overall Compute Function execution time: \n{(end_time - start_time):.10f} seconds\n")    
+
+        
+        if self._output_type == OutputType.FRAME and type=="shared memory":
+
+            if(verbose):
+                # Time the execution for the compute function
+                comp_start_time = time.time()
+
+            daphneLibResult = DaphneLib.getResult()
+            
+            # Read the frame's address into a numpy array
+            if daphneLibResult.columns is not None:
+
+                # Read the column labels and dtypes from the Frame's labels and dtypes directly
+                labels = [ctypes.cast(daphneLibResult.labels[i], ctypes.c_char_p).value.decode() for i in range(daphneLibResult.cols)]
+                
+                VTArray = ctypes.c_int64 * daphneLibResult.cols  # create a new type representing an array of data type codes
+                vtcs_array = ctypes.cast(daphneLibResult.vtcs, ctypes.POINTER(VTArray)).contents  # cast the pointer to this type and access its contents
+                dtypes = [self.getNumpyType(vtc) for vtc in vtcs_array]  # Convert the Data Types into Numpy Data Types
+
+                data = {label: None for label in labels}
+
+                # Using ctypes cast and NumPy array view to create dictionary directly
+                for idx in range(daphneLibResult.cols):
+                    c_data_type = self.getType(daphneLibResult.vtcs[idx])
+                    array_view = np.ctypeslib.as_array(
+                        ctypes.cast(daphneLibResult.columns[idx], ctypes.POINTER(c_data_type)),
+                        shape=[daphneLibResult.rows]
+                    )
+                    label = labels[idx]
+                    data[label] = array_view
+
+                # Create DataFrame from dictionary
+                df = pd.DataFrame(data, copy=False)
+
+                # If useIndexColumn is true, set 'index' column as the DataFrame's index
+                if  useIndexColumn and 'index' in df.columns:
+                    df.set_index('index', inplace=True, drop=True)
+
+            else:
+                print("Error: NULL pointer access")
+                labels = []
+                dtypes = []
+                df = pd.DataFrame()
+            
+            result = df
+            self.clear_tmp()
+
+            if(verbose):
+                # Print the compute function timing
+                comp_end_time = time.time()
+                print(f"Computing Operation execution time: \n{(comp_end_time - comp_start_time):.10f} seconds\n")
+
+        elif self._output_type == OutputType.FRAME and type=="files":
+            df = pd.read_csv(result)
+            with open(result + ".meta", "r") as f:
+                fmd = json.load(f)
+                df.columns = [x["label"] for x in fmd["schema"]]
+            result = df
+            self.clear_tmp()
+
+        if result is None:
+            return
+        return result
 
     def clear_tmp(self):
        for f in os.listdir(TMP_PATH):
@@ -141,5 +423,26 @@ class OperationNode(DAGNode):
             return ctypes.c_uint32
         elif vtc == UI8:
             return ctypes.c_uint8
+        else:
+            raise RuntimeError(f"unknown value type code: {vtc}")
+    
+    #Convert Daphne Data Types into Numpy Data Types
+    def getNumpyType(self, vtc):
+        if vtc == F64:
+            return np.float64
+        elif vtc == F32:
+            return np.float32
+        elif vtc == SI64:
+            return np.int64
+        elif vtc == SI32:
+            return np.int32
+        elif vtc == SI8:
+            return np.int8
+        elif vtc == UI64:
+            return np.uint64
+        elif vtc == UI32:
+            return np.uint32
+        elif vtc == UI8:
+            return np.uint8
         else:
             raise RuntimeError(f"unknown value type code: {vtc}")

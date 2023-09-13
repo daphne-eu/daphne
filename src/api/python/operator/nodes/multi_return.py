@@ -22,22 +22,30 @@
 # -------------------------------------------------------------
 
 from api.python.operator.operation_node import OperationNode
+from api.python.script_building.script import DaphneDSLScript
 from api.python.operator.nodes.scalar import Scalar
 from api.python.script_building.dag import OutputType
 from api.python.utils.consts import VALID_INPUT_TYPES, VALID_ARITHMETIC_TYPES, BINARY_OPERATIONS
+from api.python.utils.daphnelib import DaphneLib, DaphneLibResult
 from api.python.utils.helpers import create_params_string
 
 import numpy as np
 
+import ctypes
+
 from typing import Union, TYPE_CHECKING, Dict, Iterable, Optional, Sequence
+
+if TYPE_CHECKING:
+    # to avoid cyclic dependencies during runtime
+    from context.daphne_context import DaphneContext
 
 class MultiReturn(OperationNode):
     _np_array: np.array
 
-    def __init__(self, operation:str,output_nodes, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
+    def __init__(self, daphne_context, operation:str,output_nodes, unnamed_input_nodes:Union[str, Iterable[VALID_INPUT_TYPES]]=None, 
                 named_input_nodes:Dict[str, VALID_INPUT_TYPES]=None):
         self._outputs = output_nodes
-        super().__init__(operation, unnamed_input_nodes, named_input_nodes, OutputType.MULTI_RETURN, False)
+        super().__init__(daphne_context, operation, unnamed_input_nodes, named_input_nodes, OutputType.MULTI_RETURN, False)
     
     def __getitem__(self, key):
         self._outputs[key]
@@ -46,11 +54,40 @@ class MultiReturn(OperationNode):
                   named_input_vars: Dict[str, str]) -> str:
         inputs_comma_sep = create_params_string(
             unnamed_input_vars, named_input_vars)
-        output="["
+        output=""
         for idx, output_node in enumerate(self._outputs):
             name = f'{var_name}_{idx}'
             output_node.daphnedsl_name = name
             output += f'{name},'
-        output = output[:-1]+"]"
-        return f'{output}={self.operation}({inputs_comma_sep})'
+        output = output[:-1]
+        print(f'{output}={self.operation}({inputs_comma_sep})')
+        return f'{output}={self.operation}({inputs_comma_sep});'
 
+def compute(self, type="shared memory", num_returns = 2, verbose=False):
+        """
+        Compute function for processing the Daphne Object or operation node and returning the results.
+        The function builds a DaphneDSL script from the node and its context, executes it, and processes the results
+        to produce a pandas DataFrame, numpy array, or tensors.
+
+        :param type: Execution type, either "shared memory" for in-memory data transfer or "files" for file-based data transfer.
+        :param verbose: If True, outputs verbose logs, including timing information for each step.
+
+        :return: Depending on the parameters and the operation's output type, this function can return:
+            - A pandas DataFrame for frame outputs.
+            - A numpy array for matrix outputs.
+            - A scalar value for scalar outputs.
+            - TensorFlow or PyTorch tensors if `isTensorflow` or `isPytorch` is set to True respectively.
+        """
+        if self._result_var is None:
+
+            self._script = DaphneDSLScript(self.daphne_context)
+            print(self)
+            result = self._script.build_code(self, type, num_returns=num_returns)
+
+            # Still a hard copy function that creates tmp files to execute
+            self._script.executeSQL(multiText=True)
+            self._script.clear(self)
+
+            if result is None:
+                return
+            return result
