@@ -448,13 +448,13 @@ if __name__ == "__main__":
     }
 
     matrix_sizes_250mb_500mb = {
-    'f32': [4096, 8192],
-    'f64': [2896, 5792],
-    'int32': [4096, 8192],
-    'int64': [2896, 5792],
-    'int8': [8192, 16384],
-    'uint64': [2896, 5792],
-    'uint8': [8192, 16384]
+    'f32': [100,1000,4096, 8192],
+    'f64': [100,1000,2896, 5792],
+    'int32': [100,1000,4096, 8192],
+    'int64': [100,1000,2896, 5792],
+    'int8': [100,1000,8192, 16384],
+    'uint64': [100,1000,2896, 5792],
+    'uint8': [100,1000,8192, 16384]
     }
     
     datatypes = ['f64', 'f32', 'int64', 'int32', 'int8', 'uint64', 'uint8']
@@ -482,5 +482,7 @@ if __name__ == "__main__":
                    implementations=implementations, 
                    operations=[1, 10, 4])
 
-    # Big Benchmark
-    #run_benchmarks(matrix_sizes_250mb_500mb, datatypes_small_test, implementations, operations)
+    '''
+    Big Benchmark
+    '''
+    run_benchmarks(matrix_sizes_250mb_500mb, datatypes, implementations, operations)
