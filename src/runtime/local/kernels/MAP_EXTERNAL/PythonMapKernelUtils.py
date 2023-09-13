@@ -39,6 +39,8 @@ def get_numpy_type(dtype_str):
         return np.int8
     elif dtype_str == "uint64":
         return np.uint64
+    elif dtype_str == "uint32":
+        return np.uint32
     elif dtype_str == "uint8":
         return np.uint8
     else:
@@ -59,6 +61,8 @@ def get_ctypes_type(dtype_str):
         return ctypes.c_int8
     elif dtype_str == "uint64":
         return ctypes.c_uint64
+    elif dtype_str == "uint32":
+        return ctypes.c_uint32
     elif dtype_str == "uint8":
         return ctypes.c_uint8
     else:

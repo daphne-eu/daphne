@@ -109,12 +109,26 @@ struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
         if (!pResult) {
             PyErr_Print();
-            cleanupFiles(inputFile, outputFile);
             PyGILState_Release(gstate);
+            return;
         } else {
+            PyObject* pStatus = PyTuple_GetItem(pResult, 0);
+            PyObject* pMessage = PyTuple_GetItem(pResult, 1);
+            bool success = PyObject_IsTrue(pStatus);
+
+            if (!success) {
+                std::cerr << PyUnicode_AsUTF8(pMessage) << std::endl;
+                Py_XDECREF(pResult);
+                if (std::remove(inputFile.c_str()) != 0) {
+                    perror("Error deleting input csv file");
+                }
+                PyGILState_Release(gstate);
+                return;
+            }
+
             Py_XDECREF(pResult);
         }
-        
+
         std::ifstream ifs(outputFile);
         for (size_t i = 0; i < res->getNumRows(); ++i) {
             for (size_t j = 0; j < res->getNumCols(); ++j) {
@@ -150,10 +164,10 @@ struct PythonMapKernel_csv<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
 
     static void cleanupFiles(const std::string& inputFile, const std::string& outputFile) {
         if (std::remove(inputFile.c_str()) != 0) {
-            perror("Error deleting input csv file");
+            perror("Error deleting temp input csv file");
         }
         if (std::remove(outputFile.c_str()) != 0) {
-            perror("Error deleting output csv file");
+            perror("Error deleting temp output csv file");
         }
     }
 

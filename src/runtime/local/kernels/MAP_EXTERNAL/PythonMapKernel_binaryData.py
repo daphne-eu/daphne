@@ -26,7 +26,11 @@ from sympy import symbols, lambdify, sympify, Symbol
 import re
 
 def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype):
-    arg_array = np.fromfile(input_file, dtype=PythonMapKernelUtils.get_numpy_type(dtype)).reshape(rows, cols)    
+    try:
+        arg_array = np.fromfile(input_file, dtype=PythonMapKernelUtils.get_numpy_type(dtype)).reshape(rows, cols)    
+    except Exception as e:
+        return (False, f"Failed to read data: {str(e)}")
+
     match = re.search(r'def (\w+)', func)
     if match:
         try:
@@ -39,9 +43,9 @@ def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype
             if func_obj:
                 res_array = np.vectorize(func_obj, otypes=[dtype])(arg_array)
             else:
-                print(f"Function '{func_name}' not found.")
+                return (False, f"Function '{func_name}' not found.")
         except Exception as e:
-            print(f"Failed to execute function: {str(e)}")
+            return (False, f"Failed to execute function: {str(e)}")
     else:
         try:
             x = symbols(varName)
@@ -49,6 +53,7 @@ def apply_map_function(input_file, output_file, rows, cols, func, varName, dtype
             func_lambda = lambdify(x, func_expr, modules=["numpy"])
             res_array = np.array(func_lambda(arg_array), dtype=dtype)
         except Exception as e:
-            print(f"Failed to execute lambda expression: {str(e)}")
-
+            return (False, f"Failed to execute lambda expression: {str(e)}")
+    
     res_array.tofile(output_file)
+    return (True, None)

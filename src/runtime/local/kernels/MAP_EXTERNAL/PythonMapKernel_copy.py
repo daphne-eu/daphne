@@ -53,4 +53,3 @@ def apply_map_function(arg_list, rows, cols, func, varName, dtype_arg):
             return res_array.flatten().tolist()
         except Exception as e:
             print(f"Failed to execute lambda expression: {str(e)}")
-    return []

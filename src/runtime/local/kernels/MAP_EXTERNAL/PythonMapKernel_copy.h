@@ -97,27 +97,26 @@ struct PythonMapKernel_copy<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (!pResult) {
             PyErr_Print();
             PyGILState_Release(gstate);
-        } else {
-            int rows = arg->getNumRows();
-            int cols = arg->getNumCols();
-            std::vector<VTRes> result_data(rows * cols);
+            return;
+        }
+        
+        int rows = arg->getNumRows();
+        int cols = arg->getNumCols();
+        std::vector<VTRes> result_data(rows * cols);
 
-            for (int i = 0; i < rows * cols; ++i) {
-                PyObject* pValue = PyList_GetItem(pResult, i);
-                result_data[i] = from_python_object<VTRes>(pValue);
-            }
-
-            Py_XDECREF(pResult);
-
-            for (int i = 0; i < rows; ++i) {
-                for (int j = 0; j < cols; ++j) {
-                    res->set(i, j, result_data[i * cols + j]);
-                }
-            }
+        for (int i = 0; i < rows * cols; ++i) {
+            PyObject* pValue = PyList_GetItem(pResult, i);
+            result_data[i] = from_python_object<VTRes>(pValue);
         }
 
+        Py_XDECREF(pResult);
+
+        for (int i = 0; i < rows; ++i) {
+            for (int j = 0; j < cols; ++j) {
+                res->set(i, j, result_data[i * cols + j]);
+            }
+        }
         PyGILState_Release(gstate);
     }
 };
-
 #endif //SRC_RUNTIME_LOCAL_KERNELS_MAP_EXTERNAL_PYTHONMAPKERNEL_COPY_H

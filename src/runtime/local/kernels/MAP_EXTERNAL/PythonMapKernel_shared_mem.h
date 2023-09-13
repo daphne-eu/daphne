@@ -107,6 +107,7 @@ struct PythonMapKernel_Shared_Mem<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         if (!pResult) {
             PyErr_Print();
             PyGILState_Release(gstate);
+            return;
         } else {
             Py_XDECREF(pResult);
         }

@@ -22,6 +22,7 @@
 #include <memory>
 #include <util/PythonInterpreter.h>
 #include <runtime/local/kernels/MAP_EXTERNAL/PythonMapKernelUtils.h>
+#include <limits.h>
 
 // ****************************************************************************
 // Struct for partial template specialization
@@ -113,8 +114,10 @@ struct PythonMapKernel_SysArg<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
             if (!pResult) {
                 PyErr_Print();
                 PyGILState_Release(gstate);
+                Py_XDECREF(pArgs);
+                Py_XDECREF(pModule);
             } else {
-                res_data[i*numCols + j] = from_python_object<VTRes>(pResult);
+                res_data[i*numCols + j] = from_python_object_cutted<VTRes>(pResult);
                 Py_XDECREF(pResult);
             }
             

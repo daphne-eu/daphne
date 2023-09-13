@@ -89,28 +89,42 @@ struct PythonMapKernel_binaryData<DenseMatrix<VTRes>, DenseMatrix<VTArg>> {
         PyObject* pResult = PyObject_CallObject(pFunc, pArgs);
         Py_XDECREF(pFunc);
         Py_XDECREF(pArgs);
+
         if (!pResult) {
             PyErr_Print();
-            cleanupFiles(inputFile, outputFile);
             PyGILState_Release(gstate);
+            return;
         } else {
+            PyObject* pStatus = PyTuple_GetItem(pResult, 0);
+            PyObject* pMessage = PyTuple_GetItem(pResult, 1);
+            bool success = PyObject_IsTrue(pStatus);
+
+            if (!success) {
+                std::cerr << PyUnicode_AsUTF8(pMessage) << std::endl;
+                Py_XDECREF(pResult);
+                if (std::remove(inputFile.c_str()) != 0) {
+                    perror("Error deleting temp input binary file");
+                }
+                PyGILState_Release(gstate);
+                return;
+            }
+
             Py_XDECREF(pResult);
         }
 
         std::ifstream input(outputFile, std::ios::binary);
         input.read((char *)res->getValues(), res->getNumRows() * res->getNumCols() * sizeof(VTRes));
         input.close();
-
         cleanupFiles(inputFile, outputFile);
         PyGILState_Release(gstate);
     }
 
     static void cleanupFiles(const std::string& inputFile, const std::string& outputFile) {
         if (std::remove(inputFile.c_str()) != 0) {
-            perror(("Error deleting " + inputFile).c_str());
+            perror(("Error deleting temp " + inputFile).c_str());
         }
         if (std::remove(outputFile.c_str()) != 0) {
-            perror(("Error deleting " + outputFile).c_str());
+            perror(("Error deleting temp " + outputFile).c_str());
         }   
     }
 };
